@@ -4,7 +4,7 @@
   "description": "prisma 的一个小练习",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npx ts-node script.ts "
   },
   "keywords": [],
   "author": "",
