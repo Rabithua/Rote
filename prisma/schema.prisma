@@ -1,27 +1,45 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  email       String       @unique
+  nickname    String?
+  username    String       @unique
+  usersetting Usersetting?
+  password    String
+  rotes       Rote[]
+  attachments Attachment[]
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  author    User    @relation(fields: [authorId], references: [id])
-  authorId  Int
+model Usersetting {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  user     User    @relation(fields: [userid], references: [id])
+  userid   String  @unique @db.ObjectId
+  darkmode Boolean @default(false)
+}
+
+model Rote {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  content     String?
+  published   Boolean      @default(false)
+  author      User         @relation(fields: [authorId], references: [id])
+  authorId    String       @db.ObjectId
+  attachments Attachment[]
+}
+
+model Attachment {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  url    String
+  user   User   @relation(fields: [userid], references: [id])
+  userid String @db.ObjectId
+  rote   Rote   @relation(fields: [roteid], references: [id])
+  roteid String @db.ObjectId
 }
