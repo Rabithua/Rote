@@ -26,6 +26,24 @@ export async function createUser(data: { name: string; email: string }) {
   }
 }
 
+export async function passportCheckUser(data: { username: string; password: string }) {
+  try {
+    const user = await prisma.user.findFirst({
+      username: data.username
+    });
+    return {
+      msg: 'ok',
+      data: user
+    };
+  } catch (error) {
+    console.error("Error creating post:", error);
+    return {
+      msg: 'ok',
+      data: user
+    };;
+  }
+}
+
 export async function createPost(
   title: string,
   content: string,

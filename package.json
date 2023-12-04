@@ -6,7 +6,9 @@
   "scripts": {
     "start": "npx ts-node server.ts ",
     "dev": "nodemon server.ts",
-    "dev-f": "nodemon server.ts --ignore-errors"
+    "dev-f": "nodemon server.ts --ignore-errors",
+    "mongoInit": "docker-compose up -d",
+    "mongoSet": "docker exec -it RoteMongo1 mongosh --eval \"rs.initiate({_id: 'myReplicaSet', members: [{_id: 0, host: 'RoteMongo1'}, {_id: 1, host: 'RoteMongo2'}]})\" && docker exec -it RoteMongo1 mongo --eval \"use Rote\" && docker exec -it RoteMongo1 mongo --eval \"db.createCollection('Rote')\""
   },
   "keywords": [],
   "author": "",

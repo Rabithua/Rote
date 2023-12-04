@@ -8,14 +8,15 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  email       String       @unique
-  nickname    String?
-  username    String       @unique
-  usersetting Usersetting?
-  password    String
-  rotes       Rote[]
-  attachments Attachment[]
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  email        String         @unique
+  nickname     String?
+  username     String         @unique
+  usersetting  Usersetting?
+  password     String
+  rotes        Rote[]
+  attachments  Attachment[]
+  userreaction UserReaction[]
 }
 
 model Usersetting {
@@ -26,13 +27,15 @@ model Usersetting {
 }
 
 model Rote {
-  id          String       @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  content     String?
-  published   Boolean      @default(false)
-  author      User         @relation(fields: [authorId], references: [id])
-  authorId    String       @db.ObjectId
-  attachments Attachment[]
+  id           String         @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  content      String?
+  published    Boolean        @default(false)
+  author       User           @relation(fields: [authorid], references: [id])
+  authorid     String         @db.ObjectId
+  attachments  Attachment[]
+  userreaction UserReaction[]
+  visitorReaction VisitorReaction[]
 }
 
 model Attachment {
@@ -40,6 +43,22 @@ model Attachment {
   url    String
   user   User   @relation(fields: [userid], references: [id])
   userid String @db.ObjectId
+  rote   Rote   @relation(fields: [roteid], references: [id])
+  roteid String @db.ObjectId
+}
+
+model UserReaction {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  type   String
+  user   User   @relation(fields: [userid], references: [id])
+  userid String @db.ObjectId
+  rote   Rote   @relation(fields: [roteid], references: [id])
+  roteid String @db.ObjectId
+}
+
+model VisitorReaction {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  type   String
   rote   Rote   @relation(fields: [roteid], references: [id])
   roteid String @db.ObjectId
 }

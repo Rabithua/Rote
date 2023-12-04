@@ -1,0 +1,21 @@
+version: '3.7'
+services:
+  mongo1:
+    image: mongo:5
+    container_name: RoteMongo1
+    command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1
+    ports:
+      - "27017:27017"
+    networks:
+      - RoteMongo
+  mongo2:
+    image: mongo:5
+    container_name: RoteMongo2
+    command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2
+    ports:
+      - "27018:27017"
+    networks:
+      - RoteMongo
+networks:
+  RoteMongo:
+    driver: bridge
