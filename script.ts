@@ -9,72 +9,77 @@ export async function allUser() {
     const users = await prisma.user.findMany();
     return users;
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error creating rote:", error);
     return;
   }
 }
 
-export async function createUser(data: { name: string; email: string }) {
+export async function createUser(data: {
+  username: string;
+  email: string;
+  password: string;
+  nickname?: string
+}) {
   try {
     const user = await prisma.user.create({
       data,
     });
     return user;
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error creating rote:", error);
     return;
   }
 }
 
-export async function passportCheckUser(data: { username: string; password: string }) {
+export async function passportCheckUser(data: {
+  username: string;
+  password: string;
+}) {
   try {
     const user = await prisma.user.findFirst({
-      username: data.username
+      where: {
+        username: data.username,
+      },
     });
     return {
-      msg: 'ok',
-      data: user
+      msg: "ok",
+      data: user,
     };
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error creating rote:", error);
     return {
-      msg: 'ok',
-      data: user
-    };;
+      msg: "error",
+      data: error,
+    };
   }
 }
 
-export async function createPost(
-  title: string,
-  content: string,
-  authorId: string
-) {
+export async function createRote(data: {
+  title: string;
+  content: string;
+  authorid: string;
+}) {
   try {
-    const post = await prisma.post.create({
-      data: {
-        title,
-        content,
-        published: false,
-        author: { connect: { id: authorId } },
-      },
+    const rote = await prisma.rote.create({
+      data,
     });
-    return post;
+    return rote;
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error creating rote:", error);
     return;
   }
 }
 
-export async function findPostById(id: string) {
+export async function findRoteById(id: string) {
   try {
-    const post = await prisma.post.findUnique({
+    const rote = await prisma.rote.findUnique({
       where: {
         id,
       },
     });
-    return post;
+    return rote;
   } catch (error) {
-    console.error("Error creating post:", error);
+    console.error("Error creating rote:", error);
     throw error;
   }
 }

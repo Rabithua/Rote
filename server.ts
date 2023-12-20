@@ -8,7 +8,7 @@ import moment from "moment";
 import bodyParser from "body-parser";
 
 import { PrismaClient } from "@prisma/client";
-import { allUser, createUser, createPost, findPostById } from "./script";
+import { allUser, createUser, createRote, findRoteById } from "./script";
 
 const prisma = new PrismaClient({
   log: [
@@ -62,6 +62,7 @@ app.use(passport.session());
 //     });
 //   })
 // );
+
 // 请求中间件，记录IP和时间
 const Middleware = function (req: any, res: any, next: any) {
   const ipAddress = req.ip;
@@ -104,7 +105,13 @@ app.get("/", (req, res) => {
 });
 
 app.post("/addUser", (req, res) => {
-  createUser(req.body)
+  const { username, password, email, nickname } = req.body;
+  createUser({
+    username,
+    password,
+    email,
+    nickname,
+  })
     .then(async (user) => {
       res.send({
         code: 0,
@@ -126,14 +133,18 @@ app.post("/addUser", (req, res) => {
     });
 });
 
-app.post("/addPost", (req, res) => {
-  const { title, content, authorId } = req.body;
-  createPost(title, content, authorId)
-    .then((post) => {
+app.post("/addRote", (req, res) => {
+  const { title, content, authorid } = req.body;
+  createRote({
+    title,
+    content,
+    authorid,
+  })
+    .then((rote) => {
       res.send({
         code: 0,
         msg: "ok",
-        data: post,
+        data: rote,
       });
     })
     .catch((error) => {
@@ -146,14 +157,14 @@ app.post("/addPost", (req, res) => {
     });
 });
 
-app.get("/onePost", (req, res) => {
+app.get("/oneRote", (req, res) => {
   console.log(req.query);
-  findPostById(req.query.id?.toString() || "")
-    .then(async (post) => {
+  findRoteById(req.query.id?.toString() || "")
+    .then(async (rote) => {
       res.send({
         code: 0,
         msg: "ok",
-        data: post,
+        data: rote,
       });
       await prisma.$disconnect();
     })
@@ -170,6 +181,14 @@ app.get("/onePost", (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-  console.log("Example app listening on port 3000!");
+app.get("*", (req, res) => {
+  res.send({
+    code: 404,
+    msg: "Page not found",
+    data: null,
+  });
+});
+
+app.listen(process.env.PORT, () => {
+  console.log(`Rote Node app listening on port ${process.env.PORT}!`);
 });

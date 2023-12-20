@@ -10,10 +10,10 @@ datasource db {
 model User {
   id           String         @id @default(auto()) @map("_id") @db.ObjectId
   email        String         @unique
-  nickname     String?
   username     String         @unique
-  usersetting  Usersetting?
   password     String
+  nickname     String?
+  usersetting  Usersetting?
   rotes        Rote[]
   attachments  Attachment[]
   userreaction UserReaction[]
@@ -27,14 +27,15 @@ model Usersetting {
 }
 
 model Rote {
-  id           String         @id @default(auto()) @map("_id") @db.ObjectId
-  title        String
-  content      String?
-  published    Boolean        @default(false)
-  author       User           @relation(fields: [authorid], references: [id])
-  authorid     String         @db.ObjectId
-  attachments  Attachment[]
-  userreaction UserReaction[]
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  type            String?           @default("Rote")
+  content         String?           @default("")
+  published       Boolean           @default(false)
+  author          User              @relation(fields: [authorid], references: [id])
+  authorid        String            @db.ObjectId
+  attachments     Attachment[]
+  userreaction    UserReaction[]
   visitorReaction VisitorReaction[]
 }
 
