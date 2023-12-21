@@ -1,20 +1,20 @@
 import { Editor } from "novel";
 import { useState } from "react";
-import { apiAddPost } from "../../api/post/main";
+import { apiAddRote } from "../../api/rote/main";
 import toast from "react-hot-toast";
 
 function Home() {
   const [htmlContent, setHtmlContent] = useState<string | undefined>("");
   const [jsonContent, setJsonContent] = useState<object | undefined>(undefined);
 
-  function addPost() {
+  function addRote() {
     if (jsonContent) {
       let data = {
         title: "测试文章",
         content: JSON.stringify(jsonContent),
-        authorId: 1,
+        authorid: "658281aca6d42fed8076313a",
       };
-      apiAddPost(data)
+      apiAddRote(data)
         .then((r) => {
           toast.success("已保存");
         })
@@ -38,7 +38,7 @@ function Home() {
   }
   return (
     <div className=" w-full flex flex-col items-center">
-      <div onClick={addPost} className=" bg-black text-white px-4 py-6">
+      <div onClick={addRote} className=" bg-black text-white px-4 py-6">
         Save
       </div>
       <Editor

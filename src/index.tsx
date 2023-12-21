@@ -1,19 +1,26 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import Home from './pages/home';
-import reportWebVitals from './reportWebVitals';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { Toaster } from "react-hot-toast";
+import reportWebVitals from "./reportWebVitals";
+import { RouterProvider, createBrowserRouter } from "react-router-dom";
 import ErrorPage from "./pages/404";
-import { Toaster } from 'react-hot-toast';
+import Home from "./pages/home";
+import Landing from "./pages/landing";
+import "./utils/i18n";
 
 const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 
 const router = createBrowserRouter([
   {
     path: "/",
+    element: <Landing />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/home",
     element: <Home />,
     errorElement: <ErrorPage />,
   },
@@ -25,8 +32,8 @@ const router = createBrowserRouter([
 
 root.render(
   <React.StrictMode>
-      <RouterProvider router={router} />
-      <Toaster position="top-right" reverseOrder={false} />
+    <RouterProvider router={router} />
+    <Toaster position="top-right" reverseOrder={false} />
   </React.StrictMode>
 );
 

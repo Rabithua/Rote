@@ -1,10 +1,10 @@
 import { instance } from "../request";
 
-export function apiAddPost(data: any): Promise<any> {
+export function apiAddRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
       method: "post",
-      url: "/addPost",
+      url: "/addRote",
       data,
     })
       .then(function (response) {
