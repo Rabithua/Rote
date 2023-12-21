@@ -10,7 +10,7 @@ function LanguageSwitcher() {
   return (
     <div
       onClick={switchLng}
-      className=" fixed top-16 right-20 px-5 py-3 bg-white rounded-full font-semibold hover:bg-black hover:text-white hover:scale-95 duration-300 cursor-pointer select-none"
+      className=" fixed top-16 right-20 px-5 py-3 bg-white rounded-full font-semibold hover:bg-[#07c160] hover:text-white hover:scale-95 duration-300 cursor-pointer select-none"
     >
       <span
         className={
