@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+var crypto = require("crypto");
 
 const prisma = new PrismaClient();
 
@@ -18,11 +19,25 @@ export async function createUser(data: {
   username: string;
   email: string;
   password: string;
-  nickname?: string
+  nickname?: string;
 }) {
   try {
+    // hash 加密
+    let salt = crypto.randomBytes(16);
+    let passwordhash = crypto.pbkdf2Sync(
+      data.password,
+      salt,
+      310000,
+      32,
+      "sha256"
+    );
+
     const user = await prisma.user.create({
-      data,
+      data: {
+        ...data,
+        passwordhash,
+        salt,
+      },
     });
     return user;
   } catch (error) {
@@ -33,7 +48,6 @@ export async function createUser(data: {
 
 export async function passportCheckUser(data: {
   username: string;
-  password: string;
 }) {
   try {
     const user = await prisma.user.findFirst({
@@ -42,14 +56,14 @@ export async function passportCheckUser(data: {
       },
     });
     return {
-      msg: "ok",
-      data: user,
+      err: null,
+      user: user,
     };
   } catch (error) {
     console.error("Error creating rote:", error);
     return {
-      msg: "error",
-      data: error,
+      err: error,
+      user: null,
     };
   }
 }

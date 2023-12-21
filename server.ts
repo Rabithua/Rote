@@ -1,14 +1,21 @@
 import express = require("express");
 import session from "express-session";
 import passport from "passport";
-import LocalStrategy from "passport-local";
+import { Strategy as LocalStrategy } from "passport-local";
+var crypto = require("crypto");
 
 var cors = require("cors");
 import moment from "moment";
 import bodyParser from "body-parser";
 
 import { PrismaClient } from "@prisma/client";
-import { allUser, createUser, createRote, findRoteById } from "./script";
+import {
+  allUser,
+  createUser,
+  createRote,
+  findRoteById,
+  passportCheckUser,
+} from "./script";
 
 const prisma = new PrismaClient({
   log: [
@@ -32,6 +39,7 @@ prisma.$on("error", (e) => {
 
 // Create a new express application instance
 const app: express.Application = express();
+
 // 配置会话
 app.use(
   session({
@@ -46,22 +54,41 @@ app.use(passport.initialize());
 // 使用 passport.session() 中间件处理会话
 app.use(passport.session());
 
-// passport.use(
-//   new LocalStrategy(function (username, password, done) {
-//     User.findOne({ username: username }, function (err, user) {
-//       if (err) {
-//         return done(err);
-//       }
-//       if (!user) {
-//         return done(null, false);
-//       }
-//       if (!user.verifyPassword(password)) {
-//         return done(null, false);
-//       }
-//       return done(null, user);
-//     });
-//   })
-// );
+passport.use(
+  new LocalStrategy(async function (username: any, password: any, done: any) {
+    let data = { username };
+    let { user, err } = await passportCheckUser(data);
+    if (err) {
+      return done(err, false, {
+        message: "error.",
+      });
+    }
+    if (!user) {
+      return done(err, false, {
+        message: "User not found.",
+      });
+    }
+    // 对比hash
+    crypto.pbkdf2(
+      password,
+      user.salt,
+      310000,
+      32,
+      "sha256",
+      function (err: any, hashedPassword: any) {
+        if (err) {
+          return done(err);
+        }
+        if (!crypto.timingSafeEqual(user?.passwordhash, hashedPassword)) {
+          return done(null, false, {
+            message: "Incorrect username or password.",
+          });
+        }
+        return done(null, user);
+      }
+    );
+  })
+);
 
 // 请求中间件，记录IP和时间
 const Middleware = function (req: any, res: any, next: any) {
