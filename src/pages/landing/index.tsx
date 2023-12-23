@@ -21,11 +21,11 @@ function Landing() {
     },
   ];
   return (
-    <div className=" bg-[#f8f8f8] w-full min-h-screen flex flex-col justify-center items-center">
-      <div className=" w-[80%] max-w-[1080px] mt-10 mb-4 h-full flex flex-col gap-9 font-sans font-semibold">
+    <div className=" bg-bgWhite dark:text-white dark:bg-bgDark w-full min-h-screen flex flex-col justify-center items-center">
+      <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5 font-sans">
         <LanguageSwitcher />
-        <div className=" flex items-center gap-6 px-5">
-          <svg
+        <div className=" flex items-center flex-wrap gap-6 px-5">
+          <div className=" dark:invert"><svg
             xmlns="http://www.w3.org/2000/svg"
             width="202"
             height="48"
@@ -79,68 +79,35 @@ function Landing() {
                 <stop offset="1" stopColor="#FAFF00" stopOpacity="0" />
               </linearGradient>
             </defs>
-          </svg>
+          </svg></div>
           <div className=" w-2 h-2 bg-[#ffca27] rounded-full"></div>
-          <div className=" text-[#07c160] text-2xl">{t("poem")}</div>
+          <div className=" text-xl md:text-2xl">{t("poem")}</div>
         </div>
         <div className=" flex flex-col px-5 gap-2 leading-relaxed">
-          <div className=" flex flex-wrap items-center gap-2">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="96"
-              height="96"
-              viewBox="0 0 96 96"
-              fill="none"
-            >
-              <path
-                d="M33 23C31.36 23 30 21.64 30 20V8C30 6.36 31.36 5 33 5C34.64 5 36 6.36 36 8V20C36 21.64 34.64 23 33 23Z"
-                fill="#B2CF3E"
-              />
-              <path
-                d="M63 23C61.36 23 60 21.64 60 20V8C60 6.36 61.36 5 63 5C64.64 5 66 6.36 66 8V20C66 21.64 64.64 23 63 23Z"
-                fill="#B2CF3E"
-              />
-              <path
-                d="M48 56.36C50.08 56.36 51.6 55.12 51.6 53.16C51.6 51.16 50.08 50 48 50C45.92 50 44.4 51.16 44.4 53.16C44.4 55.12 45.92 56.36 48 56.36Z"
-                fill="#B2CF3E"
-              />
-              <path
-                d="M48 68.0001C50.5184 68.0001 52.56 66.3346 52.56 64.2801C52.56 62.2256 50.5184 60.5601 48 60.5601C45.4816 60.5601 43.44 62.2256 43.44 64.2801C43.44 66.3346 45.4816 68.0001 48 68.0001Z"
-                fill="#B2CF3E"
-              />
-              <path
-                d="M78.28 18C75.64 16.04 71.84 17.92 71.84 21.24V21.64C71.84 26.32 68.48 30.64 63.8 31.12C58.4 31.68 53.84 27.44 53.84 22.16V18C53.84 15.8 52.04 14 49.84 14H46.16C43.96 14 42.16 15.8 42.16 18V22.16C42.16 25.32 40.52 28.12 38.04 29.68C37.68 29.92 37.28 30.12 36.88 30.32C36.52 30.52 36.12 30.68 35.68 30.8C35.2 30.96 34.68 31.08 34.12 31.12C33.48 31.2 32.84 31.2 32.2 31.12C31.64 31.08 31.12 30.96 30.64 30.8C30.24 30.68 29.84 30.52 29.44 30.32C29.04 30.12 28.64 29.92 28.28 29.68C25.76 27.92 24.16 24.88 24.16 21.64V21.24C24.16 18.16 20.88 16.32 18.28 17.64C18.24 17.68 18.2 17.68 18.16 17.72C18 17.8 17.88 17.88 17.72 18C17.6 18.12 17.44 18.2 17.32 18.32C16.2 19.2 15.2 20.2 14.36 21.28C13.92 21.76 13.56 22.28 13.24 22.8C13.2 22.84 13.16 22.88 13.12 22.96C12.76 23.48 12.44 24.08 12.16 24.64C12.08 24.72 12.04 24.76 12.04 24.84C11.8 25.32 11.56 25.8 11.4 26.32C11.28 26.52 11.24 26.68 11.16 26.88C10.92 27.48 10.76 28.08 10.6 28.68C10.44 29.24 10.32 29.84 10.24 30.44C10.16 30.88 10.12 31.32 10.08 31.8C10.04 32.36 10 32.92 10 33.48V68.52C10 79.28 18.72 88 29.48 88H66.52C77.28 88 86 79.28 86 68.52V33.48C86 27.12 82.96 21.56 78.28 18ZM48 73C41.8 73 38 69.92 38 64.96C38 62.24 39.4 59.88 41.84 58.48C40.08 57.24 38.92 55.4 38.92 52.88C38.92 47.68 43.08 45 48 45C52.92 45 57.04 47.68 57.04 52.88C57.04 55.4 55.92 57.24 54.12 58.48C56.6 59.88 58 62.24 58 64.96C58 69.92 54.16 73 48 73Z"
-                fill="#B2CF3E"
-              />
-            </svg>
-            <div className=" text-[40px] bg-primary text-transparent bg-clip-text sm:text-[80px]">
-              {t("ComingSoon")}
-            </div>
-          </div>
-          <div className=" flex flex-wrap text-[#07c160] items-center text-2xl whitespace-pre-wrap">
-            {t("types.0")} <span className=" text-black px-2">/</span>
-            {t("types.1")} <span className=" text-black px-2">/</span>
-            {t("types.2")} <span className=" text-black px-2">/</span>
-            {t("types.3")} <span className=" text-black px-2">/</span>
+          <div className=" font-semibold flex flex-wrap items-center text-xl whitespace-pre-wrap">
+            {t("types.0")} <span className=" px-2">/</span>
+            {t("types.1")} <span className=" px-2">/</span>
+            {t("types.2")} <span className=" px-2">/</span>
+            {t("types.3")} <span className=" px-2">/</span>
             {t("types.4")}
           </div>
-          <div className=" flex text-[#07c160] text-5xl">{t("slogen")}</div>
-          <div className=" flex text-[#07c160] text-4xl">{t("openApi")}</div>
-          <div className=" flex text-[#07c160] text-3xl">{t("data")}</div>
+          <div className=" flex text-xl md:text-5xl font-semibold">{t("slogen")}</div>
+          <div className=" flex text-xl md:text-4xl font-semibold">{t("openApi")}</div>
+          <div className=" flex text-xl md:text-3xl font-semibold">{t("data")}</div>
           {/* <div className=" flex text-[#07c16020] text-3xl">RSS</div> */}
-          <div className=" flex flex-wrap text-[#07c160] items-center text-3xl whitespace-pre-wrap">
+          <div className=" flex flex-wrap items-center font-semibold font-mono text-md md:text-3xl whitespace-pre-wrap">
             <span className=" pr-2">{t("links")}</span>
             {links.map((item, index) => {
               return (
                 <div key={"link-" + index}>
                   <a
                     href={item.href}
-                    className=" no-underline hover:text-black hover:scale-95 duration-300 after:content-['⤴']"
+                    className=" no-underline hover:text-black dark:hover:text-[#07c160] hover:scale-95 duration-300 after:content-['⤴']"
                   >
                     {t(`linksItems.${index}`)}
                   </a>
                   {index + 1 < links.length ? (
-                    <span className=" text-black px-2">/</span>
+                    <span className=" px-2">/</span>
                   ) : null}
                 </div>
               );
