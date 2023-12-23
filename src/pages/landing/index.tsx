@@ -83,7 +83,7 @@ function Landing() {
           <div className=" w-2 h-2 bg-[#ffca27] rounded-full"></div>
           <div className=" text-xl md:text-2xl">{t("poem")}</div>
         </div>
-        <div className=" flex flex-col px-5 gap-2 leading-relaxed">
+        <div className=" flex flex-col px-5 gap-2 md:gap-5 leading-relaxed">
           <div className=" font-semibold flex flex-wrap items-center text-xl whitespace-pre-wrap">
             {t("types.0")} <span className=" px-2">/</span>
             {t("types.1")} <span className=" px-2">/</span>
@@ -102,7 +102,7 @@ function Landing() {
                 <div key={"link-" + index}>
                   <a
                     href={item.href}
-                    className=" no-underline hover:text-black dark:hover:text-[#07c160] hover:scale-95 duration-300 after:content-['⤴']"
+                    className=" no-underline hover:text-[#07c160] hover:scale-95 duration-300 after:content-['⤴']"
                   >
                     {t(`linksItems.${index}`)}
                   </a>
