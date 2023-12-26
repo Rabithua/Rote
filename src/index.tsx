@@ -8,6 +8,7 @@ import ErrorPage from "./pages/404";
 import Home from "./pages/home";
 import Landing from "./pages/landing";
 import "./utils/i18n";
+import Mine from "./pages/mine";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -22,6 +23,11 @@ const router = createBrowserRouter([
   {
     path: "/home",
     element: <Home />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/mine",
+    element: <Mine />,
     errorElement: <ErrorPage />,
   },
   {
