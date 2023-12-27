@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@lobehub/ui": "^1.125.0",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
@@ -18,6 +19,7 @@
     "react-i18next": "^13.5.0",
     "react-router-dom": "^6.14.1",
     "react-scripts": "5.0.1",
+    "stream-browserify": "^3.0.0",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
