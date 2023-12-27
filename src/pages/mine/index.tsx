@@ -1,7 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import RoteInputSimple from "../../components/roteInputSimple";
+import { useNavigate } from "react-router-dom";
 
 function Mine() {
+  const navigate = useNavigate();
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
   const icons = [
     {
@@ -23,6 +26,7 @@ function Mine() {
           />
         </svg>
       ),
+      link: "/mine",
     },
     {
       svg: (
@@ -50,6 +54,7 @@ function Mine() {
           />
         </svg>
       ),
+      link: "/#",
     },
     {
       svg: (
@@ -77,6 +82,7 @@ function Mine() {
           />
         </svg>
       ),
+      link: "/#",
     },
     {
       svg: (
@@ -104,6 +110,7 @@ function Mine() {
           />
         </svg>
       ),
+      link: "/#",
     },
     {
       svg: (
@@ -131,6 +138,7 @@ function Mine() {
           />
         </svg>
       ),
+      link: "/#",
     },
   ];
 
@@ -149,6 +157,10 @@ function Mine() {
     },
     {
       name: "Lucky",
+      active: false,
+    },
+    {
+      name: "Article",
       active: false,
     },
   ]);
@@ -171,13 +183,16 @@ function Mine() {
 
   return (
     <div className=" bg-bgWhite dark:text-white dark:bg-bgDark w-screen h-screen">
-      <div className=" max-w-[1080px] sm:w-[80%] h-full font-sans flex mx-auto">
-        <div className=" duration-300 md:w-[150px] px-2 md:px-5 shrink-0 h-full border-r border-[#00000005] flex flex-col gap-4 items-center justify-center">
+      <div className=" max-w-[1440px] lg:w-[90%] h-full font-sans flex mx-auto">
+        <div className=" duration-300 sm:flex md:w-[150px] px-2 md:px-5 shrink-0 h-full border-r border-[#00000010] hidden flex-col gap-4 items-center justify-center">
           {icons.map((icon, index) => {
             return (
               <div
                 className=" duration-300 cursor-default flex gap-2 items-center justify-center py-1 px-3 rounded-full hover:bg-[#00000010]"
                 key={`leftLinks_${index}`}
+                onClick={() => {
+                  navigate(icon.link);
+                }}
               >
                 <div className=" w-8 h-8 p-1 shrink-0">{icon.svg}</div>
                 <div className=" shrink-0 hidden md:block">
@@ -187,14 +202,14 @@ function Mine() {
             );
           })}
         </div>
-        <div className=" flex-1 h-full ">
-          <div className=" w-full flex overflow-x-scroll items-center justify-center border-b border-[#00000005]">
+        <div className=" flex-1 h-full overflow-x-hidden">
+          <div className=" w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-white dark:bg-black dark:text-white">
             {roteTypes.map((type, index) => {
               return (
                 <div
-                  className={` duration-300 border-b-2 cursor-default py-2 px-5 shrink-0 font-semibold hover:bg-[#00000005] ${
+                  className={` duration-300 border-b-2 cursor-default py-2 px-5 shrink-0 font-semibold hover:bg-[#00000010] dark:hover:bg-[#ffffff05] ${
                     type.active
-                      ? " bg-[#00000005] border-black"
+                      ? " bg-[#00000010] border-black dark:border-white"
                       : " border-transparent"
                   }`}
                   key={`roteType_${index}`}
@@ -205,6 +220,7 @@ function Mine() {
               );
             })}
           </div>
+          <RoteInputSimple></RoteInputSimple>
         </div>
       </div>
     </div>

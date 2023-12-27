@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Children } from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import { Toaster } from "react-hot-toast";
@@ -9,6 +9,7 @@ import Home from "./pages/home";
 import Landing from "./pages/landing";
 import "./utils/i18n";
 import Mine from "./pages/mine";
+import { ConfigProvider } from "antd";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -38,8 +39,22 @@ const router = createBrowserRouter([
 
 root.render(
   <React.StrictMode>
-    <RouterProvider router={router} />
-    <Toaster position="top-right" reverseOrder={false} />
+    <ConfigProvider
+      theme={{
+        components: {
+          Select: {
+            /* 这里是你的组件 token */
+            optionSelectedBg: "#00000010",
+            colorPrimary: "#000000",
+            colorBgContainer: "#000000",
+            colorPrimaryHover: "#00000080"
+          },
+        },
+      }}
+    >
+      <RouterProvider router={router} />
+      <Toaster position="top-right" reverseOrder={false} />
+    </ConfigProvider>
   </React.StrictMode>
 );
 

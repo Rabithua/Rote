@@ -102,7 +102,7 @@ function Landing() {
                 <div key={"link-" + index}>
                   <a
                     href={item.href}
-                    className=" no-underline hover:text-[#07c160] hover:scale-95 duration-300 after:content-['⤴']"
+                    className=" no-underline hover:text-[#07c160] active:scale-95 duration-300 after:content-['⤴']"
                   >
                     {t(`linksItems.${index}`)}
                   </a>

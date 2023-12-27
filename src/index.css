@@ -2,3 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+.noScrollBar::-webkit-scrollbar {
+  display: none;
+}
+
+.ProseMirror {
+    padding-top: 0 !important;
+    padding-left: 0 !important;
+}
