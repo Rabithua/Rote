@@ -33,9 +33,10 @@ model Rote {
   type            String?           @default("Rote")
   tags            String[]          @default([])
   content         String?           @default("")
-  published       Boolean           @default(false)
+  state           String            @default("private")
   author          User              @relation(fields: [authorid], references: [id])
   authorid        String            @db.ObjectId
+  pin             Boolean           @default(false)
   attachments     Attachment[]
   userreaction    UserReaction[]
   visitorReaction VisitorReaction[]
