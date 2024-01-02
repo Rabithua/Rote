@@ -37,6 +37,7 @@ model Rote {
   author          User              @relation(fields: [authorid], references: [id])
   authorid        String            @db.ObjectId
   pin             Boolean           @default(false)
+  editor          String?           @default("normal")
   attachments     Attachment[]
   userreaction    UserReaction[]
   visitorReaction VisitorReaction[]
