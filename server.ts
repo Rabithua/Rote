@@ -17,6 +17,41 @@ import {
   passportCheckUser,
 } from "./script";
 
+import multer from "multer";
+import { randomUUID } from "crypto";
+import r2uploadhandler from "./utils/r2";
+
+// 储存本地
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "uploads");
+//   },
+//   filename(req, file, callback) {
+//     const { originalname } = file;
+//     callback(null, `${randomUUID()}-${originalname}`);
+//   },
+// });
+
+// 储存内存中
+const storage = multer.memoryStorage();
+
+const fileFilter = (req: any, file: any, cb: any) => {
+  if (file.mimetype.split("/")[0] === "image") {
+    cb(null, true);
+  } else {
+    cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE"), false);
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 50 * 1024 * 1024,
+    files: 9,
+  },
+});
+
 const prisma = new PrismaClient({
   log: [
     { level: "warn", emit: "event" },
@@ -206,6 +241,29 @@ app.get("/oneRote", (req, res) => {
       await prisma.$disconnect();
       process.exit(1);
     });
+});
+
+app.post("/upload", upload.array("file"), async (req: any, res) => {
+  console.log(req.files);
+  const result = await r2uploadhandler(req.files[0]);
+  console.log(result);
+  res.send({
+    code: 0,
+    msg: "ok",
+    data: {
+      url: result,
+    },
+  });
+});
+
+app.use((error: any, req: any, res: any, next: any) => {
+  if (error instanceof multer.MulterError) {
+    return res.send({
+      code: 1,
+      msg: error.code,
+      data: null,
+    });
+  }
 });
 
 app.get("*", (req, res) => {
