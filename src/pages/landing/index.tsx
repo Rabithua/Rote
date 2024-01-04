@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "../../components/languageSwitcher";
+import { BackgroundBeams } from "../../components/ui/background-beams";
 
 function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: "pages.landing" });
@@ -24,7 +25,8 @@ function Landing() {
     <div className=" bg-bgWhite dark:text-white dark:bg-bgDark w-full min-h-screen flex flex-col justify-center items-center">
       <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5 font-sans">
         <LanguageSwitcher />
-        <div className=" flex items-center flex-wrap gap-6 px-5">
+        <BackgroundBeams className=" opacity-10" />
+        <div className=" flex items-center flex-wrap gap-6 px-5 z-10">
           <div className=" dark:invert"><svg
             xmlns="http://www.w3.org/2000/svg"
             width="202"
@@ -83,7 +85,7 @@ function Landing() {
           <div className=" w-2 h-2 bg-[#ffca27] rounded-full"></div>
           <div className=" text-xl md:text-2xl">{t("poem")}</div>
         </div>
-        <div className=" flex flex-col px-5 gap-2 md:gap-5 leading-relaxed">
+        <div className=" flex flex-col px-5 gap-2 md:gap-5 leading-relaxed z-10">
           <div className=" font-semibold flex flex-wrap items-center text-xl whitespace-pre-wrap">
             {t("types.0")} <span className=" px-2">/</span>
             {t("types.1")} <span className=" px-2">/</span>

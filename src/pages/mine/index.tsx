@@ -2,55 +2,62 @@ import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import RoteInputSimple from "../../components/roteInputSimple";
 import { useNavigate } from "react-router-dom";
+import {
+  BellOutlined,
+  HomeOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
+import Rote from "../../components/Rote";
 
 function Mine() {
   const navigate = useNavigate();
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
   const icons = [
     {
-      svg: (
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
-          <path
-            d="M24 36V30"
-            stroke="#171717"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M20.14 5.64019L6.28004 16.7402C4.72004 17.9802 3.72004 20.6002 4.06004 22.5602L6.72004 38.4802C7.20004 41.3202 9.92004 43.6202 12.8 43.6202H35.2C38.06 43.6202 40.8 41.3002 41.28 38.4802L43.94 22.5602C44.26 20.6002 43.26 17.9802 41.72 16.7402L27.86 5.66019C25.72 3.94019 22.26 3.94019 20.14 5.64019Z"
-            stroke="#171717"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      ),
+      svg: <HomeOutlined className=" text-xl" />,
       link: "/mine",
+    },
+    {
+      svg: <BellOutlined className=" text-xl" />,
+      link: "/#",
     },
     {
       svg: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
           <path
-            d="M24.0401 5.81982C17.4201 5.81982 12.0401 11.1998 12.0401 17.8198V23.5998C12.0401 24.8198 11.5201 26.6798 10.9001 27.7198L8.60005 31.5398C7.18005 33.8998 8.16005 36.5198 10.7601 37.3998C19.3801 40.2798 28.6801 40.2798 37.3001 37.3998C39.7201 36.5998 40.7801 33.7398 39.4601 31.5398L37.1601 27.7198C36.5601 26.6798 36.0401 24.8198 36.0401 23.5998V17.8198C36.0401 11.2198 30.6401 5.81982 24.0401 5.81982Z"
+            d="M24 28C26.2091 28 28 26.2091 28 24C28 21.7909 26.2091 20 24 20C21.7909 20 20 21.7909 20 24C20 26.2091 21.7909 28 24 28Z"
             stroke="#171717"
             strokeWidth="3"
-            strokeMiterlimit="10"
-            strokeLinecap="round"
-          />
-          <path
-            d="M27.74 6.39988C27.12 6.21988 26.48 6.07988 25.82 5.99988C23.9 5.75988 22.06 5.89988 20.34 6.39988C20.92 4.91988 22.36 3.87988 24.04 3.87988C25.72 3.87988 27.16 4.91988 27.74 6.39988Z"
-            stroke="#171717"
-            strokeWidth="3"
-            strokeMiterlimit="10"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
-            d="M30.04 38.1201C30.04 41.4201 27.34 44.1201 24.04 44.1201C22.4 44.1201 20.88 43.4401 19.8 42.3601C18.72 41.2801 18.04 39.7601 18.04 38.1201"
+            d="M40 36C42.52 32.66 44 28.5 44 24C44 19.5 42.52 15.34 40 12"
             stroke="#171717"
             strokeWidth="3"
-            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M8 12C5.48 15.34 4 19.5 4 24C4 28.5 5.48 32.66 8 36"
+            stroke="#171717"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M33.6 31.1998C35.1 29.1998 36 26.6998 36 23.9998C36 21.2998 35.1 18.7998 33.6 16.7998"
+            stroke="#171717"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M14.4 16.7998C12.9 18.7998 12 21.2998 12 23.9998C12 26.6998 12.9 29.1998 14.4 31.1998"
+            stroke="#171717"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
         </svg>
       ),
@@ -60,21 +67,35 @@ function Mine() {
       svg: (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
           <path
-            d="M6.33997 14.8799L24 25.0999L41.54 14.9399"
+            d="M24 44C35.0457 44 44 35.0457 44 24C44 12.9543 35.0457 4 24 4C12.9543 4 4 12.9543 4 24C4 35.0457 12.9543 44 24 44Z"
             stroke="#171717"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
-            d="M24 43.2201V25.0801"
+            d="M16 6H18C14.1 17.68 14.1 30.32 18 42H16"
             stroke="#171717"
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <path
-            d="M19.86 4.96007L9.18003 10.8801C6.76003 12.2201 4.78003 15.5801 4.78003 18.3401V29.6401C4.78003 32.4001 6.76003 35.7601 9.18003 37.1001L19.86 43.0401C22.14 44.3001 25.88 44.3001 28.16 43.0401L38.84 37.1001C41.26 35.7601 43.24 32.4001 43.24 29.6401V18.3401C43.24 15.5801 41.26 12.2201 38.84 10.8801L28.16 4.94007C25.86 3.68007 22.14 3.68007 19.86 4.96007Z"
+            d="M30 6C33.9 17.68 33.9 30.32 30 42"
+            stroke="#171717"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6 32V30C17.68 33.9 30.32 33.9 42 30V32"
+            stroke="#171717"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M6 18.0002C17.68 14.1002 30.32 14.1002 42 18.0002"
             stroke="#171717"
             strokeWidth="3"
             strokeLinecap="round"
@@ -82,6 +103,11 @@ function Mine() {
           />
         </svg>
       ),
+      link: "/#",
+    },
+
+    {
+      svg: <SaveOutlined className=" text-xl" />,
       link: "/#",
     },
     {
@@ -182,32 +208,32 @@ function Mine() {
   }
 
   return (
-    <div className=" bg-bgWhite dark:text-white dark:bg-bgDark w-screen h-screen">
-      <div className=" max-w-[1440px] lg:w-[90%] h-full font-sans flex mx-auto">
-        <div className=" duration-300 sm:flex md:w-[150px] px-2 md:px-5 shrink-0 h-full border-r border-[#00000010] hidden flex-col gap-4 items-center justify-center">
+    <div className=" bg-bgWhite dark:text-white dark:bg-bgDark w-full min-h-screen">
+      <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
+        <div className=" sticky top-0 duration-300 sm:flex md:w-[150px] px-2 md:px-5 shrink-0 border-r border-[#00000010] hidden flex-col gap-4 items-center justify-center">
           {icons.map((icon, index) => {
             return (
               <div
-                className=" duration-300 cursor-default flex gap-2 items-center justify-center py-1 px-3 rounded-full hover:bg-[#00000010]"
+                className=" cursor-pointer duration-300 flex gap-2 items-center justify-center py-1 px-3 rounded-full hover:bg-[#00000010]"
                 key={`leftLinks_${index}`}
                 onClick={() => {
                   navigate(icon.link);
                 }}
               >
                 <div className=" w-8 h-8 p-1 shrink-0">{icon.svg}</div>
-                <div className=" shrink-0 hidden md:block">
+                <div className=" shrink-0 hidden tracking-widest md:block">
                   {t(`leftNavBar.${index}`)}
                 </div>
               </div>
             );
           })}
         </div>
-        <div className=" flex-1 h-full overflow-x-hidden">
-          <div className=" w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-white dark:bg-black dark:text-white">
+        <div className=" flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative">
+          <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-3xl dark:bg-black dark:text-white">
             {roteTypes.map((type, index) => {
               return (
                 <div
-                  className={` duration-300 border-b-2 cursor-default py-2 px-5 shrink-0 font-semibold hover:bg-[#00000010] dark:hover:bg-[#ffffff05] ${
+                  className={` cursor-pointer duration-300 border-b-2 py-2 px-5 shrink-0 font-semibold hover:bg-[#00000010] dark:hover:bg-[#ffffff05] ${
                     type.active
                       ? " bg-[#00000010] border-black dark:border-white"
                       : " border-transparent"
@@ -221,6 +247,11 @@ function Mine() {
             })}
           </div>
           <RoteInputSimple></RoteInputSimple>
+          <div className="">
+            {[1, 2, 3, 4, 5].map((item, index) => {
+              return <Rote Rote="123" key={`Rote_${index}`}></Rote>;
+            })}
+          </div>
         </div>
       </div>
     </div>

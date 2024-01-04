@@ -1,15 +1,26 @@
-import { Avatar, Button, Select, SelectProps, Tooltip } from "antd";
-import Icon, {
+import {
+  Avatar,
+  Image,
+  Select,
+  SelectProps,
+  Tooltip,
+  Upload,
+  UploadProps,
+} from "antd";
+import {
+  CloseOutlined,
   CloudUploadOutlined,
   PushpinOutlined,
-  SearchOutlined,
   SendOutlined,
   TagsOutlined,
+  UploadOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { Editor } from "novel";
 import { useState } from "react";
+import defaultImage from "../assets/img/defaultImage.svg";
+import { RcFile } from "antd/es/upload";
 
 function RoteInputSimple() {
   const [textareaValue, setTextareaValue] = useState("");
@@ -21,6 +32,42 @@ function RoteInputSimple() {
       label: "defaultTag",
     },
   ]);
+  const [fileList, setFileList] = useState([]) as any;
+
+  const uploadProps: UploadProps = {
+    maxCount: 9,
+    multiple: true,
+    name: "file",
+    fileList: [],
+    action: "http://127.0.0.1:3000/upload",
+    headers: {
+      authorization: "authorization-text",
+    },
+    beforeUpload() {
+      return false;
+    },
+    onChange(info) {
+      const updatedFileList = info.fileList.map(async (file) => {
+        if (!file.url && file.originFileObj) {
+          const url = await getBase64(file.originFileObj);
+          return { ...file, url };
+        }
+        return file;
+      });
+
+      Promise.all(updatedFileList).then((newFileList) => {
+        setFileList(fileList.concat(newFileList).slice(0, 9));
+      });
+    },
+  };
+
+  const getBase64 = (file: RcFile): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
 
   const handleTagsChange = (value: string) => {
     console.log(value, typeof value);
@@ -51,11 +98,17 @@ function RoteInputSimple() {
     setEditType(editType === "default" ? "novel" : "default");
   }
 
+  function deleteFile(indexToRemove: number) {
+    setFileList(
+      fileList.filter((_: any, index: number) => index !== indexToRemove)
+    );
+  }
+
   return (
     <div className=" cursor-default bg-white w-full p-5 flex gap-5">
       <Avatar
         size={48}
-        className=" bg-[#00000010] shrink-0 hidden sm:block"
+        className=" bg-[#00000010] shrink-0 hidden border sm:block"
         icon={<UserOutlined className=" text-black" />}
       />
       <div className=" w-[90%] flex-1">
@@ -93,17 +146,56 @@ function RoteInputSimple() {
           onChange={handleTagsChange}
           options={tags}
         />
+        <div className=" flex gap-2 flex-wrap my-2">
+          <Image.PreviewGroup
+            preview={{
+              onChange: (current, prev) =>
+                console.log(`current index: ${current}, prev index: ${prev}`),
+            }}
+          >
+            {fileList.map((file: any, index: number) => {
+              return (
+                <div
+                  className=" w-20 h-20 rounded-lg bg-bgWhite border overflow-hidden relative"
+                  key={`filePicker_${index}`}
+                >
+                  <Image
+                    className=" w-full h-full object-cover"
+                    height={80}
+                    width={80}
+                    src={file.url}
+                    fallback={defaultImage}
+                  />
+                  <div
+                    onClick={() => deleteFile(index)}
+                    className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
+                  >
+                    <CloseOutlined className=" text-white text-[12px]" />
+                  </div>
+                </div>
+              );
+            })}
+          </Image.PreviewGroup>
+          <Upload
+            {...uploadProps}
+            className={` ${fileList.length < 9 ? "block" : "hidden"}`}
+          >
+            <div className=" w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-bgWhite border overflow-hidden">
+              <UploadOutlined className=" text-2xl " />
+            </div>
+          </Upload>
+        </div>
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
           <TagsOutlined
             onClick={() => {
               setTagsShow(!tagsShow);
             }}
-            className={` text-xl p-2 hover:bg-[#00000005] rounded-md ${
+            className={` cursor-pointer text-xl p-2 hover:bg-[#00000005] rounded-md ${
               tagsShow ? " bg-[#00000010]" : ""
             }`}
           />
-          <CloudUploadOutlined className=" text-xl p-2 hover:bg-[#00000010] rounded-md" />
-          <PushpinOutlined className=" text-xl p-2 hover:bg-[#00000010] rounded-md" />
+          <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-[#00000010] rounded-md" />
+          <PushpinOutlined className=" cursor-pointer text-xl p-2 hover:bg-[#00000010] rounded-md" />
           <Select
             defaultValue="私密"
             bordered={false}
@@ -113,12 +205,12 @@ function RoteInputSimple() {
             options={stateOptions}
           />
           <div
-            className={` duration-300 h-full w-20 flex items-center rounded-md active:scale-95 justify-center ${
+            className={` cursor-pointer hover:bg-[#00000010] duration-300 h-full w-20 flex items-center rounded-md active:scale-95 justify-center ${
               editType === "novel" ? " bg-[#00000010]" : ""
             }`}
             onClick={changeEditType}
           >
-            <Tooltip title="Novel编辑器" placement="bottom">
+            <Tooltip title="Novel编辑器" placement="bottom" className="">
               <svg
                 className=" flex-1 p-2 px-3"
                 xmlns="http://www.w3.org/2000/svg"
@@ -160,7 +252,7 @@ function RoteInputSimple() {
               </svg>
             </Tooltip>
           </div>
-          <div className=" select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95">
+          <div className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95">
             <SendOutlined />
             发送
           </div>
