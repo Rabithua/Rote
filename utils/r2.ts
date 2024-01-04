@@ -14,7 +14,7 @@ const s3 = new S3Client({
   },
 });
 
-export default async function r2uploadhandler(file: any) {
+async function r2uploadhandler(file: any) {
   console.log(file);
   const { originalname } = file;
   const date = new Date(); // 获取当前日期
@@ -36,3 +36,5 @@ export default async function r2uploadhandler(file: any) {
     return null;
   }
 }
+
+export { r2uploadhandler, s3 };

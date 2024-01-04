@@ -18,8 +18,10 @@ import {
 } from "./script";
 
 import multer from "multer";
+import multerS3 from "multer-s3";
+
+import { r2uploadhandler, s3 } from "./utils/r2";
 import { randomUUID } from "crypto";
-import r2uploadhandler from "./utils/r2";
 
 // 储存本地
 // const storage = multer.diskStorage({
@@ -44,7 +46,21 @@ const fileFilter = (req: any, file: any, cb: any) => {
 };
 
 const upload = multer({
-  storage,
+  storage: multerS3({
+    s3: s3,
+    bucket: `${process.env.R2_BUCKET}`,
+    metadata: function (req, file, cb) {
+      cb(null, { fieldName: file.fieldname });
+    },
+    key: function (req, file, cb) {
+      const { originalname } = file;
+      const date = new Date(); // 获取当前日期
+      const year = date.getFullYear(); // 获取当前年份
+      const month = date.getMonth() + 1; // 获取当前月份（注意月份从 0 开始，需要加 1）
+
+      cb(null, `uploads/${year}/${month}/${randomUUID()}_${originalname}`);
+    },
+  }),
   fileFilter,
   limits: {
     fileSize: 50 * 1024 * 1024,
@@ -245,13 +261,18 @@ app.get("/oneRote", (req, res) => {
 
 app.post("/upload", upload.array("file"), async (req: any, res) => {
   console.log(req.files);
-  const result = await r2uploadhandler(req.files[0]);
-  console.log(result);
+  // const result = await r2uploadhandler(req.files[0]);
+  // console.log(result);
+  let newFiles = req.files.map((file: any, index: any) => {
+    file.location = `https://${process.env.R2_URL_PREFIX}/${file.key}`;
+    return file;
+  });
+  console.log(newFiles);
   res.send({
     code: 0,
     msg: "ok",
     data: {
-      url: result,
+      files: newFiles,
     },
   });
 });
