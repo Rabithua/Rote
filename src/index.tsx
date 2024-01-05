@@ -10,6 +10,7 @@ import Landing from "./pages/landing";
 import "./utils/i18n";
 import Mine from "./pages/mine";
 import { ConfigProvider } from "antd";
+import Login from "./pages/login";
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
@@ -24,6 +25,11 @@ const router = createBrowserRouter([
   {
     path: "/home",
     element: <Home />,
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/login",
+    element: <Login />,
     errorElement: <ErrorPage />,
   },
   {
