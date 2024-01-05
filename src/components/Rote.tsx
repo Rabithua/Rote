@@ -7,9 +7,10 @@ function RoteInputSimple(Rote: any) {
   return (
     <div className=" cursor-pointer duration-300 hover:bg-[#00000005] flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5">
       <Avatar
-        className=" bg-[#00000010] text-black shrink-0"
+        className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
         icon={<UserOutlined />}
+        src="https://pbs.twimg.com/profile_images/1683041714347581441/s_P4otBB_400x400.jpg"
       />
       <div className=" flex flex-col">
         <div className=" cursor-default">

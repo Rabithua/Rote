@@ -229,7 +229,7 @@ function Mine() {
           })}
         </div>
         <div className=" flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative">
-          <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-3xl dark:bg-black dark:text-white">
+          <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
             {roteTypes.map((type, index) => {
               return (
                 <div
