@@ -10,16 +10,16 @@ function LanguageSwitcher() {
   return (
     <div
       onClick={switchLng}
-      className=" fixed top-16 right-20 px-5 py-3 bg-white rounded-full font-semibold hover:bg-[#07c160] hover:text-white hover:scale-95 duration-300 cursor-pointer select-none"
+      className=" z-50 text-sm md:text-normal fixed w-fit top-5 right-2 md:top-16 md:right-20 px-3 py-2 dark:bg-[#333333] bg-white rounded-xl font-semibold active:scale-95 duration-300 cursor-pointer select-none"
     >
       <span
         className={
           i18next.language.slice(0, 2) === "zh"
             ? " bg-[#07c160] py-1 px-2 mx-2 rounded-md text-white"
-            : " mx-2"
+            : " mx-2 text-black dark:text-white"
         }
       >
-        中文
+        中
       </span>
       /
       <span
@@ -29,7 +29,7 @@ function LanguageSwitcher() {
             : " mx-2"
         }
       >
-        ENGLISH
+        EN
       </span>
     </div>
   );
