@@ -9,7 +9,7 @@ import Home from "./pages/home";
 import Landing from "./pages/landing";
 import "./utils/i18n";
 import Mine from "./pages/mine";
-import { ConfigProvider } from "antd";
+import { App, ConfigProvider } from "antd";
 import Login from "./pages/login";
 
 const root = ReactDOM.createRoot(
@@ -45,22 +45,28 @@ const router = createBrowserRouter([
 
 root.render(
   <React.StrictMode>
-    <ConfigProvider
-      theme={{
-        components: {
-          Select: {
-            /* 这里是你的组件 token */
-            optionSelectedBg: "#00000010",
-            colorPrimary: "#000000",
-            colorBgContainer: "#000000",
-            colorPrimaryHover: "#00000080"
+    <App>
+      <ConfigProvider
+        theme={{
+          components: {
+            Select: {
+              optionSelectedBg: "#00000010",
+              colorPrimary: "#000000",
+              colorBgContainer: "#000000",
+              colorPrimaryHover: "#00000080",
+            },
+            Input: {
+              activeBorderColor: "#00000080",
+              hoverBorderColor: "#00000080",
+              activeShadow: "none",
+            },
           },
-        },
-      }}
-    >
-      <RouterProvider router={router} />
-      <Toaster position="top-right" reverseOrder={false} />
-    </ConfigProvider>
+        }}
+      >
+        <RouterProvider router={router} />
+        <Toaster position="top-right" reverseOrder={false} />
+      </ConfigProvider>
+    </App>
   </React.StrictMode>
 );
 

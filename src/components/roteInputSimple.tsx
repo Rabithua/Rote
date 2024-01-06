@@ -4,8 +4,8 @@ import {
   Select,
   SelectProps,
   Tooltip,
-  Upload,
   UploadProps,
+  message,
 } from "antd";
 import {
   CloseOutlined,
@@ -18,9 +18,10 @@ import {
 } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { Editor } from "novel";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import defaultImage from "../assets/img/defaultImage.svg";
-import { RcFile } from "antd/es/upload";
+import Upload, { RcFile } from "antd/es/upload";
+import Uploader from "./uploader";
 
 function RoteInputSimple() {
   const [textareaValue, setTextareaValue] = useState("");
@@ -33,41 +34,6 @@ function RoteInputSimple() {
     },
   ]);
   const [fileList, setFileList] = useState([]) as any;
-
-  const uploadProps: UploadProps = {
-    maxCount: 9,
-    multiple: true,
-    name: "file",
-    fileList: [],
-    action: "http://127.0.0.1:3000/upload",
-    headers: {
-      authorization: "authorization-text",
-    },
-    beforeUpload() {
-      return false;
-    },
-    onChange(info) {
-      const updatedFileList = info.fileList.map(async (file) => {
-        if (!file.url && file.originFileObj) {
-          const url = await getBase64(file.originFileObj);
-          return { ...file, url };
-        }
-        return file;
-      });
-
-      Promise.all(updatedFileList).then((newFileList) => {
-        setFileList(fileList.concat(newFileList).slice(0, 9));
-      });
-    },
-  };
-
-  const getBase64 = (file: RcFile): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
 
   const handleTagsChange = (value: string) => {
     console.log(value, typeof value);
@@ -136,16 +102,6 @@ function RoteInputSimple() {
             setNovelValue(e?.getJSON());
           }}
         />
-        <Select
-          mode="tags"
-          bordered={false}
-          className={` bg-[#00000005] my-2 rounded-md border border-[#00000010] w-fit min-w-40 max-w-full ${
-            tagsShow ? "" : "hidden"
-          }`}
-          placeholder="Tags Mode"
-          onChange={handleTagsChange}
-          options={tags}
-        />
         <div className=" flex gap-2 flex-wrap my-2">
           <Image.PreviewGroup
             preview={{
@@ -163,7 +119,7 @@ function RoteInputSimple() {
                     className=" w-full h-full object-cover"
                     height={80}
                     width={80}
-                    src={file.url}
+                    src={file.src}
                     fallback={defaultImage}
                   />
                   <div
@@ -176,15 +132,18 @@ function RoteInputSimple() {
               );
             })}
           </Image.PreviewGroup>
-          <Upload
-            {...uploadProps}
-            className={` ${fileList.length < 9 ? "block" : "hidden"}`}
-          >
-            <div className=" w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-bgWhite border overflow-hidden">
-              <UploadOutlined className=" text-2xl " />
-            </div>
-          </Upload>
+          <Uploader fileList={fileList} setFileList={setFileList} />
         </div>
+        <Select
+          mode="tags"
+          bordered={false}
+          className={` bg-[#00000005] my-2 rounded-md border border-[#00000010] w-fit min-w-40 max-w-full ${
+            tagsShow ? "" : "hidden"
+          }`}
+          placeholder="标签"
+          onChange={handleTagsChange}
+          options={tags}
+        />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
           <TagsOutlined
             onClick={() => {
