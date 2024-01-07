@@ -14,17 +14,22 @@ model User {
   passwordhash String
   salt         String
   nickname     String?
+  avatar       String?
   usersetting  Usersetting?
   rotes        Rote[]
   attachments  Attachment[]
   userreaction UserReaction[]
+  createdAt    DateTime       @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt    DateTime       @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
 
 model Usersetting {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
-  user     User    @relation(fields: [userid], references: [id])
-  userid   String  @unique @db.ObjectId
-  darkmode Boolean @default(false)
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [userid], references: [id])
+  userid    String   @unique @db.ObjectId
+  darkmode  Boolean  @default(false)
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
 
 model Rote {
@@ -40,30 +45,38 @@ model Rote {
   editor          String?           @default("normal")
   attachments     Attachment[]
   userreaction    UserReaction[]
-  visitorReaction VisitorReaction[]
+  visitorreaction VisitorReaction[]
+  createdAt       DateTime          @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt       DateTime          @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
 
 model Attachment {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  url    String
-  user   User   @relation(fields: [userid], references: [id])
-  userid String @db.ObjectId
-  rote   Rote   @relation(fields: [roteid], references: [id])
-  roteid String @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  url       String
+  user      User     @relation(fields: [userid], references: [id])
+  userid    String   @db.ObjectId
+  rote      Rote     @relation(fields: [roteid], references: [id])
+  roteid    String   @db.ObjectId
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
 
 model UserReaction {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  type   String
-  user   User   @relation(fields: [userid], references: [id])
-  userid String @db.ObjectId
-  rote   Rote   @relation(fields: [roteid], references: [id])
-  roteid String @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  user      User     @relation(fields: [userid], references: [id])
+  userid    String   @db.ObjectId
+  rote      Rote     @relation(fields: [roteid], references: [id])
+  roteid    String   @db.ObjectId
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
 
 model VisitorReaction {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  type   String
-  rote   Rote   @relation(fields: [roteid], references: [id])
-  roteid String @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  rote      Rote     @relation(fields: [roteid], references: [id])
+  roteid    String   @db.ObjectId
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
