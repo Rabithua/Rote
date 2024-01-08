@@ -1,8 +1,49 @@
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Popover, Tooltip } from "antd";
+import { formatTimeAgo } from "@/utils/main";
+import mainJson from "@/json/main.json";
+import { useEffect, useState } from "react";
+import moment from "moment";
+import { Editor } from "novel";
+const { emojiList } = mainJson;
 
-function RoteInputSimple(Rote: any) {
-  const emojiList = ["🤩", "👍", "🎉", "👀", "👎", "💩"];
+function RoteInputSimple({ rote }: any) {
+  const [categorizedReactions, setCategorizedReactions]: any = useState({});
+  function categorizeReactions(rote: any) {
+    const categorizedReactions_temp: any = [];
+    // 整理 userreaction
+    rote.userreaction.forEach((reaction: any) => {
+      if (categorizedReactions_temp[reaction.type]) {
+        categorizedReactions_temp[reaction.type].push(reaction);
+      } else {
+        categorizedReactions_temp[reaction.type] = [reaction];
+      }
+    });
+
+    // 整理 visitorreaction
+    rote.visitorreaction.forEach((reaction: any) => {
+      if (categorizedReactions_temp[reaction.type]) {
+        categorizedReactions_temp[reaction.type].push(reaction);
+      } else {
+        categorizedReactions_temp[reaction.type] = [reaction];
+      }
+    });
+
+    const resultArray: any = [];
+
+    for (const key in categorizedReactions_temp) {
+      resultArray.push({
+        type: key,
+        reactions: categorizedReactions_temp[key],
+      });
+    }
+
+    return resultArray;
+  }
+
+  useEffect(() => {
+    setCategorizedReactions(categorizeReactions(rote));
+  }, [rote]);
 
   return (
     <div className=" cursor-pointer duration-300 hover:bg-[#00000005] flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5">
@@ -10,48 +51,56 @@ function RoteInputSimple(Rote: any) {
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
         icon={<UserOutlined />}
-        src="https://pbs.twimg.com/profile_images/1683041714347581441/s_P4otBB_400x400.jpg"
+        src={rote.author.avatar}
       />
       <div className=" flex flex-col">
         <div className=" cursor-default">
           <span className=" cursor-pointer font-semibold hover:underline">
-            于长野
+            {rote.author.nickname}
           </span>
           <span className=" ml-2 font-normal text-gray-500">
-            @Rabithua<span> · </span>{" "}
-            <Tooltip placement="bottom" title={"2023/12/29 23:06:57"}>
-              <span>8小时</span>
+            {`@${rote.author.username}`}
+            <span> · </span>{" "}
+            <Tooltip
+              placement="bottom"
+              title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
+            >
+              <span>{formatTimeAgo(rote.createdAt)}</span>
             </Tooltip>
           </span>
         </div>
-        <div className=" break-words whitespace-pre-line text-[16px]">
-          {`我有一个避免焦虑、获得平静的小妙招。
-                    就是逃离同温层。
-                    比如，不看脉脉、不看小红书的大厂人相关任何话题、不看微信任何大公司八卦、不看bilibili 任何考证考公攒钱视频。
-                    我不太需要。
-                    我有自己的海域，有自己的海湾，有自己的潮汐。
-                    我关注家里人吃穿和心理状况。
-                    关注 人如何具体地爱和宽容忍耐另外一个人。
-                    关注第一次吃到的东西，大自然的气味。
-                    关注 科技。关注独立的探索者。
-                    关注世界上各种各样的生活方式。
-                    没有倒计时。
-                    只有庆祝此刻。
+        {rote.editor === "normal" ? (
+          <div className=" break-words whitespace-pre-line text-[16px]">
+            {rote.content}
+          </div>
+        ) : (
+          <Editor
+            className={` pointer-events-none text-lg max-h-96 overflow-y-scroll py-3 noScrollBar gap-0 `}
+            defaultValue={JSON.parse(rote.content)}
+            disableLocalStorage
+            onUpdate={(e) => {
+              let json = e?.getJSON();
+              console.log(JSON.stringify(json));
+              console.log(e?.getJSON());
+              console.log(e?.getText());
+            }}
+          />
+        )}
 
-                    来源：twitter@anqirocks`}
-        </div>
         <div className=" flex items-center gap-2 my-2">
-          {[1, 1, 1].map((item, index) => {
-            return (
-              <div
-                className=" cursor-pointer duration-300 hover:scale-95 flex items-center gap-2 px-2 py-1 bg-[#00000010] border rounded-md text-sm"
-                key={`reaction_${index}`}
-              >
-                <span>🎉</span>
-                <span>23</span>
-              </div>
-            );
-          })}
+          {categorizedReactions.length > 0
+            ? categorizedReactions.map((item: any, index: number) => {
+                return (
+                  <div
+                    className=" cursor-pointer duration-300 hover:scale-95 flex items-center gap-2 px-3 py-1 bg-white border rounded-full text-sm"
+                    key={`reaction_${index}`}
+                  >
+                    <span>{item.type}</span>
+                    <span>{item.reactions.length}</span>
+                  </div>
+                );
+              })
+            : null}
           <Popover
             placement="bottom"
             content={

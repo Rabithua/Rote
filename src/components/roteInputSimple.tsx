@@ -1,27 +1,19 @@
-import {
-  Avatar,
-  Image,
-  Select,
-  SelectProps,
-  Tooltip,
-  UploadProps,
-  message,
-} from "antd";
+import { Avatar, Image, Select, SelectProps, Tooltip } from "antd";
 import {
   CloseOutlined,
   CloudUploadOutlined,
   PushpinOutlined,
   SendOutlined,
   TagsOutlined,
-  UploadOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { Editor } from "novel";
 import { useRef, useState } from "react";
-import defaultImage from "../assets/img/defaultImage.svg";
-import Upload, { RcFile } from "antd/es/upload";
-import Uploader from "./uploader";
+import defaultImage from "@/assets/img/defaultImage.svg";
+import Uploader from "@/components/uploader";
+import mainJson from "@/json/main.json";
+const { stateOptions } = mainJson;
 
 function RoteInputSimple() {
   const [textareaValue, setTextareaValue] = useState("");
@@ -34,6 +26,7 @@ function RoteInputSimple() {
     },
   ]);
   const [fileList, setFileList] = useState([]) as any;
+  const [editType, setEditType] = useState("default");
 
   const handleTagsChange = (value: string) => {
     console.log(value, typeof value);
@@ -42,23 +35,6 @@ function RoteInputSimple() {
   const handleStateChange = (value: string) => {
     console.log(`selected ${value}`);
   };
-
-  const [editType, setEditType] = useState("default");
-
-  const stateOptions = [
-    {
-      label: "未发布",
-      options: [{ label: "草稿", value: "draft" }],
-    },
-    {
-      label: "已发布",
-      options: [
-        { label: "公开", value: "public" },
-        { label: "私密", value: "private" },
-        { label: "归档", value: "archived" },
-      ],
-    },
-  ];
 
   function changeEditType() {
     setEditType(editType === "default" ? "novel" : "default");
@@ -73,9 +49,9 @@ function RoteInputSimple() {
   return (
     <div className=" cursor-default bg-white w-full p-5 flex gap-5">
       <Avatar
-        size={48}
-        className=" bg-[#00000010] shrink-0 hidden border sm:block"
-        icon={<UserOutlined className=" text-black" />}
+        className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
+        size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
+        icon={<UserOutlined />}
       />
       <div className=" w-[90%] flex-1">
         <TextArea
@@ -98,7 +74,10 @@ function RoteInputSimple() {
           defaultValue={novelValue}
           disableLocalStorage
           onUpdate={(e) => {
+            let json = e?.getJSON();
+            console.log(JSON.stringify(json));
             console.log(e?.getJSON());
+            console.log(e?.getText());
             setNovelValue(e?.getJSON());
           }}
         />

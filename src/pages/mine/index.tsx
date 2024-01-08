@@ -1,13 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import RoteInputSimple from "../../components/roteInputSimple";
+import RoteInputSimple from "@/components/roteInputSimple";
 import { useNavigate } from "react-router-dom";
-import {
-  BellOutlined,
-  HomeOutlined,
-  SaveOutlined,
-} from "@ant-design/icons";
-import Rote from "../../components/Rote";
+import { BellOutlined, HomeOutlined, SaveOutlined } from "@ant-design/icons";
+import Rote from "@/components/Rote";
+import roteMocks from "@/mocks/rotes.json";
 
 function Mine() {
   const navigate = useNavigate();
@@ -248,8 +245,8 @@ function Mine() {
           </div>
           <RoteInputSimple></RoteInputSimple>
           <div className="">
-            {[1, 2, 3, 4, 5].map((item, index) => {
-              return <Rote Rote="123" key={`Rote_${index}`}></Rote>;
+            {roteMocks.normal.map((item, index) => {
+              return <Rote rote={item} key={`Rote_${index}`}></Rote>;
             })}
           </div>
         </div>

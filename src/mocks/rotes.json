@@ -1,0 +1,102 @@
+{
+  "normal": [
+    {
+      "id": "1",
+      "title": "Sample Rote 1",
+      "type": "Rote",
+      "tags": ["tag1", "tag2"],
+      "content": "This is the content of sample rote 1.",
+      "state": "private",
+      "author": {
+        "id": "1",
+        "email": "user1@example.com",
+        "username": "user1",
+        "passwordhash": "hashedPassword1",
+        "salt": "saltValue1",
+        "nickname": "NickName1",
+        "avatar": "https://pbs.twimg.com/profile_images/1683041714347581441/s_P4otBB_400x400.jpg",
+        "usersetting": {
+          "id": "1",
+          "setting1": "value1",
+          "setting2": "value2"
+        }
+      },
+      "authorid": "1",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2022-01-01T12:00:00Z",
+      "updatedAt": "2022-01-01T12:00:00Z",
+      "attachments": [],
+      "userreaction": [
+        {
+          "id": "1",
+          "type": "❤️",
+          "user": {
+            "id": "user1",
+            "name": "John Doe"
+          },
+          "createdAt": "2022-01-01T12:00:00Z",
+          "updatedAt": "2022-01-01T12:00:00Z"
+        }
+      ],
+      "visitorreaction": [
+        {
+          "id": "1",
+          "type": "❤️",
+          "ipAddress": "192.168.1.1",
+          "createdAt": "2022-01-01T12:00:00Z",
+          "updatedAt": "2022-01-01T12:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "1",
+      "title": "Sample Rote 1",
+      "type": "Rote",
+      "tags": ["tag1", "tag2"],
+      "content": "{\"type\":\"doc\",\"content\":[{\"type\":\"heading\",\"attrs\":{\"level\":1},\"content\":[{\"type\":\"text\",\"text\":\"日记三则\"}]},{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"今天天气不错。\"}]},{\"type\":\"taskList\",\"content\":[{\"type\":\"taskItem\",\"attrs\":{\"checked\":false},\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"吃午饭\"}]}]},{\"type\":\"taskItem\",\"attrs\":{\"checked\":false},\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"吃晚饭\"}]}]},{\"type\":\"taskItem\",\"attrs\":{\"checked\":false},\"content\":[{\"type\":\"paragraph\",\"content\":[{\"type\":\"text\",\"text\":\"睡觉\"}]}]}]}]}",
+      "state": "private",
+      "author": {
+        "id": "1",
+        "email": "user1@example.com",
+        "username": "user1",
+        "passwordhash": "hashedPassword1",
+        "salt": "saltValue1",
+        "nickname": "NickName1",
+        "avatar": "https://pbs.twimg.com/profile_images/1683041714347581441/s_P4otBB_400x400.jpg",
+        "usersetting": {
+          "id": "1",
+          "setting1": "value1",
+          "setting2": "value2"
+        }
+      },
+      "authorid": "1",
+      "pin": false,
+      "editor": "novel",
+      "createdAt": "2022-01-01T12:00:00Z",
+      "updatedAt": "2022-01-01T12:00:00Z",
+      "attachments": [],
+      "userreaction": [
+        {
+          "id": "1",
+          "type": "❤️",
+          "user": {
+            "id": "user1",
+            "name": "John Doe"
+          },
+          "createdAt": "2022-01-01T12:00:00Z",
+          "updatedAt": "2022-01-01T12:00:00Z"
+        }
+      ],
+      "visitorreaction": [
+        {
+          "id": "1",
+          "type": "❤️",
+          "ipAddress": "192.168.1.1",
+          "createdAt": "2022-01-01T12:00:00Z",
+          "updatedAt": "2022-01-01T12:00:00Z"
+        }
+      ]
+    }
+  ]
+}
