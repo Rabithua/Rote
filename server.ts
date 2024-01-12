@@ -15,6 +15,7 @@ import {
   createRote,
   findRoteById,
   passportCheckUser,
+  addSubScriptionToUser,
 } from "./script";
 
 import multer from "multer";
@@ -211,6 +212,25 @@ app.post("/addUser", (req, res) => {
     });
 });
 
+app.post("/addSwSubScription", (req, res) => {
+  const { userId, subScription } = req.body;
+  addSubScriptionToUser(userId, subScription)
+    .then((e) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: e,
+      });
+    })
+    .catch((err) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: null,
+      });
+    });
+});
+
 app.post("/addRote", (req, res) => {
   const { title, content, authorid } = req.body;
   createRote({
@@ -274,6 +294,22 @@ app.post("/upload", upload.array("file"), async (req: any, res) => {
     data: {
       files: newFiles,
     },
+  });
+});
+
+app.post("/savesubscription", (req: any, res) => {
+  res.send({
+    code: 0,
+    msg: "ok",
+    data: req.body,
+  });
+});
+
+app.get("/sendsubscription", (req: any, res) => {
+  res.send({
+    code: 0,
+    msg: "ok",
+    data: req.query,
   });
 });
 

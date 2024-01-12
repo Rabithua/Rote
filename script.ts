@@ -31,10 +31,13 @@ export async function createUser(data: {
       32,
       "sha256"
     );
+    console.log(passwordhash, typeof passwordhash);
 
     const user = await prisma.user.create({
       data: {
-        ...data,
+        username: data.username,
+        email: data.email,
+        nickname: data.nickname,
         passwordhash,
         salt,
       },
@@ -46,9 +49,46 @@ export async function createUser(data: {
   }
 }
 
-export async function passportCheckUser(data: {
-  username: string;
-}) {
+export async function addSubScriptionToUser(userId: string, subScription: any) {
+  try {
+    // 查找用户
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (user) {
+      try {
+        // 添加订阅信息到数组
+        const subScriptionRespon = await prisma.userSwSubScription.create({
+          data: {
+            userid: userId,
+            endpoint: subScription.endpoint,
+            expirationTime: subScription.expirationTime,
+            keys: {
+              auth: subScription.keys.auth,
+              p256dh: subScription.keys.p256dh,
+            },
+          },
+        });
+        console.log("订阅信息已成功添加到用户数组:", subScriptionRespon);
+        return subScriptionRespon;
+      } catch (error) {
+        console.log("添加订阅信息时出错:", error);
+        return;
+      }
+    } else {
+      console.log("未找到用户");
+      return;
+    }
+  } catch (error) {
+    console.log("添加订阅信息时出错:", error);
+    return;
+  }
+}
+
+export async function passportCheckUser(data: { username: string }) {
   try {
     const user = await prisma.user.findFirst({
       where: {

@@ -7,20 +7,37 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+type SubScriptionKeys {
+  auth   String
+  p256dh String
+}
+
 model User {
-  id           String         @id @default(auto()) @map("_id") @db.ObjectId
-  email        String         @unique
-  username     String         @unique
-  passwordhash String
-  salt         String
-  nickname     String?
-  avatar       String?
-  usersetting  Usersetting?
-  rotes        Rote[]
-  attachments  Attachment[]
-  userreaction UserReaction[]
-  createdAt    DateTime       @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt    DateTime       @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
+  email              String               @unique
+  username           String               @unique
+  passwordhash       Bytes
+  salt               Bytes
+  nickname           String?
+  avatar             String?
+  usersetting        Usersetting?
+  userswsubscription UserSwSubScription[]
+  rotes              Rote[]
+  attachments        Attachment[]
+  userreaction       UserReaction[]
+  createdAt          DateTime             @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt          DateTime             @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model UserSwSubScription {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  user           User             @relation(fields: [userid], references: [id])
+  userid         String           @db.ObjectId
+  endpoint       String           @unique
+  expirationTime String?
+  keys           SubScriptionKeys
+  createdAt      DateTime         @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt      DateTime         @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
 
 model Usersetting {
