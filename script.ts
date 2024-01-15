@@ -6,7 +6,6 @@ const prisma = new PrismaClient();
 export async function allUser() {
   try {
     await prisma.$connect();
-    console.log("Prisma 连接成功！");
     const users = await prisma.user.findMany();
     return users;
   } catch (error) {
@@ -84,6 +83,27 @@ export async function addSubScriptionToUser(userId: string, subScription: any) {
     }
   } catch (error) {
     console.log("添加订阅信息时出错:", error);
+    return;
+  }
+}
+
+export async function findSubScriptionToUser(subId: string) {
+  try {
+    // 查找订阅信息
+    const swSubScription = await prisma.userSwSubScription.findUnique({
+      where: {
+        id: subId,
+      },
+    });
+
+    if (swSubScription) {
+      return swSubScription;
+    } else {
+      console.log("未找到订阅信息");
+      return;
+    }
+  } catch (error) {
+    console.log("查询订阅信息时出错:", error);
     return;
   }
 }

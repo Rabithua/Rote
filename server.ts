@@ -8,7 +8,8 @@ var cors = require("cors");
 import moment from "moment";
 import bodyParser from "body-parser";
 
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserSwSubScription } from "@prisma/client";
+
 import {
   allUser,
   createUser,
@@ -16,6 +17,7 @@ import {
   findRoteById,
   passportCheckUser,
   addSubScriptionToUser,
+  findSubScriptionToUser,
 } from "./script";
 
 import multer from "multer";
@@ -23,6 +25,20 @@ import multerS3 from "multer-s3";
 
 import { r2uploadhandler, s3 } from "./utils/r2";
 import { randomUUID } from "crypto";
+
+// webpush PWA消息推送
+import webpush from "web-push";
+
+const apiKeys = {
+  publicKey: process.env.VAPID_PUBLIC_KEY as string,
+  privateKey: process.env.VAPID_PRIVATE_KEY as string,
+};
+
+webpush.setVapidDetails(
+  "mailto:rabit.hua@gmail.com",
+  apiKeys.publicKey,
+  apiKeys.privateKey
+);
 
 // 储存本地
 // const storage = multer.diskStorage({
@@ -108,18 +124,22 @@ app.use(passport.session());
 
 passport.use(
   new LocalStrategy(async function (username: any, password: any, done: any) {
+    console.log(username, password);
     let data = { username };
     let { user, err } = await passportCheckUser(data);
     if (err) {
+      console.log(`查找用户时出现错误`);
       return done(err, false, {
         message: "error.",
       });
     }
     if (!user) {
+      console.log(`用户${username}不存在`);
       return done(err, false, {
         message: "User not found.",
       });
     }
+    console.log(user);
     // 对比hash
     crypto.pbkdf2(
       password,
@@ -128,15 +148,20 @@ passport.use(
       32,
       "sha256",
       function (err: any, hashedPassword: any) {
+        console.log(`对比用户信息`, hashedPassword);
         if (err) {
+          console.log(`对比出现错误`, err);
           return done(err);
         }
         if (!crypto.timingSafeEqual(user?.passwordhash, hashedPassword)) {
+          console.log(`未匹配`);
           return done(null, false, {
             message: "Incorrect username or password.",
           });
+        } else {
+          console.log(`匹配`);
+          return done(null, true, user);
         }
-        return done(null, user);
       }
     );
   })
@@ -155,11 +180,12 @@ const Middleware = function (req: any, res: any, next: any) {
 app.use(Middleware);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(
-  cors({
-    origin: process.env.ORIGIN,
-  })
-);
+// app.use(
+//   cors({
+//     origin: "https://localhost:3001",
+//     credentials: true,
+//   })
+// );
 
 app.get("/", (req, res) => {
   allUser()
@@ -231,6 +257,56 @@ app.post("/addSwSubScription", (req, res) => {
     });
 });
 
+app.get("/sendSwSubScription", async (req, res) => {
+  const { subId, msg }: any = req.query;
+
+  if (!subId || !msg) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: null,
+    });
+    return;
+  }
+
+  let to: UserSwSubScription | any = await findSubScriptionToUser(subId);
+
+  // 设置更详细的推送通知
+  let notificationOptions = {
+    title: "自在废物",
+    body: "这是我的博客。",
+    image: "https://rote-r2.zzfw.cc/others/logo.png",
+    data: {
+      type: "openUrl",
+      url: "https://rabithua.club",
+    },
+  };
+
+  try {
+    webpush.sendNotification(
+      {
+        endpoint: to.endpoint,
+        keys: to.keys,
+      },
+      JSON.stringify(notificationOptions)
+    );
+    res.send({
+      code: 0,
+      msg: "PWA Notication send success!",
+      data: {
+        toSubId: subId,
+        msg: msg,
+      },
+    });
+  } catch (error) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: null,
+    });
+  }
+});
+
 app.post("/addRote", (req, res) => {
   const { title, content, authorid } = req.body;
   createRote({
@@ -297,21 +373,13 @@ app.post("/upload", upload.array("file"), async (req: any, res) => {
   });
 });
 
-app.post("/savesubscription", (req: any, res) => {
-  res.send({
-    code: 0,
-    msg: "ok",
-    data: req.body,
-  });
-});
-
-app.get("/sendsubscription", (req: any, res) => {
-  res.send({
-    code: 0,
-    msg: "ok",
-    data: req.query,
-  });
-});
+app.post(
+  "/login/password",
+  passport.authenticate("local", {
+    successRedirect: "/",
+    failureRedirect: "/login",
+  })
+);
 
 app.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
