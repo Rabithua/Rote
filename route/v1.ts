@@ -8,12 +8,11 @@ import {
   findSubScriptionToUser,
 } from "../script";
 import prisma from "../utils/prisma";
-import { UserSwSubScription } from "@prisma/client";
+import { User, UserSwSubScription } from "@prisma/client";
 import webpush from "../utils/webpush";
 import upload from "../utils/upload";
 import passport from "passport";
 import multer from "multer";
-import recoderIpAndTime from "../utils/recoder";
 
 let routerV1 = express.Router();
 
@@ -205,13 +204,56 @@ routerV1.post("/upload", upload.array("file"), async (req: any, res) => {
   });
 });
 
-routerV1.post(
-  "/login/password",
-  passport.authenticate("local", {
-    successRedirect: "/",
-    failureRedirect: "/login",
+routerV1.post('/login/password',
+  (req, res, next) => {
+    passport.authenticate('local', (err: any, user: User, data: any) => {
+      console.log(JSON.stringify(data))
+      if (err) {
+        res.send({
+          code: 1,
+          msg: 'error',
+          data: data
+        })
+        return;
+      }
+      if (!user) {
+        res.send({
+          code: 1,
+          msg: 'error',
+          data: data
+        })
+        return;
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          res.send({
+            code: 1,
+            msg: 'error',
+            data: err
+          })
+        }
+        delete (user as { passwordhash?: Buffer }).passwordhash
+        delete (user as { salt?: Buffer }).salt
+        res.send({
+          code: 0,
+          msg: 'ok',
+          data: user
+        })
+      })
+    })(req, res, next)
   })
-);
+
+routerV1.post('/logout', function (req, res, next) {
+  req.logout(function (err) {
+    if (err) { return next(err); }
+    res.send({
+      code: 0,
+      msg: 'ok',
+      data: null
+    })
+  });
+});
+
 
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {

@@ -97,3 +97,10 @@ model VisitorReaction {
   createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
   updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }
+
+model Session {
+  id        String   @id @map("_id")
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}
