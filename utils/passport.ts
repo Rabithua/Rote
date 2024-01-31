@@ -3,7 +3,8 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 var crypto = require("crypto");
-import { passportCheckUser } from ".././script";
+import { oneUser, passportCheckUser } from ".././script";
+import { sanitizeUserData } from "./main";
 
 // 初始化 Passport
 passport.use(
@@ -52,13 +53,18 @@ passport.use(
 );
 
 passport.serializeUser((user: any, done) => {
-  console.log(`user:${JSON.stringify(user)}`)
+  console.log(`序列化用户:${JSON.stringify(user)}`)
   return done(null, user.id)
 })
 
-passport.deserializeUser(function (user: any, done) {
-  console.log(`user:${JSON.stringify(user)}`)
-  return done(null, user)
+passport.deserializeUser(async function (id: any, done) {
+  console.log(`反序列化用户:${JSON.stringify(id)}`)
+  let user = await oneUser(id)
+  if (user) {
+    return done(null, sanitizeUserData(user))
+  } else {
+    return done(new Error('No user with id found'))
+  }
 });
 
 export default passport;

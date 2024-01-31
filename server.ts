@@ -1,5 +1,4 @@
 import express = require("express");
-import session from "express-session";
 import passport from "./utils/passport";
 import bodyParser from "body-parser";
 import cors from 'cors';
@@ -8,7 +7,6 @@ import cors from 'cors';
 import routerV1 from "./route/v1";
 import recoderIpAndTime from "./utils/recoder";
 import { PrismaSessionStore } from '@quixo3/prisma-session-store';
-import { PrismaClient } from '@prisma/client';
 import expressSession = require("express-session");
 import prisma from "./utils/prisma";
 

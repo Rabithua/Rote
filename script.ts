@@ -8,8 +8,22 @@ export async function allUser() {
     await prisma.$connect();
     const users = await prisma.user.findMany();
     return users;
+  } catch (error: any) {
+    throw new Error(error)
+  }
+}
+
+export async function oneUser(id: string) {
+  try {
+    await prisma.$connect();
+    const user = await prisma.user.findUnique({
+      where: {
+        id
+      }
+    });
+    return user;
   } catch (error) {
-    console.error("Error creating rote:", error);
+    console.error("Error find user by id:", error);
     return;
   }
 }
@@ -42,49 +56,33 @@ export async function createUser(data: {
       },
     });
     return user;
-  } catch (error) {
-    console.error("Error creating rote:", error);
-    return;
+  } catch (error: any) {
+    return error
   }
 }
 
-export async function addSubScriptionToUser(userId: string, subScription: any) {
-  try {
-    // 查找用户
-    const user = await prisma.user.findUnique({
-      where: {
-        id: userId,
+export async function addSubScriptionToUser(userId: string, subScription: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.userSwSubScription.create({
+      data: {
+        userid: userId,
+        endpoint: subScription.endpoint,
+        expirationTime: subScription.expirationTime,
+        keys: {
+          auth: subScription.keys.auth,
+          p256dh: subScription.keys.p256dh,
+        },
       },
-    });
-
-    if (user) {
-      try {
-        // 添加订阅信息到数组
-        const subScriptionRespon = await prisma.userSwSubScription.create({
-          data: {
-            userid: userId,
-            endpoint: subScription.endpoint,
-            expirationTime: subScription.expirationTime,
-            keys: {
-              auth: subScription.keys.auth,
-              p256dh: subScription.keys.p256dh,
-            },
-          },
-        });
+    })
+      .then((subScriptionRespon) => {
         console.log("订阅信息已成功添加到用户数组:", subScriptionRespon);
-        return subScriptionRespon;
-      } catch (error) {
+        resolve(subScriptionRespon);
+      })
+      .catch((error) => {
         console.log("添加订阅信息时出错:", error);
-        return;
-      }
-    } else {
-      console.log("未找到用户");
-      return;
-    }
-  } catch (error) {
-    console.log("添加订阅信息时出错:", error);
-    return;
-  }
+        reject(error);
+      });
+  });
 }
 
 export async function findSubScriptionToUser(subId: string) {
@@ -132,28 +130,32 @@ export async function createRote(data: {
   title: string;
   content: string;
   authorid: string;
-}) {
-  try {
-    const rote = await prisma.rote.create({
-      data,
-    });
-    return rote;
-  } catch (error) {
-    console.error("Error creating rote:", error);
-    return;
-  }
+}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.rote.create({ data })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error creating rote:", error);
+        reject(error);
+      });
+  });
 }
 
-export async function findRoteById(id: string) {
-  try {
-    const rote = await prisma.rote.findUnique({
+export async function findRoteById(id: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.rote.findUnique({
       where: {
         id,
       },
-    });
-    return rote;
-  } catch (error) {
-    console.error("Error creating rote:", error);
-    throw error;
-  }
+    })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
 }
