@@ -1,7 +1,6 @@
 import express from "express";
 import {
   addSubScriptionToUser,
-  allUser,
   createRote,
   createUser,
   findRoteById,
@@ -13,22 +12,21 @@ import webpush from "../utils/webpush";
 import upload from "../utils/upload";
 import passport from "passport";
 import multer from "multer";
-import { isAuthenticated, sanitizeUserData } from "../utils/main";
+import { isAdmin, isAuthenticated, sanitizeUserData } from "../utils/main";
 
 let routerV1 = express.Router();
 
+routerV1.all("/ping", isAdmin, (req, res) => {
+  res.send({
+    code: 0,
+    msg: 'ok',
+    data: null
+  })
+});
+
 // User method
 
-routerV1.post("/addUser", isAuthenticated, (req, res) => {
-  const user = req.user as User
-  if (user.username !== 'rabithua') {
-    res.status(401).send({
-      code: 1,
-      msg: 'Unauthenticated: Not admin',
-      data: null
-    })
-    return
-  }
+routerV1.post("/addUser", isAdmin, (req, res) => {
   const { username, password, email, nickname } = req.body;
   if (!username || !password || !email) {
     res.send({
@@ -70,6 +68,48 @@ routerV1.post("/addUser", isAuthenticated, (req, res) => {
   }
 
 
+});
+
+routerV1.post("/register", (req, res) => {
+  const { username, password, email, nickname } = req.body;
+  if (!username || !password || !email) {
+    res.send({
+      code: 1,
+      msg: 'error: data error',
+      data: null
+    })
+    return
+  }
+  try {
+    createUser({
+      username,
+      password,
+      email,
+      nickname,
+    })
+      .then(async (user) => {
+        if (user.id) {
+          res.send({
+            code: 0,
+            msg: "ok",
+            data: user,
+          });
+        } else {
+          res.send({
+            code: 1,
+            msg: 'error',
+            data: user
+          })
+        }
+        await prisma.$disconnect();
+      })
+  } catch (error) {
+    res.send({
+      code: 1,
+      msg: 'error',
+      data: error
+    })
+  }
 });
 
 routerV1.post("/addSwSubScription", isAuthenticated, (req, res) => {
@@ -287,7 +327,6 @@ routerV1.get('/profile', isAuthenticated, function (req, res) {
   });
 },
 );
-
 
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
