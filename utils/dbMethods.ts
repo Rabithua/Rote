@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-import prisma from "./utils/prisma";
-import { sanitizeOtherUserData, sanitizeUserData } from "./utils/main";
+import prisma from "./prisma";
 var crypto = require("crypto");
 
 

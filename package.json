@@ -44,6 +44,7 @@
     "multer-s3": "^3.0.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "rate-limiter-flexible": "^4.0.1",
     "web-push": "^3.6.6"
   }
 }

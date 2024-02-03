@@ -9,6 +9,7 @@ import recoderIpAndTime from "./utils/recoder";
 import { PrismaSessionStore } from '@quixo3/prisma-session-store';
 import expressSession = require("express-session");
 import prisma from "./utils/prisma";
+import { rateLimiterMiddleware } from "./middleware/limiter";
 
 
 const app: express.Application = express();
@@ -31,6 +32,7 @@ app.use(
 );
 
 app.use(recoderIpAndTime);
+app.use(rateLimiterMiddleware)
 // 初始化 Passport
 app.use(passport.initialize());
 app.use(passport.session());

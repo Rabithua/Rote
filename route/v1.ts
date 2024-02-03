@@ -7,7 +7,7 @@ import {
   findRoteById,
   findSubScriptionToUser,
   getUserInfoById,
-} from "../script";
+} from "../utils/dbMethods";
 import prisma from "../utils/prisma";
 import { User, UserSwSubScription } from "@prisma/client";
 import webpush from "../utils/webpush";
@@ -68,8 +68,6 @@ routerV1.post("/addUser", isAdmin, (req, res) => {
       data: error
     })
   }
-
-
 });
 
 routerV1.post("/register", (req, res) => {

@@ -3,7 +3,7 @@
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 var crypto = require("crypto");
-import { oneUser, passportCheckUser } from ".././script";
+import { oneUser, passportCheckUser } from "./dbMethods";
 import { sanitizeUserData } from "./main";
 
 // 初始化 Passport
