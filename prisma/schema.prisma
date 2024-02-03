@@ -51,10 +51,10 @@ model Usersetting {
 
 model Rote {
   id              String            @id @default(auto()) @map("_id") @db.ObjectId
-  title           String
+  title           String?           @default("")
   type            String?           @default("Rote")
   tags            String[]          @default([])
-  content         String?           @default("")
+  content         String
   state           String            @default("private")
   author          User              @relation(fields: [authorid], references: [id])
   authorid        String            @db.ObjectId

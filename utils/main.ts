@@ -6,6 +6,14 @@ export function sanitizeUserData(user: User) {
     return user
 }
 
+export function sanitizeOtherUserData(user: User) {
+    delete (user as { passwordhash?: Buffer }).passwordhash
+    delete (user as { salt?: Buffer }).salt
+    delete (user as { email?: string }).email
+    delete (user as { createdAt?: any }).createdAt
+    delete (user as { updatedAt?: any }).updatedAt
+    return user
+}
 // 自定义身份验证中间件
 export function isAuthenticated(req: any, res: any, next: any) {
     if (req.isAuthenticated()) {

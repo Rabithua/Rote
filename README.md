@@ -40,7 +40,7 @@ npx prisma generate
 
 ```
 
-#更新`schema.prisma`后如何操作
+## 更新`schema.prisma`后如何操作
 
 ```
 npx prisma db push

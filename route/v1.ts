@@ -3,8 +3,10 @@ import {
   addSubScriptionToUser,
   createRote,
   createUser,
+  findMyRote,
   findRoteById,
   findSubScriptionToUser,
+  getUserInfoById,
 } from "../script";
 import prisma from "../utils/prisma";
 import { User, UserSwSubScription } from "@prisma/client";
@@ -73,7 +75,7 @@ routerV1.post("/addUser", isAdmin, (req, res) => {
 routerV1.post("/register", (req, res) => {
   const { username, password, email, nickname } = req.body;
   if (!username || !password || !email) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: 'error: data error',
       data: null
@@ -95,16 +97,16 @@ routerV1.post("/register", (req, res) => {
             data: user,
           });
         } else {
-          res.send({
+          res.status(401).send({
             code: 1,
-            msg: 'error',
+            msg: '注册失败，用户名或邮箱已被占用',
             data: user
           })
         }
         await prisma.$disconnect();
       })
   } catch (error) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: 'error',
       data: error
@@ -192,7 +194,7 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
 });
 
 routerV1.post("/addRote", isAuthenticated, (req, res) => {
-  const { title, content } = req.body;
+  const { title, content, type, tags, state, pin, editor, attachments } = req.body;
   const user = req.user as User
   if (!content) {
     res.send({
@@ -203,8 +205,7 @@ routerV1.post("/addRote", isAuthenticated, (req, res) => {
     return
   }
   createRote({
-    title,
-    content,
+    title, content, type, tags, state, pin, editor, attachments,
     authorid: user.id,
   })
     .then((rote) => {
@@ -223,6 +224,62 @@ routerV1.post("/addRote", isAuthenticated, (req, res) => {
       });
     });
 
+});
+
+routerV1.get("/getMyRote", isAuthenticated, (req, res) => {
+  console.log(req.query);
+  const { skip, limit } = req.query
+  const user = req.user as User
+
+  const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+  const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+
+  findMyRote(user.id, parsedSkip, parsedLimit)
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/getUserInfo", (req, res) => {
+  const { userid } = req.query
+  if (!userid) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return
+  }
+  getUserInfoById(userid)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
 });
 
 routerV1.get("/oneRote", (req, res) => {
@@ -276,7 +333,7 @@ routerV1.post('/login/password',
   function (req, res, next) {
     passport.authenticate('local', (err: any, user: User, data: any) => {
       if (err) {
-        res.send({
+        res.status(401).send({
           code: 1,
           msg: 'error',
           data: data
@@ -284,7 +341,7 @@ routerV1.post('/login/password',
         return;
       }
       if (!user) {
-        res.send({
+        res.status(401).send({
           code: 1,
           msg: 'error',
           data: data
@@ -293,7 +350,7 @@ routerV1.post('/login/password',
       }
       req.logIn(user, (err) => {
         if (err) {
-          res.send({
+          res.status(401).send({
             code: 1,
             msg: 'error',
             data: err

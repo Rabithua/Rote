@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import prisma from "./utils/prisma";
+import { sanitizeOtherUserData, sanitizeUserData } from "./utils/main";
 var crypto = require("crypto");
 
 
@@ -126,11 +127,7 @@ export async function passportCheckUser(data: { username: string }) {
   }
 }
 
-export async function createRote(data: {
-  title: string;
-  content: string;
-  authorid: string;
-}): Promise<any> {
+export async function createRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
     prisma.rote.create({ data })
       .then((rote) => {
@@ -152,6 +149,76 @@ export async function findRoteById(id: string): Promise<any> {
     })
       .then((rote) => {
         resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function findMyRote(authorid: string, skip: number | undefined, limit: number | undefined): Promise<any> {
+  return new Promise((resolve, reject) => {
+    // 修改代码跳过skip个数据，再拉取limit个数据返回
+    prisma.rote.findMany({
+      where: {
+        authorid,
+        state: {
+          not: 'archived',
+        },
+      },
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [
+        {
+          pin: 'desc', // 根据 pin 字段从最大的开始获取
+        },
+        {
+          updatedAt: 'desc', // 根据 updatedAt 字段从最新的开始获取
+        },
+      ],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          }
+        },
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true
+      },
+    })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function getUserInfoById(userid: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.user.findUnique({
+      where: {
+        id: userid,
+      },
+      select: {
+        avatar: true,
+        nickname: true,
+        username: true,
+      }
+    })
+      .then((res) => {
+        console.log(res)
+        if (res) {
+          resolve(res);
+        } else {
+          reject('User not found')
+        }
       })
       .catch((error) => {
         console.error("Error finding rote:", error);
