@@ -48,3 +48,33 @@ export function isAdmin(req: any, res: any, next: any) {
         });
     }
 }
+
+// 自定义身份验证中间件
+export function isAuthor(req: any, res: any, next: any) {
+    if (req.isAuthenticated()) {
+        const user = req.user as User
+        if (!req.body.authorid) {
+            res.status(401).send({
+                code: 1,
+                msg: 'Need data',
+                data: null
+            })
+            return
+        }
+        if (user.id !== req.body.authorid) {
+            res.status(401).send({
+                code: 1,
+                msg: 'Unauthenticated: Not author',
+                data: null
+            })
+            return
+        }
+        next();
+    } else {
+        res.status(401).send({
+            code: 1,
+            msg: 'Unauthenticated',
+            data: null
+        });
+    }
+}

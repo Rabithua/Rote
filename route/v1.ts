@@ -3,6 +3,8 @@ import {
   addSubScriptionToUser,
   createRote,
   createUser,
+  deleteRote,
+  editRote,
   findMyRote,
   findRoteById,
   findSubScriptionToUser,
@@ -14,7 +16,7 @@ import webpush from "../utils/webpush";
 import upload from "../utils/upload";
 import passport from "passport";
 import multer from "multer";
-import { isAdmin, isAuthenticated, sanitizeUserData } from "../utils/main";
+import { isAdmin, isAuthenticated, isAuthor, sanitizeUserData } from "../utils/main";
 
 let routerV1 = express.Router();
 
@@ -292,6 +294,66 @@ routerV1.get("/oneRote", (req, res) => {
     return
   }
   findRoteById(req.query.id?.toString() || "")
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.post("/oneRote", isAuthor, (req, res) => {
+  console.log(req.body);
+  const rote = req.body
+  if (!rote) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Need data",
+    });
+    return
+  }
+  editRote(rote)
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.delete("/oneRote", isAuthor, (req, res) => {
+  console.log(req.body);
+  const rote = req.body
+  if (!rote) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Need data",
+    });
+    return
+  }
+  deleteRote(rote)
     .then(async (rote) => {
       res.send({
         code: 0,

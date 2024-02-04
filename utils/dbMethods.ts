@@ -155,6 +155,44 @@ export async function findRoteById(id: string): Promise<any> {
   });
 }
 
+export async function editRote(data: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const { id, authorid, ...dataClean } = data
+    prisma.rote.update({
+      where: {
+        id: data.id,
+        authorid: data.authorid
+      },
+      data: dataClean,
+    })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error update rote:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function deleteRote(data: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.rote.delete({
+      where: {
+        id: data.id,
+        authorid: data.authorid
+      },
+    })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error delete rote:", error);
+        reject(error);
+      });
+  });
+}
+
 export async function findMyRote(authorid: string, skip: number | undefined, limit: number | undefined): Promise<any> {
   return new Promise((resolve, reject) => {
     // 修改代码跳过skip个数据，再拉取limit个数据返回
