@@ -164,6 +164,18 @@ export async function editRote(data: any): Promise<any> {
         authorid: data.authorid
       },
       data: dataClean,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          }
+        },
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true
+      },
     })
       .then((rote) => {
         resolve(rote);
