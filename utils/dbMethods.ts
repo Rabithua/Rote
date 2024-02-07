@@ -205,15 +205,22 @@ export async function deleteRote(data: any): Promise<any> {
   });
 }
 
-export async function findMyRote(authorid: string, skip: number | undefined, limit: number | undefined): Promise<any> {
+export async function findMyRote(authorid: string, skip: number | undefined, limit: number | undefined, filter: any): Promise<any> {
   return new Promise((resolve, reject) => {
     // 修改代码跳过skip个数据，再拉取limit个数据返回
     prisma.rote.findMany({
       where: {
-        authorid,
-        state: {
-          not: 'archived',
-        },
+        AND: [
+          {
+            authorid,
+            state: {
+              not: 'archived',
+            },
+          },
+          {
+            ...filter
+          }
+        ]
       },
       skip: skip ? skip : 0,
       take: limit ? limit : 20,
