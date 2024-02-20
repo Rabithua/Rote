@@ -226,8 +226,8 @@ routerV1.post("/addRote", isAuthenticated, (req, res) => {
 
 });
 
-routerV1.get("/getMyRote", isAuthenticated, (req, res) => {
-  console.log(req.query);
+routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
+  console.log(req.body);
   const { skip, limit } = req.query
   const filter = req.body.filter || {}
   const user = req.user as User
@@ -245,6 +245,7 @@ routerV1.get("/getMyRote", isAuthenticated, (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
+      console.log(e)
       res.send({
         code: 1,
         msg: "error",
