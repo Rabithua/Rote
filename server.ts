@@ -20,7 +20,9 @@ app.use(
     secret: process.env.SESSION_SECRET || 'sessionSecret',
     resave: false,
     saveUninitialized: false,
-    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 },
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    },
     store: new PrismaSessionStore(
       prisma,
       {
@@ -39,7 +41,8 @@ app.use(passport.session());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cors({
-  origin: 'https://localhost:3001',
+  origin: ["https://localhost:3001", "https://rote.ink"],
+  credentials: true,
   optionsSuccessStatus: 200 // 一些旧的浏览器（如IE11、各种智能电视）对204的响应不支持
 }));
 
