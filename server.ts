@@ -43,7 +43,8 @@ app.use(bodyParser.json());
 app.use(cors({
   origin: ["https://localhost:3001", "https://rote.ink"],
   credentials: true,
-  optionsSuccessStatus: 200 // 一些旧的浏览器（如IE11、各种智能电视）对204的响应不支持
+  optionsSuccessStatus: 200,
+  // allowedHeaders: 'Content-Type, Authorization' // 允许的请求头部
 }));
 
 app.use("/v1/api", routerV1);
