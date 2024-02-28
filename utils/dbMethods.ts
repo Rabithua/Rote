@@ -280,3 +280,26 @@ export async function getUserInfoById(userid: any): Promise<any> {
       });
   });
 }
+
+export async function getMyTags(userid: any): Promise<any> {
+  console.log(userid)
+  return new Promise((resolve, reject) => {
+    prisma.rote.findMany({
+      where: {
+        authorid: userid,
+      },
+      select: {
+        tags: true
+      }
+    })
+      .then((res) => {
+        console.log(`所有标签: ${JSON.stringify(res)}`)
+        const allTags = Array.from(new Set(res.flatMap(item => item.tags)));
+        resolve(allTags)
+      })
+      .catch((error) => {
+        console.error("Error getting tags:", error);
+        reject(error);
+      });
+  });
+}

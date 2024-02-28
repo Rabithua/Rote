@@ -8,6 +8,7 @@ import {
   findMyRote,
   findRoteById,
   findSubScriptionToUser,
+  getMyTags,
   getUserInfoById,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
@@ -266,6 +267,36 @@ routerV1.get("/getUserInfo", (req, res) => {
     return
   }
   getUserInfoById(userid)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/getMyTags", (req, res) => {
+  const user = req.user as User
+
+  if (!user.id) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return
+  }
+  getMyTags(user.id)
     .then(async (data) => {
       res.send({
         code: 0,
