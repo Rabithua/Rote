@@ -1,9 +1,11 @@
-version: '3.7'
+version: "3.7"
 services:
   mongo1:
     image: mongo:5
     container_name: RoteMongo1
     command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1
+    volumes:
+      - ./mongo1_data:/data/db
     ports:
       - "27017:27017"
     networks:
@@ -12,6 +14,8 @@ services:
     image: mongo:5
     container_name: RoteMongo2
     command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2
+    volumes:
+      - ./mongo2_data:/data/db
     ports:
       - "27018:27017"
     networks:

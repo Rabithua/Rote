@@ -3,3 +3,7 @@ node_modules
 .env
 
 ._*
+
+mongo1_data
+
+mongo2_data
