@@ -4,6 +4,4 @@ node_modules
 
 ._*
 
-mongo1_data
-
-mongo2_data
+mongodb

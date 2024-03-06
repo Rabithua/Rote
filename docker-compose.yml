@@ -1,25 +1,52 @@
-version: "3.7"
+version: "3.8"
+
 services:
-  mongo1:
+  mongodb1:
     image: mongo:5
-    container_name: RoteMongo1
-    command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1
-    volumes:
-      - ./mongo1_data:/data/db
+    container_name: mongodb1
     ports:
       - "27017:27017"
-    networks:
-      - RoteMongo
-  mongo2:
-    image: mongo:5
-    container_name: RoteMongo2
-    command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rote
+      - MONGO_INITDB_ROOT_PASSWORD=etor
+      - MONGO_INITDB_DATABASE=Rote
+      - MONGO_REPLICA_SET_MODE=primary
     volumes:
-      - ./mongo2_data:/data/db
-    ports:
-      - "27018:27017"
+      - ./mongodb/mongodb1:/data/db
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+
     networks:
-      - RoteMongo
+      - rote-network
+
+  mongodb2:
+    image: mongo:5
+    container_name: mongodb2
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rote
+      - MONGO_INITDB_ROOT_PASSWORD=etor
+      - MONGO_INITDB_DATABASE=Rote
+      - MONGO_INITDB_COLLECTION=Rote
+      - MONGO_REPLICA_SET_MODE=secondary
+    volumes:
+      - ./mongodb/mongodb2:/data/db
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - rote-network
+
+  mongodb3:
+    image: mongo:5
+    container_name: mongodb3
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=rote
+      - MONGO_INITDB_ROOT_PASSWORD=etor
+      - MONGO_INITDB_DATABASE=Rote
+      - MONGO_INITDB_COLLECTION=Rote
+      - MONGO_REPLICA_SET_MODE=secondary
+    volumes:
+      - ./mongodb/mongodb3:/data/db
+      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - rote-network
+
 networks:
-  RoteMongo:
-    driver: bridge
+  rote-network:
