@@ -1,14 +1,13 @@
 import prisma from "./prisma";
 var crypto = require("crypto");
 
-
 export async function allUser() {
   try {
     await prisma.$connect();
     const users = await prisma.user.findMany();
     return users;
   } catch (error: any) {
-    throw new Error(error)
+    throw new Error(error);
   }
 }
 
@@ -17,8 +16,8 @@ export async function oneUser(id: string) {
     await prisma.$connect();
     const user = await prisma.user.findUnique({
       where: {
-        id
-      }
+        id,
+      },
     });
     return user;
   } catch (error) {
@@ -56,23 +55,27 @@ export async function createUser(data: {
     });
     return user;
   } catch (error: any) {
-    return error
+    return error;
   }
 }
 
-export async function addSubScriptionToUser(userId: string, subScription: any): Promise<any> {
+export async function addSubScriptionToUser(
+  userId: string,
+  subScription: any
+): Promise<any> {
   return new Promise((resolve, reject) => {
-    prisma.userSwSubScription.create({
-      data: {
-        userid: userId,
-        endpoint: subScription.endpoint,
-        expirationTime: subScription.expirationTime,
-        keys: {
-          auth: subScription.keys.auth,
-          p256dh: subScription.keys.p256dh,
+    prisma.userSwSubScription
+      .create({
+        data: {
+          userid: userId,
+          endpoint: subScription.endpoint,
+          expirationTime: subScription.expirationTime,
+          keys: {
+            auth: subScription.keys.auth,
+            p256dh: subScription.keys.p256dh,
+          },
         },
-      },
-    })
+      })
       .then((subScriptionRespon) => {
         console.log("订阅信息已成功添加到用户数组:", subScriptionRespon);
         resolve(subScriptionRespon);
@@ -127,7 +130,22 @@ export async function passportCheckUser(data: { username: string }) {
 
 export async function createRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    prisma.rote.create({ data })
+    prisma.rote
+      .create({
+        data,
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
       .then((rote) => {
         resolve(rote);
       })
@@ -140,11 +158,24 @@ export async function createRote(data: any): Promise<any> {
 
 export async function findRoteById(id: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    prisma.rote.findUnique({
-      where: {
-        id,
-      },
-    })
+    prisma.rote
+      .findUnique({
+        where: {
+          id,
+        },
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
       .then((rote) => {
         resolve(rote);
       })
@@ -157,26 +188,27 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    const { id, authorid, ...dataClean } = data
-    prisma.rote.update({
-      where: {
-        id: data.id,
-        authorid: data.authorid
-      },
-      data: dataClean,
-      include: {
-        author: {
-          select: {
-            username: true,
-            nickname: true,
-            avatar: true,
-          }
+    const { id, authorid, ...dataClean } = data;
+    prisma.rote
+      .update({
+        where: {
+          id: data.id,
+          authorid: data.authorid,
         },
-        attachments: true,
-        userreaction: true,
-        visitorreaction: true
-      },
-    })
+        data: dataClean,
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
       .then((rote) => {
         resolve(rote);
       })
@@ -189,12 +221,13 @@ export async function editRote(data: any): Promise<any> {
 
 export async function deleteRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    prisma.rote.delete({
-      where: {
-        id: data.id,
-        authorid: data.authorid
-      },
-    })
+    prisma.rote
+      .delete({
+        where: {
+          id: data.id,
+          authorid: data.authorid,
+        },
+      })
       .then((rote) => {
         resolve(rote);
       })
@@ -205,45 +238,51 @@ export async function deleteRote(data: any): Promise<any> {
   });
 }
 
-export async function findMyRote(authorid: string, skip: number | undefined, limit: number | undefined, filter: any): Promise<any> {
+export async function findMyRote(
+  authorid: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any
+): Promise<any> {
   return new Promise((resolve, reject) => {
-    console.log(`filter: ${JSON.stringify(filter)}`)
+    console.log(`filter: ${JSON.stringify(filter)}`);
     // 修改代码跳过skip个数据，再拉取limit个数据返回
-    prisma.rote.findMany({
-      where: {
-        AND: [
+    prisma.rote
+      .findMany({
+        where: {
+          AND: [
+            {
+              authorid,
+              state: {
+                not: "archived",
+              },
+            },
+            { ...filter },
+          ],
+        },
+        skip: skip ? skip : 0,
+        take: limit ? limit : 20,
+        orderBy: [
           {
-            authorid,
-            state: {
-              not: 'archived',
+            pin: "desc", // 根据 pin 字段从最大的开始获取
+          },
+          {
+            updatedAt: "desc", // 根据 updatedAt 字段从最新的开始获取
+          },
+        ],
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
             },
           },
-          { ...filter }
-        ]
-      },
-      skip: skip ? skip : 0,
-      take: limit ? limit : 20,
-      orderBy: [
-        {
-          pin: 'desc', // 根据 pin 字段从最大的开始获取
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
         },
-        {
-          updatedAt: 'desc', // 根据 updatedAt 字段从最新的开始获取
-        },
-      ],
-      include: {
-        author: {
-          select: {
-            username: true,
-            nickname: true,
-            avatar: true,
-          }
-        },
-        attachments: true,
-        userreaction: true,
-        visitorreaction: true
-      },
-    })
+      })
       .then((rote) => {
         resolve(rote);
       })
@@ -256,22 +295,23 @@ export async function findMyRote(authorid: string, skip: number | undefined, lim
 
 export async function getUserInfoById(userid: any): Promise<any> {
   return new Promise((resolve, reject) => {
-    prisma.user.findUnique({
-      where: {
-        id: userid,
-      },
-      select: {
-        avatar: true,
-        nickname: true,
-        username: true,
-      }
-    })
+    prisma.user
+      .findUnique({
+        where: {
+          id: userid,
+        },
+        select: {
+          avatar: true,
+          nickname: true,
+          username: true,
+        },
+      })
       .then((res) => {
-        console.log(res)
+        console.log(res);
         if (res) {
           resolve(res);
         } else {
-          reject('User not found')
+          reject("User not found");
         }
       })
       .catch((error) => {
@@ -282,20 +322,21 @@ export async function getUserInfoById(userid: any): Promise<any> {
 }
 
 export async function getMyTags(userid: any): Promise<any> {
-  console.log(userid)
+  console.log(userid);
   return new Promise((resolve, reject) => {
-    prisma.rote.findMany({
-      where: {
-        authorid: userid,
-      },
-      select: {
-        tags: true
-      }
-    })
+    prisma.rote
+      .findMany({
+        where: {
+          authorid: userid,
+        },
+        select: {
+          tags: true,
+        },
+      })
       .then((res) => {
-        console.log(`所有标签: ${JSON.stringify(res)}`)
-        const allTags = Array.from(new Set(res.flatMap(item => item.tags)));
-        resolve(allTags)
+        console.log(`所有标签: ${JSON.stringify(res)}`);
+        const allTags = Array.from(new Set(res.flatMap((item) => item.tags)));
+        resolve(allTags);
       })
       .catch((error) => {
         console.error("Error getting tags:", error);
