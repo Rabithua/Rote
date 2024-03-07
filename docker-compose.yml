@@ -1,50 +1,17 @@
 version: "3.8"
 
 services:
-  mongodb1:
-    image: mongo:5
-    container_name: mongodb1
+  rote_mongodb:
+    image: mongo:7
+    container_name: rote_mongodb
     ports:
       - "27017:27017"
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=rote
-      - MONGO_INITDB_ROOT_PASSWORD=etor
       - MONGO_INITDB_DATABASE=Rote
-      - MONGO_REPLICA_SET_MODE=primary
     volumes:
-      - ./mongodb/mongodb1:/data/db
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+      - ./mongodb/rote_mongodb:/data/db
+      - ./mongoScript:/docker-entrypoint-initdb.d
 
-    networks:
-      - rote-network
-
-  mongodb2:
-    image: mongo:5
-    container_name: mongodb2
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=rote
-      - MONGO_INITDB_ROOT_PASSWORD=etor
-      - MONGO_INITDB_DATABASE=Rote
-      - MONGO_INITDB_COLLECTION=Rote
-      - MONGO_REPLICA_SET_MODE=secondary
-    volumes:
-      - ./mongodb/mongodb2:/data/db
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-    networks:
-      - rote-network
-
-  mongodb3:
-    image: mongo:5
-    container_name: mongodb3
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=rote
-      - MONGO_INITDB_ROOT_PASSWORD=etor
-      - MONGO_INITDB_DATABASE=Rote
-      - MONGO_INITDB_COLLECTION=Rote
-      - MONGO_REPLICA_SET_MODE=secondary
-    volumes:
-      - ./mongodb/mongodb3:/data/db
-      - ./docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     networks:
       - rote-network
 
