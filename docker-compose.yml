@@ -7,6 +7,8 @@ services:
     ports:
       - "27017:27017"
     environment:
+      - MONGO_INITDB_ROOT_USERNAME=rote
+      - MONGO_INITDB_ROOT_PASSWORD=etor
       - MONGO_INITDB_DATABASE=Rote
       - MONGO_REPLICA_SET_MODE=primary
     volumes:
@@ -20,6 +22,8 @@ services:
     image: mongo:5
     container_name: mongodb2
     environment:
+      - MONGO_INITDB_ROOT_USERNAME=rote
+      - MONGO_INITDB_ROOT_PASSWORD=etor
       - MONGO_INITDB_DATABASE=Rote
       - MONGO_INITDB_COLLECTION=Rote
       - MONGO_REPLICA_SET_MODE=secondary
@@ -33,6 +37,8 @@ services:
     image: mongo:5
     container_name: mongodb3
     environment:
+      - MONGO_INITDB_ROOT_USERNAME=rote
+      - MONGO_INITDB_ROOT_PASSWORD=etor
       - MONGO_INITDB_DATABASE=Rote
       - MONGO_INITDB_COLLECTION=Rote
       - MONGO_REPLICA_SET_MODE=secondary
