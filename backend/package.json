@@ -1,10 +1,10 @@
 {
-  "name": "prisma_node_practice",
+  "name": "rote_node",
   "version": "1.0.0",
-  "description": "prisma 的一个小练习",
+  "description": "node | mongodb | prisma",
   "main": "index.js",
   "scripts": {
-    "start": "npx ts-node server.ts ",
+    "start": "npx ts-node server.ts",
     "dev": "nodemon server.ts",
     "dev-f": "nodemon server.ts --ignore-errors",
     "mongoInit": "docker-compose up -d"
@@ -24,9 +24,7 @@
     "@types/web-push": "^3.6.3",
     "eslint": "^8.56.0",
     "nodemon": "^3.0.1",
-    "prisma": "^5.7.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.3.2"
+    "prisma": "^5.7.1"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.484.0",

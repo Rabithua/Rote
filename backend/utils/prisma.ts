@@ -1,4 +1,5 @@
 import { PrismaClient, UserSwSubScription } from "@prisma/client";
+import { checkPrisma } from "./main";
 
 const prisma = new PrismaClient({
   log: [
@@ -19,5 +20,7 @@ prisma.$on("info", (e) => {
 prisma.$on("error", (e) => {
   console.log(e);
 });
+
+checkPrisma(prisma);
 
 export default prisma;

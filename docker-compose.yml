@@ -1,19 +1,76 @@
-version: "3.8"
+version: "3"
 
 services:
-  rote_mongodb:
-    image: mongo:7
-    container_name: rote_mongodb
-    ports:
-      - "27017:27017"
-    environment:
-      - MONGO_INITDB_DATABASE=Rote
-    volumes:
-      - ./mongodb/rote_mongodb:/data/db
-      - ./mongoScript:/docker-entrypoint-initdb.d
+  # rote_mongo_primary:
+  #   image: mongo:7
+  #   restart: always
+  #   expose:
+  #     - 27017
+  #   #公开数据库端口，以便单独访问
+  #   ports:
+  #     - 27017:27017
+  #   volumes:
+  #     - ./mongodb/primary:/data/db
+  #   networks:
+  #     - backendNetwork
+  #   entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
 
+  # rote_mongo_secondary:
+  #   image: mongo:7
+  #   restart: always
+  #   volumes:
+  #     - ./mongodb/secondary:/data/db
+  #   entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
+  #   networks:
+  #     - backendNetwork
+
+  # mongo-setup:
+  #   image: mongo:4
+  #   restart: on-failure
+  #   entrypoint:
+  #     - /bin/bash
+  #     - -c
+  #     - |
+  #       set -e
+  #       mongo --host rote_mongo_primary:27017 --eval 'rs.status().ok ? 0 : rs.initiate({
+  #         _id: "rs0",
+  #         members: [
+  #           {_id: 0, host: "rote_mongo_primary:27017", priority: 2},
+  #           {_id: 1, host: "rote_mongo_secondary:27017", priority: 1}
+  #         ]
+  #       })' && mongo --host rote_mongo_primary:27017 --eval 'while (! db.hello().isWritablePrimary ) sleep(1000); db = db.getSiblingDB("Rote"); db.Rote ? 0 : db.createCollection("Rote");'
+  #   depends_on:
+  #     - rote_mongo_primary
+  #     - rote_mongo_secondary
+  #   networks:
+  #     - backendNetwork
+
+  node:
+    image: node:18
+    working_dir: /root/rote_node
+    environment:
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://rote_mongo_primary:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
+      - R2_BUCKET="rote"
+      - R2_ACCOUNT_ID="9a7e130cdaa8a057ae7869e2f7782d54"
+      - R2_ACCESS_KEY_ID="6dcf07beb8b24f9f38c6637ce4eeb932"
+      - R2_SECRET_KEY_ID="e685cb08f6326ac9e334dcfa7f75fc27c0d69e10f4d0427863f3fd6bca041ac6"
+      - R2_URL_PREFIX="rote-r2.zzfw.cc"
+      - VAPID_PUBLIC_KEY="BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8"
+      - VAPID_PRIVATE_KEY="szct0G0wxT73VyN4508ri0SqH2sBRxTqOmNre-exrRc"
+      - SESSION_SECRET="RoteByRabithua"
+    volumes:
+      - ./backend:/root/rote_node
+    expose:
+      - "3000"
+    #公开api端口，以便外网单独访问
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npm start"
+    restart: always
     networks:
-      - rote-network
+      - backendNetwork
 
 networks:
-  rote-network:
+  backendNetwork:
+    driver: bridge

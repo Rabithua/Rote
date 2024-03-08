@@ -58,6 +58,6 @@ app.get("*", (req, res) => {
   });
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Rote Node app listening on port ${process.env.PORT}!`);
+app.listen(3000, () => {
+  console.log(`Rote Node app listening on port ${3000}!`);
 });
