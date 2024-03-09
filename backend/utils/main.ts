@@ -88,12 +88,12 @@ export async function checkPrisma(prisma: PrismaClient) {
         console.log("Prisma connected successfully!");
       })
       .catch((error) => {
-        console.error("Failed to connect to Prisma:", error);
+        console.error("Failed to connect to Prisma.");
       })
       .finally(() => {
         prisma.$disconnect();
       });
   } catch (error) {
-    console.error("Failed to connect to Prisma database:", error);
+    console.error("Failed to connect to Prisma database.");
   }
 }
