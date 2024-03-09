@@ -13,14 +13,14 @@ services:
       - ./mongodb/primary:/data/db
     networks:
       - backendNetwork
-    entrypoint: ["mongod", "--bind_ip_all", "--replSet", "rs0"]
+    entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
 
   rote_mongo_secondary:
     image: mongo:5
     restart: always
     volumes:
       - ./mongodb/secondary:/data/db
-    entrypoint: ["mongod", "--bind_ip_all", "--replSet", "rs0"]
+    entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
     networks:
       - backendNetwork
 
@@ -32,34 +32,13 @@ services:
       - /bin/bash
       - -c
       - |
-        set -e
-        # 检查复制集状态
-        rs_status=$(mongo --host rote_mongo_primary:27017 --eval 'rs.status().ok' --quiet)
-
-        # 如果复制集未初始化
-        if [ "$rs_status" != "0" ]; then
-          # 初始化复制集
-          mongo --host rote_mongo_primary:27017 --eval 'rs.initiate({
-            _id: "rs0",
-            members: [
-              {_id: 0, host: "rote_mongo_primary:27017", priority: 2},
-              {_id: 1, host: "rote_mongo_secondary:27017", priority: 1}
-            ]
-          })'
-        fi
-
-        # 等待主节点可写
-        until mongo --host rote_mongo_primary:27017 --eval 'db.hello().isWritablePrimary' --quiet; do
-          sleep 1
-        done
-
-        # 检查操作日志大小
-        oplog_size=$(mongo --host rote_mongo_primary:27017 --eval 'rs.printReplicationInfo().oplogSizeBytes' --quiet)
-
-        # 如果操作日志大小为0,则初始化数据库
-        if [ "$oplog_size" == "0" ]; then
-          mongo --host rote_mongo_primary:27017 --eval 'db = db.getSiblingDB("Rote"); db.createCollection("Rote");'
-        fi
+        mongo --host rote_mongo_primary:27017 --eval 'rs.status().ok ? null : rs.initiate({
+          _id: "rs0",
+          members: [
+            {_id: 0, host: "rote_mongo_primary:27017", priority: 2},
+            {_id: 1, host: "rote_mongo_secondary:27017", priority: 1}
+          ]
+        })' && mongo --host rote_mongo_primary:27017 --eval 'while (! db.hello().isWritablePrimary ) sleep(1000); db = db.getSiblingDB("Rote"); db.getCollectionNames().includes("Rote") ? 0 : db.createCollection("Rote");'
 
     depends_on:
       - rote_mongo_primary
