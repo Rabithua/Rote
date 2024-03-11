@@ -7,9 +7,9 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
-  const profile = useProfile()
+  const profile = useProfile();
   const profileDispatch = useProfileDispatch();
-  const [type, setType] = useState('login')
+  const [type, setType] = useState("login");
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
     username: "",
@@ -19,7 +19,7 @@ function Login() {
     username: "",
     password: "",
     email: "",
-    nickname: ""
+    nickname: "",
   });
 
   function login() {
@@ -35,21 +35,26 @@ function Login() {
     const toastId = toast.loading("登录中...");
     loginByPassword(loginData)
       .then((res) => {
-        // console.log(res);
         toast.success("登录成功", {
           id: toastId,
         });
         profileDispatch({
           type: "updateProfile",
-          profile: res.data.data
-        })
-        navigate("/mine")
+          profile: res.data.data,
+        });
+        navigate("/mine");
       })
       .catch((err) => {
         console.log(err);
-        toast.error(err.response.data.data.message, {
-          id: toastId,
-        });
+        if (err.response.data.data.message) {
+          toast.error(err.response.data.data.message, {
+            id: toastId,
+          });
+        } else {
+          toast.error("Backend is Down!", {
+            id: toastId,
+          });
+        }
       });
   }
 
@@ -63,12 +68,12 @@ function Login() {
         });
         profileDispatch({
           type: "updateProfile",
-          profile: undefined
-        })
+          profile: undefined,
+        });
       })
       .catch((err) => {
         console.log(err);
-        toast.error('err.response.data.data.msg', {
+        toast.error("err.response.data.data.msg", {
           id: toastId,
         });
       });
@@ -98,9 +103,9 @@ function Login() {
           username: "",
           password: "",
           email: "",
-          nickname: ""
-        })
-        setType('login')
+          nickname: "",
+        });
+        setType("login");
       })
       .catch((err) => {
         toast.error(err.response.data.msg, {
@@ -110,7 +115,7 @@ function Login() {
   }
 
   function handleInputChange(e: any, key: string) {
-    if (type === 'login') {
+    if (type === "login") {
       const { value } = e.target;
       setLoginData((prevState) => ({
         ...prevState,
@@ -126,18 +131,18 @@ function Login() {
   }
 
   function changeType() {
-    setType(type === 'login' ? 'register' : 'login')
+    setType(type === "login" ? "register" : "login");
   }
 
   function handleLoginKeyDown(e: any) {
-    if (e.key === 'Enter') {
-      login()
+    if (e.key === "Enter") {
+      login();
     }
   }
 
   function handleRegisterKeyDown(e: any) {
-    if (e.key === 'Enter') {
-      register()
+    if (e.key === "Enter") {
+      register();
     }
   }
 
@@ -146,8 +151,8 @@ function Login() {
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center  bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-white w-80 border rounded-lg flex flex-col gap-2 pb-10 z-10">
-        {
-          profile ? <>
+        {profile ? (
+          <>
             <div className=" flex flex-col justify-center items-center pt-8 gap-2">
               <Avatar
                 className=" bg-[#00000010] text-black shrink-0 block"
@@ -159,29 +164,34 @@ function Login() {
               <div
                 className=" cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
                 onClick={() => {
-                  navigate('/mine')
+                  navigate("/mine");
                 }}
               >
                 前往主页
               </div>
-              <div className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite text-black border font-semibold"
+              <div
+                className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite text-black border font-semibold"
                 onClick={logOutFn}
               >
                 退出登录
               </div>
             </div>
-          </> : <>
-            <Typography.Title level={3}>{type === 'login' ? '登录' : '注册'}</Typography.Title>
+          </>
+        ) : (
+          <>
+            <Typography.Title level={3}>
+              {type === "login" ? "登录" : "注册"}
+            </Typography.Title>
             <div className=" flex flex-col gap-2">
-              {
-                type === 'login' ? <>
+              {type === "login" ? (
+                <>
                   <Typography.Title level={5}>用户名</Typography.Title>
                   <Input
                     placeholder="username"
                     className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={20}
                     value={loginData.username}
-                    onInput={(e) => handleInputChange(e, 'username')}
+                    onInput={(e) => handleInputChange(e, "username")}
                   />
                   <Typography.Title level={5}>密码</Typography.Title>
                   <Input
@@ -190,17 +200,19 @@ function Login() {
                     className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={30}
                     value={loginData.password}
-                    onInput={(e) => handleInputChange(e, 'password')}
+                    onInput={(e) => handleInputChange(e, "password")}
                     onKeyDown={handleLoginKeyDown}
                   />
-                </> : <>
+                </>
+              ) : (
+                <>
                   <Typography.Title level={5}>用户名</Typography.Title>
                   <Input
                     placeholder="username"
                     className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={20}
                     value={registerData.username}
-                    onInput={(e) => handleInputChange(e, 'username')}
+                    onInput={(e) => handleInputChange(e, "username")}
                   />
                   <Typography.Title level={5}>邮箱</Typography.Title>
                   <Input
@@ -208,7 +220,7 @@ function Login() {
                     className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={20}
                     value={registerData.email}
-                    onInput={(e) => handleInputChange(e, 'email')}
+                    onInput={(e) => handleInputChange(e, "email")}
                   />
                   <Typography.Title level={5}>昵称</Typography.Title>
                   <Input
@@ -216,7 +228,7 @@ function Login() {
                     className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={20}
                     value={registerData.nickname}
-                    onInput={(e) => handleInputChange(e, 'nickname')}
+                    onInput={(e) => handleInputChange(e, "nickname")}
                   />
 
                   <Typography.Title level={5}>密码</Typography.Title>
@@ -226,41 +238,47 @@ function Login() {
                     className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={30}
                     value={registerData.password}
-                    onInput={(e) => handleInputChange(e, 'password')}
+                    onInput={(e) => handleInputChange(e, "password")}
                     onKeyDown={handleRegisterKeyDown}
                   />
                 </>
-              }
+              )}
               <div className=" mt-4 flex flex-col gap-2">
-                {
-                  type === 'login' ? <>
+                {type === "login" ? (
+                  <>
                     <div
                       className=" cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
                       onClick={login}
                     >
                       登录
                     </div>
-                    <div className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite text-black border font-semibold"
+                    <div
+                      className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite text-black border font-semibold"
                       onClick={changeType}
                     >
                       注册
                     </div>
-                  </> : <>
-                    <div className=" cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className=" cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
                       onClick={register}
                     >
                       注册
                     </div>
-                    <div className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite text-black border font-semibold"
+                    <div
+                      className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite text-black border font-semibold"
                       onClick={changeType}
                     >
                       返回
                     </div>
                   </>
-                }
+                )}
               </div>
-            </div></>
-        }
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
