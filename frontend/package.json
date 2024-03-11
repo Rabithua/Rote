@@ -3,6 +3,40 @@
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:3000",
+  "scripts": {
+    "dev": "set HTTPS=true&&SSL_CRT_FILE=cert.pem&&SSL_KEY_FILE=key.pem&&PORT=3001 craco start",
+    "start": "set HTTPS=true&&SSL_CRT_FILE=cert.pem&&SSL_KEY_FILE=key.pem&&PORT=3001 craco start",
+    "build": "craco build",
+    "test": "craco test",
+    "eject": "craco eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^2.6.3",
+    "@tailwindcss/typography": "^0.5.10",
+    "autoprefixer": "^10.4.14",
+    "axios": "^1.6.2",
+    "eslint": "^8.56.0",
+    "postcss": "^8.4.25",
+    "tailwindcss": "^3.3.2"
+  },
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
@@ -34,39 +68,5 @@
     "typescript": "^4.9.5",
     "web-push": "^3.6.6",
     "web-vitals": "^2.1.4"
-  },
-  "scripts": {
-    "dev": "set HTTPS=true&&SSL_CRT_FILE=cert.pem&&SSL_KEY_FILE=key.pem&&craco start",
-    "start": "set HTTPS=true&&SSL_CRT_FILE=cert.pem&&SSL_KEY_FILE=key.pem&&craco start",
-    "build": "craco build",
-    "test": "craco test",
-    "eject": "craco eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
-  "devDependencies": {
-    "@antfu/eslint-config": "^2.6.3",
-    "@tailwindcss/typography": "^0.5.10",
-    "autoprefixer": "^10.4.14",
-    "axios": "^1.6.2",
-    "eslint": "^8.56.0",
-    "postcss": "^8.4.25",
-    "tailwindcss": "^3.3.2"
   }
 }
