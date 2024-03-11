@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  background-color: white;
+}
+
+.noScrollBar::-webkit-scrollbar {
+  display: none;
+}
+
+.ProseMirror {
+  padding-top: 0 !important;
+  padding-left: 0 !important;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}

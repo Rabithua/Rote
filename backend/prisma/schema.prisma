@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type SubScriptionKeys {
+  auth   String
+  p256dh String
+}
+
+model User {
+  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
+  email              String               @unique
+  username           String               @unique
+  passwordhash       Bytes
+  salt               Bytes
+  nickname           String?
+  avatar             String              @default("https://rote-r2.zzfw.cc/others/logo.png")
+  usersetting        Usersetting?
+  userswsubscription UserSwSubScription[]
+  rotes              Rote[]
+  attachments        Attachment[]
+  userreaction       UserReaction[]
+  createdAt          DateTime             @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt          DateTime             @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model UserSwSubScription {
+  id             String           @id @default(auto()) @map("_id") @db.ObjectId
+  user           User             @relation(fields: [userid], references: [id])
+  userid         String           @db.ObjectId
+  endpoint       String           @unique
+  expirationTime String?
+  keys           SubScriptionKeys
+  createdAt      DateTime         @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt      DateTime         @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model Usersetting {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [userid], references: [id])
+  userid    String   @unique @db.ObjectId
+  darkmode  Boolean  @default(false)
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model Rote {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  title           String?           @default("")
+  type            String?           @default("Rote")
+  tags            String[]          @default([])
+  content         String
+  state           String            @default("private")
+  author          User              @relation(fields: [authorid], references: [id])
+  authorid        String            @db.ObjectId
+  pin             Boolean           @default(false)
+  editor          String?           @default("normal")
+  attachments     Attachment[]
+  userreaction    UserReaction[]
+  visitorreaction VisitorReaction[]
+  createdAt       DateTime          @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt       DateTime          @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model Attachment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  url       String
+  user      User     @relation(fields: [userid], references: [id])
+  userid    String   @db.ObjectId
+  rote      Rote     @relation(fields: [roteid], references: [id])
+  roteid    String   @db.ObjectId
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model UserReaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  user      User     @relation(fields: [userid], references: [id])
+  userid    String   @db.ObjectId
+  rote      Rote     @relation(fields: [roteid], references: [id])
+  roteid    String   @db.ObjectId
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model VisitorReaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  type      String
+  rote      Rote     @relation(fields: [roteid], references: [id])
+  roteid    String   @db.ObjectId
+  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+}
+
+model Session {
+  id        String   @id @map("_id")
+  sid       String   @unique
+  data      String
+  expiresAt DateTime
+}

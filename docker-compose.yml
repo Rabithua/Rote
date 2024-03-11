@@ -1,21 +1,80 @@
-version: '3.7'
+version: "3"
+
 services:
-  mongo1:
+  rote_mongo_primary:
     image: mongo:5
-    container_name: RoteMongo1
-    command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1
+    restart: always
+    expose:
+      - 27017
+    #公开数据库端口，以便单独访问
     ports:
-      - "27017:27017"
+      - 27017:27017
+    volumes:
+      - ./mongodb/primary:/data/db
     networks:
-      - RoteMongo
-  mongo2:
+      - backendNetwork
+    entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
+
+  rote_mongo_secondary:
     image: mongo:5
-    container_name: RoteMongo2
-    command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2
-    ports:
-      - "27018:27017"
+    restart: always
+    volumes:
+      - ./mongodb/secondary:/data/db
+    entrypoint: ["/usr/bin/mongod", "--bind_ip_all", "--replSet", "rs0"]
     networks:
-      - RoteMongo
+      - backendNetwork
+
+  mongo-setup:
+    image: mongo:5
+    restart: on-failure
+
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        mongo --host rote_mongo_primary:27017 --eval 'rs.status().ok ? null : rs.initiate({
+          _id: "rs0",
+          members: [
+            {_id: 0, host: "rote_mongo_primary:27017", priority: 2},
+            {_id: 1, host: "rote_mongo_secondary:27017", priority: 1}
+          ]
+        })' && mongo --host rote_mongo_primary:27017 --eval 'while (! db.hello().isWritablePrimary ) sleep(1000); db = db.getSiblingDB("Rote"); db.getCollectionNames().includes("Rote") ? 0 : db.createCollection("Rote");'
+
+    depends_on:
+      - rote_mongo_primary
+      - rote_mongo_secondary
+    networks:
+      - backendNetwork
+
+  node:
+    image: node:18
+    working_dir: /root/rote_node
+    environment:
+      - DATABASE_URL=mongodb://rote_mongo_primary:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
+      - R2_BUCKET=rote
+      - R2_ACCOUNT_ID=9a7e130cdaa8a057ae7869e2f7782d54
+      - R2_ACCESS_KEY_ID=6dcf07beb8b24f9f38c6637ce4eeb932
+      - R2_SECRET_KEY_ID=e685cb08f6326ac9e334dcfa7f75fc27c0d69e10f4d0427863f3fd6bca041ac6
+      - R2_URL_PREFIX=rote-r2.zzfw.cc
+      - VAPID_PUBLIC_KEY=BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8
+      - VAPID_PRIVATE_KEY=szct0G0wxT73VyN4508ri0SqH2sBRxTqOmNre-exrRc
+      - SESSION_SECRET=RoteByRabithua
+    volumes:
+      - ./backend:/root/rote_node
+    expose:
+      - "3000"
+    #公开api端口，以便外网单独访问
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npx prisma db push && npx prisma generate && npm start"
+    restart: always
+    depends_on:
+      - rote_mongo_primary
+      - rote_mongo_secondary
+      - mongo-setup
+    networks:
+      - backendNetwork
+
 networks:
-  RoteMongo:
+  backendNetwork:
     driver: bridge
