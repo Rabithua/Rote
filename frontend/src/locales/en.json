@@ -1,0 +1,27 @@
+{
+  "pages": {
+    "landing": {
+      "poem": "✏️",
+      "ComingSoon": "Coming soon",
+      "types": [
+        "Complex Format Articles",
+        "Text Only",
+        "Inspiration Gallery",
+        "Diary",
+        "Todo"
+      ],
+      "slogen": "A personal note repository that looks different🤔",
+      "openApi": "Open API, more than one way to record🤩",
+      "data": "Take control of your own data, come and go freely, no data hostage🙅🏻",
+      "links": "Links:",
+      "linksItems": [
+        "Login",
+        "User Guide",
+        "Github",
+        "Blog",
+        "Download",
+        "Donate"
+      ]
+    }
+  }
+}

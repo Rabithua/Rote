@@ -1,0 +1,17 @@
+{
+  "stateOptions": [
+    {
+      "label": "未发布",
+      "options": [{ "label": "草稿", "value": "draft" }]
+    },
+    {
+      "label": "已发布",
+      "options": [
+        { "label": "公开", "value": "public" },
+        { "label": "私密", "value": "private" },
+        { "label": "归档", "value": "archived" }
+      ]
+    }
+  ],
+  "emojiList": ["🤩", "👍", "🎉", "👀", "👎", "💩"]
+}

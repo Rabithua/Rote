@@ -1,0 +1,74 @@
+{
+  "short_name": "Rote",
+  "name": "Rote - A befaulit Note App.",
+  "icons": [
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@96w.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@120w.png",
+      "sizes": "120x120",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@192w.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@128w.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@144w.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@180w.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@192w.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@300w.png",
+      "sizes": "300x300",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@384w.png",
+      "sizes": "384x384",
+      "type": "image/png"
+    },
+    {
+      "src": "https://rote-r2.zzfw.cc/others/icons/icon@512w.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+rote",
+      "url": "/?type=%s"
+    },
+    {
+      "protocol": "web+note",
+      "url": "/?type=%s"
+    }
+  ],
+  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "display_override": ["fullscreen"],
+  "display": "standalone",
+  "theme_color": "#f8f8f8",
+  "background_color": "#ffca27"
+}
