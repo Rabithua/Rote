@@ -114,7 +114,7 @@ function RoteInputSimple({ profile }: any) {
         <TextArea
           variant="borderless"
           value={rote.content}
-          placeholder="采菊东篱下，悠然见南山"
+          placeholder="Ctrl + ↵ 发送"
           autoSize={{ minRows: 3, maxRows: 10 }}
           className={` text-base lg:text-lg text-pretty ${
             editType === "default" ? "" : " hidden"

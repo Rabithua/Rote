@@ -5,6 +5,7 @@ import {
   requestNotificationPermission,
 } from "@/utils/main";
 import { useProfile } from "@/state/profile";
+import { Link } from "react-router-dom";
 
 function Landing() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.landing" });
@@ -34,14 +35,14 @@ function Landing() {
       href: "/#",
     },
   ];
-  const profile = useProfile()
+  const profile = useProfile();
 
   async function sub() {
     try {
       checkPermission();
       await requestNotificationPermission();
       await registerSW();
-    } catch (error) { }
+    } catch (error) {}
 
     // const title = "PWA-Book-Demo Notification Title";
     // const options = {
@@ -139,16 +140,14 @@ function Landing() {
             {links.map((item, index) => {
               return (
                 <div key={"link-" + index}>
-                  <a
-                    target="blank"
-                    href={profile && item.href ? '/mine' : item.href}
+                  <Link
+                    to={profile && item.href ? "/mine" : item.href}
                     className=" no-underline hover:text-[#07c160] active:scale-95 duration-300 after:content-['⤴']"
                   >
-                    {
-                      profile && item.href === '/login' ? t(`dashboard`) :
-                        t(`linksItems.${index}`)
-                    }
-                  </a>
+                    {profile && item.href === "/login"
+                      ? t(`dashboard`)
+                      : t(`linksItems.${index}`)}
+                  </Link>
                   {index + 1 < links.length ? (
                     <span className=" px-2">/</span>
                   ) : null}

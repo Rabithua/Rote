@@ -19,7 +19,7 @@ model User {
   passwordhash       Bytes
   salt               Bytes
   nickname           String?
-  avatar             String?
+  avatar             String              @default("https://rote-r2.zzfw.cc/others/logo.png")
   usersetting        Usersetting?
   userswsubscription UserSwSubScription[]
   rotes              Rote[]

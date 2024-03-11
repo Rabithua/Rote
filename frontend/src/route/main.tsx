@@ -1,15 +1,17 @@
-import ErrorPage from "@/pages/404";
-import MineFilter from "@/pages/filter";
-import Home from "@/pages/home";
-import Landing from "@/pages/landing";
-import Login from "@/pages/login";
-import Mine from "@/pages/mine";
+import { lazy, Suspense } from "react";
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ProtectedRoute } from "./protectedRoute";
+import { LoadingOutlined } from "@ant-design/icons";
 
+const Landing = lazy(() => import("@/pages/landing"));
+const Home = lazy(() => import("@/pages/home"));
+const Login = lazy(() => import("@/pages/login"));
+const Mine = lazy(() => import("@/pages/mine"));
+const MineFilter = lazy(() => import("@/pages/filter"));
+const ErrorPage = lazy(() => import("@/pages/404"));
 
 export default function GlobalRouterProvider() {
-
   const router = createBrowserRouter([
     {
       path: "/",
@@ -32,15 +34,23 @@ export default function GlobalRouterProvider() {
       children: [
         {
           path: "",
-          element: <ProtectedRoute><Mine /></ProtectedRoute>,
+          element: (
+            <ProtectedRoute>
+              <Mine />
+            </ProtectedRoute>
+          ),
           errorElement: <ErrorPage />,
         },
         {
           path: "filter",
-          element: <ProtectedRoute><MineFilter /></ProtectedRoute>,
+          element: (
+            <ProtectedRoute>
+              <MineFilter />
+            </ProtectedRoute>
+          ),
           errorElement: <ErrorPage />,
         },
-      ]
+      ],
     },
     {
       path: "*",
@@ -48,5 +58,15 @@ export default function GlobalRouterProvider() {
     },
   ]);
 
-  return <RouterProvider router={router} />
+  return (
+    <Suspense
+      fallback={
+        <div className=" h-screen w-screen flex justify-center items-center">
+          <LoadingOutlined />
+        </div>
+      }
+    >
+      <RouterProvider router={router} />
+    </Suspense>
+  );
 }
