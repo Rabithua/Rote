@@ -50,6 +50,7 @@ services:
     image: node:18
     working_dir: /root/rote_node
     environment:
+      - DATABASE_URL_ATLAS=mongodb+srv://rabithua:1289770378@cluster0.womkl7z.mongodb.net/Rote
       - DATABASE_URL=mongodb://rote_mongo_primary:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
       - R2_BUCKET=rote
       - R2_ACCOUNT_ID=9a7e130cdaa8a057ae7869e2f7782d54
