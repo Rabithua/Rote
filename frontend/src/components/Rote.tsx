@@ -98,7 +98,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
     } = rote;
     setIsModalOpen(false);
     const toastId = toast.loading("发送中...");
-    apiEditMyRote(cleanRote)
+    apiEditMyRote({
+      ...cleanRote,
+      content: cleanRote.content.trim(),
+    })
       .then((res) => {
         console.log(res);
         rotesDispatch({

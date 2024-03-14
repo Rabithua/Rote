@@ -63,14 +63,17 @@ function RoteInputSimple({ profile }: any) {
   }
 
   function addRoteFn() {
-    if (!rote.content) {
+    if (!rote.content.trim()) {
       toast.error("内容不能为空");
       return;
     }
     console.log(rote);
 
     const toastId = toast.loading("发送中...");
-    apiAddRote(rote)
+    apiAddRote({
+      ...rote,
+      content: rote.content.trim(),
+    })
       .then((res) => {
         console.log(res);
         rotesDispatch({

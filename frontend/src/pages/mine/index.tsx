@@ -9,7 +9,6 @@ import LayoutDashboadrd from "@/layout/dashboard";
 import { Empty } from "antd";
 import { useProfile } from "@/state/profile";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
-import { smoothScrollAnchors } from "@/utils/smoothScrollAnchors";
 import { debounce } from "@/utils/main";
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
 
@@ -19,7 +18,7 @@ function Mine() {
   const [isLoadAll, setIsLoadAll] = useState(false);
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
   const [showscrollTop, setShowScrollTop] = useState(false);
-
+  const [navHeight, setNavHeight] = useState(0);
   const rotes = useRotes();
   const rotesDispatch = useRotesDispatch();
 
@@ -90,18 +89,16 @@ function Mine() {
   }, [profile]);
 
   useEffect(() => {
-    const navElement = document.querySelector(".rotypesNav") as HTMLElement;
-    const navHeight = navElement ? navElement.offsetHeight : 0;
-    const scrollContainer = document.querySelector(".scrollContainer") as any;
-
-    smoothScrollAnchors(`a[href^="#"]`, navHeight, scrollContainer);
-
     observeElementInViewport(
       document.getElementById("top") as any,
       (ifshow: boolean) => {
         setShowScrollTop(!ifshow);
       }
     );
+
+    const element = document.querySelector(".rotypesNav") as HTMLElement;
+    console.log(element.offsetHeight);
+    setNavHeight(element.offsetHeight || 0);
   }, []);
 
   function roteTypesChange(index: number) {
@@ -122,7 +119,10 @@ function Mine() {
 
   return profile ? (
     <LayoutDashboadrd>
-      <div className=" scrollContainer scroll-smooth flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative">
+      <div
+        className={` scrollContainer scroll-smooth flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative`}
+        style={{ scrollPaddingTop: `${navHeight}px` }}
+      >
         <div className=" rotypesNav duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
           {roteTypes.map((type, index) => {
             return (
