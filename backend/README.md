@@ -1,4 +1,5 @@
 # Rote_node 后端部分
+
 node v18.16.1
 npm v9.5.1
 
@@ -8,13 +9,13 @@ npm v9.5.1
 npm run mongoInit
 ```
 
-### 将schema.prisma应用到数据库
+### 将 schema.prisma 应用到数据库
 
 ```
 npx prisma db push
 ```
 
-### 生成prisma客户端
+### 生成 prisma 客户端
 
 ```
 npx prisma generate
@@ -29,4 +30,14 @@ npx prisma generate
 npx prisma db push
 
 npx prisma generate
+```
+
+### 构建镜像
+
+```
+docker build -t rotebackend:0.1 .
+```
+> 多平台镜像，prisma不支持arm/v7
+```
+docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:0.1 --push .
 ```

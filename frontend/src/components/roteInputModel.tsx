@@ -55,7 +55,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
   }
 
   function addRoteFn() {
-    if (!newRote.content) {
+    if (!newRote.content.trim()) {
       toast.error("内容不能为空");
       return;
     }

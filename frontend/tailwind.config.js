@@ -14,10 +14,11 @@ module.exports = {
     extend: {
       backgroundImage: {
         'primary': 'linear-gradient(272deg, rgba(7, 193, 96, 0.96) -0.55%, rgba(178, 207, 62, 0.96) 99.45%)',
+        'primaryGreenGradient': 'linear-gradient(327deg, #07C160 18.08%, rgba(62, 207, 74, 0.96) 64.28%, rgba(153, 230, 38, 0.40) 111.94%, rgba(250, 255, 0, 0.00) 158.87%);'
       },
       colors: {
         'bgDark': '#111111',
-        'bgWhite': '#f8f8f8'
+        'bgWhite': '#f8f8f8',
       },
       animation: {
         "meteor-effect": "meteor 5s linear infinite",
