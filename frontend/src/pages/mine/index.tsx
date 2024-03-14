@@ -2,20 +2,23 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import RoteInputSimple from "@/components/roteInputSimple";
 import { useNavigate } from "react-router-dom";
-import { LoadingOutlined } from "@ant-design/icons";
+import { LoadingOutlined, UpOutlined } from "@ant-design/icons";
 import Rote from "@/components/Rote";
 import { apiGetMyRote } from "@/api/rote/main";
 import LayoutDashboadrd from "@/layout/dashboard";
 import { Empty } from "antd";
 import { useProfile } from "@/state/profile";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
-import { Rotes } from "@/types/main";
+import { smoothScrollAnchors } from "@/utils/smoothScrollAnchors";
+import { debounce } from "@/utils/main";
+import { observeElementInViewport } from "@/utils/observeElementInViewport";
 
 function Mine() {
   const navigate = useNavigate();
   const loadingRef = useRef(null);
   const [isLoadAll, setIsLoadAll] = useState(false);
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
+  const [showscrollTop, setShowScrollTop] = useState(false);
 
   const rotes = useRotes();
   const rotesDispatch = useRotesDispatch();
@@ -86,6 +89,21 @@ function Mine() {
     };
   }, [profile]);
 
+  useEffect(() => {
+    const navElement = document.querySelector(".rotypesNav") as HTMLElement;
+    const navHeight = navElement ? navElement.offsetHeight : 0;
+    const scrollContainer = document.querySelector(".scrollContainer") as any;
+
+    smoothScrollAnchors(`a[href^="#"]`, navHeight, scrollContainer);
+
+    observeElementInViewport(
+      document.getElementById("top") as any,
+      (ifshow: boolean) => {
+        setShowScrollTop(!ifshow);
+      }
+    );
+  }, []);
+
   function roteTypesChange(index: number) {
     let newArr = roteTypes.map((type, i) => {
       if (i === index) {
@@ -104,8 +122,8 @@ function Mine() {
 
   return profile ? (
     <LayoutDashboadrd>
-      <div className=" flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative">
-        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
+      <div className=" scrollContainer scroll-smooth flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative">
+        <div className=" rotypesNav duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
           {roteTypes.map((type, index) => {
             return (
               <div
@@ -122,10 +140,8 @@ function Mine() {
             );
           })}
         </div>
-        <RoteInputSimple
-          profile={profile}
-        ></RoteInputSimple>
-        <div className="">
+        <RoteInputSimple profile={profile}></RoteInputSimple>
+        <div className=" flex flex-col w-full relative">
           {rotes.map((item: any, index: any) => {
             return (
               <Rote
@@ -153,6 +169,15 @@ function Mine() {
             </div>
           ) : null}
         </div>
+
+        {showscrollTop && (
+          <a
+            className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
+            href="#top"
+          >
+            <UpOutlined />
+          </a>
+        )}
       </div>
     </LayoutDashboadrd>
   ) : null;

@@ -197,7 +197,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
   }
 
   return rote.id ? (
-    <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 hover:bg-[#00000005] flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5">
+    <div
+      id={`Rote_${rote.id}`}
+      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 hover:bg-[#00000005] flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5"
+    >
       <Avatar
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
@@ -216,7 +219,16 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
               placement="bottom"
               title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
             >
-              <span>{formatTimeAgo(rote.createdAt)}</span>
+              <span
+                className={`${
+                  new Date().getTime() - new Date(rote.createdAt).getTime() >
+                  60 * 1000
+                    ? ""
+                    : " bg-primaryGreenGradient bg-clip-text text-transparent"
+                }`}
+              >
+                {formatTimeAgo(rote.createdAt)}
+              </span>
             </Tooltip>
           </span>
 
