@@ -26,7 +26,6 @@ function RoteInputModel({ rote, submitEdit }: any) {
   });
 
   const handleTagsChange = (value: string) => {
-    console.log(value, typeof value);
     setNewRote({
       ...newRote,
       tags: value,
@@ -34,7 +33,6 @@ function RoteInputModel({ rote, submitEdit }: any) {
   };
 
   const handleStateChange = (value: string) => {
-    console.log(`selected ${value}`);
     setNewRote({
       ...newRote,
       state: value,
@@ -59,7 +57,6 @@ function RoteInputModel({ rote, submitEdit }: any) {
       toast.error("内容不能为空");
       return;
     }
-    console.log(newRote);
     submitEdit(newRote);
   }
 

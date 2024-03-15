@@ -37,7 +37,6 @@ function RoteInputSimple({ profile }: any) {
   const rotesDispatch = useRotesDispatch();
 
   const handleTagsChange = (value: string) => {
-    console.log(value, typeof value);
     setRote({
       ...rote,
       tags: value,
@@ -45,7 +44,6 @@ function RoteInputSimple({ profile }: any) {
   };
 
   const handleStateChange = (value: string) => {
-    console.log(`selected ${value}`);
     setRote({
       ...rote,
       state: value,
@@ -67,7 +65,6 @@ function RoteInputSimple({ profile }: any) {
       toast.error("内容不能为空");
       return;
     }
-    console.log(rote);
 
     const toastId = toast.loading("发送中...");
     apiAddRote({
@@ -75,7 +72,6 @@ function RoteInputSimple({ profile }: any) {
       content: rote.content.trim(),
     })
       .then((res) => {
-        console.log(res);
         rotesDispatch({
           type: "addOne",
           rote: res.data.data,
