@@ -39,5 +39,5 @@ docker build -t rotebackend:0.1 .
 ```
 > 多平台镜像，prisma不支持arm/v7
 ```
-docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:0.1 --push .
+docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .
 ```

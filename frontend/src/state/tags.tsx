@@ -59,7 +59,6 @@ function tagsReducer(tags: Tags, action: TagsAction): Tags {
 }
 
 const initialTags = await apiGetMyTags().then((res) => {
-  console.log(res)
   return res.data.data.map((item: any) => {
     return {
       value: item,

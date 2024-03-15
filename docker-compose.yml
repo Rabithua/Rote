@@ -50,6 +50,7 @@ services:
     image: node:18
     working_dir: /root/rote_node
     environment:
+      - CROS="https://localhost:3001,https://rote.ink,https://beta.rote.ink"
       - DATABASE_URL_ATLAS=mongodb+srv://rabithua:1289770378@cluster0.womkl7z.mongodb.net/Rote
       - DATABASE_URL=mongodb://rote_mongo_primary:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
       - R2_BUCKET=rote

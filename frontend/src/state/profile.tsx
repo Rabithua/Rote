@@ -51,7 +51,6 @@ function profileReducer(profile: Profile, action: ProfileAction): Profile {
 }
 
 const initialProfile = await getUserProfile().then((res) => {
-    console.log(res)
     return res.data.data
 }).catch((err: any) => {
     return undefined

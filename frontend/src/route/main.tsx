@@ -1,8 +1,13 @@
 import { lazy, Suspense } from "react";
 
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Navigate,
+  RouterProvider,
+} from "react-router-dom";
 import { ProtectedRoute } from "./protectedRoute";
 import { LoadingOutlined } from "@ant-design/icons";
+import { useProfile } from "@/state/profile";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Home = lazy(() => import("@/pages/home"));
@@ -12,9 +17,16 @@ const MineFilter = lazy(() => import("@/pages/filter"));
 const ErrorPage = lazy(() => import("@/pages/404"));
 
 export default function GlobalRouterProvider() {
+  const profile = useProfile();
+
   const router = createBrowserRouter([
     {
       path: "/",
+      element: profile ? <Navigate to="/mine" /> : <Navigate to="/landing" />,
+      errorElement: <ErrorPage />,
+    },
+    {
+      path: "/landing",
       element: <Landing />,
       errorElement: <ErrorPage />,
     },
@@ -62,7 +74,7 @@ export default function GlobalRouterProvider() {
     <Suspense
       fallback={
         <div className=" h-screen w-screen flex justify-center items-center">
-          <LoadingOutlined className=" text-xl" />
+          <LoadingOutlined className=" text-4xl" />
         </div>
       }
     >

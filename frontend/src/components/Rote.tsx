@@ -41,7 +41,6 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    console.log(tag);
     navigate("/mine/filter", {
       state: {
         tags: [tag],
@@ -86,7 +85,6 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
     setEditRote({});
   }
   function submitEdit(rote: any) {
-    console.log(rote);
     const {
       author,
       userreaction,
@@ -103,7 +101,6 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
       content: cleanRote.content.trim(),
     })
       .then((res) => {
-        console.log(res);
         rotesDispatch({
           type: "updateOne",
           rote: res.data.data,
@@ -128,7 +125,6 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
         authorid: rote.authorid,
       })
         .then((res) => {
-          console.log(res);
           toast.success("删除成功", {
             id: toastId,
           });
@@ -152,7 +148,6 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
         pin: !rote.pin,
       })
         .then((res) => {
-          console.log(res);
           rotesDispatch({
             type: "updateOne",
             rote: res.data.data,
@@ -215,7 +210,7 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
           <span className=" cursor-pointer font-semibold hover:underline">
             {rote.author.nickname}
           </span>
-          <span className=" ml-2 font-normal text-gray-500">
+          <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
             {`@${rote.author.username}`}
             <span> · </span>{" "}
             <Tooltip
