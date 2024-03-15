@@ -2,7 +2,7 @@ import axios from "axios";
 
 export const instance = axios.create({
   timeout: 6000,
-  baseURL: process.env.NODE_ENV === "production" ? process.env.REACT_APP_BASEURL_DEV : "https://api.rote.ink",
+  baseURL: process.env.NODE_ENV === "production" ? process.env.REACT_APP_BASEURL_DEV : "https://altas.rote.ink",
   withCredentials: true
 });
 
