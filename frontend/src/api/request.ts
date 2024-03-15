@@ -4,8 +4,8 @@ export const instance = axios.create({
   timeout: 6000,
   baseURL:
     process.env.NODE_ENV === "production"
-      ? process.env.REACT_APP_BASEURL_DEV
-      : "",
+      ? process.env.REACT_APP_BASEURL_PRD
+      : process.env.REACT_APP_BASEURL_DEV,
   withCredentials: true,
 });
 
