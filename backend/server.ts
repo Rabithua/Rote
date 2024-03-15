@@ -40,7 +40,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(
   cors({
-    origin: ["https://localhost:3001", "https://rote.ink"],
+    origin: process.env.CROS?.split(","),
     credentials: true,
     optionsSuccessStatus: 200,
     // allowedHeaders: 'Content-Type, Authorization' // 允许的请求头部
