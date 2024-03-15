@@ -215,7 +215,7 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
           <span className=" cursor-pointer font-semibold hover:underline">
             {rote.author.nickname}
           </span>
-          <span className=" ml-2 font-normal text-gray-500">
+          <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
             {`@${rote.author.username}`}
             <span> · </span>{" "}
             <Tooltip
