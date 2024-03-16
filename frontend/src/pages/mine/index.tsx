@@ -118,68 +118,66 @@ function Mine() {
   }
 
   return profile ? (
-    <LayoutDashboadrd>
-      <div
-        className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative`}
-        style={{ scrollPaddingTop: `${navHeight}px` }}
-      >
-        <div className=" rotypesNav duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
-          {roteTypes.map((type, index) => {
-            return (
-              <div
-                className={` cursor-pointer duration-300 border-b-2 py-2 px-5 shrink-0 font-semibold hover:bg-[#00000010] dark:hover:bg-[#ffffff05] ${
-                  type.active
-                    ? " bg-[#00000010] border-black dark:border-white"
-                    : " border-transparent"
-                }`}
-                key={`roteType_${index}`}
-                onClick={() => roteTypesChange(index)}
-              >
-                {t(`roteTypes.${index}`)}
-              </div>
-            );
-          })}
-        </div>
-        <RoteInputSimple profile={profile}></RoteInputSimple>
-        <div className=" flex flex-col w-full relative">
-          {rotes.map((item: any, index: any) => {
-            return (
-              <Rote
-                profile={profile}
-                rote_param={item}
-                key={`Rote_${index}`}
-              ></Rote>
-            );
-          })}
-          {isLoadAll ? null : (
+    <div
+      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative`}
+      style={{ scrollPaddingTop: `${navHeight}px` }}
+    >
+      <div className=" rotypesNav duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
+        {roteTypes.map((type, index) => {
+          return (
             <div
-              ref={loadingRef}
-              className=" flex justify-center items-center py-3 gap-3"
+              className={` cursor-pointer duration-300 border-b-2 py-2 px-5 shrink-0 font-semibold hover:bg-[#00000010] dark:hover:bg-[#ffffff05] ${
+                type.active
+                  ? " bg-[#00000010] border-black dark:border-white"
+                  : " border-transparent"
+              }`}
+              key={`roteType_${index}`}
+              onClick={() => roteTypesChange(index)}
             >
-              <LoadingOutlined />
-              <div>加载中...</div>
+              {t(`roteTypes.${index}`)}
             </div>
-          )}
-          {isLoadAll && rotes.length === 0 ? (
-            <div className=" border-t-[1px] border-[#00000010] bg-white py-4">
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={"这里什么也没有"}
-              />
-            </div>
-          ) : null}
-        </div>
-
-        {showscrollTop && (
-          <a
-            className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
-            href="#top"
-          >
-            <UpOutlined />
-          </a>
-        )}
+          );
+        })}
       </div>
-    </LayoutDashboadrd>
+      <RoteInputSimple profile={profile}></RoteInputSimple>
+      <div className=" flex flex-col w-full relative">
+        {rotes.map((item: any, index: any) => {
+          return (
+            <Rote
+              profile={profile}
+              rote_param={item}
+              key={`Rote_${index}`}
+            ></Rote>
+          );
+        })}
+        {isLoadAll ? null : (
+          <div
+            ref={loadingRef}
+            className=" flex justify-center items-center py-3 gap-3"
+          >
+            <LoadingOutlined />
+            <div>加载中...</div>
+          </div>
+        )}
+        {isLoadAll && rotes.length === 0 ? (
+          <div className=" border-t-[1px] border-[#00000010] bg-white py-4">
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={"这里什么也没有"}
+            />
+          </div>
+        ) : null}
+      </div>
+
+      {showscrollTop && (
+        <a
+          className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
+          href="#top"
+        >
+          <UpOutlined />
+        </a>
+      )}
+    </div>
   ) : null;
 }
 

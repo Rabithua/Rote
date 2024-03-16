@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import {
   BellOutlined,
   HomeOutlined,
@@ -8,7 +8,7 @@ import {
 } from "@ant-design/icons";
 import { useState } from "react";
 
-function LayoutDashboadrd({ children }: any) {
+function LayoutDashboadrd() {
   const navigate = useNavigate();
   const [ifshowLeftNav, setIfshowLeftNav] = useState(true);
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
@@ -214,7 +214,7 @@ function LayoutDashboadrd({ children }: any) {
           </div>
         )}
         <div className=" flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative">
-          {children}
+          <Outlet />
         </div>
       </div>
     </div>

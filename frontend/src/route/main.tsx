@@ -8,6 +8,7 @@ import {
 import { ProtectedRoute } from "./protectedRoute";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useProfile } from "@/state/profile";
+import LayoutDashboadrd from "@/layout/dashboard";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Home = lazy(() => import("@/pages/home"));
@@ -42,10 +43,11 @@ export default function GlobalRouterProvider() {
     },
     {
       path: "/mine",
+      element: <LayoutDashboadrd />,
       errorElement: <ErrorPage />,
       children: [
         {
-          path: "",
+          index: true,
           element: (
             <ProtectedRoute>
               <Mine />
