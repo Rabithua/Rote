@@ -120,7 +120,7 @@ function Mine() {
   return profile ? (
     <LayoutDashboadrd>
       <div
-        className={` scrollContainer scroll-smooth flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative`}
+        className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative`}
         style={{ scrollPaddingTop: `${navHeight}px` }}
       >
         <div className=" rotypesNav duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
