@@ -90,7 +90,6 @@ function MineFilter() {
 
   useEffect(() => {
     // 监听state的变化
-    console.log(location.state);
     setFilter({
       tags: location.state?.tags || [],
       keywords: [],

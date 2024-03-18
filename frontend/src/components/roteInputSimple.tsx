@@ -36,10 +36,12 @@ function RoteInputSimple({ profile }: any) {
   });
   const rotesDispatch = useRotesDispatch();
 
-  const handleTagsChange = (value: string) => {
+  const handleTagsChange = (value: string[]) => {
     setRote({
       ...rote,
-      tags: value.trim(),
+      tags: value.map((tag) => {
+        return tag.trim();
+      }),
     });
   };
 

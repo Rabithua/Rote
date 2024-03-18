@@ -97,7 +97,6 @@ function Mine() {
     );
 
     const element = document.querySelector(".rotypesNav") as HTMLElement;
-    console.log(element.offsetHeight);
     setNavHeight(element.offsetHeight || 0);
   }, []);
 

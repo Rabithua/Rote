@@ -194,7 +194,7 @@ function LayoutDashboadrd() {
               );
             })}
             <div
-              className=" flex cursor-pointer duration-300 sm:hidden gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010]"
+              className=" absolute bottom-8 flex cursor-pointer duration-300 sm:hidden gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010]"
               onClick={changeLeftNavVb}
             >
               <div className=" w-8 h-8 p-1 shrink-0">
