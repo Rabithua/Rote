@@ -113,14 +113,14 @@ function MineFilter() {
   }
 
   return (
-    <div className=" flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative">
+    <>
       <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-[#ffffff99] backdrop-blur-xl">
         <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
         <div className=" font-semibold cursor-pointer" onClick={back}>
           返回
         </div>
       </div>
-      <div className=" p-4 ml-4 font-semibold">
+      <div id="top" className=" p-4 ml-4 font-semibold">
         <div className=" flex items-center flex-wrap gap-2 my-2">
           包含标签：
           {filter.tags.length > 0
@@ -177,7 +177,7 @@ function MineFilter() {
           </div>
         ) : null}
       </div>
-    </div>
+    </>
   );
 }
 

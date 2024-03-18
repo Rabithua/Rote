@@ -5,14 +5,14 @@ import { useNavigate } from "react-router-dom";
 import { LoadingOutlined, UpOutlined } from "@ant-design/icons";
 import Rote from "@/components/Rote";
 import { apiGetMyRote } from "@/api/rote/main";
-import LayoutDashboadrd from "@/layout/dashboard";
+import LayoutDashboadrd from "@/layout/mine";
 import { Empty } from "antd";
 import { useProfile } from "@/state/profile";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
 import { debounce } from "@/utils/main";
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
 
-function Mine() {
+function MinePage() {
   const navigate = useNavigate();
   const loadingRef = useRef(null);
   const [isLoadAll, setIsLoadAll] = useState(false);
@@ -180,4 +180,4 @@ function Mine() {
   ) : null;
 }
 
-export default Mine;
+export default MinePage;

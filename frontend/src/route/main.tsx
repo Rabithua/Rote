@@ -8,12 +8,16 @@ import {
 import { ProtectedRoute } from "./protectedRoute";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useProfile } from "@/state/profile";
-import LayoutDashboadrd from "@/layout/dashboard";
+import LayoutMine from "@/layout/mine";
+import LayoutHome from "@/layout/mine/home";
 
 const Landing = lazy(() => import("@/pages/landing"));
-const Home = lazy(() => import("@/pages/home"));
 const Login = lazy(() => import("@/pages/login"));
-const Mine = lazy(() => import("@/pages/mine"));
+const RotePage = lazy(() => import("@/pages/mine/home/rote"));
+const TodoPage = lazy(() => import("@/pages/mine/home/todo"));
+const JournalPage = lazy(() => import("@/pages/mine/home/journal"));
+const LuckyPage = lazy(() => import("@/pages/mine/home/lucky"));
+const ArticlePage = lazy(() => import("@/pages/mine/home/article"));
 const MineFilter = lazy(() => import("@/pages/filter"));
 const ErrorPage = lazy(() => import("@/pages/404"));
 
@@ -22,47 +26,100 @@ export default function GlobalRouterProvider() {
 
   const router = createBrowserRouter([
     {
-      path: "/",
+      path: "",
       element: profile ? <Navigate to="/mine" /> : <Navigate to="/landing" />,
       errorElement: <ErrorPage />,
+      children: [],
     },
     {
-      path: "/landing",
+      path: "landing",
       element: <Landing />,
       errorElement: <ErrorPage />,
     },
     {
-      path: "/home",
-      element: <Home />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: "/login",
+      path: "login",
       element: <Login />,
       errorElement: <ErrorPage />,
     },
     {
-      path: "/mine",
-      element: <LayoutDashboadrd />,
+      path: "mine",
+      element: <LayoutMine />,
       errorElement: <ErrorPage />,
       children: [
         {
           index: true,
-          element: (
-            <ProtectedRoute>
-              <Mine />
-            </ProtectedRoute>
-          ),
-          errorElement: <ErrorPage />,
+          element: <Navigate to="home" />,
         },
         {
-          path: "filter",
-          element: (
-            <ProtectedRoute>
-              <MineFilter />
-            </ProtectedRoute>
-          ),
+          path: "home",
+          element: <LayoutHome />,
           errorElement: <ErrorPage />,
+          children: [
+            {
+              index: true,
+              element: <Navigate to="rote" />,
+            },
+            {
+              path: "rote",
+              errorElement: <ErrorPage />,
+              children: [
+                {
+                  index: true,
+                  element: (
+                    <ProtectedRoute>
+                      <RotePage />
+                    </ProtectedRoute>
+                  ),
+                  errorElement: <ErrorPage />,
+                },
+                {
+                  path: "filter",
+                  element: (
+                    <ProtectedRoute>
+                      <MineFilter />
+                    </ProtectedRoute>
+                  ),
+                  errorElement: <ErrorPage />,
+                },
+              ],
+            },
+            {
+              path: "todo",
+              element: (
+                <ProtectedRoute>
+                  <TodoPage />
+                </ProtectedRoute>
+              ),
+              errorElement: <ErrorPage />,
+            },
+            {
+              path: "journal",
+              element: (
+                <ProtectedRoute>
+                  <JournalPage />
+                </ProtectedRoute>
+              ),
+              errorElement: <ErrorPage />,
+            },
+            {
+              path: "lucky",
+              element: (
+                <ProtectedRoute>
+                  <LuckyPage />
+                </ProtectedRoute>
+              ),
+              errorElement: <ErrorPage />,
+            },
+            {
+              path: "article",
+              element: (
+                <ProtectedRoute>
+                  <ArticlePage />
+                </ProtectedRoute>
+              ),
+              errorElement: <ErrorPage />,
+            },
+          ],
         },
       ],
     },

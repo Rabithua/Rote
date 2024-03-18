@@ -21,7 +21,7 @@ import { useRotesDispatch } from "@/state/rotes";
 import { useFilterRotesDispatch } from "@/state/filterRotes";
 const { emojiList } = mainJson;
 
-function RoteInputSimple({ rote_param, profile }: any) {
+function RoteInputSimple({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
@@ -43,7 +43,7 @@ function RoteInputSimple({ rote_param, profile }: any) {
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    navigate("/mine/filter", {
+    navigate("filter", {
       state: {
         tags: [tag],
       },
