@@ -39,7 +39,7 @@ function RoteInputSimple({ profile }: any) {
   const handleTagsChange = (value: string) => {
     setRote({
       ...rote,
-      tags: value,
+      tags: value.trim(),
     });
   };
 

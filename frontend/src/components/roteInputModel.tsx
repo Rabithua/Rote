@@ -28,7 +28,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
   const handleTagsChange = (value: string) => {
     setNewRote({
       ...newRote,
-      tags: value,
+      tags: value.trim(),
     });
   };
 

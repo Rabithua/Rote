@@ -18,11 +18,13 @@ import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRotesDispatch } from "@/state/rotes";
+import { useFilterRotesDispatch } from "@/state/filterRotes";
 const { emojiList } = mainJson;
 
-function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
+function RoteInputSimple({ rote_param, profile }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
+  const filterRotesDispatch = useFilterRotesDispatch();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editRote, setEditRote] = useState<any>({});
@@ -80,10 +82,12 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
 
     return resultArray;
   }
+
   function onModelCancel() {
     setIsModalOpen(false);
     setEditRote({});
   }
+
   function submitEdit(rote: any) {
     const {
       author,
@@ -102,6 +106,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
     })
       .then((res) => {
         rotesDispatch({
+          type: "updateOne",
+          rote: res.data.data,
+        });
+        filterRotesDispatch({
           type: "updateOne",
           rote: res.data.data,
         });
@@ -132,6 +140,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
             type: "deleted",
             roteid: res.data.data.id,
           });
+          filterRotesDispatch({
+            type: "deleted",
+            roteid: res.data.data.id,
+          });
         })
         .catch((err) => {
           toast.error("删除失败", {
@@ -149,6 +161,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
       })
         .then((res) => {
           rotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
+          filterRotesDispatch({
             type: "updateOne",
             rote: res.data.data,
           });

@@ -5,6 +5,7 @@ import Rote from "@/components/Rote";
 import { apiGetMyRote } from "@/api/rote/main";
 import { Empty } from "antd";
 import { useProfile } from "@/state/profile";
+import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
 
 function MineFilter() {
   let location = useLocation();
@@ -13,7 +14,8 @@ function MineFilter() {
   const [isLoadAll, setIsLoadAll] = useState(false);
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
-  const [rotes, setRotes] = useState<any[]>([]);
+  const rotes = useFilterRotes();
+  const rotesDispatch = useFilterRotesDispatch();
 
   const profile = useProfile();
 
@@ -58,7 +60,17 @@ function MineFilter() {
               if (res.data.data.length !== 20) {
                 setIsLoadAll(true);
               }
-              setRotes([...rotes, ...res.data.data]);
+              if (rotes.length > 0) {
+                rotesDispatch({
+                  type: "add",
+                  rotes: res.data.data,
+                });
+              } else {
+                rotesDispatch({
+                  type: "freshAll",
+                  rotes: res.data.data,
+                });
+              }
             })
             .catch((err) => {});
         }
@@ -86,23 +98,19 @@ function MineFilter() {
       userid: "",
       others: [],
     });
-    setRotes([]);
+    rotesDispatch({
+      type: "freshAll",
+      rotes: [],
+    });
     setIsLoadAll(false);
   }, [location.state]); // 当state发生变化时执行
 
   function relativeTags() {
-    return [...new Set(rotes.reduce((acc, curr) => acc.concat(curr.tags), []))];
-  }
-
-  function refreshRote() {
-    apiGetMyRote({
-      limit: rotes.length,
-      skip: 0,
-    })
-      .then((res) => {
-        setRotes(res.data.data);
-      })
-      .catch((err) => {});
+    return [
+      ...new Set(
+        rotes.reduce((acc: string[], curr) => acc.concat(curr.tags), [])
+      ),
+    ];
   }
 
   return (
@@ -151,7 +159,6 @@ function MineFilter() {
             <Rote
               profile={profile}
               rote_param={item}
-              refreshRote={refreshRote}
               key={`Rote_${index}`}
             ></Rote>
           );
