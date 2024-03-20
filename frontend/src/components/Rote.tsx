@@ -5,6 +5,7 @@ import {
   GlobalOutlined,
   HourglassOutlined,
   PushpinOutlined,
+  SaveOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Modal, Popover, Tooltip } from "antd";
@@ -179,6 +180,34 @@ function RoteInputSimple({ rote_param }: any) {
           });
         });
     }
+    function editRoteArchived() {
+      hide();
+      const toastId = toast.loading("编辑中...");
+      apiEditMyRote({
+        id: rote.id,
+        authorid: rote.authorid,
+        state: rote.state === "archived" ? "private" : "archived",
+      })
+        .then((res) => {
+          rotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
+          filterRotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
+          toast.success(`${rote.pin ? "取消归档" : "归档"}成功`, {
+            id: toastId,
+          });
+          setRote(res.data.data);
+        })
+        .catch((err) => {
+          toast.error("请求失败", {
+            id: toastId,
+          });
+        });
+    }
     return (
       <div className=" flex flex-col">
         <div
@@ -198,6 +227,13 @@ function RoteInputSimple({ rote_param }: any) {
         >
           <EditOutlined />
           编辑
+        </div>
+        <div
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          onClick={editRoteArchived}
+        >
+          <SaveOutlined />
+          {rote.state === "archived" ? "取消归档" : "归档"}
         </div>
         <div
           className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"

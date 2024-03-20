@@ -253,9 +253,6 @@ export async function findMyRote(
           AND: [
             {
               authorid,
-              state: {
-                not: "archived",
-              },
             },
             { ...filter },
           ],
