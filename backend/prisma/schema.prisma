@@ -19,7 +19,7 @@ model User {
   passwordhash       Bytes
   salt               Bytes
   nickname           String?
-  avatar             String              @default("https://rote-r2.zzfw.cc/others/logo.png")
+  avatar             String               @default("https://rote-r2.zzfw.cc/others/logo.png")
   usersetting        Usersetting?
   userswsubscription UserSwSubScription[]
   rotes              Rote[]
@@ -56,6 +56,7 @@ model Rote {
   tags            String[]          @default([])
   content         String
   state           String            @default("private")
+  archived        Boolean?          @default(false)
   author          User              @relation(fields: [authorid], references: [id])
   authorid        String            @db.ObjectId
   pin             Boolean           @default(false)

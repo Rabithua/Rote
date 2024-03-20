@@ -25,10 +25,12 @@ function RoteInputModel({ rote, submitEdit }: any) {
     pin: false,
   });
 
-  const handleTagsChange = (value: string) => {
+  const handleTagsChange = (value: string[]) => {
     setNewRote({
       ...newRote,
-      tags: value,
+      tags: value.map((tag) => {
+        return tag.trim();
+      }),
     });
   };
 

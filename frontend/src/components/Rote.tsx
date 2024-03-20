@@ -5,6 +5,7 @@ import {
   GlobalOutlined,
   HourglassOutlined,
   PushpinOutlined,
+  SaveOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Modal, Popover, Tooltip } from "antd";
@@ -18,11 +19,13 @@ import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRotesDispatch } from "@/state/rotes";
+import { useFilterRotesDispatch } from "@/state/filterRotes";
 const { emojiList } = mainJson;
 
-function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
+function RoteInputSimple({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
+  const filterRotesDispatch = useFilterRotesDispatch();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editRote, setEditRote] = useState<any>({});
@@ -41,7 +44,7 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    navigate("/mine/filter", {
+    navigate("filter", {
       state: {
         tags: [tag],
       },
@@ -80,10 +83,12 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
 
     return resultArray;
   }
+
   function onModelCancel() {
     setIsModalOpen(false);
     setEditRote({});
   }
+
   function submitEdit(rote: any) {
     const {
       author,
@@ -102,6 +107,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
     })
       .then((res) => {
         rotesDispatch({
+          type: "updateOne",
+          rote: res.data.data,
+        });
+        filterRotesDispatch({
           type: "updateOne",
           rote: res.data.data,
         });
@@ -132,6 +141,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
             type: "deleted",
             roteid: res.data.data.id,
           });
+          filterRotesDispatch({
+            type: "deleted",
+            roteid: res.data.data.id,
+          });
         })
         .catch((err) => {
           toast.error("删除失败", {
@@ -152,6 +165,10 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
             type: "updateOne",
             rote: res.data.data,
           });
+          filterRotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
           toast.success(`${rote.pin ? "取消置顶" : "置顶"}成功`, {
             id: toastId,
           });
@@ -159,6 +176,34 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
         })
         .catch((err) => {
           toast.error("发送失败", {
+            id: toastId,
+          });
+        });
+    }
+    function editRoteArchived() {
+      hide();
+      const toastId = toast.loading("编辑中...");
+      apiEditMyRote({
+        id: rote.id,
+        authorid: rote.authorid,
+        state: rote.state === "archived" ? "private" : "archived",
+      })
+        .then((res) => {
+          rotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
+          filterRotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
+          toast.success(`${rote.pin ? "取消归档" : "归档"}成功`, {
+            id: toastId,
+          });
+          setRote(res.data.data);
+        })
+        .catch((err) => {
+          toast.error("请求失败", {
             id: toastId,
           });
         });
@@ -182,6 +227,13 @@ function RoteInputSimple({ rote_param, refreshRote, profile }: any) {
         >
           <EditOutlined />
           编辑
+        </div>
+        <div
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          onClick={editRoteArchived}
+        >
+          <SaveOutlined />
+          {rote.state === "archived" ? "取消归档" : "归档"}
         </div>
         <div
           className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"

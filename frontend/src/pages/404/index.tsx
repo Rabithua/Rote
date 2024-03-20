@@ -1,7 +1,7 @@
 export default function ErrorPage() {
   return (
     <>
-      <main className=" h-screen place-items-center bg-white px-6 flex justify-center items-center">
+      <main className=" h-dvh place-items-center bg-white px-6 flex justify-center items-center">
         <div className=" flex flex-col gap-5">
           <p className=" text-[100px] lg:text-[200px] font-semibold font-mono  bg-black text-transparent bg-clip-text">404</p>
           <h1 className=" text-base lg:text-2xl font-bold tracking-tight text-gray-900 ">

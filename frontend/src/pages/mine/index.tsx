@@ -5,14 +5,14 @@ import { useNavigate } from "react-router-dom";
 import { LoadingOutlined, UpOutlined } from "@ant-design/icons";
 import Rote from "@/components/Rote";
 import { apiGetMyRote } from "@/api/rote/main";
-import LayoutDashboadrd from "@/layout/dashboard";
+import LayoutDashboadrd from "@/layout/mine";
 import { Empty } from "antd";
 import { useProfile } from "@/state/profile";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
 import { debounce } from "@/utils/main";
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
 
-function Mine() {
+function MinePage() {
   const navigate = useNavigate();
   const loadingRef = useRef(null);
   const [isLoadAll, setIsLoadAll] = useState(false);
@@ -97,7 +97,6 @@ function Mine() {
     );
 
     const element = document.querySelector(".rotypesNav") as HTMLElement;
-    console.log(element.offsetHeight);
     setNavHeight(element.offsetHeight || 0);
   }, []);
 
@@ -119,7 +118,7 @@ function Mine() {
 
   return profile ? (
     <div
-      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-screen overflow-y-visible overflow-x-hidden relative`}
+      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
       style={{ scrollPaddingTop: `${navHeight}px` }}
     >
       <div className=" rotypesNav duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center sm:justify-center border-b border-[#00000010] dark:border-[#ffffff05] bg-[#ffffff99] backdrop-blur-xl dark:bg-black dark:text-white">
@@ -181,4 +180,4 @@ function Mine() {
   ) : null;
 }
 
-export default Mine;
+export default MinePage;
