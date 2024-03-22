@@ -104,7 +104,7 @@ function RoteInputSimple({ profile }: any) {
   }
 
   return (
-    <div id="top" className=" cursor-default bg-white w-full p-5 flex gap-5">
+    <div className=" cursor-default bg-white w-full p-5 flex gap-5">
       <Avatar
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}

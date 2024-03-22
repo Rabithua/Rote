@@ -120,7 +120,7 @@ function MineFilter() {
           返回
         </div>
       </div>
-      <div id="top" className=" p-4 ml-4 font-semibold">
+      <div className=" p-4 ml-4 font-semibold">
         <div className=" flex items-center flex-wrap gap-2 my-2">
           包含标签：
           {filter.tags.length > 0
