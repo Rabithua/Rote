@@ -27,6 +27,7 @@ function RoteInputSimple({ rote_param }: any) {
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [editRote, setEditRote] = useState<any>({});
   const [open, setOpen] = useState(false);
@@ -44,11 +45,19 @@ function RoteInputSimple({ rote_param }: any) {
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    navigate("filter", {
-      state: {
-        tags: [tag],
-      },
-    });
+    if (location.pathname.includes("/filter")) {
+      navigate("../filter", {
+        state: {
+          tags: [tag],
+        },
+      });
+    } else {
+      navigate("filter", {
+        state: {
+          tags: [tag],
+        },
+      });
+    }
   }
 
   const [categorizedReactions, setCategorizedReactions] = useState<any>({});

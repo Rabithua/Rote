@@ -67,8 +67,8 @@ function LayoutMine() {
             {icons.map((icon, index) => {
               return (
                 <div
-                  className={` cursor-pointer duration-300 flex gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010] ${
-                    icon.disable ? "cursor-not-allowed" : ""
+                  className={` duration-300 flex gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010] ${
+                    icon.disable ? "cursor-not-allowed" : "cursor-pointer"
                   }`}
                   key={`leftLinks_${index}`}
                   onClick={() => {
