@@ -88,7 +88,7 @@ export async function checkPrisma(prisma: PrismaClient) {
         console.log("Prisma connected successfully!");
       })
       .catch((error) => {
-        console.error("Failed to connect to Prisma.");
+        console.error("Failed to connect to Prisma.", error);
       })
       .finally(() => {
         prisma.$disconnect();

@@ -1,5 +1,3 @@
-console.log("ENV:", process.env);
-
 import express = require("express");
 import passport from "./utils/passport";
 import bodyParser from "body-parser";

@@ -75,7 +75,7 @@ function RotePage() {
         {isLoadAll ? null : (
           <div
             ref={loadingRef}
-            className=" flex justify-center items-center py-3 gap-3"
+            className=" flex justify-center items-center py-8 h- gap-3 bg-white"
           >
             <LoadingOutlined />
             <div>加载中...</div>
