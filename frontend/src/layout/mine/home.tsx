@@ -82,6 +82,14 @@ function LayoutHome() {
 
     setRoteTypes(newArr);
   }
+
+  function goTop() {
+    const containers = document.getElementsByClassName("scrollContainer");
+    if (containers.length > 0) {
+      const container = containers[0]; // 获取第一个匹配的元素
+      container.scrollTop = 0; // 将该容器滚动到顶部
+    }
+  }
   return (
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
@@ -108,12 +116,12 @@ function LayoutHome() {
       <Outlet />
 
       {showscrollTop && (
-        <a
+        <div
           className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
-          href="#top"
+          onClick={goTop}
         >
           <UpOutlined />
-        </a>
+        </div>
       )}
     </div>
   );
