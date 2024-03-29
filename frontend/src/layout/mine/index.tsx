@@ -14,7 +14,9 @@ import { useState } from "react";
 
 function LayoutMine() {
   const navigate = useNavigate();
-  const [ifshowLeftNav, setIfshowLeftNav] = useState(true);
+  const [ifshowLeftNav, setIfshowLeftNav] = useState(
+    window.localStorage.getItem("ifshowLeftNav") === "false" ? false : true
+  );
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
   const icons = [
     {
@@ -57,6 +59,7 @@ function LayoutMine() {
 
   function changeLeftNavVb() {
     setIfshowLeftNav(!ifshowLeftNav);
+    window.localStorage.setItem("ifshowLeftNav", `${!ifshowLeftNav}`);
   }
 
   return (

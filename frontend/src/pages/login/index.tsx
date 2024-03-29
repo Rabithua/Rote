@@ -46,7 +46,7 @@ function Login() {
       })
       .catch((err) => {
         console.log(err);
-        if ("code" in err.response.data) {
+        if ("code" in err.response?.data) {
           toast.error(err.response.data.data.message, {
             id: toastId,
           });
