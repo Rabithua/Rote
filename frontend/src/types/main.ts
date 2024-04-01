@@ -47,6 +47,8 @@ export type Profile =
       email: string;
       username: string;
       nickname: string;
+      description: string;
+      cover: string;
       avatar: string;
       createdAt: string;
       updatedAt: string;

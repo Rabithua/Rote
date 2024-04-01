@@ -52,8 +52,8 @@ function LayoutMine() {
     },
     {
       svg: <UserOutlined />,
-      link: "/#",
-      disable: true,
+      link: "/mine/profile",
+      disable: false,
     },
   ];
 

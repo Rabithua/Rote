@@ -341,3 +341,24 @@ export async function getMyTags(userid: any): Promise<any> {
       });
   });
 }
+
+export async function getMySession(userid: any): Promise<any> {
+  console.log(userid);
+  return new Promise((resolve, reject) => {
+    prisma.session
+      .findMany({
+        where: {
+          data: {
+            contains: userid,
+          },
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch((error) => {
+        console.error("Error getting sessions:", error);
+        reject(error);
+      });
+  });
+}

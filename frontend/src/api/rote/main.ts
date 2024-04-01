@@ -83,3 +83,18 @@ export function apiGetMyTags(): Promise<any> {
       });
   });
 }
+
+export function apiGetMySessions(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/getsession",
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
