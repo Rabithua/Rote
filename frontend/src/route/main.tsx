@@ -19,6 +19,7 @@ const JournalPage = lazy(() => import("@/pages/mine/home/journal"));
 const LuckyPage = lazy(() => import("@/pages/mine/home/lucky"));
 const ArticlePage = lazy(() => import("@/pages/mine/home/article"));
 const MineFilter = lazy(() => import("@/pages/filter"));
+const ProfilePage = lazy(() => import("@/pages/mine/profile/index"));
 const ErrorPage = lazy(() => import("@/pages/404"));
 
 export default function GlobalRouterProvider() {
@@ -120,6 +121,11 @@ export default function GlobalRouterProvider() {
               errorElement: <ErrorPage />,
             },
           ],
+        },
+        {
+          path: "profile",
+          element: <ProfilePage />,
+          errorElement: <ErrorPage />,
         },
       ],
     },
