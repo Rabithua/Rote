@@ -8,6 +8,7 @@ import {
   findMyRote,
   findRoteById,
   findSubScriptionToUser,
+  getMySession,
   getMyTags,
   getUserInfoById,
 } from "../utils/dbMethods";
@@ -17,16 +18,21 @@ import webpush from "../utils/webpush";
 import upload from "../utils/upload";
 import passport from "passport";
 import multer from "multer";
-import { isAdmin, isAuthenticated, isAuthor, sanitizeUserData } from "../utils/main";
+import {
+  isAdmin,
+  isAuthenticated,
+  isAuthor,
+  sanitizeUserData,
+} from "../utils/main";
 
 let routerV1 = express.Router();
 
 routerV1.all("/ping", isAdmin, (req, res) => {
   res.send({
     code: 0,
-    msg: 'ok',
-    data: null
-  })
+    msg: "ok",
+    data: null,
+  });
 });
 
 // User method
@@ -36,10 +42,10 @@ routerV1.post("/addUser", isAdmin, (req, res) => {
   if (!username || !password || !email) {
     res.send({
       code: 1,
-      msg: 'error: data error',
-      data: null
-    })
-    return
+      msg: "error: data error",
+      data: null,
+    });
+    return;
   }
   try {
     createUser({
@@ -47,29 +53,28 @@ routerV1.post("/addUser", isAdmin, (req, res) => {
       password,
       email,
       nickname,
-    })
-      .then(async (user) => {
-        if (user.id) {
-          res.send({
-            code: 0,
-            msg: "ok",
-            data: user,
-          });
-        } else {
-          res.send({
-            code: 1,
-            msg: 'error',
-            data: user
-          })
-        }
-        await prisma.$disconnect();
-      })
+    }).then(async (user) => {
+      if (user.id) {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: user,
+        });
+      } else {
+        res.send({
+          code: 1,
+          msg: "error",
+          data: user,
+        });
+      }
+      await prisma.$disconnect();
+    });
   } catch (error) {
     res.send({
       code: 1,
-      msg: 'error',
-      data: error
-    })
+      msg: "error",
+      data: error,
+    });
   }
 });
 
@@ -78,10 +83,10 @@ routerV1.post("/register", (req, res) => {
   if (!username || !password || !email) {
     res.status(401).send({
       code: 1,
-      msg: 'error: data error',
-      data: null
-    })
-    return
+      msg: "error: data error",
+      data: null,
+    });
+    return;
   }
   try {
     createUser({
@@ -89,29 +94,28 @@ routerV1.post("/register", (req, res) => {
       password,
       email,
       nickname,
-    })
-      .then(async (user) => {
-        if (user.id) {
-          res.send({
-            code: 0,
-            msg: "ok",
-            data: user,
-          });
-        } else {
-          res.status(401).send({
-            code: 1,
-            msg: '注册失败，用户名或邮箱已被占用',
-            data: user
-          })
-        }
-        await prisma.$disconnect();
-      })
+    }).then(async (user) => {
+      if (user.id) {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: user,
+        });
+      } else {
+        res.status(401).send({
+          code: 1,
+          msg: "注册失败，用户名或邮箱已被占用",
+          data: user,
+        });
+      }
+      await prisma.$disconnect();
+    });
   } catch (error) {
     res.status(401).send({
       code: 1,
-      msg: 'error',
-      data: error
-    })
+      msg: "error",
+      data: error,
+    });
   }
 });
 
@@ -123,9 +127,9 @@ routerV1.post("/addSwSubScription", isAuthenticated, (req, res) => {
       msg: "Need subScription info",
       data: null,
     });
-    return
+    return;
   }
-  const user = req.user as User
+  const user = req.user as User;
   addSubScriptionToUser(user.id, subScription)
     .then((e) => {
       res.send({
@@ -141,7 +145,6 @@ routerV1.post("/addSwSubScription", isAuthenticated, (req, res) => {
         data: err,
       });
     });
-
 });
 
 routerV1.get("/sendSwSubScription", async (req, res) => {
@@ -195,18 +198,26 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
 });
 
 routerV1.post("/addRote", isAuthenticated, (req, res) => {
-  const { title, content, type, tags, state, pin, editor, attachments } = req.body;
-  const user = req.user as User
+  const { title, content, type, tags, state, pin, editor, attachments } =
+    req.body;
+  const user = req.user as User;
   if (!content) {
     res.send({
       code: 1,
       msg: "error",
       data: "Need content",
     });
-    return
+    return;
   }
   createRote({
-    title, content, type, tags, state, pin, editor, attachments,
+    title,
+    content,
+    type,
+    tags,
+    state,
+    pin,
+    editor,
+    attachments,
     authorid: user.id,
   })
     .then((rote) => {
@@ -224,17 +235,16 @@ routerV1.post("/addRote", isAuthenticated, (req, res) => {
         data: error,
       });
     });
-
 });
 
 routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
   console.log(req.body);
-  const { skip, limit } = req.query
-  const filter = req.body.filter || {}
-  const user = req.user as User
+  const { skip, limit } = req.query;
+  const filter = req.body.filter || {};
+  const user = req.user as User;
 
-  const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
-  const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+  const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
+  const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
 
   findMyRote(user.id, parsedSkip, parsedLimit, filter)
     .then(async (rote) => {
@@ -246,7 +256,7 @@ routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      console.log(e)
+      console.log(e);
       res.send({
         code: 1,
         msg: "error",
@@ -257,14 +267,14 @@ routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
 });
 
 routerV1.get("/getUserInfo", (req, res) => {
-  const { userid } = req.query
+  const { userid } = req.query;
   if (!userid) {
     res.send({
       code: 1,
       msg: "Need userid",
       data: null,
     });
-    return
+    return;
   }
   getUserInfoById(userid)
     .then(async (data) => {
@@ -286,7 +296,7 @@ routerV1.get("/getUserInfo", (req, res) => {
 });
 
 routerV1.get("/getMyTags", (req, res) => {
-  const user = req.user as User
+  const user = req.user as User;
 
   if (!user.id) {
     res.send({
@@ -294,7 +304,7 @@ routerV1.get("/getMyTags", (req, res) => {
       msg: "Need userid",
       data: null,
     });
-    return
+    return;
   }
   getMyTags(user.id)
     .then(async (data) => {
@@ -317,14 +327,14 @@ routerV1.get("/getMyTags", (req, res) => {
 
 routerV1.get("/oneRote", (req, res) => {
   console.log(req.query);
-  const { id } = req.query
+  const { id } = req.query;
   if (!id) {
     res.send({
       code: 1,
       msg: "error",
       data: "Need id",
     });
-    return
+    return;
   }
   findRoteById(req.query.id?.toString() || "")
     .then(async (rote) => {
@@ -347,14 +357,14 @@ routerV1.get("/oneRote", (req, res) => {
 
 routerV1.post("/oneRote", isAuthor, (req, res) => {
   console.log(req.body);
-  const rote = req.body
+  const rote = req.body;
   if (!rote) {
     res.send({
       code: 1,
       msg: "error",
       data: "Need data",
     });
-    return
+    return;
   }
   editRote(rote)
     .then(async (rote) => {
@@ -377,14 +387,14 @@ routerV1.post("/oneRote", isAuthor, (req, res) => {
 
 routerV1.delete("/oneRote", isAuthor, (req, res) => {
   console.log(req.body);
-  const rote = req.body
+  const rote = req.body;
   if (!rote) {
     res.send({
       code: 1,
       msg: "error",
       data: "Need data",
     });
-    return
+    return;
   }
   deleteRote(rote)
     .then(async (rote) => {
@@ -405,78 +415,113 @@ routerV1.delete("/oneRote", isAuthor, (req, res) => {
     });
 });
 
-routerV1.post("/upload", isAuthenticated, upload.array("file"), async (req: any, res) => {
-  console.log(req.files);
-  let newFiles = req.files.map((file: any, index: any) => {
-    file.location = `https://${process.env.R2_URL_PREFIX}/${file.key}`;
-    return file;
-  });
-  console.log(newFiles);
-  res.send({
-    code: 0,
-    msg: "ok",
-    data: {
-      files: newFiles,
-    },
-  });
+routerV1.post(
+  "/upload",
+  isAuthenticated,
+  upload.array("file"),
+  async (req: any, res) => {
+    console.log(req.files);
+    let newFiles = req.files.map((file: any, index: any) => {
+      file.location = `https://${process.env.R2_URL_PREFIX}/${file.key}`;
+      return file;
+    });
+    console.log(newFiles);
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: {
+        files: newFiles,
+      },
+    });
+  }
+);
 
-});
-
-routerV1.post('/login/password',
-  function (req, res, next) {
-    passport.authenticate('local', (err: any, user: User, data: any) => {
+routerV1.post("/login/password", function (req, res, next) {
+  passport.authenticate("local", (err: any, user: User, data: any) => {
+    if (err) {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: data,
+      });
+      return;
+    }
+    if (!user) {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: data,
+      });
+      return;
+    }
+    req.logIn(user, (err) => {
       if (err) {
         res.status(401).send({
           code: 1,
-          msg: 'error',
-          data: data
-        })
-        return;
+          msg: "error",
+          data: err,
+        });
       }
-      if (!user) {
-        res.status(401).send({
-          code: 1,
-          msg: 'error',
-          data: data
-        })
-        return;
-      }
-      req.logIn(user, (err) => {
-        if (err) {
-          res.status(401).send({
-            code: 1,
-            msg: 'error',
-            data: err
-          })
-        }
-        res.send({
-          code: 0,
-          msg: 'ok',
-          data: sanitizeUserData(user)
-        })
-      })
-    })(req, res, next)
-  })
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: sanitizeUserData(user),
+      });
+    });
+  })(req, res, next);
+});
 
-routerV1.post('/logout', isAuthenticated, function (req, res, next) {
+routerV1.post("/logout", isAuthenticated, function (req, res, next) {
   req.logout(function (err) {
-    if (err) { return next(err); }
+    if (err) {
+      return next(err);
+    }
     res.send({
       code: 0,
-      msg: 'ok',
-      data: null
-    })
+      msg: "ok",
+      data: null,
+    });
   });
 });
 
-routerV1.get('/profile', isAuthenticated, function (req, res) {
+routerV1.get("/profile", isAuthenticated, function (req, res) {
   res.send({
     code: 0,
-    msg: 'ok',
-    data: req.user as User
+    msg: "ok",
+    data: req.user as User,
   });
-},
-);
+});
+
+routerV1.get("/getsession", isAuthenticated, function (req, res) {
+  const user = req.user as User;
+
+  if (!user.id) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return;
+  }
+
+  getMySession(user.id)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
 
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
