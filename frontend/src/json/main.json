@@ -2,16 +2,57 @@
   "stateOptions": [
     {
       "label": "未发布",
-      "options": [{ "label": "草稿", "value": "draft" }]
+      "options": [
+        {
+          "label": "草稿",
+          "value": "draft"
+        }
+      ]
     },
     {
       "label": "已发布",
       "options": [
-        { "label": "公开", "value": "public" },
-        { "label": "私密", "value": "private" },
-        { "label": "归档", "value": "archived" }
+        {
+          "label": "公开",
+          "value": "public"
+        },
+        {
+          "label": "私密",
+          "value": "private"
+        },
+        {
+          "label": "归档",
+          "value": "archived"
+        }
       ]
     }
   ],
-  "emojiList": ["🤩", "👍", "🎉", "👀", "👎", "💩"]
+  "emojiList": [
+    "🤩",
+    "👍",
+    "🎉",
+    "👀",
+    "👎",
+    "💩"
+  ],
+  "permissionOptions": [
+    {
+      "label": "创建Rote",
+      "value": "SENDROTE",
+      "checked": false,
+      "disabled": false
+    },
+    {
+      "label": "获取Rote",
+      "value": "GETROTE",
+      "checked": false,
+      "disabled": false
+    },
+    {
+      "label": "编辑Rote（包括删除）",
+      "value": "EDITROTE",
+      "checked": false,
+      "disabled": false
+    }
+  ]
 }

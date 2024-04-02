@@ -362,3 +362,80 @@ export async function getMySession(userid: any): Promise<any> {
       });
   });
 }
+
+export async function generateOpenKey(userid: any): Promise<any> {
+  console.log(userid);
+  return new Promise((resolve, reject) => {
+    prisma.userOpenKey
+      .create({
+        data: {
+          permissions: "SENDROTE",
+          userid,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch((error) => {
+        console.error("Error generate openkey:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function getMyOpenKey(userid: any): Promise<any> {
+  console.log(userid);
+  return new Promise((resolve, reject) => {
+    prisma.userOpenKey
+      .findMany({
+        where: {
+          userid,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch((error) => {
+        console.error("Error generate openkey:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function deleteMyOneOpenKey(userid: any, id: any): Promise<any> {
+  console.log(userid, id);
+  return new Promise((resolve, reject) => {
+    prisma.userOpenKey
+      .findUnique({
+        where: {
+          id,
+        },
+      })
+      .then((res) => {
+        if (!res) {
+          reject();
+        } else {
+          if (res.userid !== userid) {
+            reject();
+          }
+
+          prisma.userOpenKey
+            .delete({
+              where: {
+                id,
+              },
+            })
+            .then((res) => {
+              resolve(res);
+            })
+            .catch(() => {
+              reject();
+            });
+        }
+      })
+      .catch((error) => {
+        console.error("Error generate openkey:", error);
+        reject(error);
+      });
+  });
+}

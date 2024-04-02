@@ -56,3 +56,20 @@ export type Profile =
   | undefined;
 
 export type ProfileAction = { type: "updateProfile"; profile: Profile };
+
+export type OpenKey = {
+  id: string;
+  userid: string;
+  permissions: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpenKeys = OpenKey[];
+
+export type OpenKeysAction =
+  | { type: "addOne"; openKey: OpenKey }
+  | { type: "addMore"; openKeys: OpenKeys }
+  | { type: "init"; openKeys: OpenKeys }
+  | { type: "updateOne"; openKey: OpenKey }
+  | { type: "delete"; openKeyid: string };

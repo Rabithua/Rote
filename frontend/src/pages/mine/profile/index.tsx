@@ -1,22 +1,52 @@
-import { apiGetMySessions } from "@/api/rote/main";
+import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
+import OpenKeyItem from "@/components/openKey";
+import { useOpenKeys, useOpenKeysDispatch } from "@/state/openKeys";
 import { useProfile } from "@/state/profile";
-import { EditOutlined, UserOutlined } from "@ant-design/icons";
-import { Alert, Avatar } from "antd";
+import { EditOutlined, LoadingOutlined, UserOutlined } from "@ant-design/icons";
+import { Avatar, Divider } from "antd";
 import moment from "moment";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 function ProfilePage() {
   const profile = useProfile();
-  const [sessions, setSessions] = useState<any>([]);
+  const openKeys = useOpenKeys();
+  const openKeysDispatch = useOpenKeysDispatch();
+  const [openKeyLoading, setOpenKeyLoading] = useState(true);
 
   useEffect(() => {
-    apiGetMySessions()
+    apiGetMyOpenKey()
+      .then((res: any) => {
+        openKeysDispatch({
+          type: "init",
+          openKeys: res.data.data,
+        });
+        setOpenKeyLoading(false);
+      })
+      .catch(() => {
+        setOpenKeyLoading(false);
+      });
+  }, []);
+
+  function generateOpenKeyFun() {
+    const toastId = toast.loading("创建中...");
+    apiGenerateOpenKey()
       .then((res: any) => {
         console.log(res);
-        setSessions(res.data.data);
+        openKeysDispatch({
+          type: "addOne",
+          openKey: res.data.data,
+        });
+        toast.success("创建成功", {
+          id: toastId,
+        });
       })
-      .catch();
-  }, []);
+      .catch(() => {
+        toast.error("创建失败", {
+          id: toastId,
+        });
+      });
+  }
 
   return (
     <div>
@@ -56,7 +86,7 @@ function ProfilePage() {
       <div className=" flex mx-4 h-16">
         <Avatar
           className=" translate-y-[-50%] bg-white border-bgWhite border-[4px] bg-[#00000010] text-black shrink-0 sm:block"
-          size={{ xs: 80, sm: 80, md: 80, lg: 120, xl: 150, xxl: 200 }}
+          size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 150 }}
           icon={<UserOutlined className=" text-[#00000030]" />}
           src={profile?.avatar}
         />
@@ -75,35 +105,43 @@ function ProfilePage() {
           .utc(profile?.createdAt)
           .format("YYYY/MM/DD HH:mm:ss")}`}</div>
       </div>
-      {sessions.length > 0 && (
-        <>
-          <div className=" text-2xl font-semibold m-4">Session</div>
-          <Alert
-            className=" m-2"
-            type="warning"
-            showIcon
-            message="Session 拥有账户的所有权限，请谨慎保管"
-          />
-          <div className=" flex flex-col">
-            {sessions.map((session: any, index: any) => {
+      <Divider />
+      <div className=" text-2xl font-semibold m-4">
+        OpenKey <br />
+        <div className=" font-normal mt-2 text-sm text-gray-500">
+          OpenKey 可以轻易的使用权限指定的功能，合理分配权限，避免 OpenKey
+          泄露带来不必要的麻烦。
+        </div>
+      </div>
+      <div className=" flex flex-col">
+        {openKeyLoading ? (
+          <div className=" flex justify-center items-center py-8 gap-3 bg-white">
+            <LoadingOutlined />
+            <div>加载中...</div>
+          </div>
+        ) : (
+          <>
+            {openKeys.map((openKey: any, index: any) => {
               return (
-                <div
-                  key={`session_${index}`}
-                  className="  flex p-4 flex-wrap border-[#00000010] border-t-[1px]"
-                >
-                  <div className=" break-all text-red-700 mr-auto font-semibold font-mono">
-                    {session.sid}
-                  </div>
-                  <div className=" text-gray-500 flex gap-2 text-sm">
-                    {moment.utc(session?.expiresAt).format("YYYY/MM/DD HH:mm")}
-                    <div>前有效</div>
-                  </div>
-                </div>
+                <OpenKeyItem
+                  key={`openKey_${openKey.id}`}
+                  openKey={openKey}
+                ></OpenKeyItem>
               );
             })}
-          </div>
-        </>
-      )}
+            {openKeys.length === 0 && (
+              <div
+                onClick={generateOpenKeyFun}
+                className=" cursor-pointer p-4 bg-white border-[#00000010] border-t-[1px]"
+              >
+                <div className=" break-all mr-auto font-semibold font-mono">
+                  暂时还没有OpenKey，新建一个？
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
