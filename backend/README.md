@@ -35,7 +35,7 @@ npx prisma generate
 ### 构建镜像
 
 ```
-docker build -t rotebackend:0.1 .
+docker build -t rotebackend:latest .
 ```
 > 多平台镜像，prisma不支持arm/v7
 ```
