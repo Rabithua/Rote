@@ -17,7 +17,7 @@ export function apiAddRote(data: any): Promise<any> {
 }
 
 export function apiGetMyRote(data: any): Promise<any> {
-  let { filter, ...params } = data
+  let { filter, ...params } = data;
   // console.log(filter)
   return new Promise((resolve, reject) => {
     instance({
@@ -25,8 +25,8 @@ export function apiGetMyRote(data: any): Promise<any> {
       url: "/v1/api/getMyRote",
       params,
       data: {
-        filter: filter
-      }
+        filter: filter,
+      },
     })
       .then(function (response) {
         resolve(response);
@@ -89,6 +89,54 @@ export function apiGetMySessions(): Promise<any> {
     instance({
       method: "get",
       url: "/v1/api/getsession",
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function apiGetMyOpenKey(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/openkey",
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function apiGenerateOpenKey(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/openkey/generate",
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function apiDeleteOneMyOpenKey(id: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "delete",
+      url: "/v1/api/openkey",
+      data: {
+        id,
+      },
     })
       .then(function (response) {
         resolve(response);

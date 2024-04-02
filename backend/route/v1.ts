@@ -3,11 +3,14 @@ import {
   addSubScriptionToUser,
   createRote,
   createUser,
+  deleteMyOneOpenKey,
   deleteRote,
   editRote,
   findMyRote,
   findRoteById,
   findSubScriptionToUser,
+  generateOpenKey,
+  getMyOpenKey,
   getMySession,
   getMyTags,
   getUserInfoById,
@@ -523,6 +526,109 @@ routerV1.get("/getsession", isAuthenticated, function (req, res) {
     });
 });
 
+routerV1.get("/openkey/generate", isAuthenticated, function (req, res) {
+  const user = req.user as User;
+
+  if (!user.id) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return;
+  }
+
+  generateOpenKey(user.id)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/openkey", isAuthenticated, function (req, res) {
+  const user = req.user as User;
+
+  if (!user.id) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return;
+  }
+
+  getMyOpenKey(user.id)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.delete("/openkey", isAuthenticated, function (req, res) {
+  const user = req.user as User;
+
+  if (!user.id) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return;
+  }
+
+  const { id } = req.body;
+
+  if (!id || id.length !== 24) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Data error",
+    });
+    return;
+  }
+
+  deleteMyOneOpenKey(user.id, id)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
