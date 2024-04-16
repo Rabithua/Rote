@@ -11,7 +11,7 @@ const RotesDispatchContext = createContext<React.Dispatch<RotesAction> | null>(
 );
 
 export function RotesProvider({ children }: { children: ReactNode }) {
-  const [rotes, dispatch] = useReducer(rotesReducer, initialRotes);
+  const [rotes, dispatch] = useReducer(rotesReducer, []);
 
   return (
     <RotesContext.Provider value={rotes}>
@@ -72,14 +72,3 @@ function rotesReducer(rotes: Rotes, action: RotesAction): Rotes {
     }
   }
 }
-
-const initialRotes = await apiGetMyRote({
-  limit: 20,
-  skip: 0,
-})
-  .then((res) => {
-    return res.data.data;
-  })
-  .catch((err: any) => {
-    return [];
-  });
