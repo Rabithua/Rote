@@ -1,5 +1,9 @@
 import { PrismaClient, User } from "@prisma/client";
 
+import mainJson from "../json/main.json";
+
+const { stateType, roteType, editorType } = mainJson;
+
 export function sanitizeUserData(user: User) {
   delete (user as { passwordhash?: Buffer }).passwordhash;
   delete (user as { salt?: Buffer }).salt;
@@ -96,4 +100,81 @@ export async function checkPrisma(prisma: PrismaClient) {
   } catch (error) {
     console.error("Failed to connect to Prisma database.");
   }
+}
+
+// body数据格式校验
+export function bodyTypeCheck(req: any, res: any, next: any) {
+  const { type, state, editor, permissions } = req.body;
+
+  if (state && !stateType.includes(state.toString())) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "State wrong!",
+    });
+    return;
+  }
+
+  if (permissions && !Array.isArray(permissions)) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Permissions wrong!",
+    });
+    return;
+  }
+
+  if (type && !roteType.includes(type.toString())) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Type wrong!",
+    });
+    return;
+  }
+
+  if (editor && !editorType.includes(editor.toString())) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Editor wrong!",
+    });
+    return;
+  }
+
+  next();
+}
+
+// query数据格式校验
+export function queryTypeCheck(req: any, res: any, next: any) {
+  const { type, state, editor } = req.query;
+
+  if (state && !stateType.includes(state.toString())) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "State wrong!",
+    });
+    return;
+  }
+
+  if (type && !roteType.includes(type.toString())) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Type wrong!",
+    });
+    return;
+  }
+
+  if (editor && !editorType.includes(editor.toString())) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Editor wrong!",
+    });
+    return;
+  }
+
+  next();
 }

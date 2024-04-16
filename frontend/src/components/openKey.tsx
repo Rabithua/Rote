@@ -71,9 +71,7 @@ function OpenKeyItem({ openKey }: any) {
   }
 
   return (
-    <div
-      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-white border-[#00000010] border-t-[1px]"
-    >
+    <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-white border-[#00000010] border-t-[1px]">
       <div className=" flex items-center break-all mr-auto font-semibold font-mono">
         {openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)}
 
@@ -86,7 +84,7 @@ function OpenKeyItem({ openKey }: any) {
           <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
         </Popover>
       </div>
-      <div className=" ">权限：{openKey.permissions}</div>
+      <div className=" ">权限：{openKey.permissions.join(",")}</div>
 
       <Modal
         title="OpenKey"
@@ -96,7 +94,10 @@ function OpenKeyItem({ openKey }: any) {
         destroyOnClose={true}
         footer={null}
       >
-        <OpenKeyEditModel openKey={openKey}></OpenKeyEditModel>
+        <OpenKeyEditModel
+          close={onModelCancel}
+          openKey={openKey}
+        ></OpenKeyEditModel>
       </Modal>
     </div>
   );

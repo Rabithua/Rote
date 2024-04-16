@@ -56,7 +56,7 @@ model UserOpenKey {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   user        User     @relation(fields: [userid], references: [id])
   userid      String   @db.ObjectId
-  permissions String?  @default("SENDROTE")
+  permissions String[] @default(["SENDROTE"])
   createdAt   DateTime @default(now()) // 添加createdAt字段并使用@default指令
   updatedAt   DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
 }

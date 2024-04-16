@@ -54,5 +54,32 @@
       "checked": false,
       "disabled": false
     }
+  ],
+  "roteType": [
+    {
+      "name": "Rote",
+      "to": "rote",
+      "active": true
+    },
+    {
+      "name": "Journal",
+      "to": "journal",
+      "active": false
+    },
+    {
+      "name": "Todo",
+      "to": "todo",
+      "active": false
+    },
+    {
+      "name": "Lucky",
+      "to": "lucky",
+      "active": false
+    },
+    {
+      "name": "Article",
+      "to": "article",
+      "active": false
+    }
   ]
 }
