@@ -16,15 +16,17 @@ import { apiAddRote, apiGetMyTags } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 import { useRotesDispatch } from "@/state/rotes";
+import { useProfile } from "@/state/profile";
 const { stateOptions } = mainJson;
 
-function RoteInputSimple({ profile }: any) {
+function RoteInputSimple() {
   const navigate = useNavigate();
   const [novelValue, setNovelValue] = useState<any>("");
   const [tagsShow, setTagsShow] = useState(false);
   const tags = useTags();
   const [fileList, setFileList] = useState([]) as any;
   const [editType, setEditType] = useState("default");
+  const profile = useProfile();
 
   const [rote, setRote] = useState<any>({
     title: "",
@@ -109,7 +111,7 @@ function RoteInputSimple({ profile }: any) {
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
         icon={<UserOutlined className=" text-[#00000030]" />}
-        src={profile.avatar}
+        src={profile?.avatar}
       />
       <div className=" w-[90%] flex-1">
         <TextArea

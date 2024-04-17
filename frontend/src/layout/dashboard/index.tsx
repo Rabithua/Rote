@@ -12,7 +12,7 @@ import {
 } from "@ant-design/icons";
 import { useState } from "react";
 
-function LayoutMine() {
+function LayoutDashboard() {
   const navigate = useNavigate();
   const [ifshowLeftNav, setIfshowLeftNav] = useState(
     window.localStorage.getItem("ifshowLeftNav") === "false" ? false : true
@@ -36,8 +36,8 @@ function LayoutMine() {
     },
     {
       svg: <GlobalOutlined />,
-      link: "/#",
-      disable: true,
+      link: "/explore",
+      disable: false,
     },
 
     {
@@ -118,4 +118,4 @@ function LayoutMine() {
   );
 }
 
-export default LayoutMine;
+export default LayoutDashboard;

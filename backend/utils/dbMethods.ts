@@ -290,6 +290,57 @@ export async function findMyRote(
   });
 }
 
+export async function findPublicRote(
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    console.log(`filter: ${JSON.stringify(filter)}`);
+    // 修改代码跳过skip个数据，再拉取limit个数据返回
+    prisma.rote
+      .findMany({
+        where: {
+          AND: [
+            {
+              state: "public",
+            },
+            { ...filter },
+          ],
+        },
+        skip: skip ? skip : 0,
+        take: limit ? limit : 20,
+        orderBy: [
+          {
+            pin: "desc", // 根据 pin 字段从最大的开始获取
+          },
+          {
+            updatedAt: "desc", // 根据 updatedAt 字段从最新的开始获取
+          },
+        ],
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
+}
+
 export async function getUserInfoById(userid: any): Promise<any> {
   return new Promise((resolve, reject) => {
     prisma.user

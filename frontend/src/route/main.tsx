@@ -8,7 +8,7 @@ import {
 import { ProtectedRoute } from "./protectedRoute";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useProfile } from "@/state/profile";
-import LayoutMine from "@/layout/mine";
+import LayoutDashboard from "@/layout/dashboard";
 import LayoutHome from "@/layout/mine/home";
 
 const Landing = lazy(() => import("@/pages/landing"));
@@ -21,6 +21,7 @@ const ArticlePage = lazy(() => import("@/pages/mine/home/article"));
 const MineFilter = lazy(() => import("@/pages/filter"));
 const ProfilePage = lazy(() => import("@/pages/mine/profile/index"));
 const ErrorPage = lazy(() => import("@/pages/404"));
+const ExplorePage = lazy(() => import("@/pages/explore"));
 
 export default function GlobalRouterProvider() {
   const profile = useProfile();
@@ -44,7 +45,7 @@ export default function GlobalRouterProvider() {
     },
     {
       path: "mine",
-      element: <LayoutMine />,
+      element: <LayoutDashboard />,
       errorElement: <ErrorPage />,
       children: [
         {
@@ -126,6 +127,17 @@ export default function GlobalRouterProvider() {
           path: "profile",
           element: <ProfilePage />,
           errorElement: <ErrorPage />,
+        },
+      ],
+    },
+    {
+      path: "explore",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          index: true,
+          element: <ExplorePage />,
         },
       ],
     },

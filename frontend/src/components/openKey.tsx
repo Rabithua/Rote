@@ -79,7 +79,7 @@ function OpenKeyItem({ openKey }: any) {
   }
 
   async function copyToClipboard(): Promise<void> {
-    const text = `${process.env.REACT_APP_BASEURL_PRD}/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=public`;
+    const text = `${process.env.REACT_APP_BASEURL_PRD}/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
     try {
       await navigator.clipboard.writeText(text);
       toast.success("内容已复制到剪贴板");
@@ -117,16 +117,16 @@ function OpenKeyItem({ openKey }: any) {
       <div className="">权限：{openKey.permissions.join(",")}</div>
       <div className="">
         示例：
-        <span className=" font-mono">
+        <span className=" font-mono break-all">
           {process.env.REACT_APP_BASEURL_PRD}
           /v1/api/openkey/onerote?openkey=
           {hidekey
             ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)
             : openKey.id}
-          &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=public
+          &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private
         </span>
-        <span className=" pl-2" onClick={copyToClipboard}>
-          <CopyOutlined />
+        <span onClick={copyToClipboard}>
+          <CopyOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
         </span>
       </div>
       <Modal

@@ -37,6 +37,27 @@ export function apiGetMyRote(data: any): Promise<any> {
   });
 }
 
+export function apiGetPublicRote(data: any): Promise<any> {
+  let { filter, ...params } = data;
+  // console.log(filter)
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "post",
+      url: "/v1/api/getPublicRote",
+      params,
+      data: {
+        filter: filter,
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiEditMyRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({

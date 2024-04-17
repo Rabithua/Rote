@@ -8,6 +8,7 @@ import {
   editMyOneOpenKey,
   editRote,
   findMyRote,
+  findPublicRote,
   findRoteById,
   findSubScriptionToUser,
   generateOpenKey,
@@ -276,6 +277,33 @@ routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
     });
 });
 
+routerV1.post("/getPublicRote", (req, res) => {
+  const { skip, limit } = req.query;
+  const filter = req.body.filter || {};
+
+  const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
+  const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+
+  findPublicRote(parsedSkip, parsedLimit, filter)
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      console.log(e);
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
 routerV1.get("/getUserInfo", (req, res) => {
   const { userid } = req.query;
   if (!userid) {
@@ -368,15 +396,6 @@ routerV1.get("/oneRote", (req, res) => {
 routerV1.post("/oneRote", isAuthor, bodyTypeCheck, (req, res) => {
   console.log(req.body);
   const rote = req.body;
-
-  if (!rote || !rote.content) {
-    res.send({
-      code: 1,
-      msg: "error",
-      data: "Need data and content",
-    });
-    return;
-  }
 
   editRote(rote)
     .then(async (rote) => {
