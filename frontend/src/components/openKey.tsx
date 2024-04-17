@@ -3,6 +3,8 @@ import {
   DeleteOutlined,
   EditOutlined,
   EllipsisOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { Modal, Popover } from "antd";
 import { useState } from "react";
@@ -15,6 +17,7 @@ function OpenKeyItem({ openKey }: any) {
   const [open, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const openKeysDispatch = useOpenKeysDispatch();
+  const [hidekey, setHideKey] = useState(true);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -70,11 +73,27 @@ function OpenKeyItem({ openKey }: any) {
     // setEditRote({});
   }
 
+  function changeHideKey() {
+    setHideKey(!hidekey);
+  }
+
   return (
     <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-white border-[#00000010] border-t-[1px]">
       <div className=" flex items-center break-all mr-auto font-semibold font-mono">
-        {openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)}
-
+        {hidekey
+          ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)
+          : openKey.id}
+        {hidekey ? (
+          <EyeOutlined
+            onClick={changeHideKey}
+            className=" ml-1 hover:bg-[#00000010] rounded-full p-2"
+          />
+        ) : (
+          <EyeInvisibleOutlined
+            onClick={changeHideKey}
+            className=" ml-1 hover:bg-[#00000010] rounded-full p-2"
+          />
+        )}
         <Popover
           placement="bottomRight"
           open={open}
