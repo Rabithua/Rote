@@ -397,15 +397,6 @@ routerV1.post("/oneRote", isAuthor, bodyTypeCheck, (req, res) => {
   console.log(req.body);
   const rote = req.body;
 
-  if (!rote || !rote.content) {
-    res.send({
-      code: 1,
-      msg: "error",
-      data: "Need data and content",
-    });
-    return;
-  }
-
   editRote(rote)
     .then(async (rote) => {
       res.send({

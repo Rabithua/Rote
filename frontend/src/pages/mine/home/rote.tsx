@@ -18,6 +18,12 @@ function RotePage() {
 
   const profile = useProfile();
 
+  const countRef = useRef(rotes.length);
+
+  useEffect(() => {
+    countRef.current = rotes.length;
+  }, [rotes.length]);
+
   useEffect(() => {
     const options = {
       root: null, // 使用视口作为根元素
@@ -31,7 +37,7 @@ function RotePage() {
           // 元素进入视口
           apiGetMyRote({
             limit: 20,
-            skip: rotes.length,
+            skip: countRef.current,
           })
             .then((res) => {
               const rotes_api = res.data.data;
@@ -57,20 +63,14 @@ function RotePage() {
         observer.unobserve(loadingRef.current);
       }
     };
-  }, [rotes.length]);
+  }, []);
 
   return (
     <>
-      <RoteInputSimple profile={profile}></RoteInputSimple>
+      <RoteInputSimple></RoteInputSimple>
       <div className=" flex flex-col w-full relative">
         {rotes.map((item: any, index: any) => {
-          return (
-            <Rote
-              profile={profile}
-              rote_param={item}
-              key={`Rote_${index}`}
-            ></Rote>
-          );
+          return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
         })}
         {isLoadAll ? null : (
           <div

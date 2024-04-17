@@ -156,7 +156,6 @@ function MineFilter() {
         {rotes.map((item: any, index: any) => {
           return (
             <Rote
-              profile={profile}
               rote_param={item}
               key={`Rote_${index}`}
             ></Rote>

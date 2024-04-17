@@ -20,9 +20,10 @@ import toast from "react-hot-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useRotesDispatch } from "@/state/rotes";
 import { useFilterRotesDispatch } from "@/state/filterRotes";
+import { useProfile } from "@/state/profile";
 const { emojiList } = mainJson;
 
-function RoteInputSimple({ rote_param }: any) {
+function RoteItem({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
@@ -40,11 +41,16 @@ function RoteInputSimple({ rote_param }: any) {
     setOpen(newOpen);
   };
 
+  const profile = useProfile();
+
   useEffect(() => {
     setRote(rote_param);
   }, [rote_param]);
 
   function goFilter(tag: string) {
+    if (profile?.username !== rote.author.username) {
+      return;
+    }
     if (location.pathname.includes("/filter")) {
       navigate("../filter", {
         state: {
@@ -330,14 +336,16 @@ function RoteInputSimple({ rote_param }: any) {
               </Tooltip>
             ) : null}
           </span>
-          <Popover
-            placement="bottomRight"
-            open={open}
-            onOpenChange={handleOpenChange}
-            content={actionsMenu(rote)}
-          >
-            <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
-          </Popover>
+          {profile?.username === rote.author.username && (
+            <Popover
+              placement="bottomRight"
+              open={open}
+              onOpenChange={handleOpenChange}
+              content={actionsMenu(rote)}
+            >
+              <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
+            </Popover>
+          )}
         </div>
         {rote.editor === "normal" ? (
           <div className=" break-words whitespace-pre-line text-[16px]">
@@ -492,4 +500,4 @@ function RoteInputSimple({ rote_param }: any) {
   ) : null;
 }
 
-export default RoteInputSimple;
+export default RoteItem;
