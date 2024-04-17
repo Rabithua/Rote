@@ -1,5 +1,8 @@
 import { logOut, loginByPassword, registerBypassword } from "@/api/login/main";
+import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile, useProfileDispatch } from "@/state/profile";
+import { useRotesDispatch } from "@/state/rotes";
+import { useTagsDispatch } from "@/state/tags";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Input, Typography } from "antd";
 import { useState } from "react";
@@ -9,6 +12,9 @@ import { useNavigate } from "react-router-dom";
 function Login() {
   const profile = useProfile();
   const profileDispatch = useProfileDispatch();
+  const filterRotesDispatch = useFilterRotesDispatch();
+  const tagsDispatch = useTagsDispatch();
+  const rotesDispatch = useRotesDispatch();
   const [type, setType] = useState("login");
   const navigate = useNavigate();
   const [loginData, setLoginData] = useState({
@@ -69,6 +75,18 @@ function Login() {
         profileDispatch({
           type: "updateProfile",
           profile: undefined,
+        });
+        filterRotesDispatch({
+          type: "freshAll",
+          rotes: [],
+        });
+        tagsDispatch({
+          type: "freshAll",
+          tags: [],
+        });
+        rotesDispatch({
+          type: "freshAll",
+          rotes: [],
         });
       })
       .catch((err) => {

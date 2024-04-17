@@ -8,7 +8,8 @@ export type Tags = Tag[];
 export type TagsAction =
   | { type: "addOne"; tag: string }
   | { type: "addMore"; tags: Tags }
-  | { type: "deleted"; tag: string };
+  | { type: "deleted"; tag: string }
+  | { type: "freshAll"; tags: [] };
 
 export type Rote = {
   id: string;
