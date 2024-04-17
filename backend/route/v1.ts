@@ -8,6 +8,7 @@ import {
   editMyOneOpenKey,
   editRote,
   findMyRote,
+  findPublicRote,
   findRoteById,
   findSubScriptionToUser,
   generateOpenKey,
@@ -257,6 +258,33 @@ routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
   const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
 
   findMyRote(user.id, parsedSkip, parsedLimit, filter)
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      console.log(e);
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.post("/getPublicRote", (req, res) => {
+  const { skip, limit } = req.query;
+  const filter = req.body.filter || {};
+
+  const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
+  const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+
+  findPublicRote(parsedSkip, parsedLimit, filter)
     .then(async (rote) => {
       res.send({
         code: 0,
