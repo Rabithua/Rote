@@ -92,7 +92,7 @@ function RoteInputSimple() {
     setRote({
       title: "",
       content: "",
-      type: "Rote",
+      type: "rote",
       tags: [],
       state: "private",
       pin: false,

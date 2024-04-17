@@ -17,7 +17,11 @@ function MineFilter() {
   const rotes = useFilterRotes();
   const rotesDispatch = useFilterRotesDispatch();
 
-  const profile = useProfile();
+  const countRef = useRef(rotes.length);
+
+  useEffect(() => {
+    countRef.current = rotes.length;
+  }, [rotes.length]);
 
   const [filter, setFilter] = useState<any>({
     tags: location.state?.tags || [],
@@ -49,7 +53,7 @@ function MineFilter() {
           // 元素进入视口
           apiGetMyRote({
             limit: 20,
-            skip: rotes.length,
+            skip: countRef.current,
             filter: {
               tags: {
                 hasEvery: filter.tags,
@@ -60,7 +64,7 @@ function MineFilter() {
               if (res.data.data.length !== 20) {
                 setIsLoadAll(true);
               }
-              if (rotes.length > 0) {
+              if (countRef.current > 0) {
                 rotesDispatch({
                   type: "add",
                   rotes: res.data.data,
@@ -86,7 +90,7 @@ function MineFilter() {
         observer.unobserve(loadingRef.current);
       }
     };
-  }, [loadingRef, rotes]);
+  }, [filter]);
 
   useEffect(() => {
     // 监听state的变化
@@ -154,12 +158,7 @@ function MineFilter() {
       </div>
       <div className="">
         {rotes.map((item: any, index: any) => {
-          return (
-            <Rote
-              rote_param={item}
-              key={`Rote_${index}`}
-            ></Rote>
-          );
+          return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
         })}
         {isLoadAll ? null : (
           <div
