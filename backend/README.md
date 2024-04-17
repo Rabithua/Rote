@@ -41,3 +41,7 @@ docker build -t rotebackend:latest .
 ```
 docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .
 ```
+
+## 注意事项
+
+- 后端容器生成后会在本地拉取npm包，需要几分钟时间，这段时间后端将不可用

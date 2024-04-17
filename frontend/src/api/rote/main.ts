@@ -146,3 +146,25 @@ export function apiDeleteOneMyOpenKey(id: string): Promise<any> {
       });
   });
 }
+
+export function apiEditOneMyOpenKey(
+  id: string,
+  permissions: string[]
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "post",
+      url: "/v1/api/openkey",
+      data: {
+        id,
+        permissions,
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}

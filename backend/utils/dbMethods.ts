@@ -369,7 +369,7 @@ export async function generateOpenKey(userid: any): Promise<any> {
     prisma.userOpenKey
       .create({
         data: {
-          permissions: "SENDROTE",
+          permissions: ["SENDROTE"],
           userid,
         },
       })
@@ -431,6 +431,73 @@ export async function deleteMyOneOpenKey(userid: any, id: any): Promise<any> {
             .catch(() => {
               reject();
             });
+        }
+      })
+      .catch((error) => {
+        console.error("Error generate openkey:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function editMyOneOpenKey(
+  userid: any,
+  id: string,
+  permissions: string[]
+): Promise<any> {
+  console.log(userid, id);
+  return new Promise((resolve, reject) => {
+    prisma.userOpenKey
+      .findUnique({
+        where: {
+          id,
+        },
+      })
+      .then((res) => {
+        if (!res) {
+          reject("OpenKey not found!");
+        } else {
+          if (res.userid !== userid) {
+            reject("OpenKey user not match!");
+          }
+
+          prisma.userOpenKey
+            .update({
+              where: {
+                id,
+              },
+              data: {
+                permissions,
+              },
+            })
+            .then((res) => {
+              resolve(res);
+            })
+            .catch(() => {
+              reject();
+            });
+        }
+      })
+      .catch((error) => {
+        console.error("Error generate openkey:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function getOneOpenKey(id: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.userOpenKey
+      .findUnique({
+        where: {
+          id,
+        },
+      })
+      .then((res) => {
+        if (!res) {
+          reject("OpenKey not found!");
+        } else {
+          resolve(res);
         }
       })
       .catch((error) => {

@@ -5,6 +5,7 @@ import {
   createUser,
   deleteMyOneOpenKey,
   deleteRote,
+  editMyOneOpenKey,
   editRote,
   findMyRote,
   findRoteById,
@@ -13,6 +14,7 @@ import {
   getMyOpenKey,
   getMySession,
   getMyTags,
+  getOneOpenKey,
   getUserInfoById,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
@@ -22,11 +24,16 @@ import upload from "../utils/upload";
 import passport from "passport";
 import multer from "multer";
 import {
+  bodyTypeCheck,
   isAdmin,
   isAuthenticated,
   isAuthor,
+  queryTypeCheck,
   sanitizeUserData,
 } from "../utils/main";
+import mainJson from "../json/main.json";
+
+const { stateType, roteType } = mainJson;
 
 let routerV1 = express.Router();
 
@@ -200,7 +207,7 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
   }
 });
 
-routerV1.post("/addRote", isAuthenticated, (req, res) => {
+routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
   const { title, content, type, tags, state, pin, editor, attachments } =
     req.body;
   const user = req.user as User;
@@ -218,7 +225,7 @@ routerV1.post("/addRote", isAuthenticated, (req, res) => {
     type,
     tags,
     state,
-    pin,
+    pin: !!pin,
     editor,
     attachments,
     authorid: user.id,
@@ -358,17 +365,19 @@ routerV1.get("/oneRote", (req, res) => {
     });
 });
 
-routerV1.post("/oneRote", isAuthor, (req, res) => {
+routerV1.post("/oneRote", isAuthor, bodyTypeCheck, (req, res) => {
   console.log(req.body);
   const rote = req.body;
-  if (!rote) {
+
+  if (!rote || !rote.content) {
     res.send({
       code: 1,
       msg: "error",
-      data: "Need data",
+      data: "Need data and content",
     });
     return;
   }
+
   editRote(rote)
     .then(async (rote) => {
       res.send({
@@ -545,7 +554,6 @@ routerV1.get("/openkey/generate", isAuthenticated, function (req, res) {
         msg: "ok",
         data,
       });
-      await prisma.$disconnect();
     })
     .catch(async (e) => {
       res.send({
@@ -553,7 +561,6 @@ routerV1.get("/openkey/generate", isAuthenticated, function (req, res) {
         msg: "error",
         data: e,
       });
-      await prisma.$disconnect();
     });
 });
 
@@ -629,6 +636,107 @@ routerV1.delete("/openkey", isAuthenticated, function (req, res) {
       await prisma.$disconnect();
     });
 });
+
+routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
+  const user = req.user as User;
+
+  if (!user.id) {
+    res.send({
+      code: 1,
+      msg: "Need userid",
+      data: null,
+    });
+    return;
+  }
+
+  const { id, permissions } = req.body;
+
+  if (!id || !permissions) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Data error",
+    });
+    return;
+  }
+
+  editMyOneOpenKey(user.id, id, permissions)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/openkey/onerote", queryTypeCheck, (req, res) => {
+  const { openkey, content, state, type, tag, pin } = req.query;
+
+  if (!openkey || !content) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Need openkey and content!",
+    });
+    return;
+  }
+
+  const rote = {
+    content,
+    state: state || "private",
+    type: type || "rote",
+    tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
+    pin: !!pin,
+  };
+
+  getOneOpenKey(openkey.toString())
+    .then(async (e) => {
+      if (!e.permissions.includes("SENDROTE")) {
+        res.send({
+          code: 1,
+          msg: "error",
+          data: "OpenKey permission unmatch!",
+        });
+        return;
+      }
+      createRote({
+        ...rote,
+        authorid: e.userid,
+      })
+        .then(async (rote) => {
+          res.send({
+            code: 0,
+            msg: "ok",
+            data: rote,
+          });
+        })
+        .catch(async (e) => {
+          res.send({
+            code: 1,
+            msg: "error",
+            data: e,
+          });
+        });
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+    });
+});
+
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {

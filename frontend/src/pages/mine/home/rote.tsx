@@ -28,7 +28,6 @@ function RotePage() {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          console.log(rotes.length);
           // 元素进入视口
           apiGetMyRote({
             limit: 20,

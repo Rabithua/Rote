@@ -1,0 +1,19 @@
+{
+    "stateType": [
+        "draft",
+        "public",
+        "private",
+        "archived"
+    ],
+    "roteType": [
+        "rote",
+        "journal",
+        "todo",
+        "lucky",
+        "article"
+    ],
+    "editorType": [
+        "normal",
+        "noval"
+    ]
+}
