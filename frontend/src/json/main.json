@@ -57,27 +57,27 @@
   ],
   "roteType": [
     {
-      "name": "Rote",
+      "name": "rote",
       "to": "rote",
       "active": true
     },
     {
-      "name": "Journal",
+      "name": "journal",
       "to": "journal",
       "active": false
     },
     {
-      "name": "Todo",
+      "name": "todo",
       "to": "todo",
       "active": false
     },
     {
-      "name": "Lucky",
+      "name": "lucky",
       "to": "lucky",
       "active": false
     },
     {
-      "name": "Article",
+      "name": "article",
       "to": "article",
       "active": false
     }

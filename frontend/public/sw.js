@@ -24,10 +24,10 @@ const urlBase64ToUint8Array = base64String => {
 
 const saveSubscription = async (subscription) => {
     let data = {
-        userId: "659f9ff5eefc77f14a8ce96c",
+        userId: "65f2f28eaa85f74b004888a8",
         subScription: subscription
     }
-    const response = await fetch('http://127.0.0.1:3000/v1/api/addSwSubScription', {
+    const response = await fetch('https://altas.rote.ink/v1/api/addSwSubScription', {
         method: 'post',
         headers: { 'Content-type': "application/json" },
         body: JSON.stringify(data)
