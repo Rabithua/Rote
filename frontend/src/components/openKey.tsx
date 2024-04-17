@@ -1,8 +1,11 @@
 import rote from "@/pages/mine/home/rote";
 import {
+  CopyOutlined,
   DeleteOutlined,
   EditOutlined,
   EllipsisOutlined,
+  EyeInvisibleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { Modal, Popover } from "antd";
 import { useState } from "react";
@@ -15,6 +18,7 @@ function OpenKeyItem({ openKey }: any) {
   const [open, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const openKeysDispatch = useOpenKeysDispatch();
+  const [hidekey, setHideKey] = useState(true);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -70,11 +74,37 @@ function OpenKeyItem({ openKey }: any) {
     // setEditRote({});
   }
 
+  function changeHideKey() {
+    setHideKey(!hidekey);
+  }
+
+  async function copyToClipboard(): Promise<void> {
+    const text = `${process.env.REACT_APP_BASEURL_PRD}/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=public`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("内容已复制到剪贴板");
+    } catch (err) {
+      toast.error("无法复制内容到剪贴板");
+    }
+  }
+
   return (
     <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-white border-[#00000010] border-t-[1px]">
       <div className=" flex items-center break-all mr-auto font-semibold font-mono">
-        {openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)}
-
+        {hidekey
+          ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)
+          : openKey.id}
+        {hidekey ? (
+          <EyeOutlined
+            onClick={changeHideKey}
+            className=" ml-1 hover:bg-[#00000010] rounded-full p-2"
+          />
+        ) : (
+          <EyeInvisibleOutlined
+            onClick={changeHideKey}
+            className=" ml-1 hover:bg-[#00000010] rounded-full p-2"
+          />
+        )}
         <Popover
           placement="bottomRight"
           open={open}
@@ -84,8 +114,21 @@ function OpenKeyItem({ openKey }: any) {
           <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
         </Popover>
       </div>
-      <div className=" ">权限：{openKey.permissions.join(",")}</div>
-
+      <div className="">权限：{openKey.permissions.join(",")}</div>
+      <div className="">
+        示例：
+        <span className=" font-mono">
+          {process.env.REACT_APP_BASEURL_PRD}
+          /v1/api/openkey/onerote?openkey=
+          {hidekey
+            ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)
+            : openKey.id}
+          &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=public
+        </span>
+        <span className=" pl-2" onClick={copyToClipboard}>
+          <CopyOutlined />
+        </span>
+      </div>
       <Modal
         title="OpenKey"
         open={isModalOpen}
