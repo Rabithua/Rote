@@ -19,7 +19,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
   const [newRote, setNewRote] = useState<any>({
     title: "",
     content: "",
-    type: "Rote",
+    type: "rote",
     tags: [],
     state: "private",
     pin: false,

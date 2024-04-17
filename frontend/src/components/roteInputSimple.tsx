@@ -29,7 +29,7 @@ function RoteInputSimple({ profile }: any) {
   const [rote, setRote] = useState<any>({
     title: "",
     content: "",
-    type: "Rote",
+    type: "rote",
     tags: [],
     state: "private",
     pin: false,
