@@ -7,6 +7,7 @@ import {
   deleteMyOneOpenKey,
   deleteRote,
   editMyOneOpenKey,
+  editMyProfile,
   editRote,
   findMyRote,
   findPublicRote,
@@ -540,6 +541,27 @@ routerV1.get("/profile", isAuthenticated, function (req, res) {
     msg: "ok",
     data: req.user as User,
   });
+});
+
+routerV1.post("/profile", isAuthenticated, function (req, res) {
+  const user = req.user as User;
+  editMyProfile(user.id, req.body)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
 });
 
 routerV1.get("/getsession", isAuthenticated, function (req, res) {

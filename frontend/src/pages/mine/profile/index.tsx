@@ -1,18 +1,30 @@
 import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
 import OpenKeyItem from "@/components/openKey";
 import { useOpenKeys, useOpenKeysDispatch } from "@/state/openKeys";
-import { useProfile } from "@/state/profile";
+import { useProfile, useProfileDispatch } from "@/state/profile";
 import { EditOutlined, LoadingOutlined, UserOutlined } from "@ant-design/icons";
-import { Avatar, Divider } from "antd";
+import { Avatar, Divider, Input, Modal, Typography } from "antd";
+import TextArea from "antd/es/input/TextArea";
 import moment from "moment";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
+import AvatarEditor from "react-avatar-editor";
+import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
 
 function ProfilePage() {
+  const inputAvatarRef = useRef(null);
+  const AvatarEditorRef = useRef(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const profile = useProfile();
+  const profileDispatch = useProfileDispatch();
+  const [editProfile, setEditProfile] = useState<any>(profile);
   const openKeys = useOpenKeys();
   const openKeysDispatch = useOpenKeysDispatch();
   const [openKeyLoading, setOpenKeyLoading] = useState(true);
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [profileEditing, setProfileEditing] = useState(false);
 
   useEffect(() => {
     apiGetMyOpenKey()
@@ -45,6 +57,77 @@ function ProfilePage() {
         toast.error("创建失败", {
           id: toastId,
         });
+      });
+  }
+
+  function onModelCancel() {
+    setIsModalOpen(false);
+    setEditProfile({});
+  }
+
+  function handleFileChange(event: any) {
+    const selectedFile = event.target.files[0];
+    // 在这里处理选择的文件
+    console.log(selectedFile);
+    setEditProfile({
+      ...editProfile,
+      avatar_file: selectedFile,
+    });
+    setIsAvatarModalOpen(true);
+  }
+
+  async function avatarEditSave() {
+    if (AvatarEditorRef.current) {
+      setAvatarUploading(true);
+      // @ts-ignore
+      const canvas = AvatarEditorRef.current.getImage().toDataURL();
+      fetch(canvas)
+        .then((res) => res.blob())
+        .then((blob) => {
+          try {
+            const formData = new FormData();
+            formData.append(
+              "file",
+              new File([blob], "cropped_image.png", {
+                type: "image/png",
+              })
+            );
+            apiUploadAvatar(formData).then((res) => {
+              console.log(res);
+              setEditProfile({
+                ...editProfile,
+                avatar: res.data.data[0].url,
+              });
+              setAvatarUploading(false);
+              setIsAvatarModalOpen(false);
+              toast.success("上传成功");
+            });
+          } catch (error) {
+            toast.error("上传失败");
+            setAvatarUploading(false);
+            console.error("Error uploading image:", error);
+          }
+        });
+    }
+  }
+
+  function saveProfile() {
+    setProfileEditing(true);
+    apiSaveProfile(editProfile)
+      .then((res) => {
+        toast.success("修改成功");
+        profileDispatch({
+          type: "updateProfile",
+          profile: res.data.data,
+        });
+        setIsModalOpen(false);
+        setProfileEditing(false);
+      })
+      .catch((err) => {
+        toast.error("修改失败");
+        setIsModalOpen(false);
+        setProfileEditing(false);
+        console.error("Error edit Profile:", err);
       });
   }
 
@@ -90,7 +173,12 @@ function ProfilePage() {
           icon={<UserOutlined className=" text-[#00000030]" />}
           src={profile?.avatar}
         />
-        <div className=" mt-auto h-fit cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95">
+        <div
+          className=" mt-auto h-fit cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
+          onClick={() => {
+            setIsModalOpen(true);
+          }}
+        >
           <EditOutlined />
           编辑资料
         </div>
@@ -142,6 +230,142 @@ function ProfilePage() {
           </>
         )}
       </div>
+      <Modal
+        title="编辑资料"
+        open={isModalOpen}
+        onCancel={onModelCancel}
+        maskClosable={true}
+        destroyOnClose={true}
+        footer={null}
+      >
+        <div className=" cursor-default bg-white w-full flex gap-5">
+          <div className=" flex flex-col gap-1 w-full">
+            <input
+              type="file"
+              accept="image/*"
+              max="1"
+              className=" hidden"
+              ref={inputAvatarRef}
+              onChange={handleFileChange}
+            />
+            <Avatar
+              className=" bg-[#00000010] mx-auto my-2 text-black shrink-0 block"
+              size={{ xs: 60, sm: 60, md: 80, lg: 80, xl: 80, xxl: 80 }}
+              icon={<UserOutlined className=" text-[#00000030]" />}
+              src={editProfile.avatar}
+              onClick={() => {
+                //@ts-ignore
+                inputAvatarRef.current?.click();
+              }}
+            />
+
+            <Typography.Title className=" mt-2" level={5}>
+              邮箱
+            </Typography.Title>
+            <Input
+              disabled
+              className=" text-lg w-full rounded-md font-mono border-[2px]"
+              maxLength={20}
+              value={editProfile.email}
+            />
+            <Typography.Title className=" mt-2" level={5}>
+              用户名
+            </Typography.Title>
+            <Input
+              placeholder="输入你的用户名..."
+              className=" text-lg w-full rounded-md font-mono border-[2px]"
+              maxLength={20}
+              value={editProfile.username}
+              onInput={(e) => {
+                setEditProfile({
+                  ...editProfile,
+                  username: e.currentTarget.value,
+                });
+              }}
+            />
+            <Typography.Title className=" mt-2" level={5}>
+              昵称
+            </Typography.Title>
+            <Input
+              placeholder="输入你的昵称..."
+              className=" text-lg w-full rounded-md font-mono border-[2px]"
+              maxLength={20}
+              value={editProfile.nickname}
+              onInput={(e) => {
+                setEditProfile({
+                  ...editProfile,
+                  nickname: e.currentTarget.value,
+                });
+              }}
+            />
+            <Typography.Title className=" mt-2" level={5}>
+              简介
+            </Typography.Title>
+            <TextArea
+              placeholder="输入你的简介..."
+              className=" text-lg w-full rounded-md border-[2px]"
+              maxLength={300}
+              value={editProfile.description}
+              style={{ height: 120, resize: "none" }}
+              onInput={(e) => {
+                setEditProfile({
+                  ...editProfile,
+                  description: e.currentTarget.value,
+                });
+              }}
+            />
+
+            <div
+              className={` mt-4 cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold ${
+                profileEditing ? " bg-gray-700" : "bg-black"
+              }`}
+              onClick={() => {
+                if (!profileEditing) {
+                  saveProfile();
+                }
+              }}
+            >
+              {profileEditing && <LoadingOutlined className=" mr-2" />}
+              {profileEditing ? "修改中..." : "保存"}
+            </div>
+          </div>
+        </div>
+      </Modal>
+      <Modal
+        title="剪裁头像"
+        open={isAvatarModalOpen}
+        onCancel={() => {
+          setIsAvatarModalOpen(false);
+        }}
+        maskClosable={true}
+        destroyOnClose={true}
+        footer={null}
+      >
+        <AvatarEditor
+          ref={AvatarEditorRef}
+          className=" mx-auto border-[2px]"
+          image={editProfile.avatar_file}
+          width={250}
+          height={250}
+          border={50}
+          color={[255, 255, 255, 0.6]} // RGBA
+          scale={1.2}
+          rotate={0}
+        />
+        <div
+          className={` mt-4 cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold ${
+            avatarUploading ? " bg-gray-700" : "bg-black"
+          }`}
+          onClick={() => {
+            if (!avatarUploading) {
+              avatarEditSave();
+            }
+          }}
+        >
+          {avatarUploading && <LoadingOutlined className=" mr-2" />}
+          {avatarUploading ? "上传中..." : "完成"}
+        </div>
+      </Modal>
     </div>
   );
 }

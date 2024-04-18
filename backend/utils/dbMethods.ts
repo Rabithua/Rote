@@ -589,3 +589,28 @@ export async function createAttachments(
     }
   });
 }
+
+export async function editMyProfile(userid: any, data: any): Promise<any> {
+  console.log(userid);
+  return new Promise((resolve, reject) => {
+    prisma.user
+      .update({
+        where: {
+          id: userid,
+        },
+        data: {
+          avatar: data.avatar || undefined,
+          nickname: data.nickname || undefined,
+          username: data.username || undefined,
+          description: data.description || undefined,
+          cover: data.cover || undefined,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch(() => {
+        reject();
+      });
+  });
+}
