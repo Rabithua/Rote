@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addSubScriptionToUser,
+  createAttachments,
   createRote,
   createUser,
   deleteMyOneOpenKey,
@@ -176,7 +177,7 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
   let notificationOptions = {
     title: "自在废物",
     body: "这是我的博客。",
-    image: "https://rote-r2.zzfw.cc/others/logo.png",
+    image: "https://r2.rote.ink/others/logo.png",
     data: {
       type: "openUrl",
       url: "https://rabithua.club",
@@ -451,19 +452,37 @@ routerV1.post(
   isAuthenticated,
   upload.array("file"),
   async (req: any, res) => {
+    const user = req.user as User;
+    const roteid = req.query.roteid || undefined;
     console.log(req.files);
+    if (!req.files) {
+      res.send({
+        code: 1,
+        msg: "error",
+        data: "Need files!",
+      });
+      return;
+    }
     let newFiles = req.files.map((file: any, index: any) => {
       file.location = `https://${process.env.R2_URL_PREFIX}/${file.key}`;
       return file;
     });
-    console.log(newFiles);
-    res.send({
-      code: 0,
-      msg: "ok",
-      data: {
-        files: newFiles,
-      },
-    });
+    createAttachments(user.id, roteid, newFiles)
+      .then((data) => {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data,
+        });
+      })
+      .catch(async (e) => {
+        res.send({
+          code: 1,
+          msg: "error",
+          data: e,
+        });
+        await prisma.$disconnect();
+      });
   }
 );
 

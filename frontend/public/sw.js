@@ -51,10 +51,10 @@ self.addEventListener("push", e => {
         let notice = JSON.parse(e.data.text())
         let notification = {
             body: notice.body || '未设置body',
-            icon: notice.icon || 'https://rote-r2.zzfw.cc/others/logo.png',
+            icon: notice.icon || 'https://r2.rote.ink/others/logo.png',
             timestamp: Date.now(),
             tag: notice.tag || 'default',
-            badge: 'https://rote-r2.zzfw.cc/others/logo.png',
+            badge: 'https://r2.rote.ink/others/logo.png',
             image: notice.image && notice.image,
             vibrate: [300],
             data: notice.data && notice.data
@@ -67,10 +67,10 @@ self.addEventListener("push", e => {
     } catch (error) {
         let notification = {
             body: '未设置body',
-            icon: 'https://rote-r2.zzfw.cc/others/logo.png',
+            icon: 'https://r2.rote.ink/others/logo.png',
             timestamp: Date.now(),
             tag: 'default',
-            badge: 'https://rote-r2.zzfw.cc/others/logo.png',
+            badge: 'https://r2.rote.ink/others/logo.png',
             image: '',
             vibrate: [300],
             data: ''
