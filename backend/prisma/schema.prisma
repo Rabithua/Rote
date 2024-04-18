@@ -21,7 +21,7 @@ model User {
   nickname           String?
   description        String?
   cover              String?
-  avatar             String               @default("https://rote-r2.zzfw.cc/others/logo.png")
+  avatar             String               @default("https://r2.rote.ink/others/logo.png")
   usersetting        Usersetting?
   userswsubscription UserSwSubScription[]
   rotes              Rote[]
@@ -83,12 +83,14 @@ model Rote {
 model Attachment {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   url       String
-  user      User     @relation(fields: [userid], references: [id])
-  userid    String   @db.ObjectId
-  rote      Rote     @relation(fields: [roteid], references: [id])
-  roteid    String   @db.ObjectId
+  userid    String?  @db.ObjectId
+  roteid    String?  @db.ObjectId
+  storage   String
+  details   Json
   createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
   updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  user      User?    @relation(fields: [userid], references: [id])
+  rote      Rote?    @relation(fields: [roteid], references: [id])
 }
 
 model UserReaction {
@@ -107,8 +109,8 @@ model VisitorReaction {
   type      String
   rote      Rote     @relation(fields: [roteid], references: [id])
   roteid    String   @db.ObjectId
-  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Session {
@@ -116,4 +118,12 @@ model Session {
   sid       String   @unique
   data      String
   expiresAt DateTime
+}
+
+model SystemSetting {
+  id               String   @id @map("_id")
+  webClientSetting Json
+  storage          Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

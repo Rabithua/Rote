@@ -557,3 +557,60 @@ export async function getOneOpenKey(id: string): Promise<any> {
       });
   });
 }
+
+export async function createAttachments(
+  userid: any,
+  roteid: any,
+  data: any
+): Promise<any> {
+  console.log(userid);
+  const attachments = data.map((e: any) => {
+    return {
+      userid,
+      roteid,
+      url: e.location,
+      details: e,
+      storage: "R2",
+    };
+  });
+  return new Promise(async (resolve, reject) => {
+    try {
+      const attachments_new = await prisma.$transaction(
+        attachments.map((attachment: any) =>
+          prisma.attachment.create({
+            data: attachment,
+          })
+        )
+      );
+      resolve(attachments_new);
+    } catch (error) {
+      console.error("Error create attachment:", error);
+      reject(error);
+    }
+  });
+}
+
+export async function editMyProfile(userid: any, data: any): Promise<any> {
+  console.log(userid);
+  return new Promise((resolve, reject) => {
+    prisma.user
+      .update({
+        where: {
+          id: userid,
+        },
+        data: {
+          avatar: data.avatar || undefined,
+          nickname: data.nickname || undefined,
+          username: data.username || undefined,
+          description: data.description || undefined,
+          cover: data.cover || undefined,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch(() => {
+        reject();
+      });
+  });
+}

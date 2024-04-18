@@ -70,7 +70,7 @@ function LayoutDashboard() {
             {icons.map((icon, index) => {
               return (
                 <div
-                  className={` duration-300 flex gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010] ${
+                  className={` duration-300 flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] ${
                     icon.disable ? "cursor-not-allowed" : "cursor-pointer"
                   }`}
                   key={`leftLinks_${index}`}
@@ -81,9 +81,7 @@ function LayoutDashboard() {
                     navigate(icon.link);
                   }}
                 >
-                  <div className=" w-8 h-8 p-1 shrink-0 text-xl">
-                    {icon.svg}
-                  </div>
+                  {icon.svg}
                   <div className=" shrink-0 hidden tracking-widest md:block">
                     {t(`leftNavBar.${index}`)}
                   </div>
