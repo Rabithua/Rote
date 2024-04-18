@@ -1,11 +1,10 @@
-import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
-import { useProfile } from "@/state/profile";
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
 import { GlobalOutlined, LoadingOutlined, UpOutlined } from "@ant-design/icons";
 import { Empty } from "antd";
 import { useEffect, useRef, useState } from "react";
 import Rote from "@/components/Rote";
 import { apiGetMyRote, apiGetPublicRote } from "@/api/rote/main";
+import { useExploreRotes, useExploreRotesDispatch } from "@/state/exploreRotes";
 
 function ExplorePage() {
   const loadingRef = useRef(null);
@@ -14,8 +13,8 @@ function ExplorePage() {
   const [isLoadAll, setIsLoadAll] = useState(false);
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
-  const rotes = useFilterRotes();
-  const rotesDispatch = useFilterRotesDispatch();
+  const rotes = useExploreRotes();
+  const rotesDispatch = useExploreRotesDispatch();
 
   const countRef = useRef(rotes.length);
 
