@@ -62,7 +62,7 @@ function ProfilePage() {
 
   function onModelCancel() {
     setIsModalOpen(false);
-    setEditProfile({});
+    setEditProfile(profile);
   }
 
   function handleFileChange(event: any) {
@@ -133,9 +133,9 @@ function ProfilePage() {
 
   return (
     <div>
-      <div className=" w-full max-h-80 overflow-hidden">
+      <div className=" w-full max-h-80 relative overflow-hidden">
         {profile?.cover ? (
-          <img src={profile?.cover} alt="" />
+          <img className=" w-full h-full" src={profile?.cover} alt="" />
         ) : (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -249,7 +249,7 @@ function ProfilePage() {
               onChange={handleFileChange}
             />
             <Avatar
-              className=" bg-[#00000010] mx-auto my-2 text-black shrink-0 block"
+              className=" cursor-pointer bg-[#00000010] mx-auto my-2 text-black shrink-0 block"
               size={{ xs: 60, sm: 60, md: 80, lg: 80, xl: 80, xxl: 80 }}
               icon={<UserOutlined className=" text-[#00000030]" />}
               src={editProfile.avatar}
@@ -272,16 +272,10 @@ function ProfilePage() {
               用户名
             </Typography.Title>
             <Input
-              placeholder="输入你的用户名..."
+              disabled
               className=" text-lg w-full rounded-md font-mono border-[2px]"
               maxLength={20}
               value={editProfile.username}
-              onInput={(e) => {
-                setEditProfile({
-                  ...editProfile,
-                  username: e.currentTarget.value,
-                });
-              }}
             />
             <Typography.Title className=" mt-2" level={5}>
               昵称

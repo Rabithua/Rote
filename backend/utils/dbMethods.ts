@@ -264,7 +264,7 @@ export async function findMyRote(
             pin: "desc", // 根据 pin 字段从最大的开始获取
           },
           {
-            updatedAt: "desc", // 根据 updatedAt 字段从最新的开始获取
+            createdAt: "desc", // 根据 updatedAt 字段从最新的开始获取
           },
         ],
         include: {
@@ -312,10 +312,7 @@ export async function findPublicRote(
         take: limit ? limit : 20,
         orderBy: [
           {
-            pin: "desc", // 根据 pin 字段从最大的开始获取
-          },
-          {
-            updatedAt: "desc", // 根据 updatedAt 字段从最新的开始获取
+            createdAt: "desc", // 根据 updatedAt 字段从最新的开始获取
           },
         ],
         include: {
@@ -601,7 +598,6 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
         data: {
           avatar: data.avatar || undefined,
           nickname: data.nickname || undefined,
-          username: data.username || undefined,
           description: data.description || undefined,
           cover: data.cover || undefined,
         },

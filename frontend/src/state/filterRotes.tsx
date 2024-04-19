@@ -1,7 +1,7 @@
 // 使用context加reducer作为全局状态管理系统
 
 import { Rote, Rotes, RotesAction } from "@/types/main";
-import { sortRotesByPinAndUpdatedAt } from "@/utils/main";
+import { sortRotesByPinAndCreatedAt } from "@/utils/main";
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 
 const FilterRotesContext = createContext<Rotes | null>(null);
@@ -41,12 +41,12 @@ function filterRotesReducer(rotes: Rotes, action: RotesAction): Rotes {
   switch (action.type) {
     case "add": {
       const rotes_unOrder = [...rotes, ...action.rotes];
-      return sortRotesByPinAndUpdatedAt(rotes_unOrder);
+      return sortRotesByPinAndCreatedAt(rotes_unOrder);
     }
 
     case "addOne": {
       const rotes_unOrder = [...rotes, action.rote];
-      return sortRotesByPinAndUpdatedAt(rotes_unOrder);
+      return sortRotesByPinAndCreatedAt(rotes_unOrder);
     }
 
     case "deleted": {
@@ -59,7 +59,7 @@ function filterRotesReducer(rotes: Rotes, action: RotesAction): Rotes {
 
     case "updateOne": {
       // 替换rotes中rote.id与action.rote.id相同的对象，替换为action.rotr
-      return sortRotesByPinAndUpdatedAt(
+      return sortRotesByPinAndCreatedAt(
         rotes.map((rote: Rote) =>
           rote.id === action.rote.id ? action.rote : rote
         )

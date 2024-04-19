@@ -48,10 +48,10 @@ export async function requestNotificationPermission() {
   }
 }
 
-export function sortRotesByPinAndUpdatedAt(objects: Rotes): Rotes {
+export function sortRotesByPinAndCreatedAt(objects: Rotes): Rotes {
   return objects.sort((a, b) => {
     if (a.pin === b.pin) {
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     } else {
       return a.pin ? -1 : 1;
     }
