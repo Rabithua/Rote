@@ -70,7 +70,7 @@ function LayoutDashboard() {
             {icons.map((icon, index) => {
               return (
                 <div
-                  className={` duration-300 flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] ${
+                  className={` duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] ${
                     icon.disable ? "cursor-not-allowed" : "cursor-pointer"
                   }`}
                   key={`leftLinks_${index}`}

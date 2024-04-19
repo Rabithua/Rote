@@ -270,12 +270,18 @@ function RoteItem({ rote_param }: any) {
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
         icon={<UserOutlined className=" text-[#00000030]" />}
-        src={rote.author.avatar}
+        src={
+          rote.author.username === profile?.username
+            ? profile?.avatar
+            : rote.author.avatar
+        }
       />
       <div className=" flex flex-col w-full">
         <div className=" cursor-default w-full flex items-center">
           <span className=" cursor-pointer font-semibold hover:underline">
-            {rote.author.nickname}
+            {rote.author.username === profile?.username
+              ? profile?.nickname
+              : rote.author.nickname}
           </span>
           <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
             {`@${rote.author.username}`}
