@@ -345,11 +345,11 @@ function ProfilePage() {
           ref={AvatarEditorRef}
           className=" mx-auto border-[2px]"
           image={editProfile.avatar_file}
-          width={250}
-          height={250}
+          width={150}
+          height={150}
           border={50}
-          color={[255, 255, 255, 0.6]} // RGBA
-          scale={1.2}
+          color={[0, 0, 0, 0.6]} // RGBA
+          scale={1}
           rotate={0}
         />
         <div
