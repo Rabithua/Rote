@@ -217,16 +217,16 @@ function ProfilePage() {
                 ></OpenKeyItem>
               );
             })}
-            {openKeys.length === 0 && (
-              <div
-                onClick={generateOpenKeyFun}
-                className=" cursor-pointer p-4 bg-white border-[#00000010] border-t-[1px]"
-              >
-                <div className=" break-all mr-auto font-semibold font-mono">
-                  暂时还没有OpenKey，新建一个？
-                </div>
+            <div
+              onClick={generateOpenKeyFun}
+              className=" cursor-pointer p-4 bg-white border-[#00000010] border-t-[1px]"
+            >
+              <div className=" break-all mr-auto font-semibold font-mono">
+                {openKeys.length === 0
+                  ? "暂时还没有OpenKey，新建一个？"
+                  : "添加一个OpenKey"}
               </div>
-            )}
+            </div>
           </>
         )}
       </div>
