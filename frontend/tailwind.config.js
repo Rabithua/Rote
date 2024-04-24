@@ -38,6 +38,9 @@ module.exports = {
           "100%": { transform: "translateY(0px)", opacity: 1 },
         },
       },
+      fontFamily: {
+        serif: ['Noto Serif SC', 'serif'],
+      },
     },
   },
   plugins: [
