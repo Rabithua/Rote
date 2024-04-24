@@ -62,7 +62,7 @@ function RoteShareCard({ rote }: any) {
         </div>
         <Divider />
         <div className=" w-full flex flex-wrap">
-          <span className=" font-semibold">{rote.author.nickname}</span>
+          <span className=" font-semibold text-gray-800">{rote.author.nickname}</span>
           <span className=" text-nowrap ml-auto font-normal text-gray-500">
             来自 Rote.ink/{rote.author.username}
           </span>
