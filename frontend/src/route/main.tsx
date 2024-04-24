@@ -22,6 +22,7 @@ const MineFilter = lazy(() => import("@/pages/filter"));
 const ProfilePage = lazy(() => import("@/pages/mine/profile/index"));
 const ErrorPage = lazy(() => import("@/pages/404"));
 const ExplorePage = lazy(() => import("@/pages/explore"));
+const ArchivedPage = lazy(() => import("@/pages/archived"));
 
 export default function GlobalRouterProvider() {
   const profile = useProfile();
@@ -138,6 +139,17 @@ export default function GlobalRouterProvider() {
         {
           index: true,
           element: <ExplorePage />,
+        },
+      ],
+    },
+    {
+      path: "archived",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          index: true,
+          element: <ArchivedPage />,
         },
       ],
     },

@@ -1,20 +1,28 @@
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
-import { GlobalOutlined, LoadingOutlined, UpOutlined } from "@ant-design/icons";
+import {
+  GlobalOutlined,
+  LoadingOutlined,
+  SaveOutlined,
+  UpOutlined,
+} from "@ant-design/icons";
 import { Empty } from "antd";
 import { useEffect, useRef, useState } from "react";
 import Rote from "@/components/Rote";
 import { apiGetMyRote, apiGetPublicRote } from "@/api/rote/main";
-import { useExploreRotes, useExploreRotesDispatch } from "@/state/exploreRotes";
+import {
+  useArchivedRotes,
+  useArchivedRotesDispatch,
+} from "@/state/archivedRotes";
 
-function ExplorePage() {
+function ArchivedPage() {
   const loadingRef = useRef(null);
   const [showscrollTop, setShowScrollTop] = useState(false);
 
   const [isLoadAll, setIsLoadAll] = useState(false);
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
-  const rotes = useExploreRotes();
-  const rotesDispatch = useExploreRotesDispatch();
+  const rotes = useArchivedRotes();
+  const rotesDispatch = useArchivedRotesDispatch();
 
   const countRef = useRef(rotes.length);
 
@@ -50,9 +58,10 @@ function ExplorePage() {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
           // 元素进入视口
-          apiGetPublicRote({
+          apiGetMyRote({
             limit: 20,
             skip: countRef.current,
+            archived: true,
             filter: {},
           })
             .then((res) => {
@@ -101,8 +110,8 @@ function ExplorePage() {
     >
       <div id="top">
         <div className=" flex gap-2 bg-white text-2xl font-semibold p-4">
-          <GlobalOutlined />
-          探索 / Explore
+          <SaveOutlined />
+          归档 / Archived
         </div>
       </div>
 
@@ -140,4 +149,4 @@ function ExplorePage() {
   );
 }
 
-export default ExplorePage;
+export default ArchivedPage;
