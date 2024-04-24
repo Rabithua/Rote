@@ -5,6 +5,7 @@ import { RotesProvider } from "./rotes";
 import { FilterRotesProvider } from "./filterRotes";
 import { OpenKeysProvider } from "./openKeys";
 import { ExploreRotesProvider } from "./exploreRotes";
+import { ArchivedRotesProvider } from "./archivedRotes";
 
 export function GlobalContextProvider({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function GlobalContextProvider({ children }: { children: ReactNode }) {
         <TagsProvider>
           <FilterRotesProvider>
             <ExploreRotesProvider>
-              <OpenKeysProvider>{children}</OpenKeysProvider>
+              <ArchivedRotesProvider>
+                <OpenKeysProvider>{children}</OpenKeysProvider>
+              </ArchivedRotesProvider>
             </ExploreRotesProvider>
           </FilterRotesProvider>
         </TagsProvider>

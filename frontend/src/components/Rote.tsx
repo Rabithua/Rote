@@ -6,6 +6,7 @@ import {
   HourglassOutlined,
   PushpinOutlined,
   SaveOutlined,
+  ShareAltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { Avatar, Modal, Popover, Tooltip } from "antd";
@@ -21,15 +22,20 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useRotesDispatch } from "@/state/rotes";
 import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
+import RoteShareCard from "./roteShareCard";
+import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 const { emojiList } = mainJson;
 
 function RoteItem({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
+  const archivedRotesDispatch = useArchivedRotesDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isShareCardModalOpen, setIsShareCardModalOpen] =
+    useState<boolean>(false);
   const [editRote, setEditRote] = useState<any>({});
   const [open, setOpen] = useState(false);
 
@@ -99,9 +105,13 @@ function RoteItem({ rote_param }: any) {
     return resultArray;
   }
 
-  function onModelCancel() {
-    setIsModalOpen(false);
+  function onEditModelCancel() {
+    setIsEditModalOpen(false);
     setEditRote({});
+  }
+
+  function onShareCardModelCancel() {
+    setIsShareCardModalOpen(false);
   }
 
   function submitEdit(rote: any) {
@@ -114,7 +124,7 @@ function RoteItem({ rote_param }: any) {
       updatedAt,
       ...cleanRote
     } = rote;
-    setIsModalOpen(false);
+    setIsEditModalOpen(false);
     const toastId = toast.loading("发送中...");
     apiEditMyRote({
       ...cleanRote,
@@ -126,6 +136,11 @@ function RoteItem({ rote_param }: any) {
           rote: res.data.data,
         });
         filterRotesDispatch({
+          type: "updateOne",
+          rote: res.data.data,
+        });
+
+        archivedRotesDispatch({
           type: "updateOne",
           rote: res.data.data,
         });
@@ -160,6 +175,10 @@ function RoteItem({ rote_param }: any) {
             type: "deleted",
             roteid: res.data.data.id,
           });
+          archivedRotesDispatch({
+            type: "deleted",
+            roteid: res.data.data.id,
+          });
         })
         .catch((err) => {
           toast.error("删除失败", {
@@ -184,6 +203,11 @@ function RoteItem({ rote_param }: any) {
             type: "updateOne",
             rote: res.data.data,
           });
+
+          archivedRotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
           toast.success(`${rote.pin ? "取消置顶" : "置顶"}成功`, {
             id: toastId,
           });
@@ -204,15 +228,30 @@ function RoteItem({ rote_param }: any) {
         archived: !rote.archived,
       })
         .then((res) => {
-          rotesDispatch({
-            type: "deleted",
-            roteid: res.data.data.id,
-          });
           filterRotesDispatch({
-            type: "deleted",
-            roteid: res.data.data.id,
+            type: "updateOne",
+            rote: res.data.data,
           });
-          toast.success(`${rote.pin ? "取消归档" : "归档"}成功`, {
+          if (res.data.data.archived) {
+            rotesDispatch({
+              type: "deleted",
+              roteid: res.data.data.id,
+            });
+            archivedRotesDispatch({
+              type: "add",
+              rotes: [res.data.data],
+            });
+          } else {
+            archivedRotesDispatch({
+              type: "deleted",
+              roteid: res.data.data.id,
+            });
+            rotesDispatch({
+              type: "add",
+              rotes: [res.data.data],
+            });
+          }
+          toast.success(`${rote.archived ? "取消归档" : "归档"}成功`, {
             id: toastId,
           });
           setRote(res.data.data);
@@ -236,7 +275,7 @@ function RoteItem({ rote_param }: any) {
           className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
           onClick={() => {
             hide();
-            setIsModalOpen(true);
+            setIsEditModalOpen(true);
             setEditRote(rote);
           }}
         >
@@ -249,6 +288,16 @@ function RoteItem({ rote_param }: any) {
         >
           <SaveOutlined />
           {rote.archived ? "取消归档" : "归档"}
+        </div>
+        <div
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          onClick={() => {
+            hide();
+            setIsShareCardModalOpen(true);
+          }}
+        >
+          <ShareAltOutlined />
+          分享
         </div>
         <div
           className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
@@ -491,8 +540,8 @@ function RoteItem({ rote_param }: any) {
       </div>
       <Modal
         title="编辑"
-        open={isModalOpen}
-        onCancel={onModelCancel}
+        open={isEditModalOpen}
+        onCancel={onEditModelCancel}
         maskClosable={true}
         destroyOnClose={true}
         footer={null}
@@ -501,6 +550,16 @@ function RoteItem({ rote_param }: any) {
           rote={editRote}
           submitEdit={submitEdit}
         ></RoteInputModel>
+      </Modal>
+      <Modal
+        title="分享"
+        open={isShareCardModalOpen}
+        onCancel={onShareCardModelCancel}
+        maskClosable={true}
+        destroyOnClose={true}
+        footer={null}
+      >
+        <RoteShareCard rote={rote} submitEdit={submitEdit}></RoteShareCard>
       </Modal>
     </div>
   ) : null;

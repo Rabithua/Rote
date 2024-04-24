@@ -42,8 +42,8 @@ function LayoutDashboard() {
 
     {
       svg: <SaveOutlined />,
-      link: "/#",
-      disable: true,
+      link: "/archived",
+      disable: false,
     },
     {
       svg: <ThunderboltOutlined />,
