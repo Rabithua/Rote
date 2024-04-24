@@ -133,7 +133,7 @@ function ProfilePage() {
 
   return (
     <div>
-      <div className=" w-full max-h-80 relative overflow-hidden">
+      <div className=" w-full min-h-[1/5] max-h-80 relative overflow-hidden">
         {profile?.cover ? (
           <img className=" w-full h-full" src={profile?.cover} alt="" />
         ) : (

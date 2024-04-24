@@ -4,6 +4,9 @@ import { observeElementInViewport } from "@/utils/observeElementInViewport";
 import { t } from "i18next";
 import { UpOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
+import { useRotes, useRotesDispatch } from "@/state/rotes";
+import { apiGetMyRote } from "@/api/rote/main";
+import toast from "react-hot-toast";
 
 function LayoutHome() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
@@ -37,6 +40,8 @@ function LayoutHome() {
     },
   ]);
   const navigate = useNavigate();
+  const rotes = useRotes();
+  const rotesDispatch = useRotesDispatch();
 
   useEffect(() => {
     checkRote();
@@ -66,6 +71,10 @@ function LayoutHome() {
   }
 
   function roteTypesChange(index: number) {
+    if (roteTypes[index].active) {
+      refreshData(index);
+      return;
+    }
     navigate(roteTypes[index].to);
     let newArr = roteTypes.map((type, i) => {
       if (i === index) {
@@ -81,6 +90,37 @@ function LayoutHome() {
     });
 
     setRoteTypes(newArr);
+  }
+
+  function refreshData(index: number) {
+    const toastId = toast.loading("刷新中...");
+    try {
+      switch (index) {
+        case 0:
+          apiGetMyRote({
+            limit: rotes.length,
+            skip: 0,
+          }).then((res) => {
+            const rotes_api = res.data.data;
+            toast.success("数据已刷新", {
+              id: toastId,
+            });
+            rotesDispatch({
+              type: "freshAll",
+              rotes: rotes_api,
+            });
+          });
+          break;
+
+        default:
+          toast.dismiss(toastId);
+          break;
+      }
+    } catch (error) {
+      toast.error("刷新失败", {
+        id: toastId,
+      });
+    }
   }
 
   function goTop() {

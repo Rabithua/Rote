@@ -252,14 +252,14 @@ routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
 
 routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
   console.log(req.body);
-  const { skip, limit } = req.query;
+  const { skip, limit, archived } = req.query;
   const filter = req.body.filter || {};
   const user = req.user as User;
 
   const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
   const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
 
-  findMyRote(user.id, parsedSkip, parsedLimit, filter)
+  findMyRote(user.id, parsedSkip, parsedLimit, filter, Boolean(archived))
     .then(async (rote) => {
       res.send({
         code: 0,

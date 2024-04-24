@@ -30,6 +30,13 @@ function ExplorePage() {
     observeElementInViewport(topElement, (ifshow: boolean) => {
       setShowScrollTop(!ifshow);
     });
+
+    return () => {
+      rotesDispatch({
+        type: "freshAll",
+        rotes: [],
+      });
+    };
   }, []);
 
   useEffect(() => {

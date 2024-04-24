@@ -242,7 +242,8 @@ export async function findMyRote(
   authorid: string,
   skip: number | undefined,
   limit: number | undefined,
-  filter: any
+  filter: any,
+  archived: any
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     console.log(`filter: ${JSON.stringify(filter)}`);
@@ -253,6 +254,8 @@ export async function findMyRote(
           AND: [
             {
               authorid,
+              // 筛选state不是archived的内容
+              archived,
             },
             { ...filter },
           ],

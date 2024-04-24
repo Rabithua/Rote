@@ -48,7 +48,7 @@ function RoteItem({ rote_param }: any) {
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    if (profile?.username !== rote.author.username) {
+    if (window.location.pathname === "/explore") {
       return;
     }
     if (location.pathname.includes("/filter")) {
@@ -201,16 +201,16 @@ function RoteItem({ rote_param }: any) {
       apiEditMyRote({
         id: rote.id,
         authorid: rote.authorid,
-        state: rote.state === "archived" ? "private" : "archived",
+        archived: !rote.archived,
       })
         .then((res) => {
           rotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
+            type: "deleted",
+            roteid: res.data.data.id,
           });
           filterRotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
+            type: "deleted",
+            roteid: res.data.data.id,
           });
           toast.success(`${rote.pin ? "取消归档" : "归档"}成功`, {
             id: toastId,
@@ -248,7 +248,7 @@ function RoteItem({ rote_param }: any) {
           onClick={editRoteArchived}
         >
           <SaveOutlined />
-          {rote.state === "archived" ? "取消归档" : "归档"}
+          {rote.archived ? "取消归档" : "归档"}
         </div>
         <div
           className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
