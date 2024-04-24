@@ -12,7 +12,7 @@ function RoteShareCard({ rote }: any) {
 
       // 配置 html2canvas 选项
       const options: any = {
-        scale: 2, // 设置缩放比例为 2
+        scale: 3, // 设置缩放比例为 2
         width: width,
         height: height,
         useCORS: true, // 允许跨域图像
@@ -41,8 +41,13 @@ function RoteShareCard({ rote }: any) {
 
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
-      <div className=" w-full flex flex-col gap-2 p-8 rounded-xl bg-bgWhite relative" id="shareCanva">
-        <div className=" font-extrabold text-5xl text-gray-200 mb-[-10px]">“</div>
+      <div
+        className=" w-full flex flex-col gap-2 p-8 rounded-xl bg-bgWhite relative"
+        id="shareCanva"
+      >
+        <div className=" font-extrabold text-5xl text-gray-200 mb-[-10px]">
+          “
+        </div>
         <div className=" text-lg break-words whitespace-pre-line font-serif">
           {rote.content}
         </div>
@@ -58,9 +63,6 @@ function RoteShareCard({ rote }: any) {
         <Divider />
         <div className=" w-full flex items-center">
           <span className=" font-semibold">{rote.author.nickname}</span>
-          <span className=" text-nowrap ml-2 font-normal text-gray-500">
-            {`@${rote.author.username}`}
-          </span>
           <span className=" text-nowrap ml-auto font-normal text-gray-500">
             来自 Rote.ink/{rote.author.username}
           </span>
