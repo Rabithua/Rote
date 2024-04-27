@@ -126,7 +126,11 @@ export default function GlobalRouterProvider() {
         },
         {
           path: "profile",
-          element: <ProfilePage />,
+          element: (
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          ),
           errorElement: <ErrorPage />,
         },
       ],
@@ -149,7 +153,11 @@ export default function GlobalRouterProvider() {
       children: [
         {
           index: true,
-          element: <ArchivedPage />,
+          element: (
+            <ProtectedRoute>
+              <ArchivedPage />
+            </ProtectedRoute>
+          ),
         },
       ],
     },

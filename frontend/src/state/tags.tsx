@@ -63,15 +63,9 @@ function tagsReducer(tags: Tags, action: TagsAction): Tags {
   }
 }
 
-const initialTags = await apiGetMyTags()
-  .then((res) => {
-    return res.data.data.map((item: any) => {
-      return {
-        value: item,
-        label: item,
-      };
-    });
-  })
-  .catch((err: any) => {
-    return [];
-  });
+const initialTags = [
+  {
+    label: "默认标签",
+    value: "默认标签",
+  },
+];
