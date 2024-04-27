@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 import { useRotesDispatch } from "@/state/rotes";
 import { useProfile } from "@/state/profile";
-const { stateOptions } = mainJson;
+const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
   const navigate = useNavigate();
@@ -122,7 +122,7 @@ function RoteInputSimple() {
           className={` text-base lg:text-lg text-pretty ${
             editType === "default" ? "" : " hidden"
           }`}
-          maxLength={3000}
+          maxLength={roteMaxLetter}
           onInput={(e) => {
             setRote({
               ...rote,

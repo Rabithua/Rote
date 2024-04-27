@@ -6,7 +6,7 @@ import mainJson from "@/json/main.json";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
-const { stateOptions } = mainJson;
+const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputModel({ rote, submitEdit }: any) {
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
           className={` text-base lg:text-lg text-pretty ${
             editType === "default" ? "" : " hidden"
           }`}
-          maxLength={3000}
+          maxLength={roteMaxLetter}
           onInput={(e) => {
             setNewRote({
               ...newRote,
