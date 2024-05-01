@@ -403,7 +403,7 @@ function RoteItem({ rote_param }: any) {
           )}
         </div>
         {rote.editor === "normal" ? (
-          <div className=" break-words whitespace-pre-line text-[16px]">
+          <div className=" font-zhengwen break-words whitespace-pre-line text-[16px]">
             {rote.content}
           </div>
         ) : (

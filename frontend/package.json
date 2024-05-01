@@ -56,6 +56,7 @@
     "framer-motion": "^10.17.6",
     "html2canvas": "^1.4.1",
     "i18next": "^23.7.11",
+    "lottie-react": "^2.4.0",
     "mini-svg-data-uri": "^1.4.4",
     "moment": "^2.30.1",
     "novel": "^0.1.22",

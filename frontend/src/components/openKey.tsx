@@ -1,4 +1,4 @@
-import rote from "@/pages/mine/home/rote";
+import rote from "@/pages/home/rote";
 import {
   CopyOutlined,
   DeleteOutlined,

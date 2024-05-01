@@ -36,7 +36,7 @@ function MineFilter() {
     if (doesAnyHistoryEntryExist) {
       navigate(-1);
     } else {
-      navigate("/mine");
+      navigate("/home");
     }
   }
 

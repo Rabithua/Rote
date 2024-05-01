@@ -13,12 +13,13 @@ import {
   findPublicRote,
   findRoteById,
   findSubScriptionToUser,
+  findUserPublicRote,
   generateOpenKey,
   getMyOpenKey,
   getMySession,
   getMyTags,
   getOneOpenKey,
-  getUserInfoById,
+  getUserInfoByUsername,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
 import { User, UserSwSubScription } from "@prisma/client";
@@ -259,7 +260,67 @@ routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
   const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
   const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
 
-  findMyRote(user.id, parsedSkip, parsedLimit, filter, Boolean(archived))
+  findMyRote(
+    user.id,
+    parsedSkip,
+    parsedLimit,
+    filter,
+    archived ? (archived === "true" ? true : false) : undefined
+  )
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      console.log(e);
+      res.send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.post("/getUserPublicRote", async (req, res) => {
+  console.log(req.body);
+  const { skip, limit, archived, username }: any = req.query;
+  const filter = req.body.filter || {};
+
+  const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
+  const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+
+  if (!username) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Username not found",
+    });
+    return;
+  }
+
+  const userInfo = await getUserInfoByUsername(username);
+
+  if (!userInfo.id) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "Username not found",
+    });
+    return;
+  }
+
+  findUserPublicRote(
+    userInfo.id,
+    parsedSkip,
+    parsedLimit,
+    filter,
+    archived ? (archived === "true" ? true : false) : undefined
+  )
     .then(async (rote) => {
       res.send({
         code: 0,
@@ -307,16 +368,17 @@ routerV1.post("/getPublicRote", (req, res) => {
 });
 
 routerV1.get("/getUserInfo", (req, res) => {
-  const { userid } = req.query;
-  if (!userid) {
-    res.send({
+  const { username } = req.query;
+  if (!username) {
+    res.status(403).send({
       code: 1,
       msg: "Need userid",
       data: null,
     });
     return;
   }
-  getUserInfoById(userid)
+
+  getUserInfoByUsername(username.toString())
     .then(async (data) => {
       res.send({
         code: 0,
@@ -326,7 +388,7 @@ routerV1.get("/getUserInfo", (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(404).send({
         code: 1,
         msg: "error",
         data: e,
@@ -536,6 +598,14 @@ routerV1.post("/logout", isAuthenticated, function (req, res, next) {
 });
 
 routerV1.get("/profile", isAuthenticated, function (req, res) {
+  res.send({
+    code: 0,
+    msg: "ok",
+    data: req.user as User,
+  });
+});
+
+routerV1.get("/user", function (req, res) {
   res.send({
     code: 0,
     msg: "ok",

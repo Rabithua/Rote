@@ -293,6 +293,62 @@ export async function findMyRote(
   });
 }
 
+export async function findUserPublicRote(
+  userid: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any,
+  archived: any
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    console.log(`filter: ${JSON.stringify(filter)}`);
+    // 修改代码跳过skip个数据，再拉取limit个数据返回
+    prisma.rote
+      .findMany({
+        where: {
+          AND: [
+            {
+              authorid: userid,
+              // 筛选state不是archived的内容
+              archived,
+              state: "public",
+            },
+            { ...filter },
+          ],
+        },
+        skip: skip ? skip : 0,
+        take: limit ? limit : 20,
+        orderBy: [
+          {
+            pin: "desc", // 根据 pin 字段从最大的开始获取
+          },
+          {
+            createdAt: "desc", // 根据 updatedAt 字段从最新的开始获取
+          },
+        ],
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
+}
+
 export async function findPublicRote(
   skip: number | undefined,
   limit: number | undefined,
@@ -333,34 +389,6 @@ export async function findPublicRote(
       })
       .then((rote) => {
         resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
-}
-
-export async function getUserInfoById(userid: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.user
-      .findUnique({
-        where: {
-          id: userid,
-        },
-        select: {
-          avatar: true,
-          nickname: true,
-          username: true,
-        },
-      })
-      .then((res) => {
-        console.log(res);
-        if (res) {
-          resolve(res);
-        } else {
-          reject("User not found");
-        }
       })
       .catch((error) => {
         console.error("Error finding rote:", error);
@@ -610,6 +638,38 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
       })
       .catch(() => {
         reject();
+      });
+  });
+}
+
+export async function getUserInfoByUsername(username: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.user
+      .findUnique({
+        where: {
+          username,
+        },
+        select: {
+          id: true,
+          avatar: true,
+          cover: true,
+          nickname: true,
+          username: true,
+          createdAt: true,
+          description: true,
+        },
+      })
+      .then((res) => {
+        console.log(res);
+        if (res) {
+          resolve(res);
+        } else {
+          reject("User not found");
+        }
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
       });
   });
 }

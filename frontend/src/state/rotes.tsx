@@ -1,6 +1,5 @@
 // 使用context加reducer作为全局状态管理系统
 
-import { apiGetMyRote } from "@/api/rote/main";
 import { Rote, Rotes, RotesAction } from "@/types/main";
 import { sortRotesByPinAndCreatedAt } from "@/utils/main";
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
