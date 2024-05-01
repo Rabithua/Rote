@@ -7,16 +7,19 @@ import {
   LoadingOutlined,
   UpOutlined,
   GlobalOutlined,
+  LeftOutlined,
 } from "@ant-design/icons";
 import { Avatar, Divider, Empty } from "antd";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Rote from "@/components/Rote";
 import { apiGetPublicRote, apiGetUserPublicRote } from "@/api/rote/main";
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
+import { useTempRotes, useTempRotesDispatch } from "@/state/tempRotes";
 
 function UserPage() {
+  let location = useLocation();
   const profile = useProfile();
   const { username }: any = useParams();
   const navigate = useNavigate();
@@ -27,8 +30,8 @@ function UserPage() {
   const [isLoadAll, setIsLoadAll] = useState(false);
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
-  const rotes = useExploreRotes();
-  const rotesDispatch = useExploreRotesDispatch();
+  const rotes = useTempRotes();
+  const rotesDispatch = useTempRotesDispatch();
 
   const countRef = useRef(rotes.length);
 
@@ -123,14 +126,34 @@ function UserPage() {
     }
   }
 
+  function back() {
+    const doesAnyHistoryEntryExist = location.key !== "default";
+    if (doesAnyHistoryEntryExist) {
+      navigate(-1);
+    } else {
+      navigate("/home");
+    }
+  }
+
   return (
     <div>
+      {window.history.state && window.history.state.idx > 0 && (
+        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-[#ffffff99] backdrop-blur-xl">
+          <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
+          <div className=" font-semibold cursor-pointer" onClick={back}>
+            返回
+          </div>
+        </div>
+      )}
       {userInfo && (
         <>
           <div
             className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
           >
-            <div className=" w-full min-h-[1/5] max-h-80 relative overflow-hidden">
+            <div
+              id="top"
+              className=" w-full min-h-[1/5] max-h-80 relative overflow-hidden"
+            >
               {userInfo?.cover ? (
                 <img className=" w-full h-full" src={userInfo?.cover} alt="" />
               ) : (
@@ -186,10 +209,7 @@ function UserPage() {
                 .format("YYYY/MM/DD HH:mm:ss")}`}</div>
             </div>
 
-            <div
-              id="top"
-              className=" mt-5 border-t border-[#00000010] sticky top-0 z-10 flex gap-2 bg-white text-2xl font-semibold p-4"
-            >
+            <div className=" mt-5 border-t border-[#00000010] sticky top-0 z-10 flex gap-2 bg-white text-2xl font-semibold p-4">
               <GlobalOutlined />
               已公开的笔记 / Public Note
             </div>

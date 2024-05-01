@@ -121,6 +121,15 @@ export default function GlobalRouterProvider() {
             </ProtectedRoute>
           ),
         },
+        {
+          path: "filter",
+          element: (
+            <ProtectedRoute>
+              <MineFilter />
+            </ProtectedRoute>
+          ),
+          errorElement: <ErrorPage />,
+        },
       ],
     },
     {

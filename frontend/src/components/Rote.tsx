@@ -54,21 +54,23 @@ function RoteItem({ rote_param }: any) {
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    if (window.location.pathname === "/explore") {
-      return;
-    }
-    if (location.pathname.includes("/filter")) {
-      navigate("../filter", {
-        state: {
-          tags: [tag],
-        },
-      });
-    } else {
-      navigate("filter", {
-        state: {
-          tags: [tag],
-        },
-      });
+    if (
+      window.location.pathname === "/home" ||
+      window.location.pathname === "/archived"
+    ) {
+      if (location.pathname.includes("/filter")) {
+        navigate("../filter", {
+          state: {
+            tags: [tag],
+          },
+        });
+      } else {
+        navigate("filter", {
+          state: {
+            tags: [tag],
+          },
+        });
+      }
     }
   }
 
@@ -155,6 +157,7 @@ function RoteItem({ rote_param }: any) {
         });
       });
   }
+
   function actionsMenu(rote: any) {
     function deleteRote() {
       hide();
@@ -310,6 +313,10 @@ function RoteItem({ rote_param }: any) {
     );
   }
 
+  function goUserPage(username: string) {
+    navigate(`/${username}`);
+  }
+
   return rote.id ? (
     <div
       id={`Rote_${rote.id}`}
@@ -324,16 +331,28 @@ function RoteItem({ rote_param }: any) {
             ? profile?.avatar
             : rote.author.avatar
         }
+        onClick={() => {
+          goUserPage(rote.author.username);
+        }}
       />
       <div className=" flex flex-col w-full">
         <div className=" cursor-default w-full flex items-center">
-          <span className=" cursor-pointer font-semibold hover:underline">
+          <span
+            className=" cursor-pointer font-semibold hover:underline"
+            onClick={() => {
+              goUserPage(rote.author.username);
+            }}
+          >
             {rote.author.username === profile?.username
               ? profile?.nickname
               : rote.author.nickname}
           </span>
           <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
-            {`@${rote.author.username}`}
+            <span
+              onClick={() => {
+                goUserPage(rote.author.username);
+              }}
+            >{`@${rote.author.username}`}</span>
             <span> · </span>{" "}
             <Tooltip
               placement="bottom"
