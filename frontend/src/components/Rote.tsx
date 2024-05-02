@@ -462,7 +462,7 @@ function RoteItem({ rote_param }: any) {
                     className=" lg:w-1/4 md:w-1/3 w-1/2 aspect-1 bg-bgWhite overflow-hidden relative flex items-center justify-center"
                     key={`filePicker_${index}`}
                   >
-                    <Image src={file.url} fallback={defaultImage} />
+                    <Image height={300} className=" object-cover" src={file.url} fallback={defaultImage} />
                   </div>
                 );
               })}
