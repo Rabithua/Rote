@@ -106,7 +106,7 @@ function MineFilter() {
         observer.unobserve(loadingRef.current);
       }
     };
-  }, [filter]);
+  }, []);
 
   useEffect(() => {
     // 监听state的变化
