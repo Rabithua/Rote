@@ -26,6 +26,8 @@ import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
 import RoteShareCard from "./roteShareCard";
 import { useArchivedRotesDispatch } from "@/state/archivedRotes";
+import linkifyStr from "linkify-string";
+
 const { emojiList, roteContentExpandedLetter } = mainJson;
 
 function RoteItem({ rote_param }: any) {
@@ -433,11 +435,18 @@ function RoteItem({ rote_param }: any) {
         </div>
 
         <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
-          {rote.content.length > roteContentExpandedLetter
-            ? isExpanded
-              ? rote.content
-              : `${rote.content.slice(0, roteContentExpandedLetter)}...`
-            : rote.content}
+          <div className="aTagStyle"
+            dangerouslySetInnerHTML={{
+              __html:
+                rote.content.length > roteContentExpandedLetter
+                  ? isExpanded
+                    ? linkifyStr(rote.content)
+                    : `${linkifyStr(
+                        rote.content.slice(0, roteContentExpandedLetter)
+                      )}...`
+                  : linkifyStr(rote.content),
+            }}
+          ></div>
 
           {rote.content.length > roteContentExpandedLetter && (
             <>

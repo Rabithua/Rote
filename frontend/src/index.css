@@ -44,3 +44,13 @@ html {
   font-weight: 900;
   font-style: normal;
 }
+
+.aTagStyle a {
+  font-family: monospace;
+  text-decoration: underline;
+  color: #0c9849;
+}
+
+.aTagStyle a::after {
+  content: '⤴';
+}

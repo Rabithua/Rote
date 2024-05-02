@@ -17,6 +17,7 @@ import Rote from "@/components/Rote";
 import { apiGetPublicRote, apiGetUserPublicRote } from "@/api/rote/main";
 import { observeElementInViewport } from "@/utils/observeElementInViewport";
 import { useTempRotes, useTempRotesDispatch } from "@/state/tempRotes";
+import linkifyStr from "linkify-string";
 
 function UserPage() {
   let location = useLocation();
@@ -202,7 +203,14 @@ function UserPage() {
                 @{userInfo?.username}
               </div>
               <div className=" text-base ">
-                {userInfo?.description || "这个人很懒，还没留下任何简介..."}
+                <div
+                  className=" aTagStyle"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      linkifyStr(profile?.description as any) ||
+                      "这个人很懒，还没留下任何简介...",
+                  }}
+                ></div>
               </div>
               <div className=" text-base text-gray-500">{`注册时间：${moment
                 .utc(userInfo?.createdAt)
