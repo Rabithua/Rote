@@ -1,5 +1,6 @@
 import {
   DeleteOutlined,
+  DownOutlined,
   EditOutlined,
   EllipsisOutlined,
   GlobalOutlined,
@@ -12,7 +13,7 @@ import {
 import { Avatar, Modal, Popover, Tooltip } from "antd";
 import { formatTimeAgo } from "@/utils/main";
 import mainJson from "@/json/main.json";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import moment from "moment";
 import { Editor } from "novel";
 import RoteInputModel from "./roteInputModel";
@@ -39,6 +40,9 @@ function RoteItem({ rote_param }: any) {
   const [editRote, setEditRote] = useState<any>({});
   const [open, setOpen] = useState(false);
 
+  const [isExpanded, setIsExpanded] = useState<any>(null);
+  const paragraphRef = useRef(null);
+
   const hide = () => {
     setOpen(false);
   };
@@ -48,6 +52,31 @@ function RoteItem({ rote_param }: any) {
   };
 
   const profile = useProfile();
+
+  useEffect(() => {
+    const checkHeight = () => {
+      const paragraphElement: any = paragraphRef.current;
+      const halfViewportHeight = window.innerHeight / 2;
+
+      if (paragraphElement.offsetHeight > halfViewportHeight) {
+        paragraphElement.style.maxHeight = `${halfViewportHeight}px`;
+        paragraphElement.style.overflow = "hidden";
+
+        setIsExpanded(false);
+      }
+    };
+
+    // 延迟执行,确保段落元素已经渲染
+    const timer = setTimeout(checkHeight, 0);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
 
   useEffect(() => {
     setRote(rote_param);
@@ -320,7 +349,7 @@ function RoteItem({ rote_param }: any) {
   return rote.id ? (
     <div
       id={`Rote_${rote.id}`}
-      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 hover:bg-[#00000005] flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5"
+      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5"
     >
       <Avatar
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
@@ -421,23 +450,32 @@ function RoteItem({ rote_param }: any) {
             </Popover>
           )}
         </div>
-        {rote.editor === "normal" ? (
-          <div className=" font-zhengwen break-words whitespace-pre-line text-[16px]">
-            {rote.content}
-          </div>
-        ) : (
-          <Editor
-            className={` pointer-events-none text-lg max-h-96 overflow-y-scroll py-3 noScrollBar gap-0 `}
-            defaultValue={JSON.parse(rote.content)}
-            disableLocalStorage
-            onUpdate={(e) => {
-              let json = e?.getJSON();
-              console.log(JSON.stringify(json));
-              console.log(e?.getJSON());
-              console.log(e?.getText());
-            }}
-          />
-        )}
+
+        <div
+          className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative"
+          ref={paragraphRef}
+          style={{
+            maxHeight: isExpanded ? "none" : "",
+            overflow: isExpanded ? "visible" : "hidden",
+          }}
+        >
+          {rote.content}
+
+          {isExpanded !== null && (
+            <>
+              {!isExpanded && (
+                <div
+                  onClick={toggleExpand}
+                  className=" hover:text-green-700 gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-white via-white/80 to-transparent pt-8 flex w-full justify-center"
+                >
+                  <DownOutlined />
+                  展开
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         <div className=" flex items-center flex-wrap gap-2 my-2">
           {rote.tags.map((tag: any, index: any) => {
             return (

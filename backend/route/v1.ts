@@ -36,6 +36,7 @@ import {
   sanitizeUserData,
 } from "../utils/main";
 import mainJson from "../json/main.json";
+import useOpenKey from "./useOpenKey";
 
 const { stateType, roteType } = mainJson;
 
@@ -809,64 +810,6 @@ routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
     });
 });
 
-routerV1.get("/openkey/onerote", queryTypeCheck, (req, res) => {
-  const { openkey, content, state, type, tag, pin } = req.query;
-
-  if (!openkey || !content) {
-    res.send({
-      code: 1,
-      msg: "error",
-      data: "Need openkey and content!",
-    });
-    return;
-  }
-
-  const rote = {
-    content,
-    state: state || "private",
-    type: type || "rote",
-    tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
-    pin: !!pin,
-  };
-
-  getOneOpenKey(openkey.toString())
-    .then(async (e) => {
-      if (!e.permissions.includes("SENDROTE")) {
-        res.send({
-          code: 1,
-          msg: "error",
-          data: "OpenKey permission unmatch!",
-        });
-        return;
-      }
-      createRote({
-        ...rote,
-        authorid: e.userid,
-      })
-        .then(async (rote) => {
-          res.send({
-            code: 0,
-            msg: "ok",
-            data: rote,
-          });
-        })
-        .catch(async (e) => {
-          res.send({
-            code: 1,
-            msg: "error",
-            data: e,
-          });
-        });
-    })
-    .catch(async (e) => {
-      res.send({
-        code: 1,
-        msg: "error",
-        data: e,
-      });
-    });
-});
-
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
@@ -877,5 +820,7 @@ routerV1.use((error: any, req: any, res: any, next: any) => {
     });
   }
 });
+
+routerV1.use("/openKey", useOpenKey);
 
 export default routerV1;
