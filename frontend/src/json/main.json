@@ -82,5 +82,6 @@
       "active": false
     }
   ],
-  "roteMaxLetter": 10000
+  "roteMaxLetter": 10000,
+  "roteContentExpandedLetter": 600
 }

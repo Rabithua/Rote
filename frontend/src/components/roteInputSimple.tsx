@@ -1,4 +1,5 @@
 import { Avatar, Image, Select, SelectProps } from "antd";
+import { cloneDeep } from "lodash";
 import {
   CloseOutlined,
   PushpinOutlined,
@@ -12,11 +13,12 @@ import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
 import { useNavigate } from "react-router-dom";
-import { apiAddRote, apiGetMyTags } from "@/api/rote/main";
+import { apiAddRote, apiGetMyTags, apiUploadFiles } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 import { useRotesDispatch } from "@/state/rotes";
 import { useProfile } from "@/state/profile";
+import { apiUploadAvatar } from "@/api/user/main";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
@@ -64,18 +66,21 @@ function RoteInputSimple() {
     );
   }
 
-  function addRoteFn() {
+  async function addRoteFn() {
+    console.log(fileList);
     if (!rote.content.trim()) {
       toast.error("内容不能为空");
       return;
     }
 
+    const newFileList = cloneDeep(fileList);
     const toastId = toast.loading("发送中...");
+
     apiAddRote({
       ...rote,
       content: rote.content.trim(),
     })
-      .then((res) => {
+      .then(async (res) => {
         rotesDispatch({
           type: "addOne",
           rote: res.data.data,
@@ -83,12 +88,17 @@ function RoteInputSimple() {
         toast.success("发送成功", {
           id: toastId,
         });
+
+        let attachments = await uploadAttachments(newFileList, res.data.data);
+        console.log(attachments);
       })
       .catch((err) => {
         toast.error("发送失败", {
           id: toastId,
         });
       });
+
+    setFileList([]);
     setRote({
       title: "",
       content: "",
@@ -96,6 +106,38 @@ function RoteInputSimple() {
       tags: [],
       state: "private",
       pin: false,
+    });
+  }
+
+  function uploadAttachments(fileList: any, rote: any) {
+    return new Promise((reslove, reject) => {
+      const toastId = toast.loading("附件上传中...");
+      try {
+        const formData = new FormData();
+        fileList.forEach((obj: any) => {
+          formData.append("file", obj.file);
+        });
+        apiUploadFiles(formData, rote.id).then((res) => {
+          console.log(res);
+          toast.success("附件上传成功", {
+            id: toastId,
+          });
+          rotesDispatch({
+            type: "updateOne",
+            rote: {
+              ...rote,
+              attachments: res.data.data,
+            },
+          });
+          reslove(res);
+        });
+      } catch (error) {
+        toast.error("附件上传失败", {
+          id: toastId,
+        });
+        console.error("Error uploading image:", error);
+        reject();
+      }
     });
   }
 
@@ -131,20 +173,7 @@ function RoteInputSimple() {
           }}
           onKeyDown={handleNormalINputKeyDown}
         />
-        {/* <Editor
-          className={` text-lg max-h-96 overflow-y-scroll p-0 px-3 noScrollBar gap-0 ${editType === "novel" ? "" : " hidden"
-            }`}
-          defaultValue={novelValue}
-          disableLocalStorage
-          onUpdate={(e) => {
-            let json = e?.getJSON();
-            console.log(JSON.stringify(json));
-            console.log(e?.getJSON());
-            console.log(e?.getText());
-            setNovelValue(e?.getJSON());
-          }}
-        /> */}
-        {/* <div className=" flex gap-2 flex-wrap my-2">
+        <div className=" flex gap-2 flex-wrap my-2">
           <Image.PreviewGroup
             preview={{
               onChange: (current, prev) =>
@@ -175,7 +204,7 @@ function RoteInputSimple() {
             })}
           </Image.PreviewGroup>
           <Uploader fileList={fileList} setFileList={setFileList} />
-        </div> */}
+        </div>
         <Select
           mode="tags"
           variant="borderless"

@@ -238,6 +238,26 @@ export async function deleteRote(data: any): Promise<any> {
   });
 }
 
+export async function deleteAttachments(roteid: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    console.log("开始删除附件", roteid);
+    prisma.attachment
+      .deleteMany({
+        where: {
+          roteid,
+        },
+      })
+      .then((data) => {
+        console.log(data);
+        resolve(data);
+      })
+      .catch((error) => {
+        console.error("Error delete attachments:", error);
+        reject(error);
+      });
+  });
+}
+
 export async function findMyRote(
   authorid: string,
   skip: number | undefined,

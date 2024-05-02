@@ -1,4 +1,5 @@
 import {
+  CloseOutlined,
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
@@ -10,7 +11,8 @@ import {
   ShareAltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Modal, Popover, Tooltip } from "antd";
+import defaultImage from "@/assets/img/defaultImage.svg";
+import { Avatar, Modal, Popover, Tooltip, Image } from "antd";
 import { formatTimeAgo } from "@/utils/main";
 import mainJson from "@/json/main.json";
 import { useEffect, useRef, useState } from "react";
@@ -25,7 +27,7 @@ import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
 import RoteShareCard from "./roteShareCard";
 import { useArchivedRotesDispatch } from "@/state/archivedRotes";
-const { emojiList } = mainJson;
+const { emojiList, roteContentExpandedLetter } = mainJson;
 
 function RoteItem({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
@@ -40,8 +42,7 @@ function RoteItem({ rote_param }: any) {
   const [editRote, setEditRote] = useState<any>({});
   const [open, setOpen] = useState(false);
 
-  const [isExpanded, setIsExpanded] = useState<any>(null);
-  const paragraphRef = useRef(null);
+  const [isExpanded, setIsExpanded] = useState<any>(false);
 
   const hide = () => {
     setOpen(false);
@@ -52,27 +53,6 @@ function RoteItem({ rote_param }: any) {
   };
 
   const profile = useProfile();
-
-  useEffect(() => {
-    const checkHeight = () => {
-      const paragraphElement: any = paragraphRef.current;
-      const halfViewportHeight = window.innerHeight / 2;
-
-      if (paragraphElement.offsetHeight > halfViewportHeight) {
-        paragraphElement.style.maxHeight = `${halfViewportHeight}px`;
-        paragraphElement.style.overflow = "hidden";
-
-        setIsExpanded(false);
-      }
-    };
-
-    // 延迟执行,确保段落元素已经渲染
-    const timer = setTimeout(checkHeight, 0);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, []);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -349,7 +329,7 @@ function RoteItem({ rote_param }: any) {
   return rote.id ? (
     <div
       id={`Rote_${rote.id}`}
-      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5"
+      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full py-4 px-5"
     >
       <Avatar
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
@@ -451,17 +431,14 @@ function RoteItem({ rote_param }: any) {
           )}
         </div>
 
-        <div
-          className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative"
-          ref={paragraphRef}
-          style={{
-            maxHeight: isExpanded ? "none" : "",
-            overflow: isExpanded ? "visible" : "hidden",
-          }}
-        >
-          {rote.content}
+        <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
+          {rote.content.length > roteContentExpandedLetter
+            ? isExpanded
+              ? rote.content
+              : `${rote.content.slice(0, roteContentExpandedLetter)}...`
+            : rote.content}
 
-          {isExpanded !== null && (
+          {rote.content.length > roteContentExpandedLetter && (
             <>
               {!isExpanded && (
                 <div
@@ -476,6 +453,22 @@ function RoteItem({ rote_param }: any) {
           )}
         </div>
 
+        {rote.attachments.length > 0 && (
+          <div className=" w-full my-2 flex flex-wrap rounded-2xl overflow-hidden">
+            <Image.PreviewGroup>
+              {rote.attachments.map((file: any, index: number) => {
+                return (
+                  <div
+                    className=" lg:w-1/4 md:w-1/3 w-1/2 aspect-1 bg-bgWhite overflow-hidden relative flex items-center justify-center"
+                    key={`filePicker_${index}`}
+                  >
+                    <Image src={file.url} fallback={defaultImage} />
+                  </div>
+                );
+              })}
+            </Image.PreviewGroup>
+          </div>
+        )}
         <div className=" flex items-center flex-wrap gap-2 my-2">
           {rote.tags.map((tag: any, index: any) => {
             return (
@@ -491,6 +484,7 @@ function RoteItem({ rote_param }: any) {
             );
           })}
         </div>
+
         {/* <div className=" flex items-center flex-wrap gap-2 my-2">
           {categorizedReactions.length > 0
             ? categorizedReactions.map((item: any, index: number) => {

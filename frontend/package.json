@@ -31,6 +31,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^2.6.3",
     "@tailwindcss/typography": "^0.5.10",
+    "@types/lodash": "^4.17.0",
     "@types/react-avatar-editor": "^13.0.2",
     "autoprefixer": "^10.4.14",
     "axios": "^1.6.2",
@@ -56,6 +57,7 @@
     "framer-motion": "^10.17.6",
     "html2canvas": "^1.4.1",
     "i18next": "^23.7.11",
+    "lodash": "^4.17.21",
     "lottie-react": "^2.4.0",
     "mini-svg-data-uri": "^1.4.4",
     "moment": "^2.30.1",

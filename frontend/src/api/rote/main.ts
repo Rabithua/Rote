@@ -210,3 +210,25 @@ export function apiEditOneMyOpenKey(
       });
   });
 }
+
+export function apiUploadFiles(formData: any, roteid: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "post",
+      url: "/v1/api/upload",
+      data: formData,
+      params: {
+        roteid,
+      },
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}

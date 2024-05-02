@@ -1,4 +1,5 @@
 import { logOut, loginByPassword, registerBypassword } from "@/api/login/main";
+import { apiGetMyTags } from "@/api/rote/main";
 import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile, useProfileDispatch } from "@/state/profile";
 import { useRotesDispatch } from "@/state/rotes";
@@ -48,6 +49,7 @@ function Login() {
           type: "updateProfile",
           profile: res.data.data,
         });
+        refreshTags();
         navigate("/home");
       })
       .catch((err) => {
@@ -62,6 +64,26 @@ function Login() {
           });
         }
       });
+  }
+
+  async function refreshTags() {
+    const initialTags = await apiGetMyTags()
+      .then((res) => {
+        return res.data.data.map((item: any) => {
+          return {
+            value: item,
+            label: item,
+          };
+        });
+      })
+      .catch((err: any) => {
+        return [];
+      });
+
+    tagsDispatch({
+      type: "freshAll",
+      tags: initialTags,
+    });
   }
 
   function logOutFn() {
@@ -293,26 +315,22 @@ function Login() {
                     </div>
                   </>
                 )}
-
-                <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95 text-black">
-                  <Link
-                    className=" after:content-['⤴'] hover:text-gray-500"
-                    to="/explore"
-                  >
-                    探索
-                  </Link>
-                  <span className=" px-2">/</span>
-                  <Link
-                    className=" after:content-['⤴'] hover:text-gray-500"
-                    to="/"
-                  >
-                    主页
-                  </Link>
-                </div>
               </div>
             </div>
           </>
         )}
+        <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95 text-black">
+          <Link
+            className=" after:content-['⤴'] hover:text-gray-500"
+            to="/explore"
+          >
+            探索
+          </Link>
+          <span className=" px-2">/</span>
+          <Link className=" after:content-['⤴'] hover:text-gray-500" to="/">
+            主页
+          </Link>
+        </div>
       </div>
     </div>
   );

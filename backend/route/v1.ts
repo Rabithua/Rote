@@ -4,6 +4,7 @@ import {
   createAttachments,
   createRote,
   createUser,
+  deleteAttachments,
   deleteMyOneOpenKey,
   deleteRote,
   editMyOneOpenKey,
@@ -493,11 +494,12 @@ routerV1.delete("/oneRote", isAuthor, (req, res) => {
     return;
   }
   deleteRote(rote)
-    .then(async (rote) => {
+    .then(async (data) => {
+      deleteAttachments(rote.id);
       res.send({
         code: 0,
         msg: "ok",
-        data: rote,
+        data,
       });
       await prisma.$disconnect();
     })
