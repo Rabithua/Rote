@@ -36,7 +36,7 @@ function MineFilter() {
     if (doesAnyHistoryEntryExist) {
       navigate(-1);
     } else {
-      navigate("/mine");
+      navigate("/home");
     }
   }
 
@@ -118,12 +118,14 @@ function MineFilter() {
 
   return (
     <>
-      <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-[#ffffff99] backdrop-blur-xl">
-        <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
-        <div className=" font-semibold cursor-pointer" onClick={back}>
-          返回
+      {window.history.state && window.history.state.idx > 0 && (
+        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-[#ffffff99] backdrop-blur-xl">
+          <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
+          <div className=" font-semibold cursor-pointer" onClick={back}>
+            返回
+          </div>
         </div>
-      </div>
+      )}
       <div className=" p-4 ml-4 font-semibold">
         <div className=" flex items-center flex-wrap gap-2 my-2">
           包含标签：

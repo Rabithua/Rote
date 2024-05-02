@@ -1,12 +1,12 @@
 import { instance } from "../request";
 
-export function apiGetUserInfoById(userid: any): Promise<any> {
+export function apiGetUserInfoByUsername(username: string): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
       method: "get",
       url: "/v1/api/getUserInfo",
       params: {
-        userid,
+        username,
       },
     })
       .then(function (response) {

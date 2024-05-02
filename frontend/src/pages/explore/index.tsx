@@ -99,7 +99,7 @@ function ExplorePage() {
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
     >
-      <div id="top">
+      <div id="top" className=" sticky top-0 z-10">
         <div className=" flex gap-2 bg-white text-2xl font-semibold p-4">
           <GlobalOutlined />
           探索 / Explore

@@ -1,5 +1,7 @@
 import {
+  CloseOutlined,
   DeleteOutlined,
+  DownOutlined,
   EditOutlined,
   EllipsisOutlined,
   GlobalOutlined,
@@ -9,10 +11,11 @@ import {
   ShareAltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Avatar, Modal, Popover, Tooltip } from "antd";
+import defaultImage from "@/assets/img/defaultImage.svg";
+import { Avatar, Modal, Popover, Tooltip, Image } from "antd";
 import { formatTimeAgo } from "@/utils/main";
 import mainJson from "@/json/main.json";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import moment from "moment";
 import { Editor } from "novel";
 import RoteInputModel from "./roteInputModel";
@@ -24,7 +27,7 @@ import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
 import RoteShareCard from "./roteShareCard";
 import { useArchivedRotesDispatch } from "@/state/archivedRotes";
-const { emojiList } = mainJson;
+const { emojiList, roteContentExpandedLetter } = mainJson;
 
 function RoteItem({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
@@ -39,6 +42,8 @@ function RoteItem({ rote_param }: any) {
   const [editRote, setEditRote] = useState<any>({});
   const [open, setOpen] = useState(false);
 
+  const [isExpanded, setIsExpanded] = useState<any>(false);
+
   const hide = () => {
     setOpen(false);
   };
@@ -49,26 +54,32 @@ function RoteItem({ rote_param }: any) {
 
   const profile = useProfile();
 
+  const toggleExpand = () => {
+    setIsExpanded(!isExpanded);
+  };
+
   useEffect(() => {
     setRote(rote_param);
   }, [rote_param]);
 
   function goFilter(tag: string) {
-    if (window.location.pathname === "/explore") {
-      return;
-    }
-    if (location.pathname.includes("/filter")) {
-      navigate("../filter", {
-        state: {
-          tags: [tag],
-        },
-      });
-    } else {
-      navigate("filter", {
-        state: {
-          tags: [tag],
-        },
-      });
+    if (
+      window.location.pathname === "/home" ||
+      window.location.pathname === "/archived"
+    ) {
+      if (location.pathname.includes("/filter")) {
+        navigate("../filter", {
+          state: {
+            tags: [tag],
+          },
+        });
+      } else {
+        navigate("filter", {
+          state: {
+            tags: [tag],
+          },
+        });
+      }
     }
   }
 
@@ -155,6 +166,7 @@ function RoteItem({ rote_param }: any) {
         });
       });
   }
+
   function actionsMenu(rote: any) {
     function deleteRote() {
       hide();
@@ -310,10 +322,14 @@ function RoteItem({ rote_param }: any) {
     );
   }
 
+  function goUserPage(username: string) {
+    navigate(`/${username}`);
+  }
+
   return rote.id ? (
     <div
       id={`Rote_${rote.id}`}
-      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 hover:bg-[#00000005] flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] w-full py-4 px-5"
+      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full py-4 px-5"
     >
       <Avatar
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
@@ -324,16 +340,28 @@ function RoteItem({ rote_param }: any) {
             ? profile?.avatar
             : rote.author.avatar
         }
+        onClick={() => {
+          goUserPage(rote.author.username);
+        }}
       />
       <div className=" flex flex-col w-full">
         <div className=" cursor-default w-full flex items-center">
-          <span className=" cursor-pointer font-semibold hover:underline">
+          <span
+            className=" cursor-pointer font-semibold hover:underline"
+            onClick={() => {
+              goUserPage(rote.author.username);
+            }}
+          >
             {rote.author.username === profile?.username
               ? profile?.nickname
               : rote.author.nickname}
           </span>
           <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
-            {`@${rote.author.username}`}
+            <span
+              onClick={() => {
+                goUserPage(rote.author.username);
+              }}
+            >{`@${rote.author.username}`}</span>
             <span> · </span>{" "}
             <Tooltip
               placement="bottom"
@@ -402,22 +430,44 @@ function RoteItem({ rote_param }: any) {
             </Popover>
           )}
         </div>
-        {rote.editor === "normal" ? (
-          <div className=" break-words whitespace-pre-line text-[16px]">
-            {rote.content}
+
+        <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
+          {rote.content.length > roteContentExpandedLetter
+            ? isExpanded
+              ? rote.content
+              : `${rote.content.slice(0, roteContentExpandedLetter)}...`
+            : rote.content}
+
+          {rote.content.length > roteContentExpandedLetter && (
+            <>
+              {!isExpanded && (
+                <div
+                  onClick={toggleExpand}
+                  className=" hover:text-green-700 gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-white via-white/80 to-transparent pt-8 flex w-full justify-center"
+                >
+                  <DownOutlined />
+                  展开
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {rote.attachments.length > 0 && (
+          <div className=" w-full my-2 flex flex-wrap rounded-2xl overflow-hidden">
+            <Image.PreviewGroup>
+              {rote.attachments.map((file: any, index: number) => {
+                return (
+                  <div
+                    className=" lg:w-1/4 md:w-1/3 w-1/2 aspect-1 bg-bgWhite overflow-hidden relative flex items-center justify-center"
+                    key={`filePicker_${index}`}
+                  >
+                    <Image src={file.url} fallback={defaultImage} />
+                  </div>
+                );
+              })}
+            </Image.PreviewGroup>
           </div>
-        ) : (
-          <Editor
-            className={` pointer-events-none text-lg max-h-96 overflow-y-scroll py-3 noScrollBar gap-0 `}
-            defaultValue={JSON.parse(rote.content)}
-            disableLocalStorage
-            onUpdate={(e) => {
-              let json = e?.getJSON();
-              console.log(JSON.stringify(json));
-              console.log(e?.getJSON());
-              console.log(e?.getText());
-            }}
-          />
         )}
         <div className=" flex items-center flex-wrap gap-2 my-2">
           {rote.tags.map((tag: any, index: any) => {
@@ -434,6 +484,7 @@ function RoteItem({ rote_param }: any) {
             );
           })}
         </div>
+
         {/* <div className=" flex items-center flex-wrap gap-2 my-2">
           {categorizedReactions.length > 0
             ? categorizedReactions.map((item: any, index: number) => {

@@ -58,6 +58,27 @@ export function apiGetPublicRote(data: any): Promise<any> {
   });
 }
 
+export function apiGetUserPublicRote(data: any): Promise<any> {
+  let { filter, ...params } = data;
+  // console.log(filter)
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "post",
+      url: "/v1/api/getUserPublicRote",
+      params,
+      data: {
+        filter: filter,
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiEditMyRote(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -179,6 +200,28 @@ export function apiEditOneMyOpenKey(
       data: {
         id,
         permissions,
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function apiUploadFiles(formData: any, roteid: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "post",
+      url: "/v1/api/upload",
+      data: formData,
+      params: {
+        roteid,
+      },
+      headers: {
+        "Content-Type": "multipart/form-data",
       },
     })
       .then(function (response) {

@@ -49,7 +49,7 @@ function RoteShareCard({ rote }: any) {
         <div className=" font-extrabold text-5xl text-gray-200 mb-[-10px]">
           “
         </div>
-        <div className=" text-base text-gray-700 font-semibold break-words whitespace-pre-line font-serif">
+        <div className=" text-base text-gray-700 break-words whitespace-pre-line font-zhengwen">
           {rote.content}
         </div>
         <div className=" flex flex-wrap gap-2 items-center">

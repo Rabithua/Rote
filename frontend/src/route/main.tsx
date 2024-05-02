@@ -13,16 +13,13 @@ import LayoutHome from "@/layout/mine/home";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));
-const RotePage = lazy(() => import("@/pages/mine/home/rote"));
-const TodoPage = lazy(() => import("@/pages/mine/home/todo"));
-const JournalPage = lazy(() => import("@/pages/mine/home/journal"));
-const LuckyPage = lazy(() => import("@/pages/mine/home/lucky"));
-const ArticlePage = lazy(() => import("@/pages/mine/home/article"));
+const RotePage = lazy(() => import("@/pages/home/rote"));
 const MineFilter = lazy(() => import("@/pages/filter"));
-const ProfilePage = lazy(() => import("@/pages/mine/profile/index"));
+const ProfilePage = lazy(() => import("@/pages/profile/index"));
 const ErrorPage = lazy(() => import("@/pages/404"));
 const ExplorePage = lazy(() => import("@/pages/explore"));
 const ArchivedPage = lazy(() => import("@/pages/archived"));
+const UserPage = lazy(() => import("@/pages/user/:username"));
 
 export default function GlobalRouterProvider() {
   const profile = useProfile();
@@ -30,7 +27,7 @@ export default function GlobalRouterProvider() {
   const router = createBrowserRouter([
     {
       path: "",
-      element: profile ? <Navigate to="/mine" /> : <Navigate to="/landing" />,
+      element: profile ? <Navigate to="/home" /> : <Navigate to="/landing" />,
       errorElement: <ErrorPage />,
       children: [],
     },
@@ -45,89 +42,58 @@ export default function GlobalRouterProvider() {
       errorElement: <ErrorPage />,
     },
     {
-      path: "mine",
+      path: "home",
       element: <LayoutDashboard />,
       errorElement: <ErrorPage />,
       children: [
         {
           index: true,
-          element: <Navigate to="home" />,
+          element: (
+            <ProtectedRoute>
+              <RotePage />
+            </ProtectedRoute>
+          ),
+          errorElement: <ErrorPage />,
         },
         {
-          path: "home",
-          element: <LayoutHome />,
+          path: "filter",
+          element: (
+            <ProtectedRoute>
+              <MineFilter />
+            </ProtectedRoute>
+          ),
           errorElement: <ErrorPage />,
-          children: [
-            {
-              index: true,
-              element: <Navigate to="rote" />,
-            },
-            {
-              path: "rote",
-              errorElement: <ErrorPage />,
-              children: [
-                {
-                  index: true,
-                  element: (
-                    <ProtectedRoute>
-                      <RotePage />
-                    </ProtectedRoute>
-                  ),
-                  errorElement: <ErrorPage />,
-                },
-                {
-                  path: "filter",
-                  element: (
-                    <ProtectedRoute>
-                      <MineFilter />
-                    </ProtectedRoute>
-                  ),
-                  errorElement: <ErrorPage />,
-                },
-              ],
-            },
-            {
-              path: "todo",
-              element: (
-                <ProtectedRoute>
-                  <TodoPage />
-                </ProtectedRoute>
-              ),
-              errorElement: <ErrorPage />,
-            },
-            {
-              path: "journal",
-              element: (
-                <ProtectedRoute>
-                  <JournalPage />
-                </ProtectedRoute>
-              ),
-              errorElement: <ErrorPage />,
-            },
-            {
-              path: "lucky",
-              element: (
-                <ProtectedRoute>
-                  <LuckyPage />
-                </ProtectedRoute>
-              ),
-              errorElement: <ErrorPage />,
-            },
-            {
-              path: "article",
-              element: (
-                <ProtectedRoute>
-                  <ArticlePage />
-                </ProtectedRoute>
-              ),
-              errorElement: <ErrorPage />,
-            },
-          ],
         },
+      ],
+    },
+    {
+      path: "profile",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
         {
-          path: "profile",
-          element: <ProfilePage />,
+          index: true,
+          element: (
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          ),
           errorElement: <ErrorPage />,
+        },
+      ],
+    },
+    {
+      path: "404",
+      element: <ErrorPage />,
+    },
+    {
+      path: ":username",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          index: true,
+          element: <UserPage />,
         },
       ],
     },
@@ -149,7 +115,20 @@ export default function GlobalRouterProvider() {
       children: [
         {
           index: true,
-          element: <ArchivedPage />,
+          element: (
+            <ProtectedRoute>
+              <ArchivedPage />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "filter",
+          element: (
+            <ProtectedRoute>
+              <MineFilter />
+            </ProtectedRoute>
+          ),
+          errorElement: <ErrorPage />,
         },
       ],
     },

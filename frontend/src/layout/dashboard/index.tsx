@@ -4,58 +4,87 @@ import {
   BellOutlined,
   GlobalOutlined,
   HomeOutlined,
+  LoginOutlined,
   MenuUnfoldOutlined,
   SaveOutlined,
   ThunderboltOutlined,
   UserOutlined,
   WifiOutlined,
 } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useProfile } from "@/state/profile";
 
 function LayoutDashboard() {
   const navigate = useNavigate();
+  const profile = useProfile();
   const [ifshowLeftNav, setIfshowLeftNav] = useState(
     window.localStorage.getItem("ifshowLeftNav") === "false" ? false : true
   );
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
-  const icons = [
+  const [icons, setIcons] = useState([
     {
-      svg: <HomeOutlined />,
-      link: "/mine",
+      svg: <LoginOutlined />,
+      link: "/login",
       disable: false,
+      name: "login",
     },
-    {
-      svg: <BellOutlined />,
-      link: "/#",
-      disable: true,
-    },
-    {
-      svg: <WifiOutlined />,
-      link: "/#",
-      disable: true,
-    },
-    {
-      svg: <GlobalOutlined />,
-      link: "/explore",
-      disable: false,
-    },
+  ]);
 
-    {
-      svg: <SaveOutlined />,
-      link: "/archived",
-      disable: false,
-    },
-    {
-      svg: <ThunderboltOutlined />,
-      link: "/#",
-      disable: true,
-    },
-    {
-      svg: <UserOutlined />,
-      link: "/mine/profile",
-      disable: false,
-    },
-  ];
+  useEffect(() => {
+    if (profile) {
+      setIcons([
+        {
+          svg: <HomeOutlined />,
+          link: "/home",
+          disable: false,
+          name: "home",
+        },
+        // {
+        //   svg: <BellOutlined />,
+        //   link: "/#",
+        //   disable: true,
+        // },
+        // {
+        //   svg: <WifiOutlined />,
+        //   link: "/#",
+        //   disable: true,
+        // },
+        {
+          svg: <GlobalOutlined />,
+          link: "/explore",
+          disable: false,
+          name: "explore",
+        },
+
+        {
+          svg: <SaveOutlined />,
+          link: "/archived",
+          disable: false,
+          name: "archived",
+        },
+        // {
+        //   svg: <ThunderboltOutlined />,
+        //   link: "/#",
+        //   disable: true,
+        // },
+        {
+          svg: <UserOutlined />,
+          link: "/profile",
+          disable: false,
+          name: "profile",
+        },
+      ]);
+    } else {
+      setIcons([
+        {
+          svg: <LoginOutlined />,
+          link: "/login",
+          disable: false,
+          name: "login",
+        },
+      ]);
+    }
+  }, [profile]);
 
   function changeLeftNavVb() {
     setIfshowLeftNav(!ifshowLeftNav);
@@ -63,7 +92,7 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className=" bg-bgWhite w-full min-h-dvh">
+    <div className=" bg-white w-full min-h-dvh">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
           <div className=" sticky top-0 duration-300 flex md:w-[150px] px-1 sm:px-2 md:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
@@ -83,7 +112,7 @@ function LayoutDashboard() {
                 >
                   {icon.svg}
                   <div className=" shrink-0 hidden tracking-widest md:block">
-                    {t(`leftNavBar.${index}`)}
+                    {t(`leftNavBar.${icon.name}`)}
                   </div>
                 </div>
               );
@@ -96,7 +125,7 @@ function LayoutDashboard() {
                 <MenuUnfoldOutlined />
               </div>
               <div className=" shrink-0 hidden tracking-widest md:block">
-                {t(`leftNavBar.${icons.length}`)}
+                {t(`leftNavBar.fold`)}
               </div>
             </div>
           </div>

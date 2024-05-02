@@ -1,4 +1,5 @@
 import { logOut, loginByPassword, registerBypassword } from "@/api/login/main";
+import { apiGetMyTags } from "@/api/rote/main";
 import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile, useProfileDispatch } from "@/state/profile";
 import { useRotesDispatch } from "@/state/rotes";
@@ -7,7 +8,7 @@ import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Input, Typography } from "antd";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function Login() {
   const profile = useProfile();
@@ -48,7 +49,8 @@ function Login() {
           type: "updateProfile",
           profile: res.data.data,
         });
-        navigate("/mine");
+        refreshTags();
+        navigate("/home");
       })
       .catch((err) => {
         console.log(err);
@@ -62,6 +64,26 @@ function Login() {
           });
         }
       });
+  }
+
+  async function refreshTags() {
+    const initialTags = await apiGetMyTags()
+      .then((res) => {
+        return res.data.data.map((item: any) => {
+          return {
+            value: item,
+            label: item,
+          };
+        });
+      })
+      .catch((err: any) => {
+        return [];
+      });
+
+    tagsDispatch({
+      type: "freshAll",
+      tags: initialTags,
+    });
   }
 
   function logOutFn() {
@@ -182,7 +204,7 @@ function Login() {
               <div
                 className=" cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
                 onClick={() => {
-                  navigate("/mine");
+                  navigate("/home");
                 }}
               >
                 前往主页
@@ -297,6 +319,18 @@ function Login() {
             </div>
           </>
         )}
+        <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95 text-black">
+          <Link
+            className=" after:content-['⤴'] hover:text-gray-500"
+            to="/explore"
+          >
+            探索
+          </Link>
+          <span className=" px-2">/</span>
+          <Link className=" after:content-['⤴'] hover:text-gray-500" to="/">
+            主页
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -3,17 +3,40 @@
     "landing": {
       "poem": "采菊东篱下，悠然见南山🍃",
       "ComingSoon": "开发中...",
-      "types": ["复杂格式文章", "Text Only", "灵感图库", "日记本", "Todo"],
+      "types": [
+        "复杂格式文章",
+        "Text Only",
+        "灵感图库",
+        "日记本",
+        "Todo"
+      ],
       "slogen": "一个看起来不太一样的个人笔记库🤔",
       "openApi": "开放API，记录的姿势不止一种🤩",
       "data": "对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "links": "链接:",
-      "linksItems": ["登录","用户指南", "Github", "博客", "下载", "捐赠"],
+      "linksItems": [
+        "登录",
+        "用户指南",
+        "Github",
+        "博客",
+        "下载",
+        "捐赠"
+      ],
       "dashboard": "仪表盘"
     },
     "mine": {
-      "leftNavBar": ["首页", "消息", "订阅", "探索", "归档", "勋章", "个人", "收起"],
-      "roteTypes": ["笔记", "日记本", "Todo", "好事", "文章"]
+      "leftNavBar": {
+        "home": "首页",
+        "explore": "探索",
+        "archived": "归档",
+        "profile": "我的",
+        "fold": "收起",
+        "login": "登录"
+      },
+      "roteTypes": {
+        "Rote": "笔记",
+        "Article": "文章"
+      }
     }
   }
 }

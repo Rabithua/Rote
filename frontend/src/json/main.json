@@ -81,5 +81,7 @@
       "to": "article",
       "active": false
     }
-  ]
+  ],
+  "roteMaxLetter": 10000,
+  "roteContentExpandedLetter": 600
 }

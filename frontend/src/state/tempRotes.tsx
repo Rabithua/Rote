@@ -4,40 +4,41 @@ import { Rote, Rotes, RotesAction } from "@/types/main";
 import { sortRotesByPinAndCreatedAt } from "@/utils/main";
 import React, { createContext, useContext, useReducer, ReactNode } from "react";
 
-const RotesContext = createContext<Rotes | null>(null);
-const RotesDispatchContext = createContext<React.Dispatch<RotesAction> | null>(
-  null
-);
+const TempRotesContext = createContext<Rotes | null>(null);
+const TempRotesDispatchContext =
+  createContext<React.Dispatch<RotesAction> | null>(null);
 
-export function RotesProvider({ children }: { children: ReactNode }) {
-  const [rotes, dispatch] = useReducer(rotesReducer, []);
+export function TempRotesProvider({ children }: { children: ReactNode }) {
+  const [rotes, dispatch] = useReducer(tempRotesReducer, initialRotes);
 
   return (
-    <RotesContext.Provider value={rotes}>
-      <RotesDispatchContext.Provider value={dispatch}>
+    <TempRotesContext.Provider value={rotes}>
+      <TempRotesDispatchContext.Provider value={dispatch}>
         {children}
-      </RotesDispatchContext.Provider>
-    </RotesContext.Provider>
+      </TempRotesDispatchContext.Provider>
+    </TempRotesContext.Provider>
   );
 }
 
-export function useRotes() {
-  const context = useContext(RotesContext);
+export function useTempRotes() {
+  const context = useContext(TempRotesContext);
   if (context === null) {
-    throw new Error("useRotes must be used within a RotesProvider");
+    throw new Error("useTempRotes must be used within a TempRotesProvider");
   }
   return context;
 }
 
-export function useRotesDispatch() {
-  const context = useContext(RotesDispatchContext);
+export function useTempRotesDispatch() {
+  const context = useContext(TempRotesDispatchContext);
   if (context === null) {
-    throw new Error("useRotesDispatch must be used within a RotesProvider");
+    throw new Error(
+      "useTempRotesDispatch must be used within a TempRotesProvider"
+    );
   }
   return context;
 }
 
-function rotesReducer(rotes: Rotes, action: RotesAction): Rotes {
+function tempRotesReducer(rotes: Rotes, action: RotesAction): Rotes {
   switch (action.type) {
     case "add": {
       const rotes_unOrder = [...rotes, ...action.rotes];
@@ -71,3 +72,5 @@ function rotesReducer(rotes: Rotes, action: RotesAction): Rotes {
     }
   }
 }
+
+const initialRotes = [] as Rotes;

@@ -18,21 +18,21 @@ function LayoutHome() {
       to: "rote",
       active: true,
     },
-    {
-      name: "Journal",
-      to: "journal",
-      active: false,
-    },
-    {
-      name: "Todo",
-      to: "todo",
-      active: false,
-    },
-    {
-      name: "Lucky",
-      to: "lucky",
-      active: false,
-    },
+    // {
+    //   name: "Journal",
+    //   to: "journal",
+    //   active: false,
+    // },
+    // {
+    //   name: "Todo",
+    //   to: "todo",
+    //   active: false,
+    // },
+    // {
+    //   name: "Lucky",
+    //   to: "lucky",
+    //   active: false,
+    // },
     {
       name: "Article",
       to: "article",
@@ -70,59 +70,6 @@ function LayoutHome() {
     setRoteTypes(newArr);
   }
 
-  function roteTypesChange(index: number) {
-    if (roteTypes[index].active) {
-      refreshData(index);
-      return;
-    }
-    navigate(roteTypes[index].to);
-    let newArr = roteTypes.map((type, i) => {
-      if (i === index) {
-        type.active = true;
-        return type;
-      } else {
-        return {
-          name: type.name,
-          to: type.to,
-          active: false,
-        };
-      }
-    });
-
-    setRoteTypes(newArr);
-  }
-
-  function refreshData(index: number) {
-    const toastId = toast.loading("刷新中...");
-    try {
-      switch (index) {
-        case 0:
-          apiGetMyRote({
-            limit: rotes.length,
-            skip: 0,
-          }).then((res) => {
-            const rotes_api = res.data.data;
-            toast.success("数据已刷新", {
-              id: toastId,
-            });
-            rotesDispatch({
-              type: "freshAll",
-              rotes: rotes_api,
-            });
-          });
-          break;
-
-        default:
-          toast.dismiss(toastId);
-          break;
-      }
-    } catch (error) {
-      toast.error("刷新失败", {
-        id: toastId,
-      });
-    }
-  }
-
   function goTop() {
     const containers = document.getElementsByClassName("scrollContainer");
     if (containers.length > 0) {
@@ -145,9 +92,8 @@ function LayoutHome() {
                   : " border-transparent"
               }`}
               key={`roteType_${index}`}
-              onClick={() => roteTypesChange(index)}
             >
-              {t(`roteTypes.${index}`)}
+              {t(`roteTypes.${type.name}`)}
             </div>
           );
         })}
