@@ -43,7 +43,7 @@ const { stateType, roteType } = mainJson;
 
 let routerV1 = express.Router();
 
-routerV1.all("/ping", isAdmin, (req, res) => {
+routerV1.all("/ping", (req, res) => {
   res.send({
     code: 0,
     msg: "ok",
@@ -399,7 +399,7 @@ routerV1.get("/getUserInfo", (req, res) => {
     });
 });
 
-routerV1.get("/getMyTags", (req, res) => {
+routerV1.get("/getMyTags", isAuthenticated, (req, res) => {
   const user = req.user as User;
 
   if (!user.id) {

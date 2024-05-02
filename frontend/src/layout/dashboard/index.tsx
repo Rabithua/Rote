@@ -1,15 +1,12 @@
 import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
-  BellOutlined,
   GlobalOutlined,
   HomeOutlined,
   LoginOutlined,
   MenuUnfoldOutlined,
   SaveOutlined,
-  ThunderboltOutlined,
   UserOutlined,
-  WifiOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/state/profile";

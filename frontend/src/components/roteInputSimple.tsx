@@ -110,6 +110,9 @@ function RoteInputSimple() {
   }
 
   function uploadAttachments(fileList: any, rote: any) {
+    if (fileList.length === 0) {
+      return [];
+    }
     return new Promise((reslove, reject) => {
       const toastId = toast.loading("附件上传中...");
       try {
