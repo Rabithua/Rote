@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import AvatarEditor from "react-avatar-editor";
 import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
+import linkifyStr from "linkify-string";
 
 function ProfilePage() {
   const inputAvatarRef = useRef(null);
@@ -187,7 +188,14 @@ function ProfilePage() {
         <div className=" text-2xl font-semibold">{profile?.nickname}</div>
         <div className=" text-base text-gray-500">@{profile?.username}</div>
         <div className=" text-base ">
-          {profile?.description || "这个人很懒，还没留下任何简介..."}
+          <div
+            className=" aTagStyle"
+            dangerouslySetInnerHTML={{
+              __html:
+                linkifyStr(profile?.description as any) ||
+                "这个人很懒，还没留下任何简介...",
+            }}
+          ></div>
         </div>
         <div className=" text-base text-gray-500">{`注册时间：${moment
           .utc(profile?.createdAt)
