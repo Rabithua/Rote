@@ -9,7 +9,6 @@ import { ProtectedRoute } from "./protectedRoute";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useProfile } from "@/state/profile";
 import LayoutDashboard from "@/layout/dashboard";
-import LayoutHome from "@/layout/mine/home";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));
