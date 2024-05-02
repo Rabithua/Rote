@@ -67,6 +67,7 @@
     "react-dom": "^18.2.0",
     "react-hot-toast": "^2.4.1",
     "react-i18next": "^13.5.0",
+    "react-photo-view": "^1.2.4",
     "react-router-dom": "^6.14.1",
     "react-scripts": "5.0.1",
     "stream-browserify": "^3.0.0",

@@ -1,5 +1,4 @@
 import {
-  CloseOutlined,
   DeleteOutlined,
   DownOutlined,
   EditOutlined,
@@ -11,13 +10,13 @@ import {
   ShareAltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import defaultImage from "@/assets/img/defaultImage.svg";
-import { Avatar, Modal, Popover, Tooltip, Image } from "antd";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
+import { Avatar, Modal, Popover, Tooltip } from "antd";
 import { formatTimeAgo } from "@/utils/main";
 import mainJson from "@/json/main.json";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import moment from "moment";
-import { Editor } from "novel";
 import RoteInputModel from "./roteInputModel";
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import toast from "react-hot-toast";
@@ -59,8 +58,10 @@ function RoteItem({ rote_param }: any) {
   };
 
   useEffect(() => {
-    setRote(rote_param);
-  }, [rote_param]);
+    if (rote_param !== rote) {
+      setRote(rote_param);
+    }
+  }, [rote_param, rote]);
 
   function goFilter(tag: string) {
     if (
@@ -454,19 +455,21 @@ function RoteItem({ rote_param }: any) {
         </div>
 
         {rote.attachments.length > 0 && (
-          <div className=" w-full my-2 flex flex-wrap rounded-2xl overflow-hidden">
-            <Image.PreviewGroup>
-              {rote.attachments.map((file: any, index: number) => {
+          <div className=" w-full my-2 flex flex-wrap rounded-2xl overflow-hidden bg-bgWhite">
+            <PhotoProvider>
+              {rote.attachments.map((file: any, index: any) => {
                 return (
-                  <div
-                    className=" lg:w-1/4 md:w-1/3 w-1/2 aspect-1 bg-bgWhite overflow-hidden relative flex items-center justify-center"
-                    key={`filePicker_${index}`}
-                  >
-                    <Image height={300} className=" object-cover" src={file.url} fallback={defaultImage} />
-                  </div>
+                  <PhotoView key={`files_${index}`} src={file.url}>
+                    <img
+                      className=" md:w-1/3 w-1/2 aspect-1 object-cover"
+                      src={file.url}
+                      loading="lazy"
+                      alt=""
+                    />
+                  </PhotoView>
                 );
               })}
-            </Image.PreviewGroup>
+            </PhotoProvider>
           </div>
         )}
         <div className=" flex items-center flex-wrap gap-2 my-2">

@@ -27,6 +27,7 @@ function ExplorePage() {
     if (!topElement) {
       return;
     }
+
     observeElementInViewport(topElement, (ifshow: boolean) => {
       setShowScrollTop(!ifshow);
     });
@@ -99,12 +100,13 @@ function ExplorePage() {
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
     >
-      <div id="top" className=" sticky top-0 z-10">
+      <div className=" sticky top-0 z-10">
         <div className=" flex gap-2 bg-white text-2xl font-semibold p-4">
           <GlobalOutlined />
           探索 / Explore
         </div>
       </div>
+      <div id="top" className=" h-[1px]"></div>
 
       <div className="">
         {rotes.map((item: any, index: any) => {

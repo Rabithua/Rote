@@ -1,7 +1,5 @@
-import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import RoteInputSimple from "@/components/roteInputSimple";
-import { useNavigate } from "react-router-dom";
 import { LoadingOutlined, UpOutlined } from "@ant-design/icons";
 import Rote from "@/components/Rote";
 import { apiGetMyRote } from "@/api/rote/main";
@@ -12,7 +10,6 @@ import { observeElementInViewport } from "@/utils/observeElementInViewport";
 import { toast } from "react-hot-toast";
 
 function RotePage() {
-  const navigate = useNavigate();
   const loadingRef = useRef(null);
   const [isLoadAll, setIsLoadAll] = useState(false);
   const rotes = useRotes();
@@ -68,7 +65,7 @@ function RotePage() {
                 rotes: rotes_api,
               });
             })
-            .catch((err) => {});
+            .catch(() => {});
         }
       });
     }, options);
