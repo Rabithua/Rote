@@ -10,6 +10,8 @@ import {
   ShareAltOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import Linkify from "react-linkify";
+
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 import { Avatar, Modal, Popover, Tooltip } from "antd";
@@ -26,7 +28,6 @@ import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
 import RoteShareCard from "./roteShareCard";
 import { useArchivedRotesDispatch } from "@/state/archivedRotes";
-import linkifyStr from "linkify-string";
 
 const { emojiList, roteContentExpandedLetter } = mainJson;
 
@@ -435,18 +436,20 @@ function RoteItem({ rote_param }: any) {
         </div>
 
         <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
-          <div className="aTagStyle"
-            dangerouslySetInnerHTML={{
-              __html:
-                rote.content.length > roteContentExpandedLetter
-                  ? isExpanded
-                    ? linkifyStr(rote.content)
-                    : `${linkifyStr(
-                        rote.content.slice(0, roteContentExpandedLetter)
-                      )}...`
-                  : linkifyStr(rote.content),
-            }}
-          ></div>
+          <div className="aTagStyle">
+            {rote.content.length > roteContentExpandedLetter ? (
+              isExpanded ? (
+                <Linkify>{rote.content}</Linkify>
+              ) : (
+                <Linkify>{`${rote.content.slice(
+                  0,
+                  roteContentExpandedLetter
+                )}...`}</Linkify>
+              )
+            ) : (
+              <Linkify>{rote.content}</Linkify>
+            )}
+          </div>
 
           {rote.content.length > roteContentExpandedLetter && (
             <>
@@ -464,13 +467,13 @@ function RoteItem({ rote_param }: any) {
         </div>
 
         {rote.attachments.length > 0 && (
-          <div className=" w-full my-2 flex flex-wrap rounded-2xl overflow-hidden bg-bgWhite">
+          <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
             <PhotoProvider>
               {rote.attachments.map((file: any, index: any) => {
                 return (
                   <PhotoView key={`files_${index}`} src={file.url}>
                     <img
-                      className=" md:w-1/3 w-1/2 aspect-1 object-cover"
+                      className=" w-[calc(1/3*100%-2.6667px)] aspect-1 object-cover "
                       src={file.url}
                       loading="lazy"
                       alt=""

@@ -2,7 +2,12 @@ import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
 import OpenKeyItem from "@/components/openKey";
 import { useOpenKeys, useOpenKeysDispatch } from "@/state/openKeys";
 import { useProfile, useProfileDispatch } from "@/state/profile";
-import { EditOutlined, LoadingOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  EditOutlined,
+  LoadingOutlined,
+  RetweetOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
 import { Avatar, Divider, Input, Modal, Typography } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import moment from "moment";
@@ -10,10 +15,11 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import AvatarEditor from "react-avatar-editor";
 import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
-import linkifyStr from "linkify-string";
+import Linkify from "react-linkify";
 
 function ProfilePage() {
   const inputAvatarRef = useRef(null);
+  const inputCoverRef = useRef(null);
   const AvatarEditorRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
@@ -132,6 +138,40 @@ function ProfilePage() {
       });
   }
 
+  function changeCover(event: any) {
+    const toastId = toast.loading("上传中...");
+    const selectedFile = event.target.files[0];
+
+    if (selectedFile) {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      apiUploadAvatar(formData).then((res) => {
+        console.log(res);
+        let url = res.data.data[0].url;
+
+        apiSaveProfile({
+          cover: url,
+        })
+          .then((res) => {
+            toast.success("修改成功", {
+              id: toastId,
+            });
+            profileDispatch({
+              type: "updateProfile",
+              profile: res.data.data,
+            });
+          })
+          .catch((err) => {
+            toast.error("修改失败", {
+              id: toastId,
+            });
+            console.error("Error edit Profile:", err);
+          });
+      });
+    }
+  }
+
   return (
     <div>
       <div className=" w-full min-h-[1/5] max-h-80 relative overflow-hidden">
@@ -166,6 +206,23 @@ function ProfilePage() {
             </defs>
           </svg>
         )}
+        <div
+          className=" cursor-pointer absolute bottom-1 right-3 text-white px-2 py-1 rounded-md bg-[#00000030] backdrop-blur-md"
+          onClick={() => {
+            // @ts-ignore
+            inputCoverRef.current?.click();
+          }}
+        >
+          <input
+            type="file"
+            accept="image/*"
+            max="1"
+            className=" hidden"
+            ref={inputCoverRef}
+            onChange={changeCover}
+          />
+          <RetweetOutlined />
+        </div>
       </div>
       <div className=" flex mx-4 h-16">
         <Avatar
@@ -188,14 +245,12 @@ function ProfilePage() {
         <div className=" text-2xl font-semibold">{profile?.nickname}</div>
         <div className=" text-base text-gray-500">@{profile?.username}</div>
         <div className=" text-base ">
-          <div
-            className=" aTagStyle"
-            dangerouslySetInnerHTML={{
-              __html:
-                linkifyStr(profile?.description as any) ||
-                "这个人很懒，还没留下任何简介...",
-            }}
-          ></div>
+          <div className=" aTagStyle break-words whitespace-pre-line">
+            <Linkify>
+              {(profile?.description as any) ||
+                "这个人很懒，还没留下任何简介..."}
+            </Linkify>
+          </div>
         </div>
         <div className=" text-base text-gray-500">{`注册时间：${moment
           .utc(profile?.createdAt)

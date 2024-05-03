@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import RoteInputSimple from "@/components/roteInputSimple";
-import { LoadingOutlined, UpOutlined } from "@ant-design/icons";
+import { LoadingOutlined, SyncOutlined, UpOutlined } from "@ant-design/icons";
 import Rote from "@/components/Rote";
 import { apiGetMyRote } from "@/api/rote/main";
 import { Empty } from "antd";
@@ -115,11 +115,11 @@ function RotePage() {
 
   return (
     <div
-      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
+      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-lvh overflow-y-visible overflow-x-hidden relative`}
       style={{ scrollPaddingTop: `${navHeight}px` }}
     >
       <div
-        className=" rotypesNav border-y border-[#00000010] flex items-end gap-2 text-gray-600 bg-white font-light p-4"
+        className=" cursor-pointer group rotypesNav border-y border-[#00000010] flex items-end gap-2 text-gray-600 bg-white font-light p-4"
         onClick={refreshData}
       >
         <svg
@@ -159,11 +159,7 @@ function RotePage() {
               gradientUnits="userSpaceOnUse"
             >
               <stop stopColor="#07C160" />
-              <stop
-                offset="0.328125"
-                stopColor="#3ECF4A"
-                stopOpacity="0.96"
-              />
+              <stop offset="0.328125" stopColor="#3ECF4A" stopOpacity="0.96" />
               <stop
                 offset="0.666667"
                 stopColor="#99E626"
@@ -180,11 +176,7 @@ function RotePage() {
               gradientUnits="userSpaceOnUse"
             >
               <stop stopColor="#07C160" />
-              <stop
-                offset="0.328125"
-                stopColor="#3ECF4A"
-                stopOpacity="0.96"
-              />
+              <stop offset="0.328125" stopColor="#3ECF4A" stopOpacity="0.96" />
               <stop
                 offset="0.666667"
                 stopColor="#99E626"
@@ -201,11 +193,7 @@ function RotePage() {
               gradientUnits="userSpaceOnUse"
             >
               <stop stopColor="#07C160" />
-              <stop
-                offset="0.328125"
-                stopColor="#3ECF4A"
-                stopOpacity="0.96"
-              />
+              <stop offset="0.328125" stopColor="#3ECF4A" stopOpacity="0.96" />
               <stop
                 offset="0.666667"
                 stopColor="#99E626"
@@ -222,11 +210,7 @@ function RotePage() {
               gradientUnits="userSpaceOnUse"
             >
               <stop stopColor="#07C160" />
-              <stop
-                offset="0.328125"
-                stopColor="#3ECF4A"
-                stopOpacity="0.96"
-              />
+              <stop offset="0.328125" stopColor="#3ECF4A" stopOpacity="0.96" />
               <stop
                 offset="0.666667"
                 stopColor="#99E626"
@@ -243,11 +227,7 @@ function RotePage() {
               gradientUnits="userSpaceOnUse"
             >
               <stop stopColor="#07C160" />
-              <stop
-                offset="0.328125"
-                stopColor="#3ECF4A"
-                stopOpacity="0.96"
-              />
+              <stop offset="0.328125" stopColor="#3ECF4A" stopOpacity="0.96" />
               <stop
                 offset="0.666667"
                 stopColor="#99E626"
@@ -257,6 +237,7 @@ function RotePage() {
             </linearGradient>
           </defs>
         </svg>
+        <SyncOutlined className=" group-hover:opacity-100 opacity-0 duration-300 mb-[2px] ml-2 text-green-600" />
         {/* 采菊东篱下，悠然见南山 */}
       </div>
       <RoteInputSimple></RoteInputSimple>
