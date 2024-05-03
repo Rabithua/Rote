@@ -98,7 +98,7 @@ function ExplorePage() {
 
   return (
     <div
-      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
+      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-lvh overflow-y-visible overflow-x-hidden relative`}
     >
       <div className=" sticky top-0 z-10">
         <div className=" flex gap-2 bg-white text-2xl font-semibold p-4">

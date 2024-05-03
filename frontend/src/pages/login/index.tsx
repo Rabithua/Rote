@@ -187,7 +187,7 @@ function Login() {
   }
 
   return (
-    <div className="h-dvh w-full  bg-white  bg-grid-black/[0.2] relative flex items-center justify-center">
+    <div className="h-lvh w-full  bg-white  bg-grid-black/[0.2] relative flex items-center justify-center">
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center  bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]"></div>
       <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-white w-80 border rounded-lg flex flex-col gap-2 pb-10 z-10">
