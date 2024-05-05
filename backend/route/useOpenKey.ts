@@ -66,7 +66,7 @@ useOpenKey.post("/onerote", queryTypeCheck, (req, res) => {
   const { openkey, content, state, type, tags, pin } = req.body;
 
   if (!openkey || !content) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Need openkey and content!",
@@ -85,7 +85,7 @@ useOpenKey.post("/onerote", queryTypeCheck, (req, res) => {
   getOneOpenKey(openkey.toString())
     .then(async (e) => {
       if (!e.permissions.includes("SENDROTE")) {
-        res.send({
+        res.status(401).send({
           code: 1,
           msg: "error",
           data: "OpenKey permission unmatch!",
@@ -104,7 +104,7 @@ useOpenKey.post("/onerote", queryTypeCheck, (req, res) => {
           });
         })
         .catch(async (e) => {
-          res.send({
+          res.status(401).send({
             code: 1,
             msg: "error",
             data: e,
@@ -112,7 +112,7 @@ useOpenKey.post("/onerote", queryTypeCheck, (req, res) => {
         });
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
