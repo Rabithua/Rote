@@ -1,16 +1,7 @@
 {
   "stateOptions": [
     {
-      "label": "未发布",
-      "options": [
-        {
-          "label": "草稿",
-          "value": "draft"
-        }
-      ]
-    },
-    {
-      "label": "已发布",
+      "label": "笔记状态",
       "options": [
         {
           "label": "公开",

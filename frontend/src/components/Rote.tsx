@@ -396,13 +396,7 @@ function RoteItem({ rote_param }: any) {
               </Tooltip>
             ) : null}
 
-            {rote.state === "draft" ? (
-              <Tooltip placement="bottom" title={`草稿`}>
-                <HourglassOutlined
-                  className={` cursor-pointer text-md rounded-md`}
-                />
-              </Tooltip>
-            ) : rote.state === "public" ? (
+            {rote.state === "public" ? (
               <Tooltip placement="bottom" title={`公开`}>
                 <GlobalOutlined
                   className={` cursor-pointer text-md rounded-md`}
