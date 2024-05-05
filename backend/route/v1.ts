@@ -39,7 +39,7 @@ import {
 import mainJson from "../json/main.json";
 import useOpenKey from "./useOpenKey";
 
-const { stateType, roteType } = mainJson;
+const { stateType, roteType, safeRoutes } = mainJson;
 
 let routerV1 = express.Router();
 
@@ -104,6 +104,33 @@ routerV1.post("/register", (req, res) => {
     });
     return;
   }
+  if (username) {
+    function isValidUsername(username: string) {
+      // 用户名只允许包含大小写字母、数字和下划线
+      const validUsernameRegex = /^[a-zA-Z0-9_]+$/;
+      return validUsernameRegex.test(username);
+    }
+    // 检查用户名是否符合要求
+    if (!isValidUsername(username)) {
+      res.status(401).send({
+        code: 1,
+        msg: "用户名只能包含大小写字母和数字以及下划线",
+        data: null,
+      });
+      return;
+    } else {
+      // 检查用户名是否在安全路由数组中
+      if (safeRoutes.includes(username)) {
+        res.status(401).send({
+          code: 1,
+          msg: "用户名与路由冲突，换一个吧",
+          data: null,
+        });
+        return;
+      }
+    }
+  }
+
   try {
     createUser({
       username,

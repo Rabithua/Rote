@@ -106,7 +106,7 @@ function MineFilter() {
         observer.unobserve(loadingRef.current);
       }
     };
-  }, []);
+  }, [filter, rotesDispatch]);
 
   useEffect(() => {
     // 监听state的变化
@@ -130,6 +130,14 @@ function MineFilter() {
         rotes.reduce((acc: string[], curr) => acc.concat(curr.tags), [])
       ),
     ];
+  }
+
+  function filterTagsChange(tag: string) {
+    navigate("/filter", {
+      state: {
+        tags: [tag],
+      },
+    });
   }
 
   function goTop() {
@@ -177,6 +185,9 @@ function MineFilter() {
                   <div
                     className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] border-[#00000010] duration-300 hover:scale-95"
                     key={`tag_${index}`}
+                    onClick={() => {
+                      filterTagsChange(tag);
+                    }}
                   >
                     {tag}
                   </div>

@@ -15,5 +15,15 @@
     "editorType": [
         "normal",
         "noval"
+    ],
+    "safeRoutes": [
+        "home",
+        "landing",
+        "login",
+        "filter",
+        "profile",
+        "404",
+        "explore",
+        "archived"
     ]
 }

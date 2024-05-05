@@ -10,6 +10,9 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 
+import mainJson from "@/json/main.json";
+
+const { safeRoutes } = mainJson;
 function Login() {
   const profile = useProfile();
   const profileDispatch = useProfileDispatch();
@@ -124,6 +127,27 @@ function Login() {
       toast.error("username 不能为空");
       return;
     }
+
+    if (registerData.username) {
+      const username = registerData.username;
+      function isValidUsername(username: string) {
+        // 用户名只允许包含大小写字母、数字和下划线
+        const validUsernameRegex = /^[a-zA-Z0-9_]+$/;
+        return validUsernameRegex.test(username);
+      }
+      // 检查用户名是否符合要求
+      if (!isValidUsername(username)) {
+        toast.error("用户名只能包含大小写字母和数字以及下划线");
+        return;
+      } else {
+        // 检查用户名是否在安全路由数组中
+        if (safeRoutes.includes(username)) {
+          toast.error("用户名与路由冲突，换一个吧");
+          return;
+        }
+      }
+    }
+
     if (!registerData.password) {
       toast.error("password 不能为空");
       return;

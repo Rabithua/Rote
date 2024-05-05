@@ -72,13 +72,13 @@ function RoteItem({ rote_param }: any) {
       window.location.pathname === "/archived"
     ) {
       if (location.pathname.includes("/filter")) {
-        navigate("../filter", {
+        navigate("/filter", {
           state: {
             tags: [tag],
           },
         });
       } else {
-        navigate("filter", {
+        navigate("/filter", {
           state: {
             tags: [tag],
           },
@@ -473,7 +473,15 @@ function RoteItem({ rote_param }: any) {
                 return (
                   <PhotoView key={`files_${index}`} src={file.url}>
                     <img
-                      className=" w-[calc(1/3*100%-2.6667px)] aspect-1 object-cover "
+                      className={` ${
+                        rote.attachments.length % 3 === 0
+                          ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                          : rote.attachments.length % 2 === 0
+                          ? "w-[calc(1/2*100%-2px)] aspect-1"
+                          : rote.attachments.length === 1
+                          ? " w-full max-w-[500px] rounded-2xl"
+                          : "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                      } object-cover grow `}
                       src={file.url}
                       loading="lazy"
                       alt=""

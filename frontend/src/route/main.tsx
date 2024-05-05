@@ -54,8 +54,16 @@ export default function GlobalRouterProvider() {
           ),
           errorElement: <ErrorPage />,
         },
+      ],
+    },
+
+    {
+      path: "filter",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
         {
-          path: "filter",
+          index: true,
           element: (
             <ProtectedRoute>
               <MineFilter />
@@ -119,15 +127,6 @@ export default function GlobalRouterProvider() {
               <ArchivedPage />
             </ProtectedRoute>
           ),
-        },
-        {
-          path: "filter",
-          element: (
-            <ProtectedRoute>
-              <MineFilter />
-            </ProtectedRoute>
-          ),
-          errorElement: <ErrorPage />,
         },
       ],
     },

@@ -83,5 +83,15 @@
     }
   ],
   "roteMaxLetter": 10000,
-  "roteContentExpandedLetter": 600
+  "roteContentExpandedLetter": 600,
+  "safeRoutes": [
+    "home",
+    "landing",
+    "login",
+    "filter",
+    "profile",
+    "404",
+    "explore",
+    "archived"
+  ]
 }
