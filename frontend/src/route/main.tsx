@@ -155,7 +155,7 @@ export default function GlobalRouterProvider() {
   return (
     <Suspense
       fallback={
-        <div className=" h-lvh w-screen flex justify-center items-center">
+        <div className=" h-dvh w-screen flex justify-center items-center">
           <LoadingOutlined className=" text-4xl" />
         </div>
       }

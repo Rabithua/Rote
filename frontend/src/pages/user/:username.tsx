@@ -148,7 +148,7 @@ function UserPage() {
         userInfo && (
           <>
             <div
-              className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-lvh overflow-y-visible overflow-x-hidden relative`}
+              className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
             >
               <div
                 id="top"
