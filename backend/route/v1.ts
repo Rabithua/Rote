@@ -7,6 +7,7 @@ import {
   deleteAttachments,
   deleteMyOneOpenKey,
   deleteRote,
+  deleteSubScription,
   editMyOneOpenKey,
   editMyProfile,
   editRote,
@@ -14,6 +15,7 @@ import {
   findPublicRote,
   findRoteById,
   findSubScriptionToUser,
+  findSubScriptionToUserByendpoint,
   findUserPublicRote,
   generateOpenKey,
   getMyOpenKey,
@@ -39,7 +41,7 @@ import {
 import mainJson from "../json/main.json";
 import useOpenKey from "./useOpenKey";
 
-const { stateType, roteType } = mainJson;
+const { stateType, roteType, safeRoutes } = mainJson;
 
 let routerV1 = express.Router();
 
@@ -53,46 +55,46 @@ routerV1.all("/ping", (req, res) => {
 
 // User method
 
-routerV1.post("/addUser", isAdmin, (req, res) => {
-  const { username, password, email, nickname } = req.body;
-  if (!username || !password || !email) {
-    res.send({
-      code: 1,
-      msg: "error: data error",
-      data: null,
-    });
-    return;
-  }
-  try {
-    createUser({
-      username,
-      password,
-      email,
-      nickname,
-    }).then(async (user) => {
-      if (user.id) {
-        res.send({
-          code: 0,
-          msg: "ok",
-          data: user,
-        });
-      } else {
-        res.send({
-          code: 1,
-          msg: "error",
-          data: user,
-        });
-      }
-      await prisma.$disconnect();
-    });
-  } catch (error) {
-    res.send({
-      code: 1,
-      msg: "error",
-      data: error,
-    });
-  }
-});
+// routerV1.post("/addUser", isAdmin, (req, res) => {
+//   const { username, password, email, nickname } = req.body;
+//   if (!username || !password || !email) {
+//     res.send({
+//       code: 1,
+//       msg: "error: data error",
+//       data: null,
+//     });
+//     return;
+//   }
+//   try {
+//     createUser({
+//       username,
+//       password,
+//       email,
+//       nickname,
+//     }).then(async (user) => {
+//       if (user.id) {
+//         res.send({
+//           code: 0,
+//           msg: "ok",
+//           data: user,
+//         });
+//       } else {
+//         res.send({
+//           code: 1,
+//           msg: "error",
+//           data: user,
+//         });
+//       }
+//       await prisma.$disconnect();
+//     });
+//   } catch (error) {
+//     res.send({
+//       code: 1,
+//       msg: "error",
+//       data: error,
+//     });
+//   }
+// });
 
 routerV1.post("/register", (req, res) => {
   const { username, password, email, nickname } = req.body;
@@ -104,6 +106,33 @@ routerV1.post("/register", (req, res) => {
     });
     return;
   }
+  if (username) {
+    function isValidUsername(username: string) {
+      // 用户名只允许包含大小写字母、数字和下划线
+      const validUsernameRegex = /^[a-zA-Z0-9_]+$/;
+      return validUsernameRegex.test(username);
+    }
+    // 检查用户名是否符合要求
+    if (!isValidUsername(username)) {
+      res.status(401).send({
+        code: 1,
+        msg: "用户名只能包含大小写字母和数字以及下划线",
+        data: null,
+      });
+      return;
+    } else {
+      // 检查用户名是否在安全路由数组中
+      if (safeRoutes.includes(username)) {
+        res.status(401).send({
+          code: 1,
+          msg: "用户名与路由冲突，换一个吧",
+          data: null,
+        });
+        return;
+      }
+    }
+  }
+
   try {
     createUser({
       username,
@@ -121,7 +150,7 @@ routerV1.post("/register", (req, res) => {
         res.status(401).send({
           code: 1,
           msg: "注册失败，用户名或邮箱已被占用",
-          data: user,
+          data: null,
         });
       }
       await prisma.$disconnect();
@@ -135,39 +164,59 @@ routerV1.post("/register", (req, res) => {
   }
 });
 
-routerV1.post("/addSwSubScription", isAuthenticated, (req, res) => {
+routerV1.post("/addSwSubScription", isAuthenticated, async (req, res) => {
   const { subScription } = req.body;
+  const user = req.user as User;
+
   if (!subScription) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need subScription info",
       data: null,
     });
     return;
   }
-  const user = req.user as User;
-  addSubScriptionToUser(user.id, subScription)
-    .then((e) => {
+
+  try {
+    const d = await findSubScriptionToUserByendpoint(subScription.endpoint);
+    if (d) {
       res.send({
         code: 0,
         msg: "ok",
-        data: e,
+        data: d,
       });
-    })
-    .catch((err) => {
-      res.send({
-        code: 1,
-        msg: "error",
-        data: err,
-      });
+    } else {
+      addSubScriptionToUser(user.id, subScription)
+        .then((e) => {
+          res.send({
+            code: 0,
+            msg: "ok",
+            data: e,
+          });
+        })
+        .catch((err) => {
+          res.status(401).send({
+            code: 1,
+            msg: "error",
+            data: err,
+          });
+        });
+    }
+  } catch (error) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: error,
     });
+  }
 });
 
-routerV1.get("/sendSwSubScription", async (req, res) => {
-  const { subId, msg }: any = req.query;
+routerV1.post("/sendSwSubScription", async (req, res) => {
+  const { subId }: any = req.query;
+  const msg = req.body;
 
   if (!subId || !msg) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Need subId and msg in query",
@@ -176,6 +225,15 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
   }
 
   let to: UserSwSubScription | any = await findSubScriptionToUser(subId);
+
+  if (!to) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "UserSwSubScription not found",
+    });
+    return;
+  }
 
   // 设置更详细的推送通知
   let notificationOptions = {
@@ -194,7 +252,7 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
         endpoint: to.endpoint,
         keys: to.keys,
       },
-      JSON.stringify(notificationOptions)
+      JSON.stringify({ ...msg })
     );
     res.send({
       code: 0,
@@ -205,7 +263,7 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
       },
     });
   } catch (error) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: null,
@@ -213,12 +271,63 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
   }
 });
 
+routerV1.delete("/swSubScription", isAuthenticated, async (req, res) => {
+  const { subId }: any = req.query;
+  const user = req.user as User;
+
+  if (!subId) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Need subId and msg in query",
+    });
+    return;
+  }
+
+  let to: UserSwSubScription | any = await findSubScriptionToUser(subId);
+
+  if (!to) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "UserSwSubScription not found",
+    });
+    return;
+  }
+
+  if (to.userid !== user.id) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "User not match!",
+    });
+    return;
+  }
+
+  deleteSubScription(subId)
+    .then((data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: data,
+      });
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: error,
+      });
+    });
+});
+
 routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
   const { title, content, type, tags, state, pin, editor, attachments } =
     req.body;
   const user = req.user as User;
   if (!content) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Need content",
@@ -245,7 +354,7 @@ routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
     })
     .catch((error) => {
       console.error("Error:", error);
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: error,
@@ -279,7 +388,7 @@ routerV1.post("/getMyRote", isAuthenticated, (req, res) => {
     })
     .catch(async (e) => {
       console.log(e);
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -297,7 +406,7 @@ routerV1.post("/getUserPublicRote", async (req, res) => {
   const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
 
   if (!username) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Username not found",
@@ -308,7 +417,7 @@ routerV1.post("/getUserPublicRote", async (req, res) => {
   const userInfo = await getUserInfoByUsername(username);
 
   if (!userInfo.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Username not found",
@@ -333,7 +442,7 @@ routerV1.post("/getUserPublicRote", async (req, res) => {
     })
     .catch(async (e) => {
       console.log(e);
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -360,7 +469,7 @@ routerV1.post("/getPublicRote", (req, res) => {
     })
     .catch(async (e) => {
       console.log(e);
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -403,7 +512,7 @@ routerV1.get("/getMyTags", isAuthenticated, (req, res) => {
   const user = req.user as User;
 
   if (!user.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need userid",
       data: null,
@@ -420,7 +529,7 @@ routerV1.get("/getMyTags", isAuthenticated, (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -433,7 +542,7 @@ routerV1.get("/oneRote", (req, res) => {
   console.log(req.query);
   const { id } = req.query;
   if (!id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Need id",
@@ -450,7 +559,7 @@ routerV1.get("/oneRote", (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -473,7 +582,7 @@ routerV1.post("/oneRote", isAuthor, bodyTypeCheck, (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -486,7 +595,7 @@ routerV1.delete("/oneRote", isAuthor, (req, res) => {
   console.log(req.body);
   const rote = req.body;
   if (!rote) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Need data",
@@ -504,7 +613,7 @@ routerV1.delete("/oneRote", isAuthor, (req, res) => {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -522,7 +631,7 @@ routerV1.post(
     const roteid = req.query.roteid || undefined;
     console.log(req.files);
     if (!req.files) {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: "Need files!",
@@ -542,7 +651,7 @@ routerV1.post(
         });
       })
       .catch(async (e) => {
-        res.send({
+        res.status(401).send({
           code: 1,
           msg: "error",
           data: e,
@@ -628,7 +737,7 @@ routerV1.post("/profile", isAuthenticated, function (req, res) {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -641,7 +750,7 @@ routerV1.get("/getsession", isAuthenticated, function (req, res) {
   const user = req.user as User;
 
   if (!user.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need userid",
       data: null,
@@ -659,7 +768,7 @@ routerV1.get("/getsession", isAuthenticated, function (req, res) {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -672,7 +781,7 @@ routerV1.get("/openkey/generate", isAuthenticated, function (req, res) {
   const user = req.user as User;
 
   if (!user.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need userid",
       data: null,
@@ -689,7 +798,7 @@ routerV1.get("/openkey/generate", isAuthenticated, function (req, res) {
       });
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -701,7 +810,7 @@ routerV1.get("/openkey", isAuthenticated, function (req, res) {
   const user = req.user as User;
 
   if (!user.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need userid",
       data: null,
@@ -719,7 +828,7 @@ routerV1.get("/openkey", isAuthenticated, function (req, res) {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -732,7 +841,7 @@ routerV1.delete("/openkey", isAuthenticated, function (req, res) {
   const user = req.user as User;
 
   if (!user.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need userid",
       data: null,
@@ -743,7 +852,7 @@ routerV1.delete("/openkey", isAuthenticated, function (req, res) {
   const { id } = req.body;
 
   if (!id || id.length !== 24) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Data error",
@@ -761,7 +870,7 @@ routerV1.delete("/openkey", isAuthenticated, function (req, res) {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -774,7 +883,7 @@ routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
   const user = req.user as User;
 
   if (!user.id) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "Need userid",
       data: null,
@@ -785,7 +894,7 @@ routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
   const { id, permissions } = req.body;
 
   if (!id || !permissions) {
-    res.send({
+    res.status(401).send({
       code: 1,
       msg: "error",
       data: "Data error",
@@ -803,7 +912,7 @@ routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
       await prisma.$disconnect();
     })
     .catch(async (e) => {
-      res.send({
+      res.status(401).send({
         code: 1,
         msg: "error",
         data: e,
@@ -815,7 +924,7 @@ routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
-    return res.send({
+    return res.status(401).send({
       code: 1,
       msg: error.code,
       data: null,

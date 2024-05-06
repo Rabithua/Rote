@@ -67,8 +67,10 @@
   "start_url": "/",
   "id": "/",
   "scope": "/",
-  "display_override": ["fullscreen"],
+  "display_override": [
+    "fullscreen"
+  ],
   "display": "standalone",
-  "theme_color": "#f8f8f8",
+  "theme_color": "#ffffff",
   "background_color": "#ffca27"
 }

@@ -19,6 +19,7 @@ const ErrorPage = lazy(() => import("@/pages/404"));
 const ExplorePage = lazy(() => import("@/pages/explore"));
 const ArchivedPage = lazy(() => import("@/pages/archived"));
 const UserPage = lazy(() => import("@/pages/user/:username"));
+const ExperimentPage = lazy(() => import("@/pages/experiment"));
 
 export default function GlobalRouterProvider() {
   const profile = useProfile();
@@ -54,8 +55,16 @@ export default function GlobalRouterProvider() {
           ),
           errorElement: <ErrorPage />,
         },
+      ],
+    },
+
+    {
+      path: "filter",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
         {
-          path: "filter",
+          index: true,
           element: (
             <ProtectedRoute>
               <MineFilter />
@@ -120,14 +129,20 @@ export default function GlobalRouterProvider() {
             </ProtectedRoute>
           ),
         },
+      ],
+    },
+    {
+      path: "experiment",
+      element: <LayoutDashboard />,
+      errorElement: <ErrorPage />,
+      children: [
         {
-          path: "filter",
+          index: true,
           element: (
             <ProtectedRoute>
-              <MineFilter />
+              <ExperimentPage />
             </ProtectedRoute>
           ),
-          errorElement: <ErrorPage />,
         },
       ],
     },

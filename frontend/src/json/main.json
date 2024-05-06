@@ -1,16 +1,7 @@
 {
   "stateOptions": [
     {
-      "label": "未发布",
-      "options": [
-        {
-          "label": "草稿",
-          "value": "draft"
-        }
-      ]
-    },
-    {
-      "label": "已发布",
+      "label": "笔记状态",
       "options": [
         {
           "label": "公开",
@@ -83,5 +74,16 @@
     }
   ],
   "roteMaxLetter": 10000,
-  "roteContentExpandedLetter": 600
+  "roteContentExpandedLetter": 600,
+  "safeRoutes": [
+    "home",
+    "landing",
+    "login",
+    "filter",
+    "profile",
+    "404",
+    "explore",
+    "archived",
+    "experiment"
+  ]
 }

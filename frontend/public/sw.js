@@ -22,62 +22,48 @@ const urlBase64ToUint8Array = base64String => {
     return outputArray;
 }
 
-const saveSubscription = async (subscription) => {
-    let data = {
-        userId: "65f2f28eaa85f74b004888a8",
-        subScription: subscription
+
+self.addEventListener('message', async event => {
+    const { method } = event.data;
+
+    switch (method) {
+        case "subNotice":
+            const subscription = await self.registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array("BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8")
+            })
+
+            event.source.postMessage({
+                method: 'subNoticeResponse',
+                payload: JSON.stringify(subscription),
+            });
+
+            break;
+
+        default:
+            break;
     }
-    const response = await fetch('https://altas.rote.ink/v1/api/addSwSubScription', {
-        method: 'post',
-        headers: { 'Content-type': "application/json" },
-        body: JSON.stringify(data)
-    })
-    // console.log(subscription, response)
-}
-
-self.addEventListener("activate", async (e) => {
-
-    const subscription = await self.registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array("BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8")
-    })
-
-    const response = await saveSubscription(subscription)
-    // console.log(response)
-})
+});
 
 self.addEventListener("push", e => {
     try {
         let notice = JSON.parse(e.data.text())
         let notification = {
-            body: notice.body || '未设置body',
-            icon: notice.icon || 'https://r2.rote.ink/others/logo.png',
+            body: notice.body || '未设置消息内容',
+            icon: notice.icon || undefined,
             timestamp: Date.now(),
             tag: notice.tag || 'default',
-            badge: 'https://r2.rote.ink/others/logo.png',
-            image: notice.image && notice.image,
+            badge: undefined,
+            image: notice.image || undefined,
             vibrate: [300],
-            data: notice.data && notice.data
+            data: notice.data || undefined
         }
         self.registration.showNotification(
             notice.title ? notice.title : "Rote笔记",
             notification
         )
-
     } catch (error) {
-        let notification = {
-            body: '未设置body',
-            icon: 'https://r2.rote.ink/others/logo.png',
-            timestamp: Date.now(),
-            tag: 'default',
-            badge: 'https://r2.rote.ink/others/logo.png',
-            image: '',
-            vibrate: [300],
-            data: ''
-        }
-        self.registration.showNotification("Rote笔记",
-            notification
-        )
+        console.log(error)
     }
 })
 
