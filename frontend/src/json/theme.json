@@ -1,6 +1,10 @@
 {
     "theme": {
-        "components": {},
+        "components": {
+            "Select": {
+                "optionSelectedBg": "#00000010"
+            }
+        },
         "token": {
             "colorPrimary": "#000000",
             "activeShadow": "none"

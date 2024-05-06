@@ -18,6 +18,24 @@ export function saveSubscription(subscription: any): Promise<any> {
   });
 }
 
+export function deleteSubscription(subId: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "delete",
+      url: "/v1/api/swSubScription",
+      params: {
+        subId,
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function sendNotificationTest(subId: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({

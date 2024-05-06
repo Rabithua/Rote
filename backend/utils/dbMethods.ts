@@ -91,48 +91,63 @@ export async function addSubScriptionToUser(
 }
 
 export async function findSubScriptionToUser(subId: string) {
-  try {
+  return new Promise((resolve, reject) => {
     // 查找订阅信息
-    const swSubScription = await prisma.userSwSubScription.findUnique({
-      where: {
-        id: subId,
-      }
-    });
-
-    if (swSubScription) {
-      return swSubScription;
-    } else {
-      console.log("未找到订阅信息");
-      return;
-    }
-  } catch (error) {
-    console.log("查询订阅信息时出错:", error);
-    return;
-  }
+    prisma.userSwSubScription
+      .findUnique({
+        where: {
+          id: subId,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
 }
 
 export async function findSubScriptionToUserByendpoint(endpoint: string) {
-  try {
+  return new Promise((resolve, reject) => {
     // 查找订阅信息
-    const swSubScription = await prisma.userSwSubScription.findUnique({
-      where: {
-        endpoint: endpoint,
-      },
-      select: {
-        id: true,
-      },
-    });
+    prisma.userSwSubScription
+      .findUnique({
+        where: {
+          endpoint: endpoint,
+        },
+        select: {
+          id: true,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch((err) => {
+        reject(err);
+      });
+  });
+}
 
-    if (swSubScription) {
-      return swSubScription;
-    } else {
-      console.log("未找到订阅信息");
-      throw new Error("未找到订阅信息");
+export async function deleteSubScription(subId: string) {
+  return new Promise((resolve, reject) => {
+    try {
+      prisma.userSwSubScription
+        .delete({
+          where: {
+            id: subId,
+          },
+        })
+        .then((res) => {
+          resolve(res);
+        })
+        .catch((err) => {
+          reject(err);
+        });
+    } catch (error) {
+      reject(error);
     }
-  } catch (error) {
-    console.log("查询订阅信息时出错:", error);
-    throw new Error("查询订阅信息时出错");
-  }
+  });
 }
 
 export async function passportCheckUser(data: { username: string }) {

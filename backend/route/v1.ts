@@ -7,6 +7,7 @@ import {
   deleteAttachments,
   deleteMyOneOpenKey,
   deleteRote,
+  deleteSubScription,
   editMyOneOpenKey,
   editMyProfile,
   editRote,
@@ -165,6 +166,8 @@ routerV1.post("/register", (req, res) => {
 
 routerV1.post("/addSwSubScription", isAuthenticated, async (req, res) => {
   const { subScription } = req.body;
+  const user = req.user as User;
+
   if (!subScription) {
     res.status(401).send({
       code: 1,
@@ -173,30 +176,38 @@ routerV1.post("/addSwSubScription", isAuthenticated, async (req, res) => {
     });
     return;
   }
-  const user = req.user as User;
+
   try {
     const d = await findSubScriptionToUserByendpoint(subScription.endpoint);
-    res.send({
-      code: 0,
-      msg: "ok",
-      data: d,
-    });
-  } catch (error) {
-    addSubScriptionToUser(user.id, subScription)
-      .then((e) => {
-        res.send({
-          code: 0,
-          msg: "ok",
-          data: e,
-        });
-      })
-      .catch((err) => {
-        res.status(401).send({
-          code: 1,
-          msg: "error",
-          data: err,
-        });
+    if (d) {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: d,
       });
+    } else {
+      addSubScriptionToUser(user.id, subScription)
+        .then((e) => {
+          res.send({
+            code: 0,
+            msg: "ok",
+            data: e,
+          });
+        })
+        .catch((err) => {
+          res.status(401).send({
+            code: 1,
+            msg: "error",
+            data: err,
+          });
+        });
+    }
+  } catch (error) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: error,
+    });
   }
 });
 
@@ -258,6 +269,57 @@ routerV1.post("/sendSwSubScription", async (req, res) => {
       data: null,
     });
   }
+});
+
+routerV1.delete("/swSubScription", isAuthenticated, async (req, res) => {
+  const { subId }: any = req.query;
+  const user = req.user as User;
+
+  if (!subId) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Need subId and msg in query",
+    });
+    return;
+  }
+
+  let to: UserSwSubScription | any = await findSubScriptionToUser(subId);
+
+  if (!to) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "UserSwSubScription not found",
+    });
+    return;
+  }
+
+  if (to.userid !== user.id) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "User not match!",
+    });
+    return;
+  }
+
+  deleteSubScription(subId)
+    .then((data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: data,
+      });
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: error,
+      });
+    });
 });
 
 routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
