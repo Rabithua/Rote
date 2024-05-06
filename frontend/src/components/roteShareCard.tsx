@@ -46,13 +46,13 @@ function RoteShareCard({ rote }: any) {
         className=" w-full flex flex-col gap-2 p-8 rounded-xl bg-bgWhite relative"
         id="shareCanva"
       >
-        <div className=" font-extrabold text-5xl text-gray-200 mb-[-10px]">
+        <div className=" font-extrabold text-5xl text-gray-800 mb-[-10px]">
           “
         </div>
-        <div className=" text-base text-gray-700 break-words whitespace-pre-line font-zhengwen">
+        <div className=" text-base text-gray-800 break-words whitespace-pre-line font-serif">
           {rote.content}
         </div>
-        <div className=" flex flex-wrap gap-2 items-center">
+        <div className=" flex flex-wrap gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span className=" text-gray-500" key={`tag_${index}`}>
