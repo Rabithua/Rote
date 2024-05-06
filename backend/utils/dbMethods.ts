@@ -75,13 +75,16 @@ export async function addSubScriptionToUser(
             p256dh: subScription.keys.p256dh,
           },
         },
+        select: {
+          id: true,
+        },
       })
       .then((subScriptionRespon) => {
         console.log("订阅信息已成功添加到用户数组:", subScriptionRespon);
         resolve(subScriptionRespon);
       })
       .catch((error) => {
-        console.log("添加订阅信息时出错:", error);
+        // console.log("添加订阅信息时出错:", error);
         reject(error);
       });
   });
@@ -93,7 +96,7 @@ export async function findSubScriptionToUser(subId: string) {
     const swSubScription = await prisma.userSwSubScription.findUnique({
       where: {
         id: subId,
-      },
+      }
     });
 
     if (swSubScription) {
@@ -105,6 +108,30 @@ export async function findSubScriptionToUser(subId: string) {
   } catch (error) {
     console.log("查询订阅信息时出错:", error);
     return;
+  }
+}
+
+export async function findSubScriptionToUserByendpoint(endpoint: string) {
+  try {
+    // 查找订阅信息
+    const swSubScription = await prisma.userSwSubScription.findUnique({
+      where: {
+        endpoint: endpoint,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (swSubScription) {
+      return swSubScription;
+    } else {
+      console.log("未找到订阅信息");
+      throw new Error("未找到订阅信息");
+    }
+  } catch (error) {
+    console.log("查询订阅信息时出错:", error);
+    throw new Error("查询订阅信息时出错");
   }
 }
 

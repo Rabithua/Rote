@@ -39,21 +39,6 @@ function Landing() {
   ];
   const profile = useProfile();
 
-  async function sub() {
-    try {
-      checkPermission();
-      await requestNotificationPermission();
-      await registerSW();
-    } catch (error) {}
-
-    // const title = "PWA-Book-Demo Notification Title";
-    // const options = {
-    //   body: "Simple piece of body text.\nSecond line of body text :)",
-    // };
-    // const notification = new Notification(title, options);
-    // console.log(notification  );
-  }
-
   return (
     <div className=" bg-bgWhite dark:text-white dark:bg-bgDark w-full min-h-lvh flex flex-col justify-center items-center">
       <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5 font-sans">
@@ -64,7 +49,7 @@ function Landing() {
             loop={true}
             className=" cursor-pointer absolute top-10 right-[-5%] w-1/3 md:w-1/4 "
           />
-          <div className=" dark:invert" onClick={sub}>
+          <div className=" dark:invert">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="202"

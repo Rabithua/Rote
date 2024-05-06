@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router-dom";
 import {
+  ExperimentOutlined,
   GlobalOutlined,
   HomeOutlined,
   LoginOutlined,
@@ -69,6 +70,12 @@ function LayoutDashboard() {
           link: "/profile",
           disable: false,
           name: "profile",
+        },
+        {
+          svg: <ExperimentOutlined />,
+          link: "/experiment",
+          disable: false,
+          name: "experiment",
         },
       ]);
     } else {

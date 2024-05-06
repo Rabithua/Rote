@@ -14,6 +14,7 @@ import {
   findPublicRote,
   findRoteById,
   findSubScriptionToUser,
+  findSubScriptionToUserByendpoint,
   findUserPublicRote,
   generateOpenKey,
   getMyOpenKey,
@@ -162,7 +163,7 @@ routerV1.post("/register", (req, res) => {
   }
 });
 
-routerV1.post("/addSwSubScription", isAuthenticated, (req, res) => {
+routerV1.post("/addSwSubScription", isAuthenticated, async (req, res) => {
   const { subScription } = req.body;
   if (!subScription) {
     res.status(401).send({
@@ -173,25 +174,35 @@ routerV1.post("/addSwSubScription", isAuthenticated, (req, res) => {
     return;
   }
   const user = req.user as User;
-  addSubScriptionToUser(user.id, subScription)
-    .then((e) => {
-      res.send({
-        code: 0,
-        msg: "ok",
-        data: e,
-      });
-    })
-    .catch((err) => {
-      res.status(401).send({
-        code: 1,
-        msg: "error",
-        data: err,
-      });
+  try {
+    const d = await findSubScriptionToUserByendpoint(subScription.endpoint);
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: d,
     });
+  } catch (error) {
+    addSubScriptionToUser(user.id, subScription)
+      .then((e) => {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: e,
+        });
+      })
+      .catch((err) => {
+        res.status(401).send({
+          code: 1,
+          msg: "error",
+          data: err,
+        });
+      });
+  }
 });
 
-routerV1.get("/sendSwSubScription", async (req, res) => {
-  const { subId, msg }: any = req.query;
+routerV1.post("/sendSwSubScription", async (req, res) => {
+  const { subId }: any = req.query;
+  const msg = req.body;
 
   if (!subId || !msg) {
     res.status(401).send({
@@ -203,6 +214,15 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
   }
 
   let to: UserSwSubScription | any = await findSubScriptionToUser(subId);
+
+  if (!to) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "UserSwSubScription not found",
+    });
+    return;
+  }
 
   // 设置更详细的推送通知
   let notificationOptions = {
@@ -221,7 +241,7 @@ routerV1.get("/sendSwSubScription", async (req, res) => {
         endpoint: to.endpoint,
         keys: to.keys,
       },
-      JSON.stringify(notificationOptions)
+      JSON.stringify({ ...msg })
     );
     res.send({
       code: 0,

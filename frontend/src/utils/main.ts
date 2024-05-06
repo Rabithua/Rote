@@ -1,4 +1,6 @@
+import { saveSubscription } from "@/api/subscription/main";
 import { Rotes } from "@/types/main";
+import toast from "react-hot-toast";
 
 export function formatTimeAgo(givenTime: string): string {
   const givenDate = new Date(givenTime);
@@ -33,11 +35,32 @@ export function checkPermission() {
   if (!("PushManager" in window)) {
     throw new Error("No support for Push API");
   }
+
+  toast.success("权限检查通过");
+
+  return;
 }
 
 export async function registerSW() {
   const registration = await navigator.serviceWorker.register("sw.js");
+
+  if (registration.active) {
+    toast.success("ServiceWorker注册成功！");
+  }
+
   return registration;
+}
+
+export async function subNotice() {
+  const registration = await navigator.serviceWorker.register("sw.js");
+
+  if (registration.active) {
+    try {
+      registration.active.postMessage({ method: "subNotice" });
+    } catch (error) {
+      throw new Error("注册订阅通知失败！");
+    }
+  }
 }
 
 export async function requestNotificationPermission() {
@@ -46,6 +69,9 @@ export async function requestNotificationPermission() {
   if (permission !== "granted") {
     throw new Error("Notification permission not granted");
   }
+
+  toast.success("授权成功");
+  return;
 }
 
 export function sortRotesByPinAndCreatedAt(objects: Rotes): Rotes {
@@ -93,4 +119,3 @@ export function debounce<F extends (...args: any[]) => any>(
     }
   };
 }
-

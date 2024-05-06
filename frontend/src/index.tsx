@@ -7,7 +7,9 @@ import "./utils/i18n";
 import { App, ConfigProvider } from "antd";
 import { GlobalContextProvider } from "./state";
 import GlobalRouterProvider from "./route/main";
-import theme from "@/json/theme.json"
+import themeJson from "@/json/theme.json";
+
+const { theme } = themeJson;
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
 );
@@ -15,9 +17,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <App>
-      <ConfigProvider
-        theme={theme}
-      >
+      <ConfigProvider theme={theme}>
         <GlobalContextProvider>
           <GlobalRouterProvider />
           <Toaster position="top-right" reverseOrder={false} />

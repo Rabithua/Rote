@@ -1,14 +1,8 @@
 {
-    "components": {
-        "Select": {
-            "optionSelectedBg": "#00000010",
+    "theme": {
+        "components": {},
+        "token": {
             "colorPrimary": "#000000",
-            "colorBgContainer": "#000000",
-            "colorPrimaryHover": "#00000080"
-        },
-        "Input": {
-            "activeBorderColor": "#00000080",
-            "hoverBorderColor": "#00000080",
             "activeShadow": "none"
         }
     }
