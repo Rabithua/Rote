@@ -96,10 +96,10 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className=" bg-white w-full h-v min-h-lvh">
+    <div className=" bg-white w-full h-v min-h-dvh">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
-          <div className=" sticky top-0 duration-300 flex md:w-[150px] px-1 sm:px-2 md:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
+          <div className=" border-t sticky top-0 duration-300 flex md:w-[150px] px-1 sm:px-2 md:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
             {icons.map((icon, index) => {
               return (
                 <div
@@ -141,7 +141,7 @@ function LayoutDashboard() {
             <MenuUnfoldOutlined />
           </div>
         )}
-        <div className=" flex-1 noScrollBar h-lvh overflow-y-visible overflow-x-hidden relative">
+        <div className=" flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative">
           <Outlet />
         </div>
       </div>

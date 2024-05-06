@@ -52,6 +52,28 @@ function RoteShareCard({ rote }: any) {
         <div className=" text-base text-gray-800 break-words whitespace-pre-line font-serif">
           {rote.content}
         </div>
+        {rote.attachments.length > 0 && (
+          <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
+            {rote.attachments.map((file: any, index: any) => {
+              return (
+                <img
+                  key={`files_${index}`}
+                  className={` ${
+                    rote.attachments.length % 3 === 0
+                      ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                      : rote.attachments.length % 2 === 0
+                      ? "w-[calc(1/2*100%-2px)] aspect-1"
+                      : rote.attachments.length === 1
+                      ? " w-full max-w-[500px] rounded-2xl"
+                      : "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                  } object-cover grow `}
+                  src={file.url}
+                  alt=""
+                />
+              );
+            })}
+          </div>
+        )}
         <div className=" flex flex-wrap gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
@@ -64,7 +86,7 @@ function RoteShareCard({ rote }: any) {
         <Divider />
         <div className=" w-full flex flex-wrap">
           {/* <img className=" w-6 h-6 mr-2 rounded-full" src={rote.author.avatar} alt="" /> */}
-          <span className=" font-semibold text-gray-800">
+          <span className=" font-serif font-semibold text-gray-800">
             {rote.author.nickname}
           </span>
           <span className=" text-nowrap ml-auto font-normal text-gray-500">
