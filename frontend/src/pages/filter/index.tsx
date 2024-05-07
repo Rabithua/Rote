@@ -105,6 +105,10 @@ function MineFilter() {
       if (loadingRef.current) {
         observer.unobserve(loadingRef.current);
       }
+      rotesDispatch({
+        type: "freshAll",
+        rotes: [],
+      });
     };
   }, [filter, rotesDispatch]);
 
