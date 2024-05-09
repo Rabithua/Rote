@@ -2,8 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  background-color: white;
+@media (prefers-color-scheme: default) {
+  html {
+    background-color: #f8f8f8;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    background-color: #111111;
+  }
 }
 
 .noScrollBar::-webkit-scrollbar {
@@ -15,10 +23,10 @@ html {
   padding-left: 0 !important;
 }
 
-#root {
+/* #root {
   height: 100vh;
   width: 100vw;
-}
+} */
 
 /* 引入谷歌Serif字体 */
 .noto-serif-sc-light {

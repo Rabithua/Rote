@@ -18,6 +18,7 @@ module.exports = {
       },
       colors: {
         'bgDark': '#111111',
+        'bgDarkSecond': '#222222',
         'bgWhite': '#f8f8f8',
       },
       animation: {

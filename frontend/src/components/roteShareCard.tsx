@@ -15,7 +15,7 @@ function RoteShareCard({ rote }: any) {
         scale: 1080 / width, // 设置缩放比例为 2
         width: width,
         height: height,
-        useCORS: true, // 允许跨域图像
+        // useCORS: true, // 允许跨域图像
         backgroundColor: null,
       };
 
@@ -52,7 +52,7 @@ function RoteShareCard({ rote }: any) {
         <div className=" text-base text-gray-800 break-words whitespace-pre-line font-serif">
           {rote.content}
         </div>
-        {rote.attachments.length > 0 && (
+        {/* {rote.attachments.length > 0 && (
           <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
             {rote.attachments.map((file: any, index: any) => {
               return (
@@ -73,12 +73,15 @@ function RoteShareCard({ rote }: any) {
               );
             })}
           </div>
-        )}
+        )} */}
         <div className=" flex flex-wrap gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
-              <span className=" text-gray-500" key={`tag_${index}`}>
-                #{tag}
+              <span
+                className=" px-2 py-1 rounded-md bg-gray-200 font-sans text-gray-800"
+                key={`tag_${index}`}
+              >
+                {tag}
               </span>
             );
           })}
