@@ -1,9 +1,4 @@
 import { useTranslation } from "react-i18next";
-import {
-  checkPermission,
-  registerSW,
-  requestNotificationPermission,
-} from "@/utils/main";
 import { useProfile } from "@/state/profile";
 import { Link } from "react-router-dom";
 import Lottie from "lottie-react";
