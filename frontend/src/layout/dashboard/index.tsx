@@ -96,7 +96,7 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className=" bg-white w-full h-v min-h-dvh">
+    <div className=" bg-white w-full h-dvh">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
           <div className=" border-t sticky top-0 duration-300 flex md:w-[150px] px-1 sm:px-2 md:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
