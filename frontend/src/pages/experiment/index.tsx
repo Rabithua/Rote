@@ -128,6 +128,7 @@ export default function ExperimentPage() {
               <div className=" flex gap-2 items-center">
                 <span className=" font-semibold">状态：</span>
                 <Switch
+                  disabled={"serviceWorker"! in navigator}
                   className=" bg-bgWhite"
                   checked={swReady}
                   loading={swLoading}
