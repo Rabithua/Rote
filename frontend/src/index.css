@@ -58,3 +58,10 @@
   color: #0c9849;
   word-break: break-all;
 }
+
+a:hover {
+  color: inherit;
+  /* 继承父元素的颜色 */
+  text-decoration: none;
+  /* 可选：去掉下划线 */
+}

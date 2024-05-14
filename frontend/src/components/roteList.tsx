@@ -14,29 +14,6 @@ function RoteList({ rotes, rotesDispatch, api, apiProps }: any) {
     countRef.current = rotes.length;
   }, [rotes.length]);
 
-  // 首次载入加载数据
-  //   useEffect(() => {
-  //     if (!hasFetchedData.current) {
-  //       console.log("加载数据");
-
-  //       api({
-  //         skip: 0,
-  //         ...apiProps,
-  //       })
-  //         .then((res: any) => {
-  //           if (res.data.data.length !== 20) {
-  //             setIsLoadAll(true);
-  //           }
-  //           rotesDispatch({
-  //             type: "add",
-  //             rotes: res.data.data,
-  //           });
-  //         })
-  //         .catch(() => {});
-  //       hasFetchedData.current = true;
-  //     }
-  //   }, [rotesDispatch, api, apiProps]);
-
   // 监听loadingRef显示事件，加载更多
   useEffect(() => {
     const currentLoadingRef = loadingRef.current;
