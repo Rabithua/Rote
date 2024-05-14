@@ -67,7 +67,7 @@ function RoteList({ rotes, rotesDispatch, api, apiProps }: any) {
         observerRun.current = false;
       }
     };
-  }, [api, apiProps, rotesDispatch]);
+  }, [apiProps]);
 
   return (
     <div className=" flex flex-col w-full relative">
