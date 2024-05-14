@@ -1,16 +1,13 @@
-import { Select, SelectProps } from "antd";
+import { Select } from "antd";
 import { PushpinOutlined, SendOutlined, TagsOutlined } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
 import mainJson from "@/json/main.json";
-import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputModel({ rote, submitEdit }: any) {
-  const navigate = useNavigate();
-  const [novelValue, setNovelValue] = useState<any>("");
   const [tagsShow, setTagsShow] = useState(false);
   const tags = useTags();
   const [fileList, setFileList] = useState([]) as any;

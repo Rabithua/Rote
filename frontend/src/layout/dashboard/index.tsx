@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import {
   ExperimentOutlined,
   GlobalOutlined,
@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import { useProfile } from "@/state/profile";
 
 function LayoutDashboard() {
-  const navigate = useNavigate();
   const profile = useProfile();
   const [ifshowLeftNav, setIfshowLeftNav] = useState(
     window.localStorage.getItem("ifshowLeftNav") === "false" ? false : true
@@ -23,7 +22,7 @@ function LayoutDashboard() {
     {
       svg: <LoginOutlined />,
       link: "/login",
-      disable: false,
+
       name: "login",
     },
   ]);
@@ -34,47 +33,32 @@ function LayoutDashboard() {
         {
           svg: <HomeOutlined />,
           link: "/home",
-          disable: false,
+
           name: "home",
         },
-        // {
-        //   svg: <BellOutlined />,
-        //   link: "/#",
-        //   disable: true,
-        // },
-        // {
-        //   svg: <WifiOutlined />,
-        //   link: "/#",
-        //   disable: true,
-        // },
         {
           svg: <GlobalOutlined />,
           link: "/explore",
-          disable: false,
+
           name: "explore",
         },
 
         {
           svg: <SaveOutlined />,
           link: "/archived",
-          disable: false,
+
           name: "archived",
         },
-        // {
-        //   svg: <ThunderboltOutlined />,
-        //   link: "/#",
-        //   disable: true,
-        // },
         {
           svg: <UserOutlined />,
           link: "/profile",
-          disable: false,
+
           name: "profile",
         },
         {
           svg: <ExperimentOutlined />,
           link: "/experiment",
-          disable: false,
+
           name: "experiment",
         },
       ]);
@@ -83,7 +67,7 @@ function LayoutDashboard() {
         {
           svg: <LoginOutlined />,
           link: "/login",
-          disable: false,
+
           name: "login",
         },
       ]);
@@ -102,23 +86,16 @@ function LayoutDashboard() {
           <div className=" border-t sticky top-0 duration-300 flex md:w-[150px] px-1 sm:px-2 md:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
             {icons.map((icon, index) => {
               return (
-                <div
-                  className={` duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] ${
-                    icon.disable ? "cursor-not-allowed" : "cursor-pointer"
-                  }`}
+                <Link
+                  className={`cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] `}
                   key={`leftLinks_${index}`}
-                  onClick={() => {
-                    if (icon.disable) {
-                      return;
-                    }
-                    navigate(icon.link);
-                  }}
+                  to={icon.link}
                 >
                   {icon.svg}
                   <div className=" shrink-0 hidden tracking-widest md:block">
                     {t(`leftNavBar.${icon.name}`)}
                   </div>
-                </div>
+                </Link>
               );
             })}
             <div

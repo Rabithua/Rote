@@ -1,4 +1,4 @@
-import { Avatar, Image, Select, SelectProps } from "antd";
+import { Avatar, Image, Select } from "antd";
 import { cloneDeep } from "lodash";
 import {
   CloseOutlined,
@@ -8,22 +8,18 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
-import { useNavigate } from "react-router-dom";
-import { apiAddRote, apiGetMyTags, apiUploadFiles } from "@/api/rote/main";
+import { apiAddRote, apiUploadFiles } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 import { useRotesDispatch } from "@/state/rotes";
 import { useProfile } from "@/state/profile";
-import { apiUploadAvatar } from "@/api/user/main";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
-  const navigate = useNavigate();
-  const [novelValue, setNovelValue] = useState<any>("");
   const [tagsShow, setTagsShow] = useState(false);
   const tags = useTags();
   const [fileList, setFileList] = useState([]) as any;

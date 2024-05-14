@@ -4,7 +4,6 @@ import {
   EditOutlined,
   EllipsisOutlined,
   GlobalOutlined,
-  HourglassOutlined,
   PushpinOutlined,
   SaveOutlined,
   ShareAltOutlined,
@@ -22,22 +21,20 @@ import moment from "moment";
 import RoteInputModel from "./roteInputModel";
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import toast from "react-hot-toast";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useRotesDispatch } from "@/state/rotes";
 import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
 import RoteShareCard from "./roteShareCard";
 import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 
-const { emojiList, roteContentExpandedLetter } = mainJson;
+const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({ rote_param }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
   const archivedRotesDispatch = useArchivedRotesDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isShareCardModalOpen, setIsShareCardModalOpen] =
     useState<boolean>(false);
@@ -65,61 +62,6 @@ function RoteItem({ rote_param }: any) {
       setRote(rote_param);
     }
   }, [rote_param, rote]);
-
-  function goFilter(tag: string) {
-    if (
-      window.location.pathname === "/home" ||
-      window.location.pathname === "/archived" ||
-      window.location.pathname === "/filter"
-    ) {
-      if (location.pathname.includes("/filter")) {
-        navigate("/filter", {
-          state: {
-            tags: [tag],
-          },
-        });
-      } else {
-        navigate("/filter", {
-          state: {
-            tags: [tag],
-          },
-        });
-      }
-    }
-  }
-
-  const [categorizedReactions, setCategorizedReactions] = useState<any>({});
-  function categorizeReactions(rote: any) {
-    const categorizedReactions_temp: any = [];
-    // 整理 userreaction
-    rote.userreaction.forEach((reaction: any) => {
-      if (categorizedReactions_temp[reaction.type]) {
-        categorizedReactions_temp[reaction.type].push(reaction);
-      } else {
-        categorizedReactions_temp[reaction.type] = [reaction];
-      }
-    });
-
-    // 整理 visitorreaction
-    rote.visitorreaction.forEach((reaction: any) => {
-      if (categorizedReactions_temp[reaction.type]) {
-        categorizedReactions_temp[reaction.type].push(reaction);
-      } else {
-        categorizedReactions_temp[reaction.type] = [reaction];
-      }
-    });
-
-    const resultArray: any = [];
-
-    for (const key in categorizedReactions_temp) {
-      resultArray.push({
-        type: key,
-        reactions: categorizedReactions_temp[key],
-      });
-    }
-
-    return resultArray;
-  }
 
   function onEditModelCancel() {
     setIsEditModalOpen(false);
@@ -165,7 +107,7 @@ function RoteItem({ rote_param }: any) {
         });
         setRote(res.data.data);
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error("发送失败", {
           id: toastId,
         });
@@ -197,7 +139,7 @@ function RoteItem({ rote_param }: any) {
             roteid: res.data.data.id,
           });
         })
-        .catch((err) => {
+        .catch(() => {
           toast.error("删除失败", {
             id: toastId,
           });
@@ -230,7 +172,7 @@ function RoteItem({ rote_param }: any) {
           });
           setRote(res.data.data);
         })
-        .catch((err) => {
+        .catch(() => {
           toast.error("发送失败", {
             id: toastId,
           });
@@ -273,7 +215,7 @@ function RoteItem({ rote_param }: any) {
           });
           setRote(res.data.data);
         })
-        .catch((err) => {
+        .catch(() => {
           toast.error("请求失败", {
             id: toastId,
           });
@@ -327,46 +269,37 @@ function RoteItem({ rote_param }: any) {
     );
   }
 
-  function goUserPage(username: string) {
-    navigate(`/${username}`);
-  }
-
   return rote.id ? (
     <div
       id={`Rote_${rote.id}`}
       className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full py-4 px-5"
     >
-      <Avatar
-        className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
-        size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
-        icon={<UserOutlined className=" text-[#00000030]" />}
-        src={
-          rote.author.username === profile?.username
-            ? profile?.avatar
-            : rote.author.avatar
-        }
-        onClick={() => {
-          goUserPage(rote.author.username);
-        }}
-      />
+      <Link to={`/${rote.author.username}`}>
+        <Avatar
+          className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
+          size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
+          icon={<UserOutlined className=" text-[#00000030]" />}
+          src={
+            rote.author.username === profile?.username
+              ? profile?.avatar
+              : rote.author.avatar
+          }
+        />
+      </Link>
       <div className=" flex flex-col w-full">
         <div className=" cursor-default w-full flex items-center">
-          <span
+          <Link
             className=" cursor-pointer font-semibold hover:underline"
-            onClick={() => {
-              goUserPage(rote.author.username);
-            }}
+            to={`/${rote.author.username}`}
           >
             {rote.author.username === profile?.username
               ? profile?.nickname
               : rote.author.nickname}
-          </span>
+          </Link>
           <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
-            <span
-              onClick={() => {
-                goUserPage(rote.author.username);
-              }}
-            >{`@${rote.author.username}`}</span>
+            <Link
+              to={`/${rote.author.username}`}
+            >{`@${rote.author.username}`}</Link>
             <span> · </span>{" "}
             <Tooltip
               placement="bottom"
@@ -490,15 +423,16 @@ function RoteItem({ rote_param }: any) {
         <div className=" flex items-center flex-wrap gap-2 my-2">
           {rote.tags.map((tag: any, index: any) => {
             return (
-              <div
+              <Link
                 className=" px-2 py-1 text-xs rounded-md bg-[#00000010] duration-300 hover:scale-95"
                 key={`tag_${index}`}
-                onClick={() => {
-                  goFilter(tag);
+                to={"/filter"}
+                state={{
+                  tags: [tag],
                 }}
               >
                 {tag}
-              </div>
+              </Link>
             );
           })}
         </div>
