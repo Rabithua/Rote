@@ -1,35 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { LeftOutlined, LoadingOutlined, UpOutlined } from "@ant-design/icons";
-import Rote from "@/components/Rote";
+import { LeftOutlined, UpOutlined } from "@ant-design/icons";
 import { apiGetMyRote } from "@/api/rote/main";
-import { Empty } from "antd";
-import { useProfile } from "@/state/profile";
 import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
-import { observeElementInViewport } from "@/utils/observeElementInViewport";
+import RoteList from "@/components/roteList";
+import GoTop from "@/components/goTop";
 
 function MineFilter() {
   let location = useLocation();
   const navigate = useNavigate();
-  const loadingRef = useRef(null);
-  const [isLoadAll, setIsLoadAll] = useState(false);
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
   const rotes = useFilterRotes();
   const rotesDispatch = useFilterRotesDispatch();
 
   const countRef = useRef(rotes.length);
+  const [roteListKey, setRoteListKey] = useState(1);
 
   useEffect(() => {
     countRef.current = rotes.length;
   }, [rotes.length]);
 
-  const [filter, setFilter] = useState<any>({
-    tags: location.state?.tags || [],
-    keywords: [],
-    time: [],
-    userid: "",
-    others: [],
+  const [apiProps, setApiProps] = useState({
+    limit: 20,
+    filter: {
+      tags: {
+        hasEvery: [],
+      },
+    },
   });
 
   function back() {
@@ -41,92 +39,30 @@ function MineFilter() {
     }
   }
 
-  const [showscrollTop, setShowScrollTop] = useState(false);
   const [navHeight, setNavHeight] = useState(0);
-  useEffect(() => {
-    let topElement = document.getElementById("top") as any;
-    if (!topElement) {
-      return;
-    }
-    observeElementInViewport(topElement, (ifshow: boolean) => {
-      setShowScrollTop(!ifshow);
-    });
 
+  useEffect(() => {
     const element = document.getElementById("top") as HTMLElement;
     setNavHeight(element.offsetHeight || 0);
+
+    return () => {};
   }, []);
 
   useEffect(() => {
-    const options = {
-      root: null, // 使用视口作为根元素
-      rootMargin: "0px", // 根元素的边距
-      threshold: 0.5, // 元素可见度的阈值
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // 元素进入视口
-          apiGetMyRote({
-            limit: 20,
-            skip: countRef.current,
-            filter: {
-              tags: {
-                hasEvery: filter.tags,
-              },
-            },
-          })
-            .then((res) => {
-              if (res.data.data.length !== 20) {
-                setIsLoadAll(true);
-              }
-              if (countRef.current > 0) {
-                rotesDispatch({
-                  type: "add",
-                  rotes: res.data.data,
-                });
-              } else {
-                rotesDispatch({
-                  type: "freshAll",
-                  rotes: res.data.data,
-                });
-              }
-            })
-            .catch((err) => {});
-        }
-      });
-    }, options);
-
-    if (loadingRef.current) {
-      observer.observe(loadingRef.current);
-    }
-
-    return () => {
-      if (loadingRef.current) {
-        observer.unobserve(loadingRef.current);
-      }
-      rotesDispatch({
-        type: "freshAll",
-        rotes: [],
-      });
-    };
-  }, [filter, rotesDispatch]);
-
-  useEffect(() => {
-    // 监听state的变化
-    setFilter({
-      tags: location.state?.tags || [],
-      keywords: [],
-      time: [],
-      userid: "",
-      others: [],
+    setApiProps({
+      limit: 20,
+      filter: {
+        tags: {
+          hasEvery: location.state?.tags || [],
+        },
+      },
     });
     rotesDispatch({
       type: "freshAll",
       rotes: [],
     });
-    setIsLoadAll(false);
-  }, [location.state]); // 当state发生变化时执行
+    setRoteListKey((r) => r + 1);
+  }, [location.state, rotesDispatch]);
 
   function relativeTags() {
     return [
@@ -168,8 +104,8 @@ function MineFilter() {
       <div className=" p-4 ml-4 font-semibold" id="top">
         <div className=" flex items-center flex-wrap gap-2 my-2">
           包含标签：
-          {filter.tags.length > 0
-            ? filter.tags.map((tag: any, index: any) => {
+          {location.state?.tags.length > 0
+            ? location.state?.tags.map((tag: any, index: any) => {
                 return (
                   <div
                     className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-[#00000010] duration-300 hover:scale-95"
@@ -200,34 +136,16 @@ function MineFilter() {
             : "NONE"}
         </div>
       </div>
-      <div className="">
-        {rotes.map((item: any, index: any) => {
-          return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
-        })}
-        {isLoadAll ? null : (
-          <div
-            ref={loadingRef}
-            className=" flex justify-center items-center py-8 gap-3 bg-white"
-          >
-            <LoadingOutlined />
-            <div>加载中...</div>
-          </div>
-        )}
-        {isLoadAll && rotes.length === 0 ? (
-          <div className=" py-4">
-            <Empty description={false} />
-          </div>
-        ) : null}
-      </div>
 
-      {showscrollTop && (
-        <div
-          className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
-          onClick={goTop}
-        >
-          <UpOutlined />
-        </div>
-      )}
+      <RoteList
+        key={roteListKey}
+        rotes={rotes}
+        rotesDispatch={rotesDispatch}
+        api={apiGetMyRote}
+        apiProps={apiProps}
+      />
+
+      <GoTop scrollContainerName="scrollContainer" />
     </div>
   );
 }
