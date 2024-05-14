@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { apiGetMyRote } from "@/api/rote/main";
 import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
@@ -13,18 +13,13 @@ function MineFilter() {
   const rotes = useFilterRotes();
   const rotesDispatch = useFilterRotesDispatch();
 
-  const countRef = useRef(rotes.length);
   const [roteListKey, setRoteListKey] = useState(1);
-
-  useEffect(() => {
-    countRef.current = rotes.length;
-  }, [rotes.length]);
 
   const [apiProps, setApiProps] = useState({
     limit: 20,
     filter: {
       tags: {
-        hasEvery: [],
+        hasEvery: location.state?.tags || [],
       },
     },
   });
