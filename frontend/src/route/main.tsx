@@ -12,7 +12,7 @@ import LayoutDashboard from "@/layout/dashboard";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));
-const RotePage = lazy(() => import("@/pages/home/rote"));
+const RotePage = lazy(() => import("@/pages/home"));
 const MineFilter = lazy(() => import("@/pages/filter"));
 const ProfilePage = lazy(() => import("@/pages/profile/index"));
 const ErrorPage = lazy(() => import("@/pages/404"));
@@ -155,7 +155,7 @@ export default function GlobalRouterProvider() {
   return (
     <Suspense
       fallback={
-        <div className=" h-dvh w-screen flex justify-center items-center">
+        <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
           <LoadingOutlined className=" text-4xl" />
         </div>
       }

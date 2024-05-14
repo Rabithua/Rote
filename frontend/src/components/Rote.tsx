@@ -69,7 +69,8 @@ function RoteItem({ rote_param }: any) {
   function goFilter(tag: string) {
     if (
       window.location.pathname === "/home" ||
-      window.location.pathname === "/archived"
+      window.location.pathname === "/archived" ||
+      window.location.pathname === "/filter"
     ) {
       if (location.pathname.includes("/filter")) {
         navigate("/filter", {
@@ -475,7 +476,7 @@ function RoteItem({ rote_param }: any) {
                           : rote.attachments.length === 1
                           ? " w-full max-w-[500px] rounded-2xl"
                           : "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                      } object-cover grow `}
+                      } object-cover grow bg-gray-100`}
                       src={file.url}
                       loading="lazy"
                       alt=""

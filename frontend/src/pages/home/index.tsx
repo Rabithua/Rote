@@ -1,89 +1,13 @@
-import { useEffect, useRef, useState } from "react";
 import RoteInputSimple from "@/components/roteInputSimple";
-import { LoadingOutlined, SyncOutlined, UpOutlined } from "@ant-design/icons";
-import Rote from "@/components/Rote";
+import { SyncOutlined, UpOutlined } from "@ant-design/icons";
 import { apiGetMyRote } from "@/api/rote/main";
-import { Empty } from "antd";
-import { useProfile } from "@/state/profile";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
-import { observeElementInViewport } from "@/utils/observeElementInViewport";
 import { toast } from "react-hot-toast";
+import RoteList from "@/components/roteList";
 
 function RotePage() {
-  const loadingRef = useRef(null);
-  const [isLoadAll, setIsLoadAll] = useState(false);
   const rotes = useRotes();
   const rotesDispatch = useRotesDispatch();
-
-  const profile = useProfile();
-
-  const countRef = useRef(rotes.length);
-
-  const [showscrollTop, setShowScrollTop] = useState(false);
-  const [navHeight, setNavHeight] = useState(0);
-
-  useEffect(() => {
-    countRef.current = rotes.length;
-  }, [rotes.length]);
-
-  useEffect(() => {
-    let topElement = document.querySelector(".rotypesNav") as any;
-    if (!topElement) {
-      return;
-    }
-    const stopOb = observeElementInViewport(topElement, (ifshow: boolean) => {
-      setShowScrollTop(!ifshow);
-    });
-
-    const element = document.querySelector(".rotypesNav") as HTMLElement;
-    setNavHeight(element.offsetHeight || 0);
-
-    return () => {
-      stopOb();
-    };
-  }, []);
-
-  useEffect(() => {
-    const options = {
-      root: null, // 使用视口作为根元素
-      rootMargin: "0px", // 根元素的边距
-      threshold: 0.5, // 元素可见度的阈值
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // 元素进入视口
-          apiGetMyRote({
-            limit: 20,
-            skip: countRef.current,
-            archived: false,
-          })
-            .then((res) => {
-              const rotes_api = res.data.data;
-              if (rotes_api.length !== 20) {
-                setIsLoadAll(true);
-              }
-              rotesDispatch({
-                type: "add",
-                rotes: rotes_api,
-              });
-            })
-            .catch(() => {});
-        }
-      });
-    }, options);
-
-    if (loadingRef.current && profile) {
-      observer.observe(loadingRef.current);
-    }
-
-    return () => {
-      if (loadingRef.current) {
-        observer.unobserve(loadingRef.current);
-      }
-    };
-  }, []);
 
   function refreshData() {
     const toastId = toast.loading("刷新中...");
@@ -120,7 +44,6 @@ function RotePage() {
   return (
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
-      style={{ scrollPaddingTop: `${navHeight}px` }}
     >
       <div
         className=" cursor-pointer group rotypesNav border-y border-[#00000010] flex items-end gap-2 text-gray-600 bg-white font-light p-4"
@@ -245,37 +168,22 @@ function RotePage() {
         {/* 采菊东篱下，悠然见南山 */}
       </div>
       <RoteInputSimple></RoteInputSimple>
-      <div className=" flex flex-col w-full relative">
-        {rotes.map((item: any, index: any) => {
-          return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
-        })}
-        {isLoadAll ? null : (
-          <div
-            ref={loadingRef}
-            className=" flex justify-center items-center py-8 h- gap-3 bg-white"
-          >
-            <LoadingOutlined />
-            <div>加载中...</div>
-          </div>
-        )}
-        {isLoadAll && rotes.length === 0 ? (
-          <div className=" border-t-[1px] border-[#00000010] bg-white py-4">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={"这里什么也没有"}
-            />
-          </div>
-        ) : null}
-      </div>
+      <RoteList
+        rotes={rotes}
+        rotesDispatch={rotesDispatch}
+        api={apiGetMyRote}
+        apiProps={{
+          limit: 20,
+          archived: false,
+        }}
+      />
 
-      {showscrollTop && (
-        <div
-          className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
-          onClick={goTop}
-        >
-          <UpOutlined />
-        </div>
-      )}
+      <div
+        className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
+        onClick={goTop}
+      >
+        <UpOutlined />
+      </div>
     </div>
   );
 }
