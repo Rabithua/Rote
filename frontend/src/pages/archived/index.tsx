@@ -35,7 +35,7 @@ function ArchivedPage() {
     if (!topElement) {
       return;
     }
-    observeElementInViewport(topElement, (ifshow: boolean) => {
+    const stopOb = observeElementInViewport(topElement, (ifshow: boolean) => {
       setShowScrollTop(!ifshow);
     });
 
@@ -44,6 +44,7 @@ function ArchivedPage() {
         type: "freshAll",
         rotes: [],
       });
+      stopOb();
     };
   }, []);
 

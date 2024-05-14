@@ -50,17 +50,21 @@ function UserPage() {
   }, [rotes.length]);
 
   useEffect(() => {
+    let stopOb: any;
     let topElement = document.getElementById("top") as any;
     if (!topElement) {
       return;
     }
     if (userInfo) {
-      observeElementInViewport(topElement, (ifshow: boolean) => {
+      stopOb = observeElementInViewport(topElement, (ifshow: boolean) => {
         setShowScrollTop(!ifshow);
       });
     }
 
     return () => {
+      if (stopOb) {
+        stopOb();
+      }
       rotesDispatch({
         type: "freshAll",
         rotes: [],

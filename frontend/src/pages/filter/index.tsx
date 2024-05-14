@@ -43,17 +43,25 @@ function MineFilter() {
 
   const [showscrollTop, setShowScrollTop] = useState(false);
   const [navHeight, setNavHeight] = useState(0);
+
   useEffect(() => {
     let topElement = document.getElementById("top") as any;
     if (!topElement) {
       return;
     }
-    observeElementInViewport(topElement, (ifshow: boolean) => {
-      setShowScrollTop(!ifshow);
-    });
+    const stopObserving = observeElementInViewport(
+      topElement,
+      (ifshow: boolean) => {
+        setShowScrollTop(!ifshow);
+      }
+    );
 
     const element = document.getElementById("top") as HTMLElement;
     setNavHeight(element.offsetHeight || 0);
+
+    return () => {
+      stopObserving();
+    };
   }, []);
 
   useEffect(() => {

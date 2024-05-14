@@ -28,7 +28,7 @@ function ExplorePage() {
       return;
     }
 
-    observeElementInViewport(topElement, (ifshow: boolean) => {
+    const stopOb = observeElementInViewport(topElement, (ifshow: boolean) => {
       setShowScrollTop(!ifshow);
     });
 
@@ -37,6 +37,7 @@ function ExplorePage() {
         type: "freshAll",
         rotes: [],
       });
+      stopOb();
     };
   }, []);
 

@@ -31,12 +31,16 @@ function RotePage() {
     if (!topElement) {
       return;
     }
-    observeElementInViewport(topElement, (ifshow: boolean) => {
+    const stopOb = observeElementInViewport(topElement, (ifshow: boolean) => {
       setShowScrollTop(!ifshow);
     });
 
     const element = document.querySelector(".rotypesNav") as HTMLElement;
     setNavHeight(element.offsetHeight || 0);
+
+    return () => {
+      stopOb();
+    };
   }, []);
 
   useEffect(() => {
