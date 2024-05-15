@@ -3,12 +3,15 @@ import Rote from "./Rote";
 import Empty from "antd/es/empty";
 import { LoadingOutlined } from "@ant-design/icons";
 
-function RoteList({ rotes, rotesDispatch, api, apiProps }: any) {
+function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
+  const rotes = rotesHook();
+  const rotesDispatch = rotesDispatchHook();
+
   const [isLoadAll, setIsLoadAll] = useState(false);
 
   const countRef = useRef(rotes.length);
+
   const loadingRef = useRef(null);
-  const observerRun = useRef(false);
 
   useEffect(() => {
     countRef.current = rotes.length;
@@ -16,9 +19,20 @@ function RoteList({ rotes, rotesDispatch, api, apiProps }: any) {
 
   // 监听loadingRef显示事件，加载更多
   useEffect(() => {
+    setIsLoadAll(false);
+    
+    if (countRef.current > 0) {
+      rotesDispatch({
+        type: "freshAll",
+        rotes: [],
+      });
+      countRef.current = 0;
+    }
+
     const currentLoadingRef = loadingRef.current;
 
     if (!currentLoadingRef) {
+      console.log("currentLoadingRef 未更新");
       return;
     }
 
@@ -48,24 +62,19 @@ function RoteList({ rotes, rotesDispatch, api, apiProps }: any) {
         .catch(() => {});
     }
 
-    if (!observerRun.current) {
-      observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            // 元素进入视口
-            loadMore();
-          }
-        });
-      }, options);
-      observer.observe(currentLoadingRef);
-      observerRun.current = true;
-    }
+    observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          // 元素进入视口
+          loadMore();
+        }
+      });
+    }, options);
+
+    observer.observe(currentLoadingRef);
 
     return () => {
-      if (currentLoadingRef && observerRun.current && observer) {
-        observer.unobserve(currentLoadingRef);
-        observerRun.current = false;
-      }
+      observer.unobserve(currentLoadingRef);
     };
   }, [apiProps]);
 

@@ -18,31 +18,15 @@ function UserPage() {
 
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
-  const rotes = useTempRotes();
-  const rotesDispatch = useTempRotesDispatch();
-
-  const fetchUserDataRef = useRef(false);
-
   useEffect(() => {
-    return rotesDispatch({
-      type: "freshAll",
-      rotes: [],
-    });
+    apiGetUserInfoByUsername(username)
+      .then((res) => {
+        setUserInfo(res.data.data);
+      })
+      .catch(() => {
+        navigate("/404");
+      });
   }, []);
-
-  useEffect(() => {
-    const currentfetchUserDataRef = fetchUserDataRef.current;
-    if (!currentfetchUserDataRef) {
-      apiGetUserInfoByUsername(username)
-        .then((res) => {
-          setUserInfo(res.data.data);
-        })
-        .catch(() => {
-          navigate("/404");
-        });
-      fetchUserDataRef.current = true;
-    }
-  }, [navigate, username]);
 
   return (
     <div>
@@ -117,8 +101,8 @@ function UserPage() {
 
         {userInfo && (
           <RoteList
-            rotes={rotes}
-            rotesDispatch={rotesDispatch}
+            rotesHook={useTempRotes}
+            rotesDispatchHook={useTempRotesDispatch}
             api={apiGetUserPublicRote}
             apiProps={{
               limit: 20,

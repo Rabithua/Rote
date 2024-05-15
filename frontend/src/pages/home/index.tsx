@@ -3,36 +3,10 @@ import { SyncOutlined, UpOutlined } from "@ant-design/icons";
 import { apiGetMyRote } from "@/api/rote/main";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
 import { toast } from "react-hot-toast";
+import slogenImg from "@/assets/img/slogen.svg";
 import RoteList from "@/components/roteList";
 
 function RotePage() {
-  const rotes = useRotes();
-  const rotesDispatch = useRotesDispatch();
-
-  function refreshData() {
-    const toastId = toast.loading("刷新中...");
-    try {
-      apiGetMyRote({
-        limit: rotes.length,
-        skip: 0,
-        archived: false,
-      }).then((res) => {
-        const rotes_api = res.data.data;
-        toast.success("数据已刷新", {
-          id: toastId,
-        });
-        rotesDispatch({
-          type: "freshAll",
-          rotes: rotes_api,
-        });
-      });
-    } catch (error) {
-      toast.error("刷新失败", {
-        id: toastId,
-      });
-    }
-  }
-
   function goTop() {
     const containers = document.getElementsByClassName("scrollContainer");
     if (containers.length > 0) {
@@ -45,10 +19,7 @@ function RotePage() {
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
     >
-      <div
-        className=" cursor-pointer group rotypesNav border-y border-[#00000010] flex items-end gap-2 text-gray-600 bg-white font-light p-4"
-        onClick={refreshData}
-      >
+      <div className=" cursor-pointer group rotypesNav border-y border-[#00000010] flex items-end gap-2 text-gray-600 bg-white font-light p-4">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="101"
@@ -164,13 +135,16 @@ function RotePage() {
             </linearGradient>
           </defs>
         </svg>
-        <SyncOutlined className=" group-hover:opacity-100 opacity-0 duration-300 mb-[2px] ml-2 text-green-600" />
-        {/* 采菊东篱下，悠然见南山 */}
+        <img
+          className=" group-hover:opacity-100 opacity-0 duration-300 mb-[2px] ml-2 text-green-600 h-4"
+          src={slogenImg}
+          alt="slogen"
+        />
       </div>
       <RoteInputSimple></RoteInputSimple>
       <RoteList
-        rotes={rotes}
-        rotesDispatch={rotesDispatch}
+        rotesHook={useRotes}
+        rotesDispatchHook={useRotesDispatch}
         api={apiGetMyRote}
         apiProps={{
           limit: 20,

@@ -252,7 +252,7 @@ function Login() {
                   <div className=" text-md font-semibold">用户名</div>
                   <Input
                     placeholder="username"
-                    className=" text-lg rounded-md font-mono border-[2px]"
+                    className=" text-lg dark:bg-transparent dark:text-white focus:bg-transparent hover:bg-transparent rounded-md border-gray-400 font-mono border-[1px]"
                     maxLength={20}
                     value={loginData.username}
                     onInput={(e) => handleInputChange(e, "username")}
