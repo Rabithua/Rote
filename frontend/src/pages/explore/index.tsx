@@ -3,6 +3,7 @@ import { apiGetPublicRote } from "@/api/rote/main";
 import { useExploreRotes, useExploreRotesDispatch } from "@/state/exploreRotes";
 import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
+import { useEffect } from "react";
 
 function ExplorePage() {
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
@@ -10,7 +11,13 @@ function ExplorePage() {
   const rotes = useExploreRotes();
   const rotesDispatch = useExploreRotesDispatch();
 
-  
+  useEffect(() => {
+    return rotesDispatch({
+      type: "freshAll",
+      rotes: [],
+    });
+  }, []);
+
   return (
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}

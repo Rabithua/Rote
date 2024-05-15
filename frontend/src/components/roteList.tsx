@@ -77,7 +77,7 @@ function RoteList({ rotes, rotesDispatch, api, apiProps }: any) {
       {isLoadAll ? null : (
         <div
           ref={loadingRef}
-          className=" flex justify-center items-center py-8 gap-3 bg-white"
+          className=" flex justify-center text-lg items-center py-8 gap-3 bg-white"
         >
           <LoadingOutlined />
           <div>加载中...</div>

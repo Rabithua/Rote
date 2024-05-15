@@ -3,6 +3,7 @@ import {
   DownOutlined,
   EditOutlined,
   EllipsisOutlined,
+  FolderOutlined,
   GlobalOutlined,
   PushpinOutlined,
   SaveOutlined,
@@ -191,25 +192,14 @@ function RoteItem({ rote_param }: any) {
             type: "updateOne",
             rote: res.data.data,
           });
-          if (res.data.data.archived) {
-            rotesDispatch({
-              type: "deleted",
-              roteid: res.data.data.id,
-            });
-            archivedRotesDispatch({
-              type: "add",
-              rotes: [res.data.data],
-            });
-          } else {
-            archivedRotesDispatch({
-              type: "deleted",
-              roteid: res.data.data.id,
-            });
-            rotesDispatch({
-              type: "add",
-              rotes: [res.data.data],
-            });
-          }
+          rotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
+          archivedRotesDispatch({
+            type: "updateOne",
+            rote: res.data.data,
+          });
           toast.success(`${rote.archived ? "取消归档" : "归档"}成功`, {
             id: toastId,
           });
@@ -274,9 +264,12 @@ function RoteItem({ rote_param }: any) {
       id={`Rote_${rote.id}`}
       className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full py-4 px-5"
     >
-      <Link to={`/${rote.author.username}`}>
+      <Link
+        className=" text-black shrink-0 hidden sm:block"
+        to={`/${rote.author.username}`}
+      >
         <Avatar
-          className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
+          className=" bg-[#00000010]"
           size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
           icon={<UserOutlined className=" text-[#00000030]" />}
           src={
@@ -333,6 +326,14 @@ function RoteItem({ rote_param }: any) {
             {rote.state === "public" ? (
               <Tooltip placement="bottom" title={`公开`}>
                 <GlobalOutlined
+                  className={` cursor-pointer text-md rounded-md`}
+                />
+              </Tooltip>
+            ) : null}
+
+            {rote.archived ? (
+              <Tooltip placement="bottom" title={`已归档`}>
+                <FolderOutlined
                   className={` cursor-pointer text-md rounded-md`}
                 />
               </Tooltip>
@@ -562,7 +563,7 @@ function RoteItem({ rote_param }: any) {
         destroyOnClose={true}
         footer={null}
       >
-        <RoteShareCard rote={rote} submitEdit={submitEdit}></RoteShareCard>
+        <RoteShareCard rote={rote}></RoteShareCard>
       </Modal>
     </div>
   ) : null;

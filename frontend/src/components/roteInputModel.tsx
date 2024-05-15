@@ -1,5 +1,10 @@
-import { Select } from "antd";
-import { PushpinOutlined, SendOutlined, TagsOutlined } from "@ant-design/icons";
+import { Select, Tooltip } from "antd";
+import {
+  FolderOutlined,
+  PushpinOutlined,
+  SendOutlined,
+  TagsOutlined,
+} from "@ant-design/icons";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
 import mainJson from "@/json/main.json";
@@ -10,7 +15,6 @@ const { stateOptions, roteMaxLetter } = mainJson;
 function RoteInputModel({ rote, submitEdit }: any) {
   const [tagsShow, setTagsShow] = useState(false);
   const tags = useTags();
-  const [fileList, setFileList] = useState([]) as any;
   const [editType, setEditType] = useState("default");
 
   const [newRote, setNewRote] = useState<any>({
@@ -38,18 +42,10 @@ function RoteInputModel({ rote, submitEdit }: any) {
     });
   };
 
-  const [profile, setProfile] = useState<any>({});
-
   useEffect(() => {
     setNewRote(rote);
     setTagsShow(rote.tags.length > 0 ? true : false);
   }, [rote]);
-
-  function deleteFile(indexToRemove: number) {
-    setFileList(
-      fileList.filter((_: any, index: number) => index !== indexToRemove)
-    );
-  }
 
   function addRoteFn() {
     if (!newRote.content.trim()) {
@@ -85,38 +81,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
           }}
           onKeyDown={handleNormalINputKeyDown}
         />
-        {/* <div className=" flex gap-2 flex-wrap my-2">
-                    <Image.PreviewGroup
-                        preview={{
-                            onChange: (current, prev) =>
-                                console.log(`current index: ${current}, prev index: ${prev}`),
-                        }}
-                    >
-                        {fileList.map((file: any, index: number) => {
-                            return (
-                                <div
-                                    className=" w-20 h-20 rounded-lg bg-bgWhite border overflow-hidden relative"
-                                    key={`filePicker_${index}`}
-                                >
-                                    <Image
-                                        className=" w-full h-full object-cover"
-                                        height={80}
-                                        width={80}
-                                        src={file.src}
-                                        fallback={defaultImage}
-                                    />
-                                    <div
-                                        onClick={() => deleteFile(index)}
-                                        className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
-                                    >
-                                        <CloseOutlined className=" text-white text-[12px]" />
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </Image.PreviewGroup>
-                    <Uploader fileList={fileList} setFileList={setFileList} />
-                </div> */}
+
         <Select
           mode="tags"
           variant="borderless"
@@ -129,27 +94,45 @@ function RoteInputModel({ rote, submitEdit }: any) {
           options={tags}
         />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
-          <TagsOutlined
-            onClick={() => {
-              setTagsShow(!tagsShow);
-            }}
-            className={` cursor-pointer text-xl p-2 hover:bg-[#00000005] rounded-md ${
-              tagsShow ? " bg-[#00000010]" : ""
-            }`}
-          />
-          <PushpinOutlined
-            className={` cursor-pointer text-xl p-2 rounded-md ${
-              newRote.pin ? "bg-[#00000010]" : ""
-            }`}
-            onClick={() => {
-              setNewRote({
-                ...newRote,
-                pin: !newRote.pin,
-              });
-            }}
-          />
+          <Tooltip placement="bottom" title={"标签"}>
+            <TagsOutlined
+              onClick={() => {
+                setTagsShow(!tagsShow);
+              }}
+              className={` cursor-pointer text-xl p-2 hover:bg-[#00000005] rounded-md ${
+                tagsShow ? " bg-[#00000010]" : ""
+              }`}
+            />
+          </Tooltip>
+          {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-[#00000010] rounded-md" /> */}
+          <Tooltip placement="bottom" title={"置顶"}>
+            <PushpinOutlined
+              className={` cursor-pointer text-xl p-2 rounded-md ${
+                newRote.pin ? "bg-[#00000010]" : ""
+              }`}
+              onClick={() => {
+                setNewRote({
+                  ...newRote,
+                  pin: !newRote.pin,
+                });
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="bottom" title={"归档"}>
+            <FolderOutlined
+              className={` cursor-pointer text-xl p-2 rounded-md ${
+                newRote.archived ? "bg-[#00000010]" : ""
+              }`}
+              onClick={() => {
+                setNewRote({
+                  ...newRote,
+                  archived: !newRote.archived,
+                });
+              }}
+            />
+          </Tooltip>
           <Select
-            value={newRote.state}
+            defaultValue="私密"
             variant="borderless"
             style={{ width: 80 }}
             className=" hover:bg-[#00000010] rounded-md"

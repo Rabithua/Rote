@@ -24,6 +24,13 @@ function UserPage() {
   const fetchUserDataRef = useRef(false);
 
   useEffect(() => {
+    return rotesDispatch({
+      type: "freshAll",
+      rotes: [],
+    });
+  }, []);
+
+  useEffect(() => {
     const currentfetchUserDataRef = fetchUserDataRef.current;
     if (!currentfetchUserDataRef) {
       apiGetUserInfoByUsername(username)
