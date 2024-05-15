@@ -6,12 +6,20 @@ import {
 } from "@/state/archivedRotes";
 import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
+import { useEffect } from "react";
 
 function ArchivedPage() {
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
   const rotes = useArchivedRotes();
   const rotesDispatch = useArchivedRotesDispatch();
+
+  useEffect(() => {
+    return rotesDispatch({
+      type: "freshAll",
+      rotes: [],
+    });
+  }, []);
 
   return (
     <div

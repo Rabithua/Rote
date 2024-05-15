@@ -49,7 +49,7 @@ function RoteShareCard({ rote }: any) {
         <div className=" font-extrabold text-5xl text-gray-800 mb-[-10px]">
           “
         </div>
-        <div className=" text-base text-gray-800 break-words whitespace-pre-line font-serif">
+        <div className=" text-base text-gray-800 break-words whitespace-pre-line font-medium font-serif">
           {rote.content}
         </div>
         {/* {rote.attachments.length > 0 && (
@@ -77,7 +77,7 @@ function RoteShareCard({ rote }: any) {
         <div className=" flex flex-wrap gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
-              <span className=" font-sans text-gray-800 " key={`tag_${index}`}>
+              <span className=" font-sans text-gray-600 " key={`tag_${index}`}>
                 #{tag}
               </span>
             );

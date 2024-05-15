@@ -15,14 +15,7 @@ function MineFilter() {
 
   const [roteListKey, setRoteListKey] = useState(1);
 
-  const [apiProps, setApiProps] = useState({
-    limit: 20,
-    filter: {
-      tags: {
-        hasEvery: location.state?.tags || [],
-      },
-    },
-  });
+  const [apiProps, setApiProps] = useState<any>(null);
 
   const [navHeight, setNavHeight] = useState(0);
 
@@ -100,13 +93,15 @@ function MineFilter() {
         </div>
       </div>
 
-      <RoteList
-        key={roteListKey}
-        rotes={rotes}
-        rotesDispatch={rotesDispatch}
-        api={apiGetMyRote}
-        apiProps={apiProps}
-      />
+      {apiProps && (
+        <RoteList
+          key={roteListKey}
+          rotes={rotes}
+          rotesDispatch={rotesDispatch}
+          api={apiGetMyRote}
+          apiProps={apiProps}
+        />
+      )}
 
       <GoTop scrollContainerName="scrollContainer" />
     </div>

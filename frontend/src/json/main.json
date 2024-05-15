@@ -10,10 +10,6 @@
         {
           "label": "私密",
           "value": "private"
-        },
-        {
-          "label": "归档",
-          "value": "archived"
         }
       ]
     }

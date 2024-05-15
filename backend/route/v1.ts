@@ -323,8 +323,17 @@ routerV1.delete("/swSubScription", isAuthenticated, async (req, res) => {
 });
 
 routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
-  const { title, content, type, tags, state, pin, editor, attachments } =
-    req.body;
+  const {
+    title,
+    content,
+    type,
+    tags,
+    state,
+    archived,
+    pin,
+    editor,
+    attachments,
+  } = req.body;
   const user = req.user as User;
   if (!content) {
     res.status(401).send({
@@ -342,6 +351,7 @@ routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
     state,
     pin: !!pin,
     editor,
+    archived: !!archived,
     attachments,
     authorid: user.id,
   })

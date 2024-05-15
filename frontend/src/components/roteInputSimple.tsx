@@ -1,7 +1,8 @@
-import { Avatar, Image, Select } from "antd";
+import { Avatar, Image, Select, Tooltip } from "antd";
 import { cloneDeep } from "lodash";
 import {
   CloseOutlined,
+  FolderOutlined,
   PushpinOutlined,
   SendOutlined,
   TagsOutlined,
@@ -17,6 +18,7 @@ import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 import { useRotesDispatch } from "@/state/rotes";
 import { useProfile } from "@/state/profile";
+import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
@@ -32,6 +34,7 @@ function RoteInputSimple() {
     type: "rote",
     tags: [],
     state: "private",
+    archived: false,
     pin: false,
   });
   const rotesDispatch = useRotesDispatch();
@@ -77,10 +80,12 @@ function RoteInputSimple() {
       content: rote.content.trim(),
     })
       .then(async (res) => {
-        rotesDispatch({
-          type: "addOne",
-          rote: res.data.data,
-        });
+        if (!res.data.data.archived) {
+          rotesDispatch({
+            type: "addOne",
+            rote: res.data.data,
+          });
+        }
         toast.success("发送成功", {
           id: toastId,
         });
@@ -101,6 +106,7 @@ function RoteInputSimple() {
       type: "rote",
       tags: [],
       state: "private",
+      archived: false,
       pin: false,
     });
   }
@@ -216,26 +222,43 @@ function RoteInputSimple() {
           options={tags}
         />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
-          <TagsOutlined
-            onClick={() => {
-              setTagsShow(!tagsShow);
-            }}
-            className={` cursor-pointer text-xl p-2 hover:bg-[#00000005] rounded-md ${
-              tagsShow ? " bg-[#00000010]" : ""
-            }`}
-          />
+          <Tooltip placement="bottom" title={"标签"}>
+            <TagsOutlined
+              onClick={() => {
+                setTagsShow(!tagsShow);
+              }}
+              className={` cursor-pointer text-xl p-2 hover:bg-[#00000005] rounded-md ${
+                tagsShow ? " bg-[#00000010]" : ""
+              }`}
+            />
+          </Tooltip>
           {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-[#00000010] rounded-md" /> */}
-          <PushpinOutlined
-            className={` cursor-pointer text-xl p-2 rounded-md ${
-              rote.pin ? "bg-[#00000010]" : ""
-            }`}
-            onClick={() => {
-              setRote({
-                ...rote,
-                pin: !rote.pin,
-              });
-            }}
-          />
+          <Tooltip placement="bottom" title={"置顶"}>
+            <PushpinOutlined
+              className={` cursor-pointer text-xl p-2 rounded-md ${
+                rote.pin ? "bg-[#00000010]" : ""
+              }`}
+              onClick={() => {
+                setRote({
+                  ...rote,
+                  pin: !rote.pin,
+                });
+              }}
+            />
+          </Tooltip>
+          <Tooltip placement="bottom" title={"归档"}>
+            <FolderOutlined
+              className={` cursor-pointer text-xl p-2 rounded-md ${
+                rote.archived ? "bg-[#00000010]" : ""
+              }`}
+              onClick={() => {
+                setRote({
+                  ...rote,
+                  archived: !rote.archived,
+                });
+              }}
+            />
+          </Tooltip>
           <Select
             defaultValue="私密"
             variant="borderless"
