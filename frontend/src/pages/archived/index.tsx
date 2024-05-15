@@ -11,7 +11,6 @@ import { useEffect } from "react";
 function ArchivedPage() {
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
-  const rotes = useArchivedRotes();
   const rotesDispatch = useArchivedRotesDispatch();
 
   useEffect(() => {
@@ -34,8 +33,8 @@ function ArchivedPage() {
       <div id="top" className=" h-[1px]"></div>
 
       <RoteList
-        rotes={rotes}
-        rotesDispatch={rotesDispatch}
+        rotesHook={useArchivedRotes}
+        rotesDispatchHook={useArchivedRotesDispatch}
         api={apiGetMyRote}
         apiProps={{
           limit: 20,

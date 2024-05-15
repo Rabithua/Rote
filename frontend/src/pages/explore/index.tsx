@@ -3,20 +3,9 @@ import { apiGetPublicRote } from "@/api/rote/main";
 import { useExploreRotes, useExploreRotesDispatch } from "@/state/exploreRotes";
 import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
-import { useEffect } from "react";
 
 function ExplorePage() {
   // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
-
-  const rotes = useExploreRotes();
-  const rotesDispatch = useExploreRotesDispatch();
-
-  useEffect(() => {
-    return rotesDispatch({
-      type: "freshAll",
-      rotes: [],
-    });
-  }, []);
 
   return (
     <div
@@ -31,8 +20,8 @@ function ExplorePage() {
       <div id="top" className=" h-[1px]"></div>
 
       <RoteList
-        rotes={rotes}
-        rotesDispatch={rotesDispatch}
+        rotesHook={useExploreRotes}
+        rotesDispatchHook={useExploreRotesDispatch}
         api={apiGetPublicRote}
         apiProps={{
           limit: 20,
