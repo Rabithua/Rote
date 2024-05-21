@@ -1,9 +1,5 @@
-backend/node_modules
-# Keep environment variables out of version control
-backend/.env
-
-frontend/.env
-frontend/node_modules
+*/.env
+*/node_modules
 ._*
 
 mongodb
