@@ -13,7 +13,7 @@ function Landing() {
     },
     {
       name: "userGuide",
-      href: "/#",
+      href: "#",
     },
     {
       name: "github",
@@ -23,14 +23,14 @@ function Landing() {
       name: "blog",
       href: "https://rabithua.club",
     },
-    {
-      name: "download",
-      href: "/#",
-    },
-    {
-      name: "donate",
-      href: "/#",
-    },
+    // {
+    //   name: "download",
+    //   href: "/#",
+    // },
+    // {
+    //   name: "donate",
+    //   href: "/#",
+    // },
   ];
   const profile = useProfile();
 

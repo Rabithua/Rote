@@ -211,7 +211,7 @@ function Login() {
   }
 
   return (
-    <div className="h-dvh w-full relative flex items-center justify-center">
+    <div className="h-dvh w-full dark:bg-black bg-gray-100 relative flex items-center justify-center">
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center "></div>
       <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-white dark:bg-bgDarkSecond w-80 dark:border-bgDarkSecond dark:text-white border rounded-lg flex flex-col gap-2 pb-10 z-10">
@@ -252,7 +252,7 @@ function Login() {
                   <div className=" text-md font-semibold">用户名</div>
                   <Input
                     placeholder="username"
-                    className=" text-lg dark:bg-transparent dark:text-white focus:bg-transparent hover:bg-transparent rounded-md border-gray-400 font-mono border-[1px]"
+                    className=" text-lg rounded-md font-mono border-[2px]"
                     maxLength={20}
                     value={loginData.username}
                     onInput={(e) => handleInputChange(e, "username")}

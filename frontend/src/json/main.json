@@ -1,7 +1,7 @@
 {
   "stateOptions": [
     {
-      "label": "笔记状态",
+      "label": "状态",
       "options": [
         {
           "label": "公开",
