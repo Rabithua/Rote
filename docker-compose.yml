@@ -50,17 +50,7 @@ services:
     image: node:18
     working_dir: /root/rote_node
     environment:
-      - CROS="https://localhost:3001,https://rote.ink,https://beta.rote.ink"
-      - DATABASE_URL_ATLAS=mongodb+srv://rabithua:1289770378@cluster0.womkl7z.mongodb.net/Rote
-      - DATABASE_URL=mongodb://rote_mongo_primary:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
-      - R2_BUCKET=rote
-      - R2_ACCOUNT_ID=9a7e130cdaa8a057ae7869e2f7782d54
-      - R2_ACCESS_KEY_ID=6dcf07beb8b24f9f38c6637ce4eeb932
-      - R2_SECRET_KEY_ID=e685cb08f6326ac9e334dcfa7f75fc27c0d69e10f4d0427863f3fd6bca041ac6
-      - R2_URL_PREFIX=r2.rote.ink
-      - VAPID_PUBLIC_KEY=BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8
-      - VAPID_PRIVATE_KEY=szct0G0wxT73VyN4508ri0SqH2sBRxTqOmNre-exrRc
-      - SESSION_SECRET=RoteByRabithua
+
     volumes:
       - ./backend:/root/rote_node
     expose:
