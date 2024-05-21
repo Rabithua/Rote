@@ -17,7 +17,7 @@ function Landing() {
     },
     {
       name: "github",
-      href: "https://github.com/Rabithua",
+      href: "https://github.com/Rabithua/Rote",
     },
     {
       name: "blog",
