@@ -1,4 +1,5 @@
 ## Rote
+
 > A personal note repository that looks different🤔
 
 - Open API, more than one way to record🤩
@@ -8,9 +9,11 @@
 ## Deploy
 
 ```
-// 此处粘贴docker命令
+// 此处粘贴docker命令，待补充
 ```
+
 ## Develop
+
 Hold
 
 ## Technology stack
@@ -18,4 +21,5 @@ Hold
 **React** + **Typescript** + **Nodejs** + **Prisma** + **MongoDB** + **Docker**
 
 ## Technical article
+
 [Docker expose 和 ports 的区别](https://talk.wowow.club/d/282-docker-expose-he-ports-de-qu-bie/4)
