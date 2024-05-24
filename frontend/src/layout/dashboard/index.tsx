@@ -2,11 +2,11 @@ import { useTranslation } from "react-i18next";
 import { Link, Outlet } from "react-router-dom";
 import {
   ExperimentOutlined,
+  FolderOutlined,
   GlobalOutlined,
   HomeOutlined,
   LoginOutlined,
   MenuUnfoldOutlined,
-  SaveOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
@@ -44,7 +44,7 @@ function LayoutDashboard() {
         },
 
         {
-          svg: <SaveOutlined />,
+          svg: <FolderOutlined />,
           link: "/archived",
 
           name: "archived",
