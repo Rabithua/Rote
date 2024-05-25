@@ -3,7 +3,7 @@ import { apiGetMyTags } from "@/api/rote/main";
 import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile, useProfileDispatch } from "@/state/profile";
 import { useRotesDispatch } from "@/state/rotes";
-import { useTagsDispatch } from "@/state/tags";
+import { useTags, useTagsDispatch } from "@/state/tags";
 import { UserOutlined } from "@ant-design/icons";
 import { Avatar, Input, Typography } from "antd";
 import { useState } from "react";
@@ -15,6 +15,7 @@ import mainJson from "@/json/main.json";
 const { safeRoutes } = mainJson;
 function Login() {
   const profile = useProfile();
+  const tags = useTags();
   const profileDispatch = useProfileDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
   const tagsDispatch = useTagsDispatch();
@@ -44,7 +45,7 @@ function Login() {
 
     const toastId = toast.loading("登录中...");
     loginByPassword(loginData)
-      .then((res) => {
+      .then(async (res) => {
         toast.success("登录成功", {
           id: toastId,
         });
@@ -52,8 +53,8 @@ function Login() {
           type: "updateProfile",
           profile: res.data.data,
         });
-        refreshTags();
-        navigate("/home");
+        await refreshTags();
+        // navigate("/home");
       })
       .catch((err) => {
         console.log(err);
@@ -70,23 +71,23 @@ function Login() {
   }
 
   async function refreshTags() {
-    const initialTags = await apiGetMyTags()
-      .then((res) => {
-        return res.data.data.map((item: any) => {
-          return {
-            value: item,
-            label: item,
-          };
-        });
-      })
-      .catch((err: any) => {
-        return [];
+    try {
+      const res = await apiGetMyTags();
+      tagsDispatch({
+        type: "freshAll",
+        tags: res.data.data.map((item: any) => ({
+          value: item,
+          label: item,
+        })),
       });
-
-    tagsDispatch({
-      type: "freshAll",
-      tags: initialTags,
-    });
+    } catch (err: any) {
+      console.error("Error fetching tags:", err);
+      tagsDispatch({
+        type: "freshAll",
+        tags: [],
+      });
+      console.log(tags);
+    }
   }
 
   function logOutFn() {
