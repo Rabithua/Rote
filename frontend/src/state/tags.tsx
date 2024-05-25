@@ -40,22 +40,16 @@ export function useTagsDispatch() {
 function tagsReducer(tags: Tags, action: TagsAction): Tags {
   switch (action.type) {
     case "addOne": {
-      return [
-        ...tags,
-        {
-          value: action.tag,
-          label: action.tag,
-        },
-      ];
+      return [...tags, action.tag];
     }
     case "addMore": {
       return [...tags, ...action.tags];
     }
     case "deleted": {
-      return tags.filter((t: Tag) => t.value !== action.tag);
+      return tags.filter((t: Tag) => t.value !== action.tag.value);
     }
     case "freshAll": {
-      return tags;
+      return action.tags;
     }
     default: {
       throw new Error("Unknown action: " + action);

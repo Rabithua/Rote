@@ -1,9 +1,10 @@
 // =======================================
 
-// Public Key:
-// BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8
+// 如果使用webpush需要保持客户端和服务端VAPID统一
 
 // =======================================
+
+const VAPID = "BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g"
 
 /* eslint-disable no-restricted-globals */
 const urlBase64ToUint8Array = base64String => {
@@ -30,7 +31,7 @@ self.addEventListener('message', async event => {
         case "subNotice":
             const subscription = await self.registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array("BKcP-BjX4_BSiMW5bBDpjbRKwBjeKcbCRGf_joXYdPG3CkNZ20KHXYBAdfkx9qiVYh4QQDoEQjQ_Q6o9kiMRwn8")
+                applicationServerKey: urlBase64ToUint8Array(VAPID)
             })
 
             event.source.postMessage({

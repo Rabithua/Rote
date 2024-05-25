@@ -6,10 +6,10 @@ export type Tag = {
 export type Tags = Tag[];
 
 export type TagsAction =
-  | { type: "addOne"; tag: string }
+  | { type: "addOne"; tag: Tag }
   | { type: "addMore"; tags: Tags }
-  | { type: "deleted"; tag: string }
-  | { type: "freshAll"; tags: [] };
+  | { type: "deleted"; tag: Tag }
+  | { type: "freshAll"; tags: Tags };
 
 export type Rote = {
   id: string;
