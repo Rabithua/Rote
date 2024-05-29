@@ -1,3 +1,5 @@
+// service worker 相关数据库操作
+
 import { instance } from "../request";
 
 export function saveSubscription(subscription: any): Promise<any> {

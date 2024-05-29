@@ -1,6 +1,6 @@
 // 使用context加reducer作为全局状态管理系统
 
-import { getUserProfile } from '@/api/login/main';
+import { getUserProfile } from '@/api/user/main';
 import { Profile, ProfileAction } from '@/types/main';
 import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 
