@@ -83,7 +83,7 @@ function LayoutDashboard() {
     <div className=" bg-white w-full h-dvh">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
-          <div className=" border-t sticky top-0 duration-300 flex md:w-[150px] px-1 sm:px-2 md:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
+          <div className=" border-t sticky top-0 duration-300 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
             {icons.map((icon, index) => {
               return (
                 <Link
@@ -92,7 +92,7 @@ function LayoutDashboard() {
                   to={icon.link}
                 >
                   {icon.svg}
-                  <div className=" shrink-0 hidden tracking-widest md:block">
+                  <div className=" shrink-0 hidden tracking-widest lg:block">
                     {t(`leftNavBar.${icon.name}`)}
                   </div>
                 </Link>
@@ -105,7 +105,7 @@ function LayoutDashboard() {
               <div className=" w-8 h-8 p-1 shrink-0 text-base">
                 <MenuUnfoldOutlined />
               </div>
-              <div className=" shrink-0 hidden tracking-widest md:block">
+              <div className=" shrink-0 hidden tracking-widest lg:block">
                 {t(`leftNavBar.fold`)}
               </div>
             </div>
@@ -118,7 +118,7 @@ function LayoutDashboard() {
             <MenuUnfoldOutlined />
           </div>
         )}
-        <div className=" border-[#00000010] border-r flex-1 noScrollBar h-dvh overflow-y-visible max-w-2xl overflow-x-hidden relative">
+        <div className=" flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative">
           <Outlet />
         </div>
       </div>
