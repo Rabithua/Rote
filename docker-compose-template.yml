@@ -7,7 +7,7 @@ services:
     image: mongo:5
     restart: always
     ports:
-      # 数据库未加密不是和暴露在公网，如有需要自行修改
+      # 数据库未加密不适合暴露在公网，如有需要自行修改
       - "27017"
     volumes:
       - ./data/mongodb:/data/db
