@@ -16,6 +16,24 @@ export function apiAddRote(data: any): Promise<any> {
   });
 }
 
+export function apiGetSingleRote(id: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/oneRote",
+      params: {
+        id,
+      },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiGetMyRote(data: any): Promise<any> {
   let { filter, ...params } = data;
   // console.log(filter)

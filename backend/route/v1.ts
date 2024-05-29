@@ -25,7 +25,7 @@ import {
   getUserInfoByUsername,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
-import { User, UserSwSubScription } from "@prisma/client";
+import { Rote, User, UserSwSubScription } from "@prisma/client";
 import webpush from "../utils/webpush";
 import upload from "../utils/upload";
 import passport from "passport";
@@ -548,34 +548,49 @@ routerV1.get("/getMyTags", isAuthenticated, (req, res) => {
     });
 });
 
-routerV1.get("/oneRote", (req, res) => {
-  console.log(req.query);
+routerV1.get("/oneRote", async (req, res) => {
+  const user = req.user as User;
   const { id } = req.query;
-  if (!id) {
+  if (!id || id.length !== 24) {
     res.status(401).send({
       code: 1,
-      msg: "error",
-      data: "Need id",
+      msg: "Need id or id wrong",
+      data: null,
     });
     return;
   }
-  findRoteById(req.query.id?.toString() || "")
-    .then(async (rote) => {
-      res.send({
-        code: 0,
-        msg: "ok",
-        data: rote,
-      });
-      await prisma.$disconnect();
-    })
-    .catch(async (e) => {
-      res.status(401).send({
-        code: 1,
-        msg: "error",
-        data: e,
-      });
-      await prisma.$disconnect();
+  const rote = await findRoteById(id.toString() || "");
+  if (!rote) {
+    res.status(401).send({
+      code: 1,
+      msg: "Not found",
+      data: null,
     });
+    return;
+  }
+  if (rote.state == "public") {
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: rote,
+    });
+    return;
+  }
+
+  if (rote.authorid == user?.id) {
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: rote,
+    });
+    return;
+  }
+
+  res.status(401).send({
+    code: 1,
+    msg: "rote is private",
+    data: null,
+  });
 });
 
 routerV1.post("/oneRote", isAuthor, bodyTypeCheck, (req, res) => {

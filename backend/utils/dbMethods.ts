@@ -201,7 +201,7 @@ export async function createRote(data: any): Promise<any> {
 export async function findRoteById(id: string): Promise<any> {
   return new Promise((resolve, reject) => {
     prisma.rote
-      .findUnique({
+      .findFirst({
         where: {
           id,
         },
