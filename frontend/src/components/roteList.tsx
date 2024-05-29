@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import Rote from "./Rote";
 import Empty from "antd/es/empty";
 import { LoadingOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 
 function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   const rotes = rotesHook();
+  const navigate = useNavigate();
   const rotesDispatch = rotesDispatchHook();
 
   const [isLoadAll, setIsLoadAll] = useState(false);
@@ -20,7 +22,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   // 监听loadingRef显示事件，加载更多
   useEffect(() => {
     setIsLoadAll(false);
-    
+
     if (countRef.current > 0) {
       rotesDispatch({
         type: "freshAll",
@@ -81,7 +83,12 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   return (
     <div className=" flex flex-col w-full relative">
       {rotes.map((item: any, index: any) => {
-        return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
+        return (
+          <Rote
+            rote_param={item}
+            key={`Rote_${index}`}
+          ></Rote>
+        );
       })}
       {isLoadAll ? null : (
         <div

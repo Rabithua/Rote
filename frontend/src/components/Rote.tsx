@@ -5,6 +5,7 @@ import {
   EllipsisOutlined,
   FolderOutlined,
   GlobalOutlined,
+  PicCenterOutlined,
   PushpinOutlined,
   SaveOutlined,
   ShareAltOutlined,
@@ -213,6 +214,13 @@ function RoteItem({ rote_param }: any) {
     }
     return (
       <div className=" flex flex-col">
+        <Link
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          to={`/rote/${rote.id}`}
+        >
+          <PicCenterOutlined />
+          详情
+        </Link>
         <div
           className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
           onClick={editRotePin}
@@ -259,7 +267,7 @@ function RoteItem({ rote_param }: any) {
     );
   }
 
-  return rote.id ? (
+  return rote?.id ? (
     <div
       id={`Rote_${rote.id}`}
       className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full py-4 px-5"

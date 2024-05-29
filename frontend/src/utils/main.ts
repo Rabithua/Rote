@@ -1,4 +1,3 @@
-import { saveSubscription } from "@/api/subscription/main";
 import { Rotes } from "@/types/main";
 import toast from "react-hot-toast";
 
@@ -82,40 +81,4 @@ export function sortRotesByPinAndCreatedAt(objects: Rotes): Rotes {
       return a.pin ? -1 : 1;
     }
   });
-}
-
-/**
- * 防抖函数
- * @param func 需要防抖的函数
- * @param wait 等待时间(毫秒)
- * @param immediate 是否立即执行一次
- * @returns 防抖函数
- */
-export function debounce<F extends (...args: any[]) => any>(
-  func: F,
-  wait: number,
-  immediate: boolean = false
-): (...args: Parameters<F>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-
-  return function (this: any, ...args: Parameters<F>) {
-    const later = () => {
-      timeout = null;
-      if (!immediate) {
-        func.apply(this, args);
-      }
-    };
-
-    const callNow = immediate && !timeout;
-
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-
-    timeout = setTimeout(later, wait);
-
-    if (callNow) {
-      func.apply(this, args);
-    }
-  };
 }

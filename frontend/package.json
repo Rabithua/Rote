@@ -4,8 +4,9 @@
   "private": true,
   "proxy": "http://localhost:3000",
   "scripts": {
-    "dev": "export HTTPS=true; export SSL_CRT_FILE=./cert.pem; export SSL_KEY_FILE=./key.pem; export PORT=3001; craco start",
+    "dev": " export PORT=3001; craco start",
     "start": "export PORT=3001; craco start",
+    "devhttps": "export HTTPS=true; export SSL_CRT_FILE=./cert.pem; export SSL_KEY_FILE=./key.pem; export PORT=3001; craco start",
     "build": "craco build",
     "test": "craco test",
     "eject": "craco eject"

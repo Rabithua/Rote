@@ -18,6 +18,22 @@ export function apiGetUserInfoByUsername(username: string): Promise<any> {
   });
 }
 
+export function getUserProfile(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/profile",
+      withCredentials: true,
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiUploadAvatar(formData: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({

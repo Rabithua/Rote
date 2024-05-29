@@ -1,0 +1,64 @@
+# 此docker-compose文件为后端部署示例
+
+version: "3.8"
+
+services:
+  roteMongodbRS:
+    image: mongo:5
+    restart: always
+    ports:
+      # 数据库未加密不适合暴露在公网，如有需要自行修改
+      - "27017"
+    volumes:
+      - ./data/mongodb:/data/db
+    command: ["mongod", "--replSet", "rs0"]
+    networks:
+      - backendNetwork
+
+  roteMongodbSetup:
+    image: mongo:5
+    depends_on:
+      - roteMongodbRS
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        mongo --host roteMongodbRS:27017 --eval 'rs.status().ok ? null : rs.initiate({
+          _id: "rs0",
+          members: [
+            {_id: 0, host: "roteMongodbRS:27017"}
+          ]
+        })' && mongo --host roteMongodbRS:27017 --eval 'while (! db.hello().isWritablePrimary ) sleep(1000); db = db.getSiblingDB("Rote"); db.getCollectionNames().includes("Rote") ? 0 : db.createCollection("Rote");'
+    networks:
+      - backendNetwork
+
+  rotebackend:
+    image: rabithua/rotebackend:latest
+    depends_on:
+      - roteMongodbRS
+      - roteMongodbSetup
+    container_name: rotebackend
+    environment:
+      # 添加客户端域名到这里，避免跨域问题
+      - CROS=https://localhost:3001,https://rote.ink,https://beta.rote.ink
+      - DATABASE_URL=mongodb://roteMongodbRS:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
+      - SESSION_SECRET=RoteByRabithuaPrd
+      # cloudflare r2储存桶配置
+      - R2_BUCKET=rote
+      - R2_ACCOUNT_ID=9a7e130cxxxxxxxx7869e2f7782d54
+      - R2_ACCESS_KEY_ID=44db2e4983e6xxxxxxd0edff90980ecf7
+      - R2_SECRET_KEY_ID=26a842fxxxxxxxxxxxxxxxxxxxxx2195a1793d06494b875
+      - R2_URL_PREFIX=r2.rote.ink
+      # webpush需要生成VAPID
+      - VAPID_PUBLIC_KEY=BDYfGAEoJIxxxFfy8ZX4Gw1YdxxxxxxxxxxxX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g
+      - VAPID_PRIVATE_KEY=25IK6YYxWFhoE1ntALVFpxxxxxxxxxGb4W9bGzlMaZ4I
+    ports:
+      # 后端api暴露端口
+      - 3001:3000
+    restart: always
+    networks:
+      - backendNetwork
+
+networks:
+  backendNetwork:
+    driver: bridge

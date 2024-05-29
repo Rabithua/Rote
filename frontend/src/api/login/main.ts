@@ -34,22 +34,6 @@ export function registerBypassword(data: any): Promise<any> {
   });
 }
 
-export function getUserProfile(): Promise<any> {
-  return new Promise((resolve, reject) => {
-    instance({
-      method: "get",
-      url: "/v1/api/profile",
-      withCredentials: true
-    })
-      .then(function (response) {
-        resolve(response);
-      })
-      .catch((e: any) => {
-        reject(e);
-      });
-  });
-}
-
 export function logOut(): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
