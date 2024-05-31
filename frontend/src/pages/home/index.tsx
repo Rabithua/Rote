@@ -4,6 +4,8 @@ import { apiGetMyRote } from "@/api/rote/main";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
 import slogenImg from "@/assets/img/slogen.svg";
 import RoteList from "@/components/roteList";
+import * as d3 from "d3";
+import Heatmap from "@/components/d3/heatmap";
 
 function RotePage() {
   function goTop() {
@@ -13,7 +15,22 @@ function RotePage() {
       container.scrollTop = 0; // 将该容器滚动到顶部
     }
   }
+  const generateData = (): { [key: string]: number } => {
+    const data: { [key: string]: number } = {};
 
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 71 - startDate.getDay());
+    const days = d3.timeDays(startDate, endDate);
+
+    days.forEach((day) => {
+      data[d3.timeFormat("%Y-%m-%d")(day)] = Math.floor(Math.random() * 5);
+    });
+    console.log(data);
+    return data;
+  };
+
+  const data = generateData();
   return (
     <div className=" flex w-full h-dvh">
       <div
@@ -186,6 +203,9 @@ function RotePage() {
         </div>
         <div className=" p-4">
           此处需要放置热力图 / 标签云，简单统计信息，待开发
+          <div className=" w-full overflow-scroll">
+            <Heatmap data={data} />
+          </div>
         </div>
       </div>
     </div>
