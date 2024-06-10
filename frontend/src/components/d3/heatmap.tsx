@@ -1,16 +1,24 @@
 // src/Heatmap.tsx
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
+import toast from "react-hot-toast";
+import { apiGetMyHeatMap } from "@/api/others/main";
 
-interface HeatmapProps {
-  data: { [key: string]: number };
-}
-
-const Heatmap: React.FC<HeatmapProps> = ({ data }) => {
+const Heatmap: React.FC = () => {
+  const [heatmapData, setHeatmapData] = useState<any>({});
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(260); // 默认宽度
 
   useEffect(() => {
+    apiGetMyHeatMap({}).then((res) => {
+      setHeatmapData(res.data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (Object.keys(heatmapData).length === 0) {
+      return;
+    }
     const height = 150;
     const cellSize = 20;
     const padding = 5;
@@ -26,7 +34,14 @@ const Heatmap: React.FC<HeatmapProps> = ({ data }) => {
     const color = d3
       .scaleLinear<string>()
       .domain([0, 1, 2, 3, 4])
-      .range(["#ebedf0", "#c6e48b", "#7bc96f", "#239a3b", "#196127"]);
+      .range([
+        "#07C16005",
+        "#07C16020",
+        "#07C16040",
+        "#07C16060",
+        "#07C16080",
+        "#07C160",
+      ]);
 
     if (svgRef.current) {
       const svg = d3
@@ -66,17 +81,28 @@ const Heatmap: React.FC<HeatmapProps> = ({ data }) => {
         .attr("height", cellSize - padding)
         .attr(
           "x",
-          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 230
+          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 270
         )
         .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
+        .attr("rx", 3) // 添加圆角
+        .attr("ry", 3) // 添加圆角
         .datum(formatDate)
-        .attr("fill", (d) => color(data[d] || 0))
-        .append("title") // 添加 title 元素
-        .text(
-          (d) => `${formatMonthDay(new Date(d))}: ${data[d] || 0} contributions`
-        ); // 显示日期和贡献数量
+        .attr("fill", (d) => color(heatmapData[d] || 0))
+        .attr(
+          "data-title",
+          (d) => `${formatMonthDay(new Date(d))}: ${heatmapData[d] || 0} Notes`
+        ) // 显示日期和贡献数量
+        .on("click", function (e) {
+          console.log(e);
+          const target = e.target as HTMLElement;
+          if (target.dataset.title) {
+            toast(target.dataset.title, {
+              icon: "🌱",
+            });
+          }
+        });
     }
-  }, [data, containerWidth]);
+  }, [heatmapData, containerWidth]);
 
   return <svg ref={svgRef}></svg>;
 };

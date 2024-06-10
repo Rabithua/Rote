@@ -18,6 +18,7 @@ import {
   findSubScriptionToUserByendpoint,
   findUserPublicRote,
   generateOpenKey,
+  getHeatMap,
   getMyOpenKey,
   getMySession,
   getMyTags,
@@ -928,6 +929,37 @@ routerV1.post("/openkey", isAuthenticated, bodyTypeCheck, function (req, res) {
   }
 
   editMyOneOpenKey(user.id, id, permissions)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.post("/getMyHeatmap", isAuthenticated, function (req, res) {
+  const user = req.user as User;
+  const { startDate, endDate } = req.body;
+  if (!startDate || !endDate) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Need startDate and endDate",
+    });
+    return;
+  }
+
+  getHeatMap(user.id, startDate, endDate)
     .then(async (data) => {
       res.send({
         code: 0,
