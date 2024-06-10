@@ -14,8 +14,21 @@
   }
 }
 
-.noScrollBar::-webkit-scrollbar {
-  display: none;
+
+@layer utilities {
+  .animation-timeline-view {
+    animation-timeline: view();
+  }
+
+  .noScrollBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .aTagStyle a {
+    text-decoration: underline;
+    color: #0c9849;
+    word-break: break-all;
+  }
 }
 
 .ProseMirror {
@@ -51,12 +64,6 @@
   font-family: "Noto Serif SC", serif;
   font-weight: 900;
   font-style: normal;
-}
-
-.aTagStyle a {
-  text-decoration: underline;
-  color: #0c9849;
-  word-break: break-all;
 }
 
 a:hover {

@@ -735,3 +735,35 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
       });
   });
 }
+
+export async function getHeatMap(
+  userId: string,
+  startDate: string,
+  endDate: string
+): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.rote
+      .findMany({
+        where: {
+          authorid: userId,
+          createdAt: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        },
+      })
+      .then((res) => {
+        // 将结果转换为所需的格式
+        const result = res.reduce((acc: any, item: any) => {
+          const date = item.createdAt.toISOString().split("T")[0];
+          acc[date] = (acc[date] || 0) + 1;
+          return acc;
+        }, {});
+        resolve(result);
+      })
+      .catch((error) => {
+        console.error("Error generate openkey:", error);
+        reject(error);
+      });
+  });
+}

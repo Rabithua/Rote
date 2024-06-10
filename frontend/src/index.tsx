@@ -7,7 +7,7 @@ import { App, ConfigProvider } from "antd";
 import { GlobalContextProvider } from "./state";
 import GlobalRouterProvider from "./route/main";
 import themeJson from "@/json/theme.json";
-import { Helmet } from "react-helmet";
+import { Helmet, HelmetProvider } from "react-helmet-async";
 
 const { theme } = themeJson;
 const root = ReactDOM.createRoot(
@@ -17,30 +17,35 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <App>
-      <Helmet>
-        <title>Rote笔记</title>
-        <link rel="icon" href="https://r2.rote.ink/others/logo.png" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta
-          name="description"
-          content="Web site created using create-react-app"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="https://r2.rote.ink/others/logo512.png"
-        />
-        <link
-          rel="apple-touch-startup-image"
-          href="https://r2.rote.ink/others/logo.png"
-        />
-      </Helmet>
-      <ConfigProvider theme={theme}>
-        <GlobalContextProvider>
-          <GlobalRouterProvider />
-          <Toaster position="top-right" reverseOrder={false} />
-        </GlobalContextProvider>
-      </ConfigProvider>
+      <HelmetProvider>
+        <Helmet>
+          <title>Rote笔记</title>
+          <link rel="icon" href="https://r2.rote.ink/others/logo.png" />
+          <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="default"
+          />
+          <meta
+            name="description"
+            content="Web site created using create-react-app"
+          />
+          <link
+            rel="apple-touch-icon"
+            sizes="180x180"
+            href="https://r2.rote.ink/others/logo512.png"
+          />
+          <link
+            rel="apple-touch-startup-image"
+            href="https://r2.rote.ink/others/logo.png"
+          />
+        </Helmet>
+        <ConfigProvider theme={theme}>
+          <GlobalContextProvider>
+            <GlobalRouterProvider />
+            <Toaster position="top-right" reverseOrder={false} />
+          </GlobalContextProvider>
+        </ConfigProvider>
+      </HelmetProvider>
     </App>
   </React.StrictMode>
 );

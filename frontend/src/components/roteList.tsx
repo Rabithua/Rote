@@ -83,12 +83,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   return (
     <div className=" flex flex-col w-full relative">
       {rotes.map((item: any, index: any) => {
-        return (
-          <Rote
-            rote_param={item}
-            key={`Rote_${index}`}
-          ></Rote>
-        );
+        return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
       })}
       {isLoadAll ? null : (
         <div
@@ -96,7 +91,6 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
           className=" flex justify-center text-lg items-center py-8 gap-3 bg-white"
         >
           <LoadingOutlined />
-          <div>加载中...</div>
         </div>
       )}
       {isLoadAll && rotes.length === 0 ? (
