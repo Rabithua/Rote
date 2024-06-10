@@ -5,6 +5,7 @@ import { useRotes, useRotesDispatch } from "@/state/rotes";
 import slogenImg from "@/assets/img/slogen.svg";
 import RoteList from "@/components/roteList";
 import Heatmap from "@/components/d3/heatmap";
+import TagMap from "@/components/tagMap";
 
 function RotePage() {
   function goTop() {
@@ -179,12 +180,13 @@ function RotePage() {
           <UpOutlined />
         </div>
       </div>
-      <div className=" hidden md:flex flex-col w-72 shrink-0 scrollContainer scroll-smooth overscroll-contain noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative p-4">
+      <div className=" gap-4 hidden md:flex flex-col w-72 shrink-0 scrollContainer scroll-smooth overscroll-contain noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative p-4">
         <div className=" flex gap-2 bg-white text-lg font-semibold">
           <BarChartOutlined />
           统计 / Static
         </div>
         <Heatmap />
+        <TagMap />
       </div>
     </div>
   );

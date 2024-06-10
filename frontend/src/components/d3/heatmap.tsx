@@ -22,7 +22,7 @@ const Heatmap: React.FC = () => {
     const height = 150;
     const cellSize = 20;
     const padding = 5;
-    const margin = { top: 20, right: 20, bottom: 20, left: 40 }; // 增加左边距以容纳礼拜几的标签
+    const margin = { top: 0, right: 20, bottom: 0, left: 40 }; // 增加左边距以容纳礼拜几的标签
 
     const formatDay = d3.timeFormat("%w");
     const formatWeek = d3.timeFormat("%U");
