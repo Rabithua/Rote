@@ -79,6 +79,7 @@ function RoteShareCard({ rote }: any) {
                   } object-cover grow `}
                   src={file.url}
                   alt=""
+                  crossOrigin=""
                 />
               );
             })}
