@@ -86,14 +86,14 @@ function LayoutDashboard() {
           <div className=" border-t sticky top-0 duration-300 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r border-[#00000010] flex-col gap-4 items-center justify-center">
             {icons.map((icon, index) => {
               return (
-                <Link
-                  className={`cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] `}
-                  key={`leftLinks_${index}`}
-                  to={icon.link}
-                >
-                  {icon.svg}
-                  <div className=" shrink-0 hidden tracking-widest lg:block">
-                    {t(`leftNavBar.${icon.name}`)}
+                <Link key={`leftLinks_${index}`} to={icon.link}>
+                  <div
+                    className={`cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] duration-300 `}
+                  >
+                    {icon.svg}
+                    <div className=" shrink-0 hidden tracking-widest lg:block">
+                      {t(`leftNavBar.${icon.name}`)}
+                    </div>
                   </div>
                 </Link>
               );

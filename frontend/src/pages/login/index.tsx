@@ -345,15 +345,16 @@ function Login() {
           </>
         )}
         <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
-          <Link
-            className=" after:content-['⤴'] hover:text-gray-500"
-            to="/explore"
-          >
-            探索
+          <Link to="/explore">
+            <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
+              探索
+            </div>
           </Link>
           <span className=" px-2">/</span>
-          <Link className=" after:content-['⤴'] hover:text-gray-500" to="/">
-            主页
+          <Link to="/">
+            <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
+              主页
+            </div>
           </Link>
         </div>
       </div>

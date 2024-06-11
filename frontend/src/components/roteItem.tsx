@@ -433,14 +433,15 @@ function RoteItem({ rote_param }: any) {
           {rote.tags.map((tag: any, index: any) => {
             return (
               <Link
-                className=" px-2 py-1 text-xs rounded-md bg-[#00000010]"
                 key={`tag_${index}`}
                 to={"/filter"}
                 state={{
                   tags: [tag],
                 }}
               >
-                {tag}
+                <div className=" px-2 py-1 text-xs rounded-md bg-[#00000010] hover:scale-95 duration-300">
+                  {tag}
+                </div>
               </Link>
             );
           })}

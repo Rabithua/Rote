@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
-import Rote from "@/components/rote";
+import Rote from "@/components/roteItem";
 import { apiGetSingleRote } from "@/api/rote/main";
 import Avatar from "antd/es/avatar";
 import { UserOutlined } from "@ant-design/icons";
@@ -44,21 +44,20 @@ function SingleRotePage() {
         </div>
       )}
       {rote && (
-        <Link
-          className=" fixed bottom-12 left-0 right-0 w-fit mx-auto rounded-full bg-bgWhite px-6 py-2 border cursor-pointer flex gap-4 justify-center items-center"
-          to={`/${rote.author.username}`}
-        >
-          <Avatar
-            size={{ xs: 40 }}
-            icon={<UserOutlined className=" text-[#00000030]" />}
-            src={rote?.author.avatar}
-          />
-          <div className=" flex flex-col">
-            <div className=" text-base font-semibold">
-              {rote?.author.nickname}
-            </div>
-            <div className=" text-md text-gray-500">
-              @{rote?.author.username}
+        <Link to={`/${rote.author.username}`}>
+          <div className=" fixed bottom-12 left-0 right-0 w-fit mx-auto rounded-full bg-bgWhite px-6 py-2 border cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
+            <Avatar
+              size={{ xs: 40 }}
+              icon={<UserOutlined className=" text-[#00000030]" />}
+              src={rote?.author.avatar}
+            />
+            <div className=" flex flex-col">
+              <div className=" text-base font-semibold">
+                {rote?.author.nickname}
+              </div>
+              <div className=" text-md text-gray-500">
+                @{rote?.author.username}
+              </div>
             </div>
           </div>
         </Link>
