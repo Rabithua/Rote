@@ -128,11 +128,11 @@ function Landing() {
               return (
                 <div key={"link-" + index}>
                   <Link to={profile && item.href ? "/home" : item.href}>
-                    <div className=" no-underline hover:text-[#07c160] active:scale-95 duration-300 after:content-['⤴']">
+                    <span className=" no-underline hover:text-[#07c160] active:scale-95 duration-300 after:content-['⤴']">
                       {profile && item.href === "/login"
                         ? t(`dashboard`)
                         : t(`linksItems.${index}`)}
-                    </div>
+                    </span>
                   </Link>
                   {index + 1 < links.length ? (
                     <span className=" px-2">/</span>
