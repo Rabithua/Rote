@@ -1,14 +1,12 @@
 import { LinkOutlined, SaveOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
 import { toBlob } from "html-to-image";
-import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
-  const [attachmentsBase64, setAttachmentsBase64] = useState<string[]>([]);
-  const [avatarBase64, setAvatarBase64] = useState<string>("");
-
   function saveImage(): void {
+    toast.error("功能暂不可用");
+    return;
     const toastId = toast.loading("正在生成图片...");
     const element: any = document.querySelector("#shareCanva");
     if (element) {
@@ -48,42 +46,11 @@ function RoteShareCard({ rote }: any) {
     }
   }
 
-  function toDataUrl(url: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      var xhr = new XMLHttpRequest();
-      xhr.onload = function () {
-        var reader = new FileReader();
-        reader.onloadend = function () {
-          if (reader.result) {
-            resolve(reader.result as string);
-          } else {
-            reject(new Error("Failed to convert to Base64"));
-          }
-        };
-        reader.readAsDataURL(xhr.response);
-      };
-      xhr.onerror = function () {
-        reject(new Error("Failed to load image"));
-      };
-      xhr.open("GET", url);
-      xhr.responseType = "blob";
-      xhr.send();
-    });
-  }
-
   function copyLink() {
     let url = `${window.location.href}/rote/${rote.id}`;
     navigator.clipboard.writeText(url);
     toast.success("链接已复制到剪贴板");
   }
-
-  useEffect(() => {
-    Promise.all(rote.attachments.map((file: any) => toDataUrl(file.url)))
-      .then(setAttachmentsBase64)
-      .catch(console.error);
-
-    toDataUrl(rote.author.avatar).then(setAvatarBase64).catch(console.error);
-  }, [rote]);
 
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
@@ -99,22 +66,24 @@ function RoteShareCard({ rote }: any) {
         </div>
         {rote.attachments.length > 0 && (
           <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
-            {attachmentsBase64.map((base64: string, index: number) => (
-              <img
-                key={`files_${index}`}
-                className={` ${
-                  rote.attachments.length % 3 === 0
-                    ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                    : rote.attachments.length % 2 === 0
-                    ? "w-[calc(1/2*100%-2px)] aspect-1"
-                    : rote.attachments.length === 1
-                    ? " w-full max-w-[500px] rounded-2xl"
-                    : "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                } object-cover grow `}
-                src={base64}
-                alt=""
-              />
-            ))}
+            {rote.attachments.map((file: any, index: any) => {
+              return (
+                <img
+                  key={`files_${index}`}
+                  className={` ${
+                    rote.attachments.length % 3 === 0
+                      ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                      : rote.attachments.length % 2 === 0
+                      ? "w-[calc(1/2*100%-2px)] aspect-1"
+                      : rote.attachments.length === 1
+                      ? " w-full max-w-[500px] rounded-2xl"
+                      : "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                  } object-cover grow `}
+                  src={file.url}
+                  alt=""
+                />
+              );
+            })}
           </div>
         )}
         <div className=" flex flex-wrap gap-2 items-center font-serif">
@@ -133,7 +102,7 @@ function RoteShareCard({ rote }: any) {
         <div className=" w-full flex flex-wrap">
           <img
             className=" w-6 h-6 mr-2 rounded-full"
-            src={avatarBase64}
+            src={rote.author.avatar}
             alt=""
           />
           <span className=" font-serif font-semibold text-gray-800">
