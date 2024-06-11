@@ -103,6 +103,7 @@ function RoteShareCard({ rote }: any) {
             className=" w-6 h-6 mr-2 rounded-full"
             src={rote.author.avatar}
             alt=""
+            crossOrigin=""
           />
           <span className=" font-serif font-semibold text-gray-800">
             {rote.author.nickname}
