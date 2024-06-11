@@ -1,4 +1,4 @@
-import { FolderOutlined } from "@ant-design/icons";
+import { InboxOutlined } from "@ant-design/icons";
 import { apiGetMyRote } from "@/api/rote/main";
 import {
   useArchivedRotes,
@@ -26,7 +26,7 @@ function ArchivedPage() {
     >
       <div className=" sticky top-0 z-10">
         <div className=" flex gap-2 bg-white text-2xl font-semibold p-4">
-          <FolderOutlined />
+          <InboxOutlined />
           归档 / Archived
         </div>
       </div>

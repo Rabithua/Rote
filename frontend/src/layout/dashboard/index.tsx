@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Link, Outlet } from "react-router-dom";
 import {
   ExperimentOutlined,
-  FolderOutlined,
+  InboxOutlined,
   GlobalOutlined,
   HomeOutlined,
   LoginOutlined,
@@ -44,7 +44,7 @@ function LayoutDashboard() {
         },
 
         {
-          svg: <FolderOutlined />,
+          svg: <InboxOutlined />,
           link: "/archived",
 
           name: "archived",

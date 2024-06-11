@@ -8,7 +8,7 @@ export default function TagMap() {
       {tags.map((item, index) => {
         return (
           <Link
-            className=" px-2 py-1 text-xs rounded-md bg-[#00000010] duration-300 hover:scale-95"
+            className=" px-2 py-1 flex-grow text-center text-xs rounded-md bg-[#00000010] duration-300 hover:scale-95"
             key={`tag_${index}`}
             to={"/filter"}
             state={{

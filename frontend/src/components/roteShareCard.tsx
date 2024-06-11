@@ -1,9 +1,11 @@
-import { SaveOutlined } from "@ant-design/icons";
+import { LinkOutlined, SaveOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
-import html2canvas from "html2canvas";
+import { toBlob } from "html-to-image";
+import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
   function saveImage(): void {
+    const toastId = toast.loading("正在生成图片...");
     const element: any = document.querySelector("#shareCanva");
     if (element) {
       // 获取元素的宽度和高度
@@ -12,47 +14,55 @@ function RoteShareCard({ rote }: any) {
 
       // 配置 html2canvas 选项
       const options: any = {
-        scale: 1080 / width, // 设置缩放比例为 2
         width: width,
         height: height,
-        // useCORS: true, // 允许跨域图像
+        canvasWidth: (width * 720) / width,
+        canvasHeight: (height * 720) / width,
         backgroundColor: null,
       };
 
-      html2canvas(element, options).then((canvas: HTMLCanvasElement) => {
-        // 将生成的图像添加到文档中
-        document.body.appendChild(canvas);
-
-        // 创建一个临时链接用于下载图像
-        const link = document.createElement("a");
-        link.href = canvas.toDataURL("image/png");
-        link.download = "image.png";
-
-        // 触发链接的点击事件以开始下载
-        link.click();
-
-        // 清理:从文档中移除临时链接和画布
-        link.remove();
-        canvas.remove();
+      toBlob(element, options).then((blob: any) => {
+        if (!blob) {
+          toast.error("生成图片失败", {
+            id: toastId,
+          });
+          return;
+        }
+        // 下载图片
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${rote.id}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success("图片已保存", {
+          id: toastId,
+        });
       });
     } else {
       console.error("未找到要保存的元素");
     }
   }
 
+  function copyLink() {
+    let url = `${window.location.href}/rote/${rote.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("链接已复制到剪贴板");
+  }
+
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
       <div
-        className=" w-full flex flex-col gap-2 p-8 rounded-xl bg-bgWhite relative"
+        className=" w-full flex flex-col gap-2 p-8 rounded-xl bg-white relative"
         id="shareCanva"
       >
         <div className=" font-extrabold text-5xl text-gray-800 mb-[-10px]">
           “
         </div>
-        <div className=" text-base text-gray-800 break-words whitespace-pre-line font-medium font-serif">
+        <div className=" text-base text-gray-800 break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
           {rote.content}
         </div>
-        {/* {rote.attachments.length > 0 && (
+        {rote.attachments.length > 0 && (
           <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
             {rote.attachments.map((file: any, index: any) => {
               return (
@@ -73,19 +83,26 @@ function RoteShareCard({ rote }: any) {
               );
             })}
           </div>
-        )} */}
+        )}
         <div className=" flex flex-wrap gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
-              <span className=" font-sans text-gray-600 " key={`tag_${index}`}>
-                #{tag}
+              <span
+                className=" px-2 py-1 text-xs rounded-md bg-[#00000010]"
+                key={`tag_${index}`}
+              >
+                {tag}
               </span>
             );
           })}
         </div>
         <Divider />
         <div className=" w-full flex flex-wrap">
-          {/* <img className=" w-6 h-6 mr-2 rounded-full" src={rote.author.avatar} alt="" /> */}
+          <img
+            className=" w-6 h-6 mr-2 rounded-full"
+            src={rote.author.avatar}
+            alt=""
+          />
           <span className=" font-serif font-semibold text-gray-800">
             {rote.author.nickname}
           </span>
@@ -94,13 +111,21 @@ function RoteShareCard({ rote }: any) {
           </span>
         </div>
       </div>
-
-      <div
-        className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
-        onClick={saveImage}
-      >
-        <SaveOutlined />
-        保存
+      <div className=" flex gap-2 justify-end">
+        <div
+          className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-gray-100 px-4 py-1 rounded-md active:scale-95"
+          onClick={copyLink}
+        >
+          <LinkOutlined />
+          复制链接
+        </div>
+        <div
+          className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
+          onClick={saveImage}
+        >
+          <SaveOutlined />
+          保存
+        </div>
       </div>
     </div>
   );
