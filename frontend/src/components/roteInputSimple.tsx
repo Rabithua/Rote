@@ -2,7 +2,7 @@ import { Avatar, Image, Select, Tooltip } from "antd";
 import { cloneDeep } from "lodash";
 import {
   CloseOutlined,
-  FolderOutlined,
+  InboxOutlined,
   PushpinOutlined,
   SendOutlined,
   TagsOutlined,
@@ -247,7 +247,7 @@ function RoteInputSimple() {
             />
           </Tooltip>
           <Tooltip placement="bottom" title={"归档"}>
-            <FolderOutlined
+            <InboxOutlined
               className={` cursor-pointer text-xl p-2 rounded-md ${
                 rote.archived ? "bg-[#00000010]" : ""
               }`}

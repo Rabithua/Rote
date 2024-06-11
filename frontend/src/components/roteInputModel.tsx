@@ -1,6 +1,6 @@
 import { Select, Tooltip } from "antd";
 import {
-  FolderOutlined,
+  InboxOutlined,
   PushpinOutlined,
   SendOutlined,
   TagsOutlined,
@@ -119,7 +119,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
             />
           </Tooltip>
           <Tooltip placement="bottom" title={"归档"}>
-            <FolderOutlined
+            <InboxOutlined
               className={` cursor-pointer text-xl p-2 rounded-md ${
                 newRote.archived ? "bg-[#00000010]" : ""
               }`}

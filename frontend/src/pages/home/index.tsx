@@ -6,8 +6,10 @@ import slogenImg from "@/assets/img/slogen.svg";
 import RoteList from "@/components/roteList";
 import Heatmap from "@/components/d3/heatmap";
 import TagMap from "@/components/tagMap";
+import { useProfile } from "@/state/profile";
 
 function RotePage() {
+  const profile = useProfile();
   function goTop() {
     const containers = document.getElementsByClassName("scrollContainer");
     if (containers.length > 0) {
@@ -185,8 +187,12 @@ function RotePage() {
           <BarChartOutlined />
           统计 / Static
         </div>
-        <Heatmap />
-        <TagMap />
+        {profile && (
+          <>
+            <Heatmap />
+            <TagMap />
+          </>
+        )}
       </div>
     </div>
   );

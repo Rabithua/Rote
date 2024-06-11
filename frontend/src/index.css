@@ -29,6 +29,12 @@
     color: #0c9849;
     word-break: break-all;
   }
+
+  *[class="day"] {
+    @apply duration-300;
+    @apply animate-show;
+    @apply opacity-0;
+  }
 }
 
 .ProseMirror {
