@@ -67,7 +67,7 @@ function RoteInputSimple() {
 
   async function addRoteFn() {
     console.log(fileList);
-    if (!rote.content.trim()) {
+    if (!rote.content.trim() && fileList.length === 0) {
       toast.error("内容不能为空");
       return;
     }
@@ -77,6 +77,7 @@ function RoteInputSimple() {
 
     apiAddRote({
       ...rote,
+      attachments: fileList.length > 0 ? true : false,
       content: rote.content.trim(),
     })
       .then(async (res) => {

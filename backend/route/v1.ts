@@ -336,7 +336,7 @@ routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
     attachments,
   } = req.body;
   const user = req.user as User;
-  if (!content) {
+  if (!content && !attachments) {
     res.status(401).send({
       code: 1,
       msg: "error",
@@ -353,7 +353,6 @@ routerV1.post("/addRote", isAuthenticated, bodyTypeCheck, (req, res) => {
     pin: !!pin,
     editor,
     archived: !!archived,
-    attachments,
     authorid: user.id,
   })
     .then((rote) => {
