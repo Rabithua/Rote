@@ -79,7 +79,7 @@ function RoteShareCard({ rote }: any) {
                   } object-cover grow `}
                   src={file.url}
                   alt=""
-                  crossOrigin=""
+                  crossOrigin="anonymous"
                 />
               );
             })}
@@ -103,7 +103,7 @@ function RoteShareCard({ rote }: any) {
             className=" w-6 h-6 mr-2 rounded-full"
             src={rote.author.avatar}
             alt=""
-            crossOrigin=""
+            crossOrigin="anonymous"
           />
           <span className=" font-serif font-semibold text-gray-800">
             {rote.author.nickname}
