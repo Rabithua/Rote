@@ -5,6 +5,8 @@ import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
   function saveImage(): void {
+    toast.error("功能暂不可用");
+    return;
     const toastId = toast.loading("正在生成图片...");
     const element: any = document.querySelector("#shareCanva");
     if (element) {
@@ -79,7 +81,6 @@ function RoteShareCard({ rote }: any) {
                   } object-cover grow `}
                   src={file.url}
                   alt=""
-                  crossOrigin=""
                 />
               );
             })}
@@ -103,7 +104,6 @@ function RoteShareCard({ rote }: any) {
             className=" w-6 h-6 mr-2 rounded-full"
             src={rote.author.avatar}
             alt=""
-            crossOrigin=""
           />
           <span className=" font-serif font-semibold text-gray-800">
             {rote.author.nickname}

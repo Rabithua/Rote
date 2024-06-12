@@ -34,6 +34,7 @@
     @apply duration-300;
     @apply animate-show;
     @apply opacity-0;
+    @apply cursor-pointer
   }
 }
 
