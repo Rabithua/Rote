@@ -3,8 +3,9 @@
 // 如果使用webpush需要保持客户端和服务端VAPID统一
 
 // =======================================
+require("dotenv").config();
 
-const VAPID = "BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g"
+const VAPID = process.env.VAPID_PUBLIC_KEY
 
 /* eslint-disable no-restricted-globals */
 const urlBase64ToUint8Array = base64String => {
