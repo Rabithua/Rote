@@ -34,10 +34,18 @@ function Login() {
   });
 
   function login() {
+    const usernameRegex = /^[A-Za-z0-9_-]+$/;
+
     if (!loginData.username) {
       toast.error("username 不能为空");
       return;
     }
+
+    if (!usernameRegex.test(loginData.username)) {
+      toast.error("username 只能包含大小写字母和数字或者下划线和‘-’");
+      return;
+    }
+
     if (!loginData.password) {
       toast.error("password 不能为空");
       return;

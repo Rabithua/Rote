@@ -100,6 +100,7 @@ routerV1.all("/ping", (req, res) => {
 
 routerV1.post("/register", (req, res) => {
   const { username, password, email, nickname } = req.body;
+
   if (!username || !password || !email) {
     res.status(401).send({
       code: 1,
@@ -108,6 +109,18 @@ routerV1.post("/register", (req, res) => {
     });
     return;
   }
+
+  const usernameRegex = /^[A-Za-z0-9_-]+$/;
+
+  if (!usernameRegex.test(username)) {
+    res.status(401).send({
+      code: 1,
+      msg: "error: data error",
+      data: null,
+    });
+    return;
+  }
+
   if (username) {
     function isValidUsername(username: string) {
       // 用户名只允许包含大小写字母、数字和下划线
