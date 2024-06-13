@@ -1,9 +1,47 @@
 import { LinkOutlined, SaveOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
 import { toBlob } from "html-to-image";
+import { useState } from "react";
+import QRCode from "react-qr-code";
+
 import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
+  const themes = [
+    {
+      cardBg: "white",
+      cardTextColor: "gray-800",
+      tagBg: "[#00000010]",
+      tagTextColor: "800",
+      authorTextColor: "gray-800",
+      qrcodeColor: "#2d3748",
+    },
+    {
+      cardBg: "zinc-800",
+      cardTextColor: "white",
+      tagBg: "[#ffffff10]",
+      tagTextColor: "white",
+      authorTextColor: "white",
+      qrcodeColor: "#ffffff",
+    },
+    {
+      cardBg: "zinc-800",
+      cardTextColor: "yellow-500",
+      tagBg: "[#eab20810]",
+      tagTextColor: "yellow-500",
+      authorTextColor: "yellow-500",
+      qrcodeColor: "#eab308",
+    },
+    {
+      cardBg: "lime-300",
+      cardTextColor: "gray-800",
+      tagBg: "[#00000010]",
+      tagTextColor: "gray-800",
+      authorTextColor: "gray-800",
+      qrcodeColor: "#2d3748",
+    },
+  ];
+  const [themeIndex, setThemeIndex] = useState(1);
   function saveImage(): void {
     // toast.error("功能暂不可用");
     // return;
@@ -52,16 +90,36 @@ function RoteShareCard({ rote }: any) {
     toast.success("链接已复制到剪贴板");
   }
 
+  function colorList() {
+    return (
+      <div className=" flex gap-2 mr-auto">
+        {themes.map((theme: any, index: any) => {
+          return colorBlock(theme, index);
+        })}
+      </div>
+    );
+  }
+
+  function colorBlock(theme: any, index: any) {
+    return (
+      <div
+        className={` w-6 h-6 cursor-pointer border border-r-8 rounded-full ${
+          index === themeIndex ? "" : "opacity-20"
+        }  bg-${theme.cardBg} border-${theme.cardTextColor}`}
+        key={`theme_${index}`}
+        onClick={() => setThemeIndex(themes.indexOf(theme))}
+      ></div>
+    );
+  }
+
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
       <div
-        className=" w-full flex flex-col gap-2 p-8 rounded-xl bg-white relative"
+        className={` w-full flex flex-col gap-2 p-8 rounded-xl relative bg-${themes[themeIndex].cardBg} text-${themes[themeIndex].cardTextColor}`}
         id="shareCanva"
       >
-        <div className=" font-extrabold text-5xl text-gray-800 mb-[-10px]">
-          “
-        </div>
-        <div className=" text-base text-gray-800 break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
+        <div className=" font-extrabold text-5xl mb-[-10px]">“</div>
+        <div className=" text-base break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
           {rote.content}
         </div>
         {rote.attachments.length > 0 && (
@@ -91,7 +149,7 @@ function RoteShareCard({ rote }: any) {
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
-                className=" px-2 py-1 text-xs rounded-md bg-[#00000010]"
+                className={` px-2 rounded-md bg-${themes[themeIndex].tagBg} text-${themes[themeIndex].tagTextColor}`}
                 key={`tag_${index}`}
               >
                 {tag}
@@ -100,22 +158,40 @@ function RoteShareCard({ rote }: any) {
           })}
         </div>
         <Divider />
-        <div className=" w-full flex flex-wrap">
-          <img
-            className=" w-6 h-6 mr-2 rounded-full"
-            src={rote.author.avatar}
-            alt=""
-            crossOrigin="anonymous"
-          />
-          <span className=" font-serif font-semibold text-gray-800">
-            {rote.author.nickname}
-          </span>
-          <span className=" text-nowrap ml-auto font-normal text-gray-500">
-            来自 Rote.ink/{rote.author.username}
-          </span>
+        <div className="  w-full flex justify-between">
+          <div
+            className={` flex items-center gap-1 text-${themes[themeIndex].authorTextColor}`}
+          >
+            <img
+              className=" w-10 mr-2 rounded-md"
+              src={rote.author.avatar}
+              alt=""
+              crossOrigin="anonymous"
+            />
+            <div className=" flex flex-col">
+              <span className=" font-serif font-semibold">
+                {rote.author.nickname}
+              </span>
+              <div className=" text-nowrap ml-auto font-normal opacity-60">
+                来自 {window.location.origin}/{rote.author.username}
+              </div>
+            </div>
+          </div>
+          <div className=" w-10 h-10">
+            <QRCode
+              size={40}
+              key={themeIndex}
+              bgColor="transparent"
+              fgColor={themes[themeIndex].qrcodeColor}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              value={`${window.location.origin}/${rote.author.username}`}
+              viewBox={`0 0 256 256`}
+            />
+          </div>
         </div>
       </div>
       <div className=" flex gap-2 justify-end">
+        {colorList()}
         <div
           className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-gray-100 px-4 py-1 rounded-md active:scale-95"
           onClick={copyLink}
