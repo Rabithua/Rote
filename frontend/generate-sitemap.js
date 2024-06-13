@@ -1,10 +1,12 @@
+require("dotenv").config();
 const { createWriteStream } = require("fs");
 const { SitemapStream } = require("sitemap");
 const { pipeline } = require("stream");
 const axios = require("axios");
 
-const URL = "https://rote.ink";
-const REACT_APP_BASEURL_PRD = "http://localhost:3000";
+
+const URL = process.env.URL;
+const REACT_APP_BASEURL_PRD = process.env.REACT_APP_BASEURL_PRD;
 
 
 const generateSitemap = async () => {
