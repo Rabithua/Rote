@@ -767,3 +767,23 @@ export async function getHeatMap(
       });
   });
 }
+
+export async function getSiteMapData(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.user
+      .findMany({
+        where: {},
+        select: {
+          username: true,
+          nickname: true,
+        },
+      })
+      .then((res) => {
+        resolve(res);
+      })
+      .catch((error) => {
+        console.error("Error prisma method:", error);
+        reject(error);
+      });
+  });
+}

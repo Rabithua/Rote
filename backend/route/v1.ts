@@ -23,6 +23,7 @@ import {
   getMySession,
   getMyTags,
   getOneOpenKey,
+  getSiteMapData,
   getUserInfoByUsername,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
@@ -959,6 +960,26 @@ routerV1.post("/getMyHeatmap", isAuthenticated, function (req, res) {
   }
 
   getHeatMap(user.id, startDate, endDate)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/sitemapData", function (req, res) {
+  getSiteMapData()
     .then(async (data) => {
       res.send({
         code: 0,
