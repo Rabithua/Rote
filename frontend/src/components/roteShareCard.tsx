@@ -9,35 +9,31 @@ import toast from "react-hot-toast";
 function RoteShareCard({ rote }: any) {
   const themes = [
     {
-      cardBg: "white",
-      cardTextColor: "gray-800",
-      tagBg: "[#00000010]",
-      tagTextColor: "800",
-      authorTextColor: "gray-800",
+      cardClass: "bg-white text-gray-800",
+      tagClass: "bg-[#00000010] text-gray-800",
+      authorClass: "text-gray-800",
+      colorBlock: "bg-white border-gray-800",
       qrcodeColor: "#2d3748",
     },
     {
-      cardBg: "zinc-800",
-      cardTextColor: "white",
-      tagBg: "[#ffffff10]",
-      tagTextColor: "white",
-      authorTextColor: "white",
+      cardClass: "bg-zinc-800 text-white",
+      tagClass: "bg-[#ffffff10] text-white",
+      authorClass: "text-white",
+      colorBlock: "bg-zinc-800 border-white",
       qrcodeColor: "#ffffff",
     },
     {
-      cardBg: "zinc-800",
-      cardTextColor: "yellow-500",
-      tagBg: "[#eab20810]",
-      tagTextColor: "yellow-500",
-      authorTextColor: "yellow-500",
+      cardClass: "bg-zinc-800 text-yellow-500",
+      tagClass: "bg-[#eab20810] text-yellow-500",
+      authorClass: "text-yellow-500",
+      colorBlock: "bg-zinc-800 border-yellow-500",
       qrcodeColor: "#eab308",
     },
     {
-      cardBg: "lime-300",
-      cardTextColor: "gray-800",
-      tagBg: "[#00000010]",
-      tagTextColor: "gray-800",
-      authorTextColor: "gray-800",
+      cardClass: "bg-lime-300 text-gray-800",
+      tagClass: "bg-[#00000010] text-gray-800",
+      authorClass: "text-gray-800",
+      colorBlock: "bg-lime-300 border-gray-800",
       qrcodeColor: "#2d3748",
     },
   ];
@@ -105,7 +101,7 @@ function RoteShareCard({ rote }: any) {
       <div
         className={` w-6 h-6 cursor-pointer border border-r-8 rounded-full ${
           index === themeIndex ? "" : "opacity-20"
-        }  bg-${theme.cardBg} border-${theme.cardTextColor}`}
+        } ${theme.colorBlock}`}
         key={`theme_${index}`}
         onClick={() => setThemeIndex(themes.indexOf(theme))}
       ></div>
@@ -115,7 +111,7 @@ function RoteShareCard({ rote }: any) {
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
       <div
-        className={` w-full flex flex-col gap-2 p-8 rounded-xl relative bg-${themes[themeIndex].cardBg} text-${themes[themeIndex].cardTextColor}`}
+        className={` w-full flex flex-col gap-2 p-8 rounded-xl relative ${themes[themeIndex].cardClass}`}
         id="shareCanva"
       >
         <div className=" font-extrabold text-5xl mb-[-10px]">“</div>
@@ -149,7 +145,7 @@ function RoteShareCard({ rote }: any) {
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
-                className={` px-2 rounded-md bg-${themes[themeIndex].tagBg} text-${themes[themeIndex].tagTextColor}`}
+                className={` px-2 rounded-md ${themes[themeIndex].tagClass}`}
                 key={`tag_${index}`}
               >
                 {tag}
@@ -160,24 +156,24 @@ function RoteShareCard({ rote }: any) {
         <Divider />
         <div className="  w-full flex justify-between">
           <div
-            className={` flex items-center gap-1 text-${themes[themeIndex].authorTextColor}`}
+            className={` flex items-center gap-2 ${themes[themeIndex].authorClass}`}
           >
             <img
-              className=" w-10 mr-2 rounded-md"
+              className=" w-10 rounded-md"
               src={rote.author.avatar}
               alt=""
               crossOrigin="anonymous"
             />
-            <div className=" flex flex-col">
+            <div>
               <span className=" font-serif font-semibold">
                 {rote.author.nickname}
               </span>
-              <div className=" text-nowrap ml-auto font-normal opacity-60">
+              <div className=" hidden sm:block font-normal opacity-60">
                 来自 {window.location.origin}/{rote.author.username}
               </div>
             </div>
           </div>
-          <div className=" w-10 h-10">
+          <div className=" w-10 h-10 shrink-0">
             <QRCode
               size={40}
               key={themeIndex}
@@ -190,7 +186,7 @@ function RoteShareCard({ rote }: any) {
           </div>
         </div>
       </div>
-      <div className=" flex gap-2 justify-end">
+      <div className=" flex flex-wrap gap-2 justify-end">
         {colorList()}
         <div
           className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-gray-100 px-4 py-1 rounded-md active:scale-95"
