@@ -78,6 +78,7 @@
     "react-i18next": "^13.5.0",
     "react-linkify": "^1.0.0-alpha",
     "react-photo-view": "^1.2.4",
+    "react-qr-code": "^2.0.14",
     "react-router-dom": "^6.14.1",
     "react-scripts": "5.0.1",
     "sitemap": "^8.0.0",
