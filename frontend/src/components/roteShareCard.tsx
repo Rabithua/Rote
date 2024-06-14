@@ -133,9 +133,9 @@ function RoteShareCard({ rote }: any) {
                       ? " w-full max-w-[500px] rounded-2xl"
                       : "w-[calc(1/3*100%-2.6667px)] aspect-1"
                   } object-cover grow `}
-                  src={file.url}
+                  src={file.url + "?" + new Date().getTime()}
                   alt=""
-                  crossOrigin="anonymous"
+                  crossOrigin=""
                 />
               );
             })}
@@ -160,7 +160,7 @@ function RoteShareCard({ rote }: any) {
           >
             <img
               className=" w-10 rounded-md"
-              src={rote.author.avatar}
+              src={rote.author.avatar + "?" + new Date().getTime()}
               alt=""
               crossOrigin="anonymous"
             />
