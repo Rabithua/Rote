@@ -135,7 +135,7 @@ function RoteShareCard({ rote }: any) {
                   } object-cover grow `}
                   src={file.url + "?" + new Date().getTime()}
                   alt=""
-                  crossOrigin=""
+                  crossOrigin="anonymous"
                 />
               );
             })}
