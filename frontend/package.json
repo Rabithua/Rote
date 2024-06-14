@@ -33,6 +33,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^2.6.3",
     "@tailwindcss/typography": "^0.5.10",
+    "@types/file-saver": "^2.0.7",
     "@types/lodash": "^4.17.0",
     "@types/react-avatar-editor": "^13.0.2",
     "@types/react-linkify": "^1.0.4",
@@ -61,6 +62,7 @@
     "d3": "^7.9.0",
     "dotenv": "^16.4.5",
     "emoji-picker-react": "^4.6.0",
+    "file-saver": "^2.0.5",
     "framer-motion": "^10.17.6",
     "html-to-image": "^1.11.11",
     "i18next": "^23.7.11",

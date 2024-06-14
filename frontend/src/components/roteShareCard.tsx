@@ -1,12 +1,14 @@
 import { LinkOutlined, SaveOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
-import { toBlob } from "html-to-image";
+import { toBlob, toPng } from "html-to-image";
 import { useState } from "react";
 import QRCode from "react-qr-code";
+import { saveAs } from "file-saver";
 
 import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
+  const [imgDataUrl, setImgDataUrl] = useState("");
   const themes = [
     {
       cardClass: "bg-white text-gray-800",
@@ -38,7 +40,7 @@ function RoteShareCard({ rote }: any) {
     },
   ];
   const [themeIndex, setThemeIndex] = useState(1);
-  function saveImage(): void {
+  async function saveImage(): Promise<void> {
     // toast.error("功能暂不可用");
     // return;
     const toastId = toast.loading("正在生成图片...");
@@ -55,25 +57,47 @@ function RoteShareCard({ rote }: any) {
         canvasWidth: (width * 720) / width,
         canvasHeight: (height * 720) / width,
         backgroundColor: null,
+        cacheBust: true,
       };
 
-      toBlob(element, options).then((blob: any) => {
-        if (!blob) {
-          toast.error("生成图片失败", {
-            id: toastId,
-          });
-          return;
-        }
-        // 下载图片
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${rote.id}.png`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success("图片已保存", {
+      const isSafari = /^((?!chrome|android).)*safari/i.test(
+        navigator.userAgent
+      );
+      let dataUrl = "";
+      let i = 0;
+      let maxAttempts;
+      if (isSafari) {
+        maxAttempts = 5;
+      } else {
+        maxAttempts = 1;
+      }
+
+      let cycle = [];
+      let repeat = true;
+
+      while (repeat && i < maxAttempts) {
+        dataUrl = await toPng(element, options);
+        i += 1;
+        cycle[i] = dataUrl.length;
+
+        if (dataUrl.length > cycle[i - 1]) repeat = false;
+      }
+
+      if (!dataUrl) {
+        toast.error("图片生成失败", {
           id: toastId,
         });
+        return;
+      }
+
+      if (window.saveAs) {
+        window.saveAs(dataUrl, `${rote.id}.png`);
+      } else {
+        saveAs(dataUrl, `${rote.id}.png`);
+      }
+
+      toast.success("图片已保存", {
+        id: toastId,
       });
     } else {
       console.error("未找到要保存的元素");
@@ -203,6 +227,7 @@ function RoteShareCard({ rote }: any) {
           保存
         </div>
       </div>
+      <img src={imgDataUrl} className=" w-full" alt="" />
     </div>
   );
 }
