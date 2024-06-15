@@ -48,7 +48,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
   }, [rote]);
 
   function addRoteFn() {
-    if (!newRote.content.trim()) {
+    if (!newRote.content.trim() && rote.attachments.length === 0) {
       toast.error("内容不能为空");
       return;
     }
