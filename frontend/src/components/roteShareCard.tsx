@@ -177,8 +177,7 @@ function RoteShareCard({ rote }: any) {
             );
           })}
         </div>
-        <Divider />
-        <div className="  w-full flex justify-between">
+        <div className=" mt-2  w-full flex justify-between">
           <div
             className={` flex items-center gap-2 ${themes[themeIndex].authorClass}`}
           >
