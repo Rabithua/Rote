@@ -23,3 +23,4 @@ Hold
 ## Technical article
 
 [Docker expose 和 ports 的区别](https://talk.wowow.club/d/282-docker-expose-he-ports-de-qu-bie/4)
+[记一次令人抓狂的修 bug 经历](https://rabithua.club/archives/796/)
