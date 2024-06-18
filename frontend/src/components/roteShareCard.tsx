@@ -148,7 +148,7 @@ function RoteShareCard({ rote }: any) {
               return (
                 <img
                   key={`files_${index}`}
-                  className={` ${
+                  className={`attachmentImg ${
                     rote.attachments.length % 3 === 0
                       ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
                       : rote.attachments.length % 2 === 0
