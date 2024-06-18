@@ -71,6 +71,7 @@
     "lodash": "^4.17.21",
     "lottie-react": "^2.4.0",
     "mini-svg-data-uri": "^1.4.4",
+    "mobile-detect": "^1.4.5",
     "moment": "^2.30.1",
     "react": "^18.2.0",
     "react-avatar-editor": "^13.0.2",
