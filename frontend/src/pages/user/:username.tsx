@@ -10,6 +10,7 @@ import Linkify from "react-linkify";
 import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
+import { Helmet } from "react-helmet-async";
 
 function UserPage() {
   const navigate = useNavigate();
@@ -30,6 +31,16 @@ function UserPage() {
 
   return (
     <div>
+      <Helmet>
+        <title>
+          {userInfo?.nickname || userInfo?.username || "loading..."}
+        </title>
+        <meta
+          name="description"
+          content={userInfo?.description || "rote.ink"}
+        />
+      </Helmet>
+
       <NavBar />
       <div
         className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
