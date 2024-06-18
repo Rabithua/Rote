@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import Rote from "@/components/roteItem";
@@ -8,6 +8,7 @@ import Avatar from "antd/es/avatar";
 import { UserOutlined } from "@ant-design/icons";
 
 function SingleRotePage() {
+  const navigate = useNavigate();
   const { roteid } = useParams();
   const [rote, setRote] = useState<any>(null);
   const [msg, setMsg] = useState(null);
@@ -28,6 +29,10 @@ function SingleRotePage() {
       });
   }
 
+  function afterDeleteFun() {
+    navigate("/home");
+  }
+
   return (
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative pb-20`}
@@ -36,7 +41,7 @@ function SingleRotePage() {
       {rote ? (
         <div className=" flex flex-col items-center">
           <div></div>
-          <Rote rote_param={rote} />
+          <Rote rote_param={rote} afterDelete={afterDeleteFun} />
         </div>
       ) : (
         <div className=" w-full h-full flex justify-center items-center">

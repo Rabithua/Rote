@@ -36,6 +36,12 @@
     @apply opacity-0;
     @apply cursor-pointer
   }
+
+  .attachmentImg {
+    @apply bg-slate-50;
+    @apply border;
+    @apply border-slate-200;
+  }
 }
 
 .ProseMirror {

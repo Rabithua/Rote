@@ -32,7 +32,7 @@ import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 
 const { roteContentExpandedLetter } = mainJson;
 
-function RoteItem({ rote_param }: any) {
+function RoteItem({ rote_param, afterDelete }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
@@ -140,6 +140,9 @@ function RoteItem({ rote_param }: any) {
             type: "deleted",
             roteid: res.data.data.id,
           });
+          if (afterDelete) {
+            afterDelete();
+          }
         })
         .catch(() => {
           toast.error("删除失败", {
@@ -410,7 +413,7 @@ function RoteItem({ rote_param }: any) {
                 return (
                   <PhotoView key={`files_${index}`} src={file.url}>
                     <img
-                      className={` ${
+                      className={` attachmentImg ${
                         rote.attachments.length % 3 === 0
                           ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
                           : rote.attachments.length % 2 === 0
