@@ -88,7 +88,11 @@ function LayoutDashboard() {
               return (
                 <Link key={`leftLinks_${index}`} to={icon.link}>
                   <div
-                    className={`cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full hover:bg-[#00000010] duration-300 `}
+                    className={` hover:bg-[#00000010] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
+                      window.location.pathname.includes(icon.link)
+                        ? " bg-[#00000010]"
+                        : ""
+                    } `}
                   >
                     {icon.svg}
                     <div className=" shrink-0 hidden tracking-widest lg:block">
