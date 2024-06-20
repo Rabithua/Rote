@@ -7,7 +7,8 @@
     "dev": " export PORT=3001; craco start",
     "start": "export PORT=3001; craco start",
     "devhttps": "export HTTPS=true; export SSL_CRT_FILE=./cert.pem; export SSL_KEY_FILE=./key.pem; export PORT=3001; craco start",
-    "build": "npm run sitemap && craco build",
+    "build": "craco build",
+    "buildwithsitemap": "npm run sitemap && craco build",
     "sitemap": " node generate-sitemap.js",
     "test": "craco test",
     "eject": "craco eject"

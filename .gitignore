@@ -6,3 +6,5 @@ data
 mongodb
 
 docker-compose.yml
+
+frontend/build

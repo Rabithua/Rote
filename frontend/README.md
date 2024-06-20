@@ -9,6 +9,18 @@ rabithua@yuchangyedeMacBook-Air app % npm -v
 9.5.1
 ```
 
+### 构建镜像
+
+```
+docker build -t roteweb:latest .
+```
+
+> 多平台镜像，prisma 不支持 arm/v7
+
+```
+docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/roteweb:latest --push .
+```
+
 ### TIPS
 
 - 本地开发 servicework webpush 功能需要开启 https，故有`cert.pem`和`key.pem`
