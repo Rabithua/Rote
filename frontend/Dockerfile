@@ -1,19 +1,12 @@
 # 1. For build React app
 FROM node:18-alpine as build
-# Set working directory
-WORKDIR /app
-COPY package.json /app/package.json
-COPY package-lock.json /app/package-lock.json
 
-# Same as npm install
-RUN npm ci
+WORKDIR /root/rote_react
 
-COPY . /app
+COPY ./ .
 
-RUN npm run build
+EXPOSE 3000
 
-# production environment
-FROM nginx:stable-alpine
-COPY --from=build /app/build /usr/share/nginx/html
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+RUN npm install -g serve
+
+CMD ["sh", "-c", "npm install --omit=dev && npm run buildwithsitemap && serve -s build"]

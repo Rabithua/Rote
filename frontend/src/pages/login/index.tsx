@@ -391,6 +391,9 @@ function Login() {
           <>
             <div className=" font-semibold">后端出问题了</div>
             <div>{checkStatusMsg}</div>
+            <div className=" text-gray-500">
+              使用docker部署，后端容器可能需要几分钟构建，可以在几分钟后刷新页面
+            </div>
           </>
         )}
       </div>
