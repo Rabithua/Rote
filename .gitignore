@@ -8,3 +8,5 @@ mongodb
 docker-compose.yml
 
 frontend/build
+
+frontend/public/sitemap.xml
