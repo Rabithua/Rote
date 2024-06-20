@@ -1,13 +1,25 @@
 import express from "express";
-import { queryTypeCheck } from "../utils/main";
+import { isOpenKeyOk, queryTypeCheck } from "../utils/main";
 import { getOneOpenKey, createRote } from "../utils/dbMethods";
+
+declare module "express-serve-static-core" {
+  interface Request {
+    openKey?: {
+      id: string;
+      userid: string;
+      permissions: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    } | null;
+  }
+}
 
 let useOpenKey = express.Router();
 
-useOpenKey.get("/onerote", queryTypeCheck, (req, res) => {
-  const { openkey, content, state, type, tag, pin } = req.query;
+useOpenKey.get("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
+  const { content, state, type, tag, pin } = req.query;
 
-  if (!openkey || !content) {
+  if (!content) {
     res.send({
       code: 1,
       msg: "error",
@@ -24,34 +36,25 @@ useOpenKey.get("/onerote", queryTypeCheck, (req, res) => {
     pin: !!pin,
   };
 
-  getOneOpenKey(openkey.toString())
-    .then(async (e) => {
-      if (!e.permissions.includes("SENDROTE")) {
-        res.send({
-          code: 1,
-          msg: "error",
-          data: "OpenKey permission unmatch!",
-        });
-        return;
-      }
-      createRote({
-        ...rote,
-        authorid: e.userid,
-      })
-        .then(async (rote) => {
-          res.send({
-            code: 0,
-            msg: "ok",
-            data: rote,
-          });
-        })
-        .catch(async (e) => {
-          res.send({
-            code: 1,
-            msg: "error",
-            data: e,
-          });
-        });
+  if (!req.openKey?.permissions.includes("SENDROTE")) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "OpenKey permission unmatch!",
+    });
+    return;
+  }
+
+  createRote({
+    ...rote,
+    authorid: req.openKey.userid,
+  })
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
     })
     .catch(async (e) => {
       res.send({
@@ -62,11 +65,11 @@ useOpenKey.get("/onerote", queryTypeCheck, (req, res) => {
     });
 });
 
-useOpenKey.post("/onerote", queryTypeCheck, (req, res) => {
-  const { openkey, content, state, type, tags, pin } = req.body;
+useOpenKey.post("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
+  const { content, state, type, tags, pin } = req.query;
 
-  if (!openkey || !content) {
-    res.status(401).send({
+  if (!content) {
+    res.send({
       code: 1,
       msg: "error",
       data: "Need openkey and content!",
@@ -82,37 +85,28 @@ useOpenKey.post("/onerote", queryTypeCheck, (req, res) => {
     pin: !!pin,
   };
 
-  getOneOpenKey(openkey.toString())
-    .then(async (e) => {
-      if (!e.permissions.includes("SENDROTE")) {
-        res.status(401).send({
-          code: 1,
-          msg: "error",
-          data: "OpenKey permission unmatch!",
-        });
-        return;
-      }
-      createRote({
-        ...rote,
-        authorid: e.userid,
-      })
-        .then(async (rote) => {
-          res.send({
-            code: 0,
-            msg: "ok",
-            data: rote,
-          });
-        })
-        .catch(async (e) => {
-          res.status(401).send({
-            code: 1,
-            msg: "error",
-            data: e,
-          });
-        });
+  if (!req.openKey?.permissions.includes("SENDROTE")) {
+    res.send({
+      code: 1,
+      msg: "error",
+      data: "OpenKey permission unmatch!",
+    });
+    return;
+  }
+
+  createRote({
+    ...rote,
+    authorid: req.openKey.userid,
+  })
+    .then(async (rote) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: rote,
+      });
     })
     .catch(async (e) => {
-      res.status(401).send({
+      res.send({
         code: 1,
         msg: "error",
         data: e,

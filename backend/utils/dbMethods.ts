@@ -803,3 +803,69 @@ export async function getStatus(): Promise<any> {
       });
   });
 }
+
+export async function findMyRandomRote(authorid: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    let allCount = await prisma.rote.count({ where: { authorid } });
+    let random = Math.floor(Math.random() * allCount);
+    prisma.rote
+      .findFirst({
+        where: {
+          authorid,
+        },
+        skip: random,
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
+}
+
+export async function findRandomPublicRote(): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    let allCount = await prisma.rote.count({ where: { state: "public" } });
+    let random = Math.floor(Math.random() * allCount);
+    prisma.rote
+      .findFirst({
+        where: {
+          state: "public",
+        },
+        skip: random,
+        include: {
+          author: {
+            select: {
+              username: true,
+              nickname: true,
+              avatar: true,
+            },
+          },
+          attachments: true,
+          userreaction: true,
+          visitorreaction: true,
+        },
+      })
+      .then((rote) => {
+        resolve(rote);
+      })
+      .catch((error) => {
+        console.error("Error finding rote:", error);
+        reject(error);
+      });
+  });
+}

@@ -174,6 +174,21 @@ export function apiGetMyOpenKey(): Promise<any> {
   });
 }
 
+export function apiGetRandomRote(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/randomRote",
+    })
+      .then(function (response) {
+        resolve(response.data);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiGenerateOpenKey(): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({

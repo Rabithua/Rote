@@ -104,7 +104,7 @@ const Heatmap: React.FC = () => {
     }
   }, [heatmapData, containerWidth]);
 
-  return <svg ref={svgRef}></svg>;
+  return <svg className=" shrink-0" ref={svgRef}></svg>;
 };
 
 export default Heatmap;

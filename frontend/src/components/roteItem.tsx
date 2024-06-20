@@ -32,7 +32,7 @@ import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 
 const { roteContentExpandedLetter } = mainJson;
 
-function RoteItem({ rote_param, afterDelete }: any) {
+function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
   const [rote, setRote] = useState<any>({});
   const rotesDispatch = useRotesDispatch();
   const filterRotesDispatch = useFilterRotesDispatch();
@@ -273,38 +273,51 @@ function RoteItem({ rote_param, afterDelete }: any) {
   return rote?.id ? (
     <div
       id={`Rote_${rote.id}`}
-      className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full py-4 px-5"
+      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full ${
+        !randomRoteStyle && " py-4 px-5"
+      }`}
     >
-      <Link
-        className=" text-black shrink-0 hidden sm:block"
-        to={`/${rote.author.username}`}
-      >
-        <Avatar
-          className=" bg-[#00000010]"
-          size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
-          icon={<UserOutlined className=" text-[#00000030]" />}
-          src={
-            rote.author.username === profile?.username
-              ? profile?.avatar
-              : rote.author.avatar
-          }
-        />
-      </Link>
+      {!randomRoteStyle && (
+        <Link
+          className=" text-black shrink-0 hidden sm:block"
+          to={`/${rote.author.username}`}
+        >
+          <Avatar
+            className=" bg-[#00000010]"
+            size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
+            icon={<UserOutlined className=" text-[#00000030]" />}
+            src={
+              rote.author.username === profile?.username
+                ? profile?.avatar
+                : rote.author.avatar
+            }
+          />
+        </Link>
+      )}
+
       <div className=" flex flex-col w-full">
-        <div className=" cursor-default w-full flex items-center">
-          <Link
-            className=" cursor-pointer font-semibold hover:underline"
-            to={`/${rote.author.username}`}
-          >
-            {rote.author.username === profile?.username
-              ? profile?.nickname
-              : rote.author.nickname}
-          </Link>
-          <span className=" overflow-scroll text-nowrap ml-2 font-normal text-gray-500">
+        <div className=" cursor-default w-full flex gap-2 items-center">
+          {!randomRoteStyle && (
             <Link
+              className=" cursor-pointer font-semibold hover:underline"
               to={`/${rote.author.username}`}
-            >{`@${rote.author.username}`}</Link>
-            <span> · </span>{" "}
+            >
+              {rote.author.username === profile?.username
+                ? profile?.nickname
+                : rote.author.nickname}
+            </Link>
+          )}
+
+          <span className=" overflow-scroll text-nowrap font-normal text-gray-500">
+            {!randomRoteStyle && (
+              <>
+                <Link
+                  to={`/${rote.author.username}`}
+                >{`@${rote.author.username}`}</Link>
+                <span> · </span>{" "}
+              </>
+            )}
+
             <Tooltip
               placement="bottom"
               title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
@@ -322,7 +335,7 @@ function RoteItem({ rote_param, afterDelete }: any) {
             </Tooltip>
           </span>
 
-          <span className=" flex gap-1 ml-2 text-gray-500">
+          <span className=" flex gap-1 text-gray-500">
             {rote.pin ? (
               <Tooltip
                 placement="bottom"

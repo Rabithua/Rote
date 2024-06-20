@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import Rote from "./roteItem";
+import RoteItem from "./roteItem";
 import Empty from "antd/es/empty";
 import { LoadingOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -83,7 +83,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   return (
     <div className=" flex flex-col w-full relative">
       {rotes.map((item: any, index: any) => {
-        return <Rote rote_param={item} key={`Rote_${index}`}></Rote>;
+        return <RoteItem rote_param={item} key={`Rote_${index}`}></RoteItem>;
       })}
       {isLoadAll ? null : (
         <div

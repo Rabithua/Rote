@@ -11,8 +11,10 @@ import {
   editMyOneOpenKey,
   editMyProfile,
   editRote,
+  findMyRandomRote,
   findMyRote,
   findPublicRote,
+  findRandomPublicRote,
   findRoteById,
   findSubScriptionToUser,
   findSubScriptionToUserByendpoint,
@@ -988,6 +990,51 @@ routerV1.get("/status", (req, res) => {
       await prisma.$disconnect();
     });
 });
+
+routerV1.get("/randomRote", (req, res) => {
+  const user = req.user as User;
+  
+  if (user) {
+    console.log(user.id);
+    // 获取用户的一条随机 rote
+    findMyRandomRote(user.id)
+      .then(async (rote) => {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: rote,
+        });
+        await prisma.$disconnect();
+      })
+      .catch(async (e) => {
+        res.status(401).send({
+          code: 1,
+          msg: "error",
+          data: e,
+        });
+        await prisma.$disconnect();
+      });
+  } else {
+    findRandomPublicRote()
+      .then(async (rote) => {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: rote,
+        });
+        await prisma.$disconnect();
+      })
+      .catch(async (e) => {
+        res.status(401).send({
+          code: 1,
+          msg: "error",
+          data: e,
+        });
+        await prisma.$disconnect();
+      });
+  }
+});
+
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
