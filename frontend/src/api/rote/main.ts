@@ -250,3 +250,18 @@ export function apiUploadFiles(formData: any, roteid: any): Promise<any> {
       });
   });
 }
+
+export function apiGetStatus(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/status",
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}

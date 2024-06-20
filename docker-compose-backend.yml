@@ -19,6 +19,7 @@ services:
     image: mongo:5
     depends_on:
       - roteMongodbRS
+    restart: on-failure
     entrypoint:
       - /bin/bash
       - -c
@@ -39,8 +40,8 @@ services:
       - roteMongodbSetup
     container_name: rotebackend
     environment:
-      # 添加客户端域名到这里，避免跨域问题
-      - CROS=https://localhost:3001,https://rote.ink,https://beta.rote.ink
+      # 添加客户端域名到这里，避免跨域问题，也可注释，不进行跨域限制
+      - CROS=https://localhost:3001,https://rote.ink,https://beta.rote.ink,chrome-extension://nknoigihdogoiojelolkdmgafhealbhn
       - DATABASE_URL=mongodb://roteMongodbRS:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
       - SESSION_SECRET=RoteByRabithuaPrd
       # cloudflare r2储存桶配置
@@ -53,8 +54,8 @@ services:
       - VAPID_PUBLIC_KEY=BDYfGAEoJIxxxFfy8ZX4Gw1YdxxxxxxxxxxxX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g
       - VAPID_PRIVATE_KEY=25IK6YYxWFhoE1ntALVFpxxxxxxxxxGb4W9bGzlMaZ4I
     ports:
-      # 后端api暴露端口
-      - 3001:3000
+      # 后端api暴露端口，可以把前面一个3000改成其他端口，如3001:3000
+      - 3000:3000
     restart: always
     networks:
       - backendNetwork

@@ -18,7 +18,6 @@ import toast from "react-hot-toast";
 import { useTags } from "@/state/tags";
 import { useRotesDispatch } from "@/state/rotes";
 import { useProfile } from "@/state/profile";
-import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
@@ -28,6 +27,7 @@ function RoteInputSimple() {
   const [editType, setEditType] = useState("default");
   const profile = useProfile();
 
+  console.log(process.env);
   const [rote, setRote] = useState<any>({
     title: "",
     content: "",
@@ -179,38 +179,41 @@ function RoteInputSimple() {
           }}
           onKeyDown={handleNormalINputKeyDown}
         />
-        <div className=" flex gap-2 flex-wrap my-2">
-          <Image.PreviewGroup
-            preview={{
-              onChange: (current, prev) =>
-                console.log(`current index: ${current}, prev index: ${prev}`),
-            }}
-          >
-            {fileList.map((file: any, index: number) => {
-              return (
-                <div
-                  className=" w-20 h-20 rounded-lg bg-bgWhite border overflow-hidden relative"
-                  key={`filePicker_${index}`}
-                >
-                  <Image
-                    className=" w-full h-full object-cover"
-                    height={80}
-                    width={80}
-                    src={file.src}
-                    fallback={defaultImage}
-                  />
+        {process.env.REACT_APP_ALLOW_UPLOAD_FILE && (
+          <div className=" flex gap-2 flex-wrap my-2">
+            <Image.PreviewGroup
+              preview={{
+                onChange: (current, prev) =>
+                  console.log(`current index: ${current}, prev index: ${prev}`),
+              }}
+            >
+              {fileList.map((file: any, index: number) => {
+                return (
                   <div
-                    onClick={() => deleteFile(index)}
-                    className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
+                    className=" w-20 h-20 rounded-lg bg-bgWhite border overflow-hidden relative"
+                    key={`filePicker_${index}`}
                   >
-                    <CloseOutlined className=" text-white text-[12px]" />
+                    <Image
+                      className=" w-full h-full object-cover"
+                      height={80}
+                      width={80}
+                      src={file.src}
+                      fallback={defaultImage}
+                    />
+                    <div
+                      onClick={() => deleteFile(index)}
+                      className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
+                    >
+                      <CloseOutlined className=" text-white text-[12px]" />
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </Image.PreviewGroup>
-          <Uploader fileList={fileList} setFileList={setFileList} />
-        </div>
+                );
+              })}
+            </Image.PreviewGroup>
+            <Uploader fileList={fileList} setFileList={setFileList} />
+          </div>
+        )}
+
         <Select
           mode="tags"
           variant="borderless"

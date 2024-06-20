@@ -60,7 +60,6 @@
     "antd": "^5.12.5",
     "clsx": "^2.1.0",
     "d3": "^7.9.0",
-    "dotenv": "^16.4.5",
     "emoji-picker-react": "^4.6.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^10.17.6",

@@ -24,6 +24,7 @@ import {
   getMyTags,
   getOneOpenKey,
   getSiteMapData,
+  getStatus,
   getUserInfoByUsername,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
@@ -54,49 +55,6 @@ routerV1.all("/ping", (req, res) => {
     data: null,
   });
 });
-
-// User method
-
-// routerV1.post("/addUser", isAdmin, (req, res) => {
-//   const { username, password, email, nickname } = req.body;
-//   if (!username || !password || !email) {
-//     res.send({
-//       code: 1,
-//       msg: "error: data error",
-//       data: null,
-//     });
-//     return;
-//   }
-//   try {
-//     createUser({
-//       username,
-//       password,
-//       email,
-//       nickname,
-//     }).then(async (user) => {
-//       if (user.id) {
-//         res.send({
-//           code: 0,
-//           msg: "ok",
-//           data: user,
-//         });
-//       } else {
-//         res.send({
-//           code: 1,
-//           msg: "error",
-//           data: user,
-//         });
-//       }
-//       await prisma.$disconnect();
-//     });
-//   } catch (error) {
-//     res.send({
-//       code: 1,
-//       msg: "error",
-//       data: error,
-//     });
-//   }
-// });
 
 routerV1.post("/register", (req, res) => {
   const { username, password, email, nickname } = req.body;
@@ -1011,6 +969,25 @@ routerV1.get("/sitemapData", function (req, res) {
     });
 });
 
+routerV1.get("/status", (req, res) => {
+  getStatus()
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: {},
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.status(404).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
 // 文件上传错误处理
 routerV1.use((error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {

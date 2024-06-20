@@ -1,6 +1,7 @@
 .env
 node_modules
 ._*
+data
 
 mongodb
 

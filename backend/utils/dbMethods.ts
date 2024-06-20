@@ -787,3 +787,19 @@ export async function getSiteMapData(): Promise<any> {
       });
   });
 }
+
+export async function getStatus(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    prisma.rote
+      .findFirst({
+        where: {},
+      })
+      .then((res) => {
+        resolve(true);
+      })
+      .catch((error) => {
+        console.error("Error prisma method:", error);
+        reject(error);
+      });
+  });
+}
