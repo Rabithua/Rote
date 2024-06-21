@@ -8,13 +8,13 @@
 
 ## Deploy
 
-```
-// 此处粘贴docker命令，待补充
-```
+### Docker
+
+docker-compose-example.yml
 
 ## Develop
 
-Hold
+look `frontend/README.md` or `backend/README.md`
 
 ## Technology stack
 

@@ -11,11 +11,13 @@ rabithua@yuchangyedeMacBook-Air app % npm -v
 
 ### 构建镜像
 
+> 本地构建
+
 ```
 docker build -t roteweb:latest .
 ```
 
-> 多平台镜像，prisma 不支持 arm/v7
+> 多平台镜像，prisma 不支持 arm/v7，构建并上传 docker，注意替换 username
 
 ```
 docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/roteweb:latest --push .
@@ -23,7 +25,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/roteweb:lates
 
 ### TIPS
 
-- 本地开发 servicework webpush 功能需要开启 https，故有`cert.pem`和`key.pem`
+- 本地开发 servicework webpush 功能需要开启 https，故有`cert.pem`和`key.pem`（不影响正常开发）
 
 ### 页面模版
 

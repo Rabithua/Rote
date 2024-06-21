@@ -6,18 +6,23 @@ import { Divider } from "antd";
 
 export default function RandomRote() {
   const [rote, setRote] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     getRandomRoteFun();
   }, []);
 
   function getRandomRoteFun() {
+    setLoading(true);
     apiGetRandomRote()
       .then((res: any) => {
+        setLoading(false);
         console.log(res.data);
         setRote(res.data);
       })
-      .catch(() => {});
+      .catch(() => {
+        setLoading(false);
+      });
   }
   return (
     rote && (
@@ -25,7 +30,9 @@ export default function RandomRote() {
         <div className=" flex gap-2 bg-white text-md font-semibold py-2">
           随机回顾 / Random Review
           <RedoOutlined
-            className=" p-1 bg-bgWhite rounded-md cursor-pointer hover:scale-90 duration-300 ml-auto text-gray-400"
+            className={` cursor-pointer hover:opacity-50 duration-300 ml-auto ${
+              loading && "animate-spin"
+            }`}
             onClick={getRandomRoteFun}
           />
         </div>

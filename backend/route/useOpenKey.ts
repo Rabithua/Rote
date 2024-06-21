@@ -66,7 +66,7 @@ useOpenKey.get("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
 });
 
 useOpenKey.post("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
-  const { content, state, type, tags, pin } = req.query;
+  const { content, state, type, tag, pin } = req.body;
 
   if (!content) {
     res.send({
@@ -81,7 +81,7 @@ useOpenKey.post("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
     content,
     state: state || "private",
     type: type || "rote",
-    tags: tags || [],
+    tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
     pin: !!pin,
   };
 
