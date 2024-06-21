@@ -1,12 +1,12 @@
 import { logOut, loginByPassword, registerBypassword } from "@/api/login/main";
-import { apiGetMyTags } from "@/api/rote/main";
-import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
+import { apiGetMyTags, apiGetStatus } from "@/api/rote/main";
+import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile, useProfileDispatch } from "@/state/profile";
 import { useRotesDispatch } from "@/state/rotes";
 import { useTags, useTagsDispatch } from "@/state/tags";
 import { UserOutlined } from "@ant-design/icons";
-import { Avatar, Input, Typography } from "antd";
-import { useState } from "react";
+import { Avatar, Input } from "antd";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -14,6 +14,7 @@ import mainJson from "@/json/main.json";
 
 const { safeRoutes } = mainJson;
 function Login() {
+  const [checkStatusMsg, setCheckStatusMsg] = useState("");
   const profile = useProfile();
   const tags = useTags();
   const profileDispatch = useProfileDispatch();
@@ -76,6 +77,18 @@ function Login() {
           });
         }
       });
+  }
+
+  async function checkStatus() {
+    try {
+      const res = await apiGetStatus();
+      if (res.data.code !== 0) {
+        setCheckStatusMsg("请检查后端数据库状态是否正常");
+      }
+    } catch (err: any) {
+      console.error("Error fetching status:", err);
+      setCheckStatusMsg("请检查后端服务是否启动");
+    }
   }
 
   async function refreshTags() {
@@ -219,152 +232,170 @@ function Login() {
     }
   }
 
+  useEffect(() => {
+    checkStatus();
+  }, []);
+
   return (
     <div className="h-dvh w-full dark:bg-black bg-gray-100 relative flex items-center justify-center">
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center "></div>
       <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-white dark:bg-bgDarkSecond w-80 dark:border-bgDarkSecond dark:text-white border rounded-lg flex flex-col gap-2 pb-10 z-10">
-        {profile ? (
+        {!checkStatusMsg ? (
           <>
-            <div className=" flex flex-col justify-center items-center pt-8 gap-2">
-              <Avatar
-                className=" bg-[#00000010] shrink-0 block"
-                size={{ xs: 60, sm: 60, md: 80, lg: 80, xl: 80, xxl: 80 }}
-                icon={<UserOutlined className=" text-[#00000030]" />}
-                src={profile.avatar}
-              />
-              <div className=" text-2xl font-semibold">{profile.username}</div>
-              <div
-                className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
-                onClick={() => {
-                  navigate("/home");
-                }}
-              >
-                前往主页
-              </div>
-              <div
-                className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
-                onClick={logOutFn}
-              >
-                退出登录
-              </div>
+            {profile ? (
+              <>
+                <div className=" flex flex-col justify-center items-center pt-8 gap-2">
+                  <Avatar
+                    className=" bg-[#00000010] shrink-0 block"
+                    size={{ xs: 60, sm: 60, md: 80, lg: 80, xl: 80, xxl: 80 }}
+                    icon={<UserOutlined className=" text-[#00000030]" />}
+                    src={profile.avatar}
+                  />
+                  <div className=" text-2xl font-semibold">
+                    {profile.username}
+                  </div>
+                  <div
+                    className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
+                    onClick={() => {
+                      navigate("/home");
+                    }}
+                  >
+                    前往主页
+                  </div>
+                  <div
+                    className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
+                    onClick={logOutFn}
+                  >
+                    退出登录
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className=" text-2xl font-semibold">
+                  {type === "login" ? "登录" : "注册"}
+                </div>
+                <div className=" flex flex-col gap-2">
+                  {type === "login" ? (
+                    <>
+                      <div className=" text-md font-semibold">用户名</div>
+                      <Input
+                        placeholder="username"
+                        className=" text-lg rounded-md font-mono border-[2px]"
+                        maxLength={20}
+                        value={loginData.username}
+                        onInput={(e) => handleInputChange(e, "username")}
+                      />
+                      <div className=" text-md font-semibold">密码</div>
+                      <Input
+                        placeholder="possword"
+                        type="password"
+                        className=" text-lg rounded-md font-mono border-[2px]"
+                        maxLength={30}
+                        value={loginData.password}
+                        onInput={(e) => handleInputChange(e, "password")}
+                        onKeyDown={handleLoginKeyDown}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <div className=" text-md font-semibold">用户名</div>
+                      <Input
+                        placeholder="username"
+                        className=" text-lg rounded-md font-mono border-[2px]"
+                        maxLength={20}
+                        value={registerData.username}
+                        onInput={(e) => handleInputChange(e, "username")}
+                      />
+                      <div className=" text-md font-semibold">邮箱</div>
+                      <Input
+                        placeholder="someone@mail.com"
+                        className=" text-lg rounded-md font-mono border-[2px]"
+                        maxLength={20}
+                        value={registerData.email}
+                        onInput={(e) => handleInputChange(e, "email")}
+                      />
+                      <div className=" text-md font-semibold">昵称</div>
+                      <Input
+                        placeholder="nickname"
+                        className=" text-lg rounded-md font-mono border-[2px]"
+                        maxLength={20}
+                        value={registerData.nickname}
+                        onInput={(e) => handleInputChange(e, "nickname")}
+                      />
+
+                      <div className=" text-md font-semibold">密码</div>
+                      <Input
+                        placeholder="possword"
+                        type="password"
+                        className=" text-lg rounded-md font-mono border-[2px]"
+                        maxLength={30}
+                        value={registerData.password}
+                        onInput={(e) => handleInputChange(e, "password")}
+                        onKeyDown={handleRegisterKeyDown}
+                      />
+                    </>
+                  )}
+                  <div className=" mt-4 flex flex-col gap-2">
+                    {type === "login" ? (
+                      <>
+                        <div
+                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
+                          onClick={login}
+                        >
+                          登录
+                        </div>
+                        <div
+                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
+                          onClick={changeType}
+                        >
+                          注册
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
+                          onClick={register}
+                        >
+                          注册
+                        </div>
+                        <div
+                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
+                          onClick={changeType}
+                        >
+                          返回
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+            <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
+              <Link to="/explore">
+                <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
+                  探索
+                </div>
+              </Link>
+              <span className=" px-2">/</span>
+              <Link to="/">
+                <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
+                  主页
+                </div>
+              </Link>
             </div>
           </>
         ) : (
           <>
-            <div className=" text-2xl font-semibold">
-              {type === "login" ? "登录" : "注册"}
-            </div>
-            <div className=" flex flex-col gap-2">
-              {type === "login" ? (
-                <>
-                  <div className=" text-md font-semibold">用户名</div>
-                  <Input
-                    placeholder="username"
-                    className=" text-lg rounded-md font-mono border-[2px]"
-                    maxLength={20}
-                    value={loginData.username}
-                    onInput={(e) => handleInputChange(e, "username")}
-                  />
-                  <div className=" text-md font-semibold">密码</div>
-                  <Input
-                    placeholder="possword"
-                    type="password"
-                    className=" text-lg rounded-md font-mono border-[2px]"
-                    maxLength={30}
-                    value={loginData.password}
-                    onInput={(e) => handleInputChange(e, "password")}
-                    onKeyDown={handleLoginKeyDown}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className=" text-md font-semibold">用户名</div>
-                  <Input
-                    placeholder="username"
-                    className=" text-lg rounded-md font-mono border-[2px]"
-                    maxLength={20}
-                    value={registerData.username}
-                    onInput={(e) => handleInputChange(e, "username")}
-                  />
-                  <div className=" text-md font-semibold">邮箱</div>
-                  <Input
-                    placeholder="someone@mail.com"
-                    className=" text-lg rounded-md font-mono border-[2px]"
-                    maxLength={20}
-                    value={registerData.email}
-                    onInput={(e) => handleInputChange(e, "email")}
-                  />
-                  <div className=" text-md font-semibold">昵称</div>
-                  <Input
-                    placeholder="nickname"
-                    className=" text-lg rounded-md font-mono border-[2px]"
-                    maxLength={20}
-                    value={registerData.nickname}
-                    onInput={(e) => handleInputChange(e, "nickname")}
-                  />
-
-                  <div className=" text-md font-semibold">密码</div>
-                  <Input
-                    placeholder="possword"
-                    type="password"
-                    className=" text-lg rounded-md font-mono border-[2px]"
-                    maxLength={30}
-                    value={registerData.password}
-                    onInput={(e) => handleInputChange(e, "password")}
-                    onKeyDown={handleRegisterKeyDown}
-                  />
-                </>
-              )}
-              <div className=" mt-4 flex flex-col gap-2">
-                {type === "login" ? (
-                  <>
-                    <div
-                      className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
-                      onClick={login}
-                    >
-                      登录
-                    </div>
-                    <div
-                      className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
-                      onClick={changeType}
-                    >
-                      注册
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div
-                      className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
-                      onClick={register}
-                    >
-                      注册
-                    </div>
-                    <div
-                      className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
-                      onClick={changeType}
-                    >
-                      返回
-                    </div>
-                  </>
-                )}
-              </div>
+            <div className=" font-semibold">后端出问题了</div>
+            <div>{checkStatusMsg}</div>
+            <div className=" text-gray-500">
+              使用docker部署，后端容器可能需要几分钟构建，可以在几分钟后刷新页面
             </div>
           </>
         )}
-        <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
-          <Link to="/explore">
-            <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
-              探索
-            </div>
-          </Link>
-          <span className=" px-2">/</span>
-          <Link to="/">
-            <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
-              主页
-            </div>
-          </Link>
-        </div>
       </div>
     </div>
   );

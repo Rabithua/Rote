@@ -81,7 +81,7 @@ const Heatmap: React.FC = () => {
         .attr("height", cellSize - padding)
         .attr(
           "x",
-          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 270
+          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 285
         )
         .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
         .attr("rx", 3) // 添加圆角
@@ -104,7 +104,7 @@ const Heatmap: React.FC = () => {
     }
   }, [heatmapData, containerWidth]);
 
-  return <svg ref={svgRef}></svg>;
+  return <svg className=" shrink-0" ref={svgRef}></svg>;
 };
 
 export default Heatmap;

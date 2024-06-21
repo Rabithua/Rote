@@ -1,6 +1,7 @@
 import { PrismaClient, User } from "@prisma/client";
 
 import mainJson from "../json/main.json";
+import { getOneOpenKey } from "./dbMethods";
 
 const { stateType, roteType, editorType } = mainJson;
 
@@ -177,4 +178,31 @@ export function queryTypeCheck(req: any, res: any, next: any) {
   }
 
   next();
+}
+
+// OpenKey权限检测中间件
+export function isOpenKeyOk(req: any, res: any, next: any) {
+  const { openkey } = req.body;
+
+  if (!openkey) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Need openkey and content!",
+    });
+    return;
+  }
+
+  getOneOpenKey(openkey.toString())
+    .then(async (e) => {
+      req.openKey = e;
+      next();
+    })
+    .catch(async (e) => {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+    });
 }

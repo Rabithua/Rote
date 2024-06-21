@@ -174,6 +174,21 @@ export function apiGetMyOpenKey(): Promise<any> {
   });
 }
 
+export function apiGetRandomRote(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/randomRote",
+    })
+      .then(function (response) {
+        resolve(response.data);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiGenerateOpenKey(): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -241,6 +256,21 @@ export function apiUploadFiles(formData: any, roteid: any): Promise<any> {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function apiGetStatus(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/status",
     })
       .then(function (response) {
         resolve(response);

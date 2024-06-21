@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export default function TagMap() {
   const tags = useTags();
   return (
-    <div className=" flex gap-2 flex-wrap opacity-0 animate-show duration-300">
+    <div className=" shrink-0 flex gap-2 flex-wrap opacity-0 animate-show duration-300">
       {tags.map((item, index) => {
         return (
           <Link

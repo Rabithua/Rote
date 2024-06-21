@@ -49,7 +49,7 @@ export function sendNotificationTest(subId: any): Promise<any> {
       data: {
         title: "自在废物",
         body: "这是我的博客。",
-        image: `${process.env.R2_BASEURL_DEV}/others/logo.png`,
+        image: `https://r2.rote.ink/others%2Flogo.png`,
         data: {
           type: "openUrl",
           url: "https://rabithua.club",

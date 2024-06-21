@@ -11,8 +11,10 @@ import {
   editMyOneOpenKey,
   editMyProfile,
   editRote,
+  findMyRandomRote,
   findMyRote,
   findPublicRote,
+  findRandomPublicRote,
   findRoteById,
   findSubScriptionToUser,
   findSubScriptionToUserByendpoint,
@@ -24,6 +26,7 @@ import {
   getMyTags,
   getOneOpenKey,
   getSiteMapData,
+  getStatus,
   getUserInfoByUsername,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
@@ -54,49 +57,6 @@ routerV1.all("/ping", (req, res) => {
     data: null,
   });
 });
-
-// User method
-
-// routerV1.post("/addUser", isAdmin, (req, res) => {
-//   const { username, password, email, nickname } = req.body;
-//   if (!username || !password || !email) {
-//     res.send({
-//       code: 1,
-//       msg: "error: data error",
-//       data: null,
-//     });
-//     return;
-//   }
-//   try {
-//     createUser({
-//       username,
-//       password,
-//       email,
-//       nickname,
-//     }).then(async (user) => {
-//       if (user.id) {
-//         res.send({
-//           code: 0,
-//           msg: "ok",
-//           data: user,
-//         });
-//       } else {
-//         res.send({
-//           code: 1,
-//           msg: "error",
-//           data: user,
-//         });
-//       }
-//       await prisma.$disconnect();
-//     });
-//   } catch (error) {
-//     res.send({
-//       code: 1,
-//       msg: "error",
-//       data: error,
-//     });
-//   }
-// });
 
 routerV1.post("/register", (req, res) => {
   const { username, password, email, nickname } = req.body;
@@ -1009,6 +969,70 @@ routerV1.get("/sitemapData", function (req, res) {
       });
       await prisma.$disconnect();
     });
+});
+
+routerV1.get("/status", (req, res) => {
+  getStatus()
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: {},
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.status(404).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/randomRote", (req, res) => {
+  const user = req.user as User;
+  
+  if (user) {
+    console.log(user.id);
+    // 获取用户的一条随机 rote
+    findMyRandomRote(user.id)
+      .then(async (rote) => {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: rote,
+        });
+        await prisma.$disconnect();
+      })
+      .catch(async (e) => {
+        res.status(401).send({
+          code: 1,
+          msg: "error",
+          data: e,
+        });
+        await prisma.$disconnect();
+      });
+  } else {
+    findRandomPublicRote()
+      .then(async (rote) => {
+        res.send({
+          code: 0,
+          msg: "ok",
+          data: rote,
+        });
+        await prisma.$disconnect();
+      })
+      .catch(async (e) => {
+        res.status(401).send({
+          code: 1,
+          msg: "error",
+          data: e,
+        });
+        await prisma.$disconnect();
+      });
+  }
 });
 
 // 文件上传错误处理

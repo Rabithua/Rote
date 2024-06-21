@@ -1,7 +1,12 @@
 .env
 node_modules
 ._*
+data
 
 mongodb
 
 docker-compose.yml
+
+frontend/build
+
+frontend/public/sitemap.xml
