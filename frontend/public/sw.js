@@ -3,9 +3,6 @@
 // 如果使用webpush需要保持客户端和服务端VAPID统一
 
 // =======================================
-require("dotenv").config();
-
-const VAPID = process.env.VAPID_PUBLIC_KEY
 
 /* eslint-disable no-restricted-globals */
 const urlBase64ToUint8Array = base64String => {
@@ -32,7 +29,7 @@ self.addEventListener('message', async event => {
         case "subNotice":
             const subscription = await self.registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID)
+                applicationServerKey: urlBase64ToUint8Array("BFKK3FRRIGK8ZjtwjalylFZbiFHuqwEo8wlJ1O0cjejKK7czee0PDd1pU51RcanA7YuWFUTxFluR6ERhxLIrWSc")
             })
 
             event.source.postMessage({
