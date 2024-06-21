@@ -1,9 +1,5 @@
 import RoteInputSimple from "@/components/roteInputSimple";
-import {
-  BarChartOutlined,
-  UpOutlined,
-  QuestionOutlined,
-} from "@ant-design/icons";
+import { BarChartOutlined, UpOutlined } from "@ant-design/icons";
 import { apiGetMyRote } from "@/api/rote/main";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
 import slogenImg from "@/assets/img/slogen.svg";
