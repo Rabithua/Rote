@@ -4,6 +4,8 @@
 
 // =======================================
 
+
+const VAPID = "BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g"
 /* eslint-disable no-restricted-globals */
 const urlBase64ToUint8Array = base64String => {
     const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -29,7 +31,7 @@ self.addEventListener('message', async event => {
         case "subNotice":
             const subscription = await self.registration.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array("BFKK3FRRIGK8ZjtwjalylFZbiFHuqwEo8wlJ1O0cjejKK7czee0PDd1pU51RcanA7YuWFUTxFluR6ERhxLIrWSc")
+                applicationServerKey: urlBase64ToUint8Array(VAPID)
             })
 
             event.source.postMessage({
