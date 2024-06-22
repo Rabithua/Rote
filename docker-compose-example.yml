@@ -41,7 +41,7 @@ services:
     container_name: rotebackend
     environment:
       # 添加web端域名到这里，避免跨域问题
-      - CROS=https://localhost:3001,https://rote.ink,https://beta.rote.ink,chrome-extension://nknoigihdogoiojelolkdmgafhealbhn
+      - CROS=https://localhost:3001,https://rote.ink,https://beta.rote.ink,chrome-extension://cahpbdbfdfnmoachkjmcfgbbnmjcbpej
       - DATABASE_URL=mongodb://roteMongodbRS:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
       - SESSION_SECRET=RoteByRabithuaPrd
       # cloudflare r2储存桶配置

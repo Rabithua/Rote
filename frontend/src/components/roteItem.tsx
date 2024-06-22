@@ -420,7 +420,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
         </div>
 
         {rote.attachments.length > 0 && (
-          <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
+          <div className=" w-full my-2 flex flex-wrap gap-1 border rounded-2xl overflow-hidden">
             <PhotoProvider>
               {rote.attachments.map((file: any, index: any) => {
                 return (

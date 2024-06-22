@@ -2,6 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url(shareCardBg.css);
+
 @media (prefers-color-scheme: default) {
   html {
     background-color: #f8f8f8;
@@ -39,8 +41,6 @@
 
   .attachmentImg {
     @apply bg-slate-50;
-    @apply border;
-    @apply border-slate-200;
   }
 }
 
