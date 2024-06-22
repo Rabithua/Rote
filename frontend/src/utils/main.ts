@@ -50,18 +50,6 @@ export async function registerSW() {
   return registration;
 }
 
-export async function subNotice() {
-  const registration = await navigator.serviceWorker.register("sw.js");
-
-  if (registration.active) {
-    try {
-      registration.active.postMessage({ method: "subNotice" });
-    } catch (error) {
-      throw new Error("注册订阅通知失败！");
-    }
-  }
-}
-
 export async function requestNotificationPermission() {
   const permission = await Notification.requestPermission();
 
