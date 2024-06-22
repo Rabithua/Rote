@@ -1,6 +1,9 @@
-import { LinkOutlined, SaveOutlined } from "@ant-design/icons";
-import { Divider } from "antd";
-import { toBlob, toPng } from "html-to-image";
+import {
+  LinkOutlined,
+  SaveOutlined,
+  ThunderboltOutlined,
+} from "@ant-design/icons";
+import { toPng } from "html-to-image";
 import { useState } from "react";
 import QRCode from "react-qr-code";
 import { saveAs } from "file-saver";
@@ -8,7 +11,6 @@ import { saveAs } from "file-saver";
 import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
-  const [imgDataUrl, setImgDataUrl] = useState("");
   const themes = [
     {
       cardClass: "bg-white text-gray-800",
@@ -39,7 +41,15 @@ function RoteShareCard({ rote }: any) {
       qrcodeColor: "#2d3748",
     },
   ];
+  const decoration = [
+    {
+      neme: "流星",
+      class: "liuxing",
+    },
+  ];
+  const [decorationIndex, setDecorationIndex] = useState<any>(null);
   const [themeIndex, setThemeIndex] = useState(1);
+
   async function saveImage(): Promise<void> {
     // toast.error("功能暂不可用");
     // return;
@@ -110,7 +120,7 @@ function RoteShareCard({ rote }: any) {
     toast.success("链接已复制到剪贴板");
   }
 
-  function colorList() {
+  function ColorList() {
     return (
       <div className=" flex gap-2 mr-auto">
         {themes.map((theme: any, index: any) => {
@@ -135,7 +145,9 @@ function RoteShareCard({ rote }: any) {
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
       <div
-        className={` w-full flex flex-col gap-2 p-8 rounded-xl relative ${themes[themeIndex].cardClass}`}
+        className={` w-full flex duration-300 flex-col gap-2 p-8 rounded-xl relative ${
+          themes[themeIndex].cardClass
+        } ${decorationIndex !== null && decoration[decorationIndex].class}`}
         id="shareCanva"
       >
         <div className=" font-extrabold text-5xl mb-[-10px]">“</div>
@@ -210,7 +222,21 @@ function RoteShareCard({ rote }: any) {
         </div>
       </div>
       <div className=" flex flex-wrap gap-2 justify-end">
-        {colorList()}
+        <ColorList />
+        <div
+          className={` cursor-pointer select-none duration-300 flex items-center gap-2  px-4 py-1 rounded-md active:scale-95 ${
+            decorationIndex !== null && "bg-gray-100"
+          }`}
+          onClick={() => {
+            if (decorationIndex === null) {
+              setDecorationIndex(0);
+            } else {
+              setDecorationIndex(null);
+            }
+          }}
+        >
+          <ThunderboltOutlined />
+        </div>
         <div
           className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-gray-100 px-4 py-1 rounded-md active:scale-95"
           onClick={copyLink}
@@ -226,7 +252,6 @@ function RoteShareCard({ rote }: any) {
           保存
         </div>
       </div>
-      <img src={imgDataUrl} className=" w-full" alt="" />
     </div>
   );
 }
