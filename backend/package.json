@@ -2,7 +2,7 @@
   "name": "rote_node",
   "version": "1.0.0",
   "description": "node | mongodb | prisma",
-  "main": "index.js",
+  "main": "server.ts",
   "scripts": {
     "start": "npx ts-node server.ts",
     "dev": "nodemon server.ts",

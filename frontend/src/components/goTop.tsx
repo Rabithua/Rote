@@ -11,7 +11,7 @@ export default function GoTop({ scrollContainerName }: any) {
 
   return (
     <div
-      className=" animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
+      className=" z-10 animate-show duration-300 fixed self-end right-8 bottom-8 bg-black w-fit py-2 px-4 rounded-md text-white cursor-pointer hover:text-white"
       onClick={goTop}
     >
       <UpOutlined />

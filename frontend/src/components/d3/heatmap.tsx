@@ -81,7 +81,7 @@ const Heatmap: React.FC = () => {
         .attr("height", cellSize - padding)
         .attr(
           "x",
-          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 285
+          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 305
         )
         .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
         .attr("rx", 3) // 添加圆角
