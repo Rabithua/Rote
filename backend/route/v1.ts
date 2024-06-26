@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addSubScriptionToUser,
+  changeUserPassword,
   createAttachments,
   createRote,
   createUser,
@@ -45,6 +46,8 @@ import {
 } from "../utils/main";
 import mainJson from "../json/main.json";
 import useOpenKey from "./useOpenKey";
+import { z } from "zod";
+import { RegisterDataZod, passwordChangeZod } from "../utils/zod";
 
 const { stateType, roteType, safeRoutes } = mainJson;
 
@@ -61,51 +64,15 @@ routerV1.all("/ping", (req, res) => {
 routerV1.post("/register", (req, res) => {
   const { username, password, email, nickname } = req.body;
 
-  if (!username || !password || !email) {
+  try {
+    RegisterDataZod.parse(req.body);
+  } catch (err: any) {
     res.status(401).send({
       code: 1,
-      msg: "error: data error",
+      msg: JSON.parse(err.message)[0].message,
       data: null,
     });
     return;
-  }
-
-  const usernameRegex = /^[A-Za-z0-9_-]+$/;
-
-  if (!usernameRegex.test(username)) {
-    res.status(401).send({
-      code: 1,
-      msg: "error: data error",
-      data: null,
-    });
-    return;
-  }
-
-  if (username) {
-    function isValidUsername(username: string) {
-      // 用户名只允许包含大小写字母、数字和下划线
-      const validUsernameRegex = /^[a-zA-Z0-9_]+$/;
-      return validUsernameRegex.test(username);
-    }
-    // 检查用户名是否符合要求
-    if (!isValidUsername(username)) {
-      res.status(401).send({
-        code: 1,
-        msg: "用户名只能包含大小写字母和数字以及下划线",
-        data: null,
-      });
-      return;
-    } else {
-      // 检查用户名是否在安全路由数组中
-      if (safeRoutes.includes(username)) {
-        res.status(401).send({
-          code: 1,
-          msg: "用户名与路由冲突，换一个吧",
-          data: null,
-        });
-        return;
-      }
-    }
   }
 
   try {
@@ -993,7 +960,7 @@ routerV1.get("/status", (req, res) => {
 
 routerV1.get("/randomRote", (req, res) => {
   const user = req.user as User;
-  
+
   if (user) {
     console.log(user.id);
     // 获取用户的一条随机 rote
@@ -1033,6 +1000,39 @@ routerV1.get("/randomRote", (req, res) => {
         await prisma.$disconnect();
       });
   }
+});
+
+routerV1.post("/change/password", isAuthenticated, (req, res) => {
+  const user = req.user as User;
+  const { newpassword, oldpassword } = req.body;
+
+  let zodData = passwordChangeZod.safeParse(req.body);
+
+  if (zodData.success === false) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: zodData.error.errors[0].message,
+    });
+    return;
+  }
+
+  changeUserPassword(oldpassword, newpassword, user.id)
+    .then(async (user) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: user,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: e.message,
+      });
+    });
 });
 
 // 文件上传错误处理

@@ -5,10 +5,11 @@ import { useProfile, useProfileDispatch } from "@/state/profile";
 import { useRotesDispatch } from "@/state/rotes";
 import { useTags, useTagsDispatch } from "@/state/tags";
 import { UserOutlined } from "@ant-design/icons";
-import { Avatar, Input } from "antd";
+import { Avatar, Input, message } from "antd";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
+import { z } from "zod";
 
 import mainJson from "@/json/main.json";
 
@@ -34,21 +35,37 @@ function Login() {
     nickname: "",
   });
 
+  const LoginDataZod = z.object({
+    username: z.string().min(1, "用户名不能为空").max(20, "用户名不能超过20位"),
+    password: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
+  });
+
+  const RegisterDataZod = z.object({
+    username: z
+      .string()
+      .min(1, "用户名不能为空")
+      .max(20, "用户名不能超过20位")
+      .regex(
+        /^[A-Za-z0-9_-]+$/,
+        "用户名只能包含大小写字母和数字或者下划线和‘-’"
+      )
+      .refine((value) => !safeRoutes.includes(value), {
+        message: "用户名与路由冲突，换一个吧",
+      }),
+    password: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
+    email: z
+      .string()
+      .min(1, "邮箱不能为空")
+      .max(30, "邮箱不能超过30位")
+      .email("邮箱格式不正确"),
+    nickname: z.string().min(1, "昵称不能为空").max(20, "昵称不能超过20位"),
+  });
+
   function login() {
-    const usernameRegex = /^[A-Za-z0-9_-]+$/;
-
-    if (!loginData.username) {
-      toast.error("username 不能为空");
-      return;
-    }
-
-    if (!usernameRegex.test(loginData.username)) {
-      toast.error("username 只能包含大小写字母和数字或者下划线和‘-’");
-      return;
-    }
-
-    if (!loginData.password) {
-      toast.error("password 不能为空");
+    try {
+      LoginDataZod.parse(loginData);
+    } catch (err: any) {
+      toast.error(JSON.parse(err.message)[0].message);
       return;
     }
 
@@ -145,37 +162,10 @@ function Login() {
   }
 
   function register() {
-    if (!registerData.username) {
-      toast.error("username 不能为空");
-      return;
-    }
-
-    if (registerData.username) {
-      const username = registerData.username;
-      function isValidUsername(username: string) {
-        // 用户名只允许包含大小写字母、数字和下划线
-        const validUsernameRegex = /^[a-zA-Z0-9_]+$/;
-        return validUsernameRegex.test(username);
-      }
-      // 检查用户名是否符合要求
-      if (!isValidUsername(username)) {
-        toast.error("用户名只能包含大小写字母和数字以及下划线");
-        return;
-      } else {
-        // 检查用户名是否在安全路由数组中
-        if (safeRoutes.includes(username)) {
-          toast.error("用户名与路由冲突，换一个吧");
-          return;
-        }
-      }
-    }
-
-    if (!registerData.password) {
-      toast.error("password 不能为空");
-      return;
-    }
-    if (!registerData.email) {
-      toast.error("email 不能为空");
+    try {
+      RegisterDataZod.parse(registerData);
+    } catch (err: any) {
+      toast.error(JSON.parse(err.message)[0].message);
       return;
     }
 
