@@ -869,3 +869,85 @@ export async function findRandomPublicRote(): Promise<any> {
       });
   });
 }
+
+export async function changeUserPassword(
+  oldpassword: string,
+  newpassword: string,
+  id: string
+): Promise<any> {
+  try {
+    const user = await prisma.user.findFirst({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const passwordhash = user.passwordhash;
+    const salt = user.salt;
+
+    // 使用异步版本的pbkdf2
+    const oldpasswordhash = crypto.pbkdf2Sync(
+      oldpassword,
+      salt,
+      310000,
+      32,
+      "sha256"
+    );
+
+    if (oldpasswordhash.toString("hex") === passwordhash.toString("hex")) {
+      const newSalt = crypto.randomBytes(16);
+      const newpasswordhash = crypto.pbkdf2Sync(
+        newpassword,
+        newSalt,
+        310000,
+        32,
+        "sha256"
+      );
+
+      const userUpdate = await prisma.user.update({
+        where: {
+          id: user.id,
+        },
+        data: {
+          passwordhash: newpasswordhash,
+          salt: newSalt, // 使用新盐值
+        },
+      });
+
+      return userUpdate;
+    } else {
+      throw new Error("Password not match");
+    }
+  } catch (error) {
+    throw error; // 直接抛出错误，让调用者处理
+  }
+}
+
+export async function ccccc(id: any, newpassword: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    const newSalt = crypto.randomBytes(16);
+    const newpasswordhash = crypto.pbkdf2Sync(
+      newpassword,
+      newSalt,
+      310000,
+      32,
+      "sha256"
+    );
+
+    const userUpdate = await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        passwordhash: newpasswordhash,
+        salt: newSalt, // 使用新盐值
+      },
+    });
+
+    resolve(userUpdate);
+  });
+}
