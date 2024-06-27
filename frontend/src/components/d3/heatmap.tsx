@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import toast from "react-hot-toast";
 import { apiGetMyHeatMap } from "@/api/others/main";
+import Empty from "antd/es/empty";
 
 const Heatmap: React.FC = () => {
   const [heatmapData, setHeatmapData] = useState<any>({});
@@ -104,7 +105,20 @@ const Heatmap: React.FC = () => {
     }
   }, [heatmapData, containerWidth]);
 
-  return <svg className=" shrink-0" ref={svgRef}></svg>;
+  return (
+    <>
+      {Object.keys(heatmapData).length > 0 ? (
+        <svg className=" shrink-0" ref={svgRef}></svg>
+      ) : (
+        <div className=" shrink-0 border-t-[1px] border-[#00000010] bg-white py-4">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={"HeatMap 无数据"}
+          />
+        </div>
+      )}
+    </>
+  );
 };
 
 export default Heatmap;

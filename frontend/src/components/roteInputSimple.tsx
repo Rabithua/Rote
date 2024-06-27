@@ -179,7 +179,7 @@ function RoteInputSimple() {
           }}
           onKeyDown={handleNormalINputKeyDown}
         />
-        {process.env.REACT_APP_ALLOW_UPLOAD_FILE && (
+        {process.env.REACT_APP_ALLOW_UPLOAD_FILE === "true" && (
           <div className=" flex gap-2 flex-wrap my-2">
             <Image.PreviewGroup
               preview={{

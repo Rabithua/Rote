@@ -41,9 +41,7 @@ const generateSitemap = async () => {
   try {
 
     const { data } = await axios.get(`${REACT_APP_BASEURL_PRD}/v1/api/sitemapData`)
-      .catch(error => {
-        console.error('Failed to fetch sitemap data', error);
-      });
+
     if (!data) {
       // 处理请求失败的情况
       return;

@@ -25,31 +25,24 @@ import {
   getMyOpenKey,
   getMySession,
   getMyTags,
-  getOneOpenKey,
   getSiteMapData,
   getStatus,
   getUserInfoByUsername,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
-import { Rote, User, UserSwSubScription } from "@prisma/client";
+import { User, UserSwSubScription } from "@prisma/client";
 import webpush from "../utils/webpush";
 import upload from "../utils/upload";
 import passport from "passport";
 import multer from "multer";
 import {
   bodyTypeCheck,
-  isAdmin,
   isAuthenticated,
   isAuthor,
-  queryTypeCheck,
   sanitizeUserData,
 } from "../utils/main";
-import mainJson from "../json/main.json";
 import useOpenKey from "./useOpenKey";
-import { z } from "zod";
 import { RegisterDataZod, passwordChangeZod } from "../utils/zod";
-
-const { stateType, roteType, safeRoutes } = mainJson;
 
 let routerV1 = express.Router();
 
@@ -156,6 +149,15 @@ routerV1.post("/addSwSubScription", isAuthenticated, async (req, res) => {
 routerV1.post("/sendSwSubScription", async (req, res) => {
   const { subId }: any = req.query;
   const msg = req.body;
+
+  if (!webpush) {
+    res.status(401).send({
+      code: 1,
+      msg: "error",
+      data: "Vaipd keys not found",
+    });
+    return;
+  }
 
   if (!subId || !msg) {
     res.status(401).send({
