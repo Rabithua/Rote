@@ -94,7 +94,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
         </div>
       )}
       {isLoadAll && rotes.length === 0 ? (
-        <div className=" border-t-[1px] border-[#00000010] bg-white py-4">
+        <div className=" shrink-0 border-t-[1px] border-[#00000010] bg-white py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"这里什么也没有"}
