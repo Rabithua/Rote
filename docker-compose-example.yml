@@ -41,18 +41,18 @@ services:
     container_name: rotebackend
     environment:
       # 添加web端域名到这里，避免跨域问题
-      - CROS=https://localhost:3001,https://rote.ink,https://beta.rote.ink,chrome-extension://cahpbdbfdfnmoachkjmcfgbbnmjcbpej
+      - CROS=http://localhost:3000,https://localhost:3001,https://rote.ink,https://beta.rote.ink,chrome-extension://cahpbdbfdfnmoachkjmcfgbbnmjcbpej
       - DATABASE_URL=mongodb://roteMongodbRS:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
       - SESSION_SECRET=RoteByRabithuaPrd
       # cloudflare r2储存桶配置
-      - R2_BUCKET=rote
-      - R2_ACCOUNT_ID=9a7e130cxxxxxxxx7869e2f7782d54
-      - R2_ACCESS_KEY_ID=44db2e4983e6xxxxxxd0edff90980ecf7
-      - R2_SECRET_KEY_ID=26a842fxxxxxxxxxxxxxxxxxxxxx2195a1793d06494b875
-      - R2_URL_PREFIX=r2.rote.ink
+      # - R2_BUCKET=rote
+      # - R2_ACCOUNT_ID=9a7e130cxxxxxxxx7869e2f7782d54
+      # - R2_ACCESS_KEY_ID=44db2e4983e6xxxxxxd0edff90980ecf7
+      # - R2_SECRET_KEY_ID=26a842fxxxxxxxxxxxxxxxxxxxxx2195a1793d06494b875
+      # - R2_URL_PREFIX=r2.rote.ink
       # webpush需要生成VAPID
-      - VAPID_PUBLIC_KEY=BDYfGAEoJIxxxFfy8ZX4Gw1YdxxxxxxxxxxxX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g
-      - VAPID_PRIVATE_KEY=25IK6YYxWFhoE1ntALVFpxxxxxxxxxGb4W9bGzlMaZ4I
+      # - VAPID_PUBLIC_KEY=BDYfGAEoJIxxxFfy8ZX4Gw1YdxxxxxxxxxxxX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g
+      # - VAPID_PRIVATE_KEY=25IK6YYxWFhoE1ntALVFpxxxxxxxxxGb4W9bGzlMaZ4I
     ports:
       # 后端api暴露端口，可以把前面一个3001改成其他端口，如3002:3000
       - 3001:3000
@@ -60,28 +60,28 @@ services:
     networks:
       - backendNetwork
 
-roteweb:
-  image: rabithua/roteweb:latest
-  depends_on:
-    - roteMongodbRS
-    - roteMongodbSetup
-    - rotebackend
-  container_name: roteweb
-  environment:
-    # 如果为后端api配置反向代理，可以使用 http://[IP]:3001
-    - REACT_APP_BASEURL_PRD=http://rotebackend:3000
-    # 如果后端配置了R2储存桶，可以开启文件上传功能
-    - REACT_APP_ALLOW_UPLOAD_FILE=true
-    # 生成sitemap需要用到，为前端web部署的域名
-    - URL=https://rote.ink
-    # web-push相关配置，不懂可以注释掉
-    - VAPID_PUBLIC_KEY=BFKK3FRRIGK8ZjtwjalylFZbiFHuqwEo8wlJ1O0cjejKK7czee0PDd1pU51RcanA7YuWFUTxFluR6ERhxLIrWSc
+  roteweb:
+    image: rabithua/roteweb:latest
+    depends_on:
+      - roteMongodbRS
+      - roteMongodbSetup
+      - rotebackend
+    container_name: roteweb
+    environment:
+      # 如果为后端api配置反向代理，可以使用 http://[IP]:3001
+      - REACT_APP_BASEURL_PRD=http://localhost:3001
+      # 如果后端配置了R2储存桶，可以修改为true开启文件上传功能
+      - REACT_APP_ALLOW_UPLOAD_FILE=false
+      # 生成sitemap需要用到，为前端web部署的域名
+      - URL=https://rote.ink
+      # web-push相关配置，不懂可以注释掉
+      # - VAPID_PUBLIC_KEY=BFKK3FRRIGK8ZjtwjalylFZbiFHuqwEo8wlJ1O0cjejKK7czee0PDd1pU51RcanA7YuWFUTxFluR6ERhxLIrWSc
 
-  ports:
-    - 3000:3000
-  restart: always
-  networks:
-    - backendNetwork
+    ports:
+      - 3000:3000
+    restart: always
+    networks:
+      - backendNetwork
 
 networks:
   backendNetwork:
