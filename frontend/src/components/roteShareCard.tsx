@@ -20,6 +20,13 @@ function RoteShareCard({ rote }: any) {
       qrcodeColor: "#2d3748",
     },
     {
+      cardClass: "bg-[#f5f5f5] text-[#255136]",
+      tagClass: "bg-[#00000010] text-[#255136]",
+      authorClass: "text-[#255136]",
+      colorBlock: "bg-[#f5f5f5] border-[#255136]",
+      qrcodeColor: "#255136",
+    },
+    {
       cardClass: "bg-zinc-800 text-white",
       tagClass: "bg-[#ffffff10] text-white",
       authorClass: "text-white",
@@ -151,7 +158,7 @@ function RoteShareCard({ rote }: any) {
         id="shareCanva"
       >
         <div className=" font-extrabold text-5xl mb-[-10px]">“</div>
-        <div className=" text-base break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
+        <div className=" text-xl break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
           {rote.content}
         </div>
         {rote.attachments.length > 0 && (

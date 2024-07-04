@@ -36,7 +36,7 @@ const Heatmap: React.FC = () => {
       .scaleLinear<string>()
       .domain([0, 1, 2, 3, 4])
       .range([
-        "#07C16005",
+        "#07C16010",
         "#07C16020",
         "#07C16040",
         "#07C16060",
@@ -82,7 +82,7 @@ const Heatmap: React.FC = () => {
         .attr("height", cellSize - padding)
         .attr(
           "x",
-          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 305
+          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2 - 325
         )
         .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
         .attr("rx", 3) // 添加圆角
@@ -94,7 +94,6 @@ const Heatmap: React.FC = () => {
           (d) => `${formatMonthDay(new Date(d))}: ${heatmapData[d] || 0} Notes`
         ) // 显示日期和贡献数量
         .on("click", function (e) {
-          console.log(e);
           const target = e.target as HTMLElement;
           if (target.dataset.title) {
             toast(target.dataset.title, {
@@ -110,7 +109,7 @@ const Heatmap: React.FC = () => {
       {Object.keys(heatmapData).length > 0 ? (
         <svg className=" shrink-0" ref={svgRef}></svg>
       ) : (
-        <div className=" shrink-0 border-t-[1px] border-[#00000010] bg-white py-4">
+        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"HeatMap 无数据"}

@@ -54,7 +54,7 @@ function TagsBlock({ setLocationState }: any) {
                     });
                   }}
                 >
-                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] border-[#00000010] duration-300 hover:scale-95">
+                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px]  duration-300 hover:scale-95">
                     {tag}
                   </div>
                 </Link>
