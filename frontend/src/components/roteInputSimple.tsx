@@ -150,7 +150,7 @@ function RoteInputSimple() {
   }
 
   return (
-    <div className=" cursor-default bg-white w-full p-5 flex gap-5">
+    <div className=" cursor-default bg-white w-full p-5 flex gap-5 border-b">
       <Avatar
         className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
@@ -212,7 +212,7 @@ function RoteInputSimple() {
         <Select
           mode="tags"
           variant="borderless"
-          className={` bg-[#00000005] my-2 rounded-md border border-[#00000010] w-fit min-w-40 max-w-full ${
+          className={` bg-[#00000005] my-2 rounded-md border  w-fit min-w-40 max-w-full ${
             tagsShow ? "" : "hidden"
           }`}
           value={rote.tags}

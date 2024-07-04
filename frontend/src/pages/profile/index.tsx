@@ -256,7 +256,7 @@ function ProfilePage() {
             })}
             <div
               onClick={generateOpenKeyFun}
-              className=" cursor-pointer p-4 bg-white border-[#00000010] border-t-[1px]"
+              className=" cursor-pointer p-4 bg-white  border-t-[1px]"
             >
               <div className=" break-all mr-auto font-semibold font-mono">
                 {openKeys.length === 0

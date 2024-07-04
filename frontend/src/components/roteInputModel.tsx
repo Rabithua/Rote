@@ -85,7 +85,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
         <Select
           mode="tags"
           variant="borderless"
-          className={` bg-[#00000005] my-2 rounded-md border border-[#00000010] w-fit min-w-40 max-w-full ${
+          className={` bg-[#00000005] my-2 rounded-md border  w-fit min-w-40 max-w-full ${
             tagsShow ? "" : "hidden"
           }`}
           value={newRote.tags}

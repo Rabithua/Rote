@@ -43,6 +43,9 @@ module.exports = {
         serif: ['Noto Serif SC', 'serif'],
         zhengwen: ['Optima-Regular,Optima', 'PingFangSC-light', 'PingFangTC-light', 'PingFang SC', "Cambria", 'Cochin', 'Georgia', 'Times', 'Times New Roma']
       },
+      borderColor: {
+        DEFAULT: '#00000010',
+      },
     },
   },
   plugins: [

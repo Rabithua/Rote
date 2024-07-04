@@ -13,6 +13,7 @@ import {
   saveSubscription,
   sendNotificationTest,
 } from "@/api/subscription/main";
+import NavHeader from "@/components/navHeader";
 
 export default function ExperimentPage() {
   const [swReady, setSwReady] = useState(false);
@@ -116,62 +117,57 @@ export default function ExperimentPage() {
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
     >
-      <div className=" sticky top-0 z-10">
-        <div className=" flex gap-2 bg-white text-2xl font-semibold p-4">
-          <ExperimentOutlined />
-          实验室 / Experimanet
+      <NavHeader title="实验室 / Experimanet" icon={<ExperimentOutlined />} />
+      <div className=" flex flex-col w-full gap-1">
+        <div className=" bg-bgWhite m-2 py-3 px-4 rounded-lg">
+          实验性质小功能，有可能会让rote变得更好用🤩
         </div>
-
-        <div className=" flex flex-col w-full gap-1">
-          <div className=" bg-bgWhite m-2 py-3 px-4 rounded-lg">
-            实验性质小功能，有可能会让rote变得更好用🤩
-          </div>
-          <div className=" m-2 flex gap-2 flex-wrap">
-            <div className=" w-full md:w-[calc(50%-4px)] relative overflow-y-scroll overflow-x-hidden aspect-1 border border-[#00000015] rounded-xl p-4">
-              <div className=" text-2xl font-semibold">
-                ServiceWoker通知 <br />
-                <div className=" font-normal mt-2 text-sm text-gray-500">
-                  ServiceWorker可以使用某些高级功能，比如后台通知等。
+        <div className=" m-2 flex gap-2 flex-wrap">
+          <div className=" w-full md:w-[calc(50%-4px)] relative overflow-y-scroll overflow-x-hidden aspect-1 border border-[#00000015] rounded-xl p-4">
+            <div className=" text-2xl font-semibold">
+              ServiceWoker通知 <br />
+              <div className=" font-normal mt-2 text-sm text-gray-500">
+                ServiceWorker可以使用某些高级功能，比如后台通知等。
+              </div>
+            </div>
+            <Divider></Divider>
+            <div className=" flex gap-2 items-center">
+              <span className=" font-semibold">状态：</span>
+              <Switch
+                disabled={!navigator.serviceWorker}
+                className=" bg-bgWhite"
+                checked={swReady}
+                loading={swLoading}
+                size="default"
+                onChange={(e) => {
+                  if (e) {
+                    sub();
+                  } else {
+                    unSub();
+                  }
+                }}
+              />
+            </div>
+            {noticeId && (
+              <div className=" flex mt-2 text-gray-500 gap-2 items-center">
+                <span className=" shrink-0">服务标识:</span>
+                <span className=" text-ellipsis overflow-hidden">
+                  {noticeId}
+                </span>
+                <div
+                  className=" duration-300 active:scale-95 py-1 shrink-0 px-2 bg-bgWhite cursor-pointer rounded-md flex gap-1"
+                  onClick={noticeTest}
+                >
+                  <NotificationFilled />
+                  通知测试
                 </div>
               </div>
-              <Divider></Divider>
-              <div className=" flex gap-2 items-center">
-                <span className=" font-semibold">状态：</span>
-                <Switch
-                  disabled={!navigator.serviceWorker}
-                  className=" bg-bgWhite"
-                  checked={swReady}
-                  loading={swLoading}
-                  size="default"
-                  onChange={(e) => {
-                    if (e) {
-                      sub();
-                    } else {
-                      unSub();
-                    }
-                  }}
-                />
-              </div>
-              {noticeId && (
-                <div className=" flex mt-2 text-gray-500 gap-2 items-center">
-                  <span className=" shrink-0">服务标识:</span>
-                  <span className=" text-ellipsis overflow-hidden">
-                    {noticeId}
-                  </span>
-                  <div
-                    className=" duration-300 active:scale-95 py-1 shrink-0 px-2 bg-bgWhite cursor-pointer rounded-md flex gap-1"
-                    onClick={noticeTest}
-                  >
-                    <NotificationFilled />
-                    通知测试
-                  </div>
-                </div>
-              )}
-              {noticeId && (
-                <div className=" mt-2 flex flex-col gap-2">
-                  <div className=" font-semibold">使用示例：</div>
-                  <div className=" whitespace-pre text-red-700 font-mono overflow-x-scroll p-3 rounded-xl bg-bgWhite">
-                    {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
+            )}
+            {noticeId && (
+              <div className=" mt-2 flex flex-col gap-2">
+                <div className=" font-semibold">使用示例：</div>
+                <div className=" whitespace-pre text-red-700 font-mono overflow-x-scroll p-3 rounded-xl bg-bgWhite">
+                  {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
 --data '{
     "title": "自在废物",
@@ -182,10 +178,9 @@ export default function ExperimentPage() {
       "url": "https://rabithua.club"
     }
   }'`}
-                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

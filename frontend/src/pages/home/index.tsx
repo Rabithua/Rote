@@ -15,9 +15,9 @@ function RotePage() {
   return (
     <div className=" flex w-full h-dvh">
       <div
-        className={` border-r border-[#00000010] scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
+        className={` border-r  scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
       >
-        <div className=" sticky top-0 z-10 cursor-pointer group rotypesNav border-y border-[#00000010] flex items-end gap-2 text-gray-600 bg-white font-light p-4">
+        <div className=" sticky top-0 z-10 cursor-pointer group rotypesNav border-y  flex items-end gap-2 text-gray-600 bg-white font-light p-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="101"

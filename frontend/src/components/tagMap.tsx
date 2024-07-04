@@ -25,7 +25,7 @@ export default function TagMap() {
           })}
         </div>
       ) : (
-        <div className=" shrink-0 border-t-[1px] border-[#00000010] bg-white py-4">
+        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"还没有标签"}

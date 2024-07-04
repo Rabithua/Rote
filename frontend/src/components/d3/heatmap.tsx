@@ -109,7 +109,7 @@ const Heatmap: React.FC = () => {
       {Object.keys(heatmapData).length > 0 ? (
         <svg className=" shrink-0" ref={svgRef}></svg>
       ) : (
-        <div className=" shrink-0 border-t-[1px] border-[#00000010] bg-white py-4">
+        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"HeatMap 无数据"}

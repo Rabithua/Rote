@@ -11,6 +11,7 @@ import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import { Helmet } from "react-helmet-async";
+import NavHeader from "@/components/navHeader";
 
 function UserPage() {
   const navigate = useNavigate();
@@ -79,10 +80,10 @@ function UserPage() {
             .format("YYYY/MM/DD HH:mm:ss")}`}</div>
         </div>
 
-        <div className=" mt-5 border-t border-[#00000010] sticky top-0 z-10 flex gap-2 bg-white text-2xl font-semibold p-4">
-          <GlobalOutlined />
-          已公开的笔记 / Public Note
-        </div>
+        <NavHeader
+          title="已公开的笔记 / Public Note"
+          icon={<GlobalOutlined />}
+        />
 
         {userInfo && (
           <RoteList

@@ -273,7 +273,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
   return rote?.id ? (
     <div
       id={`Rote_${rote.id}`}
-      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-white border-b border-[#00000010] first:border-t last:border-b-[0] last:mb-10 w-full ${
+      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-white border-b  first:border-t-[0] last:border-b-[0] last:mb-10 w-full ${
         !randomRoteStyle && " py-4 px-5"
       }`}
     >
@@ -420,7 +420,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
         </div>
 
         {rote.attachments.length > 0 && (
-          <div className=" w-full my-2 flex flex-wrap gap-1 border rounded-2xl overflow-hidden">
+          <div className=" w-fit my-2 flex flex-wrap gap-1 border rounded-2xl overflow-hidden">
             <PhotoProvider>
               {rote.attachments.map((file: any, index: any) => {
                 return (
