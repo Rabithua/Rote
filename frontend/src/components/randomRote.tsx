@@ -1,8 +1,7 @@
 import { apiGetRandomRote } from "@/api/rote/main";
-import { QuestionOutlined, RedoOutlined } from "@ant-design/icons/lib/icons";
+import { RedoOutlined } from "@ant-design/icons/lib/icons";
 import { useEffect, useState } from "react";
 import RoteItem from "./roteItem";
-import { Divider } from "antd";
 
 export default function RandomRote() {
   const [rote, setRote] = useState<any>(null);
@@ -17,7 +16,6 @@ export default function RandomRote() {
     apiGetRandomRote()
       .then((res: any) => {
         setLoading(false);
-        console.log(res.data);
         setRote(res.data);
       })
       .catch(() => {

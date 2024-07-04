@@ -27,7 +27,6 @@ function RoteInputSimple() {
   const [editType, setEditType] = useState("default");
   const profile = useProfile();
 
-  console.log(process.env);
   const [rote, setRote] = useState<any>({
     title: "",
     content: "",
@@ -66,7 +65,6 @@ function RoteInputSimple() {
   }
 
   async function addRoteFn() {
-    console.log(fileList);
     if (!rote.content.trim() && fileList.length === 0) {
       toast.error("内容不能为空");
       return;
@@ -92,7 +90,6 @@ function RoteInputSimple() {
         });
 
         let attachments = await uploadAttachments(newFileList, res.data.data);
-        console.log(attachments);
       })
       .catch((err) => {
         toast.error("发送失败", {
@@ -124,7 +121,6 @@ function RoteInputSimple() {
           formData.append("file", obj.file);
         });
         apiUploadFiles(formData, rote.id).then((res) => {
-          console.log(res);
           toast.success("附件上传成功", {
             id: toastId,
           });
@@ -183,8 +179,7 @@ function RoteInputSimple() {
           <div className=" flex gap-2 flex-wrap my-2">
             <Image.PreviewGroup
               preview={{
-                onChange: (current, prev) =>
-                  console.log(`current index: ${current}, prev index: ${prev}`),
+                onChange: (current, prev) => {},
               }}
             >
               {fileList.map((file: any, index: number) => {
