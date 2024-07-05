@@ -122,7 +122,7 @@ function RoteShareCard({ rote }: any) {
   }
 
   function copyLink() {
-    let url = `${window.location.href}/rote/${rote.id}`;
+    let url = `${window.location.origin}/rote/${rote.id}`;
     navigator.clipboard.writeText(url);
     toast.success("链接已复制到剪贴板");
   }
