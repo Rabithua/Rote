@@ -14,6 +14,7 @@ import {
   sendNotificationTest,
 } from "@/api/subscription/main";
 import NavHeader from "@/components/navHeader";
+import ExportData from "@/components/exportData";
 
 export default function ExperimentPage() {
   const [swReady, setSwReady] = useState(false);
@@ -123,7 +124,7 @@ export default function ExperimentPage() {
           实验性质小功能，有可能会让rote变得更好用🤩
         </div>
         <div className=" m-2 flex gap-2 flex-wrap">
-          <div className=" w-full md:w-[calc(50%-4px)] relative overflow-y-scroll overflow-x-hidden aspect-1 border border-[#00000015] rounded-xl p-4">
+          <div className=" w-full sm:w-[calc(50%-4px)] relative overflow-y-scroll overflow-x-hidden aspect-1 border border-[#00000015] rounded-xl p-4">
             <div className=" text-2xl font-semibold">
               ServiceWoker通知 <br />
               <div className=" font-normal mt-2 text-sm text-gray-500">
@@ -182,6 +183,7 @@ export default function ExperimentPage() {
               </div>
             )}
           </div>
+          <ExportData />
         </div>
       </div>
       <div id="top" className=" h-[1px]"></div>

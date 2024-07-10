@@ -12,6 +12,7 @@ import {
   editMyOneOpenKey,
   editMyProfile,
   editRote,
+  exportData,
   findMyRandomRote,
   findMyRote,
   findPublicRote,
@@ -28,6 +29,7 @@ import {
   getSiteMapData,
   getStatus,
   getUserInfoByUsername,
+  statistics,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
 import { User, UserSwSubScription } from "@prisma/client";
@@ -43,6 +45,7 @@ import {
 } from "../utils/main";
 import useOpenKey from "./useOpenKey";
 import { RegisterDataZod, passwordChangeZod } from "../utils/zod";
+import moment from "moment";
 
 let routerV1 = express.Router();
 
@@ -1002,6 +1005,60 @@ routerV1.get("/randomRote", (req, res) => {
         await prisma.$disconnect();
       });
   }
+});
+
+routerV1.get("/exportData", isAuthenticated, (req, res) => {
+  const user = req.user as User;
+
+  exportData(user.id)
+    .then(async (data) => {
+      // 将data创建为一个json文件，访问路由直接下载
+
+      // 将JSON数据转换为字符串
+      const jsonData = JSON.stringify(data);
+
+      // 设置响应头，以便浏览器将响应作为文件下载
+      res.setHeader("Content-Type", "application/json");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=${user.username}-${moment().format(
+          "YYYY/MM/DD HH:mm:ss"
+        )}.json`
+      );
+
+      // 发送JSON字符串作为响应
+      res.send(jsonData);
+    })
+    .catch(async (e) => {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
+});
+
+routerV1.get("/statistics", isAuthenticated, (req, res) => {
+  const user = req.user as User;
+
+  statistics(user.id)
+    .then(async (data) => {
+      res.send({
+        code: 0,
+        msg: "ok",
+        data: data,
+      });
+      await prisma.$disconnect();
+    })
+    .catch(async (e) => {
+      res.status(401).send({
+        code: 1,
+        msg: "error",
+        data: e,
+      });
+      await prisma.$disconnect();
+    });
 });
 
 routerV1.post("/change/password", isAuthenticated, (req, res) => {
