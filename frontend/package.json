@@ -2,7 +2,6 @@
   "name": "app",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://localhost:3000",
   "scripts": {
     "dev": " export PORT=3001; craco start",
     "start": "export PORT=3001; craco start",

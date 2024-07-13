@@ -5,7 +5,7 @@ export const instance = axios.create({
   baseURL:
     process.env.NODE_ENV === "production"
       ? process.env.REACT_APP_BASEURL_PRD
-      : "",
+      : "http://localhost:3000",
   withCredentials: true,
 });
 
