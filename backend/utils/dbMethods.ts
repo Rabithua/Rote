@@ -951,3 +951,40 @@ export async function ccccc(id: any, newpassword: string): Promise<any> {
     resolve(userUpdate);
   });
 }
+
+export async function statistics(authorid: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    let noteCount = await prisma.rote.count({ where: { authorid } });
+    let attachments = await prisma.attachment.findMany({
+      where: { userid: authorid },
+    });
+
+    resolve({
+      noteCount,
+      attachmentsCount: attachments.length,
+    });
+  });
+}
+
+export async function exportData(authorid: string): Promise<any> {
+  return new Promise(async (resolve, reject) => {
+    let notes = await prisma.rote.findMany({
+      where: { authorid },
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    resolve({
+      notes,
+    });
+  });
+}
