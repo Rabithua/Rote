@@ -308,7 +308,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
             </Link>
           )}
 
-          <span className=" overflow-scroll text-nowrap font-normal text-gray-500">
+          <span className=" overflow-scroll noScrollBar text-nowrap font-normal text-gray-500">
             {!randomRoteStyle && (
               <>
                 <Link
