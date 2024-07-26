@@ -15,6 +15,7 @@ import {
 } from "@/api/subscription/main";
 import NavHeader from "@/components/navHeader";
 import ExportData from "@/components/exportData";
+import ImportData from "@/components/importData";
 
 export default function ExperimentPage() {
   const [swReady, setSwReady] = useState(false);
@@ -184,6 +185,7 @@ export default function ExperimentPage() {
             )}
           </div>
           <ExportData />
+          <ImportData />
         </div>
       </div>
       <div id="top" className=" h-[1px]"></div>

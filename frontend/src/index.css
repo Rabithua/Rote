@@ -26,6 +26,13 @@
     display: none;
   }
 
+  .noScrollBar {
+    scrollbar-width: none;
+    /* 隐藏火狐的滚动条 */
+    -ms-overflow-style: none;
+    /* 隐藏IE和Edge的滚动条 */
+  }
+
   .aTagStyle a {
     text-decoration: underline;
     color: #0c9849;
