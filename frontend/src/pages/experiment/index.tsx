@@ -125,7 +125,7 @@ export default function ExperimentPage() {
           实验性质小功能，有可能会让rote变得更好用🤩
         </div>
         <div className=" m-2 flex gap-2 flex-wrap">
-          <div className=" w-full sm:w-[calc(50%-4px)] relative overflow-y-scroll overflow-x-hidden aspect-1 border border-[#00000015] rounded-xl p-4">
+          <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border border-[#00000015] rounded-xl p-4">
             <div className=" text-2xl font-semibold">
               ServiceWoker通知 <br />
               <div className=" font-normal mt-2 text-sm text-gray-500">

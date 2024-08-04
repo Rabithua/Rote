@@ -4,7 +4,7 @@ import { apiGetMyRote } from "@/api/rote/main";
 import { useRotes, useRotesDispatch } from "@/state/rotes";
 import slogenImg from "@/assets/img/slogen.svg";
 import RoteList from "@/components/roteList";
-import Heatmap from "@/components/d3/heatmap";
+// import Heatmap from "@/components/d3/heatmap";
 import TagMap from "@/components/tagMap";
 import { useProfile } from "@/state/profile";
 import RandomRote from "@/components/randomRote";
@@ -179,7 +179,7 @@ function RotePage() {
         </div>
         {profile && (
           <>
-            <Heatmap />
+            {/* <Heatmap /> */}
             <TagMap />
           </>
         )}

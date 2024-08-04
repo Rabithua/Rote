@@ -48,6 +48,7 @@ module.exports = {
       },
     },
   },
+
   plugins: [
     require('@tailwindcss/typography'),
     require("@tailwindcss/aspect-ratio"), addVariablesForColors,
@@ -74,6 +75,31 @@ module.exports = {
       );
     }
   ],
+  safelist: [
+    // 背景色和文本色
+    "bg-white",
+    "bg-[#f5f5f5]",
+    "bg-zinc-800",
+    "bg-lime-300",
+    "text-gray-800",
+    "text-[#255136]",
+    "text-white",
+
+    // 标签背景和文本色
+    "bg-[#00000010]",
+    "bg-[#ffffff10]",
+
+    // 边框色
+    "border-gray-800",
+    "border-[#255136]",
+    "border-white",
+
+    // 特定类名
+    "cardClass",
+    "tagClass",
+    "authorClass",
+    "colorBlock",
+  ]
 }
 
 function addVariablesForColors({ addBase, theme }) {

@@ -36,7 +36,7 @@ function Landing() {
 
   return (
     <div className=" dark:text-white w-full min-h-dvh flex flex-col justify-center items-center">
-      <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5 font-sans">
+      <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5">
         {/* <LanguageSwitcher /> */}
         <div className=" flex items-center flex-wrap gap-6 px-5 z-10">
           <Lottie
@@ -122,7 +122,7 @@ function Landing() {
             {t("data")}
           </div>
           {/* <div className=" flex text-[#07c16020] text-3xl">RSS</div> */}
-          <div className=" flex flex-wrap items-center font-semibold font-mono text-xl md:text-3xl whitespace-pre-wrap">
+          <div className=" flex flex-wrap items-center font-semibold text-xl md:text-3xl whitespace-pre-wrap">
             <span className=" pr-2">{t("links")}</span>
             {links.map((item, index) => {
               return (

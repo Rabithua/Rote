@@ -122,7 +122,7 @@ function LayoutDashboard() {
             <MenuUnfoldOutlined />
           </div>
         )}
-        <div className=" flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative">
+        <div className=" flex-1 noScrollBar h-dvh noScrollBar overflow-y-visible overflow-x-hidden relative">
           <Outlet />
         </div>
       </div>
