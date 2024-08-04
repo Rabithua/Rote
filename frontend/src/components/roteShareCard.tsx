@@ -9,6 +9,7 @@ import QRCode from "react-qr-code";
 import { saveAs } from "file-saver";
 
 import toast from "react-hot-toast";
+import moment from "moment";
 
 function RoteShareCard({ rote }: any) {
   const themes = [
@@ -32,13 +33,6 @@ function RoteShareCard({ rote }: any) {
       authorClass: "text-white",
       colorBlock: "bg-zinc-800 border-white",
       qrcodeColor: "#ffffff",
-    },
-    {
-      cardClass: "bg-zinc-800 text-yellow-500",
-      tagClass: "bg-[#eab20810] text-yellow-500",
-      authorClass: "text-yellow-500",
-      colorBlock: "bg-zinc-800 border-yellow-500",
-      qrcodeColor: "#eab308",
     },
     {
       cardClass: "bg-lime-300 text-gray-800",
@@ -152,13 +146,15 @@ function RoteShareCard({ rote }: any) {
   return (
     <div className=" cursor-default bg-white w-full flex flex-col gap-5">
       <div
-        className={` w-full flex duration-300 flex-col gap-2 p-8 rounded-xl relative ${
+        className={` w-full flex duration-300 flex-col gap-2 p-8 relative ${
           themes[themeIndex].cardClass
         } ${decorationIndex !== null && decoration[decorationIndex].class}`}
         id="shareCanva"
       >
-        <div className=" font-extrabold text-5xl mb-[-10px]">“</div>
-        <div className=" text-xl break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
+        <div className="font-sm opacity-60">
+          {moment().utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
+        </div>
+        <div className=" md:text-xl break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
           {rote.content}
         </div>
         {rote.attachments.length > 0 && (
@@ -184,7 +180,7 @@ function RoteShareCard({ rote }: any) {
             })}
           </div>
         )}
-        <div className=" flex flex-wrap gap-2 items-center font-serif">
+        <div className=" flex flex-wrap text-sm md:text-base gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
@@ -207,10 +203,10 @@ function RoteShareCard({ rote }: any) {
               crossOrigin="anonymous"
             />
             <div>
-              <span className=" font-serif font-semibold">
+              <span className=" font-serif text-sm md:text-base font-semibold">
                 {rote.author.nickname}
               </span>
-              <div className=" hidden sm:block font-normal opacity-60">
+              <div className=" hidden text-sm md:text-base sm:block font-normal opacity-60">
                 来自 {window.location.origin}/{rote.author.username}
               </div>
             </div>
