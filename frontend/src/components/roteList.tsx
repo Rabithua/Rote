@@ -2,11 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import RoteItem from "./roteItem";
 import Empty from "antd/es/empty";
 import { LoadingOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 
 function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   const rotes = rotesHook();
-  const navigate = useNavigate();
+
   const rotesDispatch = rotesDispatchHook();
 
   const [isLoadAll, setIsLoadAll] = useState(false);
@@ -60,6 +59,10 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
             type: "add",
             rotes: res.data.data,
           });
+
+          if (currentLoadingRef) {
+            observer.observe(currentLoadingRef);
+          }
         })
         .catch(() => {});
     }
@@ -69,6 +72,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
         if (entry.isIntersecting) {
           // 元素进入视口
           loadMore();
+          observer.unobserve(currentLoadingRef);
         }
       });
     }, options);
