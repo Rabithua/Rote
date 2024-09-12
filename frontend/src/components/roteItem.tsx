@@ -409,7 +409,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className=" hover:text-primary gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-white dark:from-black via-white/80 dark:via-black/80 to-transparent pt-8 flex w-full justify-center"
+                  className=" hover:text-primary gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center"
                 >
                   <DownOutlined />
                   展开
