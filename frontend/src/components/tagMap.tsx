@@ -17,7 +17,7 @@ export default function TagMap() {
                   tags: [item.value],
                 }}
               >
-                <div className=" px-2 py-1 flex-grow text-center text-xs rounded-md bg-[#00000010] duration-300 hover:scale-95">
+                <div className=" px-2 py-1 flex-grow text-center text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95">
                   {item.value}
                 </div>
               </Link>
@@ -25,7 +25,7 @@ export default function TagMap() {
           })}
         </div>
       ) : (
-        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
+        <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"还没有标签"}

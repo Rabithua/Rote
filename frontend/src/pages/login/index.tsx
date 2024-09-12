@@ -230,7 +230,7 @@ function Login() {
     <div className="h-dvh w-full dark:bg-black bg-gray-100 relative flex items-center justify-center">
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center "></div>
-      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-white dark:bg-bgDarkSecond w-80 dark:border-bgDarkSecond dark:text-white border rounded-lg flex flex-col gap-2 pb-10 z-10">
+      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-bgLight dark:bg-bgDark dark:bg-bgDarkSecond w-80 dark:border-bgDarkSecond dark:text-white border rounded-lg flex flex-col gap-2 pb-10 z-10">
         {!checkStatusMsg ? (
           <>
             {profile ? (
@@ -254,7 +254,7 @@ function Login() {
                     前往主页
                   </div>
                   <div
-                    className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
+                    className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black font-semibold"
                     onClick={logOutFn}
                   >
                     退出登录
@@ -337,7 +337,7 @@ function Login() {
                           登录
                         </div>
                         <div
-                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
+                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black font-semibold"
                           onClick={changeType}
                         >
                           注册
@@ -352,7 +352,7 @@ function Login() {
                           注册
                         </div>
                         <div
-                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgWhite dark:text-black font-semibold"
+                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black font-semibold"
                           onClick={changeType}
                         >
                           返回

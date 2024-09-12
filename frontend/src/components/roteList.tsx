@@ -92,13 +92,13 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
       {isLoadAll ? null : (
         <div
           ref={loadingRef}
-          className=" flex justify-center text-lg items-center py-8 gap-3 bg-white"
+          className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark"
         >
           <LoadingOutlined />
         </div>
       )}
       {isLoadAll && rotes.length === 0 ? (
-        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
+        <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"这里什么也没有"}

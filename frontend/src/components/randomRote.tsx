@@ -25,7 +25,7 @@ export default function RandomRote() {
   return (
     rote && (
       <div className=" shrink-0">
-        <div className=" flex gap-2 bg-white text-md font-semibold py-2">
+        <div className=" flex gap-2 bg-bgLight dark:bg-bgDark text-md font-semibold py-2">
           随机回顾 / Random Review
           <RedoOutlined
             className={` cursor-pointer hover:opacity-50 duration-300 ml-auto ${

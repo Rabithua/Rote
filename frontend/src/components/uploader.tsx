@@ -12,7 +12,7 @@ export default function Uploader({ fileList, setFileList }: any) {
           //@ts-ignore
           fileInputRef.current?.click();
         }}
-        className=" active:scale-95 duration-300 cursor-pointer w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-bgWhite border overflow-hidden"
+        className=" active:scale-95 duration-300 cursor-pointer w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-opacityLight dark:bg-opacityDark border border-opacityLight dark:border-opacityDark overflow-hidden"
       >
         <UploadOutlined className=" text-2xl " />
       </div>

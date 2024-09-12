@@ -150,9 +150,9 @@ function RoteInputSimple() {
   }
 
   return (
-    <div className=" cursor-default bg-white w-full p-5 flex gap-5 border-b">
+    <div className=" cursor-default bg-bgLight dark:bg-bgDark w-full p-5 flex gap-5 border-b border-opacityLight dark:border-opacityDark">
       <Avatar
-        className=" bg-[#00000010] text-black shrink-0 hidden sm:block"
+        className=" bg-opacityLight dark:bg-opacityDark text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
         icon={<UserOutlined className=" text-[#00000030]" />}
         src={profile?.avatar}
@@ -185,7 +185,7 @@ function RoteInputSimple() {
               {fileList.map((file: any, index: number) => {
                 return (
                   <div
-                    className=" w-20 h-20 rounded-lg bg-bgWhite border overflow-hidden relative"
+                    className=" w-20 h-20 rounded-lg bg-bgLight border border-opacityLight dark:border-opacityDark overflow-hidden relative"
                     key={`filePicker_${index}`}
                   >
                     <Image
@@ -212,7 +212,7 @@ function RoteInputSimple() {
         <Select
           mode="tags"
           variant="borderless"
-          className={` bg-[#00000005] my-2 rounded-md border  w-fit min-w-40 max-w-full ${
+          className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark w-fit min-w-40 max-w-full ${
             tagsShow ? "" : "hidden"
           }`}
           value={rote.tags}
@@ -226,16 +226,16 @@ function RoteInputSimple() {
               onClick={() => {
                 setTagsShow(!tagsShow);
               }}
-              className={` cursor-pointer text-xl p-2 hover:bg-[#00000005] rounded-md ${
-                tagsShow ? " bg-[#00000010]" : ""
+              className={` cursor-pointer text-xl p-2 hover:bg-opacityLight dark:hover:bg-opacityDark rounded-md ${
+                tagsShow ? " bg-opacityLight dark:bg-opacityDark" : ""
               }`}
             />
           </Tooltip>
-          {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-[#00000010] rounded-md" /> */}
+          {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-opacityLight dark:bg-opacityDark rounded-md" /> */}
           <Tooltip placement="bottom" title={"置顶"}>
             <PushpinOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md ${
-                rote.pin ? "bg-[#00000010]" : ""
+              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+                rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
                 setRote({
@@ -247,8 +247,8 @@ function RoteInputSimple() {
           </Tooltip>
           <Tooltip placement="bottom" title={"归档"}>
             <InboxOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md ${
-                rote.archived ? "bg-[#00000010]" : ""
+              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+                rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
                 setRote({
@@ -262,12 +262,12 @@ function RoteInputSimple() {
             defaultValue="私密"
             variant="borderless"
             style={{ width: 80 }}
-            className=" hover:bg-[#00000010] rounded-md"
+            className=" bg-opacityLight dark:bg-opacityDark rounded-md"
             onChange={handleStateChange}
             options={stateOptions}
           />
           {/* <div
-            className={` cursor-pointer hover:bg-[#00000010] duration-300 h-full w-20 flex items-center rounded-md active:scale-95 justify-center ${editType === "novel" ? " bg-[#00000010]" : ""
+            className={` cursor-pointer hover:bg-opacityLight dark:bg-opacityDark duration-300 h-full w-20 flex items-center rounded-md active:scale-95 justify-center ${editType === "novel" ? " bg-opacityLight dark:bg-opacityDark" : ""
               }`}
             onClick={changeEditType}
           >
@@ -314,7 +314,7 @@ function RoteInputSimple() {
             </Tooltip>
           </div> */}
           <div
-            className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
+            className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
             onClick={addRoteFn}
           >
             <SendOutlined />

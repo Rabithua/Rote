@@ -19,7 +19,12 @@ module.exports = {
       colors: {
         'bgDark': '#111111',
         'bgDarkSecond': '#222222',
-        'bgWhite': '#f8f8f8',
+        'opacityDark': '#ffffff10',
+        'opacityLight': '#00000010',
+        'bgLight': '#f8f8f8',
+        'textDark': '#f5f5f5',
+        'textLight': '#515151',
+        'primary': '#07C160',
       },
       animation: {
         "meteor-effect": "meteor 5s linear infinite",
@@ -42,9 +47,6 @@ module.exports = {
       fontFamily: {
         serif: ['Noto Serif SC', 'serif'],
         zhengwen: ['Optima-Regular,Optima', 'PingFangSC-light', 'PingFangTC-light', 'PingFang SC', "Cambria", 'Cochin', 'Georgia', 'Times', 'Times New Roma']
-      },
-      borderColor: {
-        DEFAULT: '#00000010',
       },
     },
   },
