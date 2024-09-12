@@ -17,13 +17,12 @@ module.exports = {
         'primaryGreenGradient': 'linear-gradient(327deg, #07C160 18.08%, rgba(62, 207, 74, 0.96) 64.28%, rgba(153, 230, 38, 0.40) 111.94%, rgba(250, 255, 0, 0.00) 158.87%);'
       },
       colors: {
-        'bgDark': '#111111',
-        'bgDarkSecond': '#222222',
-        'opacityDark': '#ffffff10',
+        'bgLight': '#ffffff',
+        'bgDark': '#000000',
         'opacityLight': '#00000010',
-        'bgLight': '#f8f8f8',
-        'textDark': '#f5f5f5',
-        'textLight': '#515151',
+        'opacityDark': '#ffffff10',
+        'textDark': '#E7E9EA',
+        'textLight': '#0F1419',
         'primary': '#07C160',
       },
       animation: {
