@@ -22,7 +22,8 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
 
   // 监听loadingRef显示事件，加载更多
   useEffect(() => {
-    if (observerRef.current) {
+    if (observerRef.current === true) {
+      console.log("observerRef.current 已更新");
       return;
     }
 
@@ -85,6 +86,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
     observerRef.current = true;
 
     return () => {
+      observerRef.current = false;
       observer.unobserve(currentLoadingRef);
     };
   }, [apiProps]);
