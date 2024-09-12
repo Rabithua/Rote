@@ -14,13 +14,17 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
 
   const loadingRef = useRef(null);
 
+  const observerRef = useRef(false);
+
   useEffect(() => {
     countRef.current = rotes.length;
   }, [rotes.length]);
 
   // 监听loadingRef显示事件，加载更多
   useEffect(() => {
-    setIsLoadAll(false);
+    if (observerRef.current) {
+      return;
+    }
 
     if (countRef.current > 0) {
       rotesDispatch({
@@ -78,6 +82,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
     }, options);
 
     observer.observe(currentLoadingRef);
+    observerRef.current = true;
 
     return () => {
       observer.unobserve(currentLoadingRef);
