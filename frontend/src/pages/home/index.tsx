@@ -9,6 +9,7 @@ import TagMap from "@/components/tagMap";
 import { useProfile } from "@/state/profile";
 import RandomRote from "@/components/randomRote";
 import GoTop from "@/components/goTop";
+import Heatmap from "@/components/d3/heatmap";
 
 function RotePage() {
   const profile = useProfile();
@@ -179,7 +180,7 @@ function RotePage() {
         </div>
         {profile && (
           <>
-            {/* <Heatmap /> */}
+            <Heatmap />
             <TagMap />
           </>
         )}

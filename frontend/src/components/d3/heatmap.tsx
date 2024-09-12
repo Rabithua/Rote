@@ -58,6 +58,7 @@ const Heatmap: React.FC = () => {
 
       const days = d3.timeDays(startDate, endDate);
 
+      const startWeek = parseInt(formatWeek(startDate));
       // 添加礼拜几的标签
       svg
         .selectAll(".day-of-week")
@@ -82,7 +83,7 @@ const Heatmap: React.FC = () => {
         .attr("height", cellSize - padding)
         .attr(
           "x",
-          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2
+          (d) => (parseInt(formatWeek(d)) - startWeek) * cellSize + padding / 2 - 20
         )
         .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
         .attr("rx", 3) // 添加圆角
