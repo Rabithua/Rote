@@ -200,13 +200,13 @@ function ProfilePage() {
       </div>
       <div className=" flex mx-4 h-16">
         <Avatar
-          className=" translate-y-[-50%] bg-white border-bgWhite border-[4px] bg-[#00000010] text-black shrink-0 sm:block"
+          className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-bgLight border-[4px] bg-opacityLight dark:bg-opacityDark text-black shrink-0 sm:block"
           size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 150 }}
           icon={<UserOutlined className=" text-[#00000010]" />}
           src={profile?.avatar}
         />
         <div
-          className=" mt-auto h-fit cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
+          className=" mt-auto h-fit cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
           onClick={() => {
             setIsModalOpen(true);
           }}
@@ -240,7 +240,7 @@ function ProfilePage() {
       </div>
       <div className=" flex flex-col">
         {openKeyLoading ? (
-          <div className=" flex justify-center items-center py-8 gap-3 bg-white">
+          <div className=" flex justify-center items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
             <LoadingOutlined />
             <div>加载中...</div>
           </div>
@@ -256,7 +256,7 @@ function ProfilePage() {
             })}
             <div
               onClick={generateOpenKeyFun}
-              className=" cursor-pointer p-4 bg-white  border-t-[1px]"
+              className=" cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
             >
               <div className=" break-all mr-auto font-semibold font-mono">
                 {openKeys.length === 0
@@ -275,7 +275,7 @@ function ProfilePage() {
         destroyOnClose={true}
         footer={null}
       >
-        <div className=" cursor-default bg-white w-full flex gap-5">
+        <div className=" cursor-default w-full flex gap-5">
           <div className=" flex flex-col gap-1 w-full">
             <input
               type="file"
@@ -374,7 +374,7 @@ function ProfilePage() {
       >
         <AvatarEditor
           ref={AvatarEditorRef}
-          className=" mx-auto border-[2px]"
+          className=" mx-auto border-[2px] border-opacityLight dark:border-opacityDark"
           image={editProfile.avatar_file}
           width={150}
           height={150}
@@ -384,7 +384,7 @@ function ProfilePage() {
           rotate={0}
         />
         <div
-          className={` mt-4 cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold ${
+          className={` mt-4 cursor-pointer duration-300 active:scale-95  border border-opacityLight dark:border-opacityDark w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold ${
             avatarUploading ? " bg-gray-700" : "bg-black"
           }`}
           onClick={() => {

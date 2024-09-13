@@ -144,7 +144,7 @@ function RoteShareCard({ rote }: any) {
   }
 
   return (
-    <div className=" cursor-default bg-white w-full flex flex-col gap-5">
+    <div className=" cursor-default w-full flex flex-col gap-5">
       <div
         className={` w-full flex duration-300 flex-col gap-2 p-8 relative ${
           themes[themeIndex].cardClass
@@ -180,11 +180,11 @@ function RoteShareCard({ rote }: any) {
             })}
           </div>
         )}
-        <div className=" flex flex-wrap text-sm md:text-base gap-2 items-center font-serif">
+        <div className=" flex flex-wrap text-sm md:text-md gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
-                className={` px-2 rounded-md ${themes[themeIndex].tagClass}`}
+                className={` px-2 py-1 md:px-3 font-bold rounded-md ${themes[themeIndex].tagClass}`}
                 key={`tag_${index}`}
               >
                 {tag}
@@ -241,7 +241,7 @@ function RoteShareCard({ rote }: any) {
           <ThunderboltOutlined />
         </div>
         <div
-          className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-gray-100 px-4 py-1 rounded-md active:scale-95"
+          className=" cursor-pointer select-none duration-300 flex items-center gap-2 dark:bg-bgLight text-textDark dark:text-textLight px-4 py-1 rounded-md active:scale-95"
           onClick={copyLink}
         >
           <LinkOutlined />

@@ -58,7 +58,7 @@ function UserPage() {
         </div>
         <div className=" flex mx-4 h-16">
           <Avatar
-            className=" translate-y-[-50%] bg-white border-bgWhite border-[4px] bg-[#00000010] text-black shrink-0 sm:block"
+            className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-opacityLight dark:border-opacityDark border-[4px] shrink-0 sm:block"
             size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 150 }}
             icon={<UserOutlined className=" text-[#00000010]" />}
             src={userInfo?.avatar}

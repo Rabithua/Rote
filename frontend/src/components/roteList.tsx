@@ -2,39 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import RoteItem from "./roteItem";
 import Empty from "antd/es/empty";
 import { LoadingOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
 
 function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
   const rotes = rotesHook();
-  const navigate = useNavigate();
+
   const rotesDispatch = rotesDispatchHook();
 
-  const [isLoadAll, setIsLoadAll] = useState(false);
-
-  const countRef = useRef(rotes.length);
-
-  const loadingRef = useRef(null);
+  const countRef = useRef<number>(0);
+  const loading = useRef<boolean>(false);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     countRef.current = rotes.length;
   }, [rotes.length]);
 
-  // 监听loadingRef显示事件，加载更多
+  // 监听loaderRef显示事件，加载更多
   useEffect(() => {
-    setIsLoadAll(false);
+    const currentloaderRef = loaderRef.current;
 
-    if (countRef.current > 0) {
-      rotesDispatch({
-        type: "freshAll",
-        rotes: [],
-      });
-      countRef.current = 0;
-    }
-
-    const currentLoadingRef = loadingRef.current;
-
-    if (!currentLoadingRef) {
-      console.log("currentLoadingRef 未更新");
+    if (!currentloaderRef) {
+      console.log("currentloaderRef 未更新");
       return;
     }
 
@@ -47,54 +35,65 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
     let observer: IntersectionObserver;
 
     function loadMore() {
+      if (loading.current === true || !hasMore) return;
+
+      loading.current = true;
+
       api({
         skip: countRef.current,
         ...apiProps,
       })
         .then((res: any) => {
           if (res.data.data.length !== 20) {
-            setIsLoadAll(true);
+            setHasMore(false);
           }
 
           rotesDispatch({
             type: "add",
             rotes: res.data.data,
           });
+
+          countRef.current += res.data.data.length;
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          loading.current = false;
+        });
     }
 
     observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          // 元素进入视口
-          loadMore();
-        }
-      });
+      const target = entries[0];
+      if (target.isIntersecting) {
+        loadMore();
+      }
     }, options);
 
-    observer.observe(currentLoadingRef);
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
 
     return () => {
-      observer.unobserve(currentLoadingRef);
+      if (loaderRef.current) {
+        observer.unobserve(loaderRef.current);
+      }
     };
-  }, [apiProps]);
+  }, []);
 
   return (
     <div className=" flex flex-col w-full relative">
       {rotes.map((item: any, index: any) => {
         return <RoteItem rote_param={item} key={`Rote_${index}`}></RoteItem>;
       })}
-      {isLoadAll ? null : (
+      {!hasMore ? null : (
         <div
-          ref={loadingRef}
-          className=" flex justify-center text-lg items-center py-8 gap-3 bg-white"
+          ref={loaderRef}
+          className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark"
         >
           <LoadingOutlined />
         </div>
       )}
-      {isLoadAll && rotes.length === 0 ? (
-        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
+      {!hasMore && rotes.length === 0 ? (
+        <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"这里什么也没有"}

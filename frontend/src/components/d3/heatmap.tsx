@@ -58,6 +58,8 @@ const Heatmap: React.FC = () => {
 
       const days = d3.timeDays(startDate, endDate);
 
+      const startWeek = parseInt(formatWeek(startDate));
+
       // 添加礼拜几的标签
       svg
         .selectAll(".day-of-week")
@@ -82,7 +84,8 @@ const Heatmap: React.FC = () => {
         .attr("height", cellSize - padding)
         .attr(
           "x",
-          (d) => parseInt(formatWeek(d)) * cellSize + padding / 2
+          (d) =>
+            (parseInt(formatWeek(d)) - startWeek) * cellSize + padding / 2 - 20
         )
         .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
         .attr("rx", 3) // 添加圆角
@@ -107,10 +110,11 @@ const Heatmap: React.FC = () => {
   return (
     <>
       {Object.keys(heatmapData).length > 0 ? (
-        <svg className=" shrink-0" ref={svgRef}></svg>
+        <svg className=" shrink-0  dark:fill-textDark" ref={svgRef}></svg>
       ) : (
-        <div className=" shrink-0 border-t-[1px]  bg-white py-4">
+        <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
           <Empty
+            className=" dark:text-textDark"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={"HeatMap 无数据"}
           />

@@ -50,14 +50,14 @@ function SingleRotePage() {
       )}
       {rote && (
         <Link to={`/${rote.author.username}`}>
-          <div className=" fixed bottom-12 left-0 right-0 w-fit mx-auto rounded-full bg-bgWhite px-6 py-2 border cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
+          <div className=" fixed bottom-12 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
             <Avatar
               size={{ xs: 40 }}
               icon={<UserOutlined className=" text-[#00000030]" />}
               src={rote?.author.avatar}
             />
             <div className=" flex flex-col">
-              <div className=" text-base font-semibold">
+              <div className=" text-base font-semibold dark:text-textLight text-textDark ">
                 {rote?.author.nickname}
               </div>
               <div className=" text-md text-gray-500">

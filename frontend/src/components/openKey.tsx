@@ -89,7 +89,7 @@ function OpenKeyItem({ openKey }: any) {
   }
 
   return (
-    <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-white  border-t-[1px]">
+    <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark">
       <div className=" flex items-center break-all mr-auto font-semibold font-mono">
         {hidekey
           ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)

@@ -218,21 +218,21 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
     return (
       <div className=" flex flex-col">
         <Link
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
           to={`/rote/${rote.id}`}
         >
           <PicCenterOutlined />
           详情
         </Link>
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
           onClick={editRotePin}
         >
           <PushpinOutlined />
           {rote.pin ? "取消置顶" : "置顶"}
         </div>
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
           onClick={() => {
             hide();
             setIsEditModalOpen(true);
@@ -243,14 +243,14 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           编辑
         </div>
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
           onClick={editRoteArchived}
         >
           <SaveOutlined />
           {rote.archived ? "取消归档" : "归档"}
         </div>
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
           onClick={() => {
             hide();
             setIsShareCardModalOpen(true);
@@ -260,7 +260,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           分享
         </div>
         <div
-          className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 text-red-500 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
           onClick={deleteRote}
         >
           <DeleteOutlined />
@@ -273,7 +273,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
   return rote?.id ? (
     <div
       id={`Rote_${rote.id}`}
-      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-white border-b  first:border-t-[0] last:border-b-[0] last:mb-10 w-full ${
+      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-bgLight/5 dark:bg-bgDark/5 border-opacityLight dark:border-opacityDark border-b first:border-t-[0] last:border-b-[0] last:mb-10 w-full ${
         !randomRoteStyle && " py-4 px-5"
       }`}
     >
@@ -383,7 +383,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
               onOpenChange={handleOpenChange}
               content={actionsMenu(rote)}
             >
-              <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
+              <EllipsisOutlined className=" ml-auto  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
             </Popover>
           )}
         </div>
@@ -409,7 +409,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className=" hover:text-green-700 gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-white via-white/80 to-transparent pt-8 flex w-full justify-center"
+                  className=" hover:text-primary gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center"
                 >
                   <DownOutlined />
                   展开
@@ -420,7 +420,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
         </div>
 
         {rote.attachments.length > 0 && (
-          <div className=" w-fit my-2 flex flex-wrap gap-1 border rounded-2xl overflow-hidden">
+          <div className=" w-fit my-2 flex flex-wrap gap-1 border border-opacityLight dark:border-opacityDark rounded-2xl overflow-hidden">
             <PhotoProvider>
               {rote.attachments.map((file: any, index: any) => {
                 return (
@@ -434,7 +434,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
                           : rote.attachments.length === 1
                           ? " w-full max-w-[500px] rounded-2xl"
                           : "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                      } object-cover grow bg-gray-100`}
+                      } object-cover grow bg-opacityLight dark:bg-opacityDark`}
                       src={file.url}
                       loading="lazy"
                       alt=""
@@ -455,7 +455,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
                   tags: [tag],
                 }}
               >
-                <div className=" px-2 py-1 text-xs rounded-md bg-[#00000010] hover:scale-95 duration-300">
+                <div className=" px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark hover:scale-95 duration-300">
                   {tag}
                 </div>
               </Link>
@@ -468,7 +468,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
             ? categorizedReactions.map((item: any, index: number) => {
               return (
                 <div
-                  className=" cursor-pointer duration-300 hover:scale-95 flex items-center gap-2 px-3 py-1 bg-white border rounded-full text-sm"
+                  className=" cursor-pointer duration-300 hover:scale-95 flex items-center gap-2 px-3 py-1 bg-bgLight dark:bg-bgDark border border-opacityLight dark:border-opacityDark rounded-full text-sm"
                   key={`reaction_${index}`}
                 >
                   <span>{item.type}</span>
@@ -484,7 +484,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
                 {emojiList.map((emoji, index) => {
                   return (
                     <div
-                      className=" py-2 px-3 rounded-md hover:bg-[#00000010] cursor-pointer text-xl"
+                      className=" py-2 px-3 rounded-md  hover:bg-opacityLight dark:hover:bg-opacityDark cursor-pointer text-xl"
                       key={`emoji_${index}`}
                     >
                       {emoji}
@@ -494,7 +494,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
               </div>
             }
           >
-            <div className=" p-1 w-8 h-8 hover:bg-[#00000010] rounded-md">
+            <div className=" p-1 w-8 h-8  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-md">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 48 48"

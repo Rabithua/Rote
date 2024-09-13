@@ -16,7 +16,7 @@ export default function NavBar() {
   return (
     <>
       {window.history.state && window.history.state.idx > 0 && (
-        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-[#ffffff99] backdrop-blur-xl">
+        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-xl">
           <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
           <div className=" font-semibold cursor-pointer" onClick={back}>
             返回

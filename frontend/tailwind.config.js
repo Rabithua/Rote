@@ -17,9 +17,13 @@ module.exports = {
         'primaryGreenGradient': 'linear-gradient(327deg, #07C160 18.08%, rgba(62, 207, 74, 0.96) 64.28%, rgba(153, 230, 38, 0.40) 111.94%, rgba(250, 255, 0, 0.00) 158.87%);'
       },
       colors: {
-        'bgDark': '#111111',
-        'bgDarkSecond': '#222222',
-        'bgWhite': '#f8f8f8',
+        'bgLight': '#ffffff',
+        'bgDark': '#000000',
+        'opacityLight': '#00000010',
+        'opacityDark': '#ffffff10',
+        'textDark': '#E7E9EA',
+        'textLight': '#0F1419',
+        'primary': '#07C160',
       },
       animation: {
         "meteor-effect": "meteor 5s linear infinite",
@@ -42,9 +46,6 @@ module.exports = {
       fontFamily: {
         serif: ['Noto Serif SC', 'serif'],
         zhengwen: ['Optima-Regular,Optima', 'PingFangSC-light', 'PingFangTC-light', 'PingFang SC', "Cambria", 'Cochin', 'Georgia', 'Times', 'Times New Roma']
-      },
-      borderColor: {
-        DEFAULT: '#00000010',
       },
     },
   },

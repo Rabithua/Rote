@@ -80,17 +80,17 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className=" bg-white w-full h-dvh">
+    <div className=" bg-bgLight text-textLight w-full h-dvh dark:bg-bgDark dark:text-textDark">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
-          <div className=" sticky top-0 duration-300 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r  flex-col gap-4 items-center justify-center">
+          <div className=" sticky top-0 duration-300 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-center justify-center">
             {icons.map((icon, index) => {
               return (
                 <Link key={`leftLinks_${index}`} to={icon.link}>
                   <div
-                    className={` hover:bg-[#00000010] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
+                    className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
                       window.location.pathname.includes(icon.link)
-                        ? " bg-[#00000010]"
+                        ? " bg-[#00000010] dark:bg-[#ffffff10]"
                         : ""
                     } `}
                   >
@@ -103,7 +103,7 @@ function LayoutDashboard() {
               );
             })}
             <div
-              className=" absolute bottom-8 flex cursor-pointer duration-300 sm:hidden gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010]"
+              className=" absolute bottom-8 flex cursor-pointer duration-300 sm:hidden gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010] dark:hover:bg-[#ffffff10]"
               onClick={changeLeftNavVb}
             >
               <div className=" w-8 h-8 p-1 shrink-0 text-base">
