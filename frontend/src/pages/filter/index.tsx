@@ -21,14 +21,14 @@ function TagsBlock({ setLocationState }: any) {
     ];
   }
   return (
-    <div className=" bg-bgLight p-4 font-semibold" id="top">
+    <div className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold" id="top">
       <div className=" flex items-center flex-wrap gap-2 my-2">
         包含标签：
         {location.state?.tags.length > 0
           ? location.state?.tags.map((tag: any, index: any) => {
               return (
                 <div
-                  className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-[#00000010] duration-300 hover:scale-95"
+                  className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95"
                   key={`tag_${index}`}
                 >
                   {tag}
@@ -54,7 +54,7 @@ function TagsBlock({ setLocationState }: any) {
                     });
                   }}
                 >
-                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px]  duration-300 hover:scale-95">
+                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] dark:border-opacityDark duration-300 hover:scale-95">
                     {tag}
                   </div>
                 </Link>
