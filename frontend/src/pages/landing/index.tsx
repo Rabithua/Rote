@@ -128,7 +128,7 @@ function Landing() {
               return (
                 <div key={"link-" + index}>
                   <Link to={profile && item.href ? "/home" : item.href}>
-                    <span className=" no-underline hover:text-[#07c160] active:scale-95 duration-300 after:content-['⤴']">
+                    <span className=" no-underline hover:text-[#07c160] active:scale-95 duration-300">
                       {profile && item.href === "/login"
                         ? t(`dashboard`)
                         : t(`linksItems.${index}`)}

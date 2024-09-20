@@ -227,10 +227,10 @@ function Login() {
   }, []);
 
   return (
-    <div className="h-dvh w-full dark:bg-black bg-gray-100 relative flex items-center justify-center">
+    <div className="h-dvh w-full dark:bg-bgDark bg-bgLight relative flex items-center justify-center">
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center "></div>
-      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-bgLight dark:bg-bgDark dark:bg-bgDarkSecond w-80 dark:border-bgDarkSecond dark:text-white border rounded-lg flex flex-col gap-2 pb-10 z-10">
+      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-opacityLight dark:bg-opacityDark w-80 dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
         {!checkStatusMsg ? (
           <>
             {profile ? (
@@ -365,15 +365,11 @@ function Login() {
             )}
             <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
               <Link to="/explore">
-                <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
-                  探索
-                </div>
+                <div className=" hover:opacity-60 duration-300">探索</div>
               </Link>
               <span className=" px-2">/</span>
               <Link to="/">
-                <div className=" after:content-['⤴'] hover:text-gray-500 duration-300">
-                  主页
-                </div>
+                <div className=" hover:opacity-60 duration-300">主页</div>
               </Link>
             </div>
           </>
