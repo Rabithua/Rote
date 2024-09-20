@@ -45,10 +45,6 @@
     @apply opacity-0;
     @apply cursor-pointer
   }
-
-  .attachmentImg {
-    @apply bg-slate-50;
-  }
 }
 
 .ProseMirror {

@@ -88,7 +88,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
           className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark  w-fit min-w-40 max-w-full ${
             tagsShow ? "" : "hidden"
           }`}
-          value={rote.tags}
+          value={newRote.tags}
           placeholder="标签"
           onChange={handleTagsChange}
           options={tags}
@@ -108,12 +108,12 @@ function RoteInputModel({ rote, submitEdit }: any) {
           <Tooltip placement="bottom" title={"置顶"}>
             <PushpinOutlined
               className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
-                rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
+                newRote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
                 setNewRote({
-                  ...rote,
-                  pin: !rote.pin,
+                  ...newRote,
+                  pin: !newRote.pin,
                 });
               }}
             />
@@ -121,12 +121,12 @@ function RoteInputModel({ rote, submitEdit }: any) {
           <Tooltip placement="bottom" title={"归档"}>
             <InboxOutlined
               className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
-                rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
+                newRote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
                 setNewRote({
-                  ...rote,
-                  archived: !rote.archived,
+                  ...newRote,
+                  archived: !newRote.archived,
                 });
               }}
             />
