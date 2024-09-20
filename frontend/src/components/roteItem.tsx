@@ -426,7 +426,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
                 return (
                   <PhotoView key={`files_${index}`} src={file.url}>
                     <img
-                      className={` attachmentImg ${
+                      className={`${
                         rote.attachments.length % 3 === 0
                           ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
                           : rote.attachments.length % 2 === 0
