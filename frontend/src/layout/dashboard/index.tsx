@@ -83,7 +83,7 @@ function LayoutDashboard() {
     <div className=" bg-bgLight text-textLight w-full h-dvh dark:bg-bgDark dark:text-textDark">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
-          <div className=" sticky top-0 duration-300 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-center justify-center">
+          <div className=" sticky top-0 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-center justify-center">
             {icons.map((icon, index) => {
               return (
                 <Link key={`leftLinks_${index}`} to={icon.link}>
@@ -116,7 +116,7 @@ function LayoutDashboard() {
           </div>
         ) : (
           <div
-            className=" sm:hidden active:scale-95 z-10 fixed bottom-8 left-0 px-4 py-2 rounded-r-md bg-[#ffffff90] backdrop-blur-3xl text-black"
+            className=" sm:hidden active:scale-95 z-10 fixed bottom-8 left-0 px-4 py-2 rounded-r-md bg-bgDark dark:bg-bgLight text-bgLight dark:text-bgDark"
             onClick={changeLeftNavVb}
           >
             <MenuUnfoldOutlined />
