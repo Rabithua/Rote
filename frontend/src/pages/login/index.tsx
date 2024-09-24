@@ -5,7 +5,7 @@ import { useProfile, useProfileDispatch } from "@/state/profile";
 import { useRotesDispatch } from "@/state/rotes";
 import { useTags, useTagsDispatch } from "@/state/tags";
 import { UserOutlined } from "@ant-design/icons";
-import { Avatar, Input, message } from "antd";
+import { Avatar, Input } from "antd";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
