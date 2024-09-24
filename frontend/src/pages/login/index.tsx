@@ -230,7 +230,7 @@ function Login() {
     <div className="h-dvh w-full dark:bg-bgDark bg-bgLight relative flex items-center justify-center">
       {/* Radial gradient for the container to give a faded look */}
       <div className="absolute pointer-events-none inset-0 flex items-center justify-center "></div>
-      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 bg-opacityLight dark:bg-opacityDark w-80 dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
+      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 w-80 dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
         {!checkStatusMsg ? (
           <>
             {profile ? (
