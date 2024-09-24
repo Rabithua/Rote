@@ -1,27 +1,25 @@
-import { Avatar, Image, Select, Tooltip } from "antd";
-import { cloneDeep } from "lodash";
+import { apiAddRote, apiUploadFiles } from "@/api/rote/main";
+import defaultImage from "@/assets/img/defaultImage.svg";
+import Uploader from "@/components/uploader";
+import mainJson from "@/json/main.json";
+import { useProfile } from "@/state/profile";
+import { useRotesDispatch } from "@/state/rotes";
+import { useTags } from "@/state/tags";
 import {
   CloseOutlined,
   InboxOutlined,
   PushpinOutlined,
   SendOutlined,
-  TagsOutlined,
   UserOutlined,
 } from "@ant-design/icons";
+import { Avatar, Image, Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
+import { cloneDeep } from "lodash";
 import { useState } from "react";
-import defaultImage from "@/assets/img/defaultImage.svg";
-import Uploader from "@/components/uploader";
-import mainJson from "@/json/main.json";
-import { apiAddRote, apiUploadFiles } from "@/api/rote/main";
 import toast from "react-hot-toast";
-import { useTags } from "@/state/tags";
-import { useRotesDispatch } from "@/state/rotes";
-import { useProfile } from "@/state/profile";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
-  const [tagsShow, setTagsShow] = useState(false);
   const tags = useTags();
   const [fileList, setFileList] = useState([]) as any;
   const [editType, setEditType] = useState("default");
@@ -118,7 +116,7 @@ function RoteInputSimple() {
       try {
         const formData = new FormData();
         fileList.forEach((obj: any) => {
-          formData.append("file", obj.file);
+          formData.append("images", obj.file);
         });
         apiUploadFiles(formData, rote.id).then((res) => {
           toast.success("附件上传成功", {
@@ -149,6 +147,44 @@ function RoteInputSimple() {
     }
   }
 
+  function handlePaste(e: any) {
+    const items = e.clipboardData?.items;
+
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1) {
+        const blob = items[i].getAsFile();
+        if (blob) {
+          // 创建一个新的 File 对象
+          const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+            type: "image/png",
+          });
+
+          setFileList([...fileList, { file, src: URL.createObjectURL(file) }]);
+        }
+      }
+    }
+  }
+
+  function handleDrop<T extends HTMLElement>(e: React.DragEvent<T>) {
+    e.preventDefault();
+    const files = e.dataTransfer.files;
+
+    if (files.length > 0) {
+      Array.from(files).forEach((file) => {
+        if (file.type.startsWith("image/")) {
+          setFileList((prevFileList: any) => [
+            ...prevFileList,
+            { file, src: URL.createObjectURL(file) },
+          ]);
+        } else {
+          console.warn(`File ${file.name} is not an image and was skipped.`);
+        }
+      });
+    }
+  }
+
   return (
     <div className=" cursor-default bg-bgLight dark:bg-bgDark w-full p-5 flex gap-5 border-b border-opacityLight dark:border-opacityDark">
       <Avatar
@@ -173,6 +209,9 @@ function RoteInputSimple() {
               content: e.currentTarget.value,
             });
           }}
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
           onKeyDown={handleNormalINputKeyDown}
         />
         {process.env.REACT_APP_ALLOW_UPLOAD_FILE === "true" && (
@@ -185,7 +224,7 @@ function RoteInputSimple() {
               {fileList.map((file: any, index: number) => {
                 return (
                   <div
-                    className=" w-20 h-20 rounded-lg bg-bgLight border border-opacityLight dark:border-opacityDark overflow-hidden relative"
+                    className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
                     key={`filePicker_${index}`}
                   >
                     <Image
@@ -212,16 +251,14 @@ function RoteInputSimple() {
         <Select
           mode="tags"
           variant="borderless"
-          className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark w-fit min-w-40 max-w-full ${
-            tagsShow ? "" : "hidden"
-          }`}
+          className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark w-fit min-w-40 max-w-full `}
           value={rote.tags}
           placeholder="标签"
           onChange={handleTagsChange}
           options={tags}
         />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
-          <Tooltip placement="bottom" title={"标签"}>
+          {/* <Tooltip placement="bottom" title={"标签"}>
             <TagsOutlined
               onClick={() => {
                 setTagsShow(!tagsShow);
@@ -230,7 +267,7 @@ function RoteInputSimple() {
                 tagsShow ? " bg-opacityLight dark:bg-opacityDark" : ""
               }`}
             />
-          </Tooltip>
+          </Tooltip> */}
           {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-opacityLight dark:bg-opacityDark rounded-md" /> */}
           <Tooltip placement="bottom" title={"置顶"}>
             <PushpinOutlined

@@ -3,13 +3,13 @@ import {
   SaveOutlined,
   ThunderboltOutlined,
 } from "@ant-design/icons";
+import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
 import { useState } from "react";
 import QRCode from "react-qr-code";
-import { saveAs } from "file-saver";
 
-import toast from "react-hot-toast";
 import moment from "moment";
+import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
   const themes = [
@@ -172,7 +172,11 @@ function RoteShareCard({ rote }: any) {
                       ? " w-full max-w-[500px] rounded-2xl"
                       : "w-[calc(1/3*100%-2.6667px)] aspect-1"
                   } object-cover grow bg-opacityLight dark:bg-opacityDark`}
-                  src={file.url + "?" + new Date().getTime()}
+                  src={
+                    file.compressUrl
+                      ? file.compressUrl + "?" + new Date().getTime()
+                      : file.url + "?" + new Date().getTime()
+                  }
                   alt=""
                   crossOrigin="anonymous"
                 />

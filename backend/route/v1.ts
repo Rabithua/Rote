@@ -1,4 +1,7 @@
+import { User, UserSwSubScription } from "@prisma/client";
 import express from "express";
+import formidable from "formidable";
+import passport from "passport";
 import {
   addSubScriptionToUser,
   changeUserPassword,
@@ -32,20 +35,20 @@ import {
   statistics,
 } from "../utils/dbMethods";
 import prisma from "../utils/prisma";
-import { User, UserSwSubScription } from "@prisma/client";
 import webpush from "../utils/webpush";
-import upload from "../utils/upload";
-import passport from "passport";
-import multer from "multer";
+
+import { randomUUID } from "crypto";
+import moment from "moment";
+import { UploadResult } from "../types/main";
 import {
   bodyTypeCheck,
   isAuthenticated,
   isAuthor,
   sanitizeUserData,
 } from "../utils/main";
-import useOpenKey from "./useOpenKey";
+import { r2uploadhandler } from "../utils/r2";
 import { RegisterDataZod, passwordChangeZod } from "../utils/zod";
-import moment from "moment";
+import useOpenKey from "./useOpenKey";
 
 let routerV1 = express.Router();
 
@@ -593,44 +596,56 @@ routerV1.delete("/oneRote", isAuthor, (req, res) => {
     });
 });
 
-routerV1.post(
-  "/upload",
-  isAuthenticated,
-  upload.array("file"),
-  async (req: any, res) => {
-    const user = req.user as User;
-    const roteid = req.query.roteid || undefined;
-    console.log(req.files);
-    if (!req.files) {
-      res.status(401).send({
-        code: 1,
-        msg: "error",
-        data: "Need files!",
-      });
-      return;
+routerV1.post("/upload", isAuthenticated, async (req, res) => {
+  const user = req.user as User;
+  const roteid = req.query.roteid as string | undefined;
+
+  const form = formidable({
+    multiples: true,
+    maxFileSize: 5 * 1024 * 1024, // 5MB limit
+    maxFiles: 9,
+    filename: () => {
+      return `${randomUUID()}`;
+    },
+  });
+
+  const uploadResults: UploadResult[] = [];
+
+  try {
+    const [fields, files] = await form.parse(req);
+    if (!files.images) {
+      return res.status(400).json({ error: "No images uploaded" });
     }
-    let newFiles = req.files.map((file: any, index: any) => {
-      file.location = `https://${process.env.R2_URL_PREFIX}/${file.key}`;
-      return file;
+    const imageFiles = Array.isArray(files.images)
+      ? files.images
+      : [files.images];
+
+    for (const file of imageFiles) {
+      let r2_upload_result = await r2uploadhandler(file);
+
+      if (r2_upload_result !== null) {
+        uploadResults.push(r2_upload_result);
+      }
+    }
+
+    const data = await createAttachments(user.id, roteid, uploadResults);
+
+    res.status(200).json({
+      code: 0,
+      msg: "ok",
+      data,
     });
-    createAttachments(user.id, roteid, newFiles)
-      .then((data) => {
-        res.send({
-          code: 0,
-          msg: "ok",
-          data,
-        });
-      })
-      .catch(async (e) => {
-        res.status(401).send({
-          code: 1,
-          msg: "error",
-          data: e,
-        });
-        await prisma.$disconnect();
-      });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({
+      code: 1,
+      msg: "error",
+      data: "Upload or database operation failed",
+    });
+  } finally {
+    await prisma.$disconnect();
   }
-);
+});
 
 routerV1.post("/login/password", function (req, res, next) {
   passport.authenticate("local", (err: any, user: User, data: any) => {
@@ -1092,17 +1107,6 @@ routerV1.post("/change/password", isAuthenticated, (req, res) => {
         data: e.message,
       });
     });
-});
-
-// 文件上传错误处理
-routerV1.use((error: any, req: any, res: any, next: any) => {
-  if (error instanceof multer.MulterError) {
-    return res.status(401).send({
-      code: 1,
-      msg: error.code,
-      data: null,
-    });
-  }
 });
 
 routerV1.use("/openKey", useOpenKey);

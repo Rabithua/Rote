@@ -1,3 +1,4 @@
+import { UploadResult } from "../types/main";
 import prisma from "./prisma";
 var crypto = require("crypto");
 
@@ -651,15 +652,16 @@ export async function getOneOpenKey(id: string): Promise<any> {
 export async function createAttachments(
   userid: any,
   roteid: any,
-  data: any
+  data: UploadResult[]
 ): Promise<any> {
   console.log(userid);
-  const attachments = data.map((e: any) => {
+  const attachments = data.map((e: UploadResult) => {
     return {
       userid,
       roteid,
-      url: e.location,
-      details: e,
+      url: e.url,
+      compressUrl: e.compressUrl,
+      details: e.details,
       storage: "R2",
     };
   });

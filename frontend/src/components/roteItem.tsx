@@ -3,8 +3,8 @@ import {
   DownOutlined,
   EditOutlined,
   EllipsisOutlined,
-  InboxOutlined,
   GlobalOutlined,
+  InboxOutlined,
   PicCenterOutlined,
   PushpinOutlined,
   SaveOutlined,
@@ -13,22 +13,22 @@ import {
 } from "@ant-design/icons";
 import Linkify from "react-linkify";
 
-import { PhotoProvider, PhotoView } from "react-photo-view";
-import "react-photo-view/dist/react-photo-view.css";
-import { Avatar, Modal, Popover, Tooltip } from "antd";
-import { formatTimeAgo } from "@/utils/main";
-import mainJson from "@/json/main.json";
-import { useEffect, useState } from "react";
-import moment from "moment";
-import RoteInputModel from "./roteInputModel";
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
-import toast from "react-hot-toast";
-import { Link } from "react-router-dom";
-import { useRotesDispatch } from "@/state/rotes";
+import mainJson from "@/json/main.json";
+import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
+import { useRotesDispatch } from "@/state/rotes";
+import { formatTimeAgo } from "@/utils/main";
+import { Avatar, Modal, Popover, Tooltip } from "antd";
+import moment from "moment";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { PhotoProvider, PhotoView } from "react-photo-view";
+import "react-photo-view/dist/react-photo-view.css";
+import { Link } from "react-router-dom";
+import RoteInputModel from "./roteInputModel";
 import RoteShareCard from "./roteShareCard";
-import { useArchivedRotesDispatch } from "@/state/archivedRotes";
 
 const { roteContentExpandedLetter } = mainJson;
 
@@ -435,7 +435,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
                           ? " w-full max-w-[500px] rounded-2xl"
                           : "w-[calc(1/3*100%-2.6667px)] aspect-1"
                       } object-cover grow bg-opacityLight dark:bg-opacityDark`}
-                      src={file.url}
+                      src={file.compressUrl || file.url}
                       loading="lazy"
                       alt=""
                     />

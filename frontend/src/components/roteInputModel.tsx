@@ -1,15 +1,14 @@
-import { Select, Tooltip } from "antd";
+import mainJson from "@/json/main.json";
+import { useTags } from "@/state/tags";
 import {
   InboxOutlined,
   PushpinOutlined,
   SendOutlined,
-  TagsOutlined,
 } from "@ant-design/icons";
+import { Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useEffect, useState } from "react";
-import mainJson from "@/json/main.json";
 import toast from "react-hot-toast";
-import { useTags } from "@/state/tags";
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputModel({ rote, submitEdit }: any) {
@@ -85,25 +84,13 @@ function RoteInputModel({ rote, submitEdit }: any) {
         <Select
           mode="tags"
           variant="borderless"
-          className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark  w-fit min-w-40 max-w-full ${
-            tagsShow ? "" : "hidden"
-          }`}
+          className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark  w-fit min-w-40 max-w-full `}
           value={newRote.tags}
           placeholder="标签"
           onChange={handleTagsChange}
           options={tags}
         />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
-          <Tooltip placement="bottom" title={"标签"}>
-            <TagsOutlined
-              onClick={() => {
-                setTagsShow(!tagsShow);
-              }}
-              className={` cursor-pointer text-xl p-2 hover:bg-opacityLight dark:hover:bg-opacityDark rounded-md ${
-                tagsShow ? " bg-opacityLight dark:bg-opacityDark" : ""
-              }`}
-            />
-          </Tooltip>
           {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-opacityLight dark:bg-opacityDark rounded-md" /> */}
           <Tooltip placement="bottom" title={"置顶"}>
             <PushpinOutlined

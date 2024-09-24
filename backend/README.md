@@ -9,18 +9,12 @@ npm v9.5.1
 npm run mongoInit
 ```
 
-### 将 schema.prisma 应用到数据库
-
-```
-npx prisma db push
-```
-
 ## 其他操作
 
 ### 更新 schema.prisma 后如何操作
 
 ```
-npx prisma db push
+npm run prisma-update
 ```
 
 ### 构建镜像

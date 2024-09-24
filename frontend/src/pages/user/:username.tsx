@@ -1,17 +1,17 @@
-import { apiGetUserInfoByUsername } from "@/api/user/main";
-import { UserOutlined, GlobalOutlined } from "@ant-design/icons";
-import { Avatar } from "antd";
-import moment from "moment";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { apiGetUserPublicRote } from "@/api/rote/main";
-import { useTempRotes, useTempRotesDispatch } from "@/state/tempRotes";
-import Linkify from "react-linkify";
-import RoteList from "@/components/roteList";
+import { apiGetUserInfoByUsername } from "@/api/user/main";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
-import { Helmet } from "react-helmet-async";
 import NavHeader from "@/components/navHeader";
+import RoteList from "@/components/roteList";
+import { useTempRotes, useTempRotesDispatch } from "@/state/tempRotes";
+import { GlobalOutlined, UserOutlined } from "@ant-design/icons";
+import { Avatar } from "antd";
+import moment from "moment";
+import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
+import Linkify from "react-linkify";
+import { useNavigate, useParams } from "react-router-dom";
 
 function UserPage() {
   const navigate = useNavigate();

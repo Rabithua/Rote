@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "formulahendry.auto-close-tag",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "Prisma.prisma"
+  ]
+}

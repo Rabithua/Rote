@@ -81,16 +81,18 @@ model Rote {
 }
 
 model Attachment {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  url       String
-  userid    String?  @db.ObjectId
-  roteid    String?  @db.ObjectId
-  storage   String
-  details   Json
-  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
-  user      User?    @relation(fields: [userid], references: [id])
-  rote      Rote?    @relation(fields: [roteid], references: [id])
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  url         String
+  // 压缩后的图片地址
+  compressUrl String?  @default("")
+  userid      String?  @db.ObjectId
+  roteid      String?  @db.ObjectId
+  storage     String
+  details     Json
+  createdAt   DateTime @default(now()) // 添加createdAt字段并使用@default指令
+  updatedAt   DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  user        User?    @relation(fields: [userid], references: [id])
+  rote        Rote?    @relation(fields: [roteid], references: [id])
 }
 
 model UserReaction {
