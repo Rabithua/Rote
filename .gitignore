@@ -2,7 +2,7 @@
 node_modules
 ._*
 data
-
+.DS_Store
 mongodb
 
 docker-compose.yml
@@ -14,3 +14,7 @@ frontend/public/sitemap.xml
 frontend/package-lock.json
 
 backend/package-lock.json
+
+backend/scripts/compressed
+
+backend/scripts/uploads
