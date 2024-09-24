@@ -1,4 +1,5 @@
 import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
+import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
 import OpenKeyItem from "@/components/openKey";
 import { useOpenKeys, useOpenKeysDispatch } from "@/state/openKeys";
 import { useProfile, useProfileDispatch } from "@/state/profile";
@@ -12,9 +13,8 @@ import { Avatar, Divider, Input, Modal, Typography } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
-import toast from "react-hot-toast";
 import AvatarEditor from "react-avatar-editor";
-import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
+import toast from "react-hot-toast";
 import Linkify from "react-linkify";
 
 function ProfilePage() {
@@ -94,7 +94,7 @@ function ProfilePage() {
           try {
             const formData = new FormData();
             formData.append(
-              "file",
+              "images",
               new File([blob], "cropped_image.png", {
                 type: "image/png",
               })
@@ -103,7 +103,7 @@ function ProfilePage() {
               console.log(res);
               setEditProfile({
                 ...editProfile,
-                avatar: res.data.data[0].url,
+                avatar: res.data.data[0].compressUrl || res.data.data[0].url,
               });
               setAvatarUploading(false);
               setIsAvatarModalOpen(false);
@@ -144,11 +144,11 @@ function ProfilePage() {
 
     if (selectedFile) {
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      formData.append("images", selectedFile);
 
       apiUploadAvatar(formData).then((res) => {
         console.log(res);
-        let url = res.data.data[0].url;
+        let url = res.data.data[0].compressUrl || res.data.data[0].url;
 
         apiSaveProfile({
           cover: url,
