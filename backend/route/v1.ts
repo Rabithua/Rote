@@ -602,8 +602,9 @@ routerV1.post("/upload", isAuthenticated, async (req, res) => {
 
   const form = formidable({
     multiples: true,
-    maxFileSize: 5 * 1024 * 1024, // 5MB limit
+    maxFileSize: 20 * 1024 * 1024, // 5MB limit
     maxFiles: 9,
+    maxTotalFileSize: 100 * 1024 * 1024, // 100MB limit
     filename: () => {
       return `${randomUUID()}`;
     },
