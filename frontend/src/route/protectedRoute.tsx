@@ -1,8 +1,8 @@
 import { useProfile } from "@/state/profile";
-import { Navigate } from "react-router-dom";
 import MobileDetect from "mobile-detect";
-import toast from "react-hot-toast";
 import { useEffect } from "react";
+import toast from "react-hot-toast";
+import { Navigate } from "react-router-dom";
 
 export const ProtectedRoute = ({ children }: any) => {
   const profile = useProfile();
@@ -36,6 +36,7 @@ export const ProtectedRoute = ({ children }: any) => {
   }, []);
 
   if (!profile) {
+    localStorage.removeItem("profile");
     return <Navigate to="/login" />;
   }
   return children;

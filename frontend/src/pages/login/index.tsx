@@ -79,6 +79,7 @@ function Login() {
           type: "updateProfile",
           profile: res.data.data,
         });
+        localStorage.setItem("profile", JSON.stringify(res.data.data));
         await refreshTags();
         // navigate("/home");
       })
@@ -152,6 +153,7 @@ function Login() {
           type: "freshAll",
           rotes: [],
         });
+        localStorage.removeItem("profile");
       })
       .catch((err) => {
         console.log(err);
