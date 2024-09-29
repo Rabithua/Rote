@@ -2,7 +2,13 @@
 
 import { apiGetMyTags } from "@/api/rote/main";
 import { Tag, Tags, TagsAction } from "@/types/main";
-import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useReducer,
+} from "react";
 
 const TagsContext = createContext<Tags | null>(null);
 const TagsDispatchContext = createContext<React.Dispatch<TagsAction> | null>(
@@ -10,7 +16,29 @@ const TagsDispatchContext = createContext<React.Dispatch<TagsAction> | null>(
 );
 
 export function TagsProvider({ children }: { children: ReactNode }) {
-  const [tags, dispatch] = useReducer(tagsReducer, initialTags);
+  const [tags, dispatch] = useReducer(tagsReducer, []);
+
+  useEffect(() => {
+    async function fetchTags() {
+      try {
+        const res = await apiGetMyTags();
+        dispatch({
+          type: "freshAll",
+          tags: res.data.data.map((item: any) => {
+            return {
+              value: item,
+              label: item,
+            };
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to fetch tags:", err);
+        dispatch({ type: "freshAll", tags: [] });
+      }
+    }
+
+    fetchTags();
+  }, []);
 
   return (
     <TagsContext.Provider value={tags}>
@@ -56,16 +84,3 @@ function tagsReducer(tags: Tags, action: TagsAction): Tags {
     }
   }
 }
-
-const initialTags = await apiGetMyTags()
-  .then((res) => {
-    return res.data.data.map((item: any) => {
-      return {
-        value: item,
-        label: item,
-      };
-    });
-  })
-  .catch((err: any) => {
-    return [];
-  });

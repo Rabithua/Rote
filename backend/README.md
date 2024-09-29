@@ -29,6 +29,11 @@ docker build -t rotebackend:latest .
 
 ```
 docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .
+
+docker buildx build --platform linux/amd64,linux/arm64 \
+  -t rabithua/rotebackend:latest \
+  -t rabithua/rotebackend:0.2 \
+  --push .
 ```
 
 ## 注意事项

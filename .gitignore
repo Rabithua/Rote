@@ -4,6 +4,8 @@ node_modules
 data
 .DS_Store
 mongodb
+package-lock.json
+bun.lockb
 
 docker-compose.yml
 
@@ -11,9 +13,7 @@ frontend/build
 
 frontend/public/sitemap.xml
 
-frontend/package-lock.json
 
-backend/package-lock.json
 
 backend/scripts/compressed
 
