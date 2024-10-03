@@ -37,6 +37,7 @@ async function r2uploadhandler(file: formidable.File) {
   // 使用 sharp 生成 WebP 版本
   const webpBuffer = await sharp(buffer)
     .webp({ quality: 20 }) // 你可以调整质量参数
+    .withMetadata()
     .toBuffer();
 
   // 上传 WebP 文件
