@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const instance = axios.create({
-  timeout: 20000,
+  timeout: 60000,
   baseURL:
     process.env.NODE_ENV === "production"
       ? process.env.REACT_APP_BASEURL_PRD
