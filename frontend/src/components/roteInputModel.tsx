@@ -94,7 +94,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
           {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-opacityLight dark:bg-opacityDark rounded-md" /> */}
           <Tooltip placement="bottom" title={"置顶"}>
             <PushpinOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+              className={` cursor-pointer text-xl p-2 rounded-md ${
                 newRote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -107,7 +107,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
           </Tooltip>
           <Tooltip placement="bottom" title={"归档"}>
             <InboxOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+              className={` cursor-pointer text-xl p-2 rounded-md ${
                 newRote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -119,7 +119,8 @@ function RoteInputModel({ rote, submitEdit }: any) {
             />
           </Tooltip>
           <Select
-            defaultValue="私密"
+            defaultValue={rote.state == "private" ? "私密" : "公开"}
+            defaultActiveFirstOption
             variant="borderless"
             style={{ width: 80 }}
             className=" bg-opacityLight dark:bg-opacityDark rounded-md"

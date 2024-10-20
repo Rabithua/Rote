@@ -263,7 +263,7 @@ function RoteInputSimple() {
               onClick={() => {
                 setTagsShow(!tagsShow);
               }}
-              className={` cursor-pointer text-xl p-2 hover:bg-opacityLight dark:hover:bg-opacityDark rounded-md ${
+              className={` cursor-pointer text-xl p-2 rounded-md ${
                 tagsShow ? " bg-opacityLight dark:bg-opacityDark" : ""
               }`}
             />
@@ -271,7 +271,7 @@ function RoteInputSimple() {
           {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-opacityLight dark:bg-opacityDark rounded-md" /> */}
           <Tooltip placement="bottom" title={"置顶"}>
             <PushpinOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+              className={` cursor-pointer text-xl p-2 rounded-md  ${
                 rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -284,7 +284,7 @@ function RoteInputSimple() {
           </Tooltip>
           <Tooltip placement="bottom" title={"归档"}>
             <InboxOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+              className={` cursor-pointer text-xl p-2 rounded-md ${
                 rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
