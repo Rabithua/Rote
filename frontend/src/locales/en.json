@@ -22,6 +22,283 @@
         "Download",
         "Donate"
       ]
+    },
+    "mine": {
+      "leftNavBar": {
+        "home": "Home",
+        "explore": "Explore",
+        "archived": "Archive",
+        "profile": "Profile",
+        "experiment": "Experiment",
+        "fold": "Collapse",
+        "login": "Login"
+      },
+      "roteTypes": {
+        "Rote": "Note",
+        "Article": "Article"
+      }
+    },
+    "login": {
+      "validation": {
+        "usernameRequired": "Username is required",
+        "usernameMaxLength": "Username cannot exceed 20 characters",
+        "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
+        "usernameConflict": "This username conflicts with system routes",
+        "passwordRequired": "Password is required",
+        "passwordMaxLength": "Password cannot exceed 30 characters",
+        "emailRequired": "Email is required",
+        "emailMaxLength": "Email cannot exceed 30 characters",
+        "emailFormat": "Invalid email format",
+        "nicknameRequired": "Nickname is required",
+        "nicknameMaxLength": "Nickname cannot exceed 20 characters"
+      },
+      "messages": {
+        "loggingIn": "Logging in...",
+        "loginSuccess": "Login successful",
+        "backendDown": "Backend service is unavailable",
+        "checkDatabase": "Database connection failed",
+        "checkBackend": "Backend service is not responding",
+        "loggingOut": "Logging out...",
+        "logoutSuccess": "Logout successful",
+        "registering": "Registering...",
+        "registerSuccess": "Registration successful"
+      },
+      "fields": {
+        "username": "Username",
+        "password": "Password",
+        "email": "Email",
+        "nickname": "Nickname"
+      },
+      "buttons": {
+        "login": "Login",
+        "register": "Register",
+        "back": "Back",
+        "toHome": "Go to Home",
+        "logout": "Logout"
+      },
+      "nav": {
+        "explore": "Explore",
+        "home": "Home"
+      },
+      "error": {
+        "backendIssue": "Backend service issue",
+        "dockerDeployment": "Using Docker deployment, backend container may take a few minutes to build. Please refresh the page later."
+      },
+      "title": {
+        "login": "Login",
+        "register": "Register"
+      }
+    },
+    "home": {
+      "statistics": "Statistics"
+    },
+    "profile": {
+      "editProfile": "Edit Profile",
+      "noDescription": "This person is lazy and hasn't left any description yet...",
+      "registerTime": "Register Time:",
+      "openKeyDescription": "OpenKey allows easy access to permission-specific features. Properly allocate permissions to avoid unnecessary troubles from OpenKey leakage.",
+      "loading": "Loading...",
+      "noOpenKey": "No OpenKey yet, create one?",
+      "addOpenKey": "Add an OpenKey",
+      "email": "Email",
+      "username": "Username",
+      "nickname": "Nickname",
+      "description": "Description",
+      "enterNickname": "Enter your nickname...",
+      "enterDescription": "Enter your description...",
+      "editing": "Editing...",
+      "save": "Save",
+      "cropAvatar": "Crop Avatar",
+      "uploading": "Uploading...",
+      "done": "Done",
+      "creating": "Creating...",
+      "createSuccess": "Created successfully",
+      "createFailed": "Creation failed",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
+      "editSuccess": "Edit successful",
+      "editFailed": "Edit failed"
+    },
+    "rote": {
+      "loading": "Loading...",
+      "authorInfo": {
+        "nickname": "Nickname",
+        "username": "Username"
+      }
+    },
+    "user": {
+      "loading": "Loading...",
+      "noDescription": "This person is lazy and hasn't left any description yet...",
+      "registerTime": "Register Time: ",
+      "publicNotes": "Public Notes",
+      "helmet": {
+        "loading": "loading...",
+        "defaultDesc": "rote.ink"
+      }
+    },
+    "filter": {
+      "includeTags": "Including Tags:",
+      "relatedTags": "Related Tags:",
+      "none": "NONE"
+    },
+    "explore": {
+      "title": "Explore"
+    },
+    "experiment": {
+      "title": "Experiment",
+      "description": "Experimental features that might make rote better to use 🤩",
+      "exportData": {
+        "title": "Export Data",
+        "description": "Export complete data in JSON format for use elsewhere.",
+        "noteCount": "Notes Count",
+        "attachmentCount": "Attachments Count",
+        "downloadJson": "Download JSON Data"
+      },
+      "importData": {
+        "title": "Data Import",
+        "description": "Import data from other note platforms."
+      },
+      "serviceWorker": {
+        "title": "ServiceWorker Notification",
+        "description": "ServiceWorker enables advanced features like background notifications.",
+        "status": "Status:",
+        "serviceId": "Service ID:",
+        "notificationTest": "Test Notification",
+        "permissionProcessing": "Processing permissions...",
+        "complete": "Complete",
+        "sendSuccess": "Sent successfully!",
+        "example": "Usage Example:"
+      }
+    },
+    "archived": {
+      "title": "Archive"
+    }
+  },
+  "error": {
+    "pageNotFound": "Page not found or an error occurred",
+    "pageNotFoundDesc": "Sorry, we couldn't find the page you were looking for"
+  },
+  "components": {
+    "d3": {
+      "heatmap": {
+        "noData": "No HeatMap Data",
+        "notes": "Notes",
+        "daysOfWeek": {
+          "Sun": "Sun",
+          "Mon": "Mon",
+          "Tue": "Tue",
+          "Wed": "Wed",
+          "Thu": "Thu",
+          "Fri": "Fri",
+          "Sat": "Sat"
+        }
+      }
+    },
+    "navBar": {
+      "back": "Back"
+    },
+    "openKey": {
+      "permissions": "Permissions",
+      "example": "Example",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "deleteSuccess": "Delete successful",
+      "deleteFailed": "Delete failed",
+      "copySuccess": "Content copied to clipboard",
+      "copyFailed": "Failed to copy content to clipboard"
+    },
+    "openKeyEditModel": {
+      "selectAll": "Select All",
+      "save": "Save",
+      "saving": "Saving...",
+      "saveSuccess": "Save successful",
+      "saveFailed": "Save failed",
+      "minimumPermission": "At least one permission is required"
+    },
+    "randomRote": {
+      "title": "Random Review"
+    },
+    "roteInputModel": {
+      "contentPlaceholder": "Ctrl + Enter to send",
+      "tagsPlaceholder": "Tags",
+      "pin": "Pin",
+      "archive": "Archive",
+      "send": "Send",
+      "stateOptions": {
+        "private": "Private",
+        "public": "Public"
+      },
+      "error": {
+        "emptyContent": "Content cannot be empty"
+      }
+    },
+    "roteInputSimple": {
+      "contentPlaceholder": "Ctrl + ↵ to send",
+      "tagsPlaceholder": "Tags",
+      "pin": "Pin",
+      "archive": "Archive",
+      "send": "Send",
+      "stateOptions": {
+        "private": "Private",
+        "public": "Public"
+      },
+      "uploading": "Uploading...",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
+      "sending": "Sending...",
+      "sendSuccess": "Send successful",
+      "sendFailed": "Send failed",
+      "error": {
+        "emptyContent": "Content cannot be empty"
+      }
+    },
+    "roteItem": {
+      "details": "Details",
+      "pinned": "Pin",
+      "unpinned": "Unpin",
+      "edit": "Edit",
+      "archive": "Archive",
+      "unarchive": "Unarchive",
+      "share": "Share",
+      "delete": "Delete",
+      "expand": "Expand",
+      "tooltips": {
+        "pinned": "Pinned",
+        "unpinned": "Unpinned",
+        "public": "Public",
+        "archived": "Archived",
+        "edited": "Edited at: {{time}}"
+      },
+      "messages": {
+        "sending": "Sending...",
+        "sendSuccess": "Send successful",
+        "sendFailed": "Send failed",
+        "deleting": "Deleting...",
+        "deleteSuccess": "Delete successful",
+        "deleteFailed": "Delete failed",
+        "editing": "Editing...",
+        "editSuccess": "successful",
+        "editFailed": "Edit failed"
+      }
+    },
+    "roteList": {
+      "empty": "Nothing here"
+    },
+    "roteShareCard": {
+      "copyLink": "Copy Link",
+      "save": "Save",
+      "linkCopied": "Link copied to clipboard",
+      "generatingImage": "Generating image...",
+      "imageSaved": "Image saved",
+      "imageGenerationFailed": "Failed to generate image",
+      "elementNotFound": "Element to save not found"
+    },
+    "tagMap": {
+      "noTags": "No tags yet"
+    },
+    "uploader": {
+      "fileLimit": "File count exceeds limit, excess files removed!"
     }
   }
 }

@@ -16,8 +16,10 @@ import { useEffect, useRef, useState } from "react";
 import AvatarEditor from "react-avatar-editor";
 import toast from "react-hot-toast";
 import Linkify from "react-linkify";
+import { useTranslation } from "react-i18next";
 
 function ProfilePage() {
+  const { t } = useTranslation("translation", { keyPrefix: "pages.profile" });
   const inputAvatarRef = useRef(null);
   const inputCoverRef = useRef(null);
   const AvatarEditorRef = useRef(null);
@@ -48,7 +50,7 @@ function ProfilePage() {
   }, []);
 
   function generateOpenKeyFun() {
-    const toastId = toast.loading("创建中...");
+    const toastId = toast.loading(t("creating"));
     apiGenerateOpenKey()
       .then((res: any) => {
         console.log(res);
@@ -56,12 +58,12 @@ function ProfilePage() {
           type: "addOne",
           openKey: res.data.data,
         });
-        toast.success("创建成功", {
+        toast.success(t("createSuccess"), {
           id: toastId,
         });
       })
       .catch(() => {
-        toast.error("创建失败", {
+        toast.error(t("createFailed"), {
           id: toastId,
         });
       });
@@ -107,10 +109,10 @@ function ProfilePage() {
               });
               setAvatarUploading(false);
               setIsAvatarModalOpen(false);
-              toast.success("上传成功");
+              toast.success(t("uploadSuccess"));
             });
           } catch (error) {
-            toast.error("上传失败");
+            toast.error(t("uploadFailed"));
             setAvatarUploading(false);
             console.error("Error uploading image:", error);
           }
@@ -122,7 +124,7 @@ function ProfilePage() {
     setProfileEditing(true);
     apiSaveProfile(editProfile)
       .then((res) => {
-        toast.success("修改成功");
+        toast.success(t("editSuccess"));
         profileDispatch({
           type: "updateProfile",
           profile: res.data.data,
@@ -131,7 +133,7 @@ function ProfilePage() {
         setProfileEditing(false);
       })
       .catch((err) => {
-        toast.error("修改失败");
+        toast.error(t("editFailed"));
         setIsModalOpen(false);
         setProfileEditing(false);
         console.error("Error edit Profile:", err);
@@ -139,7 +141,7 @@ function ProfilePage() {
   }
 
   function changeCover(event: any) {
-    const toastId = toast.loading("上传中...");
+    const toastId = toast.loading(t("uploading"));
     const selectedFile = event.target.files[0];
 
     if (selectedFile) {
@@ -154,7 +156,7 @@ function ProfilePage() {
           cover: url,
         })
           .then((res) => {
-            toast.success("修改成功", {
+            toast.success(t("editSuccess"), {
               id: toastId,
             });
             profileDispatch({
@@ -163,7 +165,7 @@ function ProfilePage() {
             });
           })
           .catch((err) => {
-            toast.error("修改失败", {
+            toast.error(t("editFailed"), {
               id: toastId,
             });
             console.error("Error edit Profile:", err);
@@ -201,7 +203,7 @@ function ProfilePage() {
       <div className=" flex mx-4 h-16">
         <Avatar
           className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-bgLight border-[4px] bg-opacityLight dark:bg-opacityDark text-black shrink-0 sm:block"
-          size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 150 }}
+          size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 120 }}
           icon={<UserOutlined className=" text-[#00000010]" />}
           src={profile?.avatar}
         />
@@ -212,7 +214,7 @@ function ProfilePage() {
           }}
         >
           <EditOutlined />
-          编辑资料
+          {t("editProfile")}
         </div>
       </div>
       <div className=" flex flex-col mx-4 gap-1">
@@ -221,28 +223,27 @@ function ProfilePage() {
         <div className=" text-base ">
           <div className=" aTagStyle break-words whitespace-pre-line">
             <Linkify>
-              {(profile?.description as any) ||
-                "这个人很懒，还没留下任何简介..."}
+              {(profile?.description as any) || t("noDescription")}
             </Linkify>
           </div>
         </div>
-        <div className=" text-base text-gray-500">{`注册时间：${moment
-          .utc(profile?.createdAt)
-          .format("YYYY/MM/DD HH:mm:ss")}`}</div>
+        <div className=" text-base text-gray-500">
+          {t("registerTime")}
+          {moment.utc(profile?.createdAt).format("YYYY/MM/DD HH:mm:ss")}
+        </div>
       </div>
       <Divider />
       <div className=" text-2xl font-semibold m-4">
         OpenKey <br />
         <div className=" font-normal mt-2 text-sm text-gray-500">
-          OpenKey 可以轻易的使用权限指定的功能，合理分配权限，避免 OpenKey
-          泄露带来不必要的麻烦。
+          {t("openKeyDescription")}
         </div>
       </div>
       <div className=" flex flex-col">
         {openKeyLoading ? (
           <div className=" flex justify-center items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
             <LoadingOutlined />
-            <div>加载中...</div>
+            <div>{t("loading")}</div>
           </div>
         ) : (
           <>
@@ -259,16 +260,14 @@ function ProfilePage() {
               className=" cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
             >
               <div className=" break-all mr-auto font-semibold font-mono">
-                {openKeys.length === 0
-                  ? "暂时还没有OpenKey，新建一个？"
-                  : "添加一个OpenKey"}
+                {openKeys.length === 0 ? t("noOpenKey") : t("addOpenKey")}
               </div>
             </div>
           </>
         )}
       </div>
       <Modal
-        title="编辑资料"
+        title={t("editProfile")}
         open={isModalOpen}
         onCancel={onModelCancel}
         maskClosable={true}
@@ -297,7 +296,7 @@ function ProfilePage() {
             />
 
             <Typography.Title className=" mt-2" level={5}>
-              邮箱
+              {t("email")}
             </Typography.Title>
             <Input
               disabled
@@ -306,7 +305,7 @@ function ProfilePage() {
               value={editProfile.email}
             />
             <Typography.Title className=" mt-2" level={5}>
-              用户名
+              {t("username")}
             </Typography.Title>
             <Input
               disabled
@@ -315,10 +314,10 @@ function ProfilePage() {
               value={editProfile.username}
             />
             <Typography.Title className=" mt-2" level={5}>
-              昵称
+              {t("nickname")}
             </Typography.Title>
             <Input
-              placeholder="输入你的昵称..."
+              placeholder={t("enterNickname")}
               className=" text-lg w-full rounded-md font-mono border-[2px]"
               maxLength={20}
               value={editProfile.nickname}
@@ -330,10 +329,10 @@ function ProfilePage() {
               }}
             />
             <Typography.Title className=" mt-2" level={5}>
-              简介
+              {t("description")}
             </Typography.Title>
             <TextArea
-              placeholder="输入你的简介..."
+              placeholder={t("enterDescription")}
               className=" text-lg w-full rounded-md border-[2px]"
               maxLength={300}
               value={editProfile.description}
@@ -357,13 +356,13 @@ function ProfilePage() {
               }}
             >
               {profileEditing && <LoadingOutlined className=" mr-2" />}
-              {profileEditing ? "修改中..." : "保存"}
+              {profileEditing ? t("editing") : t("save")}
             </div>
           </div>
         </div>
       </Modal>
       <Modal
-        title="剪裁头像"
+        title={t("cropAvatar")}
         open={isAvatarModalOpen}
         onCancel={() => {
           setIsAvatarModalOpen(false);
@@ -394,7 +393,7 @@ function ProfilePage() {
           }}
         >
           {avatarUploading && <LoadingOutlined className=" mr-2" />}
-          {avatarUploading ? "上传中..." : "完成"}
+          {avatarUploading ? t("uploading") : t("done")}
         </div>
       </Modal>
     </div>

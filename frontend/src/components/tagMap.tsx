@@ -1,8 +1,12 @@
 import { useTags } from "@/state/tags";
 import Empty from "antd/es/empty";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function TagMap() {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.tagMap",
+  });
   const tags = useTags();
   return (
     <>
@@ -28,7 +32,7 @@ export default function TagMap() {
         <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={"还没有标签"}
+            description={t("noTags")}
           />
         </div>
       )}

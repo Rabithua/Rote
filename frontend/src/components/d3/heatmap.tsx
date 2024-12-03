@@ -4,8 +4,12 @@ import * as d3 from "d3";
 import toast from "react-hot-toast";
 import { apiGetMyHeatMap } from "@/api/others/main";
 import Empty from "antd/es/empty";
+import { useTranslation } from "react-i18next";
 
 const Heatmap: React.FC = () => {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.d3.heatmap",
+  });
   const [heatmapData, setHeatmapData] = useState<any>({});
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [containerWidth, setContainerWidth] = useState<number>(260); // 默认宽度
@@ -30,7 +34,15 @@ const Heatmap: React.FC = () => {
     const formatDate = d3.timeFormat("%Y-%m-%d");
     const formatMonthDay = d3.timeFormat("%B %d, %Y"); // 格式化为 月 日, 年
 
-    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const daysOfWeek = [
+      t("daysOfWeek.Sun"),
+      t("daysOfWeek.Mon"),
+      t("daysOfWeek.Tue"),
+      t("daysOfWeek.Wed"),
+      t("daysOfWeek.Thu"),
+      t("daysOfWeek.Fri"),
+      t("daysOfWeek.Sat"),
+    ];
 
     const color = d3
       .scaleLinear<string>()
@@ -94,7 +106,10 @@ const Heatmap: React.FC = () => {
         .attr("fill", (d) => color(heatmapData[d] || 0))
         .attr(
           "data-title",
-          (d) => `${formatMonthDay(new Date(d))}: ${heatmapData[d] || 0} Notes`
+          (d) =>
+            `${formatMonthDay(new Date(d))}: ${heatmapData[d] || 0} ${t(
+              "notes"
+            )}`
         ) // 显示日期和贡献数量
         .on("click", function (e) {
           const target = e.target as HTMLElement;
@@ -116,7 +131,7 @@ const Heatmap: React.FC = () => {
           <Empty
             className=" dark:text-textDark"
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={"HeatMap 无数据"}
+            description={t("noData")}
           />
         </div>
       )}

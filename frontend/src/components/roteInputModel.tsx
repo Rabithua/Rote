@@ -7,11 +7,16 @@ import {
 } from "@ant-design/icons";
 import { Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+
 const { stateOptions, roteMaxLetter } = mainJson;
 
 function RoteInputModel({ rote, submitEdit }: any) {
+  const { t, i18n } = useTranslation("translation", {
+    keyPrefix: "components.roteInputModel",
+  });
   const [tagsShow, setTagsShow] = useState(false);
   const tags = useTags();
   const [editType, setEditType] = useState("default");
@@ -48,7 +53,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
 
   function addRoteFn() {
     if (!newRote.content.trim() && rote.attachments.length === 0) {
-      toast.error("内容不能为空");
+      toast.error(t("error.emptyContent"));
       return;
     }
     submitEdit(newRote);
@@ -60,13 +65,26 @@ function RoteInputModel({ rote, submitEdit }: any) {
     }
   }
 
+  const processedStateOptions = useMemo(
+    () =>
+      mainJson.stateOptions.map((option) => ({
+        ...option,
+        label: option.label[i18n.language as "zh" | "en"],
+        options: option.options.map((subOption) => ({
+          ...subOption,
+          label: subOption.label[i18n.language as keyof typeof option.label],
+        })),
+      })),
+    [i18n.language]
+  );
+
   return (
     <div className=" cursor-default w-full flex gap-5">
       <div className=" w-[90%] flex-1">
         <TextArea
           variant="borderless"
           value={newRote.content}
-          placeholder="Ctrl + ↵ 发送"
+          placeholder={t("contentPlaceholder")}
           autoSize={{ minRows: 3, maxRows: 8 }}
           className={` text-base lg:text-lg text-pretty ${
             editType === "default" ? "" : " hidden"
@@ -86,15 +104,15 @@ function RoteInputModel({ rote, submitEdit }: any) {
           variant="borderless"
           className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark  w-fit min-w-40 max-w-full `}
           value={newRote.tags}
-          placeholder="标签"
+          placeholder={t("tagsPlaceholder")}
           onChange={handleTagsChange}
           options={tags}
         />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
           {/* <CloudUploadOutlined className=" cursor-pointer text-xl p-2 hover:bg-opacityLight dark:bg-opacityDark rounded-md" /> */}
-          <Tooltip placement="bottom" title={"置顶"}>
+          <Tooltip placement="bottom" title={t("pin")}>
             <PushpinOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+              className={` cursor-pointer text-xl p-2 rounded-md ${
                 newRote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -105,9 +123,9 @@ function RoteInputModel({ rote, submitEdit }: any) {
               }}
             />
           </Tooltip>
-          <Tooltip placement="bottom" title={"归档"}>
+          <Tooltip placement="bottom" title={t("archive")}>
             <InboxOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md hover:bg-opacityLight dark:hover:bg-opacityDark ${
+              className={` cursor-pointer text-xl p-2 rounded-md ${
                 newRote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -119,12 +137,17 @@ function RoteInputModel({ rote, submitEdit }: any) {
             />
           </Tooltip>
           <Select
-            defaultValue="私密"
+            defaultValue={
+              rote.state === "private"
+                ? t("stateOptions.private")
+                : t("stateOptions.public")
+            }
+            defaultActiveFirstOption
             variant="borderless"
             style={{ width: 80 }}
-            className=" bg-opacityLight dark:bg-opacityDark rounded-md"
+            className=" bg-opacityLight min-w-32 dark:bg-opacityDark rounded-md"
             onChange={handleStateChange}
-            options={stateOptions}
+            options={processedStateOptions}
           />
           {/* <div
             className={` cursor-pointer hover:bg-opacityLight dark:bg-opacityDark duration-300 h-full w-20 flex items-center rounded-md active:scale-95 justify-center ${editType === "novel" ? " bg-opacityLight dark:bg-opacityDark" : ""
@@ -178,7 +201,7 @@ function RoteInputModel({ rote, submitEdit }: any) {
             onClick={addRoteFn}
           >
             <SendOutlined />
-            发送
+            {t("send")}
           </div>
         </div>
       </div>

@@ -10,8 +10,10 @@ import { useProfile } from "@/state/profile";
 import RandomRote from "@/components/randomRote";
 import GoTop from "@/components/goTop";
 import Heatmap from "@/components/d3/heatmap";
+import { useTranslation } from "react-i18next";
 
 function RotePage() {
+  const { t } = useTranslation("translation", { keyPrefix: "pages.home" });
   const profile = useProfile();
   return (
     <div className=" flex w-full h-dvh">
@@ -176,7 +178,7 @@ function RotePage() {
       <div className=" gap-4 hidden md:flex flex-col w-72 shrink-0 scrollContainer scroll-smooth overscroll-contain noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative p-4">
         <div className=" flex gap-2 text-lg font-semibold">
           <BarChartOutlined />
-          统计 / Static
+          {t("statistics")}
         </div>
         {profile && (
           <>

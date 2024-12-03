@@ -2,8 +2,12 @@ import { apiGetRandomRote } from "@/api/rote/main";
 import { RedoOutlined } from "@ant-design/icons/lib/icons";
 import { useEffect, useState } from "react";
 import RoteItem from "./roteItem";
+import { useTranslation } from "react-i18next";
 
 export default function RandomRote() {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.randomRote",
+  });
   const [rote, setRote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -26,7 +30,7 @@ export default function RandomRote() {
     rote && (
       <div className=" shrink-0">
         <div className=" flex gap-2 bg-bgLight dark:bg-bgDark text-md font-semibold py-2">
-          随机回顾 / Random Review
+          {t("title")}
           <RedoOutlined
             className={` cursor-pointer hover:opacity-50 duration-300 ml-auto ${
               loading && "animate-spin"

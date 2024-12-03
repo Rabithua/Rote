@@ -7,11 +7,14 @@ import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
 import { useState } from "react";
 import QRCode from "react-qr-code";
-
+import { useTranslation } from "react-i18next";
 import moment from "moment";
 import toast from "react-hot-toast";
 
 function RoteShareCard({ rote }: any) {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.roteShareCard",
+  });
   const themes = [
     {
       cardClass: "bg-white text-gray-800",
@@ -52,9 +55,7 @@ function RoteShareCard({ rote }: any) {
   const [themeIndex, setThemeIndex] = useState(1);
 
   async function saveImage(): Promise<void> {
-    // toast.error("功能暂不可用");
-    // return;
-    const toastId = toast.loading("正在生成图片...");
+    const toastId = toast.loading(t("generatingImage"));
     const element: any = document.querySelector("#shareCanva");
     if (element) {
       // 获取元素的宽度和高度
@@ -95,7 +96,7 @@ function RoteShareCard({ rote }: any) {
       }
 
       if (!dataUrl) {
-        toast.error("图片生成失败", {
+        toast.error(t("imageGenerationFailed"), {
           id: toastId,
         });
         return;
@@ -107,18 +108,18 @@ function RoteShareCard({ rote }: any) {
         saveAs(dataUrl, `${rote.id}.png`);
       }
 
-      toast.success("图片已保存", {
+      toast.success(t("imageSaved"), {
         id: toastId,
       });
     } else {
-      console.error("未找到要保存的元素");
+      console.error(t("elementNotFound"));
     }
   }
 
   function copyLink() {
     let url = `${window.location.origin}/rote/${rote.id}`;
     navigator.clipboard.writeText(url);
-    toast.success("链接已复制到剪贴板");
+    toast.success(t("linkCopied"));
   }
 
   function ColorList() {
@@ -249,14 +250,14 @@ function RoteShareCard({ rote }: any) {
           onClick={copyLink}
         >
           <LinkOutlined />
-          复制链接
+          {t("copyLink")}
         </div>
         <div
           className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
           onClick={saveImage}
         >
           <SaveOutlined />
-          保存
+          {t("save")}
         </div>
       </div>
     </div>

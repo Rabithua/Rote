@@ -1,24 +1,35 @@
 import { SaveOutlined } from "@ant-design/icons";
 import mainJson from "@/json/main.json";
 import { Checkbox, CheckboxProps } from "antd";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { apiEditOneMyOpenKey } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useOpenKeysDispatch } from "@/state/openKeys";
+import { useTranslation } from "react-i18next";
 const CheckboxGroup = Checkbox.Group;
 
-const plainOptions: any = mainJson.permissionOptions;
-
 function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
+  const { t, i18n } = useTranslation("translation", {
+    keyPrefix: "components.openKeyEditModel",
+  });
   const openKeysDispatch = useOpenKeysDispatch();
   const defaultCheckedList: any = openKey.permissions;
 
+  const processedOptions = useMemo(
+    () =>
+      mainJson.permissionOptions.map((option) => ({
+        ...option,
+        label: option.label[i18n.language as keyof typeof option.label],
+      })),
+    [i18n.language]
+  );
+
   const [checkedList, setCheckedList] = useState<any[]>(defaultCheckedList);
 
-  const checkAll = plainOptions.length === checkedList.length;
+  const checkAll = processedOptions.length === checkedList.length;
 
   const indeterminate =
-    checkedList.length > 0 && checkedList.length < plainOptions.length;
+    checkedList.length > 0 && checkedList.length < processedOptions.length;
 
   const onChange = (list: any[]) => {
     setCheckedList(list);
@@ -27,24 +38,21 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
   const onCheckAllChange: CheckboxProps["onChange"] = (e) => {
     setCheckedList(
       e.target.checked
-        ? plainOptions.map((option: any) => {
-            return option.value;
-          })
+        ? processedOptions.map((option: any) => option.value)
         : []
     );
   };
 
   function save() {
-    console.log("save");
     if (checkedList.length === 0) {
-      toast.error("至少需要一个权限");
+      toast.error(t("minimumPermission"));
       return;
     }
     close();
-    const toastId = toast.loading("保存中...");
+    const toastId = toast.loading(t("saving"));
     apiEditOneMyOpenKey(openKey.id, checkedList)
       .then((res) => {
-        toast.success("保存成功", {
+        toast.success(t("saveSuccess"), {
           id: toastId,
         });
         openKeysDispatch({
@@ -53,7 +61,7 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
         });
       })
       .catch((err) => {
-        toast.error("保存失败", {
+        toast.error(t("saveFailed"), {
           id: toastId,
         });
       });
@@ -62,7 +70,7 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
   return (
     <div className=" py-4">
       <CheckboxGroup
-        options={plainOptions}
+        options={processedOptions}
         value={checkedList}
         onChange={onChange}
       />
@@ -74,14 +82,14 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
           checked={checkAll}
           className=" ml-auto"
         >
-          全选
+          {t("selectAll")}
         </Checkbox>
         <div
           className=" cursor-pointer w-fit select-none duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
           onClick={save}
         >
           <SaveOutlined />
-          保存
+          {t("save")}
         </div>
       </div>
     </div>

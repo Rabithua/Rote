@@ -2,8 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import RoteItem from "./roteItem";
 import Empty from "antd/es/empty";
 import { LoadingOutlined } from "@ant-design/icons";
+import { useTranslation } from "react-i18next";
 
 function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.roteList",
+  });
   const rotes = rotesHook();
 
   const rotesDispatch = rotesDispatchHook();
@@ -96,7 +100,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
         <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={"这里什么也没有"}
+            description={t("empty")}
           />
         </div>
       ) : null}

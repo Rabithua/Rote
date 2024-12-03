@@ -8,11 +8,11 @@ import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
 import { useEffect } from "react";
 import NavHeader from "@/components/navHeader";
+import { useTranslation } from "react-i18next";
 
 function ArchivedPage() {
-  // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
-
   const rotesDispatch = useArchivedRotesDispatch();
+  const { t } = useTranslation();
 
   useEffect(() => {
     return rotesDispatch({
@@ -25,7 +25,7 @@ function ArchivedPage() {
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
     >
-      <NavHeader title="归档 / Archived" icon={<InboxOutlined />} />
+      <NavHeader title={t("pages.archived.title")} icon={<InboxOutlined />} />
       <div id="top" className=" h-[1px]"></div>
 
       <RoteList

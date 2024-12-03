@@ -12,9 +12,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import mainJson from "@/json/main.json";
+import { useTranslation } from "react-i18next";
 
-const { safeRoutes } = mainJson;
 function Login() {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "pages.login",
+  });
+  const { safeRoutes } = mainJson;
   const [checkStatusMsg, setCheckStatusMsg] = useState("");
   const profile = useProfile();
   const tags = useTags();
@@ -36,29 +40,38 @@ function Login() {
   });
 
   const LoginDataZod = z.object({
-    username: z.string().min(1, "用户名不能为空").max(20, "用户名不能超过20位"),
-    password: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
+    username: z
+      .string()
+      .min(1, t("validation.usernameRequired"))
+      .max(20, t("validation.usernameMaxLength")),
+    password: z
+      .string()
+      .min(1, t("validation.passwordRequired"))
+      .max(30, t("validation.passwordMaxLength")),
   });
 
   const RegisterDataZod = z.object({
     username: z
       .string()
-      .min(1, "用户名不能为空")
-      .max(20, "用户名不能超过20位")
-      .regex(
-        /^[A-Za-z0-9_-]+$/,
-        "用户名只能包含大小写字母和数字或者下划线和‘-’"
-      )
+      .min(1, t("validation.usernameRequired"))
+      .max(20, t("validation.usernameMaxLength"))
+      .regex(/^[A-Za-z0-9_-]+$/, t("validation.usernameFormat"))
       .refine((value) => !safeRoutes.includes(value), {
-        message: "用户名与路由冲突，换一个吧",
+        message: t("validation.usernameConflict"),
       }),
-    password: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
+    password: z
+      .string()
+      .min(1, t("validation.passwordRequired"))
+      .max(30, t("validation.passwordMaxLength")),
     email: z
       .string()
-      .min(1, "邮箱不能为空")
-      .max(30, "邮箱不能超过30位")
-      .email("邮箱格式不正确"),
-    nickname: z.string().min(1, "昵称不能为空").max(20, "昵称不能超过20位"),
+      .min(1, t("validation.emailRequired"))
+      .max(30, t("validation.emailMaxLength"))
+      .email(t("validation.emailFormat")),
+    nickname: z
+      .string()
+      .min(1, t("validation.nicknameRequired"))
+      .max(20, t("validation.nicknameMaxLength")),
   });
 
   function login() {
@@ -69,10 +82,10 @@ function Login() {
       return;
     }
 
-    const toastId = toast.loading("登录中...");
+    const toastId = toast.loading(t("messages.loggingIn"));
     loginByPassword(loginData)
       .then(async (res) => {
-        toast.success("登录成功", {
+        toast.success(t("messages.loginSuccess"), {
           id: toastId,
         });
         profileDispatch({
@@ -90,7 +103,7 @@ function Login() {
             id: toastId,
           });
         } else {
-          toast.error("Backend is Down!", {
+          toast.error(t("messages.backendDown"), {
             id: toastId,
           });
         }
@@ -101,11 +114,11 @@ function Login() {
     try {
       const res = await apiGetStatus();
       if (res.data.code !== 0) {
-        setCheckStatusMsg("请检查后端数据库状态是否正常");
+        setCheckStatusMsg(t("messages.checkDatabase"));
       }
     } catch (err: any) {
       console.error("Error fetching status:", err);
-      setCheckStatusMsg("请检查后端服务是否启动");
+      setCheckStatusMsg(t("messages.checkBackend"));
     }
   }
 
@@ -130,11 +143,11 @@ function Login() {
   }
 
   function logOutFn() {
-    const toastId = toast.loading("退出登录...");
+    const toastId = toast.loading(t("messages.loggingOut"));
     logOut()
       .then((res) => {
         // console.log(res);
-        toast.success("退出登录成功", {
+        toast.success(t("messages.logoutSuccess"), {
           id: toastId,
         });
         profileDispatch({
@@ -171,10 +184,10 @@ function Login() {
       return;
     }
 
-    const toastId = toast.loading("注册中...");
+    const toastId = toast.loading(t("messages.registering"));
     registerBypassword(registerData)
       .then((res) => {
-        toast.success("注册成功，返回登录", {
+        toast.success(t("messages.registerSuccess"), {
           id: toastId,
         });
         setRegisterData({
@@ -253,25 +266,27 @@ function Login() {
                       navigate("/home");
                     }}
                   >
-                    前往主页
+                    {t("buttons.toHome")}
                   </div>
                   <div
                     className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black font-semibold"
                     onClick={logOutFn}
                   >
-                    退出登录
+                    {t("buttons.logout")}
                   </div>
                 </div>
               </>
             ) : (
               <>
                 <div className=" text-2xl font-semibold">
-                  {type === "login" ? "登录" : "注册"}
+                  {type === "login" ? t("title.login") : t("title.register")}
                 </div>
                 <div className=" flex flex-col gap-2">
                   {type === "login" ? (
                     <>
-                      <div className=" text-md font-semibold">用户名</div>
+                      <div className=" text-md font-semibold">
+                        {t("fields.username")}
+                      </div>
                       <Input
                         placeholder="username"
                         className=" text-lg rounded-md font-mono border-[2px]"
@@ -279,7 +294,9 @@ function Login() {
                         value={loginData.username}
                         onInput={(e) => handleInputChange(e, "username")}
                       />
-                      <div className=" text-md font-semibold">密码</div>
+                      <div className=" text-md font-semibold">
+                        {t("fields.password")}
+                      </div>
                       <Input
                         placeholder="possword"
                         type="password"
@@ -292,7 +309,9 @@ function Login() {
                     </>
                   ) : (
                     <>
-                      <div className=" text-md font-semibold">用户名</div>
+                      <div className=" text-md font-semibold">
+                        {t("fields.username")}
+                      </div>
                       <Input
                         placeholder="username"
                         className=" text-lg rounded-md font-mono border-[2px]"
@@ -300,7 +319,9 @@ function Login() {
                         value={registerData.username}
                         onInput={(e) => handleInputChange(e, "username")}
                       />
-                      <div className=" text-md font-semibold">邮箱</div>
+                      <div className=" text-md font-semibold">
+                        {t("fields.email")}
+                      </div>
                       <Input
                         placeholder="someone@mail.com"
                         className=" text-lg rounded-md font-mono border-[2px]"
@@ -308,7 +329,9 @@ function Login() {
                         value={registerData.email}
                         onInput={(e) => handleInputChange(e, "email")}
                       />
-                      <div className=" text-md font-semibold">昵称</div>
+                      <div className=" text-md font-semibold">
+                        {t("fields.nickname")}
+                      </div>
                       <Input
                         placeholder="nickname"
                         className=" text-lg rounded-md font-mono border-[2px]"
@@ -317,7 +340,9 @@ function Login() {
                         onInput={(e) => handleInputChange(e, "nickname")}
                       />
 
-                      <div className=" text-md font-semibold">密码</div>
+                      <div className=" text-md font-semibold">
+                        {t("fields.password")}
+                      </div>
                       <Input
                         placeholder="possword"
                         type="password"
@@ -336,13 +361,13 @@ function Login() {
                           className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
                           onClick={login}
                         >
-                          登录
+                          {t("buttons.login")}
                         </div>
                         <div
                           className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black font-semibold"
                           onClick={changeType}
                         >
-                          注册
+                          {t("buttons.register")}
                         </div>
                       </>
                     ) : (
@@ -351,13 +376,13 @@ function Login() {
                           className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold"
                           onClick={register}
                         >
-                          注册
+                          {t("buttons.register")}
                         </div>
                         <div
                           className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black font-semibold"
                           onClick={changeType}
                         >
-                          返回
+                          {t("buttons.back")}
                         </div>
                       </>
                     )}
@@ -367,21 +392,23 @@ function Login() {
             )}
             <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
               <Link to="/explore">
-                <div className=" hover:opacity-60 duration-300">探索</div>
+                <div className=" hover:opacity-60 duration-300">
+                  {t("nav.explore")}
+                </div>
               </Link>
               <span className=" px-2">/</span>
               <Link to="/">
-                <div className=" hover:opacity-60 duration-300">主页</div>
+                <div className=" hover:opacity-60 duration-300">
+                  {t("nav.home")}
+                </div>
               </Link>
             </div>
           </>
         ) : (
           <>
-            <div className=" font-semibold">后端出问题了</div>
+            <div className=" font-semibold">{t("error.backendIssue")}</div>
             <div>{checkStatusMsg}</div>
-            <div className=" text-gray-500">
-              使用docker部署，后端容器可能需要几分钟构建，可以在几分钟后刷新页面
-            </div>
+            <div className=" text-gray-500">{t("error.dockerDeployment")}</div>
           </>
         )}
       </div>

@@ -1,14 +1,23 @@
 {
   "stateOptions": [
     {
-      "label": "状态",
+      "label": {
+        "zh": "状态",
+        "en": "Status"
+      },
       "options": [
         {
-          "label": "公开",
+          "label": {
+            "zh": "公开",
+            "en": "Public"
+          },
           "value": "public"
         },
         {
-          "label": "私密",
+          "label": {
+            "zh": "私密",
+            "en": "Private"
+          },
           "value": "private"
         }
       ]
@@ -24,19 +33,28 @@
   ],
   "permissionOptions": [
     {
-      "label": "创建Rote",
+      "label": {
+        "zh": "创建Rote",
+        "en": "Create Rote"
+      },
       "value": "SENDROTE",
       "checked": false,
       "disabled": false
     },
     {
-      "label": "获取Rote",
+      "label": {
+        "zh": "获取Rote",
+        "en": "Get Rote"
+      },
       "value": "GETROTE",
       "checked": false,
       "disabled": false
     },
     {
-      "label": "编辑Rote（包括删除）",
+      "label": {
+        "zh": "编辑Rote（包括删除）",
+        "en": "Edit Rote (Including Delete)"
+      },
       "value": "EDITROTE",
       "checked": false,
       "disabled": false
@@ -44,27 +62,42 @@
   ],
   "roteType": [
     {
-      "name": "rote",
+      "name": {
+        "zh": "笔记",
+        "en": "rote"
+      },
       "to": "rote",
       "active": true
     },
     {
-      "name": "journal",
+      "name": {
+        "zh": "日记",
+        "en": "journal"
+      },
       "to": "journal",
       "active": false
     },
     {
-      "name": "todo",
+      "name": {
+        "zh": "待办",
+        "en": "todo"
+      },
       "to": "todo",
       "active": false
     },
     {
-      "name": "lucky",
+      "name": {
+        "zh": "幸运",
+        "en": "lucky"
+      },
       "to": "lucky",
       "active": false
     },
     {
-      "name": "article",
+      "name": {
+        "zh": "文章",
+        "en": "article"
+      },
       "to": "article",
       "active": false
     }

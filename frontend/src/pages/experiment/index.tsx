@@ -3,16 +3,23 @@ import NavHeader from "@/components/navHeader";
 import ExportData from "@/components/experiment/exportData";
 import ImportData from "@/components/experiment/importData";
 import ServiceWorker from "@/components/experiment/serviceWorker";
+import { useTranslation } from "react-i18next";
 
 export default function ExperimentPage() {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "pages.experiment",
+  });
   return (
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
     >
-      <NavHeader title="实验室 / Experimanet" icon={<ExperimentOutlined />} />
+      <NavHeader
+        title={`${t("title")} / Experiment`}
+        icon={<ExperimentOutlined />}
+      />
       <div className=" flex flex-col w-full gap-1">
         <div className=" bg-opacityLight dark:bg-opacityDark m-2 py-3 px-4 rounded-lg">
-          实验性质小功能，有可能会让rote变得更好用🤩
+          {t("description")}
         </div>
         <div className=" m-2 flex gap-2 flex-wrap">
           <ServiceWorker />

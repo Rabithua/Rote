@@ -12,8 +12,12 @@ import { NotificationFilled } from "@ant-design/icons";
 import { Divider, Switch } from "antd";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 export default function ServiceWorker() {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "pages.experiment.serviceWorker",
+  });
   const [swReady, setSwReady] = useState(false);
   const [swLoading, setSwLoading] = useState(true);
   const [noticeId, setNoticeId] = useState<any>(null);
@@ -58,7 +62,7 @@ export default function ServiceWorker() {
   }
 
   async function sub() {
-    const toastId = toast.loading("权限处理中...");
+    const toastId = toast.loading(t("permissionProcessing"));
     try {
       setSwLoading(true);
       checkPermission();
@@ -80,7 +84,7 @@ export default function ServiceWorker() {
           console.log("Service Worker is not installed.");
         }
       } catch (error) {}
-      toast.success("完成", {
+      toast.success(t("complete"), {
         id: toastId,
       });
       setSwReady(true);
@@ -108,21 +112,21 @@ export default function ServiceWorker() {
     try {
       const resp = await sendNotificationTest(noticeId);
       console.log(resp);
-      toast.success("发送成功！");
+      toast.success(t("sendSuccess"));
     } catch (error) {}
   }
 
   return (
     <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border border-opacityLight dark:border-opacityDark rounded-xl p-4 bg-opacityLight dark:bg-opacityDark">
       <div className=" text-2xl font-semibold">
-        ServiceWoker通知 <br />
+        {t("title")} <br />
         <div className=" font-normal mt-2 text-sm text-gray-500">
-          ServiceWorker可以使用某些高级功能，比如后台通知等。
+          {t("description")}
         </div>
       </div>
       <Divider></Divider>
       <div className=" flex gap-2 items-center">
-        <span className=" font-semibold">状态：</span>
+        <span className=" font-semibold">{t("status")}</span>
         <Switch
           disabled={!navigator.serviceWorker}
           className=" bg-bgLight dark:bg-bgDark"
@@ -140,20 +144,20 @@ export default function ServiceWorker() {
       </div>
       {noticeId && (
         <div className=" flex mt-2 text-gray-500 gap-2 items-center">
-          <span className=" shrink-0">服务标识:</span>
+          <span className=" shrink-0">{t("serviceId")}</span>
           <span className=" text-ellipsis overflow-hidden">{noticeId}</span>
           <div
             className=" duration-300 active:scale-95 py-1 shrink-0 px-2 bg-bgLight cursor-pointer rounded-md flex gap-1"
             onClick={noticeTest}
           >
             <NotificationFilled />
-            通知测试
+            {t("notificationTest")}
           </div>
         </div>
       )}
       {noticeId && (
         <div className=" mt-2 flex flex-col gap-2">
-          <div className=" font-semibold">使用示例：</div>
+          <div className=" font-semibold">{t("example")}</div>
           <div className=" whitespace-pre text-red-700 font-mono overflow-x-scroll p-3 rounded-xl bg-bgLight">
             {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
