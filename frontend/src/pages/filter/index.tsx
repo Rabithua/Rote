@@ -6,10 +6,11 @@ import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import { useImmer } from "use-immer";
+import { useTranslation } from "react-i18next";
 
 function TagsBlock({ setLocationState }: any) {
   let location = useLocation();
-  // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
+  const { t } = useTranslation("translation", { keyPrefix: "pages.filter" });
 
   const rotes = useFilterRotes();
 
@@ -21,9 +22,12 @@ function TagsBlock({ setLocationState }: any) {
     ];
   }
   return (
-    <div className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold" id="top">
+    <div
+      className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold"
+      id="top"
+    >
       <div className=" flex items-center flex-wrap gap-2 my-2">
-        包含标签：
+        {t("includeTags")}
         {location.state?.tags.length > 0
           ? location.state?.tags.map((tag: any, index: any) => {
               return (
@@ -35,10 +39,10 @@ function TagsBlock({ setLocationState }: any) {
                 </div>
               );
             })
-          : "NONE"}
+          : t("none")}
       </div>
       <div className=" flex items-center flex-wrap gap-2 my-2 font-normal text-gray-500">
-        相关标签：
+        {t("relatedTags")}
         {relativeTags().length > 0
           ? relativeTags().map((tag: any, index: any) => {
               return (
@@ -60,7 +64,7 @@ function TagsBlock({ setLocationState }: any) {
                 </Link>
               );
             })
-          : "NONE"}
+          : t("none")}
       </div>
     </div>
   );

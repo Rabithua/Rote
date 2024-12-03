@@ -10,6 +10,7 @@ import { Avatar } from "antd";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
+import { useTranslation } from "react-i18next";
 import Linkify from "react-linkify";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -18,7 +19,7 @@ function UserPage() {
   const { username }: any = useParams();
   const [userInfo, setUserInfo] = useState<any>(null);
 
-  // const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
+  const { t } = useTranslation("translation", { keyPrefix: "pages.user" });
 
   useEffect(() => {
     apiGetUserInfoByUsername(username)
@@ -34,11 +35,11 @@ function UserPage() {
     <div>
       <Helmet>
         <title>
-          {userInfo?.nickname || userInfo?.username || "loading..."}
+          {userInfo?.nickname || userInfo?.username || t("helmet.loading")}
         </title>
         <meta
           name="description"
-          content={userInfo?.description || "rote.ink"}
+          content={userInfo?.description || t("helmet.defaultDesc")}
         />
       </Helmet>
 
@@ -59,7 +60,7 @@ function UserPage() {
         <div className=" flex mx-4 h-16">
           <Avatar
             className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-opacityLight dark:border-opacityDark border-[4px] shrink-0 sm:block"
-            size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 150 }}
+            size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 120 }}
             icon={<UserOutlined className=" text-[#00000010]" />}
             src={userInfo?.avatar}
           />
@@ -70,20 +71,18 @@ function UserPage() {
           <div className=" text-base ">
             <div className=" aTagStyle break-words whitespace-pre-line">
               <Linkify>
-                {(userInfo?.description as any) ||
-                  "这个人很懒，还没留下任何简介..."}
+                {(userInfo?.description as any) || t("noDescription")}
               </Linkify>
             </div>
           </div>
-          <div className=" text-base text-gray-500">{`注册时间：${moment
+          <div className=" text-base text-gray-500">{`${t(
+            "registerTime"
+          )}${moment
             .utc(userInfo?.createdAt)
             .format("YYYY/MM/DD HH:mm:ss")}`}</div>
         </div>
 
-        <NavHeader
-          title="已公开的笔记 / Public Note"
-          icon={<GlobalOutlined />}
-        />
+        <NavHeader title={t("publicNotes")} icon={<GlobalOutlined />} />
 
         {userInfo && (
           <RoteList

@@ -6,8 +6,9 @@ import Rote from "@/components/roteItem";
 import { apiGetSingleRote } from "@/api/rote/main";
 import Avatar from "antd/es/avatar";
 import { UserOutlined } from "@ant-design/icons";
-
+import { useTranslation } from "react-i18next";
 function SingleRotePage() {
+  const { t } = useTranslation("translation", { keyPrefix: "pages.rote" });
   const navigate = useNavigate();
   const { roteid } = useParams();
   const [rote, setRote] = useState<any>(null);
@@ -45,7 +46,7 @@ function SingleRotePage() {
         </div>
       ) : (
         <div className=" w-full h-full flex justify-center items-center">
-          {msg || "加载中..."}
+          {msg || t("loading")}
         </div>
       )}
       {rote && (

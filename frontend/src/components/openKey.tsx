@@ -13,8 +13,12 @@ import toast from "react-hot-toast";
 import OpenKeyEditModel from "./openKeyEditModel";
 import { apiDeleteOneMyOpenKey } from "@/api/rote/main";
 import { useOpenKeysDispatch } from "@/state/openKeys";
+import { useTranslation } from "react-i18next";
 
 function OpenKeyItem({ openKey }: any) {
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.openKey",
+  });
   const [open, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const openKeysDispatch = useOpenKeysDispatch();
@@ -27,10 +31,10 @@ function OpenKeyItem({ openKey }: any) {
   function actionsMenu(rote: any) {
     function deleteOpenKey() {
       setOpen(false);
-      const toastId = toast.loading("删除中...");
+      const toastId = toast.loading(t("deleting"));
       apiDeleteOneMyOpenKey(openKey.id)
         .then((res) => {
-          toast.success("删除成功", {
+          toast.success(t("deleteSuccess"), {
             id: toastId,
           });
           openKeysDispatch({
@@ -39,7 +43,7 @@ function OpenKeyItem({ openKey }: any) {
           });
         })
         .catch((err) => {
-          toast.error("删除失败", {
+          toast.error(t("deleteFailed"), {
             id: toastId,
           });
         });
@@ -56,14 +60,14 @@ function OpenKeyItem({ openKey }: any) {
           }}
         >
           <EditOutlined />
-          编辑
+          {t("edit")}
         </div>
         <div
           className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
           onClick={deleteOpenKey}
         >
           <DeleteOutlined />
-          删除
+          {t("delete")}
         </div>
       </div>
     );
@@ -82,9 +86,9 @@ function OpenKeyItem({ openKey }: any) {
     const text = `${process.env.REACT_APP_BASEURL_PRD}/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
     try {
       await navigator.clipboard.writeText(text);
-      toast.success("内容已复制到剪贴板");
+      toast.success(t("copySuccess"));
     } catch (err) {
-      toast.error("无法复制内容到剪贴板");
+      toast.error(t("copyFailed"));
     }
   }
 
@@ -114,9 +118,11 @@ function OpenKeyItem({ openKey }: any) {
           <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
         </Popover>
       </div>
-      <div className="">权限：{openKey.permissions.join(",")}</div>
       <div className="">
-        示例：
+        {t("permissions")}：{openKey.permissions.join(",")}
+      </div>
+      <div className="">
+        {t("example")}：
         <span className=" font-mono break-all">
           {process.env.REACT_APP_BASEURL_PRD}
           /v1/api/openkey/onerote?openkey=

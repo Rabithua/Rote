@@ -1,10 +1,13 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { message } from "antd";
 import { useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function Uploader({ fileList, setFileList }: any) {
   const fileInputRef = useRef(null);
-
+  const { t } = useTranslation("translation", {
+    keyPrefix: "components.uploader",
+  });
   return (
     <div className={` ${fileList.length >= 9 ? "hidden" : ""}`}>
       <div
@@ -34,7 +37,7 @@ export default function Uploader({ fileList, setFileList }: any) {
           });
 
           if (fileList.length + updatedFileList.length > 9) {
-            message.error(`文件数量超过限制，已去除多余文件！`);
+            message.error(t("fileLimit"));
           }
 
           Promise.all(updatedFileList).then((newFileList) => {
