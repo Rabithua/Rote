@@ -1,3 +1,7 @@
+/**
+ * Upload files to R2
+ */
+
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { config } from "dotenv";
 import { readdir, readFile } from "fs/promises";

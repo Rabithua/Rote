@@ -1,29 +1,32 @@
 import { UploadResult } from "../types/main";
 import prisma from "./prisma";
-var crypto = require("crypto");
+import crypto from "crypto";
+
+// Define unified error type
+class DatabaseError extends Error {
+  constructor(message: string, public originalError?: any) {
+    super(message);
+    this.name = "DatabaseError";
+  }
+}
 
 export async function allUser() {
   try {
-    await prisma.$connect();
     const users = await prisma.user.findMany();
     return users;
   } catch (error: any) {
-    throw new Error(error);
+    throw new DatabaseError("Failed to get all users", error);
   }
 }
 
 export async function oneUser(id: string) {
   try {
-    await prisma.$connect();
     const user = await prisma.user.findUnique({
-      where: {
-        id,
-      },
+      where: { id },
     });
     return user;
   } catch (error) {
-    console.error("Error find user by id:", error);
-    return;
+    throw new DatabaseError(`Failed to find user by id: ${id}`, error);
   }
 }
 
@@ -34,7 +37,6 @@ export async function createUser(data: {
   nickname?: string;
 }) {
   try {
-    // hash 加密
     let salt = crypto.randomBytes(16);
     let passwordhash = crypto.pbkdf2Sync(
       data.password,
@@ -43,7 +45,6 @@ export async function createUser(data: {
       32,
       "sha256"
     );
-    console.log(passwordhash, typeof passwordhash);
 
     const user = await prisma.user.create({
       data: {
@@ -56,7 +57,7 @@ export async function createUser(data: {
     });
     return user;
   } catch (error: any) {
-    return error;
+    throw new DatabaseError("Failed to create user", error);
   }
 }
 
@@ -64,91 +65,67 @@ export async function addSubScriptionToUser(
   userId: string,
   subScription: any
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.userSwSubScription
-      .create({
-        data: {
-          userid: userId,
-          endpoint: subScription.endpoint,
-          expirationTime: subScription.expirationTime,
-          keys: {
-            auth: subScription.keys.auth,
-            p256dh: subScription.keys.p256dh,
-          },
+  try {
+    const subScriptionRespon = await prisma.userSwSubScription.create({
+      data: {
+        userid: userId,
+        endpoint: subScription.endpoint,
+        expirationTime: subScription.expirationTime,
+        keys: {
+          auth: subScription.keys.auth,
+          p256dh: subScription.keys.p256dh,
         },
-        select: {
-          id: true,
-        },
-      })
-      .then((subScriptionRespon) => {
-        console.log("订阅信息已成功添加到用户数组:", subScriptionRespon);
-        resolve(subScriptionRespon);
-      })
-      .catch((error) => {
-        // console.log("添加订阅信息时出错:", error);
-        reject(error);
-      });
-  });
+      },
+      select: { id: true },
+    });
+    return subScriptionRespon;
+  } catch (error) {
+    throw new DatabaseError("Failed to add subscription", error);
+  }
 }
 
-export async function findSubScriptionToUser(subId: string) {
-  return new Promise((resolve, reject) => {
-    // 查找订阅信息
-    prisma.userSwSubScription
-      .findUnique({
-        where: {
-          id: subId,
-        },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
-}
+export async function findSubScriptionToUser(subId: string): Promise<any> {
+  try {
+    const subscription = await prisma.userSwSubScription.findUnique({
+      where: { id: subId },
+    });
 
-export async function findSubScriptionToUserByendpoint(endpoint: string) {
-  return new Promise((resolve, reject) => {
-    // 查找订阅信息
-    prisma.userSwSubScription
-      .findUnique({
-        where: {
-          endpoint: endpoint,
-        },
-        select: {
-          id: true,
-        },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
-}
-
-export async function deleteSubScription(subId: string) {
-  return new Promise((resolve, reject) => {
-    try {
-      prisma.userSwSubScription
-        .delete({
-          where: {
-            id: subId,
-          },
-        })
-        .then((res) => {
-          resolve(res);
-        })
-        .catch((err) => {
-          reject(err);
-        });
-    } catch (error) {
-      reject(error);
+    if (!subscription) {
+      throw new DatabaseError("Subscription not found");
     }
-  });
+
+    return subscription;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to find subscription: ${subId}`, error);
+  }
+}
+
+export async function findSubScriptionToUserByendpoint(
+  endpoint: string
+): Promise<any> {
+  try {
+    const subscription = await prisma.userSwSubScription.findUnique({
+      where: { endpoint },
+      select: { id: true },
+    });
+    return subscription;
+  } catch (error) {
+    throw new DatabaseError("Failed to find subscription by endpoint", error);
+  }
+}
+
+export async function deleteSubScription(subId: string): Promise<any> {
+  try {
+    const result = await prisma.userSwSubScription.delete({
+      where: { id: subId },
+    });
+    return result;
+  } catch (error) {
+    throw new DatabaseError(`Failed to delete subscription: ${subId}`, error);
+  }
 }
 
 export async function passportCheckUser(data: { username: string }) {
@@ -163,142 +140,110 @@ export async function passportCheckUser(data: { username: string }) {
       user: user,
     };
   } catch (error) {
-    console.error("Error creating rote:", error);
-    return {
-      err: error,
-      user: null,
-    };
+    throw new DatabaseError("Failed to authenticate user", error);
   }
 }
 
 export async function createRote(data: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.rote
-      .create({
-        data,
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+  try {
+    const rote = await prisma.rote.create({
+      data,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error creating rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rote;
+  } catch (error) {
+    throw new DatabaseError("Failed to create note", error);
+  }
 }
 
 export async function findRoteById(id: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.rote
-      .findFirst({
-        where: {
-          id,
-        },
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+  try {
+    const rote = await prisma.rote.findFirst({
+      where: { id },
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rote;
+  } catch (error) {
+    throw new DatabaseError(`Failed to find rote by id: ${id}`, error);
+  }
 }
 
 export async function editRote(data: any): Promise<any> {
-  return new Promise((resolve, reject) => {
+  try {
     const { id, authorid, ...dataClean } = data;
-    prisma.rote
-      .update({
-        where: {
-          id: data.id,
-          authorid: data.authorid,
-        },
-        data: dataClean,
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+    const rote = await prisma.rote.update({
+      where: {
+        id: data.id,
+        authorid: data.authorid,
+      },
+      data: dataClean,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error update rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rote;
+  } catch (error) {
+    throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
+  }
 }
 
 export async function deleteRote(data: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.rote
-      .delete({
-        where: {
-          id: data.id,
-          authorid: data.authorid,
-        },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error delete rote:", error);
-        reject(error);
-      });
-  });
+  try {
+    const rote = await prisma.rote.delete({
+      where: {
+        id: data.id,
+        authorid: data.authorid,
+      },
+    });
+    return rote;
+  } catch (error) {
+    throw new DatabaseError(`Failed to delete rote: ${data.id}`, error);
+  }
 }
 
 export async function deleteAttachments(roteid: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    console.log("开始删除附件", roteid);
-    prisma.attachment
-      .deleteMany({
-        where: {
-          roteid,
-        },
-      })
-      .then((data) => {
-        console.log(data);
-        resolve(data);
-      })
-      .catch((error) => {
-        console.error("Error delete attachments:", error);
-        reject(error);
-      });
-  });
+  try {
+    const result = await prisma.attachment.deleteMany({
+      where: { roteid },
+    });
+    return result;
+  } catch (error) {
+    throw new DatabaseError(
+      `Failed to delete attachments for rote: ${roteid}`,
+      error
+    );
+  }
 }
 
 export async function findMyRote(
@@ -308,52 +253,37 @@ export async function findMyRote(
   filter: any,
   archived: any
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    console.log(`filter: ${JSON.stringify(filter)}`);
-    // 修改代码跳过skip个数据，再拉取limit个数据返回
-    prisma.rote
-      .findMany({
-        where: {
-          AND: [
-            {
-              authorid,
-              // 筛选state不是archived的内容
-              archived,
-            },
-            { ...filter },
-          ],
-        },
-        skip: skip ? skip : 0,
-        take: limit ? limit : 20,
-        orderBy: [
+  try {
+    const rotes = await prisma.rote.findMany({
+      where: {
+        AND: [
           {
-            pin: "desc", // 根据 pin 字段从最大的开始获取
+            authorid,
+            archived,
           },
-          {
-            createdAt: "desc", // 根据 updatedAt 字段从最新的开始获取
-          },
+          { ...filter },
         ],
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+      },
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ pin: "desc" }, { createdAt: "desc" }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError("Failed to find user rotes", error);
+  }
 }
 
 export async function findUserPublicRote(
@@ -363,53 +293,38 @@ export async function findUserPublicRote(
   filter: any,
   archived: any
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    console.log(`filter: ${JSON.stringify(filter)}`);
-    // 修改代码跳过skip个数据，再拉取limit个数据返回
-    prisma.rote
-      .findMany({
-        where: {
-          AND: [
-            {
-              authorid: userid,
-              // 筛选state不是archived的内容
-              archived,
-              state: "public",
-            },
-            { ...filter },
-          ],
-        },
-        skip: skip ? skip : 0,
-        take: limit ? limit : 20,
-        orderBy: [
+  try {
+    const rotes = await prisma.rote.findMany({
+      where: {
+        AND: [
           {
-            pin: "desc", // 根据 pin 字段从最大的开始获取
+            authorid: userid,
+            archived,
+            state: "public",
           },
-          {
-            createdAt: "desc", // 根据 updatedAt 字段从最新的开始获取
-          },
+          { ...filter },
         ],
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+      },
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ pin: "desc" }, { createdAt: "desc" }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError("Failed to find public rotes", error);
+  }
 }
 
 export async function findPublicRote(
@@ -417,325 +332,236 @@ export async function findPublicRote(
   limit: number | undefined,
   filter: any
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    console.log(`filter: ${JSON.stringify(filter)}`);
-    // 修改代码跳过skip个数据，再拉取limit个数据返回
-    prisma.rote
-      .findMany({
-        where: {
-          AND: [
-            {
-              state: "public",
-            },
-            { ...filter },
-          ],
-        },
-        skip: skip ? skip : 0,
-        take: limit ? limit : 20,
-        orderBy: [
-          {
-            createdAt: "desc", // 根据 updatedAt 字段从最新的开始获取
-          },
-        ],
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
-          },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
-        },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
-}
-
-export async function getMyTags(userid: any): Promise<any> {
-  console.log(userid);
-  return new Promise((resolve, reject) => {
-    prisma.rote
-      .findMany({
-        where: {
-          authorid: userid,
-        },
-        select: {
-          tags: true,
-        },
-      })
-      .then((res) => {
-        console.log(`所有标签: ${JSON.stringify(res)}`);
-        const allTags = Array.from(new Set(res.flatMap((item) => item.tags)));
-        resolve(allTags);
-      })
-      .catch((error) => {
-        console.error("Error getting tags:", error);
-        reject(error);
-      });
-  });
-}
-
-export async function getMySession(userid: any): Promise<any> {
-  console.log(userid);
-  return new Promise((resolve, reject) => {
-    prisma.session
-      .findMany({
-        where: {
-          data: {
-            contains: userid,
+  try {
+    const rotes = await prisma.rote.findMany({
+      where: {
+        AND: [{ state: "public" }, { ...filter }],
+      },
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ createdAt: "desc" }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
         },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((error) => {
-        console.error("Error getting sessions:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError("Failed to find public rotes", error);
+  }
 }
 
-export async function generateOpenKey(userid: any): Promise<any> {
-  console.log(userid);
-  return new Promise((resolve, reject) => {
-    prisma.userOpenKey
-      .create({
+export async function getMyTags(userid: string): Promise<any> {
+  try {
+    const rotes = await prisma.rote.findMany({
+      where: { authorid: userid },
+      select: { tags: true },
+    });
+    const allTags = Array.from(new Set(rotes.flatMap((item) => item.tags)));
+    return allTags;
+  } catch (error) {
+    throw new DatabaseError("Failed to get user tags", error);
+  }
+}
+
+export async function getMySession(userid: string): Promise<any> {
+  try {
+    const sessions = await prisma.session.findMany({
+      where: {
         data: {
-          permissions: ["SENDROTE"],
-          userid,
+          contains: userid,
         },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((error) => {
-        console.error("Error generate openkey:", error);
-        reject(error);
-      });
-  });
+      },
+    });
+    return sessions;
+  } catch (error) {
+    throw new DatabaseError("Failed to get user sessions", error);
+  }
 }
 
-export async function getMyOpenKey(userid: any): Promise<any> {
-  console.log(userid);
-  return new Promise((resolve, reject) => {
-    prisma.userOpenKey
-      .findMany({
-        where: {
-          userid,
-        },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((error) => {
-        console.error("Error generate openkey:", error);
-        reject(error);
-      });
-  });
+export async function generateOpenKey(userid: string): Promise<any> {
+  try {
+    const openKey = await prisma.userOpenKey.create({
+      data: {
+        permissions: ["SENDROTE"],
+        userid,
+      },
+    });
+    return openKey;
+  } catch (error) {
+    throw new DatabaseError("Failed to generate open key", error);
+  }
 }
 
-export async function deleteMyOneOpenKey(userid: any, id: any): Promise<any> {
-  console.log(userid, id);
-  return new Promise((resolve, reject) => {
-    prisma.userOpenKey
-      .findUnique({
-        where: {
-          id,
-        },
-      })
-      .then((res) => {
-        if (!res) {
-          reject();
-        } else {
-          if (res.userid !== userid) {
-            reject();
-          }
+export async function getMyOpenKey(userid: string): Promise<any> {
+  try {
+    const openKeys = await prisma.userOpenKey.findMany({
+      where: { userid },
+    });
+    return openKeys;
+  } catch (error) {
+    throw new DatabaseError("Failed to get user open keys", error);
+  }
+}
 
-          prisma.userOpenKey
-            .delete({
-              where: {
-                id,
-              },
-            })
-            .then((res) => {
-              resolve(res);
-            })
-            .catch(() => {
-              reject();
-            });
-        }
-      })
-      .catch((error) => {
-        console.error("Error generate openkey:", error);
-        reject(error);
-      });
-  });
+export async function deleteMyOneOpenKey(
+  userid: string,
+  id: string
+): Promise<any> {
+  try {
+    const openKey = await prisma.userOpenKey.findUnique({
+      where: { id },
+    });
+
+    if (!openKey) {
+      throw new DatabaseError("Open key not found");
+    }
+
+    if (openKey.userid !== userid) {
+      throw new DatabaseError("Unauthorized to delete this open key");
+    }
+
+    const result = await prisma.userOpenKey.delete({
+      where: { id },
+    });
+    return result;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to delete open key: ${id}`, error);
+  }
 }
 
 export async function editMyOneOpenKey(
-  userid: any,
+  userid: string,
   id: string,
   permissions: string[]
 ): Promise<any> {
-  console.log(userid, id);
-  return new Promise((resolve, reject) => {
-    prisma.userOpenKey
-      .findUnique({
-        where: {
-          id,
-        },
-      })
-      .then((res) => {
-        if (!res) {
-          reject("OpenKey not found!");
-        } else {
-          if (res.userid !== userid) {
-            reject("OpenKey user not match!");
-          }
+  try {
+    const openKey = await prisma.userOpenKey.findUnique({
+      where: { id },
+    });
 
-          prisma.userOpenKey
-            .update({
-              where: {
-                id,
-              },
-              data: {
-                permissions,
-              },
-            })
-            .then((res) => {
-              resolve(res);
-            })
-            .catch(() => {
-              reject();
-            });
-        }
-      })
-      .catch((error) => {
-        console.error("Error generate openkey:", error);
-        reject(error);
-      });
-  });
+    if (!openKey) {
+      throw new DatabaseError("Open key not found");
+    }
+
+    if (openKey.userid !== userid) {
+      throw new DatabaseError("Unauthorized to edit this open key");
+    }
+
+    const result = await prisma.userOpenKey.update({
+      where: { id },
+      data: { permissions },
+    });
+    return result;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to update open key: ${id}`, error);
+  }
 }
 
 export async function getOneOpenKey(id: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.userOpenKey
-      .findUnique({
-        where: {
-          id,
-        },
-      })
-      .then((res) => {
-        if (!res) {
-          reject("OpenKey not found!");
-        } else {
-          resolve(res);
-        }
-      })
-      .catch((error) => {
-        console.error("Error generate openkey:", error);
-        reject(error);
-      });
-  });
+  try {
+    const openKey = await prisma.userOpenKey.findUnique({
+      where: { id },
+    });
+
+    if (!openKey) {
+      throw new DatabaseError("Open key not found");
+    }
+
+    return openKey;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to get open key: ${id}`, error);
+  }
 }
 
 export async function createAttachments(
-  userid: any,
-  roteid: any,
+  userid: string,
+  roteid: string | undefined,
   data: UploadResult[]
 ): Promise<any> {
-  console.log(userid);
-  const attachments = data.map((e: UploadResult) => {
-    return {
+  try {
+    const attachments = data.map((e: UploadResult) => ({
       userid,
       roteid,
       url: e.url,
       compressUrl: e.compressUrl,
       details: e.details,
       storage: "R2",
-    };
-  });
-  return new Promise(async (resolve, reject) => {
-    try {
-      const attachments_new = await prisma.$transaction(
-        attachments.map((attachment: any) =>
-          prisma.attachment.create({
-            data: attachment,
-          })
-        )
-      );
-      resolve(attachments_new);
-    } catch (error) {
-      console.error("Error create attachment:", error);
-      reject(error);
-    }
-  });
+    }));
+
+    const attachments_new = await prisma.$transaction(
+      attachments.map((attachment: any) =>
+        prisma.attachment.create({
+          data: attachment,
+        })
+      )
+    );
+    return attachments_new;
+  } catch (error) {
+    throw new DatabaseError("Failed to create attachments", error);
+  }
 }
 
 export async function editMyProfile(userid: any, data: any): Promise<any> {
-  console.log(userid);
-  return new Promise((resolve, reject) => {
-    prisma.user
-      .update({
-        where: {
-          id: userid,
-        },
-        data: {
-          avatar: data.avatar || undefined,
-          nickname: data.nickname || undefined,
-          description: data.description || undefined,
-          cover: data.cover || undefined,
-        },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch(() => {
-        reject();
-      });
-  });
+  try {
+    const user = await prisma.user.update({
+      where: { id: userid },
+      data: {
+        avatar: data.avatar || undefined,
+        nickname: data.nickname || undefined,
+        description: data.description || undefined,
+        cover: data.cover || undefined,
+      },
+    });
+    return user;
+  } catch (error) {
+    throw new DatabaseError("Failed to update user profile", error);
+  }
 }
 
 export async function getUserInfoByUsername(username: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.user
-      .findUnique({
-        where: {
-          username,
-        },
-        select: {
-          id: true,
-          avatar: true,
-          cover: true,
-          nickname: true,
-          username: true,
-          createdAt: true,
-          description: true,
-        },
-      })
-      .then((res) => {
-        console.log(res);
-        if (res) {
-          resolve(res);
-        } else {
-          reject("User not found");
-        }
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        avatar: true,
+        cover: true,
+        nickname: true,
+        username: true,
+        createdAt: true,
+        description: true,
+      },
+    });
+
+    if (!user) {
+      throw new DatabaseError("User not found");
+    }
+
+    return user;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to get user info: ${username}`, error);
+  }
 }
 
 export async function getHeatMap(
@@ -743,133 +569,118 @@ export async function getHeatMap(
   startDate: string,
   endDate: string
 ): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.rote
-      .findMany({
-        where: {
-          authorid: userId,
-          createdAt: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
+  try {
+    const rotes = await prisma.rote.findMany({
+      where: {
+        authorid: userId,
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
         },
-      })
-      .then((res) => {
-        // 将结果转换为所需的格式
-        const result = res.reduce((acc: any, item: any) => {
-          const date = item.createdAt.toISOString().split("T")[0];
-          acc[date] = (acc[date] || 0) + 1;
-          return acc;
-        }, {});
-        resolve(result);
-      })
-      .catch((error) => {
-        console.error("Error generate openkey:", error);
-        reject(error);
-      });
-  });
+      },
+    });
+
+    const result = rotes.reduce((acc: any, item: any) => {
+      const date = item.createdAt.toISOString().split("T")[0];
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {});
+
+    return result;
+  } catch (error) {
+    throw new DatabaseError("Failed to generate heatmap data", error);
+  }
 }
 
 export async function getSiteMapData(): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.user
-      .findMany({
-        where: {},
-        select: {
-          username: true,
-          nickname: true,
-        },
-      })
-      .then((res) => {
-        resolve(res);
-      })
-      .catch((error) => {
-        console.error("Error prisma method:", error);
-        reject(error);
-      });
-  });
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        username: true,
+        nickname: true,
+      },
+    });
+    return users;
+  } catch (error) {
+    throw new DatabaseError("Failed to get sitemap data", error);
+  }
 }
 
-export async function getStatus(): Promise<any> {
-  return new Promise((resolve, reject) => {
-    prisma.rote
-      .findFirst({
-        where: {},
-      })
-      .then((res) => {
-        resolve(true);
-      })
-      .catch((error) => {
-        console.error("Error prisma method:", error);
-        reject(error);
-      });
-  });
+export async function getStatus(): Promise<boolean> {
+  try {
+    await prisma.rote.findFirst();
+    return true;
+  } catch (error) {
+    throw new DatabaseError("Failed to check database status", error);
+  }
 }
 
 export async function findMyRandomRote(authorid: string): Promise<any> {
-  return new Promise(async (resolve, reject) => {
-    let allCount = await prisma.rote.count({ where: { authorid } });
-    let random = Math.floor(Math.random() * allCount);
-    prisma.rote
-      .findFirst({
-        where: {
-          authorid,
-        },
-        skip: random,
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+  try {
+    const allCount = await prisma.rote.count({ where: { authorid } });
+    if (allCount === 0) {
+      throw new DatabaseError("No rotes found for user");
+    }
+
+    const random = Math.floor(Math.random() * allCount);
+    const rote = await prisma.rote.findFirst({
+      where: { authorid },
+      skip: random,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+
+    return rote;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError("Failed to find random user rote", error);
+  }
 }
 
 export async function findRandomPublicRote(): Promise<any> {
-  return new Promise(async (resolve, reject) => {
-    let allCount = await prisma.rote.count({ where: { state: "public" } });
-    let random = Math.floor(Math.random() * allCount);
-    prisma.rote
-      .findFirst({
-        where: {
-          state: "public",
-        },
-        skip: random,
-        include: {
-          author: {
-            select: {
-              username: true,
-              nickname: true,
-              avatar: true,
-            },
+  try {
+    const allCount = await prisma.rote.count({ where: { state: "public" } });
+    if (allCount === 0) {
+      throw new DatabaseError("No public rotes found");
+    }
+
+    const random = Math.floor(Math.random() * allCount);
+    const rote = await prisma.rote.findFirst({
+      where: { state: "public" },
+      skip: random,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
           },
-          attachments: true,
-          userreaction: true,
-          visitorreaction: true,
         },
-      })
-      .then((rote) => {
-        resolve(rote);
-      })
-      .catch((error) => {
-        console.error("Error finding rote:", error);
-        reject(error);
-      });
-  });
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+
+    return rote;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError("Failed to find random public rote", error);
+  }
 }
 
 export async function changeUserPassword(
@@ -885,13 +696,12 @@ export async function changeUserPassword(
     });
 
     if (!user) {
-      throw new Error("User not found");
+      throw new DatabaseError("User not found");
     }
 
     const passwordhash = user.passwordhash;
     const salt = user.salt;
 
-    // 使用异步版本的pbkdf2
     const oldpasswordhash = crypto.pbkdf2Sync(
       oldpassword,
       salt,
@@ -900,37 +710,10 @@ export async function changeUserPassword(
       "sha256"
     );
 
-    if (oldpasswordhash.toString("hex") === passwordhash.toString("hex")) {
-      const newSalt = crypto.randomBytes(16);
-      const newpasswordhash = crypto.pbkdf2Sync(
-        newpassword,
-        newSalt,
-        310000,
-        32,
-        "sha256"
-      );
-
-      const userUpdate = await prisma.user.update({
-        where: {
-          id: user.id,
-        },
-        data: {
-          passwordhash: newpasswordhash,
-          salt: newSalt, // 使用新盐值
-        },
-      });
-
-      return userUpdate;
-    } else {
-      throw new Error("Password not match");
+    if (oldpasswordhash.toString("hex") !== passwordhash.toString("hex")) {
+      throw new DatabaseError("Incorrect old password");
     }
-  } catch (error) {
-    throw error; // 直接抛出错误，让调用者处理
-  }
-}
 
-export async function ccccc(id: any, newpassword: string): Promise<any> {
-  return new Promise(async (resolve, reject) => {
     const newSalt = crypto.randomBytes(16);
     const newpasswordhash = crypto.pbkdf2Sync(
       newpassword,
@@ -942,35 +725,42 @@ export async function ccccc(id: any, newpassword: string): Promise<any> {
 
     const userUpdate = await prisma.user.update({
       where: {
-        id,
+        id: user.id,
       },
       data: {
         passwordhash: newpasswordhash,
-        salt: newSalt, // 使用新盐值
+        salt: newSalt,
       },
     });
 
-    resolve(userUpdate);
-  });
+    return userUpdate;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError("Failed to change password", error);
+  }
 }
 
 export async function statistics(authorid: string): Promise<any> {
-  return new Promise(async (resolve, reject) => {
-    let noteCount = await prisma.rote.count({ where: { authorid } });
-    let attachments = await prisma.attachment.findMany({
-      where: { userid: authorid },
-    });
+  try {
+    const [noteCount, attachments] = await Promise.all([
+      prisma.rote.count({ where: { authorid } }),
+      prisma.attachment.findMany({ where: { userid: authorid } }),
+    ]);
 
-    resolve({
+    return {
       noteCount,
       attachmentsCount: attachments.length,
-    });
-  });
+    };
+  } catch (error) {
+    throw new DatabaseError("Failed to get user statistics", error);
+  }
 }
 
 export async function exportData(authorid: string): Promise<any> {
-  return new Promise(async (resolve, reject) => {
-    let notes = await prisma.rote.findMany({
+  try {
+    const notes = await prisma.rote.findMany({
       where: { authorid },
       include: {
         author: {
@@ -985,8 +775,8 @@ export async function exportData(authorid: string): Promise<any> {
         visitorreaction: true,
       },
     });
-    resolve({
-      notes,
-    });
-  });
+    return { notes };
+  } catch (error) {
+    throw new DatabaseError("Failed to export user data", error);
+  }
 }

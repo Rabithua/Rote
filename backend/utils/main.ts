@@ -19,72 +19,58 @@ export function sanitizeOtherUserData(user: User) {
   delete (user as { updatedAt?: any }).updatedAt;
   return user;
 }
-// 自定义身份验证中间件
+// Custom authentication middleware
 export function isAuthenticated(req: any, res: any, next: any) {
   if (req.isAuthenticated()) {
     next();
   } else {
-    res.status(401).send({
-      code: 1,
-      msg: "Unauthenticated",
-      data: null,
-    });
+    const error = new Error("Unauthenticated");
+    error.name = "AuthenticationError";
+    next(error);
   }
 }
 
-// 自定义身份验证中间件
+// Custom admin authentication middleware
 export function isAdmin(req: any, res: any, next: any) {
-  if (req.isAuthenticated()) {
-    const user = req.user as User;
-    if (user.username !== "rabithua") {
-      res.status(401).send({
-        code: 1,
-        msg: "Unauthenticated: Not admin",
-        data: null,
-      });
-      return;
-    }
-    next();
-  } else {
-    res.status(401).send({
-      code: 1,
-      msg: "Unauthenticated",
-      data: null,
-    });
+  if (!req.isAuthenticated()) {
+    const error = new Error("Unauthenticated");
+    error.name = "AuthenticationError";
+    return next(error);
   }
+
+  const user = req.user as User;
+  if (user.username !== "rabithua") {
+    const error = new Error("Unauthenticated: Not admin");
+    error.name = "AuthorizationError";
+    return next(error);
+  }
+  next();
 }
 
-// 自定义身份验证中间件
+// Custom author authentication middleware
 export function isAuthor(req: any, res: any, next: any) {
-  if (req.isAuthenticated()) {
-    const user = req.user as User;
-    if (!req.body.authorid) {
-      res.status(401).send({
-        code: 1,
-        msg: "Need data",
-        data: null,
-      });
-      return;
-    }
-    if (user.id !== req.body.authorid) {
-      res.status(401).send({
-        code: 1,
-        msg: "Unauthenticated: Not author",
-        data: null,
-      });
-      return;
-    }
-    next();
-  } else {
-    res.status(401).send({
-      code: 1,
-      msg: "Unauthenticated",
-      data: null,
-    });
+  if (!req.isAuthenticated()) {
+    const error = new Error("Unauthenticated");
+    error.name = "AuthenticationError";
+    return next(error);
   }
+
+  const user = req.user as User;
+  if (!req.body.authorid) {
+    const error = new Error("Need data");
+    error.name = "ValidationError";
+    return next(error);
+  }
+
+  if (user.id !== req.body.authorid) {
+    const error = new Error("Unauthenticated: Not author");
+    error.name = "AuthorizationError";
+    return next(error);
+  }
+  next();
 }
 
-// 检查prisma是否连接成功
+// Check if Prisma connection is successful
 export async function checkPrisma(prisma: PrismaClient) {
   try {
     prisma.rote
@@ -103,94 +89,70 @@ export async function checkPrisma(prisma: PrismaClient) {
   }
 }
 
-// body数据格式校验
+// Request body data validation
 export function bodyTypeCheck(req: any, res: any, next: any) {
   const { type, state, editor, permissions } = req.body;
 
   if (state && !stateType.includes(state.toString())) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "State wrong!",
-    });
-    return;
+    const error = new Error("State wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   if (permissions && !Array.isArray(permissions)) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "Permissions wrong!",
-    });
-    return;
+    const error = new Error("Permissions wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   if (type && !roteType.includes(type.toString())) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "Type wrong!",
-    });
-    return;
+    const error = new Error("Type wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   if (editor && !editorType.includes(editor.toString())) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "Editor wrong!",
-    });
-    return;
+    const error = new Error("Editor wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   next();
 }
 
-// query数据格式校验
+// Query parameters validation
 export function queryTypeCheck(req: any, res: any, next: any) {
   const { type, state, editor } = req.query;
 
   if (state && !stateType.includes(state.toString())) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "State wrong!",
-    });
-    return;
+    const error = new Error("State wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   if (type && !roteType.includes(type.toString())) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "Type wrong!",
-    });
-    return;
+    const error = new Error("Type wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   if (editor && !editorType.includes(editor.toString())) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "Editor wrong!",
-    });
-    return;
+    const error = new Error("Editor wrong!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   next();
 }
 
-// OpenKey权限检测中间件
+// OpenKey permission validation middleware
 export function isOpenKeyOk(req: any, res: any, next: any) {
   const { openkey } = req.body;
 
   if (!openkey) {
-    res.status(401).send({
-      code: 1,
-      msg: "error",
-      data: "Need openkey and content!",
-    });
-    return;
+    const error = new Error("Need openkey and content!");
+    error.name = "ValidationError";
+    return next(error);
   }
 
   getOneOpenKey(openkey.toString())
@@ -199,10 +161,8 @@ export function isOpenKeyOk(req: any, res: any, next: any) {
       next();
     })
     .catch(async (e) => {
-      res.status(401).send({
-        code: 1,
-        msg: "error",
-        data: e,
-      });
+      const error = new Error(e);
+      error.name = "ValidationError";
+      next(error);
     });
 }
