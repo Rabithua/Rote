@@ -17,6 +17,7 @@ import AvatarEditor from "react-avatar-editor";
 import toast from "react-hot-toast";
 import Linkify from "react-linkify";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 function ProfilePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.profile" });
@@ -218,8 +219,14 @@ function ProfilePage() {
         </div>
       </div>
       <div className=" flex flex-col mx-4 gap-1">
-        <div className=" text-2xl font-semibold">{profile?.nickname}</div>
-        <div className=" text-base text-gray-500">@{profile?.username}</div>
+        <Link to={`/${profile?.username}`}>
+          <h1 className=" hover:underline w-fit text-2xl font-semibold">
+            {profile?.nickname}
+          </h1>
+          <h2 className=" hover:underline w-fit text-base text-gray-500">
+            @{profile?.username}
+          </h2>
+        </Link>
         <div className=" text-base ">
           <div className=" aTagStyle break-words whitespace-pre-line">
             <Linkify>
@@ -257,7 +264,7 @@ function ProfilePage() {
             })}
             <div
               onClick={generateOpenKeyFun}
-              className=" cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
+              className=" text-primary cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
             >
               <div className=" break-all mr-auto font-semibold font-mono">
                 {openKeys.length === 0 ? t("noOpenKey") : t("addOpenKey")}
