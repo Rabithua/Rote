@@ -98,8 +98,8 @@
       "registerTime": "Register Time:",
       "openKeyDescription": "OpenKey allows easy access to permission-specific features. Properly allocate permissions to avoid unnecessary troubles from OpenKey leakage.",
       "loading": "Loading...",
-      "noOpenKey": "No OpenKey yet, create one?",
-      "addOpenKey": "Add an OpenKey",
+      "noOpenKey": "No OpenKey yet, generate one?",
+      "addOpenKey": "Generate an OpenKey",
       "email": "Email",
       "username": "Username",
       "nickname": "Nickname",
@@ -295,7 +295,8 @@
       "elementNotFound": "Element to save not found"
     },
     "tagMap": {
-      "noTags": "No tags yet"
+      "noTags": "No tags yet",
+      "expand": "Expand"
     },
     "uploader": {
       "fileLimit": "File count exceeds limit, excess files removed!"

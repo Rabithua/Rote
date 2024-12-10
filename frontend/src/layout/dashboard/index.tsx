@@ -83,14 +83,14 @@ function LayoutDashboard() {
     <div className=" bg-bgLight text-textLight w-full h-dvh dark:bg-bgDark dark:text-textDark">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
         {ifshowLeftNav ? (
-          <div className=" sticky top-0 flex lg:w-[150px] px-1 sm:px-2 lg:px-5 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-center justify-center">
+          <div className=" sticky top-0 flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-start justify-center">
             {icons.map((icon, index) => {
               return (
                 <Link key={`leftLinks_${index}`} to={icon.link}>
                   <div
                     className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
                       window.location.pathname.includes(icon.link)
-                        ? " bg-[#00000010] dark:bg-[#ffffff10]"
+                        ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
                         : ""
                     } `}
                   >

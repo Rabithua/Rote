@@ -1,3 +1,7 @@
+/**
+ * Compress images in a folder using sharp
+ */
+
 import * as fs from "fs";
 import * as path from "path";
 import sharp from "sharp";

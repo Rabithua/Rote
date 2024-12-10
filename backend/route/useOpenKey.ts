@@ -1,6 +1,11 @@
+/**
+ * OpenKey API
+ */
+
 import express from "express";
 import { isOpenKeyOk, queryTypeCheck } from "../utils/main";
-import { getOneOpenKey, createRote } from "../utils/dbMethods";
+import { getOneOpenKey, createRote, findMyRote } from "../utils/dbMethods";
+import { asyncHandler } from "../utils/handlers";
 
 declare module "express-serve-static-core" {
   interface Request {
@@ -16,102 +21,109 @@ declare module "express-serve-static-core" {
 
 let useOpenKey = express.Router();
 
-useOpenKey.get("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
-  const { content, state, type, tag, pin } = req.query;
+// send rote using openkey: GET
+useOpenKey.get(
+  "/onerote",
+  isOpenKeyOk,
+  queryTypeCheck,
+  asyncHandler(async (req, res) => {
+    const { content, state, type, tag, pin } = req.query;
 
-  if (!content) {
-    res.send({
-      code: 1,
-      msg: "error",
-      data: "Need openkey and content!",
+    if (!content) {
+      throw new Error("Need content!");
+    }
+
+    if (!req.openKey?.permissions.includes("SENDROTE")) {
+      throw new Error("OpenKey permission unmatch!");
+    }
+
+    const rote = {
+      content,
+      state: state || "private",
+      type: type || "rote",
+      tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
+      pin: !!pin,
+    };
+
+    const result = await createRote({
+      ...rote,
+      authorid: req.openKey.userid,
     });
-    return;
-  }
 
-  const rote = {
-    content,
-    state: state || "private",
-    type: type || "rote",
-    tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
-    pin: !!pin,
-  };
-
-  if (!req.openKey?.permissions.includes("SENDROTE")) {
     res.send({
-      code: 1,
-      msg: "error",
-      data: "OpenKey permission unmatch!",
+      code: 0,
+      msg: "ok",
+      data: result,
     });
-    return;
-  }
-
-  createRote({
-    ...rote,
-    authorid: req.openKey.userid,
   })
-    .then(async (rote) => {
-      res.send({
-        code: 0,
-        msg: "ok",
-        data: rote,
-      });
-    })
-    .catch(async (e) => {
-      res.send({
-        code: 1,
-        msg: "error",
-        data: e,
-      });
+);
+
+// send rote using openkey: POST
+useOpenKey.post(
+  "/onerote",
+  isOpenKeyOk,
+  queryTypeCheck,
+  asyncHandler(async (req, res) => {
+    const { content, state, type, tags, pin } = req.body;
+
+    if (!content) {
+      throw new Error("Need content!");
+    }
+
+    if (!req.openKey?.permissions.includes("SENDROTE")) {
+      throw new Error("OpenKey permission unmatch!");
+    }
+
+    const rote = {
+      content,
+      state: state || "private",
+      type: type || "rote",
+      tags: Array.isArray(tags) ? tags : tags ? tags.split(" ") : [],
+      pin: !!pin,
+    };
+
+    const result = await createRote({
+      ...rote,
+      authorid: req.openKey.userid,
     });
-});
 
-useOpenKey.post("/onerote", isOpenKeyOk, queryTypeCheck, (req, res) => {
-  const { content, state, type, tags, pin } = req.body;
-
-  if (!content) {
     res.send({
-      code: 1,
-      msg: "error",
-      data: "Need openkey and content!",
+      code: 0,
+      msg: "ok",
+      data: result,
     });
-    return;
-  }
-
-  const rote = {
-    content,
-    state: state || "private",
-    type: type || "rote",
-    tags: Array.isArray(tags) ? tags : tags ? tags.split(" ") : [],
-    pin: !!pin,
-  };
-
-  if (!req.openKey?.permissions.includes("SENDROTE")) {
-    res.send({
-      code: 1,
-      msg: "error",
-      data: "OpenKey permission unmatch!",
-    });
-    return;
-  }
-
-  createRote({
-    ...rote,
-    authorid: req.openKey.userid,
   })
-    .then(async (rote) => {
-      res.send({
-        code: 0,
-        msg: "ok",
-        data: rote,
-      });
-    })
-    .catch(async (e) => {
-      res.send({
-        code: 1,
-        msg: "error",
-        data: e,
-      });
+);
+
+// get rote using openkey: GET
+useOpenKey.get(
+  "/myrote",
+  isOpenKeyOk,
+  asyncHandler(async (req, res) => {
+    const { skip, limit, archived } = req.query;
+    const filter = req.body.filter || {};
+
+    if (!req.openKey?.permissions.includes("GETROTE")) {
+      throw new Error("OpenKey permission unmatch!");
+    }
+
+    const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+
+    const rote = await findMyRote(
+      req.openKey.userid,
+      parsedSkip,
+      parsedLimit,
+      filter,
+      archived ? (archived === "true" ? true : false) : undefined
+    );
+
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: rote,
     });
-});
+  })
+);
 
 export default useOpenKey;

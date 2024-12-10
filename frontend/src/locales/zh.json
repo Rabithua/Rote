@@ -103,8 +103,8 @@
       "registerTime": "注册时间：",
       "openKeyDescription": "OpenKey 可以轻易的使用权限指定的功能，合理分配权限，避免 OpenKey 泄露带来不必要的麻烦。",
       "loading": "加载中...",
-      "noOpenKey": "暂时还没有OpenKey，新建一个？",
-      "addOpenKey": "添加一个OpenKey",
+      "noOpenKey": "暂时还没有OpenKey，生成一个？",
+      "addOpenKey": "生成一个OpenKey",
       "email": "邮箱",
       "username": "用户名",
       "nickname": "昵称",
@@ -296,7 +296,8 @@
       "elementNotFound": "未找到要保存的元素"
     },
     "tagMap": {
-      "noTags": "还没有标签"
+      "noTags": "还没有标签",
+      "expand": "展开"
     },
     "uploader": {
       "fileLimit": "文件数量超过限制，已去除多余文件！"

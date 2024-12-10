@@ -83,7 +83,11 @@ function OpenKeyItem({ openKey }: any) {
   }
 
   async function copyToClipboard(): Promise<void> {
-    const text = `${process.env.REACT_APP_BASEURL_PRD}/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
+    const text = `${
+      process.env.REACT_APP_BASEURL_PRD || "http://localhost:3000"
+    }/v1/api/openkey/onerote?openkey=${
+      openKey.id
+    }&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
     try {
       await navigator.clipboard.writeText(text);
       toast.success(t("copySuccess"));
@@ -96,7 +100,7 @@ function OpenKeyItem({ openKey }: any) {
     <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark">
       <div className=" flex items-center break-all mr-auto font-semibold font-mono">
         {hidekey
-          ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)
+          ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
           : openKey.id}
         {hidekey ? (
           <EyeOutlined
@@ -124,10 +128,10 @@ function OpenKeyItem({ openKey }: any) {
       <div className="">
         {t("example")}：
         <span className=" font-mono break-all">
-          {process.env.REACT_APP_BASEURL_PRD}
+          {process.env.REACT_APP_BASEURL_PRD || "http://localhost:3000"}
           /v1/api/openkey/onerote?openkey=
           {hidekey
-            ? openKey.id.slice(0, 4) + "****************" + openKey.id.slice(-4)
+            ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
             : openKey.id}
           &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private
         </span>

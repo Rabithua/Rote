@@ -1,6 +1,6 @@
 import moment from "moment";
 
-// 请求中间件，记录IP和时间
+// Request middleware, record IP and time
 const recoderIpAndTime = function (req: any, res: any, next: any) {
   const ipAddress = req.ip;
   console.log(

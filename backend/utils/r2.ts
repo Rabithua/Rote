@@ -18,13 +18,13 @@ const s3 = new S3Client({
 async function r2uploadhandler(file: formidable.File) {
   const buffer = await fs.readFile(file.filepath);
 
-  // 生成原始文件的 Key
+  // Generate key for original file
   const originalKey = `uploads/${file.originalFilename}`;
 
-  // 生成 WebP 文件的 Key
+  // Generate key for WebP file
   const webpKey = `compressed/${file.newFilename}.webp`;
 
-  // 上传原始文件
+  // Upload original file
   const originalParam = {
     Bucket: `${process.env.R2_BUCKET}`,
     Key: originalKey,
@@ -34,13 +34,13 @@ async function r2uploadhandler(file: formidable.File) {
   };
   const originalCommand = new PutObjectCommand(originalParam);
 
-  // 使用 sharp 生成 WebP 版本
+  // Generate WebP version using sharp
   const webpBuffer = await sharp(buffer)
     .rotate()
-    .webp({ quality: 20 }) // 你可以调整质量参数
+    .webp({ quality: 20 }) // Quality parameter can be adjusted
     .toBuffer();
 
-  // 上传 WebP 文件
+  // Upload WebP file
   const webpParam = {
     Bucket: `${process.env.R2_BUCKET}`,
     Key: webpKey,
@@ -56,13 +56,13 @@ async function r2uploadhandler(file: formidable.File) {
   const webpCommand = new PutObjectCommand(webpParam);
 
   try {
-    // 分别上传两个文件，并记录结果
+    // Upload both files and record results
     const [originalResult, webpResult] = await Promise.allSettled([
       s3.send(originalCommand),
       s3.send(webpCommand),
     ]);
 
-    // 初始化结果对象
+    // Initialize result object
     const result: UploadResult = {
       url: null,
       compressUrl: null,
@@ -74,26 +74,26 @@ async function r2uploadhandler(file: formidable.File) {
       },
     };
 
-    // 检查原始文件上传结果
+    // Check original file upload result
     if (originalResult.status === "fulfilled") {
       result.url = `https://${process.env.R2_URL_PREFIX}/${originalKey}`;
     } else {
       console.log("Error uploading original file:", originalResult.reason);
     }
 
-    // 检查 WebP 文件上传结果
+    // Check WebP file upload result
     if (webpResult.status === "fulfilled") {
       result.compressUrl = `https://${process.env.R2_URL_PREFIX}/${webpKey}`;
     } else {
       console.log("Error uploading WebP file:", webpResult.reason);
     }
 
-    // 如果两个文件都上传失败，返回 null
+    // Return null if both uploads failed
     if (Object.keys(result).length === 0) {
       return null;
     }
 
-    // 返回结果，可能包含一个或两个 URL
+    // Return result, may contain one or both URLs
     return result;
   } catch (err) {
     console.log("Unexpected error during file upload:", err);

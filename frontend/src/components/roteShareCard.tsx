@@ -185,11 +185,11 @@ function RoteShareCard({ rote }: any) {
             })}
           </div>
         )}
-        <div className=" flex flex-wrap text-sm md:text-md gap-2 items-center font-serif">
+        <div className=" flex flex-wrap text-xs md:text-md  md:font-bold gap-2 items-center font-serif">
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
-                className={` px-2 py-1 md:px-3 font-bold rounded-md ${themes[themeIndex].tagClass}`}
+                className={` px-2 py-1 md:px-3 rounded-md ${themes[themeIndex].tagClass}`}
                 key={`tag_${index}`}
               >
                 {tag}

@@ -1,3 +1,7 @@
+/**
+ * Update attachments with compressUrl
+ */
+
 import axios from "axios";
 import prisma from "../utils/prisma";
 

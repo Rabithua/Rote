@@ -25,5 +25,10 @@
         "explore",
         "archived",
         "experiment"
+    ],
+    "openkeyPermissions": [
+        "SENDROTE",
+        "GETROTE",
+        "EDITROTE"
     ]
 }

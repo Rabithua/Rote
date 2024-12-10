@@ -8,17 +8,17 @@
       "options": [
         {
           "label": {
-            "zh": "公开",
-            "en": "Public"
-          },
-          "value": "public"
-        },
-        {
-          "label": {
             "zh": "私密",
             "en": "Private"
           },
           "value": "private"
+        },
+        {
+          "label": {
+            "zh": "公开",
+            "en": "Public"
+          },
+          "value": "public"
         }
       ]
     }

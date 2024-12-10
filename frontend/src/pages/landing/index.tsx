@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next";
 import { useProfile } from "@/state/profile";
 import { Link } from "react-router-dom";
 import Lottie from "lottie-react";
-import * as animationData from "@/json/Animation - 1714545494540.json";
 
 function Landing() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.landing" });
@@ -39,11 +38,6 @@ function Landing() {
       <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5">
         {/* <LanguageSwitcher /> */}
         <div className=" flex items-center flex-wrap gap-6 px-5 z-10">
-          <Lottie
-            animationData={animationData}
-            loop={true}
-            className=" cursor-pointer absolute top-10 right-0 w-1/3 md:w-1/4 "
-          />
           <div className=" dark:invert">
             <svg
               xmlns="http://www.w3.org/2000/svg"
