@@ -21,15 +21,15 @@ model User {
   nickname           String?
   description        String?
   cover              String?
-  avatar             String               @default("https://r2.rote.ink/others/logo.png")
+  avatar             String?
   usersetting        Usersetting?
   userswsubscription UserSwSubScription[]
   rotes              Rote[]
   attachments        Attachment[]
   openkey            UserOpenKey[]
   userreaction       UserReaction[]
-  createdAt          DateTime             @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt          DateTime             @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
 }
 
 model UserSwSubScription {
@@ -39,8 +39,8 @@ model UserSwSubScription {
   endpoint       String           @unique
   expirationTime String?
   keys           SubScriptionKeys
-  createdAt      DateTime         @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt      DateTime         @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
 
 model Usersetting {
@@ -48,8 +48,8 @@ model Usersetting {
   user      User     @relation(fields: [userid], references: [id])
   userid    String   @unique @db.ObjectId
   darkmode  Boolean  @default(false)
-  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model UserOpenKey {
@@ -57,8 +57,8 @@ model UserOpenKey {
   user        User     @relation(fields: [userid], references: [id])
   userid      String   @db.ObjectId
   permissions String[] @default(["SENDROTE"])
-  createdAt   DateTime @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt   DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Rote {
@@ -76,21 +76,20 @@ model Rote {
   attachments     Attachment[]
   userreaction    UserReaction[]
   visitorreaction VisitorReaction[]
-  createdAt       DateTime          @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt       DateTime          @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 }
 
 model Attachment {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   url         String
-  // 压缩后的图片地址
   compressUrl String?  @default("")
   userid      String?  @db.ObjectId
   roteid      String?  @db.ObjectId
   storage     String
   details     Json
-  createdAt   DateTime @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt   DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   user        User?    @relation(fields: [userid], references: [id])
   rote        Rote?    @relation(fields: [roteid], references: [id])
 }
@@ -102,8 +101,8 @@ model UserReaction {
   userid    String   @db.ObjectId
   rote      Rote     @relation(fields: [roteid], references: [id])
   roteid    String   @db.ObjectId
-  createdAt DateTime @default(now()) // 添加createdAt字段并使用@default指令
-  updatedAt DateTime @updatedAt // 添加updatedAt字段并使用@updatedAt指令
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model VisitorReaction {

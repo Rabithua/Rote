@@ -5,22 +5,37 @@ const { safeRoutes } = mainJson;
 export const RegisterDataZod = z.object({
   username: z
     .string()
-    .min(1, "用户名不能为空")
-    .max(20, "用户名不能超过20位")
-    .regex(/^[A-Za-z0-9_-]+$/, "用户名只能包含大小写字母和数字或者下划线和‘-’")
+    .min(1, "Username cannot be empty")
+    .max(20, "Username cannot exceed 20 characters")
+    .regex(
+      /^[A-Za-z0-9_-]+$/,
+      "Username can only contain letters, numbers, underscore and hyphen"
+    )
     .refine((value) => !safeRoutes.includes(value), {
-      message: "用户名与路由冲突，换一个吧",
+      message: "Username conflicts with routes, please choose another one",
     }),
-  password: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
+  password: z
+    .string()
+    .min(1, "Password cannot be empty")
+    .max(30, "Password cannot exceed 30 characters"),
   email: z
     .string()
-    .min(1, "邮箱不能为空")
-    .max(30, "邮箱不能超过30位")
-    .email("邮箱格式不正确"),
-  nickname: z.string().min(1, "昵称不能为空").max(20, "昵称不能超过20位"),
+    .min(1, "Email cannot be empty")
+    .max(30, "Email cannot exceed 30 characters")
+    .email("Invalid email format"),
+  nickname: z
+    .string()
+    .min(1, "Nickname cannot be empty")
+    .max(20, "Nickname cannot exceed 20 characters"),
 });
 
 export const passwordChangeZod = z.object({
-  newpassword: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
-  oldpassword: z.string().min(1, "密码不能为空").max(30, "密码不能超过30位"),
+  newpassword: z
+    .string()
+    .min(1, "Password cannot be empty")
+    .max(30, "Password cannot exceed 30 characters"),
+  oldpassword: z
+    .string()
+    .min(1, "Password cannot be empty")
+    .max(30, "Password cannot exceed 30 characters"),
 });

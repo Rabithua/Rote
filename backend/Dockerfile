@@ -1,14 +1,14 @@
-# 使用更小的基础镜像
+# Use a smaller base image
 FROM node:18-alpine
 
-# 设置工作目录
+# Set working directory
 WORKDIR /root/rote_node
 
-# 复制项目文件
+# Copy project files
 COPY ./ .
 
-# 暴露容器的 3000 端口
+# Expose container port 3000
 EXPOSE 3000
 
-# 在容器启动时安装依赖、编译 Prisma 客户端并启动应用
+# Install dependencies, compile Prisma client and start app on container launch
 CMD ["sh", "-c", "npm install --omit=dev && npx prisma db push && npm start"]

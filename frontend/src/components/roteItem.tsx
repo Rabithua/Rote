@@ -131,13 +131,13 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
   function actionsMenu(rote: any) {
     function deleteRote() {
       hide();
-      const toastId = toast.loading(t("messages.deleting", "删除中..."));
+      const toastId = toast.loading(t("messages.deleting"));
       apiDeleteMyRote({
         id: rote.id,
         authorid: rote.authorid,
       })
         .then((res) => {
-          toast.success(t("messages.deleteSuccess", "删除成功"), {
+          toast.success(t("messages.deleteSuccess"), {
             id: toastId,
           });
           rotesDispatch({
@@ -157,14 +157,14 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           }
         })
         .catch(() => {
-          toast.error(t("messages.deleteFailed", "删除失败"), {
+          toast.error(t("messages.deleteFailed"), {
             id: toastId,
           });
         });
     }
     function editRotePin() {
       hide();
-      const toastId = toast.loading(t("messages.editing", "编辑中..."));
+      const toastId = toast.loading(t("messages.editing"));
       apiEditMyRote({
         id: rote.id,
         authorid: rote.authorid,
@@ -196,14 +196,14 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           setRote(res.data.data);
         })
         .catch(() => {
-          toast.error(t("messages.editFailed", "编辑失败"), {
+          toast.error(t("messages.editFailed"), {
             id: toastId,
           });
         });
     }
     function editRoteArchived() {
       hide();
-      const toastId = toast.loading(t("messages.editing", "编辑中..."));
+      const toastId = toast.loading(t("messages.editing"));
       apiEditMyRote({
         id: rote.id,
         authorid: rote.authorid,
@@ -224,8 +224,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           });
           toast.success(
             `${rote.archived ? t("unarchive") : t("archive")}${t(
-              "messages.editSuccess",
-              "成功"
+              "messages.editSuccess"
             )}`,
             {
               id: toastId,
@@ -234,7 +233,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           setRote(res.data.data);
         })
         .catch(() => {
-          toast.error(t("messages.editFailed", "请求失败"), {
+          toast.error(t("messages.editFailed"), {
             id: toastId,
           });
         });
@@ -390,11 +389,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
             {rote.updatedAt !== rote.createdAt ? (
               <Tooltip
                 placement="bottom"
-                title={t("tooltips.edited", {
-                  time: moment
-                    .utc(rote.updatedAt)
-                    .format("YYYY/MM/DD HH:mm:ss"),
-                })}
+                title={moment.utc(rote.updatedAt).format("YYYY/MM/DD HH:mm:ss")}
               >
                 <EditOutlined
                   className={` cursor-pointer text-md rounded-md`}
@@ -435,7 +430,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className=" hover:text-primary gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center"
+                  className=" hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center"
                 >
                   <DownOutlined />
                   {t("expand")}

@@ -1,18 +1,19 @@
 import { RateLimiterMemory } from "rate-limiter-flexible";
 
-// 配置限流器
+// Configure the rate limiter
 const limiter = new RateLimiterMemory({
-    points: 10, // 在持续时间内允许的最大请求数
-    duration: 1, // 持续时间，单位为秒
+  points: 10, // Maximum number of requests allowed within the duration
+  duration: 1, // Duration in seconds
 });
 
-// 创建限流中间件函数
+// Create rate limiting middleware function
 export const rateLimiterMiddleware = (req: any, res: any, next: any) => {
-    limiter.consume(req.ip) // 基于IP地址跟踪请求
-        .then(() => {
-            next(); // 请求在限流范围内，继续执行下一个中间件
-        })
-        .catch(() => {
-            res.status(429).send('请求过多'); // 请求超出限流范围，返回429状态码和错误消息
-        });
+  limiter
+    .consume(req.ip) // Track requests based on IP address
+    .then(() => {
+      next(); // Request is within the rate limit, proceed to the next middleware
+    })
+    .catch(() => {
+      res.status(429).send("Too Many Requests"); // Request exceeds the rate limit, return 429 status code and error message
+    });
 };

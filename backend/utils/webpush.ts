@@ -1,4 +1,4 @@
-// webpush PWA消息推送
+// Web Push notification service for PWA
 import webpush from "web-push";
 
 const apiKeys = {

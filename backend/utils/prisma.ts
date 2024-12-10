@@ -10,15 +10,15 @@ const prisma = new PrismaClient({
 });
 
 prisma.$on("warn", (e) => {
-  console.log(e);
+  console.log("Prisma Warn:", e);
 });
 
 prisma.$on("info", (e) => {
-  console.log(e);
+  console.log("Prisma Info:", e);
 });
 
 prisma.$on("error", (e) => {
-  // console.log(e);
+  console.log("Prisma Error:", e);
 });
 
 checkPrisma(prisma);
