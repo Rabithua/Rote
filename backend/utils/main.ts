@@ -147,10 +147,10 @@ export function queryTypeCheck(req: any, res: any, next: any) {
 
 // OpenKey permission validation middleware
 export function isOpenKeyOk(req: any, res: any, next: any) {
-  const { openkey } = req.body;
+  const openkey = req.body?.openkey || req.query?.openkey;
 
   if (!openkey) {
-    const error = new Error("Need openkey and content!");
+    const error = new Error("Need openkey!");
     error.name = "ValidationError";
     return next(error);
   }
