@@ -32,7 +32,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:l
 
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t rabithua/rotebackend:latest \
-  -t rabithua/rotebackend:0.2.2 \
+  -t rabithua/rotebackend:0.2.3 \
   --push .
 ```
 
