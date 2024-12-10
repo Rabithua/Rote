@@ -1,6 +1,10 @@
+/**
+ * OpenKey API
+ */
+
 import express from "express";
 import { isOpenKeyOk, queryTypeCheck } from "../utils/main";
-import { getOneOpenKey, createRote } from "../utils/dbMethods";
+import { getOneOpenKey, createRote, findMyRote } from "../utils/dbMethods";
 import { asyncHandler } from "../utils/handlers";
 
 declare module "express-serve-static-core" {
@@ -17,6 +21,7 @@ declare module "express-serve-static-core" {
 
 let useOpenKey = express.Router();
 
+// send rote using openkey: GET
 useOpenKey.get(
   "/onerote",
   isOpenKeyOk,
@@ -25,7 +30,7 @@ useOpenKey.get(
     const { content, state, type, tag, pin } = req.query;
 
     if (!content) {
-      throw new Error("Need openkey and content!");
+      throw new Error("Need content!");
     }
 
     if (!req.openKey?.permissions.includes("SENDROTE")) {
@@ -53,6 +58,7 @@ useOpenKey.get(
   })
 );
 
+// send rote using openkey: POST
 useOpenKey.post(
   "/onerote",
   isOpenKeyOk,
@@ -61,7 +67,7 @@ useOpenKey.post(
     const { content, state, type, tags, pin } = req.body;
 
     if (!content) {
-      throw new Error("Need openkey and content!");
+      throw new Error("Need content!");
     }
 
     if (!req.openKey?.permissions.includes("SENDROTE")) {
@@ -85,6 +91,37 @@ useOpenKey.post(
       code: 0,
       msg: "ok",
       data: result,
+    });
+  })
+);
+
+// get rote using openkey: GET
+useOpenKey.get(
+  "/myrote",
+  isOpenKeyOk,
+  asyncHandler(async (req, res) => {
+    const { skip, limit, archived } = req.query;
+    const filter = req.body.filter || {};
+
+    if (!req.openKey?.permissions.includes("GETROTE")) {
+      throw new Error("OpenKey permission unmatch!");
+    }
+
+    const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+
+    const rote = await findMyRote(
+      req.openKey.userid,
+      parsedSkip,
+      parsedLimit,
+      filter,
+      archived ? (archived === "true" ? true : false) : undefined
+    );
+
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: rote,
     });
   })
 );
