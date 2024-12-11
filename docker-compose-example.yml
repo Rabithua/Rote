@@ -7,7 +7,6 @@ services:
     image: mongo:5
     restart: always
     ports:
-      # 数据库未加密不适合暴露在公网，如有需要自行修改
       - "27017"
     volumes:
       - ./data/mongodb:/data/db
@@ -34,7 +33,7 @@ services:
       - backendNetwork
 
   rotebackend:
-    image: rabithua/rotebackend:0.1
+    image: rabithua/rotebackend:latest
     depends_on:
       - roteMongodbRS
       - roteMongodbSetup
@@ -44,6 +43,7 @@ services:
       - CROS=http://localhost:3000,chrome-extension://cahpbdbfdfnmoachkjmcfgbbnmjcbpej
       - DATABASE_URL=mongodb://roteMongodbRS:27017/Rote?directConnection=true&serverSelectionTimeoutMS=2000
       - SESSION_SECRET=RoteByRabithuaPrd
+
       # cloudflare r2储存桶配置
       - R2_BUCKET=rotedemo
       - R2_ACCOUNT_ID=9a7e130cdaa8a057ae7869e2f7782d54
@@ -55,14 +55,13 @@ services:
       # - VAPID_PUBLIC_KEY=BDYfGAEoJIxxxFfy8ZX4Gw1YdxxxxxxxxxxxX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g
       # - VAPID_PRIVATE_KEY=25IK6YYxWFhoE1ntALVFpxxxxxxxxxGb4W9bGzlMaZ4I
     ports:
-      # 后端api暴露端口，可以把前面一个3001改成其他端口，如3002:3000
       - 3001:3000
     restart: always
     networks:
       - backendNetwork
 
   roteweb:
-    image: rabithua/roteweb:0.1
+    image: rabithua/roteweb:latest
     depends_on:
       - roteMongodbRS
       - roteMongodbSetup
