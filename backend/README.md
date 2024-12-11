@@ -3,18 +3,12 @@
 node v18.16.1
 npm v9.5.1
 
-## Backend Creation, Database and Initialization
-
-```
-npm run mongoInit
-```
-
 ## Other Operations
 
 ### Steps after updating schema.prisma
 
 ```
-npm run prisma-update
+npm run dbSchemaUpdate
 ```
 
 ### Building Images
