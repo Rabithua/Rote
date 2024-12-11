@@ -6,15 +6,8 @@ data
 mongodb
 package-lock.json
 bun.lockb
-
 docker-compose.yml
-
 frontend/build
-
 frontend/public/sitemap.xml
-
-
-
 backend/scripts/compressed
-
 backend/scripts/uploads
