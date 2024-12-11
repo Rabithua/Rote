@@ -710,7 +710,10 @@ export async function changeUserPassword(
       "sha256"
     );
 
-    if (oldpasswordhash.toString("hex") !== passwordhash.toString("hex")) {
+    if (
+      Buffer.from(oldpasswordhash).toString("hex") !==
+      Buffer.from(passwordhash).toString("hex")
+    ) {
       throw new DatabaseError("Incorrect old password");
     }
 
