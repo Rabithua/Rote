@@ -2,7 +2,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible";
 
 // Configure the rate limiter
 const limiter = new RateLimiterMemory({
-  points: 10, // Maximum number of requests allowed within the duration
+  points: 100, // Maximum number of requests allowed within the duration
   duration: 1, // Duration in seconds
 });
 
@@ -19,6 +19,7 @@ export const rateLimiterMiddleware = (req: any, res: any, next: any) => {
     .catch((rejRes) => {
       const retrySecs = Math.round(rejRes.msBeforeNext / 1000) || 1;
       res.set("Retry-After", String(retrySecs)); // Set Retry-After header
+      console.log("Too Many Requests", rejRes);
       res
         .status(429)
         .send(`Too Many Requests. Please try again in ${retrySecs} seconds.`); // Custom error message

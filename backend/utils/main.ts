@@ -33,7 +33,7 @@ export function isAuthenticated(req: any, res: any, next: any) {
 // Custom admin authentication middleware
 export function isAdmin(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
-    const error = new Error("Unauthenticated");
+    const error = new Error("Unauthenticated: please login");
     error.name = "AuthenticationError";
     return next(error);
   }

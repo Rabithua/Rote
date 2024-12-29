@@ -1,4 +1,4 @@
-import { User, UserSwSubScription } from "@prisma/client";
+import { User } from "@prisma/client";
 import express from "express";
 import formidable from "formidable";
 import passport from "passport";
@@ -34,12 +34,12 @@ import {
   getUserInfoByUsername,
   statistics,
 } from "../utils/dbMethods";
-import prisma from "../utils/prisma";
 import webpush from "../utils/webpush";
 
 import { randomUUID } from "crypto";
 import moment from "moment";
 import { UploadResult } from "../types/main";
+import { asyncHandler, errorHandler } from "../utils/handlers";
 import {
   bodyTypeCheck,
   isAuthenticated,
@@ -49,7 +49,6 @@ import {
 import { r2uploadhandler } from "../utils/r2";
 import { RegisterDataZod, passwordChangeZod } from "../utils/zod";
 import useOpenKey from "./useOpenKey";
-import { errorHandler, asyncHandler } from "../utils/handlers";
 
 let routerV1 = express.Router();
 
@@ -464,12 +463,14 @@ routerV1.post(
   asyncHandler(async (req, res, next) => {
     passport.authenticate("local", (err: any, user: User, data: any) => {
       if (err || !user) {
-        throw new Error(data || "Authentication failed");
+        next(new Error(data.message || "Authentication failed"));
+        return;
       }
 
       req.logIn(user, (err) => {
         if (err) {
-          throw new Error("Login failed");
+          next(new Error("Login failed"));
+          return;
         }
         res.send({
           code: 0,
@@ -642,6 +643,9 @@ routerV1.post(
     }
 
     const data = await getHeatMap(user.id, startDate, endDate);
+
+    console.log(data);
+
     res.send({
       code: 0,
       msg: "ok",

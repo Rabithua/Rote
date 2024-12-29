@@ -4,7 +4,7 @@
   "description": "node | mongodb | prisma",
   "main": "server.ts",
   "scripts": {
-    "start": "npx ts-node server.ts",
+    "start": "npx ts-node server.ts ",
     "dev": "nodemon server.ts",
     "dev-f": "nodemon server.ts --ignore-errors",
     "dbSchemaUpdate": "npx prisma db push && npx prisma generate",

@@ -12,6 +12,8 @@ WORKDIR /app
 COPY . .
 
 # Generate Prisma client
+RUN npm config set registry https://registry.npmmirror.com/
+
 RUN npm install --omit=dev
 
 # Expose container port 3000

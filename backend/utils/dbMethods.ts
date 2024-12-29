@@ -1,6 +1,6 @@
+import crypto from "crypto";
 import { UploadResult } from "../types/main";
 import prisma from "./prisma";
-import crypto from "crypto";
 
 // Define unified error type
 class DatabaseError extends Error {
@@ -580,13 +580,15 @@ export async function getHeatMap(
       },
     });
 
-    const result = rotes.reduce((acc: any, item: any) => {
+    if (rotes.length === 0) {
+      return {};
+    }
+
+    return rotes.reduce((acc: any, item: any) => {
       const date = item.createdAt.toISOString().split("T")[0];
       acc[date] = (acc[date] || 0) + 1;
       return acc;
     }, {});
-
-    return result;
   } catch (error) {
     throw new DatabaseError("Failed to generate heatmap data", error);
   }

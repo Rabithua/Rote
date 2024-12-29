@@ -11,3 +11,5 @@ frontend/build
 frontend/public/sitemap.xml
 backend/scripts/compressed
 backend/scripts/uploads
+.idea
+.vscode
