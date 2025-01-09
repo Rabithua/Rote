@@ -11,6 +11,4 @@ RUN npm install -g serve
 
 RUN npm install --omit=dev
 
-RUN npm run buildwithsitemap
-
-CMD ["sh", "-c", "serve -s build"]
+CMD ["sh", "-c", "npm run buildwithsitemap && serve -s build"]
