@@ -7,18 +7,18 @@ import {
 } from "@ant-design/icons";
 import { Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
-const { stateOptions, roteMaxLetter } = mainJson;
+const { roteMaxLetter } = mainJson;
 
 function RoteInputModel({ rote, submitEdit }: any) {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.roteInputModel",
   });
   const [tagsShow, setTagsShow] = useState(false);
-  const tags = useTags();
+  const [tags] = useTags();
   const [editType, setEditType] = useState("default");
 
   const [newRote, setNewRote] = useState<any>({

@@ -1,13 +1,12 @@
+import themeJson from "@/json/theme.json";
+import { App, ConfigProvider, theme } from "antd";
 import React, { useCallback, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import "./index.css";
-import { Toaster } from "react-hot-toast";
-import "./utils/i18n";
-import { App, ConfigProvider, theme } from "antd";
-import { GlobalContextProvider } from "./state";
-import GlobalRouterProvider from "./route/main";
-import themeJson from "@/json/theme.json";
 import { Helmet, HelmetProvider } from "react-helmet-async";
+import { Toaster } from "react-hot-toast";
+import "./index.css";
+import GlobalRouterProvider from "./route/main";
+import "./utils/i18n";
 
 const { lightTheme, darkTheme } = themeJson;
 const root = ReactDOM.createRoot(
@@ -31,7 +30,6 @@ const AppWrapper = () => {
   }, [windowQuery, darkModeChange]);
 
   useEffect(() => {
-    console.log(windowQuery.matches ? true : false);
     setIsDarkMode(windowQuery.matches ? true : false);
   }, []);
 
@@ -52,7 +50,7 @@ const AppWrapper = () => {
       <App>
         <HelmetProvider>
           <Helmet>
-            <title>Rote笔记</title>
+            <title>Rote - Personal note like twitter</title>
             <link rel="icon" href="https://r2.rote.ink/others/logo.png" />
             <meta
               name="apple-mobile-web-app-status-bar-style"
@@ -82,10 +80,8 @@ const AppWrapper = () => {
                   }
             }
           >
-            <GlobalContextProvider>
-              <GlobalRouterProvider />
-              <Toaster position="top-right" reverseOrder={false} />
-            </GlobalContextProvider>
+            <GlobalRouterProvider />
+            <Toaster position="top-right" reverseOrder={false} />
           </ConfigProvider>
         </HelmetProvider>
       </App>

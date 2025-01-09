@@ -2,8 +2,7 @@
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "always",
-    "source.organizeImports": "always",
-    "source.removeUnused": "always"
+    "source.organizeImports": "always"
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "eslint.validate": [

@@ -31,11 +31,16 @@
         "profile": "Profile",
         "experiment": "Experiment",
         "fold": "Collapse",
-        "login": "Login"
+        "login": "Login",
+        "logout": "Logout"
       },
       "roteTypes": {
         "Rote": "Note",
         "Article": "Article"
+      },
+      "messages": {
+        "loggingOut": "Logging out...",
+        "logoutSuccess": "Logout successful"
       }
     },
     "login": {
@@ -138,7 +143,7 @@
     },
     "filter": {
       "includeTags": "Including Tags:",
-      "relatedTags": "Related Tags:",
+      "allTags": "All Tags:",
       "none": "NONE"
     },
     "explore": {

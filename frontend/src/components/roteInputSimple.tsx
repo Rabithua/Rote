@@ -3,7 +3,6 @@ import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
 import { useProfile } from "@/state/profile";
-import { useRotesDispatch } from "@/state/rotes";
 import { useTags } from "@/state/tags";
 import {
   CloseOutlined,
@@ -15,7 +14,7 @@ import {
 import { Avatar, Image, Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { cloneDeep } from "lodash";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
@@ -25,11 +24,12 @@ function RoteInputSimple() {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.roteInputSimple",
   });
-  const tags = useTags();
-  const [fileList, setFileList] = useState([]) as any;
-  const [editType, setEditType] = useState("default");
-  const profile = useProfile();
 
+  const [profile] = useProfile();
+  const [tags] = useTags();
+
+  const [fileList, setFileList] = useState([]) as any;
+  const [editType] = useState("default");
   const [rote, setRote] = useState<any>({
     title: "",
     content: "",
@@ -39,7 +39,6 @@ function RoteInputSimple() {
     archived: false,
     pin: false,
   });
-  const rotesDispatch = useRotesDispatch();
 
   const handleTagsChange = (value: string[]) => {
     setRote({
@@ -56,10 +55,6 @@ function RoteInputSimple() {
       state: value,
     });
   };
-
-  function changeEditType() {
-    setEditType(editType === "default" ? "novel" : "default");
-  }
 
   function deleteFile(indexToRemove: number) {
     setFileList(
@@ -82,19 +77,14 @@ function RoteInputSimple() {
       content: rote.content.trim(),
     })
       .then(async (res) => {
-        if (!res.data.data.archived) {
-          rotesDispatch({
-            type: "addOne",
-            rote: res.data.data,
-          });
-        }
+        console.log(res.data.data);
         toast.success(t("sendSuccess"), {
           id: toastId,
         });
 
-        let attachments = await uploadAttachments(newFileList, res.data.data);
+        await uploadAttachments(newFileList, res.data.data);
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error(t("sendFailed"), {
           id: toastId,
         });
@@ -127,13 +117,7 @@ function RoteInputSimple() {
           toast.success(t("uploadSuccess"), {
             id: toastId,
           });
-          rotesDispatch({
-            type: "updateOne",
-            rote: {
-              ...rote,
-              attachments: res.data.data,
-            },
-          });
+
           reslove(res);
         });
       } catch (error) {
@@ -236,14 +220,14 @@ function RoteInputSimple() {
           <div className=" flex gap-2 flex-wrap my-2">
             <Image.PreviewGroup
               preview={{
-                onChange: (current, prev) => {},
+                onChange: () => {},
               }}
             >
               {fileList.map((file: any, index: number) => {
                 return (
                   <div
                     className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
-                    key={`filePicker_${index}`}
+                    key={file.src}
                   >
                     <Image
                       className=" w-full h-full object-cover"

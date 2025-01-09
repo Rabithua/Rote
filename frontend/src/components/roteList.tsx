@@ -1,32 +1,32 @@
-import { useEffect, useRef, useState } from "react";
-import RoteItem from "./roteItem";
-import Empty from "antd/es/empty";
+import { Rote, Rotes } from "@/types/main";
 import { LoadingOutlined } from "@ant-design/icons";
+import Empty from "antd/es/empty";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import RoteItem from "./roteItem";
 
-function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
+function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
+  const [rotesToRender, setRotesToRender] = useState<Rotes>([]);
+
   const { t } = useTranslation("translation", {
     keyPrefix: "components.roteList",
   });
-  const rotes = rotesHook();
-
-  const rotesDispatch = rotesDispatchHook();
 
   const countRef = useRef<number>(0);
   const loading = useRef<boolean>(false);
-  const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement>(null);
 
+  const [hasMore, setHasMore] = useState(true);
+
   useEffect(() => {
-    countRef.current = rotes.length;
-  }, [rotes.length]);
+    countRef.current = rotesToRender.length;
+  }, [rotesToRender.length]);
 
   // 监听loaderRef显示事件，加载更多
   useEffect(() => {
     const currentloaderRef = loaderRef.current;
 
     if (!currentloaderRef) {
-      console.log("currentloaderRef 未更新");
       return;
     }
 
@@ -52,11 +52,7 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
             setHasMore(false);
           }
 
-          rotesDispatch({
-            type: "add",
-            rotes: res.data.data,
-          });
-
+          setRotesToRender([...rotesToRender, ...res.data.data]);
           countRef.current += res.data.data.length;
         })
         .catch(() => {})
@@ -81,12 +77,50 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
         observer.unobserve(loaderRef.current);
       }
     };
-  }, []);
+  }, [rotesToRender]);
+
+  useEffect(() => {
+    setRotesToRender([]);
+    setHasMore(true);
+
+    api(apiProps)
+      .then((res: any) => {
+        if (res.data.data.length !== 20) {
+          setHasMore(false);
+        }
+
+        setRotesToRender(res.data.data);
+        countRef.current = res.data.data.length;
+      })
+      .catch(() => {});
+  }, [apiProps]);
+
+  function updateRote(rote: Rote) {
+    setRotesToRender((prev) => {
+      return prev.map((r) => {
+        if (r.id === rote.id) {
+          return rote;
+        }
+        return r;
+      });
+    });
+  }
+
+  function deleteRote(id: string) {
+    setRotesToRender((prev) => prev.filter((rote) => rote.id !== id));
+  }
 
   return (
     <div className=" flex flex-col w-full relative">
-      {rotes.map((item: any, index: any) => {
-        return <RoteItem rote_param={item} key={`Rote_${index}`}></RoteItem>;
+      {rotesToRender.map((item: any, index: any) => {
+        return (
+          <RoteItem
+            rote_param={item}
+            updateRote={updateRote}
+            deleteRote={deleteRote}
+            key={item.id}
+          ></RoteItem>
+        );
       })}
       {!hasMore ? null : (
         <div
@@ -96,8 +130,8 @@ function RoteList({ rotesHook, rotesDispatchHook, api, apiProps }: any) {
           <LoadingOutlined />
         </div>
       )}
-      {!hasMore && rotes.length === 0 ? (
-        <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
+      {!hasMore && rotesToRender.length === 0 ? (
+        <div className=" shrink-0 dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={t("empty")}

@@ -1,8 +1,8 @@
 import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
 import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
 import OpenKeyItem from "@/components/openKey";
-import { useOpenKeys, useOpenKeysDispatch } from "@/state/openKeys";
-import { useProfile, useProfileDispatch } from "@/state/profile";
+import { useOpenKeys } from "@/state/openKeys";
+import { useProfile } from "@/state/profile";
 import {
   EditOutlined,
   LoadingOutlined,
@@ -26,11 +26,9 @@ function ProfilePage() {
   const AvatarEditorRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
-  const profile = useProfile();
-  const profileDispatch = useProfileDispatch();
+  const [profile, setProfile] = useProfile();
   const [editProfile, setEditProfile] = useState<any>(profile);
-  const openKeys = useOpenKeys();
-  const openKeysDispatch = useOpenKeysDispatch();
+  const [openKeys, setOpenKeys] = useOpenKeys();
   const [openKeyLoading, setOpenKeyLoading] = useState(true);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -39,10 +37,7 @@ function ProfilePage() {
   useEffect(() => {
     apiGetMyOpenKey()
       .then((res: any) => {
-        openKeysDispatch({
-          type: "init",
-          openKeys: res.data.data,
-        });
+        setOpenKeys(res.data.data);
         setOpenKeyLoading(false);
       })
       .catch(() => {
@@ -54,11 +49,7 @@ function ProfilePage() {
     const toastId = toast.loading(t("creating"));
     apiGenerateOpenKey()
       .then((res: any) => {
-        console.log(res);
-        openKeysDispatch({
-          type: "addOne",
-          openKey: res.data.data,
-        });
+        setOpenKeys([...openKeys, res.data.data]);
         toast.success(t("createSuccess"), {
           id: toastId,
         });
@@ -126,10 +117,7 @@ function ProfilePage() {
     apiSaveProfile(editProfile)
       .then((res) => {
         toast.success(t("editSuccess"));
-        profileDispatch({
-          type: "updateProfile",
-          profile: res.data.data,
-        });
+        setProfile(res.data.data);
         setIsModalOpen(false);
         setProfileEditing(false);
       })
@@ -160,10 +148,7 @@ function ProfilePage() {
             toast.success(t("editSuccess"), {
               id: toastId,
             });
-            profileDispatch({
-              type: "updateProfile",
-              profile: res.data.data,
-            });
+            setProfile(res.data.data);
           })
           .catch((err) => {
             toast.error(t("editFailed"), {
@@ -257,7 +242,7 @@ function ProfilePage() {
             {openKeys.map((openKey: any, index: any) => {
               return (
                 <OpenKeyItem
-                  key={`openKey_${openKey.id}`}
+                  key={openKey.id}
                   openKey={openKey}
                 ></OpenKeyItem>
               );

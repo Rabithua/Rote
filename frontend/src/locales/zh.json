@@ -32,11 +32,16 @@
         "profile": "我的",
         "experiment": "实验",
         "fold": "收起",
-        "login": "登录"
+        "login": "登录",
+        "logout": "登出"
       },
       "roteTypes": {
         "Rote": "笔记",
         "Article": "文章"
+      },
+      "messages": {
+        "loggingOut": "退出登录中...",
+        "logoutSuccess": "已退出登录"
       }
     },
     "error": {
@@ -143,7 +148,7 @@
     },
     "filter": {
       "includeTags": "包含标签：",
-      "relatedTags": "相关标签：",
+      "allTags": "所有标签：",
       "none": "无"
     },
     "explore": {

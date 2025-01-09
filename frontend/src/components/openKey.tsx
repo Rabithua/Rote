@@ -12,7 +12,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import OpenKeyEditModel from "./openKeyEditModel";
 import { apiDeleteOneMyOpenKey } from "@/api/rote/main";
-import { useOpenKeysDispatch } from "@/state/openKeys";
+import { useOpenKeys } from "@/state/openKeys";
 import { useTranslation } from "react-i18next";
 
 function OpenKeyItem({ openKey }: any) {
@@ -21,7 +21,7 @@ function OpenKeyItem({ openKey }: any) {
   });
   const [open, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const openKeysDispatch = useOpenKeysDispatch();
+  const [openKeys, setOpenKeys] = useOpenKeys();
   const [hidekey, setHideKey] = useState(true);
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -37,10 +37,7 @@ function OpenKeyItem({ openKey }: any) {
           toast.success(t("deleteSuccess"), {
             id: toastId,
           });
-          openKeysDispatch({
-            type: "delete",
-            openKeyid: res.data.data.id,
-          });
+          setOpenKeys(openKeys.filter((key) => key.id !== res.data.data.id));
         })
         .catch((err) => {
           toast.error(t("deleteFailed"), {

@@ -1,14 +1,14 @@
 import { lazy, Suspense } from "react";
 
+import LayoutDashboard from "@/layout/dashboard";
+import { useProfile } from "@/state/profile";
+import { LoadingOutlined } from "@ant-design/icons";
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from "react-router-dom";
 import { ProtectedRoute } from "./protectedRoute";
-import { LoadingOutlined } from "@ant-design/icons";
-import { useProfile } from "@/state/profile";
-import LayoutDashboard from "@/layout/dashboard";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));
@@ -23,146 +23,113 @@ const SingleRotePage = lazy(() => import("@/pages/rote/:roteid"));
 const ExperimentPage = lazy(() => import("@/pages/experiment"));
 
 export default function GlobalRouterProvider() {
-  const profile = useProfile();
+  const [profile] = useProfile();
 
-  const router = createBrowserRouter([
-    {
-      path: "",
-      element: profile ? <Navigate to="/home" /> : <Navigate to="/landing" />,
-      errorElement: <ErrorPage />,
-      children: [],
-    },
-    {
-      path: "landing",
-      element: <Landing />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: "login",
-      element: <Login />,
-      errorElement: <ErrorPage />,
-    },
-    {
-      path: "home",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: (
-            <ProtectedRoute>
-              <RotePage />
-            </ProtectedRoute>
-          ),
-          errorElement: <ErrorPage />,
-        },
-      ],
-    },
+  const router = createBrowserRouter(
+    [
+      {
+        path: "landing",
+        element: <Landing />,
+        errorElement: <ErrorPage />,
+      },
+      {
+        path: "login",
+        element: <Login />,
+        errorElement: <ErrorPage />,
+      },
+      {
+        path: "404",
+        element: <ErrorPage />,
+      },
+      {
+        path: "",
+        element: profile ? <Navigate to="/home" /> : <Navigate to="/landing" />,
+        errorElement: <ErrorPage />,
+        children: [],
+      },
+      {
+        path: "/",
+        element: <LayoutDashboard />,
+        children: [
+          {
+            path: "home",
+            element: (
+              <ProtectedRoute>
+                <RotePage />
+              </ProtectedRoute>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "filter",
+            element: (
+              <ProtectedRoute>
+                <MineFilter />
+              </ProtectedRoute>
+            ),
+            errorElement: <ErrorPage />,
+          },
 
+          {
+            path: "profile",
+            element: (
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            ),
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "explore",
+            element: <ExplorePage />,
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: ":username",
+            element: <UserPage />,
+            errorElement: <ErrorPage />,
+          },
+          {
+            path: "rote",
+            errorElement: <ErrorPage />,
+            children: [
+              {
+                path: ":roteid",
+                element: <SingleRotePage />,
+              },
+            ],
+          },
+          {
+            path: "archived",
+            errorElement: <ErrorPage />,
+            element: (
+              <ProtectedRoute>
+                <ArchivedPage />
+              </ProtectedRoute>
+            ),
+          },
+          {
+            path: "experiment",
+            errorElement: <ErrorPage />,
+            element: (
+              <ProtectedRoute>
+                <ExperimentPage />
+              </ProtectedRoute>
+            ),
+          },
+        ],
+      },
+      {
+        path: "*",
+        element: <ErrorPage />,
+      },
+    ],
     {
-      path: "filter",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: (
-            <ProtectedRoute>
-              <MineFilter />
-            </ProtectedRoute>
-          ),
-          errorElement: <ErrorPage />,
-        },
-      ],
-    },
-    {
-      path: "profile",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: (
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          ),
-          errorElement: <ErrorPage />,
-        },
-      ],
-    },
-    {
-      path: "404",
-      element: <ErrorPage />,
-    },
-    {
-      path: ":username",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: <UserPage />,
-        },
-      ],
-    },
-    {
-      path: "rote",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          path: ":roteid",
-          element: <SingleRotePage />,
-        },
-      ],
-    },
-    {
-      path: "explore",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: <ExplorePage />,
-        },
-      ],
-    },
-    {
-      path: "archived",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: (
-            <ProtectedRoute>
-              <ArchivedPage />
-            </ProtectedRoute>
-          ),
-        },
-      ],
-    },
-    {
-      path: "experiment",
-      element: <LayoutDashboard />,
-      errorElement: <ErrorPage />,
-      children: [
-        {
-          index: true,
-          element: (
-            <ProtectedRoute>
-              <ExperimentPage />
-            </ProtectedRoute>
-          ),
-        },
-      ],
-    },
-    {
-      path: "*",
-      element: <ErrorPage />,
-    },
-  ]);
+      future: {
+        v7_startTransition: true,
+      },
+    }
+  );
 
   return (
     <Suspense
@@ -172,7 +139,12 @@ export default function GlobalRouterProvider() {
         </div>
       }
     >
-      <RouterProvider router={router} />
+      <RouterProvider
+        router={router}
+        future={{
+          v7_startTransition: true,
+        }}
+      />
     </Suspense>
   );
 }

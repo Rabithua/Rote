@@ -36,7 +36,7 @@ export function apiGetSingleRote(id: any): Promise<any> {
 
 export function apiGetMyRote(data: any): Promise<any> {
   let { filter, ...params } = data;
-  // console.log(filter)
+
   return new Promise((resolve, reject) => {
     instance({
       method: "post",

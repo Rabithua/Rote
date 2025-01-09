@@ -1,86 +1,37 @@
-// 使用context加reducer作为全局状态管理系统
-
 import { apiGetMyTags } from "@/api/rote/main";
-import { Tag, Tags, TagsAction } from "@/types/main";
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useReducer,
-} from "react";
+import { Tags } from "@/types/main";
+import { useAtom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+import { useEffect } from "react";
 
-const TagsContext = createContext<Tags | null>(null);
-const TagsDispatchContext = createContext<React.Dispatch<TagsAction> | null>(
-  null
-);
+const tagsAtom = atomWithStorage<Tags>("tags", []);
 
-export function TagsProvider({ children }: { children: ReactNode }) {
-  const [tags, dispatch] = useReducer(tagsReducer, []);
+export function useTags(): [Tags, (tags: Tags) => void] {
+  const [tags, setTags] = useAtom(tagsAtom);
 
   useEffect(() => {
-    async function fetchTags() {
-      try {
-        const res = await apiGetMyTags();
-        dispatch({
-          type: "freshAll",
-          tags: res.data.data.map((item: any) => {
-            return {
-              value: item,
-              label: item,
-            };
-          }),
-        });
-      } catch (err) {
-        console.error("Failed to fetch tags:", err);
-        dispatch({ type: "freshAll", tags: [] });
-      }
+    if (tags.length > 0) {
+      return;
     }
-
-    fetchTags();
+    fetchTags()
+      .then((newTags) => {
+        setTags(newTags);
+      })
+      .catch(console.error);
   }, []);
 
-  return (
-    <TagsContext.Provider value={tags}>
-      <TagsDispatchContext.Provider value={dispatch}>
-        {children}
-      </TagsDispatchContext.Provider>
-    </TagsContext.Provider>
-  );
+  return [tags, setTags];
 }
 
-export function useTags() {
-  const context = useContext(TagsContext);
-  if (context === null) {
-    throw new Error("useTags must be used within a TagsProvider");
-  }
-  return context;
-}
-
-export function useTagsDispatch() {
-  const context = useContext(TagsDispatchContext);
-  if (context === null) {
-    throw new Error("useTagsDispatch must be used within a TagsProvider");
-  }
-  return context;
-}
-
-function tagsReducer(tags: Tags, action: TagsAction): Tags {
-  switch (action.type) {
-    case "addOne": {
-      return [...tags, action.tag];
-    }
-    case "addMore": {
-      return [...tags, ...action.tags];
-    }
-    case "deleted": {
-      return tags.filter((t: Tag) => t.value !== action.tag.value);
-    }
-    case "freshAll": {
-      return action.tags;
-    }
-    default: {
-      throw new Error("Unknown action: " + action);
-    }
+export async function fetchTags() {
+  try {
+    const res = await apiGetMyTags();
+    return res.data.data.map((item: any) => ({
+      value: item,
+      label: item,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch tags:", err);
+    return [];
   }
 }
