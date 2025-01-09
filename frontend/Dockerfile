@@ -1,7 +1,7 @@
 # 1. For build React app
 FROM node:18-alpine as build
 
-WORKDIR /root/rote_react
+WORKDIR /app
 
 COPY ./ .
 
@@ -9,4 +9,8 @@ EXPOSE 3000
 
 RUN npm install -g serve
 
-CMD ["sh", "-c", "npm install --omit=dev && npm run buildwithsitemap && serve -s build"]
+RUN npm install --omit=dev
+
+RUN npm run buildwithsitemap
+
+CMD ["sh", "-c", "serve -s build"]
