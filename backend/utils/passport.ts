@@ -2,9 +2,9 @@
 
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-var crypto = require("crypto");
 import { oneUser, passportCheckUser } from "./dbMethods";
 import { sanitizeUserData } from "./main";
+var crypto = require("crypto");
 
 // 初始化 Passport
 passport.use(
@@ -32,7 +32,18 @@ passport.use(
         if (err || !user) {
           return done(err);
         }
-        if (!crypto.timingSafeEqual(user?.passwordhash, hashedPassword)) {
+        console.log(
+          Buffer.from(user?.passwordhash),
+          hashedPassword,
+          typeof user?.passwordhash,
+          typeof hashedPassword
+        );
+        if (
+          !crypto.timingSafeEqual(
+            Buffer.from(user?.passwordhash),
+            hashedPassword
+          )
+        ) {
           return done(err, false, {
             message: "Incorrect username or password.",
           });

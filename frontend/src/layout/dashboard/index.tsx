@@ -1,23 +1,28 @@
-import { useTranslation } from "react-i18next";
-import { Link, Outlet } from "react-router-dom";
+import { logOut } from "@/api/login/main";
+import { useProfile } from "@/state/profile";
+import { useShowLeftNav } from "@/state/showLeftNav";
 import {
   ExperimentOutlined,
-  InboxOutlined,
   GlobalOutlined,
   HomeOutlined,
+  InboxOutlined,
   LoginOutlined,
+  LogoutOutlined,
   MenuUnfoldOutlined,
   UserOutlined,
 } from "@ant-design/icons";
 import { useEffect, useState } from "react";
-import { useProfile } from "@/state/profile";
+import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+import { Link, Outlet, useLocation } from "react-router-dom";
 
 function LayoutDashboard() {
-  const profile = useProfile();
-  const [ifshowLeftNav, setIfshowLeftNav] = useState(
-    window.localStorage.getItem("ifshowLeftNav") === "false" ? false : true
-  );
+  const location = useLocation();
+  const [profile, setProfile] = useProfile();
+  const [ifshowLeftNav, setIfshowLeftNav] = useShowLeftNav();
+
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
+  
   const [icons, setIcons] = useState([
     {
       svg: <LoginOutlined />,
@@ -76,7 +81,24 @@ function LayoutDashboard() {
 
   function changeLeftNavVb() {
     setIfshowLeftNav(!ifshowLeftNav);
-    window.localStorage.setItem("ifshowLeftNav", `${!ifshowLeftNav}`);
+  }
+
+  function logOutFn() {
+    const toastId = toast.loading(t("messages.loggingOut"));
+    logOut()
+      .then(() => {
+        toast.success(t("messages.logoutSuccess"), {
+          id: toastId,
+        });
+
+        setProfile(null);
+      })
+      .catch((err) => {
+        console.log(err);
+        toast.error("err.response.data.data.msg", {
+          id: toastId,
+        });
+      });
   }
 
   return (
@@ -86,10 +108,10 @@ function LayoutDashboard() {
           <div className=" sticky top-0 flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-start justify-center">
             {icons.map((icon, index) => {
               return (
-                <Link key={`leftLinks_${index}`} to={icon.link}>
+                <Link key={icon.link} to={icon.link}>
                   <div
                     className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
-                      window.location.pathname.includes(icon.link)
+                      location.pathname === icon.link
                         ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
                         : ""
                     } `}
@@ -102,6 +124,19 @@ function LayoutDashboard() {
                 </Link>
               );
             })}
+
+            {profile && (
+              <div
+                className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full`}
+                onClick={logOutFn}
+              >
+                <LogoutOutlined />
+                <div className=" shrink-0 hidden tracking-widest lg:block">
+                  {t(`leftNavBar.logout`)}
+                </div>
+              </div>
+            )}
+
             <div
               className=" absolute bottom-8 flex cursor-pointer duration-300 sm:hidden gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010] dark:hover:bg-[#ffffff10]"
               onClick={changeLeftNavVb}

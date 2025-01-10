@@ -3,18 +3,12 @@
 node v18.16.1
 npm v9.5.1
 
-## Backend Creation, Database and Initialization
-
-```
-npm run mongoInit
-```
-
 ## Other Operations
 
 ### Steps after updating schema.prisma
 
 ```
-npm run prisma-update
+npm run dbSchemaUpdate
 ```
 
 ### Building Images
@@ -32,7 +26,7 @@ docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:l
 
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t rabithua/rotebackend:latest \
-  -t rabithua/rotebackend:0.2.3 \
+  -t rabithua/rotebackend:0.2.4 \
   --push .
 ```
 

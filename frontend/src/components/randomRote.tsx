@@ -8,6 +8,7 @@ export default function RandomRote() {
   const { t } = useTranslation("translation", {
     keyPrefix: "components.randomRote",
   });
+
   const [rote, setRote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 

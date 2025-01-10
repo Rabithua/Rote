@@ -1,25 +1,13 @@
-import { InboxOutlined } from "@ant-design/icons";
 import { apiGetMyRote } from "@/api/rote/main";
-import {
-  useArchivedRotes,
-  useArchivedRotesDispatch,
-} from "@/state/archivedRotes";
-import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
-import { useEffect } from "react";
 import NavHeader from "@/components/navHeader";
+import RoteList from "@/components/roteList";
+import { InboxOutlined } from "@ant-design/icons";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 function ArchivedPage() {
-  const rotesDispatch = useArchivedRotesDispatch();
   const { t } = useTranslation();
-
-  useEffect(() => {
-    return rotesDispatch({
-      type: "freshAll",
-      rotes: [],
-    });
-  }, []);
 
   return (
     <div
@@ -29,13 +17,10 @@ function ArchivedPage() {
       <div id="top" className=" h-[1px]"></div>
 
       <RoteList
-        rotesHook={useArchivedRotes}
-        rotesDispatchHook={useArchivedRotesDispatch}
         api={apiGetMyRote}
         apiProps={{
           limit: 20,
           archived: true,
-          filter: {},
         }}
       />
 

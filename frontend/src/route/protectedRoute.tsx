@@ -1,11 +1,18 @@
-import { useProfile } from "@/state/profile";
+import { useIosSafariToastDone } from "@/state/iosSafariToastDone";
+import { useProfileLoadable } from "@/state/profile";
+import { LoadingOutlined } from "@ant-design/icons";
 import MobileDetect from "mobile-detect";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Navigate } from "react-router-dom";
 
 export const ProtectedRoute = ({ children }: any) => {
-  const profile = useProfile();
+  const profile = useProfileLoadable();
+
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [iosSafariToastDone, setIosSafariToastDone] = useIosSafariToastDone();
+
   const isIosSafari = () => {
     const md = new MobileDetect(window.navigator.userAgent);
     return md.os() === "iOS" && md.userAgent() === "Safari";
@@ -24,20 +31,30 @@ export const ProtectedRoute = ({ children }: any) => {
     if (isPwa()) {
       return;
     }
-    if (window.localStorage.getItem("iosSafariToast") === "true") {
+    if (iosSafariToastDone) {
       return;
     }
     if (!isIosSafari()) {
       toast("iOS Safari 建议添加到桌面，体验更佳！", {
         icon: "🤖",
       });
-      window.localStorage.setItem("iosSafariToast", "true");
+      setIosSafariToastDone(true);
     }
   }, []);
 
-  if (!profile) {
-    localStorage.removeItem("profile");
-    return <Navigate to="/login" />;
-  }
-  return children;
+  useEffect(() => {
+    if (profile.state !== "loading") {
+      setIsLoading(false);
+    }
+  }, [profile]);
+
+  return isLoading ? (
+    <div className="h-screen w-screen flex items-center justify-center">
+      <LoadingOutlined className="text-2xl" />
+    </div>
+  ) : profile.state === "hasData" && profile.data ? (
+    children
+  ) : (
+    <Navigate to="/login" />
+  );
 };

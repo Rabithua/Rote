@@ -4,7 +4,6 @@ import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
-import { useTempRotes, useTempRotesDispatch } from "@/state/tempRotes";
 import { GlobalOutlined, UserOutlined } from "@ant-design/icons";
 import { Avatar } from "antd";
 import moment from "moment";
@@ -86,8 +85,6 @@ function UserPage() {
 
         {userInfo && (
           <RoteList
-            rotesHook={useTempRotes}
-            rotesDispatchHook={useTempRotesDispatch}
             api={apiGetUserPublicRote}
             apiProps={{
               limit: 20,

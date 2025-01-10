@@ -4,7 +4,7 @@ import { Checkbox, CheckboxProps } from "antd";
 import { useState, useMemo } from "react";
 import { apiEditOneMyOpenKey } from "@/api/rote/main";
 import toast from "react-hot-toast";
-import { useOpenKeysDispatch } from "@/state/openKeys";
+import { useOpenKeys } from "@/state/openKeys";
 import { useTranslation } from "react-i18next";
 const CheckboxGroup = Checkbox.Group;
 
@@ -12,7 +12,7 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.openKeyEditModel",
   });
-  const openKeysDispatch = useOpenKeysDispatch();
+  const [openKeys, setOpenKeys] = useOpenKeys();
   const defaultCheckedList: any = openKey.permissions;
 
   const processedOptions = useMemo(
@@ -55,10 +55,11 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
         toast.success(t("saveSuccess"), {
           id: toastId,
         });
-        openKeysDispatch({
-          type: "updateOne",
-          openKey: res.data.data,
-        });
+        setOpenKeys(
+          openKeys.map((key) =>
+            key.id === res.data.data.id ? res.data.data : key
+          )
+        );
       })
       .catch((err) => {
         toast.error(t("saveFailed"), {

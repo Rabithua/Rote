@@ -17,7 +17,8 @@ export type Rote = {
   type: string;
   tags: string[];
   content: string;
-  state: string;
+  state: "private" | "public";
+  archived: boolean;
   authorid: string;
   pin: boolean;
   editor: string;
@@ -28,9 +29,41 @@ export type Rote = {
     nickname: string;
     avatar: string;
   };
-  attachments: any[]; // 你可以根据实际情况定义attachments的类型
+  attachments: Attachment[];
   userreaction: any[]; // 你可以根据实际情况定义userreaction的类型
   visitorreaction: any[]; // 你可以根据实际情况定义visitorreaction的类型
+};
+
+export type Attachment = {
+  id: string;
+  url: string;
+  compressUrl: string;
+  userid: string;
+  roteid: string;
+  storage: string;
+  details: {
+    fieldname: string;
+    originalname: string;
+    encoding: string;
+    mimetype: string;
+    size: number;
+    bucket: string;
+    key: string;
+    acl: string;
+    contentType: string;
+    contentDisposition: string | null;
+    contentEncoding: string | null;
+    storageClass: string;
+    serverSideEncryption: string | null;
+    metadata: {
+      fieldName: string;
+    };
+    location: string;
+    etag: string;
+    versionId: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type Rotes = Rote[];
@@ -56,7 +89,10 @@ export type Profile =
     }
   | undefined;
 
-export type ProfileAction = { type: "updateProfile"; profile: Profile };
+export type ProfileAction =
+  | { type: "updateProfile"; profile: Profile }
+  | { type: "setLoading"; isLoading: boolean }
+  | { type: "setError"; error: string };
 
 export type OpenKey = {
   id: string;
@@ -74,3 +110,8 @@ export type OpenKeysAction =
   | { type: "init"; openKeys: OpenKeys }
   | { type: "updateOne"; openKey: OpenKey }
   | { type: "delete"; openKeyid: string };
+
+export type HeatMapDay = {
+  date: Date;
+  notesCount: number;
+};

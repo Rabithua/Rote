@@ -15,31 +15,31 @@ import Linkify from "react-linkify";
 
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import mainJson from "@/json/main.json";
-import { useArchivedRotesDispatch } from "@/state/archivedRotes";
-import { useFilterRotesDispatch } from "@/state/filterRotes";
 import { useProfile } from "@/state/profile";
-import { useRotesDispatch } from "@/state/rotes";
 import { formatTimeAgo } from "@/utils/main";
 import { Avatar, Modal, Popover, Tooltip } from "antd";
 import moment from "moment";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 import { Link } from "react-router-dom";
 import RoteInputModel from "./roteInputModel";
 import RoteShareCard from "./roteShareCard";
-import { useTranslation } from "react-i18next";
 const { roteContentExpandedLetter } = mainJson;
 
-function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
+function RoteItem({
+  rote_param,
+  updateRote,
+  deleteRote,
+  randomRoteStyle,
+}: any) {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.roteItem",
   });
+
   const [rote, setRote] = useState<any>({});
-  const rotesDispatch = useRotesDispatch();
-  const filterRotesDispatch = useFilterRotesDispatch();
-  const archivedRotesDispatch = useArchivedRotesDispatch();
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isShareCardModalOpen, setIsShareCardModalOpen] =
     useState<boolean>(false);
@@ -65,7 +65,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
     setOpen(newOpen);
   };
 
-  const profile = useProfile();
+  const [profile] = useProfile();
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -103,23 +103,11 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
       content: cleanRote.content.trim(),
     })
       .then((res) => {
-        rotesDispatch({
-          type: "updateOne",
-          rote: res.data.data,
-        });
-        filterRotesDispatch({
-          type: "updateOne",
-          rote: res.data.data,
-        });
-
-        archivedRotesDispatch({
-          type: "updateOne",
-          rote: res.data.data,
-        });
+        setRote(res.data.data);
+        updateRote(res.data.data);
         toast.success(t("messages.sendSuccess", "发送成功"), {
           id: toastId,
         });
-        setRote(res.data.data);
       })
       .catch(() => {
         toast.error(t("messages.sendFailed", "发送失败"), {
@@ -129,7 +117,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
   }
 
   function actionsMenu(rote: any) {
-    function deleteRote() {
+    function deleteRoteFn() {
       hide();
       const toastId = toast.loading(t("messages.deleting"));
       apiDeleteMyRote({
@@ -140,21 +128,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           toast.success(t("messages.deleteSuccess"), {
             id: toastId,
           });
-          rotesDispatch({
-            type: "deleted",
-            roteid: res.data.data.id,
-          });
-          filterRotesDispatch({
-            type: "deleted",
-            roteid: res.data.data.id,
-          });
-          archivedRotesDispatch({
-            type: "deleted",
-            roteid: res.data.data.id,
-          });
-          if (afterDelete) {
-            afterDelete();
-          }
+          deleteRote(rote.id);
         })
         .catch(() => {
           toast.error(t("messages.deleteFailed"), {
@@ -171,19 +145,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
         pin: !rote.pin,
       })
         .then((res) => {
-          rotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
-          });
-          filterRotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
-          });
-
-          archivedRotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
-          });
+          updateRote(res.data.data);
           toast.success(
             `${rote.pin ? t("unpinned") : t("pinned")}${t(
               "messages.editSuccess",
@@ -210,18 +172,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
         archived: !rote.archived,
       })
         .then((res) => {
-          filterRotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
-          });
-          rotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
-          });
-          archivedRotesDispatch({
-            type: "updateOne",
-            rote: res.data.data,
-          });
+          updateRote(res.data.data);
           toast.success(
             `${rote.archived ? t("unarchive") : t("archive")}${t(
               "messages.editSuccess"
@@ -284,7 +235,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
         </div>
         <div
           className=" py-1 px-2 text-red-500 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer"
-          onClick={deleteRote}
+          onClick={deleteRoteFn}
         >
           <DeleteOutlined />
           {t("delete")}
@@ -470,7 +421,7 @@ function RoteItem({ rote_param, afterDelete, randomRoteStyle }: any) {
           {rote.tags.map((tag: any, index: any) => {
             return (
               <Link
-                key={`tag_${index}`}
+                key={tag}
                 to={"/filter"}
                 state={{
                   tags: [tag],

@@ -1,3 +1,4 @@
+import { Attachment } from "@/types/main";
 import {
   LinkOutlined,
   SaveOutlined,
@@ -5,11 +6,11 @@ import {
 } from "@ant-design/icons";
 import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
-import { useState } from "react";
-import QRCode from "react-qr-code";
-import { useTranslation } from "react-i18next";
 import moment from "moment";
+import { useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
+import QRCode from "react-qr-code";
 
 function RoteShareCard({ rote }: any) {
   const { t } = useTranslation("translation", {
@@ -160,10 +161,10 @@ function RoteShareCard({ rote }: any) {
         </div>
         {rote.attachments.length > 0 && (
           <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
-            {rote.attachments.map((file: any, index: any) => {
+            {rote.attachments.map((file: Attachment, index: any) => {
               return (
                 <img
-                  key={`files_${index}`}
+                  key={file.id}
                   className={` ${
                     rote.attachments.length % 3 === 0
                       ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
@@ -190,7 +191,7 @@ function RoteShareCard({ rote }: any) {
             return (
               <span
                 className={` px-2 py-1 md:px-3 rounded-md ${themes[themeIndex].tagClass}`}
-                key={`tag_${index}`}
+                key={tag}
               >
                 {tag}
               </span>
@@ -246,7 +247,7 @@ function RoteShareCard({ rote }: any) {
           <ThunderboltOutlined />
         </div>
         <div
-          className=" cursor-pointer select-none duration-300 flex items-center gap-2 dark:bg-bgLight text-textDark dark:text-textLight px-4 py-1 rounded-md active:scale-95"
+          className=" cursor-pointer select-none duration-300 flex items-center gap-2 dark:bg-bgLight text-textLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
           onClick={copyLink}
         >
           <LinkOutlined />

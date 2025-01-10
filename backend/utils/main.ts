@@ -6,14 +6,14 @@ import { getOneOpenKey } from "./dbMethods";
 const { stateType, roteType, editorType } = mainJson;
 
 export function sanitizeUserData(user: User) {
-  delete (user as { passwordhash?: Buffer }).passwordhash;
-  delete (user as { salt?: Buffer }).salt;
+  delete (user as { passwordhash?: Uint8Array }).passwordhash;
+  delete (user as { salt?: Uint8Array }).salt;
   return user;
 }
 
 export function sanitizeOtherUserData(user: User) {
-  delete (user as { passwordhash?: Buffer }).passwordhash;
-  delete (user as { salt?: Buffer }).salt;
+  delete (user as { passwordhash?: Uint8Array }).passwordhash;
+  delete (user as { salt?: Uint8Array }).salt;
   delete (user as { email?: string }).email;
   delete (user as { createdAt?: any }).createdAt;
   delete (user as { updatedAt?: any }).updatedAt;
@@ -33,7 +33,7 @@ export function isAuthenticated(req: any, res: any, next: any) {
 // Custom admin authentication middleware
 export function isAdmin(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
-    const error = new Error("Unauthenticated");
+    const error = new Error("Unauthenticated: please login");
     error.name = "AuthenticationError";
     return next(error);
   }
@@ -68,25 +68,6 @@ export function isAuthor(req: any, res: any, next: any) {
     return next(error);
   }
   next();
-}
-
-// Check if Prisma connection is successful
-export async function checkPrisma(prisma: PrismaClient) {
-  try {
-    prisma.rote
-      .findFirst()
-      .then(() => {
-        console.log("Prisma connected successfully!");
-      })
-      .catch((error) => {
-        console.error("Failed to connect to Prisma.", error);
-      })
-      .finally(() => {
-        prisma.$disconnect();
-      });
-  } catch (error) {
-    console.error("Failed to connect to Prisma database.");
-  }
 }
 
 // Request body data validation

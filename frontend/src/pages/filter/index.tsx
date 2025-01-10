@@ -1,87 +1,25 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
 import { apiGetMyRote } from "@/api/rote/main";
-import { useFilterRotes, useFilterRotesDispatch } from "@/state/filterRotes";
-import RoteList from "@/components/roteList";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
-import { useImmer } from "use-immer";
+import RoteList from "@/components/roteList";
+import { useTags } from "@/state/tags";
+import { Tag } from "@/types/main";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-
-function TagsBlock({ setLocationState }: any) {
-  let location = useLocation();
-  const { t } = useTranslation("translation", { keyPrefix: "pages.filter" });
-
-  const rotes = useFilterRotes();
-
-  function relativeTags() {
-    return [
-      ...new Set(
-        rotes.reduce((acc: string[], curr) => acc.concat(curr.tags), [])
-      ),
-    ];
-  }
-  return (
-    <div
-      className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold"
-      id="top"
-    >
-      <div className=" flex items-center flex-wrap gap-2 my-2">
-        {t("includeTags")}
-        {location.state?.tags.length > 0
-          ? location.state?.tags.map((tag: any, index: any) => {
-              return (
-                <div
-                  className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95"
-                  key={`tag_${index}`}
-                >
-                  {tag}
-                </div>
-              );
-            })
-          : t("none")}
-      </div>
-      <div className=" flex items-center flex-wrap gap-2 my-2 font-normal text-gray-500">
-        {t("relatedTags")}
-        {relativeTags().length > 0
-          ? relativeTags().map((tag: any, index: any) => {
-              return (
-                <Link
-                  key={`tag_${index}`}
-                  to={"/filter"}
-                  state={{
-                    tags: [tag],
-                  }}
-                  onClick={() => {
-                    setLocationState((pre: any) => {
-                      pre.tags = [tag];
-                    });
-                  }}
-                >
-                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] dark:border-opacityDark duration-300 hover:scale-95">
-                    {tag}
-                  </div>
-                </Link>
-              );
-            })
-          : t("none")}
-      </div>
-    </div>
-  );
-}
+import { useLocation } from "react-router-dom";
 
 function MineFilter() {
+  const { t } = useTranslation("translation", { keyPrefix: "pages.filter" });
+
+  const [tags, setTags] = useTags();
   const location = useLocation();
-  const [locationState, setLocationState] = useImmer<any>(null);
+  const [filter, setFilter] = useState({
+    tags: {
+      hasEvery: location.state.tags || [],
+    },
+  });
 
   const [navHeight, setNavHeight] = useState(0);
-
-  useEffect(() => {
-    console.log("locations:" + location.state);
-    setLocationState(location.state);
-  }, [location]);
-
-  // const [roteListKey, setRoteListKey] = useState(0);
 
   useEffect(() => {
     const element = document.getElementById("top") as HTMLElement;
@@ -90,6 +28,65 @@ function MineFilter() {
     return () => {};
   }, []);
 
+  function TagsBlock() {
+    const tagsClickHandler = (tag: string) => {
+      setFilter((prevState) => {
+        const newTags = prevState.tags.hasEvery.includes(tag)
+          ? prevState.tags.hasEvery.filter((t: any) => t !== tag)
+          : [...prevState.tags.hasEvery, tag];
+
+        return {
+          ...prevState,
+          tags: {
+            ...prevState.tags,
+            hasEvery: newTags,
+          },
+        };
+      });
+    };
+
+    return (
+      <div
+        className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold"
+        id="top"
+      >
+        <div className=" flex items-center flex-wrap gap-2 my-2">
+          {t("includeTags")}
+          {filter.tags.hasEvery.length > 0
+            ? filter.tags.hasEvery.map((tag: any, index: any) => {
+                return (
+                  <div
+                    className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95"
+                    key={`tag-${index}`}
+                    onClick={() => tagsClickHandler(tag)}
+                  >
+                    {tag}
+                  </div>
+                );
+              })
+            : t("none")}
+        </div>
+        <div className=" flex items-center flex-wrap gap-2 my-2 font-normal text-gray-500">
+          {t("allTags")}
+          {tags.length > 0
+            ? tags.map((tag: Tag, index: any) => {
+                return (
+                  <div
+                    key={`AllTags-${index}`}
+                    onClick={() => tagsClickHandler(tag.value)}
+                  >
+                    <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] dark:border-opacityDark duration-300 hover:scale-95">
+                      {tag.value}
+                    </div>
+                  </div>
+                );
+              })
+            : t("none")}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
@@ -97,24 +94,15 @@ function MineFilter() {
     >
       <NavBar />
 
-      <TagsBlock setLocationState={setLocationState} />
+      <TagsBlock />
 
-      {locationState && (
-        <RoteList
-          // key={roteListKey}
-          rotesHook={useFilterRotes}
-          rotesDispatchHook={useFilterRotesDispatch}
-          api={apiGetMyRote}
-          apiProps={{
-            limit: 20,
-            filter: {
-              tags: {
-                hasEvery: locationState.tags || [],
-              },
-            },
-          }}
-        />
-      )}
+      <RoteList
+        api={apiGetMyRote}
+        apiProps={{
+          limit: 20,
+          filter,
+        }}
+      />
 
       <GoTop scrollContainerName="scrollContainer" />
     </div>

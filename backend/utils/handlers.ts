@@ -2,11 +2,11 @@ import express from "express";
 
 export const errorHandler: express.ErrorRequestHandler = (
   err,
-  req,
+  _req,
   res,
-  next
+  _next
 ) => {
-  console.error("API Error:", err);
+  console.error("API Error:", err.message);
 
   if (err.code === "P2002") {
     return res.status(400).json({

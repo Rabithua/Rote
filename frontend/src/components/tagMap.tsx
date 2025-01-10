@@ -9,7 +9,9 @@ export default function TagMap() {
   const { t } = useTranslation("translation", {
     keyPrefix: "components.tagMap",
   });
-  const tags = useTags();
+
+  const [tags] = useTags();
+
   const [isCollapsed, setIsCollapsed] = useState(true);
 
   const toggleCollapse = () => {
@@ -29,7 +31,7 @@ export default function TagMap() {
           {tags.map((item, index) => {
             return (
               <Link
-                key={`tag_${index}`}
+                key={item.value}
                 to={"/filter"}
                 state={{
                   tags: [item.value],
