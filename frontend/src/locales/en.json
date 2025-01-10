@@ -234,6 +234,9 @@
         "private": "Private",
         "public": "Public"
       },
+      "uploading": "Uploading...",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
       "deleting": "Deleting...",
       "deleteSuccess": "Delete successful",
       "deleteFailed": "Delete failed",

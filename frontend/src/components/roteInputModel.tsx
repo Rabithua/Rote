@@ -1,6 +1,7 @@
 import { apiDeleteMyAttachment, apiUploadFiles } from "@/api/rote/main";
 import defaultImage from "@/assets/img/defaultImage.svg";
 import mainJson from "@/json/main.json";
+import { useTempState } from "@/state/others";
 import { useTags } from "@/state/tags";
 import { Attachment, Rote } from "@/types/main";
 import {
@@ -23,6 +24,7 @@ function RoteInputModel({ rote, submitEdit }: { rote: Rote; submitEdit: any }) {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.roteInputModel",
   });
+  const [tempState, setTempState] = useTempState();
   const [tagsShow, setTagsShow] = useState(false);
   const [tags] = useTags();
   const [editType, setEditType] = useState("default");
@@ -77,11 +79,16 @@ function RoteInputModel({ rote, submitEdit }: { rote: Rote; submitEdit: any }) {
         toast.success(t("deleteSuccess"), {
           id: toastId,
         });
-        setNewRote({
+        const updatedRote = {
           ...newRote,
           attachments: newRote.attachments.filter(
             (_: any, index: number) => index !== indexToRemove
           ),
+        };
+        setNewRote(updatedRote);
+        setTempState({
+          ...tempState,
+          editOne: updatedRote,
         });
       } else {
         toast.error(t("deleteFailed"), {
@@ -103,9 +110,14 @@ function RoteInputModel({ rote, submitEdit }: { rote: Rote; submitEdit: any }) {
         toast.success(t("uploadSuccess"), {
           id: toastId,
         });
-        setNewRote({
+        let updatedRote = {
           ...newRote,
           attachments: newRote.attachments.concat(res.data.data),
+        };
+        setNewRote(updatedRote);
+        setTempState({
+          ...tempState,
+          editOne: updatedRote,
         });
       }
     });

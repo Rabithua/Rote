@@ -126,3 +126,10 @@ export type EditorType = {
   pin: boolean;
   type: "rote";
 };
+
+export type TempState = {
+  sendNewOne: null | Rote;
+  editOne: null | Rote;
+  removeOne: null | string;
+  newAttachments: null | Attachment[];
+};

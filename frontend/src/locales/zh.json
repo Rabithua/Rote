@@ -235,6 +235,9 @@
         "private": "私密",
         "public": "公开"
       },
+      "uploading": "上传中...",
+      "uploadSuccess": "上传成功",
+      "uploadFailed": "上传失败",
       "deleting": "删除中...",
       "deleteSuccess": "删除成功",
       "deleteFailed": "删除失败",

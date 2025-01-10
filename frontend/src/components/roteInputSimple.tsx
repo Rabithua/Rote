@@ -3,6 +3,7 @@ import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
 import { useEditor } from "@/state/editor";
+import { useTempState } from "@/state/others";
 import { useProfile } from "@/state/profile";
 import { useTags } from "@/state/tags";
 import {
@@ -27,6 +28,7 @@ function RoteInputSimple() {
     keyPrefix: "components.roteInputSimple",
   });
 
+  const [tempState, setTempState] = useTempState();
   const [profile] = useProfile();
   const [tags] = useTags();
 
@@ -65,11 +67,13 @@ function RoteInputSimple() {
       content: rote.content.trim(),
     })
       .then(async (res) => {
-        console.log(res.data.data);
         toast.success(t("sendSuccess"), {
           id: toastId,
         });
-
+        setTempState({
+          ...tempState,
+          sendNewOne: res.data.data,
+        });
         await uploadAttachments(newFileList, res.data.data);
       })
       .catch(() => {
@@ -97,14 +101,18 @@ function RoteInputSimple() {
       const toastId = toast.loading(t("uploading"));
       try {
         const formData = new FormData();
-        fileList.forEach((obj: any) => {
-          formData.append("images", obj.file);
+        fileList.forEach((file: any) => {
+          formData.append("images", file);
         });
         apiUploadFiles(formData, rote.id).then((res) => {
+          if (res.data.code !== 0) return;
           toast.success(t("uploadSuccess"), {
             id: toastId,
           });
-
+          setTempState({
+            ...tempState,
+            newAttachments: res.data.data,
+          });
           reslove(res);
         });
       } catch (error) {

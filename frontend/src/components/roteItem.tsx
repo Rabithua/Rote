@@ -15,7 +15,9 @@ import Linkify from "react-linkify";
 
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import mainJson from "@/json/main.json";
+import { useTempState } from "@/state/others";
 import { useProfile } from "@/state/profile";
+import { Rote } from "@/types/main";
 import { formatTimeAgo } from "@/utils/main";
 import { Avatar, Modal, Popover, Tooltip } from "antd";
 import moment from "moment";
@@ -29,16 +31,12 @@ import RoteInputModel from "./roteInputModel";
 import RoteShareCard from "./roteShareCard";
 const { roteContentExpandedLetter } = mainJson;
 
-function RoteItem({
-  rote_param,
-  updateRote,
-  deleteRote,
-  randomRoteStyle,
-}: any) {
+function RoteItem({ rote_param, randomRoteStyle }: any) {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.roteItem",
   });
 
+  const [tempState, setTempState] = useTempState();
   const [rote, setRote] = useState<any>({});
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isShareCardModalOpen, setIsShareCardModalOpen] =
@@ -98,15 +96,22 @@ function RoteItem({
     } = rote;
     setIsEditModalOpen(false);
     const toastId = toast.loading(t("messages.sending", "发送中..."));
+
     apiEditMyRote({
       ...cleanRote,
       content: cleanRote.content.trim(),
     })
       .then((res) => {
-        setRote(res.data.data);
-        updateRote(res.data.data);
+        if (res.data.code !== 0) {
+          return;
+        }
         toast.success(t("messages.sendSuccess", "发送成功"), {
           id: toastId,
+        });
+
+        setTempState({
+          ...tempState,
+          editOne: res.data.data as Rote,
         });
       })
       .catch(() => {
@@ -116,7 +121,7 @@ function RoteItem({
       });
   }
 
-  function actionsMenu(rote: any) {
+  function actionsMenu(rote: Rote) {
     function deleteRoteFn() {
       hide();
       const toastId = toast.loading(t("messages.deleting"));
@@ -128,7 +133,10 @@ function RoteItem({
           toast.success(t("messages.deleteSuccess"), {
             id: toastId,
           });
-          deleteRote(rote.id);
+          setTempState({
+            ...tempState,
+            removeOne: rote.id,
+          });
         })
         .catch(() => {
           toast.error(t("messages.deleteFailed"), {
@@ -145,7 +153,9 @@ function RoteItem({
         pin: !rote.pin,
       })
         .then((res) => {
-          updateRote(res.data.data);
+          if (res.data.code !== 0) {
+            return;
+          }
           toast.success(
             `${rote.pin ? t("unpinned") : t("pinned")}${t(
               "messages.editSuccess",
@@ -155,7 +165,10 @@ function RoteItem({
               id: toastId,
             }
           );
-          setRote(res.data.data);
+          setTempState({
+            ...tempState,
+            editOne: res.data.data as Rote,
+          });
         })
         .catch(() => {
           toast.error(t("messages.editFailed"), {
@@ -172,7 +185,9 @@ function RoteItem({
         archived: !rote.archived,
       })
         .then((res) => {
-          updateRote(res.data.data);
+          if (res.data.code !== 0) {
+            return;
+          }
           toast.success(
             `${rote.archived ? t("unarchive") : t("archive")}${t(
               "messages.editSuccess"
@@ -181,7 +196,10 @@ function RoteItem({
               id: toastId,
             }
           );
-          setRote(res.data.data);
+          setTempState({
+            ...tempState,
+            editOne: res.data.data as Rote,
+          });
         })
         .catch(() => {
           toast.error(t("messages.editFailed"), {

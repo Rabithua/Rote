@@ -1,3 +1,4 @@
+import { useTempState } from "@/state/others";
 import { Rote, Rotes } from "@/types/main";
 import { LoadingOutlined } from "@ant-design/icons";
 import Empty from "antd/es/empty";
@@ -7,6 +8,7 @@ import RoteItem from "./roteItem";
 
 function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
   const [rotesToRender, setRotesToRender] = useState<Rotes>([]);
+  const [tempState, setTempState] = useTempState();
 
   const { t } = useTranslation("translation", {
     keyPrefix: "components.roteList",
@@ -21,6 +23,59 @@ function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
   useEffect(() => {
     countRef.current = rotesToRender.length;
   }, [rotesToRender.length]);
+
+  useEffect(() => {
+    if (
+      tempState.editOne ||
+      tempState.sendNewOne ||
+      tempState.removeOne ||
+      tempState.newAttachments
+    ) {
+      setHasMore(true);
+      if (tempState.editOne) {
+        setRotesToRender((prev) => {
+          return prev.map((r) => {
+            if (r.id === tempState.editOne?.id) {
+              return tempState.editOne as Rote;
+            }
+            return r;
+          });
+        });
+      }
+
+      if (tempState.sendNewOne) {
+        setRotesToRender((prev) => {
+          return [tempState.sendNewOne as Rote, ...prev];
+        });
+      }
+
+      if (tempState.removeOne !== null) {
+        setRotesToRender((prev) => {
+          return prev.filter((r) => r.id !== tempState.removeOne);
+        });
+      }
+
+      if (tempState.newAttachments) {
+        setRotesToRender((prev) => {
+          return prev.map((r) => {
+            return r.id === tempState.newAttachments![0].roteid
+              ? {
+                  ...r,
+                  attachments: [...r.attachments, ...tempState.newAttachments!],
+                }
+              : r;
+          });
+        });
+      }
+
+      setTempState({
+        editOne: null,
+        sendNewOne: null,
+        removeOne: null,
+        newAttachments: null,
+      });
+    }
+  }, [tempState]);
 
   // 监听loaderRef显示事件，加载更多
   useEffect(() => {
@@ -106,21 +161,10 @@ function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
     });
   }
 
-  function deleteRote(id: string) {
-    setRotesToRender((prev) => prev.filter((rote) => rote.id !== id));
-  }
-
   return (
     <div className=" flex flex-col w-full relative">
       {rotesToRender.map((item: any, index: any) => {
-        return (
-          <RoteItem
-            rote_param={item}
-            updateRote={updateRote}
-            deleteRote={deleteRote}
-            key={item.id}
-          ></RoteItem>
-        );
+        return <RoteItem rote_param={item} key={item.id}></RoteItem>;
       })}
       {!hasMore ? null : (
         <div
