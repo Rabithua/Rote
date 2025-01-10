@@ -284,7 +284,7 @@ function RoteInputSimple() {
           </Tooltip>
           <Tooltip placement="bottom" title={t(`stateOptions.${rote.state}`)}>
             <GlobalOutlined
-              className={` duration-300 cursor-pointer text-xl p-2 rounded-md ${
+              className={` duration-300 cursor-pointer text-lg p-2 rounded-md ${
                 rote.state === "public"
                   ? "bg-opacityLight dark:bg-opacityDark text-primary"
                   : ""
