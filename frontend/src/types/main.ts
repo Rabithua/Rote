@@ -3,6 +3,8 @@ export type Tag = {
   label: string;
 };
 
+export type RoteState = "private" | "public";
+
 export type Tags = Tag[];
 
 export type TagsAction =
@@ -13,25 +15,25 @@ export type TagsAction =
 
 export type Rote = {
   id: string;
-  title: string;
-  type: string;
+  title?: string;
+  type?: string;
   tags: string[];
   content: string;
-  state: "private" | "public";
+  state: RoteState;
   archived: boolean;
-  authorid: string;
+  authorid?: string;
   pin: boolean;
-  editor: string;
+  editor?: string;
   createdAt: string;
   updatedAt: string;
-  author: {
+  author?: {
     username: string;
     nickname: string;
     avatar: string;
   };
   attachments: Attachment[];
-  userreaction: any[]; // 你可以根据实际情况定义userreaction的类型
-  visitorreaction: any[]; // 你可以根据实际情况定义visitorreaction的类型
+  userreaction?: any[]; // 你可以根据实际情况定义userreaction的类型
+  visitorreaction?: any[]; // 你可以根据实际情况定义visitorreaction的类型
 };
 
 export type Attachment = {
@@ -114,4 +116,13 @@ export type OpenKeysAction =
 export type HeatMapDay = {
   date: Date;
   notesCount: number;
+};
+
+export type EditorType = {
+  tags: string[];
+  content: string;
+  state: RoteState;
+  archived: boolean;
+  pin: boolean;
+  type: "rote";
 };

@@ -18,7 +18,7 @@ export default function ExportData() {
       .then((res: any) => {
         setLoading(false);
         console.log(res);
-        setStatistics(res.data);
+        setStatistics(res.data.data);
       })
       .catch(() => {
         setLoading(false);

@@ -3,7 +3,7 @@ import { message } from "antd";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
-export default function Uploader({ fileList, setFileList }: any) {
+export default function Uploader({ fileList, callback, id }: any) {
   const fileInputRef = useRef(null);
   const { t } = useTranslation("translation", {
     keyPrefix: "components.uploader",
@@ -23,26 +23,22 @@ export default function Uploader({ fileList, setFileList }: any) {
         ref={fileInputRef}
         className=" hidden"
         type="file"
-        id="file"
+        id={`file-${id}`}
         multiple
         accept="image/*"
         onInput={() => {
-          const input = document.querySelector("#file");
-          //@ts-ignore
-          let files = Object.values(input.files);
+          const input = document.querySelector(
+            `#file-${id}`
+          ) as HTMLInputElement;
 
-          const updatedFileList: Array<any> = files.map(async (file: any) => {
-            const src = URL.createObjectURL(file);
-            return { file, src };
-          });
+          let files = input.files ? Object.values(input.files) : [];
 
-          if (fileList.length + updatedFileList.length > 9) {
+          if (fileList.length + files.length > 9) {
             message.error(t("fileLimit"));
+            return [];
           }
 
-          Promise.all(updatedFileList).then((newFileList) => {
-            setFileList(fileList.concat(newFileList).slice(0, 9));
-          });
+          callback(files);
         }}
       />
     </div>

@@ -2,10 +2,12 @@ import { apiAddRote, apiUploadFiles } from "@/api/rote/main";
 import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
+import { useEditor } from "@/state/editor";
 import { useProfile } from "@/state/profile";
 import { useTags } from "@/state/tags";
 import {
   CloseOutlined,
+  GlobalOutlined,
   InboxOutlined,
   PushpinOutlined,
   SendOutlined,
@@ -30,15 +32,8 @@ function RoteInputSimple() {
 
   const [fileList, setFileList] = useState([]) as any;
   const [editType] = useState("default");
-  const [rote, setRote] = useState<any>({
-    title: "",
-    content: "",
-    type: "rote",
-    tags: [],
-    state: "private",
-    archived: false,
-    pin: false,
-  });
+
+  const [rote, setRote] = useEditor();
 
   const handleTagsChange = (value: string[]) => {
     setRote({
@@ -46,13 +41,6 @@ function RoteInputSimple() {
       tags: value.map((tag) => {
         return tag.trim();
       }),
-    });
-  };
-
-  const handleStateChange = (value: string) => {
-    setRote({
-      ...rote,
-      state: value,
     });
   };
 
@@ -92,7 +80,6 @@ function RoteInputSimple() {
 
     setFileList([]);
     setRote({
-      title: "",
       content: "",
       type: "rote",
       tags: [],
@@ -223,17 +210,17 @@ function RoteInputSimple() {
                 onChange: () => {},
               }}
             >
-              {fileList.map((file: any, index: number) => {
+              {fileList.map((file: File, index: number) => {
                 return (
                   <div
                     className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
-                    key={file.src}
+                    key={file.name + index}
                   >
                     <Image
                       className=" w-full h-full object-cover"
                       height={80}
                       width={80}
-                      src={file.src}
+                      src={URL.createObjectURL(file)}
                       fallback={defaultImage}
                     />
                     <div
@@ -246,7 +233,16 @@ function RoteInputSimple() {
                 );
               })}
             </Image.PreviewGroup>
-            <Uploader fileList={fileList} setFileList={setFileList} />
+            <Uploader
+              id="roteInputSimple"
+              fileList={fileList}
+              callback={(newFileList: File[]) => {
+                setFileList((prevFileList: any) => [
+                  ...prevFileList,
+                  ...newFileList,
+                ]);
+              }}
+            />
           </div>
         )}
 
@@ -262,7 +258,7 @@ function RoteInputSimple() {
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
           <Tooltip placement="bottom" title={t("pin")}>
             <PushpinOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md  ${
+              className={` duration-300 cursor-pointer text-xl p-2 rounded-md  ${
                 rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -275,7 +271,7 @@ function RoteInputSimple() {
           </Tooltip>
           <Tooltip placement="bottom" title={t("archive")}>
             <InboxOutlined
-              className={` cursor-pointer text-xl p-2 rounded-md ${
+              className={` duration-300 cursor-pointer text-xl p-2 rounded-md ${
                 rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -286,14 +282,21 @@ function RoteInputSimple() {
               }}
             />
           </Tooltip>
-          <Select
-            defaultValue={t("stateOptions.private")}
-            variant="borderless"
-            style={{ width: 80 }}
-            className=" bg-opacityLight min-w-32 dark:bg-opacityDark rounded-md"
-            onChange={handleStateChange}
-            options={processedStateOptions}
-          />
+          <Tooltip placement="bottom" title={t(`stateOptions.${rote.state}`)}>
+            <GlobalOutlined
+              className={` duration-300 cursor-pointer text-xl p-2 rounded-md ${
+                rote.state === "public"
+                  ? "bg-opacityLight dark:bg-opacityDark text-primary"
+                  : ""
+              }`}
+              onClick={() => {
+                setRote({
+                  ...rote,
+                  state: rote.state === "public" ? "private" : "public",
+                });
+              }}
+            />
+          </Tooltip>
 
           <div
             className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"

@@ -129,6 +129,22 @@ export function apiDeleteMyRote(data: any): Promise<any> {
   });
 }
 
+export function apiDeleteMyAttachment(data: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "delete",
+      url: "/v1/api/deleteAttachment",
+      data,
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
 export function apiGetMyTags(): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -181,7 +197,7 @@ export function apiGetRandomRote(): Promise<any> {
       url: "/v1/api/randomRote",
     })
       .then(function (response) {
-        resolve(response.data);
+        resolve(response);
       })
       .catch((e: any) => {
         reject(e);
@@ -196,7 +212,7 @@ export function apiGetStatistics(): Promise<any> {
       url: "/v1/api/statistics",
     })
       .then(function (response) {
-        resolve(response.data);
+        resolve(response);
       })
       .catch((e: any) => {
         reject(e);

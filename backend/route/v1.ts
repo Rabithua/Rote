@@ -8,9 +8,10 @@ import {
   createAttachments,
   createRote,
   createUser,
-  deleteAttachments,
+  deleteAttachment,
   deleteMyOneOpenKey,
   deleteRote,
+  deleteRoteAttachments,
   deleteSubScription,
   editMyOneOpenKey,
   editMyProfile,
@@ -398,14 +399,35 @@ routerV1.delete(
   "/oneRote",
   isAuthor,
   asyncHandler(async (req, res) => {
+    const user = req.user as User;
     const rote = req.body;
     if (!rote) {
       throw new Error("Need data");
     }
 
     const data = await deleteRote(rote);
-    await deleteAttachments(rote.id);
+    await deleteRoteAttachments(rote.id, user.id);
 
+    res.send({
+      code: 0,
+      msg: "ok",
+      data,
+    });
+  })
+);
+
+routerV1.delete(
+  "/deleteAttachment",
+  isAuthor,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { id } = req.body;
+
+    if (!id || id.length !== 24) {
+      throw new Error("Data error");
+    }
+
+    const data = await deleteAttachment(id, user.id);
     res.send({
       code: 0,
       msg: "ok",

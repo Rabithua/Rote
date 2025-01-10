@@ -234,6 +234,9 @@
         "private": "Private",
         "public": "Public"
       },
+      "deleting": "Deleting...",
+      "deleteSuccess": "Delete successful",
+      "deleteFailed": "Delete failed",
       "error": {
         "emptyContent": "Content cannot be empty"
       }

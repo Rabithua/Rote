@@ -1,8 +1,8 @@
 import { apiGetRandomRote } from "@/api/rote/main";
 import { RedoOutlined } from "@ant-design/icons/lib/icons";
 import { useEffect, useState } from "react";
-import RoteItem from "./roteItem";
 import { useTranslation } from "react-i18next";
+import RoteItem from "./roteItem";
 
 export default function RandomRote() {
   const { t } = useTranslation("translation", {
@@ -21,7 +21,7 @@ export default function RandomRote() {
     apiGetRandomRote()
       .then((res: any) => {
         setLoading(false);
-        setRote(res.data);
+        setRote(res.data.data);
       })
       .catch(() => {
         setLoading(false);

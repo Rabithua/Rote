@@ -232,15 +232,35 @@ export async function deleteRote(data: any): Promise<any> {
   }
 }
 
-export async function deleteAttachments(roteid: string): Promise<any> {
+export async function deleteRoteAttachments(
+  roteid: string,
+  userid: string
+): Promise<any> {
   try {
     const result = await prisma.attachment.deleteMany({
-      where: { roteid },
+      where: { roteid, userid },
     });
     return result;
   } catch (error) {
     throw new DatabaseError(
       `Failed to delete attachments for rote: ${roteid}`,
+      error
+    );
+  }
+}
+
+export async function deleteAttachment(
+  id: string,
+  userid: string
+): Promise<any> {
+  try {
+    const result = await prisma.attachment.deleteMany({
+      where: { id, userid },
+    });
+    return result;
+  } catch (error) {
+    throw new DatabaseError(
+      `Failed to delete attachment: ${id} for user: ${userid}`,
       error
     );
   }
