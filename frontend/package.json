@@ -80,6 +80,7 @@
     "react-helmet-async": "^2.0.5",
     "react-hot-toast": "^2.4.1",
     "react-i18next": "^13.5.0",
+    "react-intersection-observer": "^9.14.1",
     "react-linkify": "^1.0.0-alpha",
     "react-photo-view": "^1.2.6",
     "react-qr-code": "^2.0.14",

@@ -66,7 +66,7 @@ function MineFilter() {
               })
             : t("none")}
         </div>
-        <div className=" flex items-center flex-wrap gap-2 my-2 font-normal text-gray-500">
+        <div className=" flex items-center flex-wrap max-h-[25vh] overflow-y-scroll gap-2 my-2 font-normal text-gray-500">
           {t("allTags")}
           {tags.length > 0
             ? tags.map((tag: Tag, index: any) => {

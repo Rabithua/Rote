@@ -13,6 +13,7 @@ import {
 } from "@ant-design/icons";
 import Linkify from "react-linkify";
 
+import { useInView } from "react-intersection-observer";
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import mainJson from "@/json/main.json";
 import { useTempState } from "@/state/others";
@@ -35,7 +36,7 @@ function RoteItem({ rote_param, randomRoteStyle }: any) {
   const { t, i18n } = useTranslation("translation", {
     keyPrefix: "components.roteItem",
   });
-
+  const { ref, inView, entry } = useInView();
   const [tempState, setTempState] = useTempState();
   const [rote, setRote] = useState<any>({});
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -262,222 +263,234 @@ function RoteItem({ rote_param, randomRoteStyle }: any) {
     );
   }
 
-  return rote?.id ? (
-    <div
-      id={`Rote_${rote.id}`}
-      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-bgLight/5 dark:bg-bgDark/5 border-opacityLight dark:border-opacityDark border-b first:border-t-[0] last:border-b-[0] last:mb-10 w-full ${
-        !randomRoteStyle && " py-4 px-5"
-      }`}
-    >
-      {!randomRoteStyle && (
-        <Link
-          className=" text-black shrink-0 hidden sm:block"
-          to={`/${rote.author.username}`}
-        >
-          <Avatar
-            className=" bg-[#00000010]"
-            size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
-            icon={<UserOutlined className=" text-[#00000030]" />}
-            src={
-              rote.author.username === profile?.username
-                ? profile?.avatar
-                : rote.author.avatar
-            }
-          />
-        </Link>
-      )}
+  return (
+    rote?.id && (
+      <div
+        ref={ref}
+        id={`Rote_${rote.id}`}
+        className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-bgLight/5 dark:bg-bgDark/5 border-opacityLight dark:border-opacityDark border-b first:border-t-[0] last:border-b-[0] last:mb-10 w-full ${
+          !randomRoteStyle && " py-4 px-5"
+        }`}
+      >
+        {!randomRoteStyle && (
+          <Link
+            className=" text-black shrink-0 hidden sm:block"
+            to={`/${rote.author.username}`}
+          >
+            <Avatar
+              className=" bg-[#00000010]"
+              size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
+              icon={<UserOutlined className=" text-[#00000030]" />}
+              src={
+                rote.author.username === profile?.username
+                  ? profile?.avatar
+                  : rote.author.avatar
+              }
+            />
+          </Link>
+        )}
 
-      <div className=" flex flex-col w-full">
-        <div className=" cursor-default w-full flex gap-2 items-center">
-          {!randomRoteStyle && (
-            <Link
-              className=" cursor-pointer font-semibold hover:underline"
-              to={`/${rote.author.username}`}
-            >
-              {rote.author.username === profile?.username
-                ? profile?.nickname
-                : rote.author.nickname}
-            </Link>
-          )}
-
-          <span className=" overflow-scroll noScrollBar text-nowrap font-normal text-gray-500">
+        <div className=" flex flex-col w-full">
+          <div className=" cursor-default w-full flex gap-2 items-center">
             {!randomRoteStyle && (
+              <Link
+                className=" cursor-pointer font-semibold hover:underline"
+                to={`/${rote.author.username}`}
+              >
+                {rote.author.username === profile?.username
+                  ? profile?.nickname
+                  : rote.author.nickname}
+              </Link>
+            )}
+
+            <span className=" overflow-scroll noScrollBar text-nowrap font-normal text-gray-500">
+              {!randomRoteStyle && (
+                <>
+                  <Link
+                    to={`/${rote.author.username}`}
+                  >{`@${rote.author.username}`}</Link>
+                  <span> · </span>{" "}
+                </>
+              )}
+
+              <Tooltip
+                placement="bottom"
+                title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
+              >
+                <span
+                  className={`${
+                    new Date().getTime() - new Date(rote.createdAt).getTime() >
+                    60 * 1000
+                      ? ""
+                      : " bg-primaryGreenGradient bg-clip-text text-transparent"
+                  }`}
+                >
+                  {formatTimeAgo(rote.createdAt)}
+                </span>
+              </Tooltip>
+            </span>
+
+            <span className=" flex gap-1 text-gray-500">
+              {rote.pin ? (
+                <Tooltip
+                  placement="bottom"
+                  title={
+                    rote.pin ? t("tooltips.pinned") : t("tooltips.unpinned")
+                  }
+                >
+                  <PushpinOutlined
+                    className={` cursor-pointer text-md rounded-md`}
+                  />
+                </Tooltip>
+              ) : null}
+
+              {rote.state === "public" ? (
+                <Tooltip placement="bottom" title={t("tooltips.public")}>
+                  <GlobalOutlined
+                    className={` cursor-pointer text-md rounded-md`}
+                  />
+                </Tooltip>
+              ) : null}
+
+              {rote.archived ? (
+                <Tooltip placement="bottom" title={t("tooltips.archived")}>
+                  <InboxOutlined
+                    className={` cursor-pointer text-md rounded-md`}
+                  />
+                </Tooltip>
+              ) : null}
+
+              {rote.updatedAt !== rote.createdAt ? (
+                <Tooltip
+                  placement="bottom"
+                  title={moment
+                    .utc(rote.updatedAt)
+                    .format("YYYY/MM/DD HH:mm:ss")}
+                >
+                  <EditOutlined
+                    className={` cursor-pointer text-md rounded-md`}
+                  />
+                </Tooltip>
+              ) : null}
+            </span>
+            {profile?.username === rote.author.username && inView && (
+              <Popover
+                placement="bottomRight"
+                open={open}
+                onOpenChange={handleOpenChange}
+                content={actionsMenu(rote)}
+              >
+                <EllipsisOutlined className=" ml-auto  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
+              </Popover>
+            )}
+          </div>
+
+          <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
+            <div className="aTagStyle">
+              {rote.content.length > roteContentExpandedLetter ? (
+                isExpanded ? (
+                  <Linkify>{rote.content}</Linkify>
+                ) : (
+                  <Linkify>{`${rote.content.slice(
+                    0,
+                    roteContentExpandedLetter
+                  )}...`}</Linkify>
+                )
+              ) : (
+                <Linkify>{rote.content}</Linkify>
+              )}
+            </div>
+
+            {rote.content.length > roteContentExpandedLetter && (
               <>
-                <Link
-                  to={`/${rote.author.username}`}
-                >{`@${rote.author.username}`}</Link>
-                <span> · </span>{" "}
+                {!isExpanded && (
+                  <div
+                    onClick={toggleExpand}
+                    className=" hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center"
+                  >
+                    <DownOutlined />
+                    {t("expand")}
+                  </div>
+                )}
               </>
             )}
-
-            <Tooltip
-              placement="bottom"
-              title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
-            >
-              <span
-                className={`${
-                  new Date().getTime() - new Date(rote.createdAt).getTime() >
-                  60 * 1000
-                    ? ""
-                    : " bg-primaryGreenGradient bg-clip-text text-transparent"
-                }`}
-              >
-                {formatTimeAgo(rote.createdAt)}
-              </span>
-            </Tooltip>
-          </span>
-
-          <span className=" flex gap-1 text-gray-500">
-            {rote.pin ? (
-              <Tooltip
-                placement="bottom"
-                title={rote.pin ? t("tooltips.pinned") : t("tooltips.unpinned")}
-              >
-                <PushpinOutlined
-                  className={` cursor-pointer text-md rounded-md`}
-                />
-              </Tooltip>
-            ) : null}
-
-            {rote.state === "public" ? (
-              <Tooltip placement="bottom" title={t("tooltips.public")}>
-                <GlobalOutlined
-                  className={` cursor-pointer text-md rounded-md`}
-                />
-              </Tooltip>
-            ) : null}
-
-            {rote.archived ? (
-              <Tooltip placement="bottom" title={t("tooltips.archived")}>
-                <InboxOutlined
-                  className={` cursor-pointer text-md rounded-md`}
-                />
-              </Tooltip>
-            ) : null}
-
-            {rote.updatedAt !== rote.createdAt ? (
-              <Tooltip
-                placement="bottom"
-                title={moment.utc(rote.updatedAt).format("YYYY/MM/DD HH:mm:ss")}
-              >
-                <EditOutlined
-                  className={` cursor-pointer text-md rounded-md`}
-                />
-              </Tooltip>
-            ) : null}
-          </span>
-          {profile?.username === rote.author.username && (
-            <Popover
-              placement="bottomRight"
-              open={open}
-              onOpenChange={handleOpenChange}
-              content={actionsMenu(rote)}
-            >
-              <EllipsisOutlined className=" ml-auto  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
-            </Popover>
-          )}
-        </div>
-
-        <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
-          <div className="aTagStyle">
-            {rote.content.length > roteContentExpandedLetter ? (
-              isExpanded ? (
-                <Linkify>{rote.content}</Linkify>
-              ) : (
-                <Linkify>{`${rote.content.slice(
-                  0,
-                  roteContentExpandedLetter
-                )}...`}</Linkify>
-              )
-            ) : (
-              <Linkify>{rote.content}</Linkify>
-            )}
           </div>
 
-          {rote.content.length > roteContentExpandedLetter && (
-            <>
-              {!isExpanded && (
-                <div
-                  onClick={toggleExpand}
-                  className=" hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center"
+          {rote.attachments.length > 0 && (
+            <div className=" w-fit my-2 flex flex-wrap gap-1 border border-opacityLight dark:border-opacityDark rounded-2xl overflow-hidden">
+              <PhotoProvider>
+                {rote.attachments.map((file: any, index: any) => {
+                  return (
+                    <PhotoView key={`files_${index}`} src={file.url}>
+                      <img
+                        className={`${
+                          rote.attachments.length % 3 === 0
+                            ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                            : rote.attachments.length % 2 === 0
+                            ? "w-[calc(1/2*100%-2px)] aspect-1"
+                            : rote.attachments.length === 1
+                            ? " w-full max-w-[500px] rounded-2xl"
+                            : "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                        } object-cover grow bg-opacityLight dark:bg-opacityDark`}
+                        src={file.compressUrl || file.url}
+                        loading="lazy"
+                        alt=""
+                      />
+                    </PhotoView>
+                  );
+                })}
+              </PhotoProvider>
+            </div>
+          )}
+          <div className=" flex items-center flex-wrap gap-2 my-2">
+            {rote.tags.map((tag: any, index: any) => {
+              return (
+                <Link
+                  key={tag}
+                  to={"/filter"}
+                  state={{
+                    tags: [tag],
+                  }}
                 >
-                  <DownOutlined />
-                  {t("expand")}
-                </div>
-              )}
-            </>
-          )}
+                  <div className=" px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark hover:scale-95 duration-300">
+                    {tag}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        {rote.attachments.length > 0 && (
-          <div className=" w-fit my-2 flex flex-wrap gap-1 border border-opacityLight dark:border-opacityDark rounded-2xl overflow-hidden">
-            <PhotoProvider>
-              {rote.attachments.map((file: any, index: any) => {
-                return (
-                  <PhotoView key={`files_${index}`} src={file.url}>
-                    <img
-                      className={`${
-                        rote.attachments.length % 3 === 0
-                          ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                          : rote.attachments.length % 2 === 0
-                          ? "w-[calc(1/2*100%-2px)] aspect-1"
-                          : rote.attachments.length === 1
-                          ? " w-full max-w-[500px] rounded-2xl"
-                          : "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                      } object-cover grow bg-opacityLight dark:bg-opacityDark`}
-                      src={file.compressUrl || file.url}
-                      loading="lazy"
-                      alt=""
-                    />
-                  </PhotoView>
-                );
-              })}
-            </PhotoProvider>
-          </div>
+        {inView && (
+          <>
+            <Modal
+              title={t("edit")}
+              open={isEditModalOpen}
+              onCancel={onEditModelCancel}
+              maskClosable={true}
+              destroyOnClose={true}
+              footer={null}
+            >
+              <RoteInputModel
+                rote={editRote}
+                submitEdit={submitEdit}
+              ></RoteInputModel>
+            </Modal>
+            <Modal
+              title={t("share")}
+              open={isShareCardModalOpen}
+              onCancel={onShareCardModelCancel}
+              maskClosable={true}
+              destroyOnClose={true}
+              footer={null}
+            >
+              <RoteShareCard rote={rote}></RoteShareCard>
+            </Modal>
+          </>
         )}
-        <div className=" flex items-center flex-wrap gap-2 my-2">
-          {rote.tags.map((tag: any, index: any) => {
-            return (
-              <Link
-                key={tag}
-                to={"/filter"}
-                state={{
-                  tags: [tag],
-                }}
-              >
-                <div className=" px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark hover:scale-95 duration-300">
-                  {tag}
-                </div>
-              </Link>
-            );
-          })}
-        </div>
       </div>
-      <Modal
-        title={t("edit")}
-        open={isEditModalOpen}
-        onCancel={onEditModelCancel}
-        maskClosable={true}
-        destroyOnClose={true}
-        footer={null}
-      >
-        <RoteInputModel
-          rote={editRote}
-          submitEdit={submitEdit}
-        ></RoteInputModel>
-      </Modal>
-      <Modal
-        title={t("share")}
-        open={isShareCardModalOpen}
-        onCancel={onShareCardModelCancel}
-        maskClosable={true}
-        destroyOnClose={true}
-        footer={null}
-      >
-        <RoteShareCard rote={rote}></RoteShareCard>
-      </Modal>
-    </div>
-  ) : null;
+    )
+  );
 }
 
 export default RoteItem;
