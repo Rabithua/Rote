@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": " export PORT=3001; craco start",
-    "start": "export PORT=3001; craco start",
+    "dev": "cross-env HOST=0.0.0.0 PORT=3001 craco start",
+    "start": "cross-env PORT=3001 craco start",
     "devhttps": "export HTTPS=true; export SSL_CRT_FILE=./cert.pem; export SSL_KEY_FILE=./key.pem; export PORT=3001; craco start",
     "build": "craco build",
     "buildwithsitemap": "npm run sitemap && craco build",
@@ -33,6 +33,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "^2.6.3",
     "autoprefixer": "^10.4.14",
+    "cross-env": "^7.0.3",
     "eslint": "^8.56.0",
     "postcss": "^8.4.25"
   },
