@@ -103,7 +103,7 @@ function LayoutDashboard() {
   return (
     <div className=" bg-bgLight text-textLight w-full dark:bg-bgDark dark:text-textDark">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
-        <div className=" sm:sticky sm:top-0 fixed border-t border-r-0 sm:border-t-0 py-2 z-10 bottom-0 w-full sm:w-fit bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark flex-row justify-around sm:h-dvh flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 sm:border-r border-opacityLight dark:border-opacityDark sm:flex-col sm:gap-4 items-start sm:justify-center">
+        <div className=" sm:sticky sm:top-0 fixed border-t border-r-0 sm:border-t-0 py-2 pb-5 z-10 bottom-0 w-full sm:w-fit bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark flex-row justify-around sm:h-dvh flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 sm:border-r border-opacityLight dark:border-opacityDark sm:flex-col sm:gap-4 items-start sm:justify-center">
           {icons.map((icon, index) => {
             return (
               <Link key={icon.link} to={icon.link}>
@@ -136,7 +136,7 @@ function LayoutDashboard() {
           )}
         </div>
 
-        <div className=" flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative">
+        <div className=" flex-1 overflow-x-hidden relative">
           <Outlet />
         </div>
       </div>

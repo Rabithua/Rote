@@ -13,7 +13,6 @@ import {
 } from "@ant-design/icons";
 import Linkify from "react-linkify";
 
-import { useInView } from "react-intersection-observer";
 import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
 import mainJson from "@/json/main.json";
 import { useTempState } from "@/state/others";
@@ -25,6 +24,7 @@ import moment from "moment";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useInView } from "react-intersection-observer";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 import { Link } from "react-router-dom";
@@ -279,7 +279,7 @@ function RoteItem({ rote_param, randomRoteStyle }: any) {
           >
             <Avatar
               className=" bg-[#00000010]"
-              size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
+              size={{ xs: 24, sm: 32, md: 40, lg: 40, xl: 50, xxl: 50 }}
               icon={<UserOutlined className=" text-[#00000030]" />}
               src={
                 rote.author.username === profile?.username
