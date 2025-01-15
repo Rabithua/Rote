@@ -1,17 +1,28 @@
 import { UpOutlined } from "@ant-design/icons";
 
-export default function GoTop({ scrollContainerName }: any) {
+export default function GoTop({
+  scrollContainerName,
+}: {
+  scrollContainerName?: string;
+}) {
   function goTop() {
-    const containers = document.getElementsByClassName(scrollContainerName);
-    if (containers.length > 0) {
-      const container = containers[0]; // 获取第一个匹配的元素
-      container.scrollTop = 0; // 将该容器滚动到顶部
+    const container = scrollContainerName
+      ? document.querySelector(scrollContainerName)
+      : window;
+
+    if (container) {
+      console.log(container);
+      if (container === window) {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (container instanceof HTMLElement) {
+        container.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   }
 
   return (
     <div
-      className=" z-10 animate-show duration-300 fixed self-end right-8 bottom-8 bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer"
+      className="z-10 animate-show duration-300 fixed self-end right-8 bottom-14 bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer"
       onClick={goTop}
     >
       <UpOutlined />

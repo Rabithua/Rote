@@ -15,8 +15,8 @@ import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import AvatarEditor from "react-avatar-editor";
 import toast from "react-hot-toast";
-import Linkify from "react-linkify";
 import { useTranslation } from "react-i18next";
+import Linkify from "react-linkify";
 import { Link } from "react-router-dom";
 
 function ProfilePage() {
@@ -161,7 +161,7 @@ function ProfilePage() {
   }
 
   return (
-    <div>
+    <div className=" pb-20">
       <div className=" w-full min-h-[1/5] max-h-80 relative overflow-hidden">
         <img
           className=" w-full h-full min-h-20"
@@ -241,10 +241,7 @@ function ProfilePage() {
           <>
             {openKeys.map((openKey: any, index: any) => {
               return (
-                <OpenKeyItem
-                  key={openKey.id}
-                  openKey={openKey}
-                ></OpenKeyItem>
+                <OpenKeyItem key={openKey.id} openKey={openKey}></OpenKeyItem>
               );
             })}
             <div

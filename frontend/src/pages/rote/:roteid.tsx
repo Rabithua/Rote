@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { apiGetSingleRote } from "@/api/rote/main";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import Rote from "@/components/roteItem";
-import { apiGetSingleRote } from "@/api/rote/main";
-import Avatar from "antd/es/avatar";
 import { UserOutlined } from "@ant-design/icons";
+import Avatar from "antd/es/avatar";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useNavigate, useParams } from "react-router-dom";
 function SingleRotePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.rote" });
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ function SingleRotePage() {
 
   return (
     <div
-      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative pb-20`}
+      className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative pb-20`}
     >
       <NavBar />
       {rote ? (
@@ -51,7 +51,7 @@ function SingleRotePage() {
       )}
       {rote && (
         <Link to={`/${rote.author.username}`}>
-          <div className=" fixed bottom-12 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
+          <div className=" fixed bottom-14 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
             <Avatar
               size={{ xs: 40 }}
               icon={<UserOutlined className=" text-[#00000030]" />}
@@ -68,7 +68,7 @@ function SingleRotePage() {
           </div>
         </Link>
       )}
-      <GoTop scrollContainerName="scrollContainer" />
+      <GoTop />
     </div>
   );
 }

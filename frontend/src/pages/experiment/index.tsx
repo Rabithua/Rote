@@ -1,8 +1,8 @@
-import { ExperimentOutlined } from "@ant-design/icons";
-import NavHeader from "@/components/navHeader";
 import ExportData from "@/components/experiment/exportData";
 import ImportData from "@/components/experiment/importData";
 import ServiceWorker from "@/components/experiment/serviceWorker";
+import NavHeader from "@/components/navHeader";
+import { ExperimentOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 
 export default function ExperimentPage() {
@@ -11,7 +11,7 @@ export default function ExperimentPage() {
   });
   return (
     <div
-      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
+      className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
     >
       <NavHeader
         title={`${t("title")} / Experiment`}

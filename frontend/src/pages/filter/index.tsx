@@ -89,7 +89,7 @@ function MineFilter() {
 
   return (
     <div
-      className={` scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative`}
+      className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
       style={{ scrollPaddingTop: `${navHeight}px` }}
     >
       <NavBar />
@@ -104,7 +104,7 @@ function MineFilter() {
         }}
       />
 
-      <GoTop scrollContainerName="scrollContainer" />
+      <GoTop />
     </div>
   );
 }

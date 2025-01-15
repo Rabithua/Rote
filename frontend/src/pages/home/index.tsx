@@ -12,14 +12,18 @@ import { useTranslation } from "react-i18next";
 
 const Statistics = ({ t }: { t: (key: string) => string }) => {
   return (
-    <div className="gap-4 hidden md:flex flex-col w-72 shrink-0 scrollContainer scroll-smooth overscroll-contain noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative p-4">
-      <div className="flex gap-2 text-lg font-semibold">
-        <BarChartOutlined />
-        {t("statistics")}
+    <div className=" w-72 shrink-0 relative hidden md:block">
+      <div className="p-4  w-72 fixed top-0 overflow-y-scroll noScrollBar hidden md:block">
+        <div className="gap-4 w-full sticky top-0 flex flex-col">
+          <div className="flex gap-2 text-lg font-semibold">
+            <BarChartOutlined />
+            {t("statistics")}
+          </div>
+          <Heatmap />
+          <TagMap />
+          <RandomRote />
+        </div>
       </div>
-      <Heatmap />
-      <TagMap />
-      <RandomRote />
     </div>
   );
 };
@@ -28,8 +32,8 @@ function RotePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.home" });
 
   return (
-    <div className="flex w-full h-dvh">
-      <div className="border-r border-opacityLight dark:border-opacityDark scrollContainer scroll-smooth overscroll-contain flex-1 noScrollBar h-dvh overflow-y-visible overflow-x-hidden relative">
+    <div className="flex w-full">
+      <div className="border-r border-opacityLight dark:border-opacityDark flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative">
         <div className="sticky top-0 z-10 cursor-pointer group rotypesNav border-y border-opacityLight dark:border-opacityDark flex items-center gap-2 text-gray-600 bg-bgLight dark:bg-bgDark font-light p-4 py-2">
           <Logo className=" w-24" color="#07C160" />
           <img
@@ -46,7 +50,7 @@ function RotePage() {
             archived: false,
           }}
         />
-        <GoTop scrollContainerName="scrollContainer" />
+        <GoTop />
       </div>
       <Statistics t={t} />
     </div>
