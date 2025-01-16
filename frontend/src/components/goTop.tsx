@@ -22,7 +22,7 @@ export default function GoTop({
 
   return (
     <div
-      className="z-10 animate-show duration-300 fixed self-end right-8 bottom-14 bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer"
+      className="z-10 animate-show duration-300 fixed self-end right-8 bottom-16 bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer"
       onClick={goTop}
     >
       <UpOutlined />

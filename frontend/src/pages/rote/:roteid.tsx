@@ -51,7 +51,7 @@ function SingleRotePage() {
       )}
       {rote && (
         <Link to={`/${rote.author.username}`}>
-          <div className=" fixed bottom-14 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
+          <div className=" fixed bottom-16 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
             <Avatar
               size={{ xs: 40 }}
               icon={<UserOutlined className=" text-[#00000030]" />}

@@ -380,7 +380,7 @@ function RoteItem({ rote_param, randomRoteStyle }: any) {
                 onOpenChange={handleOpenChange}
                 content={actionsMenu(rote)}
               >
-                <EllipsisOutlined className=" ml-auto  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
+                <EllipsisOutlined className=" absolute right-4 top-4  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
               </Popover>
             )}
           </div>
