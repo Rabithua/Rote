@@ -37,7 +37,7 @@ const Heatmap: React.FC = () => {
   useEffect(() => {
     apiGetMyHeatMap({}).then((res) => {
       setHeatmapData(res.data);
-    });
+    }).catch((e) => {});
   }, []);
 
   useEffect(() => {
@@ -144,49 +144,52 @@ const Heatmap: React.FC = () => {
       `${moment.utc(day.date).format("YYYY/MM/DD")} ${day.notesCount} Notes.`,
       {
         icon: "🌱",
-      }
+      },
     );
   };
 
   return (
     <>
-      {Object.keys(heatmapData).length > 0 ? (
-        <div className=" flex gap-2">
-          <div className=" flex flex-col justify-around">
-            {daysOfWeek.map((day) => (
-              <div key={day} className=" text-[10px] text-right">
-                {day}
-              </div>
-            ))}
+      {Object.keys(heatmapData).length > 0
+        ? (
+          <div className=" flex gap-2">
+            <div className=" flex flex-col justify-around">
+              {daysOfWeek.map((day) => (
+                <div key={day} className=" text-[10px] text-right">
+                  {day}
+                </div>
+              ))}
+            </div>
+            <div className=" flex gap-1">
+              {days.map((week: any, index: number) => (
+                <div key={`week_${index}`} className=" flex flex-col gap-1">
+                  {week.map((day: any, index: number) => (
+                    <div
+                      key={index}
+                      className=" w-4 h-4 rounded-sm hover:scale-105 duration-300"
+                      style={{
+                        backgroundColor: day.notesCount
+                          ? colors[Math.min(day.notesCount, colors.length - 1)]
+                          : colors[0],
+                      }}
+                      onClick={() => handleDayClick(day)}
+                    >
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
-          <div className=" flex gap-1">
-            {days.map((week: any, index: number) => (
-              <div key={`week_${index}`} className=" flex flex-col gap-1">
-                {week.map((day: any, index: number) => (
-                  <div
-                    key={index}
-                    className=" w-4 h-4 rounded-sm hover:scale-105 duration-300"
-                    style={{
-                      backgroundColor: day.notesCount
-                        ? colors[Math.min(day.notesCount, colors.length - 1)]
-                        : colors[0],
-                    }}
-                    onClick={() => handleDayClick(day)}
-                  ></div>
-                ))}
-              </div>
-            ))}
+        )
+        : (
+          <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
+            <Empty
+              className=" dark:text-textDark"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={t("noData")}
+            />
           </div>
-        </div>
-      ) : (
-        <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
-          <Empty
-            className=" dark:text-textDark"
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t("noData")}
-          />
-        </div>
-      )}
+        )}
     </>
   );
 };

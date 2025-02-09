@@ -31,7 +31,6 @@ export async function fetchTags() {
       label: item,
     }));
   } catch (err) {
-    console.error("Failed to fetch tags:", err);
     return [];
   }
 }
