@@ -1,37 +1,35 @@
 import { apiGetSingleRote } from "@/api/rote/main";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
-import Rote from "@/components/roteItem";
-import { UserOutlined } from "@ant-design/icons";
+import RoteItem from "@/components/roteItem";
+
+import { Rote } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
 import Avatar from "antd/es/avatar";
+import { Loader, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
+
 function SingleRotePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.rote" });
   const navigate = useNavigate();
   const { roteid } = useParams();
-  const [rote, setRote] = useState<any>(null);
-  const [msg, setMsg] = useState(null);
+  const [msg] = useState(null);
+
+  const { data: rote, isLoading } = useAPIGet<Rote>(
+    roteid || "",
+    apiGetSingleRote,
+  );
 
   useEffect(() => {
-    if (roteid) {
-      getRote();
+    if (!roteid) {
+      navigate("/404");
     }
-  }, [roteid]);
+  }, [roteid, navigate]);
 
-  async function getRote() {
-    apiGetSingleRote(roteid)
-      .then((data) => {
-        setRote(data.data.data);
-      })
-      .catch((e) => {
-        setMsg(e.response.data.msg);
-      });
-  }
-
-  function afterDeleteFun() {
-    navigate("/home");
+  if (!roteid) {
+    return null;
   }
 
   return (
@@ -39,35 +37,45 @@ function SingleRotePage() {
       className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative pb-20`}
     >
       <NavBar />
-      {rote ? (
-        <div className=" flex flex-col items-center">
-          <div></div>
-          <Rote rote_param={rote} afterDelete={afterDeleteFun} />
-        </div>
-      ) : (
-        <div className=" w-full h-full flex justify-center items-center">
-          {msg || t("loading")}
-        </div>
-      )}
-      {rote && (
-        <Link to={`/${rote.author.username}`}>
-          <div className=" fixed bottom-16 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
-            <Avatar
-              size={{ xs: 40 }}
-              icon={<UserOutlined className=" text-[#00000030]" />}
-              src={rote?.author.avatar}
-            />
-            <div className=" flex flex-col">
-              <div className=" text-base font-semibold dark:text-textLight text-textDark ">
-                {rote?.author.nickname}
-              </div>
-              <div className=" text-md text-gray-500">
-                @{rote?.author.username}
-              </div>
-            </div>
+      {isLoading
+        ? (
+          <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
+            <Loader className="size-6 animate-spin" />
           </div>
-        </Link>
-      )}
+        )
+        : rote
+        ? (
+          <>
+            <div className=" flex flex-col items-center">
+              <div></div>
+              <RoteItem rote={rote} />
+            </div>
+            {rote.author && (
+              <Link to={`/${rote.author.username}`}>
+                <div className=" fixed bottom-16 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
+                  <Avatar
+                    size={{ xs: 40 }}
+                    icon={<User className=" size-4 text-[#00000030]" />}
+                    src={rote?.author.avatar}
+                  />
+                  <div className=" flex flex-col">
+                    <div className=" text-base font-semibold dark:text-textLight text-textDark ">
+                      {rote?.author.nickname}
+                    </div>
+                    <div className=" text-md text-gray-500">
+                      @{rote?.author.username}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            )}
+          </>
+        )
+        : (
+          <div className=" w-full h-full flex justify-center items-center">
+            {msg || t("loading")}
+          </div>
+        )}
       <GoTop />
     </div>
   );

@@ -1,9 +1,8 @@
-import { apiGetMyRote } from "@/api/rote/main";
+import { apiGetMyRote, apiGetMyTags } from "@/api/rote/main";
 import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import RoteList from "@/components/roteList";
-import { useTags } from "@/state/tags";
-import { Tag } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
@@ -11,7 +10,11 @@ import { useLocation } from "react-router-dom";
 function MineFilter() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.filter" });
 
-  const [tags, setTags] = useTags();
+  const { data: tags } = useAPIGet<string[]>(
+    "tags",
+    apiGetMyTags,
+  );
+
   const location = useLocation();
   const [filter, setFilter] = useState({
     tags: {
@@ -54,33 +57,33 @@ function MineFilter() {
           {t("includeTags")}
           {filter.tags.hasEvery.length > 0
             ? filter.tags.hasEvery.map((tag: any, index: any) => {
-                return (
-                  <div
-                    className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95"
-                    key={`tag-${index}`}
-                    onClick={() => tagsClickHandler(tag)}
-                  >
-                    {tag}
-                  </div>
-                );
-              })
+              return (
+                <div
+                  className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95"
+                  key={`tag-${index}`}
+                  onClick={() => tagsClickHandler(tag)}
+                >
+                  {tag}
+                </div>
+              );
+            })
             : t("none")}
         </div>
         <div className=" flex items-center flex-wrap max-h-[25vh] overflow-y-scroll gap-2 my-2 font-normal text-gray-500">
           {t("allTags")}
-          {tags.length > 0
-            ? tags.map((tag: Tag, index: any) => {
-                return (
-                  <div
-                    key={`AllTags-${index}`}
-                    onClick={() => tagsClickHandler(tag.value)}
-                  >
-                    <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] dark:border-opacityDark duration-300 hover:scale-95">
-                      {tag.value}
-                    </div>
+          {tags && tags.length > 0
+            ? tags.map((tag) => {
+              return (
+                <div
+                  key={tag}
+                  onClick={() => tagsClickHandler(tag)}
+                >
+                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] dark:border-opacityDark duration-300 hover:scale-95">
+                    {tag}
                   </div>
-                );
-              })
+                </div>
+              );
+            })
             : t("none")}
         </div>
       </div>

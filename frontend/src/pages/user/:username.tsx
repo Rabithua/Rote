@@ -4,8 +4,8 @@ import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
-import { GlobalOutlined, UserOutlined } from "@ant-design/icons";
 import { Avatar } from "antd";
+import { Globe2, User } from "lucide-react";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
@@ -28,7 +28,7 @@ function UserPage() {
       .catch(() => {
         navigate("/404");
       });
-  }, []);
+  }, [navigate, username]);
 
   return (
     <div>
@@ -60,7 +60,7 @@ function UserPage() {
           <Avatar
             className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-opacityLight dark:border-opacityDark border-[4px] shrink-0 sm:block"
             size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 120 }}
-            icon={<UserOutlined className=" text-[#00000010]" />}
+            icon={<User className=" size-4 text-[#00000010]" />}
             src={userInfo?.avatar}
           />
         </div>
@@ -81,7 +81,7 @@ function UserPage() {
             .format("YYYY/MM/DD HH:mm:ss")}`}</div>
         </div>
 
-        <NavHeader title={t("publicNotes")} icon={<GlobalOutlined />} />
+        <NavHeader title={t("publicNotes")} icon={<Globe2 className="size-6" />} />
 
         {userInfo && (
           <RoteList

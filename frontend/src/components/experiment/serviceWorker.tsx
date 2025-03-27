@@ -1,15 +1,15 @@
 import {
-  saveSubscription,
   deleteSubscription,
+  saveSubscription,
   sendNotificationTest,
 } from "@/api/subscription/main";
 import {
   checkPermission,
-  requestNotificationPermission,
   registerSW,
+  requestNotificationPermission,
 } from "@/utils/main";
-import { NotificationFilled } from "@ant-design/icons";
 import { Divider, Switch } from "antd";
+import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
@@ -49,7 +49,7 @@ export default function ServiceWorker() {
       if (event.data.method === "subNoticeResponse") {
         try {
           const response = await saveSubscription(
-            JSON.parse(event.data.payload)
+            JSON.parse(event.data.payload),
           );
           if (response.data.data.id) {
             setSwLoading(false);
@@ -147,10 +147,10 @@ export default function ServiceWorker() {
           <span className=" shrink-0">{t("serviceId")}</span>
           <span className=" text-ellipsis overflow-hidden">{noticeId}</span>
           <div
-            className=" duration-300 active:scale-95 py-1 shrink-0 px-2 bg-bgLight cursor-pointer rounded-md flex gap-1"
+            className=" duration-300 items-center active:scale-95 py-1 shrink-0 px-2 bg-bgLight cursor-pointer rounded-md flex gap-1"
             onClick={noticeTest}
           >
-            <NotificationFilled />
+            <Bell className="size-4" />
             {t("notificationTest")}
           </div>
         </div>
@@ -158,7 +158,7 @@ export default function ServiceWorker() {
       {noticeId && (
         <div className=" mt-2 flex flex-col gap-2">
           <div className=" font-semibold">{t("example")}</div>
-          <div className=" whitespace-pre text-red-700 font-mono overflow-x-scroll p-3 rounded-xl bg-bgLight">
+          <div className=" whitespace-pre text-red-700 dark:text-white font-mono overflow-x-scroll p-3 rounded-xl bg-opacityLight dark:bg-opacityDark">
             {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
 --data '{

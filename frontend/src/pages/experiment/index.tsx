@@ -2,7 +2,7 @@ import ExportData from "@/components/experiment/exportData";
 import ImportData from "@/components/experiment/importData";
 import ServiceWorker from "@/components/experiment/serviceWorker";
 import NavHeader from "@/components/navHeader";
-import { ExperimentOutlined } from "@ant-design/icons";
+import { Snail } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export default function ExperimentPage() {
@@ -15,7 +15,7 @@ export default function ExperimentPage() {
     >
       <NavHeader
         title={`${t("title")} / Experiment`}
-        icon={<ExperimentOutlined />}
+        icon={<Snail className="size-6" />}
       />
       <div className=" flex flex-col w-full gap-1">
         <div className=" bg-opacityLight dark:bg-opacityDark m-2 py-3 px-4 rounded-lg">

@@ -47,7 +47,7 @@ export function apiGetMyRote(data: any): Promise<any> {
       },
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);
@@ -68,7 +68,7 @@ export function apiGetPublicRote(data: any): Promise<any> {
       },
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);
@@ -89,7 +89,7 @@ export function apiGetUserPublicRote(data: any): Promise<any> {
       },
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);
@@ -152,7 +152,7 @@ export function apiGetMyTags(): Promise<any> {
       url: "/v1/api/getMyTags",
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);
@@ -197,7 +197,7 @@ export function apiGetRandomRote(): Promise<any> {
       url: "/v1/api/randomRote",
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);
@@ -304,7 +304,7 @@ export function apiGetStatus(): Promise<any> {
       url: "/v1/api/status",
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);

@@ -1,36 +1,39 @@
-import { apiAddRote, apiUploadFiles } from "@/api/rote/main";
+import { apiAddRote, apiGetMyTags, apiUploadFiles } from "@/api/rote/main";
+import { getMyProfile } from "@/api/user/main";
 import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
 import { useEditor } from "@/state/editor";
 import { useTempState } from "@/state/others";
-import { useProfile } from "@/state/profile";
-import { useTags } from "@/state/tags";
-import {
-  CloseOutlined,
-  GlobalOutlined,
-  InboxOutlined,
-  PushpinOutlined,
-  SendOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { Profile } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
+
 import { Avatar, Image, Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { cloneDeep } from "lodash";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { Archive, Globe2, Pin, PinIcon, Send, User, X } from "lucide-react";
 
 const { roteMaxLetter } = mainJson;
 
 function RoteInputSimple() {
-  const { t, i18n } = useTranslation("translation", {
+  const { t } = useTranslation("translation", {
     keyPrefix: "components.roteInputSimple",
   });
 
   const [tempState, setTempState] = useTempState();
-  const [profile] = useProfile();
-  const [tags] = useTags();
+
+  const { data: profile } = useAPIGet<Profile>(
+    "profile",
+    getMyProfile,
+  );
+
+  const { data: tags } = useAPIGet<string[]>(
+    "tags",
+    apiGetMyTags,
+  );
 
   const [fileList, setFileList] = useState([]) as any;
   const [editType] = useState("default");
@@ -48,7 +51,7 @@ function RoteInputSimple() {
 
   function deleteFile(indexToRemove: number) {
     setFileList(
-      fileList.filter((_: any, index: number) => index !== indexToRemove)
+      fileList.filter((_: any, index: number) => index !== indexToRemove),
     );
   }
 
@@ -69,10 +72,6 @@ function RoteInputSimple() {
       .then(async (res) => {
         toast.success(t("sendSuccess"), {
           id: toastId,
-        });
-        setTempState({
-          ...tempState,
-          sendNewOne: res.data.data,
         });
         await uploadAttachments(newFileList, res.data.data);
       })
@@ -169,25 +168,12 @@ function RoteInputSimple() {
     }
   }
 
-  const processedStateOptions = useMemo(
-    () =>
-      mainJson.stateOptions.map((option) => ({
-        ...option,
-        label: option.label[i18n.language as keyof typeof option.label],
-        options: option.options.map((subOption) => ({
-          ...subOption,
-          label: subOption.label[i18n.language as keyof typeof option.label],
-        })),
-      })),
-    [i18n.language]
-  );
-
   return (
     <div className=" cursor-default bg-bgLight dark:bg-bgDark w-full p-5 flex gap-5 border-b border-opacityLight dark:border-opacityDark">
       <Avatar
         className=" bg-opacityLight dark:bg-opacityDark text-black shrink-0 hidden sm:block"
         size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
-        icon={<UserOutlined className=" text-[#00000030]" />}
+        icon={<User className=" text-[#00000030]" />}
         src={profile?.avatar}
       />
       <div className=" w-[90%] flex-1">
@@ -235,7 +221,7 @@ function RoteInputSimple() {
                       onClick={() => deleteFile(index)}
                       className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
                     >
-                      <CloseOutlined className=" text-white text-[12px]" />
+                      <X className=" text-white size-4" />
                     </div>
                   </div>
                 );
@@ -261,12 +247,19 @@ function RoteInputSimple() {
           value={rote.tags}
           placeholder={t("tagsPlaceholder")}
           onChange={handleTagsChange}
-          options={tags}
+          options={tags
+            ? tags.map((tag) => {
+              return {
+                value: tag,
+                label: tag,
+              };
+            })
+            : []}
         />
         <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
           <Tooltip placement="bottom" title={t("pin")}>
-            <PushpinOutlined
-              className={` duration-300 cursor-pointer text-xl p-2 rounded-md  ${
+            <PinIcon
+              className={` duration-300 cursor-pointer size-8 p-2 rounded-md  ${
                 rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -278,8 +271,8 @@ function RoteInputSimple() {
             />
           </Tooltip>
           <Tooltip placement="bottom" title={t("archive")}>
-            <InboxOutlined
-              className={` duration-300 cursor-pointer text-xl p-2 rounded-md ${
+            <Archive
+              className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
                 rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
               }`}
               onClick={() => {
@@ -291,8 +284,8 @@ function RoteInputSimple() {
             />
           </Tooltip>
           <Tooltip placement="bottom" title={t(`stateOptions.${rote.state}`)}>
-            <GlobalOutlined
-              className={` duration-300 cursor-pointer text-lg p-2 rounded-md ${
+            <Globe2
+              className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
                 rote.state === "public"
                   ? "bg-opacityLight dark:bg-opacityDark text-primary"
                   : ""
@@ -310,7 +303,7 @@ function RoteInputSimple() {
             className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
             onClick={addRoteFn}
           >
-            <SendOutlined />
+            <Send className="size-4" />
             {t("send")}
           </div>
         </div>

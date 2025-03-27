@@ -1,16 +1,12 @@
 import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
-import { apiSaveProfile, apiUploadAvatar } from "@/api/user/main";
+import { apiSaveProfile, apiUploadAvatar, getMyProfile } from "@/api/user/main";
 import OpenKeyItem from "@/components/openKey";
 import { useOpenKeys } from "@/state/openKeys";
-import { useProfile } from "@/state/profile";
-import {
-  EditOutlined,
-  LoadingOutlined,
-  RetweetOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { Profile } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
 import { Avatar, Divider, Input, Modal, Typography } from "antd";
 import TextArea from "antd/es/input/TextArea";
+import { Edit, Loader, LoaderPinwheel, User } from "lucide-react";
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import AvatarEditor from "react-avatar-editor";
@@ -26,7 +22,11 @@ function ProfilePage() {
   const AvatarEditorRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
-  const [profile, setProfile] = useProfile();
+
+  const { data: profile, mutate } = useAPIGet<Profile>(
+    "profile",
+    getMyProfile,
+  );
   const [editProfile, setEditProfile] = useState<any>(profile);
   const [openKeys, setOpenKeys] = useOpenKeys();
   const [openKeyLoading, setOpenKeyLoading] = useState(true);
@@ -43,7 +43,7 @@ function ProfilePage() {
       .catch(() => {
         setOpenKeyLoading(false);
       });
-  }, []);
+  }, [setOpenKeys]);
 
   function generateOpenKeyFun() {
     const toastId = toast.loading(t("creating"));
@@ -91,7 +91,7 @@ function ProfilePage() {
               "images",
               new File([blob], "cropped_image.png", {
                 type: "image/png",
-              })
+              }),
             );
             apiUploadAvatar(formData).then((res) => {
               console.log(res);
@@ -117,7 +117,7 @@ function ProfilePage() {
     apiSaveProfile(editProfile)
       .then((res) => {
         toast.success(t("editSuccess"));
-        setProfile(res.data.data);
+        mutate();
         setIsModalOpen(false);
         setProfileEditing(false);
       })
@@ -148,7 +148,7 @@ function ProfilePage() {
             toast.success(t("editSuccess"), {
               id: toastId,
             });
-            setProfile(res.data.data);
+            mutate();
           })
           .catch((err) => {
             toast.error(t("editFailed"), {
@@ -182,15 +182,16 @@ function ProfilePage() {
             className=" hidden"
             ref={inputCoverRef}
             onChange={changeCover}
+            title="Upload cover image"
           />
-          <RetweetOutlined />
+          <LoaderPinwheel className="size-4 animate-spin" />
         </div>
       </div>
       <div className=" flex mx-4 h-16">
         <Avatar
           className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-bgLight border-[4px] bg-opacityLight dark:bg-opacityDark text-black shrink-0 sm:block"
           size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 120 }}
-          icon={<UserOutlined className=" text-[#00000010]" />}
+          icon={<User className=" size-4 text-[#00000010]" />}
           src={profile?.avatar}
         />
         <div
@@ -199,7 +200,7 @@ function ProfilePage() {
             setIsModalOpen(true);
           }}
         >
-          <EditOutlined />
+          <Edit />
           {t("editProfile")}
         </div>
       </div>
@@ -232,28 +233,30 @@ function ProfilePage() {
         </div>
       </div>
       <div className=" flex flex-col">
-        {openKeyLoading ? (
-          <div className=" flex justify-center items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-            <LoadingOutlined />
-            <div>{t("loading")}</div>
-          </div>
-        ) : (
-          <>
-            {openKeys.map((openKey: any, index: any) => {
-              return (
-                <OpenKeyItem key={openKey.id} openKey={openKey}></OpenKeyItem>
-              );
-            })}
-            <div
-              onClick={generateOpenKeyFun}
-              className=" text-primary cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
-            >
-              <div className=" break-all mr-auto font-semibold font-mono">
-                {openKeys.length === 0 ? t("noOpenKey") : t("addOpenKey")}
-              </div>
+        {openKeyLoading
+          ? (
+            <div className=" flex justify-center items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
+              <Loader className="animate-spin size-4" />
+              <div>{t("loading")}</div>
             </div>
-          </>
-        )}
+          )
+          : (
+            <>
+              {openKeys.map((openKey: any, index: any) => {
+                return (
+                  <OpenKeyItem key={openKey.id} openKey={openKey}></OpenKeyItem>
+                );
+              })}
+              <div
+                onClick={generateOpenKeyFun}
+                className=" text-primary cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
+              >
+                <div className=" break-all mr-auto font-semibold font-mono">
+                  {openKeys.length === 0 ? t("noOpenKey") : t("addOpenKey")}
+                </div>
+              </div>
+            </>
+          )}
       </div>
       <Modal
         title={t("editProfile")}
@@ -272,11 +275,12 @@ function ProfilePage() {
               className=" hidden"
               ref={inputAvatarRef}
               onChange={handleFileChange}
+              title="Upload avatar image"
             />
             <Avatar
               className=" cursor-pointer bg-[#00000010] mx-auto my-2 text-black shrink-0 block"
               size={{ xs: 60, sm: 60, md: 80, lg: 80, xl: 80, xxl: 80 }}
-              icon={<UserOutlined className=" text-[#00000030]" />}
+              icon={<User className=" size-4 text-[#00000030]" />}
               src={editProfile.avatar}
               onClick={() => {
                 //@ts-ignore
@@ -344,7 +348,7 @@ function ProfilePage() {
                 }
               }}
             >
-              {profileEditing && <LoadingOutlined className=" mr-2" />}
+              {profileEditing && <Loader className=" animate-spin size-4 mr-2" />}
               {profileEditing ? t("editing") : t("save")}
             </div>
           </div>
@@ -381,7 +385,7 @@ function ProfilePage() {
             }
           }}
         >
-          {avatarUploading && <LoadingOutlined className=" mr-2" />}
+          {avatarUploading && <Loader className=" animate-spin size-4 mr-2" />}
           {avatarUploading ? t("uploading") : t("done")}
         </div>
       </Modal>

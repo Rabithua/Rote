@@ -18,7 +18,7 @@ export function apiGetUserInfoByUsername(username: string): Promise<any> {
   });
 }
 
-export function getUserProfile(): Promise<any> {
+export function getMyProfile(): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
       method: "get",
@@ -26,7 +26,7 @@ export function getUserProfile(): Promise<any> {
       withCredentials: true,
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);

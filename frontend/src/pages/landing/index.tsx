@@ -1,5 +1,7 @@
+import { getMyProfile } from "@/api/user/main";
 import Logo from "@/components/logo";
-import { useProfile } from "@/state/profile";
+import { Profile } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -31,7 +33,11 @@ function Landing() {
     //   href: "/#",
     // },
   ];
-  const [profile] = useProfile();
+
+  const { data: profile } = useAPIGet<Profile>(
+    "profile",
+    getMyProfile,
+  );
 
   return (
     <div className=" dark:text-white w-full min-h-dvh flex flex-col justify-center items-center">

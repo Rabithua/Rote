@@ -1,9 +1,11 @@
 // src/Heatmap.tsx
 import { apiGetMyHeatMap } from "@/api/others/main";
 import { HeatMapDay } from "@/types/main";
-import Empty from "antd/es/empty";
+import { useAPIGet } from "@/utils/fetcher";
+import { Empty } from "antd";
+import { Loader } from "lucide-react";
 import moment from "moment";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 
@@ -11,6 +13,15 @@ const Heatmap: React.FC = () => {
   const { t } = useTranslation("translation", {
     keyPrefix: "components.d3.heatmap",
   });
+
+  const { data: heatmapData, isLoading } = useAPIGet<
+    {
+      [key: string]: number;
+    }
+  >(
+    "heatmap",
+    apiGetMyHeatMap,
+  );
 
   const colors = [
     "#cccccc20",
@@ -31,18 +42,13 @@ const Heatmap: React.FC = () => {
     t("daysOfWeek.Sat"),
   ];
 
-  const [heatmapData, setHeatmapData] = useState<any>({});
-  const [days, setDays] = useState<any>([]);
+  function parseDays(data: any) {
+    if (isLoading || !data) {
+      return [];
+    }
 
-  useEffect(() => {
-    apiGetMyHeatMap({}).then((res) => {
-      setHeatmapData(res.data);
-    }).catch((e) => {});
-  }, []);
-
-  useEffect(() => {
-    if (Object.keys(heatmapData).length === 0) {
-      return;
+    if (Object.keys(data).length === 0) {
+      return [];
     }
 
     const endDate = new Date();
@@ -65,7 +71,7 @@ const Heatmap: React.FC = () => {
 
     dates.forEach((date) => {
       const dateString = date.toISOString().split("T")[0];
-      const notesCount = heatmapData[dateString] || 0;
+      const notesCount = data[dateString] || 0;
       currentWeek.push({ date, notesCount });
       if (date.getDay() === 6) {
         // 周六
@@ -77,67 +83,8 @@ const Heatmap: React.FC = () => {
       weeks.push(currentWeek);
     }
 
-    setDays(weeks);
-
-    // if (svgRef.current) {
-    //   const svg = d3
-    //     .select(svgRef.current)
-    //     .attr("width", containerWidth)
-    //     .attr("height", height + margin.top + margin.bottom)
-    //     .append("g")
-    //     .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    //   const startWeek = parseInt(formatWeek(startDate));
-
-    //   // 添加礼拜几的标签
-    //   svg
-    //     .selectAll(".day-of-week")
-    //     .data(daysOfWeek)
-    //     .enter()
-    //     .append("text")
-    //     .attr("class", "day-of-week")
-    //     .attr("x", -16)
-    //     .attr("y", (d, i) => i * cellSize + cellSize / 2)
-    //     .attr("dy", "0.35em")
-    //     .style("text-anchor", "end")
-    //     .style("font-size", "10px")
-    //     .text((d) => d);
-
-    //   svg
-    //     .selectAll(".day")
-    //     .data(days)
-    //     .enter()
-    //     .append("rect")
-    //     .attr("class", "day")
-    //     .attr("width", cellSize - padding)
-    //     .attr("height", cellSize - padding)
-    //     .attr(
-    //       "x",
-    //       (d) =>
-    //         (parseInt(formatWeek(d)) - startWeek) * cellSize + padding / 2 - 20
-    //     )
-    //     .attr("y", (d) => parseInt(formatDay(d)) * cellSize + padding / 2)
-    //     .attr("rx", 3) // 添加圆角
-    //     .attr("ry", 3) // 添加圆角
-    //     .datum(formatDate)
-    //     .attr("fill", (d) => color(heatmapData[d] || 0))
-    //     .attr(
-    //       "data-title",
-    //       (d) =>
-    //         `${formatMonthDay(new Date(d))}: ${heatmapData[d] || 0} ${t(
-    //           "notes"
-    //         )}`
-    //     ) // 显示日期和贡献数量
-    //     .on("click", function (e) {
-    //       const target = e.target as HTMLElement;
-    //       if (target.dataset.title) {
-    //         toast(target.dataset.title, {
-    //           icon: "🌱",
-    //         });
-    //       }
-    //     });
-    // }
-  }, [heatmapData]);
+    return weeks;
+  }
 
   const handleDayClick = (day: HeatMapDay) => {
     toast(
@@ -150,8 +97,23 @@ const Heatmap: React.FC = () => {
 
   return (
     <>
-      {Object.keys(heatmapData).length > 0
+      {isLoading
         ? (
+          <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
+            <Loader className="animate-spin size-6" />
+          </div>
+        )
+        : heatmapData && heatmapData.length === 0
+        ? (
+          <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
+            <Empty
+              className=" dark:text-textDark"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={t("noData")}
+            />
+          </div>
+        )
+        : (
           <div className=" flex gap-2">
             <div className=" flex flex-col justify-around">
               {daysOfWeek.map((day) => (
@@ -161,7 +123,7 @@ const Heatmap: React.FC = () => {
               ))}
             </div>
             <div className=" flex gap-1">
-              {days.map((week: any, index: number) => (
+              {parseDays(heatmapData).map((week: any, index: number) => (
                 <div key={`week_${index}`} className=" flex flex-col gap-1">
                   {week.map((day: any, index: number) => (
                     <div
@@ -179,15 +141,6 @@ const Heatmap: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )
-        : (
-          <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
-            <Empty
-              className=" dark:text-textDark"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={t("noData")}
-            />
           </div>
         )}
     </>

@@ -1,83 +1,101 @@
-import { useTempState } from "@/state/others";
-import { Rote, Rotes } from "@/types/main";
-import { LoadingOutlined } from "@ant-design/icons";
+import { Rotes } from "@/types/main";
+import { useAPIInfinite } from "@/utils/fetcher";
+
 import Empty from "antd/es/empty";
-import { useEffect, useRef, useState } from "react";
+import { Loader } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import { SWRConfiguration } from "swr";
 import RoteItem from "./roteItem";
 
-function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
-  const [rotesToRender, setRotesToRender] = useState<Rotes>([]);
-  const [tempState, setTempState] = useTempState();
-
+function RoteList(
+  { api, apiProps, options }: {
+    api: any;
+    apiProps: any;
+    options?: SWRConfiguration;
+  },
+) {
   const { t } = useTranslation("translation", {
     keyPrefix: "components.roteList",
   });
 
-  const countRef = useRef<number>(0);
-  const loading = useRef<boolean>(false);
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  const [hasMore, setHasMore] = useState(true);
+  const getProps = (pageIndex: number, previousPageData: Rotes | null) => {
+    if (previousPageData && !previousPageData.length) return null;
+    return {
+      limit: 20,
+      skip: pageIndex * 20,
+      ...apiProps,
+    };
+  };
 
-  useEffect(() => {
-    countRef.current = rotesToRender.length;
-  }, [rotesToRender.length]);
+  const { data, mutate, loadMore } = useAPIInfinite(getProps, api, {
+    ...options,
+    initialSize: 0,
+    revalidateFirstPage: false,
+  });
 
-  useEffect(() => {
-    if (
-      tempState.editOne ||
-      tempState.sendNewOne ||
-      tempState.removeOne ||
-      tempState.newAttachments
-    ) {
-      setHasMore(true);
-      if (tempState.editOne) {
-        setRotesToRender((prev) => {
-          return prev.map((r) => {
-            if (r.id === tempState.editOne?.id) {
-              return tempState.editOne as Rote;
-            }
-            return r;
-          });
-        });
-      }
+  const rotes: Rotes = data ? [].concat(...data) : [];
+  const isEmpty = data?.[0]?.length === 0;
+  const isReachingEnd = isEmpty ||
+    (data && data[data.length - 1]?.length < apiProps.limit);
 
-      if (tempState.sendNewOne) {
-        setRotesToRender((prev) => {
-          return [tempState.sendNewOne as Rote, ...prev];
-        });
-      }
+  // useEffect(() => {
+  //   if (
+  //     tempState.editOne ||
+  //     tempState.sendNewOne ||
+  //     tempState.removeOne ||
+  //     tempState.newAttachments
+  //   ) {
+  //     setHasMore(true);
+  //     if (tempState.editOne) {
+  //       setRotesToRender((prev) => {
+  //         return prev.map((r) => {
+  //           if (r.id === tempState.editOne?.id) {
+  //             return tempState.editOne as Rote;
+  //           }
+  //           return r;
+  //         });
+  //       });
+  //     }
 
-      if (tempState.removeOne !== null) {
-        setRotesToRender((prev) => {
-          return prev.filter((r) => r.id !== tempState.removeOne);
-        });
-      }
+  //     if (tempState.sendNewOne) {
+  //       setRotesToRender((prev) => {
+  //         return [tempState.sendNewOne as Rote, ...prev];
+  //       });
+  //     }
 
-      if (tempState.newAttachments) {
-        setRotesToRender((prev) => {
-          return prev.map((r) => {
-            return r.id === tempState.newAttachments![0].roteid
-              ? {
-                  ...r,
-                  attachments: [...r.attachments, ...tempState.newAttachments!],
-                }
-              : r;
-          });
-        });
-      }
+  //     if (tempState.removeOne !== null) {
+  //       setRotesToRender((prev) => {
+  //         return prev.filter((r) => r.id !== tempState.removeOne);
+  //       });
+  //     }
 
-      setTempState({
-        editOne: null,
-        sendNewOne: null,
-        removeOne: null,
-        newAttachments: null,
-      });
-    }
-  }, [tempState]);
+  //     if (tempState.newAttachments) {
+  //       setRotesToRender((prev) => {
+  //         return prev.map((r) => {
+  //           return r.id === tempState.newAttachments![0].roteid
+  //             ? {
+  //               ...r,
+  //               attachments: [...r.attachments, ...tempState.newAttachments!],
+  //             }
+  //             : r;
+  //         });
+  //       });
+  //     }
+
+  //     setTempState({
+  //       editOne: null,
+  //       sendNewOne: null,
+  //       removeOne: null,
+  //       newAttachments: null,
+  //     });
+  //   }
+  // }, [tempState]);
 
   // 监听loaderRef显示事件，加载更多
+
   useEffect(() => {
     const currentloaderRef = loaderRef.current;
 
@@ -91,97 +109,45 @@ function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
       threshold: 0.5, // 元素可见度的阈值
     };
 
-    let observer: IntersectionObserver;
-
-    function loadMore() {
-      if (loading.current === true || !hasMore) return;
-
-      loading.current = true;
-
-      api({
-        skip: countRef.current,
-        ...apiProps,
-      })
-        .then((res: any) => {
-          if (res.data.data.length !== 20) {
-            setHasMore(false);
-          }
-
-          setRotesToRender([...rotesToRender, ...res.data.data]);
-          countRef.current += res.data.data.length;
-        })
-        .catch(() => {})
-        .finally(() => {
-          loading.current = false;
-        });
-    }
-
-    observer = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries) => {
       const target = entries[0];
       if (target.isIntersecting) {
         loadMore();
       }
     }, options);
 
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
+    // 使用之前保存的引用而不是直接访问 loaderRef.current
+    observer.observe(currentloaderRef);
 
     return () => {
-      if (loaderRef.current) {
-        observer.unobserve(loaderRef.current);
-      }
+      // 在清理函数中使用相同的引用
+      observer.unobserve(currentloaderRef);
     };
-  }, [rotesToRender]);
-
-  useEffect(() => {
-    setRotesToRender([]);
-    setHasMore(true);
-
-    api(apiProps)
-      .then((res: any) => {
-        if (res.data.data.length !== 20) {
-          setHasMore(false);
-        }
-
-        setRotesToRender(res.data.data);
-        countRef.current = res.data.data.length;
-      })
-      .catch(() => {});
-  }, [apiProps]);
-
-  function updateRote(rote: Rote) {
-    setRotesToRender((prev) => {
-      return prev.map((r) => {
-        if (r.id === rote.id) {
-          return rote;
-        }
-        return r;
-      });
-    });
-  }
+  }, [loadMore]);
 
   return (
     <div className=" flex flex-col w-full relative">
-      {rotesToRender.map((item: any, index: any) => {
-        return <RoteItem rote_param={item} key={item.id}></RoteItem>;
+      {rotes.map((item: any) => {
+        return <RoteItem rote={item} key={item.id} mutate={mutate} />;
       })}
-      {!hasMore ? null : (
+      {isReachingEnd ? null : (
         <div
           ref={loaderRef}
           className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark"
         >
-          <LoadingOutlined />
+          <Loader className="size-5 animate-spin" />
         </div>
       )}
-      {!hasMore && rotesToRender.length === 0 ? (
-        <div className=" shrink-0 dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t("empty")}
-          />
-        </div>
-      ) : null}
+      {isReachingEnd && rotes.length === 0
+        ? (
+          <div className=" shrink-0 dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={t("empty")}
+            />
+          </div>
+        )
+        : null}
     </div>
   );
 }

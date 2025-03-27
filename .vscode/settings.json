@@ -24,5 +24,6 @@
   "files.autoSaveDelay": 1000,
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
-  "javascript.updateImportsOnFileMove.enabled": "always"
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "postman.settings.dotenv-detection-notification-visibility": false
 }

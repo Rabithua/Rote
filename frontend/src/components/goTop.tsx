@@ -1,4 +1,4 @@
-import { UpOutlined } from "@ant-design/icons";
+import { ArrowUp } from "lucide-react";
 
 export default function GoTop({
   scrollContainerName,
@@ -25,7 +25,7 @@ export default function GoTop({
       className="z-10 animate-show duration-300 fixed self-end right-8 bottom-16 bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer"
       onClick={goTop}
     >
-      <UpOutlined />
+      <ArrowUp className="size-4" />
     </div>
   );
 }

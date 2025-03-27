@@ -1,5 +1,5 @@
-import { UploadOutlined } from "@ant-design/icons";
 import { message } from "antd";
+import { Upload } from "lucide-react";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -17,7 +17,7 @@ export default function Uploader({ fileList, callback, id }: any) {
         }}
         className=" active:scale-95 duration-300 cursor-pointer w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-opacityLight dark:bg-opacityDark border border-opacityLight dark:border-opacityDark overflow-hidden"
       >
-        <UploadOutlined className=" text-2xl " />
+        <Upload className=" size-6 " />
       </div>
       <input
         ref={fileInputRef}
@@ -28,7 +28,7 @@ export default function Uploader({ fileList, callback, id }: any) {
         accept="image/*"
         onInput={() => {
           const input = document.querySelector(
-            `#file-${id}`
+            `#file-${id}`,
           ) as HTMLInputElement;
 
           let files = input.files ? Object.values(input.files) : [];
@@ -40,6 +40,7 @@ export default function Uploader({ fileList, callback, id }: any) {
 
           callback(files);
         }}
+        title="Attachments Uploader"
       />
     </div>
   );

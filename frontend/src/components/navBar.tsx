@@ -1,6 +1,6 @@
-import { LeftOutlined } from "@ant-design/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { ArrowLeft } from "lucide-react";
 
 export default function NavBar() {
   const { t } = useTranslation("translation", {
@@ -21,7 +21,7 @@ export default function NavBar() {
     <>
       {window.history.state && window.history.state.idx > 0 && (
         <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-xl">
-          <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
+          <ArrowLeft className=" p-2 size-8 cursor-pointer" onClick={back} />
           <div className=" font-semibold cursor-pointer" onClick={back}>
             {t("back")}
           </div>

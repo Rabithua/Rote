@@ -2,7 +2,7 @@ import { apiGetPublicRote } from "@/api/rote/main";
 import GoTop from "@/components/goTop";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
-import { GlobalOutlined } from "@ant-design/icons";
+import { Globe2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 function ExplorePage() {
@@ -12,7 +12,7 @@ function ExplorePage() {
     <div
       className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
     >
-      <NavHeader title={t("title")} icon={<GlobalOutlined />} />
+      <NavHeader title={t("title")} icon={<Globe2 className="size-6" />} />
       <div id="top" className=" h-[1px]"></div>
 
       <RoteList

@@ -10,7 +10,7 @@ import "./utils/i18n";
 
 const { lightTheme, darkTheme } = themeJson;
 const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement
+  document.getElementById("root") as HTMLElement,
 );
 
 const AppWrapper = () => {
@@ -31,7 +31,7 @@ const AppWrapper = () => {
 
   useEffect(() => {
     setIsDarkMode(windowQuery.matches ? true : false);
-  }, []);
+  }, [windowQuery.matches]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -71,14 +71,12 @@ const AppWrapper = () => {
             />
           </Helmet>
           <ConfigProvider
-            theme={
-              isDarkMode
-                ? { algorithm: theme.darkAlgorithm, ...darkTheme }
-                : {
-                    algorithm: theme.defaultAlgorithm,
-                    ...lightTheme,
-                  }
-            }
+            theme={isDarkMode
+              ? { algorithm: theme.darkAlgorithm, ...darkTheme }
+              : {
+                algorithm: theme.defaultAlgorithm,
+                ...lightTheme,
+              }}
           >
             <GlobalRouterProvider />
             <Toaster position="top-right" reverseOrder={false} />

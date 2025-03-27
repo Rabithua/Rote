@@ -15,7 +15,7 @@ export function apiGetMyHeatMap(data: any): Promise<any> {
       },
     })
       .then(function (response) {
-        resolve(response.data);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);

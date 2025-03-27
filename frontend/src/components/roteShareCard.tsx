@@ -1,11 +1,7 @@
 import { Attachment } from "@/types/main";
-import {
-  LinkOutlined,
-  SaveOutlined,
-  ThunderboltOutlined,
-} from "@ant-design/icons";
 import { saveAs } from "file-saver";
 import { toPng } from "html-to-image";
+import { Link, Save, Zap } from "lucide-react";
 import moment from "moment";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -74,7 +70,7 @@ function RoteShareCard({ rote }: any) {
       };
 
       const isSafari = /^((?!chrome|android).)*safari/i.test(
-        navigator.userAgent
+        navigator.userAgent,
       );
       let dataUrl = "";
       let i = 0;
@@ -141,7 +137,8 @@ function RoteShareCard({ rote }: any) {
         } ${theme.colorBlock}`}
         key={`theme_${index}`}
         onClick={() => setThemeIndex(themes.indexOf(theme))}
-      ></div>
+      >
+      </div>
     );
   }
 
@@ -174,11 +171,9 @@ function RoteShareCard({ rote }: any) {
                       ? " w-full max-w-[500px] rounded-2xl"
                       : "w-[calc(1/3*100%-2.6667px)] aspect-1"
                   } object-cover grow bg-opacityLight dark:bg-opacityDark`}
-                  src={
-                    file.compressUrl
-                      ? file.compressUrl + "?" + new Date().getTime()
-                      : file.url + "?" + new Date().getTime()
-                  }
+                  src={file.compressUrl
+                    ? file.compressUrl + "?" + new Date().getTime()
+                    : file.url + "?" + new Date().getTime()}
                   alt=""
                   crossOrigin="anonymous"
                 />
@@ -190,7 +185,9 @@ function RoteShareCard({ rote }: any) {
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
-                className={` px-2 py-1 md:px-3 rounded-md ${themes[themeIndex].tagClass}`}
+                className={` px-2 py-1 md:px-3 rounded-md ${
+                  themes[themeIndex].tagClass
+                }`}
                 key={tag}
               >
                 {tag}
@@ -200,7 +197,9 @@ function RoteShareCard({ rote }: any) {
         </div>
         <div className=" mt-2  w-full flex justify-between">
           <div
-            className={` flex items-center gap-2 ${themes[themeIndex].authorClass}`}
+            className={` flex items-center gap-2 ${
+              themes[themeIndex].authorClass
+            }`}
           >
             <img
               className=" w-10 rounded-md"
@@ -244,20 +243,20 @@ function RoteShareCard({ rote }: any) {
             }
           }}
         >
-          <ThunderboltOutlined />
+          <Zap className="size-4" />
         </div>
         <div
           className=" cursor-pointer select-none duration-300 flex items-center gap-2 dark:bg-bgLight text-textLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
           onClick={copyLink}
         >
-          <LinkOutlined />
+          <Link className="size-4" />
           {t("copyLink")}
         </div>
         <div
           className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
           onClick={saveImage}
         >
-          <SaveOutlined />
+          <Save className="size-4" />
           {t("save")}
         </div>
       </div>

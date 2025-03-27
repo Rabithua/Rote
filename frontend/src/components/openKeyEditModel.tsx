@@ -1,4 +1,3 @@
-import { SaveOutlined } from "@ant-design/icons";
 import mainJson from "@/json/main.json";
 import { Checkbox, CheckboxProps } from "antd";
 import { useState, useMemo } from "react";
@@ -6,6 +5,7 @@ import { apiEditOneMyOpenKey } from "@/api/rote/main";
 import toast from "react-hot-toast";
 import { useOpenKeys } from "@/state/openKeys";
 import { useTranslation } from "react-i18next";
+import { Save } from "lucide-react";
 const CheckboxGroup = Checkbox.Group;
 
 function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
@@ -89,7 +89,7 @@ function OpenKeyEditModel({ openKey, submitEdit, close }: any) {
           className=" cursor-pointer w-fit select-none duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
           onClick={save}
         >
-          <SaveOutlined />
+          <Save className="size-4" />
           {t("save")}
         </div>
       </div>

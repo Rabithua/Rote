@@ -1,18 +1,18 @@
-import { lazy, Suspense } from "react";
-
 import LayoutDashboard from "@/layout/dashboard";
-import { useProfile } from "@/state/profile";
-import { LoadingOutlined } from "@ant-design/icons";
+import { lazy, Suspense } from "react";
 import {
   createBrowserRouter,
   Navigate,
   RouterProvider,
 } from "react-router-dom";
 import { ProtectedRoute } from "./protectedRoute";
+import { useAPIGet } from "@/utils/fetcher";
+import { getMyProfile } from "@/api/user/main";
+import { Loader } from "lucide-react";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));
-const RotePage = lazy(() => import("@/pages/home"));
+const HomePage = lazy(() => import("@/pages/home"));
 const MineFilter = lazy(() => import("@/pages/filter"));
 const ProfilePage = lazy(() => import("@/pages/profile/index"));
 const ErrorPage = lazy(() => import("@/pages/404"));
@@ -23,7 +23,7 @@ const SingleRotePage = lazy(() => import("@/pages/rote/:roteid"));
 const ExperimentPage = lazy(() => import("@/pages/experiment"));
 
 export default function GlobalRouterProvider() {
-  const [profile] = useProfile();
+  const { data: profile } = useAPIGet("profile", getMyProfile);
 
   const router = createBrowserRouter(
     [
@@ -55,7 +55,7 @@ export default function GlobalRouterProvider() {
             path: "home",
             element: (
               <ProtectedRoute>
-                <RotePage />
+                <HomePage />
               </ProtectedRoute>
             ),
             errorElement: <ErrorPage />,
@@ -69,7 +69,6 @@ export default function GlobalRouterProvider() {
             ),
             errorElement: <ErrorPage />,
           },
-
           {
             path: "profile",
             element: (
@@ -128,14 +127,14 @@ export default function GlobalRouterProvider() {
       future: {
         v7_startTransition: true,
       },
-    }
+    },
   );
 
   return (
     <Suspense
       fallback={
         <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
-          <LoadingOutlined className=" text-4xl" />
+          <Loader className=" animate-spin size-4 text-4xl" />
         </div>
       }
     >

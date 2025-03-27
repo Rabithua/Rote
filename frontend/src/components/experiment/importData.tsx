@@ -1,5 +1,5 @@
-import { LoadingOutlined } from "@ant-design/icons";
 import { Divider } from "antd";
+import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -7,7 +7,7 @@ export default function ImportData() {
   const { t } = useTranslation("translation", {
     keyPrefix: "pages.experiment.importData",
   });
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
 
   useEffect(() => {}, []);
 
@@ -20,13 +20,13 @@ export default function ImportData() {
         </div>
       </div>
       <Divider></Divider>
-      {loading ? (
-        <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-          <LoadingOutlined />
-        </div>
-      ) : (
-        <></>
-      )}
+      {loading
+        ? (
+          <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
+            <Loader className="animate-spin size-6" />
+          </div>
+        )
+        : <></>}
     </div>
   );
 }

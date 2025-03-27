@@ -1,46 +1,42 @@
 import { apiGetRandomRote } from "@/api/rote/main";
-import { RedoOutlined } from "@ant-design/icons/lib/icons";
-import { useEffect, useState } from "react";
+import { Rote } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
 import { useTranslation } from "react-i18next";
 import RoteItem from "./roteItem";
+import { Loader, RefreshCcwIcon } from "lucide-react";
 
 export default function RandomRote() {
   const { t } = useTranslation("translation", {
     keyPrefix: "components.randomRote",
   });
 
-  const [rote, setRote] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: rote, isLoading, isValidating, mutate } = useAPIGet<Rote>(
+    "randomRote",
+    apiGetRandomRote,
+  );
 
-  useEffect(() => {
-    getRandomRoteFun();
-  }, []);
-
-  function getRandomRoteFun() {
-    setLoading(true);
-    apiGetRandomRote()
-      .then((res: any) => {
-        setLoading(false);
-        setRote(res.data.data);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }
   return (
-    rote && (
-      <div className=" shrink-0">
-        <div className=" flex gap-2 bg-bgLight dark:bg-bgDark text-md font-semibold py-2">
-          {t("title")}
-          <RedoOutlined
-            className={` cursor-pointer hover:opacity-50 duration-300 ml-auto ${
-              loading && "animate-spin"
-            }`}
-            onClick={getRandomRoteFun}
-          />
+    isLoading
+      ? (
+        <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
+          <Loader className="size-6 animate-spin" />
         </div>
-        <RoteItem rote_param={rote} randomRoteStyle />
-      </div>
-    )
+      )
+      : rote
+      ? (
+        <div className=" shrink-0">
+          <div className=" flex gap-2 bg-bgLight dark:bg-bgDark text-md font-semibold py-2">
+            {t("title")}
+            <RefreshCcwIcon
+              className={` cursor-pointer hover:opacity-50 size-4 duration-300 ml-auto ${
+                isValidating && "animate-spin"
+              }`}
+              onClick={() => mutate()}
+            />
+          </div>
+          <RoteItem rote={rote} randomRoteStyle />
+        </div>
+      )
+      : null
   );
 }

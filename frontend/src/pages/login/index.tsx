@@ -1,15 +1,17 @@
 import { loginByPassword, registerBypassword } from "@/api/login/main";
 import { apiGetStatus } from "@/api/rote/main";
-import { useProfile } from "@/state/profile";
-import { fetchTags, useTags } from "@/state/tags";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
+import { getMyProfile } from "@/api/user/main";
 import Logo from "@/components/logo";
 import mainJson from "@/json/main.json";
+import { Profile } from "@/types/main";
+import { useAPIGet } from "@/utils/fetcher";
 import { Input } from "antd";
+import { Loader } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 function Login() {
@@ -18,10 +20,16 @@ function Login() {
   });
 
   const { safeRoutes } = mainJson;
-  const [checkStatusMsg, setCheckStatusMsg] = useState("");
 
-  const [profile, setProfile] = useProfile();
-  const [, setTags] = useTags();
+  const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet(
+    "checkStatus",
+    apiGetStatus,
+  );
+
+  const { data: profile, mutate } = useAPIGet<Profile>(
+    "profile",
+    getMyProfile,
+  );
 
   const [type, setType] = useState("login");
   const navigate = useNavigate();
@@ -91,8 +99,7 @@ function Login() {
           id: toastId,
         });
         setDisbled(false);
-        setProfile(res.data.data);
-        setTags(await fetchTags());
+        mutate();
         navigate("/home");
       })
       .catch((err) => {
@@ -108,18 +115,6 @@ function Login() {
           });
         }
       });
-  }
-
-  async function checkStatus() {
-    try {
-      const res = await apiGetStatus();
-      if (res.data.code !== 0) {
-        setCheckStatusMsg(t("messages.checkDatabase"));
-      }
-    } catch (err: any) {
-      console.error("Error fetching status:", err);
-      setCheckStatusMsg(t("messages.checkBackend"));
-    }
   }
 
   function register() {
@@ -187,23 +182,22 @@ function Login() {
   }
 
   useEffect(() => {
-    checkStatus();
-  }, []);
-
-  useEffect(() => {
     if (profile) {
       navigate("/home");
     } else {
     }
-  }, [profile]);
+  }, [profile, navigate]);
 
   return (
     <div className="h-dvh w-full dark:bg-bgDark bg-bgLight relative flex items-center justify-center">
-      {/* Radial gradient for the container to give a faded look */}
-      <div className="absolute pointer-events-none inset-0 flex items-center justify-center ">
-      </div>
-      <div className=" opacity-0 translate-y-5 animate-show px-5 py-6 w-80 dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
-        {!checkStatusMsg
+      <div className=" opacity-0 translate-y-5 animate-show px-8 py-6 w-80 border-[1px] border-opacityLight dark:bg-opacityDark shadow-card dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
+        {isCheckingStatus
+          ? (
+            <div className=" flex justify-center text-lg items-center py-8 gap-3 ">
+              <Loader className="animate-spin size-6" />
+            </div>
+          )
+          : backendStatusOk
           ? (
             <>
               <div className=" dark:invert mb-4">
@@ -341,7 +335,7 @@ function Login() {
           : (
             <>
               <div className=" ">{t("error.backendIssue")}</div>
-              <div>{checkStatusMsg}</div>
+              <div>{JSON.stringify(backendStatusOk)}</div>
               <div className=" text-gray-500">
                 {t("error.dockerDeployment")}
               </div>

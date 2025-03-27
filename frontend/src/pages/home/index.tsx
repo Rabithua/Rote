@@ -7,7 +7,7 @@ import RandomRote from "@/components/randomRote";
 import RoteInputSimple from "@/components/roteInputSimple";
 import RoteList from "@/components/roteList";
 import TagMap from "@/components/tagMap";
-import { BarChartOutlined } from "@ant-design/icons";
+import { ChartAreaIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const Statistics = ({ t }: { t: (key: string) => string }) => {
@@ -16,7 +16,7 @@ const Statistics = ({ t }: { t: (key: string) => string }) => {
       <div className="p-4 h-dvh w-72 fixed top-0 overflow-y-scroll noScrollBar hidden md:block">
         <div className="gap-4 w-full sticky top-0 flex flex-col">
           <div className="flex gap-2 text-lg font-semibold">
-            <BarChartOutlined />
+            <ChartAreaIcon className="size-4" />
             {t("statistics")}
           </div>
           <Heatmap />
@@ -28,7 +28,7 @@ const Statistics = ({ t }: { t: (key: string) => string }) => {
   );
 };
 
-function RotePage() {
+function HomePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.home" });
 
   return (
@@ -57,4 +57,4 @@ function RotePage() {
   );
 }
 
-export default RotePage;
+export default HomePage;

@@ -1,12 +1,4 @@
 import rote from "@/pages/home";
-import {
-  CopyOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  EllipsisOutlined,
-  EyeInvisibleOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
 import { Modal, Popover } from "antd";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -14,6 +6,7 @@ import OpenKeyEditModel from "./openKeyEditModel";
 import { apiDeleteOneMyOpenKey } from "@/api/rote/main";
 import { useOpenKeys } from "@/state/openKeys";
 import { useTranslation } from "react-i18next";
+import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Trash2 } from "lucide-react";
 
 function OpenKeyItem({ openKey }: any) {
   const { t } = useTranslation("translation", {
@@ -49,21 +42,21 @@ function OpenKeyItem({ openKey }: any) {
     return (
       <div className=" flex flex-col">
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer items-center"
           onClick={() => {
             setOpen(false);
             setIsModalOpen(true);
             // setEditRote(rote);
           }}
         >
-          <EditOutlined />
+          <Edit className="size-4" />
           {t("edit")}
         </div>
         <div
-          className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer"
+          className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer items-center"
           onClick={deleteOpenKey}
         >
-          <DeleteOutlined />
+          <Trash2 className="size-4" />
           {t("delete")}
         </div>
       </div>
@@ -82,9 +75,7 @@ function OpenKeyItem({ openKey }: any) {
   async function copyToClipboard(): Promise<void> {
     const text = `${
       process.env.REACT_APP_BASEURL_PRD || "http://localhost:3000"
-    }/v1/api/openkey/onerote?openkey=${
-      openKey.id
-    }&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
+    }/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
     try {
       await navigator.clipboard.writeText(text);
       toast.success(t("copySuccess"));
@@ -99,24 +90,26 @@ function OpenKeyItem({ openKey }: any) {
         {hidekey
           ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
           : openKey.id}
-        {hidekey ? (
-          <EyeOutlined
-            onClick={changeHideKey}
-            className=" ml-1 hover:bg-[#00000010] rounded-full p-2"
-          />
-        ) : (
-          <EyeInvisibleOutlined
-            onClick={changeHideKey}
-            className=" ml-1 hover:bg-[#00000010] rounded-full p-2"
-          />
-        )}
+        {hidekey
+          ? (
+            <EyeIcon
+              onClick={changeHideKey}
+              className=" ml-1 hover:bg-[#00000010] rounded-lg size-8 p-2"
+            />
+          )
+          : (
+            <EyeClosed
+              onClick={changeHideKey}
+              className=" ml-1 hover:bg-[#00000010] size-8 rounded-lg p-2"
+            />
+          )}
         <Popover
           placement="bottomRight"
           open={open}
           onOpenChange={handleOpenChange}
           content={actionsMenu(rote)}
         >
-          <EllipsisOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
+          <Ellipsis className=" ml-auto size-8 hover:bg-[#00000010] rounded-lg p-2" />
         </Popover>
       </div>
       <div className="">
@@ -133,7 +126,7 @@ function OpenKeyItem({ openKey }: any) {
           &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private
         </span>
         <span onClick={copyToClipboard}>
-          <CopyOutlined className=" ml-auto hover:bg-[#00000010] rounded-full p-2" />
+          <Copy className=" ml-auto hover:bg-[#00000010] rounded-lg size-8 p-2" />
         </span>
       </div>
       <Modal
@@ -147,7 +140,8 @@ function OpenKeyItem({ openKey }: any) {
         <OpenKeyEditModel
           close={onModelCancel}
           openKey={openKey}
-        ></OpenKeyEditModel>
+        >
+        </OpenKeyEditModel>
       </Modal>
     </div>
   );
