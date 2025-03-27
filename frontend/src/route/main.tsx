@@ -1,4 +1,7 @@
+import { getMyProfile } from "@/api/user/main";
 import LayoutDashboard from "@/layout/dashboard";
+import { useAPIGet } from "@/utils/fetcher";
+import { Loader } from "lucide-react";
 import { lazy, Suspense } from "react";
 import {
   createBrowserRouter,
@@ -6,9 +9,6 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { ProtectedRoute } from "./protectedRoute";
-import { useAPIGet } from "@/utils/fetcher";
-import { getMyProfile } from "@/api/user/main";
-import { Loader } from "lucide-react";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));
@@ -123,11 +123,6 @@ export default function GlobalRouterProvider() {
         element: <ErrorPage />,
       },
     ],
-    {
-      future: {
-        v7_startTransition: true,
-      },
-    },
   );
 
   return (
@@ -140,9 +135,6 @@ export default function GlobalRouterProvider() {
     >
       <RouterProvider
         router={router}
-        future={{
-          v7_startTransition: true,
-        }}
       />
     </Suspense>
   );
