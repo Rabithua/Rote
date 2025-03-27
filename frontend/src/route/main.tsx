@@ -23,7 +23,7 @@ const SingleRotePage = lazy(() => import("@/pages/rote/:roteid"));
 const ExperimentPage = lazy(() => import("@/pages/experiment"));
 
 export default function GlobalRouterProvider() {
-  const { data: profile } = useAPIGet("profile", getMyProfile);
+  const { data: profile, isLoading } = useAPIGet("profile", getMyProfile);
 
   const router = createBrowserRouter(
     [
@@ -129,13 +129,21 @@ export default function GlobalRouterProvider() {
     <Suspense
       fallback={
         <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
-          <Loader className=" animate-spin size-4 text-4xl" />
+          <Loader className=" animate-spin size-8 text-4xl" />
         </div>
       }
     >
-      <RouterProvider
-        router={router}
-      />
+      {isLoading
+        ? (
+          <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
+            <Loader className=" animate-spin size-8 text-4xl" />
+          </div>
+        )
+        : (
+          <RouterProvider
+            router={router}
+          />
+        )}
     </Suspense>
   );
 }
