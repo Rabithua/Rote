@@ -103,7 +103,7 @@ const Heatmap: React.FC = () => {
             <Loader className="animate-spin size-6" />
           </div>
         )
-        : heatmapData && heatmapData.length === 0
+        : heatmapData && Object.keys(heatmapData).length === 0
         ? (
           <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
             <Empty
