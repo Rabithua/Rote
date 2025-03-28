@@ -119,7 +119,7 @@ function LayoutDashboard() {
             location.pathname === icon.link
               ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
               : ""
-          } `}
+          } ${icon.name === "logout" ? "hover:text-red-600 hover:bg-red-600/10" : ""} `}
           onClick={() => {
             icon.callback && icon.callback();
           }}
