@@ -14,7 +14,15 @@ import { cloneDeep } from "lodash";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
-import { Archive, Globe2, PinIcon, Send, User, X } from "lucide-react";
+import {
+  Archive,
+  ArrowBigUpDashIcon,
+  Globe2,
+  PinIcon,
+  Send,
+  User,
+  X,
+} from "lucide-react";
 import RoteItem from "./roteItem";
 
 const { roteMaxLetter } = mainJson;
@@ -179,11 +187,16 @@ function RoteInputSimple() {
   const NewRotes = () => {
     return (
       newRotes.length === 0 ? null : (
-        <>
+        <div className=" flex flex-col border-b">
           {newRotes.map((item: any) => {
             return <RoteItem rote={item} key={item.id} />;
           })}
-        </>
+
+          <div className=" p-2 justify-center flex items-center text-sm">
+            <ArrowBigUpDashIcon className=" size-4" />
+            {t("recentPosts")}
+          </div>
+        </div>
       )
     );
   };

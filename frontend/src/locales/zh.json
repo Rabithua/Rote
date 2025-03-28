@@ -263,7 +263,8 @@
       "sendFailed": "发送失败",
       "error": {
         "emptyContent": "内容不能为空"
-      }
+      },
+      "recentPosts": "以上是最近的笔记"
     },
     "roteItem": {
       "details": "详情",

@@ -262,7 +262,8 @@
       "sendFailed": "Send failed",
       "error": {
         "emptyContent": "Content cannot be empty"
-      }
+      },
+      "recentPosts": "The above are recent notes"
     },
     "roteItem": {
       "details": "Details",
