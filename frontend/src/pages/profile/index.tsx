@@ -22,6 +22,7 @@ function ProfilePage() {
   const AvatarEditorRef = useRef(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
+  const [coverChangeing, setCoverChangeing] = useState(false);
 
   const { data: profile, mutate } = useAPIGet<Profile>(
     "profile",
@@ -130,7 +131,7 @@ function ProfilePage() {
   }
 
   function changeCover(event: any) {
-    const toastId = toast.loading(t("uploading"));
+    setCoverChangeing(true);
     const selectedFile = event.target.files[0];
 
     if (selectedFile) {
@@ -145,16 +146,12 @@ function ProfilePage() {
           cover: url,
         })
           .then((res) => {
-            toast.success(t("editSuccess"), {
-              id: toastId,
-            });
             mutate();
+            setCoverChangeing(false);
           })
           .catch((err) => {
-            toast.error(t("editFailed"), {
-              id: toastId,
-            });
             console.error("Error edit Profile:", err);
+            setCoverChangeing(false);
           });
       });
     }
@@ -182,9 +179,12 @@ function ProfilePage() {
             className=" hidden"
             ref={inputCoverRef}
             onChange={changeCover}
+            disabled={coverChangeing}
             title="Upload cover image"
           />
-          <LoaderPinwheel className="size-4 animate-spin" />
+          <LoaderPinwheel
+            className={`size-4 ${coverChangeing && "animate-spin"}`}
+          />
         </div>
       </div>
       <div className=" flex mx-4 h-16">
@@ -200,7 +200,7 @@ function ProfilePage() {
             setIsModalOpen(true);
           }}
         >
-          <Edit />
+          <Edit className="size-4" />
           {t("editProfile")}
         </div>
       </div>
@@ -339,7 +339,7 @@ function ProfilePage() {
             />
 
             <div
-              className={` mt-4 cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold ${
+              className={` mt-4 cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold flex items-center justify-center ${
                 profileEditing ? " bg-gray-700" : "bg-black"
               }`}
               onClick={() => {
@@ -348,7 +348,9 @@ function ProfilePage() {
                 }
               }}
             >
-              {profileEditing && <Loader className=" animate-spin size-4 mr-2" />}
+              {profileEditing && (
+                <Loader className=" animate-spin size-4 mr-2" />
+              )}
               {profileEditing ? t("editing") : t("save")}
             </div>
           </div>

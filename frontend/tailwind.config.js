@@ -52,6 +52,7 @@ module.exports = {
       },
       borderColor: {
         DEFAULT: '#00000010',
+        dark: '#ffffff10',
       },
     },
   },

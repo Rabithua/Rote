@@ -3,6 +3,7 @@ import { Divider } from "antd";
 import { DownloadCloud, Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 export default function ExportData() {
   const { t } = useTranslation("translation", {
     keyPrefix: "pages.experiment.exportData",
@@ -62,15 +63,15 @@ export default function ExportData() {
                 </div>
               </div>
             </div>
-            <a
-              href={`${process.env.REACT_APP_BASEURL_PRD}/v1/api/exportData`}
-              className=" mx-auto mt-6 w-fit cursor-pointer select-none hover:text-white duration-300 flex items-center gap-2 bg-black text-white px-6 py-2 rounded-md active:scale-95"
+            <Link
+              to={`${process.env.REACT_APP_BASEURL_PRD}/v1/api/exportData`}
+              className=" mx-auto mt-6 w-fit cursor-pointer select-none hover:text-white duration-300 flex items-center gap-2 bg-black text-white dark:bg-opacityDark px-6 py-2 rounded-md active:scale-95"
               target="_blank"
               rel="noreferrer"
             >
               <DownloadCloud className="size-4" />
               {t("downloadJson")}
-            </a>
+            </Link>
           </>
         )}
     </div>

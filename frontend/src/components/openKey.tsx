@@ -109,7 +109,7 @@ function OpenKeyItem({ openKey }: any) {
           onOpenChange={handleOpenChange}
           content={actionsMenu(rote)}
         >
-          <Ellipsis className=" ml-auto size-8 hover:bg-[#00000010] rounded-lg p-2" />
+          <Ellipsis className=" absolute right-2 top-2 size-8 hover:bg-[#00000010] rounded-lg p-2" />
         </Popover>
       </div>
       <div className="">
