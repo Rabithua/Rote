@@ -117,7 +117,7 @@ export default function ServiceWorker() {
   }
 
   return (
-    <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border border-opacityLight dark:border-opacityDark rounded-xl p-4 bg-opacityLight dark:bg-opacityDark">
+    <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border-b p-4">
       <div className=" text-2xl font-semibold">
         {t("title")} <br />
         <div className=" font-normal mt-2 text-sm text-gray-500">

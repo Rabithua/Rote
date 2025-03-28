@@ -11,17 +11,17 @@ export default function ExperimentPage() {
   });
   return (
     <div
-      className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
+      className="flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative sm:pb-0 pb-20"
     >
       <NavHeader
         title={`${t("title")} / Experiment`}
         icon={<Snail className="size-6" />}
       />
       <div className=" flex flex-col w-full gap-1">
-        <div className=" bg-opacityLight dark:bg-opacityDark m-2 py-3 px-4 rounded-lg">
+        <div className=" py-3 px-4 border-b font-thin">
           {t("description")}
         </div>
-        <div className=" m-2 flex gap-2 flex-wrap">
+        <div className=" flex flex-wrap">
           <ServiceWorker />
           <ExportData />
           <ImportData />
