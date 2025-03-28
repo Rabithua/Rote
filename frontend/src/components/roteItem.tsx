@@ -6,6 +6,7 @@ import {
   Ellipsis,
   Globe2Icon,
   Layers,
+  LinkIcon,
   PinIcon,
   PinOff,
   Save,
@@ -413,6 +414,22 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
                 >
                   <Edit
                     className={` cursor-pointer size-4 rounded-md`}
+                  />
+                </Tooltip>
+              )
+              : null}
+
+            {rote.state === "public"
+              ? (
+                <Tooltip placement="bottom" title={t("tooltips.copyLink")}>
+                  <LinkIcon
+                    className={` cursor-pointer size-4 rounded-md`}
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${window.location.origin}/rote/${rote.id}`,
+                      );
+                      toast.success(t("messages.copySuccess"));
+                    }}
                   />
                 </Tooltip>
               )

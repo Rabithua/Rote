@@ -285,7 +285,9 @@
         "unpinned": "Unpinned",
         "public": "Public",
         "archived": "Archived",
-        "edited": "Edited at: {{time}}"
+        "edited": "Edited at: {{time}}",
+        "copyLink": "Copy Link",
+        "copyLinkSuccess": "Link copied to clipboard"
       },
       "messages": {
         "sending": "Sending...",

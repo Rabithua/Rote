@@ -16,7 +16,7 @@ function SingleRotePage() {
   const { roteid } = useParams();
   const [msg] = useState(null);
 
-  const { data: rote, isLoading } = useAPIGet<Rote>(
+  const { data: rote, isLoading, error } = useAPIGet<Rote>(
     roteid || "",
     apiGetSingleRote,
   );
@@ -51,14 +51,15 @@ function SingleRotePage() {
             </div>
             {rote.author && (
               <Link to={`/${rote.author.username}`}>
-                <div className=" fixed bottom-16 left-0 right-0 w-fit mx-auto rounded-full bg-bgDark dark:bg-bgLight px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300">
+                <div className=" fixed bottom-16 left-0 right-0 w-fit mx-auto rounded-full bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-3xl px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300 shadow-card">
                   <Avatar
                     size={{ xs: 40 }}
                     icon={<User className=" size-4 text-[#00000030]" />}
+                    className="border"
                     src={rote?.author.avatar}
                   />
-                  <div className=" flex flex-col">
-                    <div className=" text-base font-semibold dark:text-textLight text-textDark ">
+                  <div className=" flex gap-2 items-center">
+                    <div className=" text-base font-semibold dark:text-textDark text-textLight ">
                       {rote?.author.nickname}
                     </div>
                     <div className=" text-md text-gray-500">
@@ -72,7 +73,7 @@ function SingleRotePage() {
         )
         : (
           <div className=" w-full h-full flex justify-center items-center">
-            {msg || t("loading")}
+            {error}
           </div>
         )}
     </div>

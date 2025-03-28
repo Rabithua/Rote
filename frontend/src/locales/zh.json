@@ -286,7 +286,9 @@
         "unpinned": "未置顶",
         "public": "公开",
         "archived": "已归档",
-        "edited": "已编辑：{{time}}"
+        "edited": "已编辑：{{time}}",
+        "copyLink": "复制链接",
+        "copySuccess": "链接已复制到剪贴板"
       },
       "messages": {
         "sending": "发送中...",
