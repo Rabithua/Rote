@@ -32,8 +32,8 @@ function HomePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.home" });
 
   return (
-    <div className="flex w-full">
-      <div className="border-r border-opacityLight dark:border-opacityDark flex-1 overflow-x-hidden relative">
+    <div className="flex w-full min-h-screen">
+      <div className="md:border-r border-opacityLight dark:border-opacityDark flex-1 overflow-x-hidden relative">
         <div className="sticky top-0 z-10 cursor-pointer group rotypesNav border-y border-opacityLight dark:border-opacityDark flex items-center gap-2 text-gray-600 bg-bgLight dark:bg-bgDark font-light p-4 py-2">
           <Logo className=" w-24" color="#07C160" />
           <img
