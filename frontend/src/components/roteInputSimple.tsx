@@ -4,7 +4,6 @@ import defaultImage from "@/assets/img/defaultImage.svg";
 import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
 import { useEditor } from "@/state/editor";
-import { useTempState } from "@/state/others";
 import { Profile, Rotes } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 
@@ -31,8 +30,6 @@ function RoteInputSimple() {
   const { t } = useTranslation("translation", {
     keyPrefix: "components.roteInputSimple",
   });
-
-  const [tempState, setTempState] = useTempState();
 
   const [newRotes, setNewRotes] = useState<Rotes>([]);
 

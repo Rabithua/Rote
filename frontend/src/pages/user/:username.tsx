@@ -9,7 +9,6 @@ import { useAPIGet } from "@/utils/fetcher";
 import { Avatar } from "antd";
 import { Globe2, Loader, User } from "lucide-react";
 import moment from "moment";
-import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import Linkify from "react-linkify";
@@ -19,7 +18,7 @@ function UserPage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.user" });
   const navigate = useNavigate();
   const { username }: any = useParams();
-  const { data: userInfo, error, isLoading } = useAPIGet<Profile>(
+  const { data: userInfo, isLoading } = useAPIGet<Profile>(
     username,
     apiGetUserInfoByUsername,
     {

@@ -49,7 +49,10 @@ module.exports = {
       },
       boxShadow: {
         'card': '0px 0px 60px rgba(0, 0, 0, 0.05)',
-      }
+      },
+      borderColor: {
+        DEFAULT: '#00000010',
+      },
     },
   },
 
