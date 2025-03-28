@@ -10,7 +10,7 @@ export function apiGetUserInfoByUsername(username: string): Promise<any> {
       },
     })
       .then(function (response) {
-        resolve(response);
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);

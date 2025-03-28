@@ -9,6 +9,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { ProtectedRoute } from "./protectedRoute";
+import { SWRConfig } from "swr";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const Login = lazy(() => import("@/pages/login"));

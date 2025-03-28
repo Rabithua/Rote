@@ -212,7 +212,7 @@ function Login() {
                       </div>
                       <Input
                         placeholder="username"
-                        className=" text-lg rounded-md font-mono border-[2px]"
+                        className=" text-md rounded-md font-mono "
                         maxLength={20}
                         value={loginData.username}
                         onInput={(e) => handleInputChange(e, "username")}
@@ -223,7 +223,7 @@ function Login() {
                       <Input
                         placeholder="possword"
                         type="password"
-                        className=" text-lg rounded-md font-mono border-[2px]"
+                        className=" text-md rounded-md font-mono "
                         maxLength={30}
                         value={loginData.password}
                         onInput={(e) => handleInputChange(e, "password")}
@@ -238,7 +238,7 @@ function Login() {
                       </div>
                       <Input
                         placeholder="username"
-                        className=" text-lg rounded-md font-mono border-[2px]"
+                        className=" text-md rounded-md font-mono "
                         maxLength={20}
                         value={registerData.username}
                         onInput={(e) => handleInputChange(e, "username")}
@@ -248,7 +248,7 @@ function Login() {
                       </div>
                       <Input
                         placeholder="someone@mail.com"
-                        className=" text-lg rounded-md font-mono border-[2px]"
+                        className=" text-md rounded-md font-mono "
                         maxLength={20}
                         value={registerData.email}
                         onInput={(e) => handleInputChange(e, "email")}
@@ -258,7 +258,7 @@ function Login() {
                       </div>
                       <Input
                         placeholder="nickname"
-                        className=" text-lg rounded-md font-mono border-[2px]"
+                        className=" text-md rounded-md font-mono "
                         maxLength={20}
                         value={registerData.nickname}
                         onInput={(e) => handleInputChange(e, "nickname")}
@@ -270,7 +270,7 @@ function Login() {
                       <Input
                         placeholder="possword"
                         type="password"
-                        className=" text-lg rounded-md font-mono border-[2px]"
+                        className=" text-md rounded-md font-mono "
                         maxLength={30}
                         value={registerData.password}
                         onInput={(e) => handleInputChange(e, "password")}
@@ -318,13 +318,13 @@ function Login() {
               </div>
 
               <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
-                <Link to="/dashboard/explore">
+                <Link to="/explore">
                   <div className=" hover:opacity-60 duration-300">
                     {t("nav.explore")}
                   </div>
                 </Link>
                 <span className=" px-2">/</span>
-                <Link to="/dashboard">
+                <Link to="/landing">
                   <div className=" hover:opacity-60 duration-300">
                     {t("nav.home")}
                   </div>

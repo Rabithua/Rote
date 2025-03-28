@@ -7,6 +7,7 @@ import { Toaster } from "react-hot-toast";
 import "./index.css";
 import GlobalRouterProvider from "./route/main";
 import "./utils/i18n";
+import { SWRConfig } from "swr";
 
 const { lightTheme, darkTheme } = themeJson;
 const root = ReactDOM.createRoot(
@@ -78,8 +79,27 @@ const AppWrapper = () => {
                 ...lightTheme,
               }}
           >
-            <GlobalRouterProvider />
-            <Toaster position="top-right" reverseOrder={false} />
+            <SWRConfig
+              value={{
+                onErrorRetry: (
+                  error,
+                  key,
+                  _config,
+                  _revalidate,
+                  { retryCount },
+                ) => {
+                  // no retry
+                  if ([404, 401, 403].includes(error.status)) return;
+                  if (key === "profile") return;
+                  if (retryCount >= 3) return;
+                },
+                revalidateOnFocus: false,
+                refreshInterval: 0,
+              }}
+            >
+              <GlobalRouterProvider />
+              <Toaster position="top-right" reverseOrder={false} />
+            </SWRConfig>
           </ConfigProvider>
         </HelmetProvider>
       </App>
