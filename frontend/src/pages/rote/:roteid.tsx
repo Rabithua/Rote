@@ -1,5 +1,4 @@
 import { apiGetSingleRote } from "@/api/rote/main";
-import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import RoteItem from "@/components/roteItem";
 
@@ -76,7 +75,6 @@ function SingleRotePage() {
             {msg || t("loading")}
           </div>
         )}
-      <GoTop />
     </div>
   );
 }

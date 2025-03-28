@@ -152,7 +152,12 @@
       "none": "无"
     },
     "explore": {
-      "title": "探索 / Explore"
+      "title": "探索 / Explore",
+      "sideBarTitle": "探索✨",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch"
     },
     "experiment": {
       "title": "实验室",

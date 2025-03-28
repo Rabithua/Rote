@@ -147,7 +147,12 @@
       "none": "NONE"
     },
     "explore": {
-      "title": "Explore"
+      "title": "Explore",
+      "sideBarTitle": "Explore✨",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch"
     },
     "experiment": {
       "title": "Experiment",

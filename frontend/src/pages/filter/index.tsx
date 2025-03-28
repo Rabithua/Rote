@@ -1,5 +1,4 @@
 import { apiGetMyRote, apiGetMyTags } from "@/api/rote/main";
-import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import RoteList from "@/components/roteList";
 import { useAPIGet } from "@/utils/fetcher";
@@ -106,8 +105,6 @@ function MineFilter() {
           filter,
         }}
       />
-
-      <GoTop />
     </div>
   );
 }

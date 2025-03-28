@@ -1,5 +1,6 @@
 import { logOut } from "@/api/login/main";
 import { getMyProfile } from "@/api/user/main";
+import GoTop from "@/components/goTop";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import {
@@ -155,6 +156,7 @@ function LayoutDashboard() {
 
         <div className=" flex-1 overflow-x-hidden relative">
           <Outlet />
+          <GoTop />
         </div>
       </div>
     </div>

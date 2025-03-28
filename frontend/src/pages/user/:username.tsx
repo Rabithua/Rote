@@ -1,6 +1,5 @@
 import { apiGetUserPublicRote } from "@/api/rote/main";
 import { apiGetUserInfoByUsername } from "@/api/user/main";
-import GoTop from "@/components/goTop";
 import NavBar from "@/components/navBar";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
@@ -110,8 +109,6 @@ function UserPage() {
               }}
             />
           )}
-
-          <GoTop />
         </div>
       </>
     );

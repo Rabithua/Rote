@@ -1,5 +1,4 @@
 import { apiGetMyRote } from "@/api/rote/main";
-import GoTop from "@/components/goTop";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
 import { Archive } from "lucide-react";
@@ -25,8 +24,6 @@ function ArchivedPage() {
           archived: true,
         }}
       />
-
-      <GoTop />
     </div>
   );
 }
