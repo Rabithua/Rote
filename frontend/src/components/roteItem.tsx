@@ -428,7 +428,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
                   onOpenChange={handleOpenChange}
                   content={actionsMenu(rote)}
                 >
-                  <Ellipsis className=" z-10 absolute right-4 top-4 size-8  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
+                  <Ellipsis className=" z-10 absolute right-2 top-2 size-8  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
                 </Popover>
               )}
             </div>
