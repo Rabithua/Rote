@@ -41,61 +41,6 @@ function RoteList(
   const isReachingEnd = isEmpty ||
     (data && data[data.length - 1]?.length < apiProps.limit);
 
-  // useEffect(() => {
-  //   if (
-  //     tempState.editOne ||
-  //     tempState.sendNewOne ||
-  //     tempState.removeOne ||
-  //     tempState.newAttachments
-  //   ) {
-  //     setHasMore(true);
-  //     if (tempState.editOne) {
-  //       setRotesToRender((prev) => {
-  //         return prev.map((r) => {
-  //           if (r.id === tempState.editOne?.id) {
-  //             return tempState.editOne as Rote;
-  //           }
-  //           return r;
-  //         });
-  //       });
-  //     }
-
-  //     if (tempState.sendNewOne) {
-  //       setRotesToRender((prev) => {
-  //         return [tempState.sendNewOne as Rote, ...prev];
-  //       });
-  //     }
-
-  //     if (tempState.removeOne !== null) {
-  //       setRotesToRender((prev) => {
-  //         return prev.filter((r) => r.id !== tempState.removeOne);
-  //       });
-  //     }
-
-  //     if (tempState.newAttachments) {
-  //       setRotesToRender((prev) => {
-  //         return prev.map((r) => {
-  //           return r.id === tempState.newAttachments![0].roteid
-  //             ? {
-  //               ...r,
-  //               attachments: [...r.attachments, ...tempState.newAttachments!],
-  //             }
-  //             : r;
-  //         });
-  //       });
-  //     }
-
-  //     setTempState({
-  //       editOne: null,
-  //       sendNewOne: null,
-  //       removeOne: null,
-  //       newAttachments: null,
-  //     });
-  //   }
-  // }, [tempState]);
-
-  // 监听loaderRef显示事件，加载更多
-
   useEffect(() => {
     const currentloaderRef = loaderRef.current;
 

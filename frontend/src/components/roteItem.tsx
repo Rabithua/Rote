@@ -138,7 +138,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
               // 处理嵌套数组结构
               return currentData?.map((page) =>
                 Array.isArray(page)
-                  ? page.map((r) => r.id === rote.id ? res.data.data : r)
+                  ? page.filter((r) => r.id !== rote.id)
                   : page
               );
             },
@@ -420,7 +420,8 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
                   )
                   : null}
               </span>
-              {profile?.username === rote.author!.username && inView && (
+              {profile?.username === rote.author!.username && inView &&
+                mutate !== undefined && (
                 <Popover
                   placement="bottomRight"
                   open={open}

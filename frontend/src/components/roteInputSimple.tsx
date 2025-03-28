@@ -5,7 +5,7 @@ import Uploader from "@/components/uploader";
 import mainJson from "@/json/main.json";
 import { useEditor } from "@/state/editor";
 import { useTempState } from "@/state/others";
-import { Profile } from "@/types/main";
+import { Profile, Rotes } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 
 import { Avatar, Image, Select, Tooltip } from "antd";
@@ -15,6 +15,7 @@ import { useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { Archive, Globe2, PinIcon, Send, User, X } from "lucide-react";
+import RoteItem from "./roteItem";
 
 const { roteMaxLetter } = mainJson;
 
@@ -24,6 +25,8 @@ function RoteInputSimple() {
   });
 
   const [tempState, setTempState] = useTempState();
+
+  const [newRotes, setNewRotes] = useState<Rotes>([]);
 
   const { data: profile } = useAPIGet<Profile>(
     "profile",
@@ -73,6 +76,7 @@ function RoteInputSimple() {
         toast.success(t("sendSuccess"), {
           id: toastId,
         });
+        setNewRotes((prev) => [res.data.data, ...prev]);
         await uploadAttachments(newFileList, res.data.data);
       })
       .catch(() => {
@@ -108,9 +112,13 @@ function RoteInputSimple() {
           toast.success(t("uploadSuccess"), {
             id: toastId,
           });
-          setTempState({
-            ...tempState,
-            newAttachments: res.data.data,
+          setNewRotes((prev) => {
+            const newRotes = cloneDeep(prev);
+            const index = newRotes.findIndex((item) => item.id === rote.id);
+            if (index !== -1) {
+              newRotes[index].attachments = res.data.data;
+            }
+            return newRotes;
           });
           reslove(res);
         });
@@ -168,147 +176,162 @@ function RoteInputSimple() {
     }
   }
 
+  const NewRotes = () => {
+    return (
+      newRotes.length === 0 ? null : (
+        <>
+          {newRotes.map((item: any) => {
+            return <RoteItem rote={item} key={item.id} />;
+          })}
+        </>
+      )
+    );
+  };
+
   return (
-    <div className=" cursor-default bg-bgLight dark:bg-bgDark w-full p-5 flex gap-5 border-b border-opacityLight dark:border-opacityDark">
-      <Avatar
-        className=" bg-opacityLight dark:bg-opacityDark text-black shrink-0 hidden sm:block"
-        size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
-        icon={<User className=" text-[#00000030]" />}
-        src={profile?.avatar}
-      />
-      <div className=" w-[90%] flex-1">
-        <TextArea
-          variant="borderless"
-          value={rote.content}
-          placeholder={t("contentPlaceholder")}
-          autoSize={{ minRows: 3, maxRows: 10 }}
-          className={` text-base lg:text-lg text-pretty ${
-            editType === "default" ? "" : " hidden"
-          }`}
-          maxLength={roteMaxLetter}
-          onInput={(e) => {
-            setRote({
-              ...rote,
-              content: e.currentTarget.value,
-            });
-          }}
-          onPaste={handlePaste}
-          onDrop={handleDrop}
-          onDragOver={(e) => e.preventDefault()}
-          onKeyDown={handleNormalINputKeyDown}
+    <>
+      <div className=" cursor-default bg-bgLight dark:bg-bgDark w-full p-5 flex gap-5 border-b border-opacityLight dark:border-opacityDark">
+        <Avatar
+          className=" bg-opacityLight dark:bg-opacityDark text-black shrink-0 hidden sm:block"
+          size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
+          icon={<User className=" text-[#00000030]" />}
+          src={profile?.avatar}
         />
-        {process.env.REACT_APP_ALLOW_UPLOAD_FILE === "true" && (
-          <div className=" flex gap-2 flex-wrap my-2">
-            <Image.PreviewGroup
-              preview={{
-                onChange: () => {},
-              }}
-            >
-              {fileList.map((file: File, index: number) => {
-                return (
-                  <div
-                    className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
-                    key={file.name + index}
-                  >
-                    <Image
-                      className=" w-full h-full object-cover"
-                      height={80}
-                      width={80}
-                      src={URL.createObjectURL(file)}
-                      fallback={defaultImage}
-                    />
+        <div className=" w-[90%] flex-1">
+          <TextArea
+            variant="borderless"
+            value={rote.content}
+            placeholder={t("contentPlaceholder")}
+            autoSize={{ minRows: 3, maxRows: 10 }}
+            className={` text-base lg:text-lg text-pretty ${
+              editType === "default" ? "" : " hidden"
+            }`}
+            maxLength={roteMaxLetter}
+            onInput={(e) => {
+              setRote({
+                ...rote,
+                content: e.currentTarget.value,
+              });
+            }}
+            onPaste={handlePaste}
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onKeyDown={handleNormalINputKeyDown}
+          />
+          {process.env.REACT_APP_ALLOW_UPLOAD_FILE === "true" && (
+            <div className=" flex gap-2 flex-wrap my-2">
+              <Image.PreviewGroup
+                preview={{
+                  onChange: () => {},
+                }}
+              >
+                {fileList.map((file: File, index: number) => {
+                  return (
                     <div
-                      onClick={() => deleteFile(index)}
-                      className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
+                      className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
+                      key={file.name + index}
                     >
-                      <X className=" text-white size-4" />
+                      <Image
+                        className=" w-full h-full object-cover"
+                        height={80}
+                        width={80}
+                        src={URL.createObjectURL(file)}
+                        fallback={defaultImage}
+                      />
+                      <div
+                        onClick={() => deleteFile(index)}
+                        className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
+                      >
+                        <X className=" text-white size-4" />
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </Image.PreviewGroup>
-            <Uploader
-              id="roteInputSimple"
-              fileList={fileList}
-              callback={(newFileList: File[]) => {
-                setFileList((prevFileList: any) => [
-                  ...prevFileList,
-                  ...newFileList,
-                ]);
-              }}
-            />
-          </div>
-        )}
+                  );
+                })}
+              </Image.PreviewGroup>
+              <Uploader
+                id="roteInputSimple"
+                fileList={fileList}
+                callback={(newFileList: File[]) => {
+                  setFileList((prevFileList: any) => [
+                    ...prevFileList,
+                    ...newFileList,
+                  ]);
+                }}
+              />
+            </div>
+          )}
 
-        <Select
-          mode="tags"
-          variant="borderless"
-          className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark w-fit min-w-40 max-w-full `}
-          value={rote.tags}
-          placeholder={t("tagsPlaceholder")}
-          onChange={handleTagsChange}
-          options={tags
-            ? tags.map((tag) => {
-              return {
-                value: tag,
-                label: tag,
-              };
-            })
-            : []}
-        />
-        <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
-          <Tooltip placement="bottom" title={t("pin")}>
-            <PinIcon
-              className={` duration-300 cursor-pointer size-8 p-2 rounded-md  ${
-                rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
-              }`}
-              onClick={() => {
-                setRote({
-                  ...rote,
-                  pin: !rote.pin,
-                });
-              }}
-            />
-          </Tooltip>
-          <Tooltip placement="bottom" title={t("archive")}>
-            <Archive
-              className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
-                rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
-              }`}
-              onClick={() => {
-                setRote({
-                  ...rote,
-                  archived: !rote.archived,
-                });
-              }}
-            />
-          </Tooltip>
-          <Tooltip placement="bottom" title={t(`stateOptions.${rote.state}`)}>
-            <Globe2
-              className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
-                rote.state === "public"
-                  ? "bg-opacityLight dark:bg-opacityDark text-primary"
-                  : ""
-              }`}
-              onClick={() => {
-                setRote({
-                  ...rote,
-                  state: rote.state === "public" ? "private" : "public",
-                });
-              }}
-            />
-          </Tooltip>
+          <Select
+            mode="tags"
+            variant="borderless"
+            className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark w-fit min-w-40 max-w-full `}
+            value={rote.tags}
+            placeholder={t("tagsPlaceholder")}
+            onChange={handleTagsChange}
+            options={tags
+              ? tags.map((tag) => {
+                return {
+                  value: tag,
+                  label: tag,
+                };
+              })
+              : []}
+          />
+          <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
+            <Tooltip placement="bottom" title={t("pin")}>
+              <PinIcon
+                className={` duration-300 cursor-pointer size-8 p-2 rounded-md  ${
+                  rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
+                }`}
+                onClick={() => {
+                  setRote({
+                    ...rote,
+                    pin: !rote.pin,
+                  });
+                }}
+              />
+            </Tooltip>
+            <Tooltip placement="bottom" title={t("archive")}>
+              <Archive
+                className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
+                  rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
+                }`}
+                onClick={() => {
+                  setRote({
+                    ...rote,
+                    archived: !rote.archived,
+                  });
+                }}
+              />
+            </Tooltip>
+            <Tooltip placement="bottom" title={t(`stateOptions.${rote.state}`)}>
+              <Globe2
+                className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
+                  rote.state === "public"
+                    ? "bg-opacityLight dark:bg-opacityDark text-primary"
+                    : ""
+                }`}
+                onClick={() => {
+                  setRote({
+                    ...rote,
+                    state: rote.state === "public" ? "private" : "public",
+                  });
+                }}
+              />
+            </Tooltip>
 
-          <div
-            className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
-            onClick={addRoteFn}
-          >
-            <Send className="size-4" />
-            {t("send")}
+            <div
+              className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
+              onClick={addRoteFn}
+            >
+              <Send className="size-4" />
+              {t("send")}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+      {NewRotes()}
+    </>
   );
 }
 
