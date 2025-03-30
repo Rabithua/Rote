@@ -17,7 +17,7 @@ export default function RandomCat() {
 
   return (
     <img
-      className="size-100 max-w-full border-[3px] border-black cursor-pointer duration-300"
+      className="size-100 max-w-full border-[3px] border-black hover:scale-95 cursor-pointer duration-300"
       src={`http://motions.cat/gif/nhn/${
         randomCat.toString().padStart(4, "0")
       }.gif`}

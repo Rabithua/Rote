@@ -1,6 +1,7 @@
 import { apiGetPublicRote } from "@/api/rote/main";
 import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import NavHeader from "@/components/navHeader";
+import RandomCat from "@/components/RandomCat";
 import RoteList from "@/components/roteList";
 import { formatTimeAgo } from "@/utils/main";
 import {
@@ -90,6 +91,20 @@ function ExplorePage() {
                   </div>
                 </Link>
               )}
+
+            <div className="font-semibold border-t pt-4">
+              EveDayOneCat <br />
+              <div className=" font-normal text-sm text-gray-500">
+                <Link
+                  to={"http://motions.cat/index.html"}
+                  target="_blank"
+                >
+                  From: http://motions.cat/index.html
+                </Link>
+              </div>
+            </div>
+            <RandomCat />
+            <div>Click img to random one cat.</div>
           </div>
         </div>
       </div>
