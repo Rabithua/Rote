@@ -1,9 +1,10 @@
 import { apiGetRandomRote } from "@/api/rote/main";
 import { Rote } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
+import { RefreshCcwIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import LoadingPlaceholder from "./loader";
 import RoteItem from "./roteItem";
-import { Loader, RefreshCcwIcon } from "lucide-react";
 
 export default function RandomRote() {
   const { t } = useTranslation("translation", {
@@ -17,11 +18,7 @@ export default function RandomRote() {
 
   return (
     isLoading
-      ? (
-        <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-          <Loader className="size-6 animate-spin" />
-        </div>
-      )
+      ? <LoadingPlaceholder size={6} className=" py-8" />
       : rote
       ? (
         <div className=" shrink-0">

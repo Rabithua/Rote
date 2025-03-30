@@ -3,11 +3,11 @@ import { apiGetMyHeatMap } from "@/api/others/main";
 import { HeatMapDay } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import { Empty } from "antd";
-import { Loader } from "lucide-react";
 import moment from "moment";
 import React from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import LoadingPlaceholder from "../loader";
 
 const Heatmap: React.FC = () => {
   const { t } = useTranslation("translation", {
@@ -99,9 +99,10 @@ const Heatmap: React.FC = () => {
     <>
       {isLoading
         ? (
-          <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-            <Loader className="animate-spin size-6" />
-          </div>
+          <LoadingPlaceholder
+            className=" py-8"
+            size={6}
+          />
         )
         : heatmapData && Object.keys(heatmapData).length === 0
         ? (

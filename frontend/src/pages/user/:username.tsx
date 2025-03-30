@@ -1,12 +1,13 @@
 import { apiGetUserPublicRote } from "@/api/rote/main";
 import { apiGetUserInfoByUsername } from "@/api/user/main";
+import LoadingPlaceholder from "@/components/loader";
 import NavBar from "@/components/navBar";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import { Avatar } from "antd";
-import { Globe2, Loader, User } from "lucide-react";
+import { Globe2, User } from "lucide-react";
 import moment from "moment";
 import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
@@ -31,9 +32,10 @@ function UserPage() {
 
   return isLoading
     ? (
-      <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
-        <Loader className=" animate-spin size-8 text-4xl" />
-      </div>
+      <LoadingPlaceholder
+        className="h-dvh w-dvw"
+        size={6}
+      />
     )
     : (
       <>

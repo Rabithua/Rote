@@ -1,11 +1,12 @@
 import { apiGetSingleRote } from "@/api/rote/main";
+import LoadingPlaceholder from "@/components/loader";
 import NavBar from "@/components/navBar";
 import RoteItem from "@/components/roteItem";
 
 import { Rote } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import Avatar from "antd/es/avatar";
-import { Loader, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -38,9 +39,10 @@ function SingleRotePage() {
       <NavBar />
       {isLoading
         ? (
-          <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-            <Loader className="size-6 animate-spin" />
-          </div>
+          <LoadingPlaceholder
+            className=" py-8"
+            size={6}
+          />
         )
         : rote
         ? (

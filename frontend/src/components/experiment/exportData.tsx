@@ -1,9 +1,10 @@
 import { apiGetStatistics } from "@/api/rote/main";
 import { Divider } from "antd";
-import { DownloadCloud, Loader } from "lucide-react";
+import { DownloadCloud } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import LoadingPlaceholder from "../loader";
 export default function ExportData() {
   const { t } = useTranslation("translation", {
     keyPrefix: "pages.experiment.exportData",
@@ -41,9 +42,10 @@ export default function ExportData() {
       <Divider></Divider>
       {loading
         ? (
-          <div className=" flex justify-center text-lg items-center py-8 gap-3">
-            <Loader className="size-6 animate-spin" />
-          </div>
+          <LoadingPlaceholder
+            className=" py-8"
+            size={6}
+          />
         )
         : (
           <>

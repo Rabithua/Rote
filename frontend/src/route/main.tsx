@@ -1,7 +1,7 @@
 import { getMyProfile } from "@/api/user/main";
+import LoadingPlaceholder from "@/components/loader";
 import LayoutDashboard from "@/layout/dashboard";
 import { useAPIGet } from "@/utils/fetcher";
-import { Loader } from "lucide-react";
 import { lazy, Suspense } from "react";
 import {
   createBrowserRouter,
@@ -127,18 +127,10 @@ export default function GlobalRouterProvider() {
 
   return (
     <Suspense
-      fallback={
-        <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
-          <Loader className=" animate-spin size-8 text-4xl" />
-        </div>
-      }
+      fallback={<LoadingPlaceholder className="h-dvh w-screen" />}
     >
       {isLoading
-        ? (
-          <div className=" h-dvh w-screen dark:text-white flex justify-center items-center">
-            <Loader className=" animate-spin size-8 text-4xl" />
-          </div>
-        )
+        ? <LoadingPlaceholder className="h-dvh w-dvw" />
         : (
           <RouterProvider
             router={router}

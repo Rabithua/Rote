@@ -2,10 +2,10 @@ import { Rotes } from "@/types/main";
 import { useAPIInfinite } from "@/utils/fetcher";
 
 import Empty from "antd/es/empty";
-import { Loader } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { SWRConfiguration } from "swr";
+import LoadingPlaceholder from "./loader";
 import RoteItem from "./roteItem";
 
 function RoteList(
@@ -78,9 +78,8 @@ function RoteList(
       {isReachingEnd ? null : (
         <div
           ref={loaderRef}
-          className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark"
         >
-          <Loader className="size-5 animate-spin" />
+          <LoadingPlaceholder className=" py-8" size={6} />
         </div>
       )}
       {isReachingEnd && rotes.length === 0

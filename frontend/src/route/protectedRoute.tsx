@@ -1,8 +1,8 @@
 import { getMyProfile } from "@/api/user/main";
+import LoadingPlaceholder from "@/components/loader";
 import { useIosSafariToastDone } from "@/state/iosSafariToastDone";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
-import { Loader } from "lucide-react";
 import MobileDetect from "mobile-detect";
 import { useEffect } from "react";
 import toast from "react-hot-toast";
@@ -49,9 +49,10 @@ export const ProtectedRoute = ({ children }: any) => {
 
   return isLoading
     ? (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <Loader className="animate-spin size-6" />
-      </div>
+      <LoadingPlaceholder
+        className="h-dvh w-dvw"
+        size={6}
+      />
     )
     : profile
     ? children

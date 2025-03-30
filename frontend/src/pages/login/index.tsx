@@ -6,12 +6,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { getMyProfile } from "@/api/user/main";
+import LoadingPlaceholder from "@/components/loader";
 import Logo from "@/components/logo";
 import mainJson from "@/json/main.json";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import { Input } from "antd";
-import { Loader } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 function Login() {
@@ -193,9 +193,10 @@ function Login() {
       <div className=" opacity-0 translate-y-5 animate-show px-8 py-6 w-80 border-[1px] border-opacityLight dark:bg-opacityDark shadow-card dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
         {isCheckingStatus
           ? (
-            <div className=" flex justify-center text-lg items-center py-8 gap-3 ">
-              <Loader className="animate-spin size-6" />
-            </div>
+            <LoadingPlaceholder
+              className=" py-8"
+              size={6}
+            />
           )
           : backendStatusOk
           ? (

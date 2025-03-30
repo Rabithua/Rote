@@ -1,5 +1,6 @@
 import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
 import { apiSaveProfile, apiUploadAvatar, getMyProfile } from "@/api/user/main";
+import LoadingPlaceholder from "@/components/loader";
 import OpenKeyItem from "@/components/openKey";
 import { useOpenKeys } from "@/state/openKeys";
 import { Profile } from "@/types/main";
@@ -235,10 +236,10 @@ function ProfilePage() {
       <div className=" flex flex-col">
         {openKeyLoading
           ? (
-            <div className=" flex justify-center items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-              <Loader className="animate-spin size-4" />
-              <div>{t("loading")}</div>
-            </div>
+            <LoadingPlaceholder
+              className=" py-8"
+              size={6}
+            />
           )
           : (
             <>

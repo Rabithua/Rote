@@ -1,13 +1,13 @@
 import { logOut } from "@/api/login/main";
 import { getMyProfile } from "@/api/user/main";
 import GoTop from "@/components/goTop";
+import LoadingPlaceholder from "@/components/loader";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import {
   Archive,
   Globe2,
   Home,
-  Loader,
   LogIn,
   LogOut,
   Snail,
@@ -120,7 +120,11 @@ function LayoutDashboard() {
             location.pathname === icon.link
               ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
               : ""
-          } ${icon.name === "logout" ? "hover:text-red-600 hover:bg-red-600/10" : ""} `}
+          } ${
+            icon.name === "logout"
+              ? "hover:text-red-600 hover:bg-red-600/10"
+              : ""
+          } `}
           onClick={() => {
             icon.callback && icon.callback();
           }}
@@ -134,16 +138,15 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className=" bg-bgLight mx-auto max-w-6xl w-full text-textLight w-full dark:bg-bgDark dark:text-textDark">
+    <div className=" bg-bgLight mx-auto max-w-6xl text-textLight w-full dark:bg-bgDark dark:text-textDark">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto ">
         <div className=" sm:sticky sm:top-0 fixed border-t border-r-0 sm:border-t-0 py-2 pb-5 z-10 bottom-0 w-full sm:w-fit bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark flex-row justify-around sm:h-dvh flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 sm:border-r border-opacityLight dark:border-opacityDark sm:flex-col sm:gap-4 backdrop-blur-2xl items-start sm:justify-center">
           {isLoading
             ? (
-              <div
-                className={` cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full`}
-              >
-                <Loader className="size-6 animate-spin" />
-              </div>
+              <LoadingPlaceholder
+                className=" py-8"
+                size={6}
+              />
             )
             : profile
             ? iconsData[0].map((icon) => {

@@ -1,7 +1,7 @@
 import { Divider } from "antd";
-import { Loader } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import LoadingPlaceholder from "../loader";
 
 export default function ImportData() {
   const { t } = useTranslation("translation", {
@@ -22,11 +22,12 @@ export default function ImportData() {
       <Divider></Divider>
       {loading
         ? (
-          <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-            <Loader className="animate-spin size-6" />
-          </div>
+          <LoadingPlaceholder
+            className=" py-8"
+            size={6}
+          />
         )
-        : <></>}
+        : null}
     </div>
   );
 }

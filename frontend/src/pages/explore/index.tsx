@@ -1,4 +1,5 @@
 import { apiGetPublicRote } from "@/api/rote/main";
+import LoadingPlaceholder from "@/components/loader";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
 import { formatTimeAgo } from "@/utils/main";
@@ -7,7 +8,6 @@ import {
   GitFork,
   Github,
   Globe2,
-  Loader,
   MessageCircleQuestionIcon,
   Star,
 } from "lucide-react";
@@ -58,9 +58,10 @@ function ExplorePage() {
             </div>
             {isRoteGithubDataLoading
               ? (
-                <div className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark">
-                  <Loader className="animate-spin size-6" />
-                </div>
+                <LoadingPlaceholder
+                  className=" py-8"
+                  size={6}
+                />
               )
               : (
                 <Link
