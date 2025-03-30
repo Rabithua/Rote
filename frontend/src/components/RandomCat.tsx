@@ -1,14 +1,30 @@
 import { useEffect, useState } from "react";
+import LoadingPlaceholder from "./LoadingPlaceholder";
 
-const TOTALCAT = 168;
+const URLPREFIX = "https://r2.rote.ink/evecat/";
+const TOTALCAT = 164;
+const excludedNumbers = [127, 0];
 
 export default function RandomCat() {
-  const [randomCat, setRandomCat] = useState(1);
+  const [randomCat, setRandomCat] = useState("0001"); // 默认值而不是null
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const random = Math.floor(Math.random() * TOTALCAT);
-    setRandomCat(random);
+    getRandomInt();
   }, []);
+
+  function getRandomInt() {
+    setIsLoading(true); // 先设置加载状态
+
+    let random;
+    do {
+      random = Math.floor(Math.random() * TOTALCAT);
+    } while (excludedNumbers.includes(random));
+
+    const formattedCat = random.toString().padStart(4, "0");
+    setRandomCat(formattedCat);
+    // 不再使用setTimeout，直接设置新的randomCat
+  }
 
   const playSound = () => {
     const audio = new Audio(require("@/assets/voice/cat4.mp3"));
@@ -16,17 +32,24 @@ export default function RandomCat() {
   };
 
   return (
-    <img
-      className="size-100 max-w-full border-[3px] border-black hover:scale-95 cursor-pointer duration-300"
-      src={`http://motions.cat/gif/nhn/${
-        randomCat.toString().padStart(4, "0")
-      }.gif`}
-      alt="cat"
+    <div
+      className="relative size-100 max-w-full border-[3px] border-black hover:scale-95 cursor-pointer duration-300"
       onClick={() => {
-        const random = Math.floor(Math.random() * TOTALCAT);
-        setRandomCat(random);
+        getRandomInt();
         playSound();
       }}
-    />
+    >
+      {isLoading && <LoadingPlaceholder className="absolute inset-0" />}
+
+      <img
+        className="w-full h-full"
+        src={`${URLPREFIX}${randomCat}.gif`}
+        alt="cat"
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+        }}
+      />
+    </div>
   );
 }
