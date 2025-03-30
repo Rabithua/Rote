@@ -7,15 +7,13 @@ import { Rote } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import Avatar from "antd/es/avatar";
 import { User } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
+import { useEffect } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 function SingleRotePage() {
-  const { t } = useTranslation("translation", { keyPrefix: "pages.rote" });
+  // const { t } = useTranslation("translation", { keyPrefix: "pages.rote" });
   const navigate = useNavigate();
   const { roteid } = useParams();
-  const [msg] = useState(null);
 
   const { data: rote, isLoading, error } = useAPIGet<Rote>(
     roteid || "",
