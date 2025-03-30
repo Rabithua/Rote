@@ -1,5 +1,5 @@
 import { getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import LayoutDashboard from "@/layout/dashboard";
 import { useAPIGet } from "@/utils/fetcher";
 import { lazy, Suspense } from "react";

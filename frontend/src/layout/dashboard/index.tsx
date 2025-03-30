@@ -1,7 +1,7 @@
 import { logOut } from "@/api/login/main";
 import { getMyProfile } from "@/api/user/main";
 import GoTop from "@/components/goTop";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import {

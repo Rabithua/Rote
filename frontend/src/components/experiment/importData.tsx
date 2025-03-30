@@ -1,7 +1,7 @@
 import { Divider } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import LoadingPlaceholder from "../loader";
+import LoadingPlaceholder from "../LoadingPlaceholder";
 
 export default function ImportData() {
   const { t } = useTranslation("translation", {

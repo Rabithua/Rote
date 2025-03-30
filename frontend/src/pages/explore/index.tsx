@@ -1,5 +1,5 @@
 import { apiGetPublicRote } from "@/api/rote/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";
 import { formatTimeAgo } from "@/utils/main";

@@ -4,7 +4,7 @@ import { DownloadCloud } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import LoadingPlaceholder from "../loader";
+import LoadingPlaceholder from "../LoadingPlaceholder";
 export default function ExportData() {
   const { t } = useTranslation("translation", {
     keyPrefix: "pages.experiment.exportData",

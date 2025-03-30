@@ -3,7 +3,7 @@ import { Rote } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
 import { RefreshCcwIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import LoadingPlaceholder from "./loader";
+import LoadingPlaceholder from "./LoadingPlaceholder";
 import RoteItem from "./roteItem";
 
 export default function RandomRote() {

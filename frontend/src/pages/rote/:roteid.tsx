@@ -1,5 +1,5 @@
 import { apiGetSingleRote } from "@/api/rote/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import NavBar from "@/components/navBar";
 import RoteItem from "@/components/roteItem";
 

@@ -5,7 +5,7 @@ import Empty from "antd/es/empty";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { SWRConfiguration } from "swr";
-import LoadingPlaceholder from "./loader";
+import LoadingPlaceholder from "./LoadingPlaceholder";
 import RoteItem from "./roteItem";
 
 function RoteList(

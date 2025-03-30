@@ -1,6 +1,6 @@
 import { apiGetUserPublicRote } from "@/api/rote/main";
 import { apiGetUserInfoByUsername } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import NavBar from "@/components/navBar";
 import NavHeader from "@/components/navHeader";
 import RoteList from "@/components/roteList";

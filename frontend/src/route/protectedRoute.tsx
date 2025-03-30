@@ -1,5 +1,5 @@
 import { getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import { useIosSafariToastDone } from "@/state/iosSafariToastDone";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";

@@ -6,7 +6,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { z } from "zod";
 
 import { getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import Logo from "@/components/logo";
 import mainJson from "@/json/main.json";
 import { Profile } from "@/types/main";

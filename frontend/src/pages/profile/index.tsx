@@ -1,6 +1,6 @@
 import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
 import { apiSaveProfile, apiUploadAvatar, getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/loader";
+import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import OpenKeyItem from "@/components/openKey";
 import { useOpenKeys } from "@/state/openKeys";
 import { Profile } from "@/types/main";
