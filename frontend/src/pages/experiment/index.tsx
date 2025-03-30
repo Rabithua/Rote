@@ -1,3 +1,4 @@
+import EveCat from "@/components/experiment/EveCat";
 import ExportData from "@/components/experiment/exportData";
 import ImportData from "@/components/experiment/importData";
 import ServiceWorker from "@/components/experiment/serviceWorker";
@@ -10,9 +11,7 @@ export default function ExperimentPage() {
     keyPrefix: "pages.experiment",
   });
   return (
-    <div
-      className="flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative sm:pb-0 pb-20"
-    >
+    <div className="flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative pb-20">
       <NavHeader
         title={`${t("title")} / Experiment`}
         icon={<Snail className="size-6" />}
@@ -25,9 +24,9 @@ export default function ExperimentPage() {
           <ServiceWorker />
           <ExportData />
           <ImportData />
+          <EveCat />
         </div>
       </div>
-      <div id="top" className=" h-[1px]"></div>
     </div>
   );
 }

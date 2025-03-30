@@ -11,14 +11,14 @@ export default function RandomRote() {
     keyPrefix: "components.randomRote",
   });
 
-  const { data: rote, isLoading, isValidating, mutate } = useAPIGet<Rote>(
+  const { data: rote, isLoading, isValidating, mutate, error } = useAPIGet<Rote>(
     "randomRote",
     apiGetRandomRote,
   );
 
   return (
     isLoading
-      ? <LoadingPlaceholder size={6} className=" py-8" />
+      ? <LoadingPlaceholder size={6} className=" py-8" error={error} />
       : rote
       ? (
         <div className=" shrink-0">

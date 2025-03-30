@@ -15,7 +15,6 @@ function ArchivedPage() {
         title={t("pages.archived.title")}
         icon={<Archive className="size-6" />}
       />
-      <div id="top" className=" h-[1px]"></div>
 
       <RoteList
         api={apiGetMyRote}

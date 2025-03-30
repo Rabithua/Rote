@@ -102,7 +102,6 @@ function ExplorePage() {
         className={`md:border-r border-opacityLight dark:border-opacityDark flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
       >
         <NavHeader title={t("title")} icon={<Globe2 className="size-6" />} />
-        <div id="top" className=" h-[1px]"></div>
 
         <RoteList
           api={apiGetPublicRote}
