@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import LoadingPlaceholder from "./LoadingPlaceholder";
 
 const URLPREFIX = "https://r2.rote.ink/evecat/";
 const TOTALCAT = 164;
@@ -39,7 +38,15 @@ export default function RandomCat() {
         playSound();
       }}
     >
-      {isLoading && <LoadingPlaceholder className="absolute inset-0" />}
+      {isLoading && (
+        <div className="py-8 absolute inset-0 flex justify-center items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop:blur-xl">
+          <img
+            className="size-6 animate-spin"
+            src={"https://r2.rote.ink/evecat/loading_roll.gif"}
+            alt="loading"
+          />
+        </div>
+      )}
 
       <img
         className="w-full h-full"
