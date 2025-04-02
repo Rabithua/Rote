@@ -10,9 +10,6 @@ import { useAPIGet } from "@/utils/fetcher";
 import { Avatar, Image, Select, Tooltip } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { cloneDeep } from "lodash";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
 import {
   Archive,
   ArrowBigUpDashIcon,
@@ -22,6 +19,9 @@ import {
   User,
   X,
 } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import RoteItem from "./roteItem";
 
 const { roteMaxLetter } = mainJson;
@@ -43,7 +43,7 @@ function RoteInputSimple() {
     apiGetMyTags,
   );
 
-  const [fileList, setFileList] = useState([]) as any;
+  const [fileList, setFileList] = useState<File[]>([]);
   const [editType] = useState("default");
 
   const [rote, setRote] = useEditor();
@@ -143,21 +143,23 @@ function RoteInputSimple() {
     }
   }
 
-  function handlePaste(e: any) {
+  function handlePaste(e: React.ClipboardEvent) {
     const items = e.clipboardData?.items;
-
     if (!items) return;
 
     for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf("image") !== -1) {
-        const blob = items[i].getAsFile();
-        if (blob) {
-          // 创建一个新的 File 对象
-          const file = new File([blob], `pasted-image-${Date.now()}.png`, {
-            type: "image/png",
-          });
-
-          setFileList([...fileList, { file, src: URL.createObjectURL(file) }]);
+      const item = items[i];
+      if (item.type.startsWith("image/")) {
+        const blob = item.getAsFile();
+        if (blob && blob.size > 0) {
+          try {
+            const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+              type: blob.type || "image/png", // 保留原始类型，默认 fallback
+            });
+            setFileList((prev: any) => [...prev, file]);
+          } catch (error) {
+            console.log("Error creating object URL:", error);
+          }
         }
       }
     }
@@ -172,7 +174,7 @@ function RoteInputSimple() {
         if (file.type.startsWith("image/")) {
           setFileList((prevFileList: any) => [
             ...prevFileList,
-            { file, src: URL.createObjectURL(file) },
+            file,
           ]);
         } else {
           console.warn(`File ${file.name} is not an image and was skipped.`);
@@ -235,7 +237,7 @@ function RoteInputSimple() {
                   onChange: () => {},
                 }}
               >
-                {fileList.map((file: File, index: number) => {
+                {fileList.map((file, index: number) => {
                   return (
                     <div
                       className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
