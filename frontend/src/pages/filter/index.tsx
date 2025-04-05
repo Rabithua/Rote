@@ -21,15 +21,6 @@ function MineFilter() {
     },
   });
 
-  const [navHeight, setNavHeight] = useState(0);
-
-  useEffect(() => {
-    const element = document.getElementById("top") as HTMLElement;
-    setNavHeight(element.offsetHeight || 0);
-
-    return () => {};
-  }, []);
-
   function TagsBlock() {
     const tagsClickHandler = (tag: string) => {
       setFilter((prevState) => {
@@ -48,10 +39,7 @@ function MineFilter() {
     };
 
     return (
-      <div
-        className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold"
-        id="top"
-      >
+      <div className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold">
         <div className=" flex items-center flex-wrap gap-2 my-2">
           {t("includeTags")}
           {filter.tags.hasEvery.length > 0
@@ -90,22 +78,22 @@ function MineFilter() {
   }
 
   return (
-    <div
-      className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
-      style={{ scrollPaddingTop: `${navHeight}px` }}
-    >
+    <>
       <NavBar />
+      <div
+        className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
+      >
+        <TagsBlock />
 
-      <TagsBlock />
-
-      <RoteList
-        api={apiGetMyRote}
-        apiProps={{
-          limit: 20,
-          filter,
-        }}
-      />
-    </div>
+        <RoteList
+          api={apiGetMyRote}
+          apiProps={{
+            limit: 20,
+            filter,
+          }}
+        />
+      </div>
+    </>
   );
 }
 

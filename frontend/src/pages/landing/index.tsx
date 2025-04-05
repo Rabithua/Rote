@@ -44,9 +44,7 @@ function Landing() {
       <div className=" w-[96%] max-w-[1080px] sm:w-[80%] mt-10 mb-4 h-full flex flex-col gap-5">
         {/* <LanguageSwitcher /> */}
         <div className=" flex items-center flex-wrap gap-6 px-5 z-10">
-          <div className=" dark:invert">
-            <Logo color="#07C160" />
-          </div>
+          <Logo color="#07C160" />
           <div className=" w-2 h-2 bg-[#ffca27] rounded-full"></div>
           <div className=" text-xl md:text-2xl">{t("poem")}</div>
         </div>
@@ -73,16 +71,18 @@ function Landing() {
             {links.map((item, index) => {
               return (
                 <div key={item.name}>
-                  <Link to={profile && item.href ? "/home" : item.href}>
+                  <Link
+                    to={profile && item.name === "login" ? "/home" : item.href}
+                  >
                     <span className=" no-underline hover:text-[#07c160] active:scale-95 duration-300">
                       {profile && item.href === "/login"
                         ? t(`dashboard`)
                         : t(`linksItems.${index}`)}
                     </span>
                   </Link>
-                  {index + 1 < links.length ? (
-                    <span className=" px-2">/</span>
-                  ) : null}
+                  {index + 1 < links.length
+                    ? <span className=" px-2">/</span>
+                    : null}
                 </div>
               );
             })}

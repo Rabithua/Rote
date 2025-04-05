@@ -19,14 +19,19 @@ export default function NavBar() {
   }
   return (
     <>
-      {window.history.state && window.history.state.idx > 0 && (
-        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-xl">
-          <ArrowLeft className=" p-2 size-8 cursor-pointer" onClick={back} />
-          <div className=" font-semibold cursor-pointer" onClick={back}>
-            {t("back")}
-          </div>
+      <div
+        className={` duration-300 fixed top-0 z-10 w-full border border-b overflow-x-scroll noScrollBar items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-xl py-3   ${
+          window.history.state && window.history.state.idx > 0
+            ? "flex"
+            : "hidden"
+        }`}
+      >
+        <ArrowLeft className=" p-2 size-8 cursor-pointer" onClick={back} />
+        <div className=" text-base cursor-pointer" onClick={back}>
+          {t("back")}
         </div>
-      )}
+      </div>
+      <div className="h-14"></div>
     </>
   );
 }
