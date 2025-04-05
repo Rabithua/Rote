@@ -201,7 +201,7 @@ function Login() {
           : backendStatusOk
           ? (
             <>
-              <div className=" dark:invert mb-4">
+              <div className=" mb-4">
                 <Logo className=" w-32" color="#07C160" />
               </div>
               <div className=" flex flex-col gap-2">

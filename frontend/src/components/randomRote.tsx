@@ -11,7 +11,9 @@ export default function RandomRote() {
     keyPrefix: "components.randomRote",
   });
 
-  const { data: rote, isLoading, isValidating, mutate, error } = useAPIGet<Rote>(
+  const { data: rote, isLoading, isValidating, mutate, error } = useAPIGet<
+    Rote
+  >(
     "randomRote",
     apiGetRandomRote,
   );
@@ -22,7 +24,7 @@ export default function RandomRote() {
       : rote
       ? (
         <div className=" shrink-0">
-          <div className=" flex gap-2 bg-bgLight dark:bg-bgDark text-md font-semibold py-2">
+          <div className=" flex gap-2 text-md font-semibold py-2">
             {t("title")}
             <RefreshCcwIcon
               className={` cursor-pointer hover:opacity-50 size-4 duration-300 ml-auto ${

@@ -7,7 +7,8 @@
         },
         "token": {
             "colorPrimary": "#000000",
-            "activeShadow": "none"
+            "activeShadow": "none",
+            "colorBgElevated": "#ffffff"
         }
     },
     "darkTheme": {
@@ -18,7 +19,8 @@
         },
         "token": {
             "colorPrimary": "#000000",
-            "activeShadow": "none"
+            "activeShadow": "none",
+            "colorBgElevated": "#000000"
         }
     }
 }

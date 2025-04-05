@@ -129,7 +129,7 @@ export default function ServiceWorker() {
         <span className=" font-semibold">{t("status")}</span>
         <Switch
           disabled={!navigator.serviceWorker}
-          className=" bg-bgLight dark:bg-bgDark"
+          className=" bg-opacityLight dark:bg-opacityDark"
           checked={swReady}
           loading={swLoading}
           size="default"

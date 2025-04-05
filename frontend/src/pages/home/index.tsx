@@ -1,34 +1,31 @@
 import { apiGetMyRote } from "@/api/rote/main";
 import slogenImg from "@/assets/img/slogen.svg";
 import Heatmap from "@/components/d3/heatmap";
+import FloatBtns from "@/components/FloatBtns";
+import { SideContentLayout } from "@/components/layout/SideContentLayout";
 import Logo from "@/components/logo";
 import RandomRote from "@/components/randomRote";
 import RoteInputSimple from "@/components/roteInputSimple";
 import RoteList from "@/components/roteList";
 import TagMap from "@/components/tagMap";
-import { ChartAreaIcon } from "lucide-react";
+import { Drawer } from "antd";
+import { ChartAreaIcon, ChartLine } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-const Statistics = ({ t }: { t: (key: string) => string }) => {
+const SideBar = () => {
   return (
-    <div className=" w-72 shrink-0 relative hidden md:block">
-      <div className="p-4 h-dvh w-72 fixed top-0 overflow-y-scroll noScrollBar hidden md:block">
-        <div className="gap-4 w-full sticky top-0 flex flex-col">
-          <div className="flex gap-2 text-lg items-center font-semibold">
-            <ChartAreaIcon className="size-5" />
-            {t("statistics")}
-          </div>
-          <Heatmap />
-          <TagMap />
-          <RandomRote />
-        </div>
-      </div>
+    <div className="gap-4 w-full sticky top-0 flex flex-col">
+      <Heatmap />
+      <TagMap />
+      <RandomRote />
     </div>
   );
 };
 
 function HomePage() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.home" });
+  const [drawOpen, setDrawOpen] = useState(false);
 
   return (
     <div className="flex w-full min-h-screen">
@@ -50,7 +47,33 @@ function HomePage() {
           }}
         />
       </div>
-      <Statistics t={t} />
+
+      <SideContentLayout>
+        <div className="flex gap-2 text-lg mb-4 items-center font-semibold">
+          <ChartAreaIcon className="size-5" />
+          {t("statistics")}
+        </div>
+        <SideBar />
+      </SideContentLayout>
+
+      <FloatBtns>
+        <div
+          className="bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer hover:scale-105 duration-300  md:hidden block"
+          onClick={() => setDrawOpen(!drawOpen)}
+        >
+          <ChartLine className="size-4" />
+        </div>
+      </FloatBtns>
+
+      <Drawer
+        open={drawOpen}
+        onClose={() => setDrawOpen(false)}
+        placement="bottom"
+        height={"80%"}
+        title={t("statistics")}
+      >
+        <SideBar />
+      </Drawer>
     </div>
   );
 }

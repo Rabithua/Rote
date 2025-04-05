@@ -39,7 +39,7 @@ export default function RandomCat() {
       }}
     >
       {isLoading && (
-        <div className="py-8 absolute inset-0 flex justify-center items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop:blur-xl">
+        <div className="py-16 absolute inset-0 flex justify-center items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop:blur-xl">
           <img
             className="size-6 animate-spin"
             src={"https://r2.rote.ink/evecat/loading_roll.gif"}

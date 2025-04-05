@@ -1,6 +1,5 @@
 import { logOut } from "@/api/login/main";
 import { getMyProfile } from "@/api/user/main";
-import GoTop from "@/components/goTop";
 import LoadingPlaceholder from "@/components/LoadingPlaceholder";
 import { Profile } from "@/types/main";
 import { useAPIGet } from "@/utils/fetcher";
@@ -137,6 +136,10 @@ function LayoutDashboard() {
       );
   }
 
+  const test = () => {
+    console.log("test");
+  };
+
   return (
     <div className=" bg-bgLight mx-auto max-w-6xl text-textLight w-full dark:bg-bgDark dark:text-textDark">
       <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto ">
@@ -159,7 +162,6 @@ function LayoutDashboard() {
 
         <div className=" flex-1 overflow-x-hidden relative">
           <Outlet />
-          <GoTop />
         </div>
       </div>
     </div>

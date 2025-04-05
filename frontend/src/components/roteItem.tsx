@@ -471,7 +471,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className=" hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-gray-700  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center items-center"
+                  className=" hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-bgDark dark:text-bgLight  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center items-center"
                 >
                   <ArrowDownLeft className="size-4" />
                   {t("expand")}
