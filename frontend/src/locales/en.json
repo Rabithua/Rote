@@ -290,6 +290,7 @@
         "copyLinkSuccess": "Link copied to clipboard"
       },
       "messages": {
+        "copySuccess": "Content copied to clipboard",
         "sending": "Sending...",
         "sendSuccess": "Send successful",
         "sendFailed": "Send failed",
