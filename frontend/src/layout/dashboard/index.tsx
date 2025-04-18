@@ -25,10 +25,11 @@ interface IconType {
 
 function LayoutDashboard() {
   const location = useLocation();
-  const { data: profile, isLoading, mutate } = useAPIGet<Profile>(
-    "profile",
-    getMyProfile,
-  );
+  const {
+    data: profile,
+    isLoading,
+    mutate,
+  } = useAPIGet<Profile>("profile", getMyProfile);
 
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
@@ -95,45 +96,47 @@ function LayoutDashboard() {
   }
 
   function IconRenderItem(icon: IconType) {
-    return icon.link
-      ? (
-        <Link key={icon.link} to={icon.link}>
-          <div
-            className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
-              location.pathname === icon.link
-                ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
-                : ""
-            } `}
-          >
-            {icon.svg}
-            <div className=" shrink-0 hidden tracking-widest lg:block">
-              {t(`leftNavBar.${icon.name}`)}
-            </div>
-          </div>
-        </Link>
-      )
-      : (
+    return icon.link ? (
+      <Link
+        key={icon.link}
+        to={icon.link}
+        onClick={() => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
+      >
         <div
-          key={icon.name}
-          className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
             location.pathname === icon.link
-              ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
-              : ""
-          } ${
-            icon.name === "logout"
-              ? "hover:text-red-600 hover:bg-red-600/10"
+              ? "bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight"
               : ""
           } `}
-          onClick={() => {
-            icon.callback && icon.callback();
-          }}
         >
           {icon.svg}
-          <div className=" shrink-0 hidden tracking-widest lg:block">
+          <div className="hidden shrink-0 tracking-widest lg:block">
             {t(`leftNavBar.${icon.name}`)}
           </div>
         </div>
-      );
+      </Link>
+    ) : (
+      <div
+        key={icon.name}
+        className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
+          location.pathname === icon.link
+            ? "bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight"
+            : ""
+        } ${
+          icon.name === "logout" ? "hover:bg-red-600/10 hover:text-red-600" : ""
+        } `}
+        onClick={() => {
+          icon.callback && icon.callback();
+        }}
+      >
+        {icon.svg}
+        <div className="hidden shrink-0 tracking-widest lg:block">
+          {t(`leftNavBar.${icon.name}`)}
+        </div>
+      </div>
+    );
   }
 
   const test = () => {
@@ -141,26 +144,23 @@ function LayoutDashboard() {
   };
 
   return (
-    <div className=" bg-bgLight mx-auto max-w-6xl text-textLight w-full dark:bg-bgDark dark:text-textDark">
-      <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto ">
-        <div className=" sm:sticky sm:top-0 fixed border-t border-r-0 sm:border-t-0 py-2 pb-5 z-10 bottom-0 w-full sm:w-fit bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark flex-row justify-around sm:h-dvh flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 sm:border-r border-opacityLight dark:border-opacityDark sm:flex-col sm:gap-4 backdrop-blur-2xl items-start sm:justify-center">
-          {isLoading
-            ? (
-              <LoadingPlaceholder
-                className=" py-8"
-                size={6}
-              />
-            )
-            : profile
-            ? iconsData[0].map((icon) => {
+    <div className="mx-auto w-full max-w-6xl bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark">
+      <div className="mx-auto flex max-w-[1440px] font-sans lg:w-[90%]">
+        <div className="fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around border-r-0 border-t border-opacityLight bg-bgLight/90 px-1 py-2 pb-5 text-textLight backdrop-blur-2xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:border-r sm:border-t-0 sm:px-2 lg:w-[200px] lg:px-4 dark:border-opacityDark dark:bg-bgDark/90 dark:text-textDark">
+          {isLoading ? (
+            <LoadingPlaceholder className="py-8" size={6} />
+          ) : profile ? (
+            iconsData[0].map((icon) => {
               return IconRenderItem(icon);
             })
-            : iconsData[1].map((icon) => {
+          ) : (
+            iconsData[1].map((icon) => {
               return IconRenderItem(icon);
-            })}
+            })
+          )}
         </div>
 
-        <div className=" flex-1 overflow-x-hidden relative">
+        <div className="relative flex-1 overflow-x-hidden">
           <Outlet />
         </div>
       </div>
