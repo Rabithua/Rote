@@ -1,6 +1,6 @@
-import { useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { ArrowLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function NavBar() {
   const { t } = useTranslation("translation", {
@@ -20,18 +20,24 @@ export default function NavBar() {
   return (
     <>
       <div
-        className={` duration-300 fixed top-0 z-10 w-full border border-b overflow-x-scroll noScrollBar items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-xl py-3   ${
+        className={`noScrollBar fixed top-0 z-10 w-full items-center overflow-x-scroll border border-b bg-bgLight/90 py-3 backdrop-blur-xl duration-300 dark:bg-bgDark/90 ${
           window.history.state && window.history.state.idx > 0
             ? "flex"
             : "hidden"
         }`}
       >
-        <ArrowLeft className=" p-2 size-8 cursor-pointer" onClick={back} />
-        <div className=" text-base cursor-pointer" onClick={back}>
+        <ArrowLeft className="size-8 cursor-pointer p-2" onClick={back} />
+        <div className="cursor-pointer text-base" onClick={back}>
           {t("back")}
         </div>
       </div>
-      <div className="h-14"></div>
+      <div
+        className={`h-14 ${
+          window.history.state && window.history.state.idx > 0
+            ? "block"
+            : "hidden"
+        }`}
+      ></div>
     </>
   );
 }

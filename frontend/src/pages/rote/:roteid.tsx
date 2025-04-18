@@ -15,10 +15,11 @@ function SingleRotePage() {
   const navigate = useNavigate();
   const { roteid } = useParams();
 
-  const { data: rote, isLoading, error } = useAPIGet<Rote>(
-    roteid || "",
-    apiGetSingleRote,
-  );
+  const {
+    data: rote,
+    isLoading,
+    error,
+  } = useAPIGet<Rote>(roteid || "", apiGetSingleRote);
 
   useEffect(() => {
     if (!roteid) {
@@ -32,50 +33,43 @@ function SingleRotePage() {
 
   return (
     <div
-      className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative pb-20`}
+      className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible pb-20`}
     >
       <NavBar />
-      {isLoading
-        ? (
-          <LoadingPlaceholder
-            className=" py-8"
-            size={6}
-          />
-        )
-        : rote
-        ? (
-          <>
-            <div className=" flex flex-col items-center">
-              <div></div>
-              <RoteItem rote={rote} />
-            </div>
-            {rote.author && (
-              <Link to={`/${rote.author.username}`}>
-                <div className=" fixed bottom-16 left-0 right-0 w-fit mx-auto rounded-full bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-3xl px-6 py-2 border border-opacityLight dark:border-opacityDark cursor-pointer flex gap-4 justify-center items-center hover:scale-95 duration-300 shadow-card">
-                  <Avatar
-                    size={{ xs: 40 }}
-                    icon={<User className=" size-4 text-[#00000030]" />}
-                    className="border"
-                    src={rote?.author.avatar}
-                  />
-                  <div className=" flex gap-2 items-center">
-                    <div className=" text-base font-semibold dark:text-textDark text-textLight ">
-                      {rote?.author.nickname}
-                    </div>
-                    <div className=" text-md text-gray-500">
-                      @{rote?.author.username}
-                    </div>
+      {isLoading ? (
+        <LoadingPlaceholder className="py-8" size={6} />
+      ) : rote ? (
+        <>
+          <div className="flex flex-col items-center pb-16">
+            <div></div>
+            <RoteItem rote={rote} />
+          </div>
+          {rote.author && (
+            <Link to={`/${rote.author.username}`}>
+              <div className="fixed bottom-16 left-0 right-0 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full border border-opacityLight bg-bgLight/90 px-6 py-2 shadow-card backdrop-blur-3xl duration-300 hover:scale-95 dark:border-opacityDark dark:bg-bgDark/90">
+                <Avatar
+                  size={{ xs: 40 }}
+                  icon={<User className="size-4 text-[#00000030]" />}
+                  className="border"
+                  src={rote?.author.avatar}
+                />
+                <div className="flex items-center gap-2">
+                  <div className="text-base font-semibold text-textLight dark:text-textDark">
+                    {rote?.author.nickname}
+                  </div>
+                  <div className="text-md text-gray-500">
+                    @{rote?.author.username}
                   </div>
                 </div>
-              </Link>
-            )}
-          </>
-        )
-        : (
-          <div className=" w-full h-full flex justify-center items-center">
-            {error}
-          </div>
-        )}
+              </div>
+            </Link>
+          )}
+        </>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center">
+          {error}
+        </div>
+      )}
     </div>
   );
 }
