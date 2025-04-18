@@ -12,10 +12,7 @@ export default function TagMap() {
     keyPrefix: "components.tagMap",
   });
 
-  const { data: tags, isLoading } = useAPIGet<string[]>(
-    "tags",
-    apiGetMyTags,
-  );
+  const { data: tags, isLoading } = useAPIGet<string[]>("tags", apiGetMyTags);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
 
@@ -25,56 +22,49 @@ export default function TagMap() {
 
   return (
     <>
-      {isLoading
-        ? (
-          <LoadingPlaceholder
-            className=" py-8"
-            size={6}
-          />
-        )
-        : tags && tags?.length > 0
-        ? (
-          <div
-            className={` shrink-0 flex gap-2 flex-wrap opacity-0 animate-show duration-300 ${
-              tags.length > 20 && isCollapsed
-                ? "max-h-80 overflow-hidden"
-                : "max-h-full"
-            }`}
-          >
-            {tags.map((item: string) => {
-              return (
-                <Link
-                  key={item}
-                  to={"/filter"}
-                  state={{
-                    tags: [item],
-                  }}
-                >
-                  <div className="px-2 py-1 flex-grow text-center text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95">
-                    {item}
-                  </div>
-                </Link>
-              );
-            })}
-            {tags.length > 20 && isCollapsed && (
-              <div
-                onClick={toggleCollapse}
-                className="hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-bgDark dark:text-bgLight from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center items-center"
+      {isLoading ? (
+        <LoadingPlaceholder className="py-8" size={6} />
+      ) : tags && tags?.length > 0 ? (
+        <div
+          className={`flex shrink-0 animate-show flex-wrap gap-2 opacity-0 duration-300 ${
+            tags.length > 20 && isCollapsed
+              ? "max-h-80 overflow-hidden"
+              : "max-h-full"
+          }`}
+        >
+          {tags.map((item: string) => {
+            return (
+              <Link
+                key={item}
+                to={"/filter"}
+                state={{
+                  tags: [item],
+                }}
               >
-                <ArrowDownLeft className="size-4" />
-                {t("expand")}
-              </div>
-            )}
-          </div>
-        )
-        : (
-          <div className="shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={t("noTags")}
-            />
-          </div>
-        )}
+                <div className="flex-grow rounded-md bg-opacityLight px-2 py-1 text-center text-xs duration-300 hover:scale-95 dark:bg-opacityDark">
+                  {item}
+                </div>
+              </Link>
+            );
+          })}
+          {tags.length > 20 && isCollapsed && (
+            <div
+              onClick={toggleCollapse}
+              className="absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t from-bgLight via-bgLight/80 to-transparent pt-8 text-primary duration-300 dark:from-bgDark dark:via-bgDark/80"
+            >
+              <ArrowDownLeft className="size-4" />
+              {t("expand")}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="shrink-0 border-t-[1px] border-opacityLight bg-bgLight py-4 dark:border-opacityDark dark:bg-bgDark">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={t("noTags")}
+          />
+        </div>
+      )}
     </>
   );
 }

@@ -445,7 +445,7 @@ function RoteItem({
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className="absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t from-bgLight via-bgLight/80 to-transparent pt-8 text-primary duration-300 dark:from-bgDark dark:via-bgDark/80 dark:text-bgLight"
+                  className="absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t from-bgLight via-bgLight/80 to-transparent pt-8 text-primary duration-300 dark:from-bgDark dark:via-bgDark/80"
                 >
                   <ArrowDownLeft className="size-4" />
                   {t("expand")}
