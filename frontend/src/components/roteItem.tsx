@@ -36,7 +36,11 @@ import RoteInputModel from "./roteInputModel";
 import RoteShareCard from "./roteShareCard";
 const { roteContentExpandedLetter } = mainJson;
 
-function RoteItem({ rote, randomRoteStyle, mutate }: {
+function RoteItem({
+  rote,
+  randomRoteStyle,
+  mutate,
+}: {
   rote: Rote;
   randomRoteStyle?: boolean;
   mutate?: SWRInfiniteKeyedMutator<any[]>;
@@ -47,9 +51,8 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
   const { ref, inView } = useInView();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [isShareCardModalOpen, setIsShareCardModalOpen] = useState<boolean>(
-    false,
-  );
+  const [isShareCardModalOpen, setIsShareCardModalOpen] =
+    useState<boolean>(false);
   const [open, setOpen] = useState(false);
 
   const [isExpanded, setIsExpanded] = useState<any>(false);
@@ -62,10 +65,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
     setOpen(newOpen);
   };
 
-  const { data: profile } = useAPIGet<Profile>(
-    "profile",
-    getMyProfile,
-  );
+  const { data: profile } = useAPIGet<Profile>("profile", getMyProfile);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -100,19 +100,20 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
           id: toastId,
         });
 
-        mutate && mutate(
-          (currentData) => {
-            // 处理嵌套数组结构
-            return currentData?.map((page) =>
-              Array.isArray(page)
-                ? page.map((r) => r.id === rote.id ? res.data.data : r)
-                : page
-            );
-          },
-          {
-            revalidate: false,
-          },
-        );
+        mutate &&
+          mutate(
+            (currentData) => {
+              // 处理嵌套数组结构
+              return currentData?.map((page) =>
+                Array.isArray(page)
+                  ? page.map((r) => (r.id === rote.id ? res.data.data : r))
+                  : page,
+              );
+            },
+            {
+              revalidate: false,
+            },
+          );
       })
       .catch(() => {
         toast.error(t("messages.sendFailed", "发送失败"), {
@@ -134,19 +135,20 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
             id: toastId,
           });
 
-          mutate && mutate(
-            (currentData) => {
-              // 处理嵌套数组结构
-              return currentData?.map((page) =>
-                Array.isArray(page)
-                  ? page.filter((r) => r.id !== rote.id)
-                  : page
-              );
-            },
-            {
-              revalidate: false,
-            },
-          );
+          mutate &&
+            mutate(
+              (currentData) => {
+                // 处理嵌套数组结构
+                return currentData?.map((page) =>
+                  Array.isArray(page)
+                    ? page.filter((r) => r.id !== rote.id)
+                    : page,
+                );
+              },
+              {
+                revalidate: false,
+              },
+            );
         })
         .catch(() => {
           toast.error(t("messages.deleteFailed"), {
@@ -168,30 +170,29 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
             return;
           }
           toast.success(
-            `${rote.pin ? t("unpinned") : t("pinned")}${
-              t(
-                "messages.editSuccess",
-                "成功",
-              )
-            }`,
+            `${rote.pin ? t("unpinned") : t("pinned")}${t(
+              "messages.editSuccess",
+              "成功",
+            )}`,
             {
               id: toastId,
             },
           );
 
-          mutate && mutate(
-            (currentData) => {
-              // 处理嵌套数组结构
-              return currentData?.map((page) =>
-                Array.isArray(page)
-                  ? page.map((r) => r.id === rote.id ? res.data.data : r)
-                  : page
-              );
-            },
-            {
-              revalidate: false,
-            },
-          );
+          mutate &&
+            mutate(
+              (currentData) => {
+                // 处理嵌套数组结构
+                return currentData?.map((page) =>
+                  Array.isArray(page)
+                    ? page.map((r) => (r.id === rote.id ? res.data.data : r))
+                    : page,
+                );
+              },
+              {
+                revalidate: false,
+              },
+            );
         })
         .catch(() => {
           toast.error(t("messages.editFailed"), {
@@ -212,29 +213,28 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
             return;
           }
           toast.success(
-            `${rote.archived ? t("unarchive") : t("archive")}${
-              t(
-                "messages.editSuccess",
-              )
-            }`,
+            `${rote.archived ? t("unarchive") : t("archive")}${t(
+              "messages.editSuccess",
+            )}`,
             {
               id: toastId,
             },
           );
 
-          mutate && mutate(
-            (currentData) => {
-              // 处理嵌套数组结构
-              return currentData?.map((page) =>
-                Array.isArray(page)
-                  ? page.map((r) => r.id === rote.id ? res.data.data : r)
-                  : page
-              );
-            },
-            {
-              revalidate: false,
-            },
-          );
+          mutate &&
+            mutate(
+              (currentData) => {
+                // 处理嵌套数组结构
+                return currentData?.map((page) =>
+                  Array.isArray(page)
+                    ? page.map((r) => (r.id === rote.id ? res.data.data : r))
+                    : page,
+                );
+              },
+              {
+                revalidate: false,
+              },
+            );
         })
         .catch(() => {
           toast.error(t("messages.editFailed"), {
@@ -243,25 +243,27 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
         });
     }
     return (
-      <div className=" flex flex-col">
+      <div className="flex flex-col">
         <Link
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer items-center"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           to={`/rote/${rote.id}`}
         >
           <Layers className="size-4" />
           {t("details")}
         </Link>
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer items-center"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={editRotePin}
         >
-          {rote.pin
-            ? <PinOff className="size-4" />
-            : <PinIcon className="size-4" />}
+          {rote.pin ? (
+            <PinOff className="size-4" />
+          ) : (
+            <PinIcon className="size-4" />
+          )}
           {rote.pin ? t("unpinned") : t("pinned")}
         </div>
         <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer items-center"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={() => {
             hide();
             setIsEditModalOpen(true);
@@ -271,14 +273,14 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
           {t("edit")}
         </div>
         <div
-          className=" py-1 px-2 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer items-center"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={editRoteArchived}
         >
           <Save className="size-4" />
           {rote.archived ? t("unarchive") : t("archive")}
         </div>
         <div
-          className=" py-1 px-2 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark flex gap-2 cursor-pointer items-center"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={() => {
             hide();
             setIsShareCardModalOpen(true);
@@ -288,7 +290,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
           {t("share")}
         </div>
         <div
-          className=" py-1 px-2 text-red-500 rounded-md font-semibold  hover:bg-opacityLight dark:hover:bg-opacityDark gap-2 cursor-pointer flex items-center"
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold text-red-500 hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={deleteRoteFn}
         >
           <Trash2 className="size-4" />
@@ -302,31 +304,33 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
     <div
       ref={ref}
       id={`Rote_${rote.id}`}
-      className={` opacity-0 translate-y-5 animate-show duration-300 flex gap-4 bg-bgLight/5 dark:bg-bgDark/5 border-opacityLight dark:border-opacityDark border-b first:border-t-[0] last:border-b-[0] w-full ${
-        !randomRoteStyle && " py-4 px-5"
+      className={`flex w-full translate-y-5 animate-show gap-4 border-b border-opacityLight bg-bgLight/5 opacity-0 duration-300 first:border-t-[0] last:border-b-[0] dark:border-opacityDark dark:bg-bgDark/5 ${
+        !randomRoteStyle && "px-5 py-4"
       }`}
     >
       {!randomRoteStyle && (
         <Link
-          className=" text-black shrink-0 hidden sm:block"
+          className="hidden shrink-0 text-black sm:block"
           to={`/${rote.author!.username}`}
         >
           <Avatar
-            className=" bg-[#00000010]"
+            className="bg-[#00000010]"
             size={{ xs: 24, sm: 32, md: 40, lg: 40, xl: 50, xxl: 50 }}
-            icon={<User className=" text-[#00000030] size-4" />}
-            src={rote.author!.username === profile?.username
-              ? profile?.avatar
-              : rote.author!.avatar}
+            icon={<User className="size-4 text-[#00000030]" />}
+            src={
+              rote.author!.username === profile?.username
+                ? profile?.avatar
+                : rote.author!.avatar
+            }
           />
         </Link>
       )}
 
-      <div className=" flex flex-col w-full">
-        <div className=" cursor-default w-full flex gap-2 items-center">
+      <div className="flex w-full flex-col">
+        <div className="flex w-full cursor-default items-center gap-2">
           {!randomRoteStyle && (
             <Link
-              className=" cursor-pointer font-semibold hover:underline"
+              className="cursor-pointer font-semibold hover:underline"
               to={`/${rote.author!.username}`}
             >
               {rote.author!.username === profile?.username
@@ -335,32 +339,26 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
             </Link>
           )}
 
-          <span className=" overflow-scroll noScrollBar text-nowrap font-normal text-gray-500">
+          <span className="noScrollBar overflow-scroll text-nowrap font-normal text-gray-500">
             {!randomRoteStyle && (
               <>
-                <Link
-                  to={`/${rote.author!.username}`}
-                >
+                <Link to={`/${rote.author!.username}`}>
                   {`@${rote.author!.username}`}
                 </Link>
-                <span>·</span>
-                {" "}
+                <span>·</span>{" "}
               </>
             )}
 
             <Tooltip
               placement="bottom"
-              title={moment.utc(rote.createdAt).format(
-                "YYYY/MM/DD HH:mm:ss",
-              )}
+              title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
             >
               <span
                 className={`${
-                  new Date().getTime() -
-                        new Date(rote.createdAt).getTime() >
-                      60 * 1000
+                  new Date().getTime() - new Date(rote.createdAt).getTime() >
+                  60 * 1000
                     ? ""
-                    : " bg-primaryGreenGradient bg-clip-text text-transparent"
+                    : "bg-primaryGreenGradient bg-clip-text text-transparent"
                 }`}
               >
                 {formatTimeAgo(rote.createdAt)}
@@ -368,102 +366,78 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
             </Tooltip>
           </span>
 
-          <span className=" flex gap-1 text-gray-500">
-            {rote.pin
-              ? (
-                <Tooltip
-                  placement="bottom"
-                  title={rote.pin
-                    ? t("tooltips.pinned")
-                    : t("tooltips.unpinned")}
-                >
-                  <PinIcon
-                    className={` cursor-pointer size-4 rounded-md`}
-                  />
-                </Tooltip>
-              )
-              : null}
+          <span className="flex gap-1 text-gray-500">
+            {rote.pin ? (
+              <Tooltip
+                placement="bottom"
+                title={rote.pin ? t("tooltips.pinned") : t("tooltips.unpinned")}
+              >
+                <PinIcon className={`size-4 cursor-pointer rounded-md`} />
+              </Tooltip>
+            ) : null}
 
-            {rote.state === "public"
-              ? (
-                <Tooltip placement="bottom" title={t("tooltips.public")}>
-                  <Globe2Icon
-                    className={` cursor-pointer size-4 rounded-md`}
-                  />
-                </Tooltip>
-              )
-              : null}
+            {rote.state === "public" ? (
+              <Tooltip placement="bottom" title={t("tooltips.public")}>
+                <Globe2Icon className={`size-4 cursor-pointer rounded-md`} />
+              </Tooltip>
+            ) : null}
 
-            {rote.archived
-              ? (
-                <Tooltip placement="bottom" title={t("tooltips.archived")}>
-                  <Archive
-                    className={` cursor-pointer size-4 rounded-md`}
-                  />
-                </Tooltip>
-              )
-              : null}
+            {rote.archived ? (
+              <Tooltip placement="bottom" title={t("tooltips.archived")}>
+                <Archive className={`size-4 cursor-pointer rounded-md`} />
+              </Tooltip>
+            ) : null}
 
-            {rote.updatedAt !== rote.createdAt
-              ? (
-                <Tooltip
-                  placement="bottom"
-                  title={moment
-                    .utc(rote.updatedAt)
-                    .format("YYYY/MM/DD HH:mm:ss")}
-                >
-                  <Edit
-                    className={` cursor-pointer size-4 rounded-md`}
-                  />
-                </Tooltip>
-              )
-              : null}
+            {rote.updatedAt !== rote.createdAt ? (
+              <Tooltip
+                placement="bottom"
+                title={moment.utc(rote.updatedAt).format("YYYY/MM/DD HH:mm:ss")}
+              >
+                <Edit className={`size-4 cursor-pointer rounded-md`} />
+              </Tooltip>
+            ) : null}
 
-            {rote.state === "public"
-              ? (
-                <Tooltip placement="bottom" title={t("tooltips.copyLink")}>
-                  <LinkIcon
-                    className={` cursor-pointer size-4 rounded-md`}
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `${window.location.origin}/rote/${rote.id}`,
-                      );
-                      toast.success(t("messages.copySuccess"));
-                    }}
-                  />
-                </Tooltip>
-              )
-              : null}
+            {rote.state === "public" ? (
+              <Tooltip placement="bottom" title={t("tooltips.copyLink")}>
+                <LinkIcon
+                  className={`size-4 cursor-pointer rounded-md`}
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/rote/${rote.id}`,
+                    );
+                    toast.success(t("messages.copySuccess"));
+                  }}
+                />
+              </Tooltip>
+            ) : null}
           </span>
-          {profile?.username === rote.author!.username && inView &&
+          {profile?.username === rote.author!.username &&
+            inView &&
             mutate !== undefined && (
-            <Popover
-              placement="bottomRight"
-              open={open}
-              onOpenChange={handleOpenChange}
-              content={actionsMenu(rote)}
-            >
-              <Ellipsis className=" z-10 absolute right-2 top-2 size-8  hover:bg-opacityLight dark:hover:bg-opacityDark rounded-full p-2" />
-            </Popover>
-          )}
+              <Popover
+                placement="bottomRight"
+                open={open}
+                onOpenChange={handleOpenChange}
+                content={actionsMenu(rote)}
+              >
+                <Ellipsis className="absolute right-2 top-2 z-10 size-8 rounded-full p-2 hover:bg-opacityLight dark:hover:bg-opacityDark" />
+              </Popover>
+            )}
         </div>
 
-        <div className=" font-zhengwen break-words whitespace-pre-line text-[16px] relative">
+        <div className="relative whitespace-pre-line break-words font-zhengwen text-[16px]">
           <div className="aTagStyle">
-            {rote.content.length > roteContentExpandedLetter
-              ? (
-                isExpanded ? <Linkify>{rote.content}</Linkify> : (
-                  <Linkify>
-                    {`${
-                      rote.content.slice(
-                        0,
-                        roteContentExpandedLetter,
-                      )
-                    }...`}
-                  </Linkify>
-                )
+            {rote.content.length > roteContentExpandedLetter ? (
+              isExpanded ? (
+                <Linkify>{rote.content}</Linkify>
+              ) : (
+                <Linkify>
+                  {`${rote.content.slice(0, roteContentExpandedLetter)}...`}
+                </Linkify>
               )
-              : <Linkify>{rote.content}</Linkify>}
+            ) : (
+              <Linkify>{rote.content}</Linkify>
+            )}
           </div>
 
           {rote.content.length > roteContentExpandedLetter && (
@@ -471,7 +445,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className=" hover:text-primary cursor-pointer gap-1 duration-300 absolute bottom-0 bg-gradient-to-t text-bgDark dark:text-bgLight  from-bgLight dark:from-bgDark via-bgLight/80 dark:via-bgDark/80 to-transparent pt-8 flex w-full justify-center items-center"
+                  className="absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t from-bgLight via-bgLight/80 to-transparent pt-8 text-primary duration-300 dark:from-bgDark dark:via-bgDark/80 dark:text-bgLight"
                 >
                   <ArrowDownLeft className="size-4" />
                   {t("expand")}
@@ -482,7 +456,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
         </div>
 
         {rote.attachments.length > 0 && (
-          <div className=" w-fit my-2 flex flex-wrap gap-1 border border-opacityLight dark:border-opacityDark rounded-2xl overflow-hidden">
+          <div className="my-2 flex w-fit flex-wrap gap-1 overflow-hidden rounded-2xl border border-opacityLight dark:border-opacityDark">
             <PhotoProvider>
               {rote.attachments.map((file: any, index: any) => {
                 return (
@@ -490,13 +464,13 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
                     <img
                       className={`${
                         rote.attachments.length % 3 === 0
-                          ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                          ? "aspect-1 w-[calc(1/3*100%-2.6667px)]"
                           : rote.attachments.length % 2 === 0
-                          ? "w-[calc(1/2*100%-2px)] aspect-1"
-                          : rote.attachments.length === 1
-                          ? " w-full max-w-[500px] rounded-2xl"
-                          : "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                      } object-cover grow bg-opacityLight dark:bg-opacityDark`}
+                            ? "aspect-1 w-[calc(1/2*100%-2px)]"
+                            : rote.attachments.length === 1
+                              ? "w-full max-w-[500px] rounded-2xl"
+                              : "aspect-1 w-[calc(1/3*100%-2.6667px)]"
+                      } grow bg-opacityLight object-cover dark:bg-opacityDark`}
                       src={file.compressUrl || file.url}
                       loading="lazy"
                       alt=""
@@ -507,7 +481,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
             </PhotoProvider>
           </div>
         )}
-        <div className=" flex items-center flex-wrap gap-2 my-2">
+        <div className="my-2 flex flex-wrap items-center gap-2">
           {rote.tags.map((tag: any, index: any) => {
             return (
               <Link
@@ -517,7 +491,7 @@ function RoteItem({ rote, randomRoteStyle, mutate }: {
                   tags: [tag],
                 }}
               >
-                <div className=" px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark hover:scale-95 duration-300">
+                <div className="rounded-md bg-opacityLight px-2 py-1 text-xs duration-300 hover:scale-95 dark:bg-opacityDark">
                   {tag}
                 </div>
               </Link>
