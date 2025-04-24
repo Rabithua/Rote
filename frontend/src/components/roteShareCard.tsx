@@ -69,28 +69,7 @@ function RoteShareCard({ rote }: any) {
         cacheBust: true,
       };
 
-      const isSafari = /^((?!chrome|android).)*safari/i.test(
-        navigator.userAgent,
-      );
-      let dataUrl = "";
-      let i = 0;
-      let maxAttempts;
-      if (isSafari) {
-        maxAttempts = 5;
-      } else {
-        maxAttempts = 1;
-      }
-
-      let cycle = [];
-      let repeat = true;
-
-      while (repeat && i < maxAttempts) {
-        dataUrl = await toPng(element, options);
-        i += 1;
-        cycle[i] = dataUrl.length;
-
-        if (dataUrl.length > cycle[i - 1]) repeat = false;
-      }
+      let dataUrl = await toPng(element, options);
 
       if (!dataUrl) {
         toast.error(t("imageGenerationFailed"), {
@@ -121,7 +100,7 @@ function RoteShareCard({ rote }: any) {
 
   function ColorList() {
     return (
-      <div className=" flex gap-2 mr-auto">
+      <div className="mr-auto flex gap-2">
         {themes.map((theme: any, index: any) => {
           return colorBlock(theme, index);
         })}
@@ -132,20 +111,19 @@ function RoteShareCard({ rote }: any) {
   function colorBlock(theme: any, index: any) {
     return (
       <div
-        className={` w-6 h-6 cursor-pointer border border-r-8 rounded-full ${
+        className={`h-6 w-6 cursor-pointer rounded-full border border-r-8 ${
           index === themeIndex ? "" : "opacity-20"
         } ${theme.colorBlock}`}
         key={`theme_${index}`}
         onClick={() => setThemeIndex(themes.indexOf(theme))}
-      >
-      </div>
+      ></div>
     );
   }
 
   return (
-    <div className=" cursor-default w-full flex flex-col gap-5">
+    <div className="flex w-full cursor-default flex-col gap-5">
       <div
-        className={` w-full flex duration-300 flex-col gap-2 p-8 relative ${
+        className={`relative flex w-full flex-col gap-2 p-8 duration-300 ${
           themes[themeIndex].cardClass
         } ${decorationIndex !== null && decoration[decorationIndex].class}`}
         id="shareCanva"
@@ -153,27 +131,29 @@ function RoteShareCard({ rote }: any) {
         <div className="font-sm opacity-60">
           {moment().utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
         </div>
-        <div className=" md:text-xl break-words whitespace-pre-line font-medium font-serif tracking-wide	leading-7	">
+        <div className="whitespace-pre-line break-words font-serif font-medium leading-7 tracking-wide md:text-xl">
           {rote.content}
         </div>
         {rote.attachments.length > 0 && (
-          <div className=" w-full my-2 flex flex-wrap gap-1 rounded-2xl overflow-hidden">
+          <div className="my-2 flex w-full flex-wrap gap-1 overflow-hidden rounded-2xl">
             {rote.attachments.map((file: Attachment, index: any) => {
               return (
                 <img
                   key={file.id}
                   className={` ${
                     rote.attachments.length % 3 === 0
-                      ? "w-[calc(1/3*100%-2.6667px)] aspect-1"
+                      ? "aspect-1 w-[calc(1/3*100%-2.6667px)]"
                       : rote.attachments.length % 2 === 0
-                      ? "w-[calc(1/2*100%-2px)] aspect-1"
-                      : rote.attachments.length === 1
-                      ? " w-full max-w-[500px] rounded-2xl"
-                      : "w-[calc(1/3*100%-2.6667px)] aspect-1"
-                  } object-cover grow bg-opacityLight dark:bg-opacityDark`}
-                  src={file.compressUrl
-                    ? file.compressUrl + "?" + new Date().getTime()
-                    : file.url + "?" + new Date().getTime()}
+                        ? "aspect-1 w-[calc(1/2*100%-2px)]"
+                        : rote.attachments.length === 1
+                          ? "w-full max-w-[500px] rounded-2xl"
+                          : "aspect-1 w-[calc(1/3*100%-2.6667px)]"
+                  } grow bg-opacityLight object-cover dark:bg-opacityDark`}
+                  src={
+                    file.compressUrl
+                      ? file.compressUrl + "?" + new Date().getTime()
+                      : file.url + "?" + new Date().getTime()
+                  }
                   alt=""
                   crossOrigin="anonymous"
                 />
@@ -181,11 +161,11 @@ function RoteShareCard({ rote }: any) {
             })}
           </div>
         )}
-        <div className=" flex flex-wrap text-xs md:text-md  md:font-bold gap-2 items-center font-serif">
+        <div className="md:text-md flex flex-wrap items-center gap-2 font-serif text-xs md:font-bold">
           {rote.tags.map((tag: any, index: any) => {
             return (
               <span
-                className={` px-2 py-1 md:px-3 rounded-md ${
+                className={`rounded-md px-2 py-1 md:px-3 ${
                   themes[themeIndex].tagClass
                 }`}
                 key={tag}
@@ -195,28 +175,28 @@ function RoteShareCard({ rote }: any) {
             );
           })}
         </div>
-        <div className=" mt-2  w-full flex justify-between">
+        <div className="mt-2 flex w-full justify-between">
           <div
-            className={` flex items-center gap-2 ${
+            className={`flex items-center gap-2 ${
               themes[themeIndex].authorClass
             }`}
           >
             <img
-              className=" w-10 rounded-md"
+              className="w-10 rounded-md"
               src={rote.author.avatar + "?" + new Date().getTime()}
               alt=""
               crossOrigin="anonymous"
             />
             <div>
-              <span className=" font-serif text-sm md:text-base font-semibold">
+              <span className="font-serif text-sm font-semibold md:text-base">
                 {rote.author.nickname}
               </span>
-              <div className=" hidden text-sm md:text-base sm:block font-normal opacity-60">
+              <div className="hidden text-sm font-normal opacity-60 sm:block md:text-base">
                 来自 {window.location.origin}/{rote.author.username}
               </div>
             </div>
           </div>
-          <div className=" w-10 h-10 shrink-0">
+          <div className="h-10 w-10 shrink-0">
             <QRCode
               size={40}
               key={themeIndex}
@@ -229,10 +209,10 @@ function RoteShareCard({ rote }: any) {
           </div>
         </div>
       </div>
-      <div className=" flex flex-wrap gap-2 justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
         <ColorList />
         <div
-          className={` cursor-pointer select-none duration-300 flex items-center gap-2  px-4 py-1 rounded-md active:scale-95 ${
+          className={`flex cursor-pointer select-none items-center gap-2 rounded-md px-4 py-1 duration-300 active:scale-95 ${
             decorationIndex !== null && "bg-gray-100"
           }`}
           onClick={() => {
@@ -246,14 +226,14 @@ function RoteShareCard({ rote }: any) {
           <Zap className="size-4" />
         </div>
         <div
-          className=" cursor-pointer select-none duration-300 flex items-center gap-2 dark:bg-bgLight text-textLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
+          className="flex cursor-pointer select-none items-center gap-2 rounded-md px-4 py-1 text-textLight duration-300 active:scale-95 dark:bg-bgLight dark:text-textLight"
           onClick={copyLink}
         >
           <Link className="size-4" />
           {t("copyLink")}
         </div>
         <div
-          className=" cursor-pointer select-none duration-300 flex items-center gap-2 bg-black text-white px-4 py-1 rounded-md active:scale-95"
+          className="flex cursor-pointer select-none items-center gap-2 rounded-md bg-black px-4 py-1 text-white duration-300 active:scale-95"
           onClick={saveImage}
         >
           <Save className="size-4" />

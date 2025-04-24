@@ -1,4 +1,4 @@
-import { ArrowUp, PanelTopClose } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { ReactNode } from "react";
 
 export default function FloatBtns({
@@ -24,11 +24,11 @@ export default function FloatBtns({
   }
 
   return (
-    <div className="z-10 animate-show duration-300 fixed self-end right-8 bottom-16 flex flex-col gap-2">
+    <div className="fixed bottom-16 right-8 z-10 flex animate-show flex-col gap-2 self-end duration-300">
       {/* 渲染子组件 */}
       {children}
       <div
-        className="bg-bgDark dark:bg-bgLight w-fit py-2 px-4 rounded-md text-textDark dark:text-textLight cursor-pointer hover:scale-105 duration-300"
+        className="w-fit cursor-pointer rounded-md bg-bgDark px-4 py-2 text-textDark duration-300 hover:scale-105 dark:bg-bgLight dark:text-textLight"
         onClick={goTop}
       >
         <ArrowUp className="size-4" />

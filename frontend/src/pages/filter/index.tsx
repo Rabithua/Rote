@@ -2,17 +2,14 @@ import { apiGetMyRote, apiGetMyTags } from "@/api/rote/main";
 import NavBar from "@/components/navBar";
 import RoteList from "@/components/roteList";
 import { useAPIGet } from "@/utils/fetcher";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 
 function MineFilter() {
   const { t } = useTranslation("translation", { keyPrefix: "pages.filter" });
 
-  const { data: tags } = useAPIGet<string[]>(
-    "tags",
-    apiGetMyTags,
-  );
+  const { data: tags } = useAPIGet<string[]>("tags", apiGetMyTags);
 
   const location = useLocation();
   const [filter, setFilter] = useState({
@@ -39,38 +36,35 @@ function MineFilter() {
     };
 
     return (
-      <div className=" bg-opacityLight dark:bg-opacityDark p-4 font-semibold">
-        <div className=" flex items-center flex-wrap gap-2 my-2">
+      <div className="bg-opacityLight p-4 font-semibold dark:bg-opacityDark">
+        <div className="my-2 flex flex-wrap items-center gap-2">
           {t("includeTags")}
           {filter.tags.hasEvery.length > 0
             ? filter.tags.hasEvery.map((tag: any, index: any) => {
-              return (
-                <div
-                  className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md bg-opacityLight dark:bg-opacityDark duration-300 hover:scale-95"
-                  key={`tag-${index}`}
-                  onClick={() => tagsClickHandler(tag)}
-                >
-                  {tag}
-                </div>
-              );
-            })
+                return (
+                  <div
+                    className="cursor-pointer rounded-md bg-opacityLight px-2 py-1 text-xs font-normal duration-300 hover:scale-95 dark:bg-opacityDark"
+                    key={`tag-${index}`}
+                    onClick={() => tagsClickHandler(tag)}
+                  >
+                    {tag}
+                  </div>
+                );
+              })
             : t("none")}
         </div>
-        <div className=" flex items-center flex-wrap max-h-[25vh] overflow-y-scroll gap-2 my-2 font-normal text-gray-500">
+        <div className="my-2 flex max-h-[25vh] flex-wrap items-center gap-2 overflow-y-scroll font-normal text-gray-500">
           {t("allTags")}
           {tags && tags.length > 0
             ? tags.map((tag) => {
-              return (
-                <div
-                  key={tag}
-                  onClick={() => tagsClickHandler(tag)}
-                >
-                  <div className=" cursor-pointer font-normal px-2 py-1 text-xs rounded-md border-[1px] dark:border-opacityDark duration-300 hover:scale-95">
-                    {tag}
+                return (
+                  <div key={tag} onClick={() => tagsClickHandler(tag)}>
+                    <div className="cursor-pointer rounded-md border-[1px] px-2 py-1 text-xs font-normal duration-300 hover:scale-95 dark:border-opacityDark">
+                      {tag}
+                    </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })
             : t("none")}
         </div>
       </div>
@@ -81,7 +75,7 @@ function MineFilter() {
     <>
       <NavBar />
       <div
-        className={`flex-1 noScrollBar overflow-y-visible overflow-x-hidden relative`}
+        className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible`}
       >
         <TagsBlock />
 

@@ -139,10 +139,6 @@ function LayoutDashboard() {
     );
   }
 
-  const test = () => {
-    console.log("test");
-  };
-
   return (
     <div className="mx-auto w-full max-w-6xl bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark">
       <div className="mx-auto flex max-w-[1440px] font-sans lg:w-[90%]">
