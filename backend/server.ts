@@ -1,16 +1,17 @@
 import express = require("express");
-import cors from "cors";
-import expressSession = require("express-session");
-import passport from "./utils/passport";
 import bodyParser from "body-parser";
+import cors from "cors";
+import passport from "./utils/passport";
+import expressSession = require("express-session");
 
-import prisma from "./utils/prisma";
 import { PrismaSessionStore } from "@quixo3/prisma-session-store";
+import prisma from "./utils/prisma";
 
-import { recorderIpAndTime } from "./utils/recoder";
 import { rateLimiterMiddleware } from "./middleware/limiter";
+import { recorderIpAndTime } from "./utils/recoder";
 
 import routerV1 from "./route/v1";
+import { startAgenda } from "./utils/schedule";
 
 const app: express.Application = express();
 
@@ -29,7 +30,7 @@ app.use(
       checkPeriod: 2 * 60 * 1000,
       dbRecordIdIsSessionId: true,
     }),
-  })
+  }),
 );
 
 // record ip and time
@@ -52,7 +53,7 @@ app.use(
     origin: process.env.CORS?.split(",") || "http://localhost:3000",
     credentials: true,
     optionsSuccessStatus: 200,
-  })
+  }),
 );
 
 app.use("/v1/api", routerV1);
@@ -68,3 +69,12 @@ app.get("*", (req, res) => {
 app.listen(port, () => {
   console.log(`Rote Node backend server listening on port ${port}!`);
 });
+
+startAgenda().then(() => {
+  // scheduleNoteOnceNoticeJob({
+  //   when: "One Minute",
+  //   subId: "67ba96bcc13e4e3e622d6113",
+  //   noteId: "680f39fc819b0a0fcd1339f6",
+  //   userId: "65f2f28eaa85f74b004888a8",
+  // });
+}); // Start the scheduled job

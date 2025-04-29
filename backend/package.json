@@ -21,6 +21,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.484.0",
     "@aws-sdk/s3-request-presigner": "^3.484.0",
+    "@hokify/agenda": "^6.3.0",
     "@prisma/client": "6",
     "@quixo3/prisma-session-store": "^3.1.13",
     "@types/cors": "^2.8.17",

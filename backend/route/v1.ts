@@ -24,6 +24,7 @@ import {
   findRoteById,
   findSubScriptionToUser,
   findSubScriptionToUserByendpoint,
+  findSubScriptionToUserByUserId,
   findUserPublicRote,
   generateOpenKey,
   getHeatMap,
@@ -39,7 +40,9 @@ import webpush from "../utils/webpush";
 
 import { randomUUID } from "crypto";
 import moment from "moment";
+import { scheduleNoteOnceNoticeJob } from "../schedule/NoteOnceNoticeJob";
 import { UploadResult } from "../types/main";
+import { JobNames } from "../types/schedule";
 import { asyncHandler, errorHandler } from "../utils/handlers";
 import {
   bodyTypeCheck,
@@ -48,7 +51,7 @@ import {
   sanitizeUserData,
 } from "../utils/main";
 import { r2uploadhandler } from "../utils/r2";
-import { RegisterDataZod, passwordChangeZod } from "../utils/zod";
+import { passwordChangeZod, RegisterDataZod } from "../utils/zod";
 import useOpenKey from "./useOpenKey";
 
 let routerV1 = express.Router();
@@ -60,6 +63,29 @@ routerV1.all("/ping", (req, res) => {
     data: null,
   });
 });
+
+routerV1.post(
+  "/notice",
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const { type } = req.body;
+
+    switch (type) {
+      case JobNames.NoteOnceNoticeJob:
+        await scheduleNoteOnceNoticeJob(req.body);
+        break;
+
+      default:
+        throw new Error("Invalid type");
+    }
+
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: null,
+    });
+  }),
+);
 
 routerV1.post(
   "/register",
@@ -84,7 +110,7 @@ routerV1.post(
       msg: "ok",
       data: user,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -114,7 +140,7 @@ routerV1.post(
       msg: "ok",
       data: result,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -136,23 +162,20 @@ routerV1.post(
       throw new Error("UserSwSubScription not found");
     }
 
-    await webpush.sendNotification(
+    let r = await webpush.sendNotification(
       {
         endpoint: to.endpoint,
         keys: to.keys,
       },
-      JSON.stringify({ ...msg })
+      JSON.stringify({ ...msg }),
     );
 
     res.send({
       code: 0,
       msg: "PWA Notification send success!",
-      data: {
-        toSubId: subId,
-        msg: msg,
-      },
+      data: r,
     });
-  })
+  }),
 );
 
 routerV1.delete(
@@ -181,7 +204,21 @@ routerV1.delete(
       msg: "ok",
       data: data,
     });
-  })
+  }),
+);
+
+routerV1.get(
+  "/swSubScription",
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const data = await findSubScriptionToUserByUserId(user.id);
+    res.send({
+      code: 0,
+      msg: "ok",
+      data: data,
+    });
+  }),
 );
 
 routerV1.post(
@@ -223,7 +260,7 @@ routerV1.post(
       msg: "ok",
       data: rote,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -242,7 +279,7 @@ routerV1.post(
       parsedSkip,
       parsedLimit,
       filter,
-      archived ? (archived === "true" ? true : false) : undefined
+      archived ? (archived === "true" ? true : false) : undefined,
     );
 
     res.send({
@@ -250,7 +287,7 @@ routerV1.post(
       msg: "ok",
       data: rote,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -277,7 +314,7 @@ routerV1.post(
       parsedSkip,
       parsedLimit,
       filter,
-      archived ? (archived === "true" ? true : false) : undefined
+      archived ? (archived === "true" ? true : false) : undefined,
     );
 
     res.send({
@@ -285,7 +322,7 @@ routerV1.post(
       msg: "ok",
       data: rote,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -304,7 +341,7 @@ routerV1.post(
       msg: "ok",
       data: rote,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -321,7 +358,7 @@ routerV1.get(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -339,7 +376,7 @@ routerV1.get(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -376,7 +413,7 @@ routerV1.get(
     }
 
     throw new Error("Access denied: rote is private");
-  })
+  }),
 );
 
 routerV1.post(
@@ -392,7 +429,7 @@ routerV1.post(
       msg: "ok",
       data: data,
     });
-  })
+  }),
 );
 
 routerV1.delete(
@@ -413,7 +450,7 @@ routerV1.delete(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.delete(
@@ -433,7 +470,7 @@ routerV1.delete(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -477,7 +514,7 @@ routerV1.post(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -501,7 +538,7 @@ routerV1.post(
         });
       });
     })(req, res, next);
-  })
+  }),
 );
 
 routerV1.post(
@@ -520,7 +557,7 @@ routerV1.post(
       msg: "ok",
       data: null,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -532,7 +569,7 @@ routerV1.get(
       msg: "ok",
       data: req.user as User,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -547,7 +584,7 @@ routerV1.post(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -565,7 +602,7 @@ routerV1.get(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -583,7 +620,7 @@ routerV1.get(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -601,7 +638,7 @@ routerV1.get(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.delete(
@@ -625,7 +662,7 @@ routerV1.delete(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -650,7 +687,7 @@ routerV1.post(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -673,7 +710,7 @@ routerV1.post(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -685,7 +722,7 @@ routerV1.get(
       msg: "ok",
       data,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -697,7 +734,7 @@ routerV1.get(
       msg: "ok",
       data: {},
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -717,7 +754,7 @@ routerV1.get(
       msg: "ok",
       data: rote,
     });
-  })
+  }),
 );
 
 routerV1.get(
@@ -732,13 +769,15 @@ routerV1.get(
     res.setHeader("Content-Type", "application/json");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${user.username}-${moment().format(
-        "YYYY/MM/DD HH:mm:ss"
-      )}.json`
+      `attachment; filename=${user.username}-${
+        moment().format(
+          "YYYY/MM/DD HH:mm:ss",
+        )
+      }.json`,
     );
 
     res.send(jsonData);
-  })
+  }),
 );
 
 routerV1.get(
@@ -753,7 +792,7 @@ routerV1.get(
       msg: "ok",
       data: data,
     });
-  })
+  }),
 );
 
 routerV1.post(
@@ -771,14 +810,14 @@ routerV1.post(
     const updatedUser = await changeUserPassword(
       oldpassword,
       newpassword,
-      user.id
+      user.id,
     );
     res.send({
       code: 0,
       msg: "ok",
       data: updatedUser,
     });
-  })
+  }),
 );
 
 routerV1.use("/openKey", useOpenKey);

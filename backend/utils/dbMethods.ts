@@ -43,7 +43,7 @@ export async function createUser(data: {
       salt,
       310000,
       32,
-      "sha256"
+      "sha256",
     );
 
     const user = await prisma.user.create({
@@ -63,7 +63,7 @@ export async function createUser(data: {
 
 export async function addSubScriptionToUser(
   userId: string,
-  subScription: any
+  subScription: any,
 ): Promise<any> {
   try {
     const subScriptionRespon = await prisma.userSwSubScription.create({
@@ -103,8 +103,32 @@ export async function findSubScriptionToUser(subId: string): Promise<any> {
   }
 }
 
+export async function findSubScriptionToUserByUserId(
+  userId: string,
+): Promise<any> {
+  try {
+    const subscriptions = await prisma.userSwSubScription.findMany({
+      where: { userid: userId },
+    });
+
+    if (!subscriptions) {
+      throw new DatabaseError("Subscriptions not found");
+    }
+
+    return subscriptions;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(
+      `Failed to find subscriptions for user: ${userId}`,
+      error,
+    );
+  }
+}
+
 export async function findSubScriptionToUserByendpoint(
-  endpoint: string
+  endpoint: string,
 ): Promise<any> {
   try {
     const subscription = await prisma.userSwSubScription.findUnique({
@@ -234,7 +258,7 @@ export async function deleteRote(data: any): Promise<any> {
 
 export async function deleteRoteAttachments(
   roteid: string,
-  userid: string
+  userid: string,
 ): Promise<any> {
   try {
     const result = await prisma.attachment.deleteMany({
@@ -244,14 +268,14 @@ export async function deleteRoteAttachments(
   } catch (error) {
     throw new DatabaseError(
       `Failed to delete attachments for rote: ${roteid}`,
-      error
+      error,
     );
   }
 }
 
 export async function deleteAttachment(
   id: string,
-  userid: string
+  userid: string,
 ): Promise<any> {
   try {
     const result = await prisma.attachment.deleteMany({
@@ -261,7 +285,7 @@ export async function deleteAttachment(
   } catch (error) {
     throw new DatabaseError(
       `Failed to delete attachment: ${id} for user: ${userid}`,
-      error
+      error,
     );
   }
 }
@@ -271,7 +295,7 @@ export async function findMyRote(
   skip: number | undefined,
   limit: number | undefined,
   filter: any,
-  archived: any
+  archived: any,
 ): Promise<any> {
   try {
     const rotes = await prisma.rote.findMany({
@@ -311,7 +335,7 @@ export async function findUserPublicRote(
   skip: number | undefined,
   limit: number | undefined,
   filter: any,
-  archived: any
+  archived: any,
 ): Promise<any> {
   try {
     const rotes = await prisma.rote.findMany({
@@ -350,7 +374,7 @@ export async function findUserPublicRote(
 export async function findPublicRote(
   skip: number | undefined,
   limit: number | undefined,
-  filter: any
+  filter: any,
 ): Promise<any> {
   try {
     const rotes = await prisma.rote.findMany({
@@ -434,7 +458,7 @@ export async function getMyOpenKey(userid: string): Promise<any> {
 
 export async function deleteMyOneOpenKey(
   userid: string,
-  id: string
+  id: string,
 ): Promise<any> {
   try {
     const openKey = await prisma.userOpenKey.findUnique({
@@ -464,7 +488,7 @@ export async function deleteMyOneOpenKey(
 export async function editMyOneOpenKey(
   userid: string,
   id: string,
-  permissions: string[]
+  permissions: string[],
 ): Promise<any> {
   try {
     const openKey = await prisma.userOpenKey.findUnique({
@@ -514,7 +538,7 @@ export async function getOneOpenKey(id: string): Promise<any> {
 export async function createAttachments(
   userid: string,
   roteid: string | undefined,
-  data: UploadResult[]
+  data: UploadResult[],
 ): Promise<any> {
   try {
     const attachments = data.map((e: UploadResult) => ({
@@ -531,7 +555,7 @@ export async function createAttachments(
         prisma.attachment.create({
           data: attachment,
         })
-      )
+      ),
     );
     return attachments_new;
   } catch (error) {
@@ -587,7 +611,7 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
 export async function getHeatMap(
   userId: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Promise<any> {
   try {
     const rotes = await prisma.rote.findMany({
@@ -708,7 +732,7 @@ export async function findRandomPublicRote(): Promise<any> {
 export async function changeUserPassword(
   oldpassword: string,
   newpassword: string,
-  id: string
+  id: string,
 ): Promise<any> {
   try {
     const user = await prisma.user.findFirst({
@@ -729,12 +753,12 @@ export async function changeUserPassword(
       salt,
       310000,
       32,
-      "sha256"
+      "sha256",
     );
 
     if (
       Buffer.from(oldpasswordhash).toString("hex") !==
-      Buffer.from(passwordhash).toString("hex")
+        Buffer.from(passwordhash).toString("hex")
     ) {
       throw new DatabaseError("Incorrect old password");
     }
@@ -745,7 +769,7 @@ export async function changeUserPassword(
       newSalt,
       310000,
       32,
-      "sha256"
+      "sha256",
     );
 
     const userUpdate = await prisma.user.update({
