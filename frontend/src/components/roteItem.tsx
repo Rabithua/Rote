@@ -1,6 +1,7 @@
 import {
   Archive,
   ArrowDownLeft,
+  Bell,
   Edit,
   Edit3,
   Ellipsis,
@@ -32,6 +33,7 @@ import { PhotoProvider, PhotoView } from "react-photo-view";
 import "react-photo-view/dist/react-photo-view.css";
 import { Link } from "react-router-dom";
 import { SWRInfiniteKeyedMutator } from "swr/dist/infinite";
+import NoticeCreateBoard from "./NoticeCreateBoard";
 import RoteInputModel from "./roteInputModel";
 import RoteShareCard from "./roteShareCard";
 const { roteContentExpandedLetter } = mainJson;
@@ -52,6 +54,8 @@ function RoteItem({
 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isShareCardModalOpen, setIsShareCardModalOpen] =
+    useState<boolean>(false);
+  const [isNoticeCreateBoardModalOpen, setIsNoticeCreateBoardModalOpen] =
     useState<boolean>(false);
   const [open, setOpen] = useState(false);
 
@@ -251,6 +255,16 @@ function RoteItem({
           <Layers className="size-4" />
           {t("details")}
         </Link>
+        <div
+          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
+          onClick={() => {
+            hide();
+            setIsNoticeCreateBoardModalOpen(true);
+          }}
+        >
+          <Bell className="size-4" />
+          {"回顾"}
+        </div>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={editRotePin}
@@ -527,6 +541,18 @@ function RoteItem({
             footer={null}
           >
             <RoteShareCard rote={rote}></RoteShareCard>
+          </Modal>
+          <Modal
+            title={"创建提醒"}
+            open={isNoticeCreateBoardModalOpen}
+            onCancel={() => {
+              setIsNoticeCreateBoardModalOpen(false);
+            }}
+            maskClosable={true}
+            destroyOnClose={true}
+            footer={null}
+          >
+            <NoticeCreateBoard />
           </Modal>
         </>
       )}

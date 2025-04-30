@@ -182,7 +182,9 @@
         "permissionProcessing": "权限处理中...",
         "complete": "完成",
         "sendSuccess": "发送成功！",
-        "example": "使用示例："
+        "example": "使用示例：",
+        "notSupported": "当前浏览器不支持 ServiceWorker",
+        "swNotActive": "ServiceWorker 未激活"
       }
     },
     "archived": {

@@ -33,15 +33,9 @@ function RoteInputSimple() {
 
   const [newRotes, setNewRotes] = useState<Rotes>([]);
 
-  const { data: profile } = useAPIGet<Profile>(
-    "profile",
-    getMyProfile,
-  );
+  const { data: profile } = useAPIGet<Profile>("profile", getMyProfile);
 
-  const { data: tags } = useAPIGet<string[]>(
-    "tags",
-    apiGetMyTags,
-  );
+  const { data: tags } = useAPIGet<string[]>("tags", apiGetMyTags);
 
   const [fileList, setFileList] = useState<File[]>([]);
   const [editType] = useState("default");
@@ -172,10 +166,7 @@ function RoteInputSimple() {
     if (files.length > 0) {
       Array.from(files).forEach((file) => {
         if (file.type.startsWith("image/")) {
-          setFileList((prevFileList: any) => [
-            ...prevFileList,
-            file,
-          ]);
+          setFileList((prevFileList: any) => [...prevFileList, file]);
         } else {
           console.warn(`File ${file.name} is not an image and was skipped.`);
         }
@@ -184,39 +175,37 @@ function RoteInputSimple() {
   }
 
   const NewRotes = () => {
-    return (
-      newRotes.length === 0 ? null : (
-        <div className=" flex flex-col border-b">
-          {newRotes.map((item: any) => {
-            return <RoteItem rote={item} key={item.id} />;
-          })}
+    return newRotes.length === 0 ? null : (
+      <div className="flex flex-col border-b">
+        {newRotes.map((item: any) => {
+          return <RoteItem rote={item} key={item.id} />;
+        })}
 
-          <div className=" p-2 justify-center flex items-center text-sm">
-            <ArrowBigUpDashIcon className=" size-4" />
-            {t("recentPosts")}
-          </div>
+        <div className="flex items-center justify-center p-2 text-sm">
+          <ArrowBigUpDashIcon className="size-4" />
+          {t("recentPosts")}
         </div>
-      )
+      </div>
     );
   };
 
   return (
     <>
-      <div className=" cursor-default bg-bgLight dark:bg-bgDark w-full p-5 flex gap-5 border-b border-opacityLight dark:border-opacityDark">
+      <div className="flex w-full cursor-default gap-5 border-b border-opacityLight bg-bgLight p-5 dark:border-opacityDark dark:bg-bgDark">
         <Avatar
-          className=" bg-opacityLight dark:bg-opacityDark text-black shrink-0 hidden sm:block"
+          className="hidden shrink-0 bg-opacityLight text-black sm:block dark:bg-opacityDark"
           size={{ xs: 24, sm: 32, md: 40, lg: 50, xl: 50, xxl: 50 }}
-          icon={<User className=" text-[#00000030]" />}
+          icon={<User className="text-[#00000030]" />}
           src={profile?.avatar}
         />
-        <div className=" w-[90%] flex-1">
+        <div className="w-[90%] flex-1">
           <TextArea
             variant="borderless"
             value={rote.content}
             placeholder={t("contentPlaceholder")}
             autoSize={{ minRows: 3, maxRows: 10 }}
-            className={` text-base lg:text-lg text-pretty ${
-              editType === "default" ? "" : " hidden"
+            className={`text-pretty text-base lg:text-lg ${
+              editType === "default" ? "" : "hidden"
             }`}
             maxLength={roteMaxLetter}
             onInput={(e) => {
@@ -231,7 +220,7 @@ function RoteInputSimple() {
             onKeyDown={handleNormalINputKeyDown}
           />
           {process.env.REACT_APP_ALLOW_UPLOAD_FILE === "true" && (
-            <div className=" flex gap-2 flex-wrap my-2">
+            <div className="my-2 flex flex-wrap gap-2">
               <Image.PreviewGroup
                 preview={{
                   onChange: () => {},
@@ -240,11 +229,11 @@ function RoteInputSimple() {
                 {fileList.map((file, index: number) => {
                   return (
                     <div
-                      className=" w-20 h-20 rounded-lg bg-bgLight overflow-hidden relative"
+                      className="relative h-20 w-20 overflow-hidden rounded-lg bg-bgLight"
                       key={file.name + index}
                     >
                       <Image
-                        className=" w-full h-full object-cover"
+                        className="h-full w-full object-cover"
                         height={80}
                         width={80}
                         src={URL.createObjectURL(file)}
@@ -252,9 +241,9 @@ function RoteInputSimple() {
                       />
                       <div
                         onClick={() => deleteFile(index)}
-                        className=" cursor-pointer duration-300 bg-[#00000080] rounded-md hover:scale-95 flex justify-center items-center p-2 absolute right-1 top-1 backdrop-blur-3xl"
+                        className="absolute right-1 top-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-3xl duration-300 hover:scale-95"
                       >
-                        <X className=" text-white size-4" />
+                        <X className="size-4 text-white" />
                       </div>
                     </div>
                   );
@@ -276,23 +265,25 @@ function RoteInputSimple() {
           <Select
             mode="tags"
             variant="borderless"
-            className={` bg-opacityLight dark:bg-opacityDark my-2 rounded-md border border-opacityLight dark:border-opacityDark w-fit min-w-40 max-w-full `}
+            className={`my-2 w-fit min-w-40 max-w-full rounded-md border border-opacityLight bg-opacityLight dark:border-opacityDark dark:bg-opacityDark`}
             value={rote.tags}
             placeholder={t("tagsPlaceholder")}
             onChange={handleTagsChange}
-            options={tags
-              ? tags.map((tag) => {
-                return {
-                  value: tag,
-                  label: tag,
-                };
-              })
-              : []}
+            options={
+              tags
+                ? tags.map((tag) => {
+                    return {
+                      value: tag,
+                      label: tag,
+                    };
+                  })
+                : []
+            }
           />
-          <div className=" flex flex-wrap gap-2 overflow-x-scroll noScrollBar">
+          <div className="noScrollBar flex flex-wrap gap-2 overflow-x-scroll">
             <Tooltip placement="bottom" title={t("pin")}>
               <PinIcon
-                className={` duration-300 cursor-pointer size-8 p-2 rounded-md  ${
+                className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                   rote.pin ? "bg-opacityLight dark:bg-opacityDark" : ""
                 }`}
                 onClick={() => {
@@ -305,7 +296,7 @@ function RoteInputSimple() {
             </Tooltip>
             <Tooltip placement="bottom" title={t("archive")}>
               <Archive
-                className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
+                className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                   rote.archived ? "bg-opacityLight dark:bg-opacityDark" : ""
                 }`}
                 onClick={() => {
@@ -318,9 +309,9 @@ function RoteInputSimple() {
             </Tooltip>
             <Tooltip placement="bottom" title={t(`stateOptions.${rote.state}`)}>
               <Globe2
-                className={` duration-300 cursor-pointer size-8 p-2 rounded-md ${
+                className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                   rote.state === "public"
-                    ? "bg-opacityLight dark:bg-opacityDark text-primary"
+                    ? "bg-opacityLight text-primary dark:bg-opacityDark"
                     : ""
                 }`}
                 onClick={() => {
@@ -333,7 +324,7 @@ function RoteInputSimple() {
             </Tooltip>
 
             <div
-              className=" cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
+              className="ml-auto flex cursor-pointer select-none items-center gap-2 rounded-md bg-bgDark px-4 py-1 text-textDark duration-300 active:scale-95 dark:bg-bgLight dark:text-textLight"
               onClick={addRoteFn}
             >
               <Send className="size-4" />

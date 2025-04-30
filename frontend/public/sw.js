@@ -28,12 +28,16 @@ const urlBase64ToUint8Array = base64String => {
 self.addEventListener('message', async event => {
     const { method } = event.data;
 
+    console.log("收到消息", event.data);
+
     switch (method) {
         case "subNotice":
             const subscription = await self.registration.pushManager.subscribe({
                 userVisibleOnly: true,
                 applicationServerKey: urlBase64ToUint8Array(VAPID)
             })
+
+            console.log("订阅成功", subscription);
 
             // 兼容 event.source 可能为 undefined 的情况
             if (event.source) {

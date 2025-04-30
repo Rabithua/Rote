@@ -18,7 +18,7 @@ module.exports = {
       },
       colors: {
         'bgLight': '#ffffff',
-        'bgDark': '#111111',
+        'bgDark': '#000000',
         'opacityLight': '#00000010',
         'opacityDark': '#ffffff10',
         'textDark': '#E7E9EA',

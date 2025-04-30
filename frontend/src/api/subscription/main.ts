@@ -2,6 +2,19 @@
 
 import { instance } from "../request";
 
+export interface Subscription {
+  keys: {
+    auth: string;
+    p256dh: string;
+  };
+  id: string;
+  userid: string;
+  endpoint: string;
+  expirationTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function saveSubscription(subscription: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -58,6 +71,21 @@ export function sendNotificationTest(subId: any): Promise<any> {
     })
       .then(function (response) {
         resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function getSubscriptionList(): Promise<Subscription[]> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/swSubScription",
+    })
+      .then(function (response) {
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);

@@ -22,41 +22,44 @@ export default function ServiceWorker() {
   const [swLoading, setSwLoading] = useState(true);
   const [noticeId, setNoticeId] = useState<any>(null);
 
-  useEffect(() => {
-    listenSw();
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistration().then(async (registration) => {
-        if (registration) {
-          try {
-            registration?.active?.postMessage({ method: "subNotice" });
-          } catch (error) {}
-          // console.log("Service Worker is installed.");
-        } else {
-          // console.log("Service Worker is not installed.");
-        }
-        setSwLoading(false);
-      });
-    } else {
+  const initializeServiceWorker = async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+
+    try {
+      listenSw();
+
+      if (registration && registration.active) {
+        registration.active.postMessage({ method: "subNotice" });
+      } else {
+        console.log("Service Worker is not installed.");
+      }
+    } catch (error) {
+      console.error("Error initializing Service Worker:", error);
+    } finally {
       setSwLoading(false);
-      console.log("Service Worker is not supported.");
     }
-  }, []);
+  };
 
   function listenSw() {
-    console.log("listenSw");
     navigator.serviceWorker.removeEventListener("message", async (event) => {});
     navigator.serviceWorker.addEventListener("message", async (event) => {
-      if (event.data.method === "subNoticeResponse") {
-        try {
-          const response = await saveSubscription(
-            JSON.parse(event.data.payload),
-          );
-          if (response.data.data.id) {
-            setSwLoading(false);
-            setSwReady(true);
-            setNoticeId(response.data.data.id);
+      switch (event.data.method) {
+        case "subNoticeResponse":
+          {
+            const response = await saveSubscription(
+              JSON.parse(event.data.payload),
+            );
+            if (response.data.data.id) {
+              setSwLoading(false);
+              setSwReady(true);
+              setNoticeId(response.data.data.id);
+            }
           }
-        } catch (error) {}
+          break;
+
+        default:
+          console.warn("Unknown message from Service Worker:", event.data);
+          break;
       }
     });
   }
@@ -67,27 +70,15 @@ export default function ServiceWorker() {
       setSwLoading(true);
       checkPermission();
       await requestNotificationPermission();
-      await registerSW();
-      try {
-        const registration = await registerSW();
+      const registration = await registerSW();
 
-        if (registration) {
-          console.log(registration);
-          try {
-            listenSw();
-            setTimeout(() => {
-              registration?.active?.postMessage({ method: "subNotice" });
-            }, 300);
-          } catch (error) {}
-          console.log("Service Worker is installed.");
-        } else {
-          console.log("Service Worker is not installed.");
-        }
-      } catch (error) {}
-      toast.success(t("complete"), {
-        id: toastId,
-      });
-      setSwReady(true);
+      if (!registration.active) {
+        return toast.error(t("swNotActive"), {
+          id: toastId,
+        });
+      }
+
+      initializeServiceWorker();
     } catch (error: any) {
       toast.error(error, {
         id: toastId,
@@ -116,20 +107,33 @@ export default function ServiceWorker() {
     } catch (error) {}
   }
 
+  useEffect(() => {
+    if (navigator.serviceWorker) {
+      setSwLoading(true);
+      initializeServiceWorker();
+    } else {
+      setSwLoading(false);
+    }
+
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", listenSw);
+    };
+  }, []);
+
   return (
-    <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border-b p-4">
-      <div className=" text-2xl font-semibold">
+    <div className="noScrollBar relative aspect-1 w-full overflow-x-hidden overflow-y-scroll border-b p-4 sm:w-[calc(50%-4px)]">
+      <div className="text-2xl font-semibold">
         {t("title")} <br />
-        <div className=" font-normal mt-2 text-sm text-gray-500">
+        <div className="mt-2 text-sm font-normal text-gray-500">
           {t("description")}
         </div>
       </div>
       <Divider></Divider>
-      <div className=" flex gap-2 items-center">
-        <span className=" font-semibold">{t("status")}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold">{t("status")}</span>
         <Switch
           disabled={!navigator.serviceWorker}
-          className=" bg-opacityLight dark:bg-opacityDark"
+          className="bg-opacityLight dark:bg-opacityDark"
           checked={swReady}
           loading={swLoading}
           size="default"
@@ -143,11 +147,11 @@ export default function ServiceWorker() {
         />
       </div>
       {noticeId && (
-        <div className=" flex mt-2 text-gray-500 gap-2 items-center">
-          <span className=" shrink-0">{t("serviceId")}</span>
-          <span className=" text-ellipsis overflow-hidden">{noticeId}</span>
+        <div className="mt-2 flex items-center gap-2 text-gray-500">
+          <span className="shrink-0">{t("serviceId")}</span>
+          <span className="overflow-hidden text-ellipsis">{noticeId}</span>
           <div
-            className=" duration-300 items-center active:scale-95 py-1 shrink-0 px-2 bg-bgLight cursor-pointer rounded-md flex gap-1"
+            className="flex shrink-0 cursor-pointer items-center gap-1 rounded-md bg-bgLight px-2 py-1 duration-300 active:scale-95"
             onClick={noticeTest}
           >
             <Bell className="size-4" />
@@ -156,9 +160,9 @@ export default function ServiceWorker() {
         </div>
       )}
       {noticeId && (
-        <div className=" mt-2 flex flex-col gap-2">
-          <div className=" font-semibold">{t("example")}</div>
-          <div className=" whitespace-pre text-red-700 dark:text-white font-mono overflow-x-scroll p-3 rounded-xl bg-opacityLight dark:bg-opacityDark">
+        <div className="mt-2 flex flex-col gap-2">
+          <div className="font-semibold">{t("example")}</div>
+          <div className="overflow-x-scroll whitespace-pre rounded-xl bg-opacityLight p-3 font-mono text-red-700 dark:bg-opacityDark dark:text-red-400">
             {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
 --data '{
@@ -171,6 +175,13 @@ export default function ServiceWorker() {
 }
 }'`}
           </div>
+        </div>
+      )}
+
+      {!navigator.serviceWorker && (
+        <div className="absolute left-0 top-0 flex h-full w-full flex-col items-center justify-center gap-2 bg-bgLight/90 backdrop-blur-sm dark:bg-bgDark/90 dark:text-textDark">
+          <div className="text-2xl">🤕</div>
+          <div>{t("notSupported")}</div>
         </div>
       )}
     </div>

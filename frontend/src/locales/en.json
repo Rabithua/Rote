@@ -177,7 +177,9 @@
         "permissionProcessing": "Processing permissions...",
         "complete": "Complete",
         "sendSuccess": "Sent successfully!",
-        "example": "Usage Example:"
+        "example": "Usage Example:",
+        "notSupported": "Current browser does not support ServiceWorker",
+        "swNotActive": "ServiceWorker is not active, please refresh the page"
       }
     },
     "archived": {
