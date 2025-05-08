@@ -25,11 +25,10 @@ interface IconType {
 
 function LayoutDashboard() {
   const location = useLocation();
-  const {
-    data: profile,
-    isLoading,
-    mutate,
-  } = useAPIGet<Profile>("profile", getMyProfile);
+  const { data: profile, isLoading } = useAPIGet<Profile>(
+    "profile",
+    getMyProfile,
+  );
 
   const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
 
@@ -80,12 +79,12 @@ function LayoutDashboard() {
   function logOutFn() {
     const toastId = toast.loading(t("messages.loggingOut"));
     logOut()
-      .then(() => {
+      .then(async () => {
         toast.success(t("messages.logoutSuccess"), {
           id: toastId,
         });
 
-        mutate();
+        window.location.reload();
       })
       .catch((err) => {
         console.log(err);
