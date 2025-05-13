@@ -1,6 +1,5 @@
-# Use a smaller base image
-FROM node:18.18.0-alpine
-
+# Use a smaller base image with bun
+FROM oven/bun:1.1.13-alpine
 
 # Install OpenSSL
 RUN apk add --no-cache openssl
@@ -11,13 +10,14 @@ WORKDIR /app
 # Copy project files
 COPY . .
 
-# Generate Prisma client
-RUN npm config set registry https://registry.npmmirror.com/
+# Set npm registry for compatibility (optional, if needed)
+RUN bun config set registry https://registry.npmmirror.com/
 
-RUN npm install --omit=dev
+# Install dependencies (bun automatically uses bun.lockb)
+RUN bun install --production
 
 # Expose container port 3000
 EXPOSE 3000
 
-# Install dependencies, compile Prisma client and start app on container launch
-CMD ["sh", "-c", "npx prisma db push && npm start"]
+# Generate Prisma client and start app on container launch
+CMD ["sh", "-c", "bunx prisma db push && bun start"]
