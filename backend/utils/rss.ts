@@ -1,6 +1,6 @@
 import { Rote, User } from '@prisma/client';
+import { Feed } from 'feed';
 import moment from 'moment';
-// 由于不支持顶层 await，我们将从 feed 的导入移到函数内部
 
 export interface RssFeedOptions {
   title: string;
@@ -31,9 +31,6 @@ export async function generateRssFeed(
   options: RssFeedOptions,
   baseUrl: string
 ): Promise<string> {
-  // 在函数内部动态导入 Feed
-  const { Feed } = await import('feed');
-
   // 创建Feed实例
   const feed = new Feed({
     title: options.title,
