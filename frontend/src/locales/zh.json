@@ -141,6 +141,8 @@
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
       "publicNotes": "已公开的笔记 / Public Note",
+      "rssSubscribe": "RSS 订阅",
+      "sideBarTitle": "除了...还有",
       "helmet": {
         "loading": "加载中...",
         "defaultDesc": "rote.ink"

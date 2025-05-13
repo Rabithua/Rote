@@ -1,18 +1,11 @@
 // eslint.config.js
-const antfu = require('@antfu/eslint-config').default
-const { FlatCompat } = require('@eslint/eslintrc')
+const { FlatCompat } = require('@eslint/eslintrc');
 
-const compat = new FlatCompat()
+const compat = new FlatCompat();
 
 module.exports = antfu(
   {
-    ignores: [
-      'dist',
-      'build',
-      'node_modules',
-      '*.min.js',
-      '*.d.ts',
-    ],
+    ignores: ['dist', 'build', 'node_modules', '*.min.js', '*.d.ts'],
   },
 
   // Legacy config
@@ -38,7 +31,15 @@ module.exports = antfu(
       'plugin:prettier/recommended',
     ],
     // 声明使用的插件
-    plugins: ['@typescript-eslint', 'react', 'react-hooks', 'jsx-a11y', 'import', 'promise', 'prettier'],
+    plugins: [
+      '@typescript-eslint',
+      'react',
+      'react-hooks',
+      'jsx-a11y',
+      'import',
+      'promise',
+      'prettier',
+    ],
     rules: {
       // JavaScript 规则
       'no-console': 'warn', // 警告使用 console
@@ -57,11 +58,14 @@ module.exports = antfu(
       'react/react-in-jsx-scope': 'off', // 不再需要在 JSX 文件中导入 React
 
       // Import 规则
-      'import/order': ['error', {
-        'groups': ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
-        'newlines-between': 'always',
-        'alphabetize': { 'order': 'asc', 'caseInsensitive': true }
-      }], // 强制导入顺序
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc', caseInsensitive: true },
+        },
+      ], // 强制导入顺序
 
       // Prettier 规则
       'prettier/prettier': ['error', {}, { usePrettierrc: true }], // 使用 .prettierrc 文件中的配置
@@ -69,4 +73,4 @@ module.exports = antfu(
   })
 
   // Other flat configs...
-)
+);

@@ -1,7 +1,7 @@
-import { User } from "@prisma/client";
-import express from "express";
-import formidable from "formidable";
-import passport from "passport";
+import { User } from '@prisma/client';
+import express from 'express';
+import formidable from 'formidable';
+import passport from 'passport';
 import {
   addSubScriptionToUser,
   changeUserPassword,
@@ -31,41 +31,38 @@ import {
   getMyOpenKey,
   getMySession,
   getMyTags,
+  getRssData,
   getSiteMapData,
   getStatus,
   getUserInfoByUsername,
   statistics,
-} from "../utils/dbMethods";
-import webpush from "../utils/webpush";
+} from '../utils/dbMethods';
+import webpush from '../utils/webpush';
 
-import { randomUUID } from "crypto";
-import moment from "moment";
-import { scheduleNoteOnceNoticeJob } from "../schedule/NoteOnceNoticeJob";
-import { UploadResult } from "../types/main";
-import { JobNames } from "../types/schedule";
-import { asyncHandler, errorHandler } from "../utils/handlers";
-import {
-  bodyTypeCheck,
-  isAuthenticated,
-  isAuthor,
-  sanitizeUserData,
-} from "../utils/main";
-import { r2uploadhandler } from "../utils/r2";
-import { passwordChangeZod, RegisterDataZod } from "../utils/zod";
-import useOpenKey from "./useOpenKey";
+import { randomUUID } from 'crypto';
+import moment from 'moment';
+import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
+import { UploadResult } from '../types/main';
+import { JobNames } from '../types/schedule';
+import { asyncHandler, errorHandler } from '../utils/handlers';
+import { bodyTypeCheck, isAuthenticated, isAuthor, sanitizeUserData } from '../utils/main';
+import { r2uploadhandler } from '../utils/r2';
+import { generateRssFeed, RssFeedOptions } from '../utils/rss';
+import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
+import useOpenKey from './useOpenKey';
 
 let routerV1 = express.Router();
 
-routerV1.all("/ping", (req, res) => {
+routerV1.all('/ping', (req, res) => {
   res.send({
     code: 0,
-    msg: "ok",
+    msg: 'ok',
     data: null,
   });
 });
 
 routerV1.post(
-  "/notice",
+  '/notice',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const { type } = req.body;
@@ -76,19 +73,19 @@ routerV1.post(
         break;
 
       default:
-        throw new Error("Invalid type");
+        throw new Error('Invalid type');
     }
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: null,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/register",
+  '/register',
   asyncHandler(async (req, res) => {
     const { username, password, email, nickname } = req.body;
 
@@ -102,33 +99,33 @@ routerV1.post(
     });
 
     if (!user.id) {
-      throw new Error("Registration failed, username or email already exists");
+      throw new Error('Registration failed, username or email already exists');
     }
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: user,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/addSwSubScription",
+  '/addSwSubScription',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const { subScription } = req.body;
     const user = req.user as User;
 
     if (!subScription) {
-      throw new Error("Need subscription info");
+      throw new Error('Need subscription info');
     }
 
     const d = await findSubScriptionToUserByendpoint(subScription.endpoint);
     if (d) {
       res.send({
         code: 0,
-        msg: "ok",
+        msg: 'ok',
         data: d,
       });
       return;
@@ -137,29 +134,29 @@ routerV1.post(
     const result = await addSubScriptionToUser(user.id, subScription);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: result,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/sendSwSubScription",
+  '/sendSwSubScription',
   asyncHandler(async (req, res) => {
     const { subId }: any = req.query;
     const msg = req.body;
 
     if (!webpush) {
-      throw new Error("Valid keys not found");
+      throw new Error('Valid keys not found');
     }
 
     if (!subId || !msg) {
-      throw new Error("Need subId and msg in query");
+      throw new Error('Need subId and msg in query');
     }
 
     const to = await findSubScriptionToUser(subId);
     if (!to) {
-      throw new Error("UserSwSubScription not found");
+      throw new Error('UserSwSubScription not found');
     }
 
     let r = await webpush.sendNotification(
@@ -167,80 +164,70 @@ routerV1.post(
         endpoint: to.endpoint,
         keys: to.keys,
       },
-      JSON.stringify({ ...msg }),
+      JSON.stringify({ ...msg })
     );
 
     res.send({
       code: 0,
-      msg: "PWA Notification send success!",
+      msg: 'PWA Notification send success!',
       data: r,
     });
-  }),
+  })
 );
 
 routerV1.delete(
-  "/swSubScription",
+  '/swSubScription',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const { subId }: any = req.query;
     const user = req.user as User;
 
     if (!subId) {
-      throw new Error("Need subId in query");
+      throw new Error('Need subId in query');
     }
 
     const to = await findSubScriptionToUser(subId);
     if (!to) {
-      throw new Error("UserSwSubScription not found");
+      throw new Error('UserSwSubScription not found');
     }
 
     if (to.userid !== user.id) {
-      throw new Error("User not match!");
+      throw new Error('User not match!');
     }
 
     const data = await deleteSubScription(subId);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/swSubScription",
+  '/swSubScription',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const data = await findSubScriptionToUserByUserId(user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: data,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/addRote",
+  '/addRote',
   isAuthenticated,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
-    const {
-      title,
-      content,
-      type,
-      tags,
-      state,
-      archived,
-      pin,
-      editor,
-      attachments,
-    } = req.body;
+    const { title, content, type, tags, state, archived, pin, editor, attachments } = req.body;
     const user = req.user as User;
 
     if (!content && !attachments) {
-      throw new Error("Content is required");
+      throw new Error('Content is required');
     }
 
     const rote = await createRote({
@@ -257,56 +244,56 @@ routerV1.post(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: rote,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/getMyRote",
+  '/getMyRote',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const { skip, limit, archived } = req.query;
     const filter = req.body.filter || {};
     const user = req.user as User;
 
-    const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
-    const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
     const rote = await findMyRote(
       user.id,
       parsedSkip,
       parsedLimit,
       filter,
-      archived ? (archived === "true" ? true : false) : undefined,
+      archived ? (archived === 'true' ? true : false) : undefined
     );
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: rote,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/getUserPublicRote",
+  '/getUserPublicRote',
   asyncHandler(async (req, res) => {
     const { skip, limit, archived, username }: any = req.query;
     const filter = req.body.filter || {};
 
-    const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
-    const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
     if (!username) {
-      throw new Error("Username not found");
+      throw new Error('Username not found');
     }
 
     const userInfo = await getUserInfoByUsername(username);
 
     if (!userInfo.id) {
-      throw new Error("Username not found");
+      throw new Error('Username not found');
     }
 
     const rote = await findUserPublicRote(
@@ -314,90 +301,90 @@ routerV1.post(
       parsedSkip,
       parsedLimit,
       filter,
-      archived ? (archived === "true" ? true : false) : undefined,
+      archived ? (archived === 'true' ? true : false) : undefined
     );
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: rote,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/getPublicRote",
+  '/getPublicRote',
   asyncHandler(async (req, res) => {
     const { skip, limit } = req.query;
     const filter = req.body.filter || {};
 
-    const parsedSkip = typeof skip === "string" ? parseInt(skip) : undefined;
-    const parsedLimit = typeof limit === "string" ? parseInt(limit) : undefined;
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
     const rote = await findPublicRote(parsedSkip, parsedLimit, filter);
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: rote,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/getUserInfo",
+  '/getUserInfo',
   asyncHandler(async (req, res) => {
     const { username } = req.query;
     if (!username) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     const data = await getUserInfoByUsername(username.toString());
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/getMyTags",
+  '/getMyTags',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     const data = await getMyTags(user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/oneRote",
+  '/oneRote',
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { id } = req.query;
 
     if (!id || id.length !== 24) {
-      throw new Error("Invalid or missing ID");
+      throw new Error('Invalid or missing ID');
     }
 
     const rote = await findRoteById(id.toString());
     if (!rote) {
-      throw new Error("Rote not found");
+      throw new Error('Rote not found');
     }
 
-    if (rote.state == "public") {
+    if (rote.state == 'public') {
       res.send({
         code: 0,
-        msg: "ok",
+        msg: 'ok',
         data: rote,
       });
       return;
@@ -406,18 +393,18 @@ routerV1.get(
     if (rote.authorid == user?.id) {
       res.send({
         code: 0,
-        msg: "ok",
+        msg: 'ok',
         data: rote,
       });
       return;
     }
 
-    throw new Error("Access denied: rote is private");
-  }),
+    throw new Error('Access denied: rote is private');
+  })
 );
 
 routerV1.post(
-  "/oneRote",
+  '/oneRote',
   isAuthor,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
@@ -426,20 +413,20 @@ routerV1.post(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: data,
     });
-  }),
+  })
 );
 
 routerV1.delete(
-  "/oneRote",
+  '/oneRote',
   isAuthor,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const rote = req.body;
     if (!rote) {
-      throw new Error("Need data");
+      throw new Error('Need data');
     }
 
     const data = await deleteRote(rote);
@@ -447,34 +434,34 @@ routerV1.delete(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.delete(
-  "/deleteAttachment",
+  '/deleteAttachment',
   isAuthor,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { id } = req.body;
 
     if (!id || id.length !== 24) {
-      throw new Error("Data error");
+      throw new Error('Data error');
     }
 
     const data = await deleteAttachment(id, user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/upload",
+  '/upload',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -492,12 +479,10 @@ routerV1.post(
 
     const [fields, files] = await form.parse(req);
     if (!files.images) {
-      throw new Error("No images uploaded");
+      throw new Error('No images uploaded');
     }
 
-    const imageFiles = Array.isArray(files.images)
-      ? files.images
-      : [files.images];
+    const imageFiles = Array.isArray(files.images) ? files.images : [files.images];
 
     const uploadResults: UploadResult[] = [];
     for (const file of imageFiles) {
@@ -511,38 +496,38 @@ routerV1.post(
 
     res.status(200).json({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/login/password",
+  '/login/password',
   asyncHandler(async (req, res, next) => {
-    passport.authenticate("local", (err: any, user: User, data: any) => {
+    passport.authenticate('local', (err: any, user: User, data: any) => {
       if (err || !user) {
-        next(new Error(data.message || "Authentication failed"));
+        next(new Error(data.message || 'Authentication failed'));
         return;
       }
 
       req.logIn(user, (err) => {
         if (err) {
-          next(new Error("Login failed"));
+          next(new Error('Login failed'));
           return;
         }
         res.send({
           code: 0,
-          msg: "ok",
+          msg: 'ok',
           data: sanitizeUserData(user),
         });
       });
     })(req, res, next);
-  }),
+  })
 );
 
 routerV1.post(
-  "/logout",
+  '/logout',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     await new Promise<void>((resolve, reject) => {
@@ -554,26 +539,26 @@ routerV1.post(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: null,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/profile",
+  '/profile',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: req.user as User,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/profile",
+  '/profile',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -581,92 +566,92 @@ routerV1.post(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/getsession",
+  '/getsession',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     const data = await getMySession(user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/openkey/generate",
+  '/openkey/generate',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     const data = await generateOpenKey(user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/openkey",
+  '/openkey',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     const data = await getMyOpenKey(user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.delete(
-  "/openkey",
+  '/openkey',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { id } = req.body;
 
     if (!user.id) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     if (!id || id.length !== 24) {
-      throw new Error("Data error");
+      throw new Error('Data error');
     }
 
     const data = await deleteMyOneOpenKey(user.id, id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/openkey",
+  '/openkey',
   isAuthenticated,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
@@ -674,31 +659,31 @@ routerV1.post(
     const { id, permissions } = req.body;
 
     if (!user.id) {
-      throw new Error("Need userid");
+      throw new Error('Need userid');
     }
 
     if (!id || !permissions) {
-      throw new Error("Data error");
+      throw new Error('Data error');
     }
 
     const data = await editMyOneOpenKey(user.id, id, permissions);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/getMyHeatmap",
+  '/getMyHeatmap',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { startDate, endDate } = req.body;
 
     if (!startDate || !endDate) {
-      throw new Error("Need startDate and endDate");
+      throw new Error('Need startDate and endDate');
     }
 
     const data = await getHeatMap(user.id, startDate, endDate);
@@ -707,38 +692,38 @@ routerV1.post(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/sitemapData",
+  '/sitemapData',
   asyncHandler(async (req, res) => {
     const data = await getSiteMapData();
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/status",
+  '/status',
   asyncHandler(async (req, res) => {
     await getStatus();
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: {},
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/randomRote",
+  '/randomRote',
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     let rote;
@@ -751,14 +736,14 @@ routerV1.get(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: rote,
     });
-  }),
+  })
 );
 
 routerV1.get(
-  "/exportData",
+  '/exportData',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -766,22 +751,18 @@ routerV1.get(
 
     const jsonData = JSON.stringify(data);
 
-    res.setHeader("Content-Type", "application/json");
+    res.setHeader('Content-Type', 'application/json');
     res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${user.username}-${
-        moment().format(
-          "YYYY/MM/DD HH:mm:ss",
-        )
-      }.json`,
+      'Content-Disposition',
+      `attachment; filename=${user.username}-${moment().format('YYYY/MM/DD HH:mm:ss')}.json`
     );
 
     res.send(jsonData);
-  }),
+  })
 );
 
 routerV1.get(
-  "/statistics",
+  '/statistics',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -789,14 +770,14 @@ routerV1.get(
 
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: data,
     });
-  }),
+  })
 );
 
 routerV1.post(
-  "/change/password",
+  '/change/password',
   isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -807,20 +788,60 @@ routerV1.post(
       throw new Error(zodData.error.errors[0].message);
     }
 
-    const updatedUser = await changeUserPassword(
-      oldpassword,
-      newpassword,
-      user.id,
-    );
+    const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);
     res.send({
       code: 0,
-      msg: "ok",
+      msg: 'ok',
       data: updatedUser,
     });
-  }),
+  })
 );
 
-routerV1.use("/openKey", useOpenKey);
+routerV1.get(
+  '/rss/:username',
+  asyncHandler(async (req, res) => {
+    const { username } = req.params;
+
+    if (!username) {
+      throw new Error('需要提供用户名');
+    }
+
+    // 获取RSS数据
+    const { user, notes } = await getRssData(username);
+
+    // 基础URL由环境变量提供或默认值
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+
+    // 设置RSS feed选项
+    const feedOptions: RssFeedOptions = {
+      title: `${user.nickname || user.username} 的笔记`,
+      description: user.description || `这里是 ${user.nickname || user.username} 的笔记RSS订阅`,
+      id: `${baseUrl}/user/${user.username}`,
+      link: `${baseUrl}/user/${user.username}`,
+      favicon: `${baseUrl}/favicon.ico`,
+      copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
+      author: {
+        name: user.nickname || user.username,
+        email: user.email,
+        link: `${baseUrl}/user/${user.username}`,
+      },
+    };
+
+    // 如果用户有头像，添加到feed中
+    if (user.avatar) {
+      feedOptions.image = user.avatar;
+    }
+
+    // 生成RSS feed
+    const feed = generateRssFeed(notes, user, feedOptions, baseUrl);
+
+    // 设置正确的Content-Type
+    res.setHeader('Content-Type', 'application/rss+xml');
+    res.send(feed);
+  })
+);
+
+routerV1.use('/openKey', useOpenKey);
 
 routerV1.use(errorHandler);
 

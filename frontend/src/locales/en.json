@@ -136,6 +136,8 @@
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time: ",
       "publicNotes": "Public Notes",
+      "rssSubscribe": "RSS Feed",
+      "sideBarTitle": "Besides... there are also",
       "helmet": {
         "loading": "loading...",
         "defaultDesc": "rote.ink"
