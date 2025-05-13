@@ -1,23 +1,24 @@
-import { apiGenerateOpenKey, apiGetMyOpenKey } from "@/api/rote/main";
-import { apiSaveProfile, apiUploadAvatar, getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/LoadingPlaceholder";
-import OpenKeyItem from "@/components/openKey";
-import { useOpenKeys } from "@/state/openKeys";
-import { Profile } from "@/types/main";
-import { useAPIGet } from "@/utils/fetcher";
-import { Avatar, Divider, Input, Modal, Typography } from "antd";
-import TextArea from "antd/es/input/TextArea";
-import { Edit, Loader, LoaderPinwheel, User } from "lucide-react";
-import moment from "moment";
-import { useEffect, useRef, useState } from "react";
-import AvatarEditor from "react-avatar-editor";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import Linkify from "react-linkify";
-import { Link } from "react-router-dom";
+import { apiGenerateOpenKey, apiGetMyOpenKey } from '@/api/rote/main';
+import { apiSaveProfile, apiUploadAvatar, getMyProfile } from '@/api/user/main';
+import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import OpenKeyItem from '@/components/openKey';
+import RssBlock from '@/components/Rss';
+import { useOpenKeys } from '@/state/openKeys';
+import { Profile } from '@/types/main';
+import { useAPIGet } from '@/utils/fetcher';
+import { Avatar, Divider, Input, Modal, Typography } from 'antd';
+import TextArea from 'antd/es/input/TextArea';
+import { Edit, Loader, LoaderPinwheel, User } from 'lucide-react';
+import moment from 'moment';
+import { useEffect, useRef, useState } from 'react';
+import AvatarEditor from 'react-avatar-editor';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import Linkify from 'react-linkify';
+import { Link } from 'react-router-dom';
 
 function ProfilePage() {
-  const { t } = useTranslation("translation", { keyPrefix: "pages.profile" });
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const inputAvatarRef = useRef(null);
   const inputCoverRef = useRef(null);
   const AvatarEditorRef = useRef(null);
@@ -25,10 +26,7 @@ function ProfilePage() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const [coverChangeing, setCoverChangeing] = useState(false);
 
-  const { data: profile, mutate } = useAPIGet<Profile>(
-    "profile",
-    getMyProfile,
-  );
+  const { data: profile, mutate } = useAPIGet<Profile>('profile', getMyProfile);
   const [editProfile, setEditProfile] = useState<any>(profile);
   const [openKeys, setOpenKeys] = useOpenKeys();
   const [openKeyLoading, setOpenKeyLoading] = useState(true);
@@ -48,16 +46,16 @@ function ProfilePage() {
   }, [setOpenKeys]);
 
   function generateOpenKeyFun() {
-    const toastId = toast.loading(t("creating"));
+    const toastId = toast.loading(t('creating'));
     apiGenerateOpenKey()
       .then((res: any) => {
         setOpenKeys([...openKeys, res.data.data]);
-        toast.success(t("createSuccess"), {
+        toast.success(t('createSuccess'), {
           id: toastId,
         });
       })
       .catch(() => {
-        toast.error(t("createFailed"), {
+        toast.error(t('createFailed'), {
           id: toastId,
         });
       });
@@ -90,10 +88,10 @@ function ProfilePage() {
           try {
             const formData = new FormData();
             formData.append(
-              "images",
-              new File([blob], "cropped_image.png", {
-                type: "image/png",
-              }),
+              'images',
+              new File([blob], 'cropped_image.png', {
+                type: 'image/png',
+              })
             );
             apiUploadAvatar(formData).then((res) => {
               console.log(res);
@@ -103,12 +101,12 @@ function ProfilePage() {
               });
               setAvatarUploading(false);
               setIsAvatarModalOpen(false);
-              toast.success(t("uploadSuccess"));
+              toast.success(t('uploadSuccess'));
             });
           } catch (error) {
-            toast.error(t("uploadFailed"));
+            toast.error(t('uploadFailed'));
             setAvatarUploading(false);
-            console.error("Error uploading image:", error);
+            console.error('Error uploading image:', error);
           }
         });
     }
@@ -118,16 +116,16 @@ function ProfilePage() {
     setProfileEditing(true);
     apiSaveProfile(editProfile)
       .then((res) => {
-        toast.success(t("editSuccess"));
+        toast.success(t('editSuccess'));
         mutate();
         setIsModalOpen(false);
         setProfileEditing(false);
       })
       .catch((err) => {
-        toast.error(t("editFailed"));
+        toast.error(t('editFailed'));
         setIsModalOpen(false);
         setProfileEditing(false);
-        console.error("Error edit Profile:", err);
+        console.error('Error edit Profile:', err);
       });
   }
 
@@ -137,7 +135,7 @@ function ProfilePage() {
 
     if (selectedFile) {
       const formData = new FormData();
-      formData.append("images", selectedFile);
+      formData.append('images', selectedFile);
 
       apiUploadAvatar(formData).then((res) => {
         console.log(res);
@@ -151,7 +149,7 @@ function ProfilePage() {
             setCoverChangeing(false);
           })
           .catch((err) => {
-            console.error("Error edit Profile:", err);
+            console.error('Error edit Profile:', err);
             setCoverChangeing(false);
           });
       });
@@ -159,15 +157,15 @@ function ProfilePage() {
   }
 
   return (
-    <div className=" pb-20">
-      <div className=" w-full min-h-[1/5] max-h-80 relative overflow-hidden">
+    <div className="pb-20">
+      <div className="relative max-h-80 min-h-[1/5] w-full overflow-hidden">
         <img
-          className=" w-full h-full min-h-20"
-          src={profile?.cover || require("@/assets/img/defaultCover.png")}
+          className="h-full min-h-20 w-full"
+          src={profile?.cover || require('@/assets/img/defaultCover.png')}
           alt=""
         />
         <div
-          className=" cursor-pointer absolute bottom-1 right-3 text-white px-2 py-1 rounded-md bg-[#00000030] backdrop-blur-md"
+          className="absolute bottom-1 right-3 cursor-pointer rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-md"
           onClick={() => {
             // @ts-ignore
             inputCoverRef.current?.click();
@@ -177,111 +175,95 @@ function ProfilePage() {
             type="file"
             accept="image/*"
             max="1"
-            className=" hidden"
+            className="hidden"
             ref={inputCoverRef}
             onChange={changeCover}
             disabled={coverChangeing}
             title="Upload cover image"
           />
-          <LoaderPinwheel
-            className={`size-4 ${coverChangeing && "animate-spin"}`}
-          />
+          <LoaderPinwheel className={`size-4 ${coverChangeing && 'animate-spin'}`} />
         </div>
       </div>
-      <div className=" flex mx-4 h-16">
+      <div className="mx-4 flex h-16">
         <Avatar
-          className=" translate-y-[-50%] bg-bgLight dark:bg-bgDark border-bgLight border-[4px] bg-opacityLight dark:bg-opacityDark text-black shrink-0 sm:block"
+          className="shrink-0 translate-y-[-50%] border-[4px] border-bgLight bg-bgLight bg-opacityLight text-black sm:block dark:bg-bgDark dark:bg-opacityDark"
           size={{ xs: 80, sm: 80, md: 80, lg: 100, xl: 120, xxl: 120 }}
-          icon={<User className=" size-4 text-[#00000010]" />}
+          icon={<User className="size-4 text-[#00000010]" />}
           src={profile?.avatar}
         />
         <div
-          className=" mt-auto h-fit cursor-pointer select-none ml-auto duration-300 flex items-center gap-2 bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight px-4 py-1 rounded-md active:scale-95"
+          className="ml-auto mt-auto flex h-fit cursor-pointer select-none items-center gap-2 rounded-md bg-bgDark px-4 py-1 text-textDark duration-300 active:scale-95 dark:bg-bgLight dark:text-textLight"
           onClick={() => {
             setIsModalOpen(true);
           }}
         >
           <Edit className="size-4" />
-          {t("editProfile")}
+          {t('editProfile')}
         </div>
       </div>
-      <div className=" flex flex-col mx-4 gap-1">
+      <div className="mx-4 flex flex-col gap-1">
         <Link to={`/${profile?.username}`}>
-          <h1 className=" hover:underline w-fit text-2xl font-semibold">
-            {profile?.nickname}
-          </h1>
-          <h2 className=" hover:underline w-fit text-base text-gray-500">
-            @{profile?.username}
-          </h2>
+          <h1 className="w-fit text-2xl font-semibold hover:underline">{profile?.nickname}</h1>
+          <h2 className="w-fit text-base text-gray-500 hover:underline">@{profile?.username}</h2>
         </Link>
-        <div className=" text-base ">
-          <div className=" aTagStyle break-words whitespace-pre-line">
-            <Linkify>
-              {(profile?.description as any) || t("noDescription")}
-            </Linkify>
+        <div className="text-base">
+          <div className="aTagStyle whitespace-pre-line break-words">
+            <Linkify>{(profile?.description as any) || t('noDescription')}</Linkify>
           </div>
         </div>
-        <div className=" text-base text-gray-500">
-          {t("registerTime")}
-          {moment.utc(profile?.createdAt).format("YYYY/MM/DD HH:mm:ss")}
+        <div className="text-base text-gray-500">
+          {t('registerTime')}
+          {moment.utc(profile?.createdAt).format('YYYY/MM/DD HH:mm:ss')}
         </div>
+        <RssBlock username={profile?.username} />
       </div>
       <Divider />
-      <div className=" text-2xl font-semibold m-4">
+      <div className="m-4 text-2xl font-semibold">
         OpenKey <br />
-        <div className=" font-normal mt-2 text-sm text-gray-500">
-          {t("openKeyDescription")}
-        </div>
+        <div className="mt-2 text-sm font-normal text-gray-500">{t('openKeyDescription')}</div>
       </div>
-      <div className=" flex flex-col">
-        {openKeyLoading
-          ? (
-            <LoadingPlaceholder
-              className=" py-8"
-              size={6}
-            />
-          )
-          : (
-            <>
-              {openKeys.map((openKey: any, index: any) => {
-                return (
-                  <OpenKeyItem key={openKey.id} openKey={openKey}></OpenKeyItem>
-                );
-              })}
-              <div
-                onClick={generateOpenKeyFun}
-                className=" text-primary cursor-pointer p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark"
-              >
-                <div className=" break-all mr-auto font-semibold font-mono">
-                  {openKeys.length === 0 ? t("noOpenKey") : t("addOpenKey")}
-                </div>
+      <div className="flex flex-col">
+        {openKeyLoading ? (
+          <LoadingPlaceholder className="py-8" size={6} />
+        ) : (
+          <>
+            {openKeys.map((openKey: any, index: any) => {
+              return <OpenKeyItem key={openKey.id} openKey={openKey}></OpenKeyItem>;
+            })}
+            <div
+              onClick={generateOpenKeyFun}
+              className="cursor-pointer border-t-[1px] border-opacityLight bg-bgLight p-4 text-primary dark:border-opacityDark dark:bg-bgDark"
+            >
+              <div className="mr-auto break-all font-mono font-semibold">
+                {openKeys.length === 0 ? t('noOpenKey') : t('addOpenKey')}
               </div>
-            </>
-          )}
+            </div>
+          </>
+        )}
       </div>
       <Modal
-        title={t("editProfile")}
+        title={t('editProfile')}
         open={isModalOpen}
         onCancel={onModelCancel}
         maskClosable={true}
         destroyOnClose={true}
         footer={null}
       >
-        <div className=" cursor-default w-full flex gap-5">
-          <div className=" flex flex-col gap-1 w-full">
+        <div className="flex w-full cursor-default gap-5">
+          <div className="flex w-full flex-col gap-1">
             <input
               type="file"
               accept="image/*"
               max="1"
-              className=" hidden"
+              className="hidden"
               ref={inputAvatarRef}
               onChange={handleFileChange}
               title="Upload avatar image"
             />
             <Avatar
-              className=" cursor-pointer bg-[#00000010] mx-auto my-2 text-black shrink-0 block"
+              className="mx-auto my-2 block shrink-0 cursor-pointer bg-[#00000010] text-black"
               size={{ xs: 60, sm: 60, md: 80, lg: 80, xl: 80, xxl: 80 }}
-              icon={<User className=" size-4 text-[#00000030]" />}
+              icon={<User className="size-4 text-[#00000030]" />}
               src={editProfile.avatar}
               onClick={() => {
                 //@ts-ignore
@@ -289,30 +271,30 @@ function ProfilePage() {
               }}
             />
 
-            <Typography.Title className=" mt-2" level={5}>
-              {t("email")}
+            <Typography.Title className="mt-2" level={5}>
+              {t('email')}
             </Typography.Title>
             <Input
               disabled
-              className=" text-lg w-full rounded-md font-mono border-[2px]"
+              className="w-full rounded-md border-[2px] font-mono text-lg"
               maxLength={20}
               value={editProfile.email}
             />
-            <Typography.Title className=" mt-2" level={5}>
-              {t("username")}
+            <Typography.Title className="mt-2" level={5}>
+              {t('username')}
             </Typography.Title>
             <Input
               disabled
-              className=" text-lg w-full rounded-md font-mono border-[2px]"
+              className="w-full rounded-md border-[2px] font-mono text-lg"
               maxLength={20}
               value={editProfile.username}
             />
-            <Typography.Title className=" mt-2" level={5}>
-              {t("nickname")}
+            <Typography.Title className="mt-2" level={5}>
+              {t('nickname')}
             </Typography.Title>
             <Input
-              placeholder={t("enterNickname")}
-              className=" text-lg w-full rounded-md font-mono border-[2px]"
+              placeholder={t('enterNickname')}
+              className="w-full rounded-md border-[2px] font-mono text-lg"
               maxLength={20}
               value={editProfile.nickname}
               onInput={(e) => {
@@ -322,15 +304,15 @@ function ProfilePage() {
                 });
               }}
             />
-            <Typography.Title className=" mt-2" level={5}>
-              {t("description")}
+            <Typography.Title className="mt-2" level={5}>
+              {t('description')}
             </Typography.Title>
             <TextArea
-              placeholder={t("enterDescription")}
-              className=" text-lg w-full rounded-md border-[2px]"
+              placeholder={t('enterDescription')}
+              className="w-full rounded-md border-[2px] text-lg"
               maxLength={300}
               value={editProfile.description}
-              style={{ height: 120, resize: "none" }}
+              style={{ height: 120, resize: 'none' }}
               onInput={(e) => {
                 setEditProfile({
                   ...editProfile,
@@ -340,8 +322,8 @@ function ProfilePage() {
             />
 
             <div
-              className={` mt-4 cursor-pointer duration-300 active:scale-95  border w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold flex items-center justify-center ${
-                profileEditing ? " bg-gray-700" : "bg-black"
+              className={`mt-4 flex w-full cursor-pointer items-center justify-center rounded-md border bg-black px-3 py-2 text-center font-semibold text-white duration-300 active:scale-95 ${
+                profileEditing ? 'bg-gray-700' : 'bg-black'
               }`}
               onClick={() => {
                 if (!profileEditing) {
@@ -349,16 +331,14 @@ function ProfilePage() {
                 }
               }}
             >
-              {profileEditing && (
-                <Loader className=" animate-spin size-4 mr-2" />
-              )}
-              {profileEditing ? t("editing") : t("save")}
+              {profileEditing && <Loader className="mr-2 size-4 animate-spin" />}
+              {profileEditing ? t('editing') : t('save')}
             </div>
           </div>
         </div>
       </Modal>
       <Modal
-        title={t("cropAvatar")}
+        title={t('cropAvatar')}
         open={isAvatarModalOpen}
         onCancel={() => {
           setIsAvatarModalOpen(false);
@@ -369,7 +349,7 @@ function ProfilePage() {
       >
         <AvatarEditor
           ref={AvatarEditorRef}
-          className=" mx-auto border-[2px] border-opacityLight dark:border-opacityDark"
+          className="mx-auto border-[2px] border-opacityLight dark:border-opacityDark"
           image={editProfile.avatar_file}
           width={150}
           height={150}
@@ -379,8 +359,8 @@ function ProfilePage() {
           rotate={0}
         />
         <div
-          className={` mt-4 cursor-pointer duration-300 active:scale-95  border border-opacityLight dark:border-opacityDark w-full text-center rounded-md px-3 py-2 bg-black text-white font-semibold ${
-            avatarUploading ? " bg-gray-700" : "bg-black"
+          className={`mt-4 w-full cursor-pointer rounded-md border border-opacityLight bg-black px-3 py-2 text-center font-semibold text-white duration-300 active:scale-95 dark:border-opacityDark ${
+            avatarUploading ? 'bg-gray-700' : 'bg-black'
           }`}
           onClick={() => {
             if (!avatarUploading) {
@@ -388,8 +368,8 @@ function ProfilePage() {
             }
           }}
         >
-          {avatarUploading && <Loader className=" animate-spin size-4 mr-2" />}
-          {avatarUploading ? t("uploading") : t("done")}
+          {avatarUploading && <Loader className="mr-2 size-4 animate-spin" />}
+          {avatarUploading ? t('uploading') : t('done')}
         </div>
       </Modal>
     </div>

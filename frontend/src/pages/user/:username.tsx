@@ -9,8 +9,8 @@ import RoteList from '@/components/roteList';
 import RssBlock from '@/components/Rss';
 import { Profile } from '@/types/main';
 import { useAPIGet } from '@/utils/fetcher';
-import { Avatar, Drawer, Tooltip } from 'antd';
-import { ChartAreaIcon, ChartLine, Globe2, Rss, Stars, User } from 'lucide-react';
+import { Avatar, Drawer } from 'antd';
+import { ChartLine, Globe2, Stars, User } from 'lucide-react';
 import moment from 'moment';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -40,7 +40,7 @@ function UserPage() {
   };
 
   return isLoading ? (
-    <LoadingPlaceholder className="h-dvh w-dvw" size={6} />
+    <LoadingPlaceholder className="h-dvh w-full" size={6} />
   ) : (
     <>
       <Helmet>
@@ -86,6 +86,7 @@ function UserPage() {
               {`${t('registerTime')}${moment.utc(userInfo?.createdAt).format('YYYY/MM/DD HH:mm:ss')}`}
             </div>
 
+            <RssBlock username={username} />
           </div>
 
           <NavHeader title={t('publicNotes')} icon={<Globe2 className="size-6" />} />
