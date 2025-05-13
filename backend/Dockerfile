@@ -1,5 +1,5 @@
 # Use a smaller base image with bun
-FROM oven/bun:1.1.13-alpine
+FROM oven/bun:1.2-alpine
 
 # Install OpenSSL
 RUN apk add --no-cache openssl
@@ -11,7 +11,7 @@ WORKDIR /app
 COPY . .
 
 # Set npm registry for compatibility (optional, if needed)
-RUN bun config set registry https://registry.npmmirror.com/
+# RUN bun config set registry https://registry.npmmirror.com/
 
 # Install dependencies (bun automatically uses bun.lockb)
 RUN bun install --production
