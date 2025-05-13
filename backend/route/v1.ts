@@ -833,7 +833,7 @@ routerV1.get(
     }
 
     // 生成RSS feed
-    const feed = generateRssFeed(notes, user, feedOptions, baseUrl);
+    const feed = await generateRssFeed(notes, user, feedOptions, baseUrl);
 
     // 设置正确的Content-Type
     res.setHeader('Content-Type', 'application/rss+xml');
