@@ -1,15 +1,17 @@
-import { apiGetMyRote, apiGetMyTags } from "@/api/rote/main";
-import NavBar from "@/components/navBar";
-import RoteList from "@/components/roteList";
-import { useAPIGet } from "@/utils/fetcher";
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useLocation } from "react-router-dom";
+import { apiGetMyRote, apiGetMyTags } from '@/api/rote/main';
+import NavBar from '@/components/navBar';
+import RoteList from '@/components/roteList';
+import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { useAPIGet } from '@/utils/fetcher';
+import { ActivityIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 function MineFilter() {
-  const { t } = useTranslation("translation", { keyPrefix: "pages.filter" });
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
 
-  const { data: tags } = useAPIGet<string[]>("tags", apiGetMyTags);
+  const { data: tags } = useAPIGet<string[]>('tags', apiGetMyTags);
 
   const location = useLocation();
   const [filter, setFilter] = useState({
@@ -38,7 +40,7 @@ function MineFilter() {
     return (
       <div className="bg-opacityLight p-4 font-semibold dark:bg-opacityDark">
         <div className="my-2 flex flex-wrap items-center gap-2">
-          {t("includeTags")}
+          {t('includeTags')}
           {filter.tags.hasEvery.length > 0
             ? filter.tags.hasEvery.map((tag: any, index: any) => {
                 return (
@@ -51,10 +53,10 @@ function MineFilter() {
                   </div>
                 );
               })
-            : t("none")}
+            : t('none')}
         </div>
         <div className="my-2 flex max-h-[25vh] flex-wrap items-center gap-2 overflow-y-scroll font-normal text-gray-500">
-          {t("allTags")}
+          {t('allTags')}
           {tags && tags.length > 0
             ? tags.map((tag) => {
                 return (
@@ -65,18 +67,49 @@ function MineFilter() {
                   </div>
                 );
               })
-            : t("none")}
+            : t('none')}
+        </div>
+      </div>
+    );
+  }
+
+  function SideBar() {
+    return (
+      <div className="grid grid-cols-2">
+        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <div className="font-light">TAG</div>
+        </div>
+        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <div className="font-light">TAG</div>
+        </div>
+        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <div className="font-light">TAG</div>
+        </div>
+        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <div className="font-light">TAG</div>
         </div>
       </div>
     );
   }
 
   return (
-    <>
+    <ContainerWithSideBar
+      sidebar={<SideBar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 border-b p-4 text-lg font-semibold">
+          <div className="flex h-8 items-center gap-2">
+            <ActivityIcon className="size-5" />
+            {t('data')}
+          </div>
+        </div>
+      }
+    >
       <NavBar />
-      <div
-        className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible`}
-      >
+      <div className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible`}>
         <TagsBlock />
 
         <RoteList
@@ -87,7 +120,7 @@ function MineFilter() {
           }}
         />
       </div>
-    </>
+    </ContainerWithSideBar>
   );
 }
 

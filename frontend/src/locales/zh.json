@@ -103,6 +103,7 @@
       "statistics": "统计 / Static"
     },
     "profile": {
+      "title": "个人资料",
       "editProfile": "编辑资料",
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
@@ -127,7 +128,8 @@
       "uploadSuccess": "上传成功",
       "uploadFailed": "上传失败",
       "editSuccess": "修改成功",
-      "editFailed": "修改失败"
+      "editFailed": "修改失败",
+      "sideBarTitle": "除了这些...还有"
     },
     "rote": {
       "loading": "加载中...",
@@ -142,7 +144,7 @@
       "registerTime": "注册时间：",
       "publicNotes": "已公开的笔记 / Public Note",
       "rssSubscribe": "RSS 订阅",
-      "sideBarTitle": "除了...还有",
+      "sideBarTitle": "除了这些...还有",
       "helmet": {
         "loading": "加载中...",
         "defaultDesc": "rote.ink"
@@ -151,7 +153,8 @@
     "filter": {
       "includeTags": "包含标签：",
       "allTags": "所有标签：",
-      "none": "无"
+      "none": "无",
+      "data": "数据统计"
     },
     "explore": {
       "title": "探索 / Explore",
@@ -190,7 +193,8 @@
       }
     },
     "archived": {
-      "title": "归档 / Archived"
+      "title": "归档 / Archived",
+      "statistics": "统计 / Static"
     }
   },
   "components": {

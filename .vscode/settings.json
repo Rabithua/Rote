@@ -20,7 +20,7 @@
   },
   "editor.tabSize": 2,
   "editor.wordWrap": "on",
-  "editor.minimap.enabled": true,
+  "editor.minimap.enabled": false,
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
   "editor.suggestSelection": "first",

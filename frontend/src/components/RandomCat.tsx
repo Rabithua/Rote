@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
-const URLPREFIX = "https://r2.rote.ink/evecat/";
+const URLPREFIX = 'https://r2.rote.ink/evecat/';
 const TOTALCAT = 164;
 const excludedNumbers = [127, 0];
 
 export default function RandomCat() {
-  const [randomCat, setRandomCat] = useState("0001"); // 默认值而不是null
+  const [randomCat, setRandomCat] = useState('0001'); // 默认值而不是null
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -20,36 +20,37 @@ export default function RandomCat() {
       random = Math.floor(Math.random() * TOTALCAT);
     } while (excludedNumbers.includes(random));
 
-    const formattedCat = random.toString().padStart(4, "0");
+    const formattedCat = random.toString().padStart(4, '0');
     setRandomCat(formattedCat);
     // 不再使用setTimeout，直接设置新的randomCat
   }
 
-  const playSound = () => {
-    const audio = new Audio(require("@/assets/voice/cat4.mp3"));
-    audio.play();
-  };
+  //MARK:NOISY
+  // const playSound = () => {
+  //   const audio = new Audio(require('@/assets/voice/cat4.mp3'));
+  //   audio.play();
+  // };
 
   return (
     <div
-      className="relative size-100 max-w-full border-[3px] border-black hover:scale-95 cursor-pointer duration-300"
+      className="size-100 relative m-4 max-w-full cursor-pointer border-[3px] border-black duration-300 hover:scale-95"
       onClick={() => {
         getRandomInt();
-        playSound();
+        // playSound();
       }}
     >
       {isLoading && (
-        <div className="py-16 absolute inset-0 flex justify-center items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop:blur-xl">
+        <div className="absolute inset-0 flex items-center justify-center bg-bgLight/90 py-16 backdrop:blur-xl dark:bg-bgDark/90">
           <img
             className="size-6 animate-spin"
-            src={"https://r2.rote.ink/evecat/loading_roll.gif"}
+            src={'https://r2.rote.ink/evecat/loading_roll.gif'}
             alt="loading"
           />
         </div>
       )}
 
       <img
-        className="w-full h-full"
+        className="h-full w-full"
         src={`${URLPREFIX}${randomCat}.gif`}
         alt="cat"
         onLoad={() => setIsLoading(false)}

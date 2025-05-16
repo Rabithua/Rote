@@ -1,20 +1,12 @@
-import { logOut } from "@/api/login/main";
-import { getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/LoadingPlaceholder";
-import { Profile } from "@/types/main";
-import { useAPIGet } from "@/utils/fetcher";
-import {
-  Archive,
-  Globe2,
-  Home,
-  LogIn,
-  LogOut,
-  Snail,
-  User,
-} from "lucide-react";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { logOut } from '@/api/login/main';
+import { getMyProfile } from '@/api/user/main';
+import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import { Profile } from '@/types/main';
+import { useAPIGet } from '@/utils/fetcher';
+import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 
 interface IconType {
   svg: JSX.Element;
@@ -25,62 +17,59 @@ interface IconType {
 
 function LayoutDashboard() {
   const location = useLocation();
-  const { data: profile, isLoading } = useAPIGet<Profile>(
-    "profile",
-    getMyProfile,
-  );
+  const { data: profile, isLoading } = useAPIGet<Profile>('profile', getMyProfile);
 
-  const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
   const iconsData: IconType[][] = [
     [
       {
         svg: <Home className="size-4" />,
-        link: "/home",
-        name: "home",
+        link: '/home',
+        name: 'home',
       },
       {
         svg: <Globe2 className="size-4" />,
-        link: "/explore",
-        name: "explore",
+        link: '/explore',
+        name: 'explore',
       },
 
       {
         svg: <Archive className="size-4" />,
-        link: "/archived",
-        name: "archived",
+        link: '/archived',
+        name: 'archived',
       },
       {
         svg: <User className="size-4" />,
-        link: "/profile",
+        link: '/profile',
 
-        name: "profile",
+        name: 'profile',
       },
       {
         svg: <Snail className="size-4" />,
-        link: "/experiment",
-        name: "experiment",
+        link: '/experiment',
+        name: 'experiment',
       },
       {
         svg: <LogOut className="size-4" />,
-        name: "logout",
+        name: 'logout',
         callback: logOutFn,
       },
     ],
     [
       {
         svg: <LogIn className="size-4" />,
-        link: "/login",
-        name: "login",
+        link: '/login',
+        name: 'login',
       },
     ],
   ];
 
   function logOutFn() {
-    const toastId = toast.loading(t("messages.loggingOut"));
+    const toastId = toast.loading(t('messages.loggingOut'));
     logOut()
       .then(async () => {
-        toast.success(t("messages.logoutSuccess"), {
+        toast.success(t('messages.logoutSuccess'), {
           id: toastId,
         });
 
@@ -88,7 +77,7 @@ function LayoutDashboard() {
       })
       .catch((err) => {
         console.log(err);
-        toast.error("err.response.data.data.msg", {
+        toast.error('err.response.data.data.msg', {
           id: toastId,
         });
       });
@@ -100,14 +89,14 @@ function LayoutDashboard() {
         key={icon.link}
         to={icon.link}
         onClick={() => {
-          window.scrollTo({ top: 0, behavior: "smooth" });
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
       >
         <div
           className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
             location.pathname === icon.link
-              ? "bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight"
-              : ""
+              ? 'bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight'
+              : ''
           } `}
         >
           {icon.svg}
@@ -121,11 +110,9 @@ function LayoutDashboard() {
         key={icon.name}
         className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
           location.pathname === icon.link
-            ? "bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight"
-            : ""
-        } ${
-          icon.name === "logout" ? "hover:bg-red-600/10 hover:text-red-600" : ""
-        } `}
+            ? 'bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight'
+            : ''
+        } ${icon.name === 'logout' ? 'hover:bg-red-600/10 hover:text-red-600' : ''} `}
         onClick={() => {
           icon.callback && icon.callback();
         }}
@@ -140,7 +127,7 @@ function LayoutDashboard() {
 
   return (
     <div className="mx-auto w-full max-w-6xl bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark">
-      <div className="mx-auto flex max-w-[1440px] font-sans lg:w-[90%]">
+      <div className="mx-auto flex w-dvw max-w-[1440px] font-sans lg:w-[90%]">
         <div className="fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around border-r-0 border-t border-opacityLight bg-bgLight/90 px-1 py-2 pb-5 text-textLight backdrop-blur-2xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:border-r sm:border-t-0 sm:px-2 lg:w-[200px] lg:px-4 dark:border-opacityDark dark:bg-bgDark/90 dark:text-textDark">
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
@@ -155,7 +142,7 @@ function LayoutDashboard() {
           )}
         </div>
 
-        <div className="relative flex-1 overflow-x-hidden">
+        <div className="relative min-w-0 flex-1 overflow-visible">
           <Outlet />
         </div>
       </div>
