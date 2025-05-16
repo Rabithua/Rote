@@ -14,28 +14,28 @@ import {
   Share,
   Trash2,
   User,
-} from "lucide-react";
-import Linkify from "react-linkify";
+} from 'lucide-react';
+import Linkify from 'react-linkify';
 
-import { apiDeleteMyRote, apiEditMyRote } from "@/api/rote/main";
-import { getMyProfile } from "@/api/user/main";
-import mainJson from "@/json/main.json";
-import { Profile, Rote } from "@/types/main";
-import { useAPIGet } from "@/utils/fetcher";
-import { formatTimeAgo } from "@/utils/main";
-import { Avatar, Modal, Popover, Tooltip } from "antd";
-import moment from "moment";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import { useInView } from "react-intersection-observer";
-import { PhotoProvider, PhotoView } from "react-photo-view";
-import "react-photo-view/dist/react-photo-view.css";
-import { Link } from "react-router-dom";
-import { SWRInfiniteKeyedMutator } from "swr/dist/infinite";
-import NoticeCreateBoard from "./NoticeCreateBoard";
-import RoteInputModel from "./roteInputModel";
-import RoteShareCard from "./roteShareCard";
+import { apiDeleteMyRote, apiEditMyRote } from '@/api/rote/main';
+import { getMyProfile } from '@/api/user/main';
+import mainJson from '@/json/main.json';
+import { Profile, Rote } from '@/types/main';
+import { useAPIGet } from '@/utils/fetcher';
+import { formatTimeAgo } from '@/utils/main';
+import { Avatar, Modal, Popover, Tooltip } from 'antd';
+import moment from 'moment';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
+import { PhotoProvider, PhotoView } from 'react-photo-view';
+import 'react-photo-view/dist/react-photo-view.css';
+import { Link } from 'react-router-dom';
+import { SWRInfiniteKeyedMutator } from 'swr/dist/infinite';
+import NoticeCreateBoard from './NoticeCreateBoard';
+import RoteInputModel from './roteInputModel';
+import RoteShareCard from './roteShareCard';
 const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
@@ -47,16 +47,14 @@ function RoteItem({
   randomRoteStyle?: boolean;
   mutate?: SWRInfiniteKeyedMutator<any[]>;
 }) {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.roteItem",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.roteItem',
   });
   const { ref, inView } = useInView();
 
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [isShareCardModalOpen, setIsShareCardModalOpen] =
-    useState<boolean>(false);
-  const [isNoticeCreateBoardModalOpen, setIsNoticeCreateBoardModalOpen] =
-    useState<boolean>(false);
+  const [isShareCardModalOpen, setIsShareCardModalOpen] = useState<boolean>(false);
+  const [isNoticeCreateBoardModalOpen, setIsNoticeCreateBoardModalOpen] = useState<boolean>(false);
   const [open, setOpen] = useState(false);
 
   const [isExpanded, setIsExpanded] = useState<any>(false);
@@ -69,7 +67,7 @@ function RoteItem({
     setOpen(newOpen);
   };
 
-  const { data: profile } = useAPIGet<Profile>("profile", getMyProfile);
+  const { data: profile } = useAPIGet<Profile>('profile', getMyProfile);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -90,7 +88,7 @@ function RoteItem({
       ...cleanRote
     } = rote;
     setIsEditModalOpen(false);
-    const toastId = toast.loading(t("messages.sending", "发送中..."));
+    const toastId = toast.loading(t('messages.sending', '发送中...'));
 
     apiEditMyRote({
       ...cleanRote,
@@ -100,7 +98,7 @@ function RoteItem({
         if (res.data.code !== 0) {
           return;
         }
-        toast.success(t("messages.sendSuccess", "发送成功"), {
+        toast.success(t('messages.sendSuccess', '发送成功'), {
           id: toastId,
         });
 
@@ -109,18 +107,16 @@ function RoteItem({
             (currentData) => {
               // 处理嵌套数组结构
               return currentData?.map((page) =>
-                Array.isArray(page)
-                  ? page.map((r) => (r.id === rote.id ? res.data.data : r))
-                  : page,
+                Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data.data : r)) : page
               );
             },
             {
               revalidate: false,
-            },
+            }
           );
       })
       .catch(() => {
-        toast.error(t("messages.sendFailed", "发送失败"), {
+        toast.error(t('messages.sendFailed', '发送失败'), {
           id: toastId,
         });
       });
@@ -129,13 +125,13 @@ function RoteItem({
   function actionsMenu(rote: Rote) {
     function deleteRoteFn() {
       hide();
-      const toastId = toast.loading(t("messages.deleting"));
+      const toastId = toast.loading(t('messages.deleting'));
       apiDeleteMyRote({
         id: rote.id,
         authorid: rote.authorid,
       })
         .then((res) => {
-          toast.success(t("messages.deleteSuccess"), {
+          toast.success(t('messages.deleteSuccess'), {
             id: toastId,
           });
 
@@ -144,18 +140,16 @@ function RoteItem({
               (currentData) => {
                 // 处理嵌套数组结构
                 return currentData?.map((page) =>
-                  Array.isArray(page)
-                    ? page.filter((r) => r.id !== rote.id)
-                    : page,
+                  Array.isArray(page) ? page.filter((r) => r.id !== rote.id) : page
                 );
               },
               {
                 revalidate: false,
-              },
+              }
             );
         })
         .catch(() => {
-          toast.error(t("messages.deleteFailed"), {
+          toast.error(t('messages.deleteFailed'), {
             id: toastId,
           });
         });
@@ -163,7 +157,7 @@ function RoteItem({
 
     function editRotePin() {
       hide();
-      const toastId = toast.loading(t("messages.editing"));
+      const toastId = toast.loading(t('messages.editing'));
       apiEditMyRote({
         id: rote.id,
         authorid: rote.authorid,
@@ -174,13 +168,10 @@ function RoteItem({
             return;
           }
           toast.success(
-            `${rote.pin ? t("unpinned") : t("pinned")}${t(
-              "messages.editSuccess",
-              "成功",
-            )}`,
+            `${rote.pin ? t('unpinned') : t('pinned')}${t('messages.editSuccess', '成功')}`,
             {
               id: toastId,
-            },
+            }
           );
 
           mutate &&
@@ -190,23 +181,23 @@ function RoteItem({
                 return currentData?.map((page) =>
                   Array.isArray(page)
                     ? page.map((r) => (r.id === rote.id ? res.data.data : r))
-                    : page,
+                    : page
                 );
               },
               {
                 revalidate: false,
-              },
+              }
             );
         })
         .catch(() => {
-          toast.error(t("messages.editFailed"), {
+          toast.error(t('messages.editFailed'), {
             id: toastId,
           });
         });
     }
     function editRoteArchived() {
       hide();
-      const toastId = toast.loading(t("messages.editing"));
+      const toastId = toast.loading(t('messages.editing'));
       apiEditMyRote({
         id: rote.id,
         authorid: rote.authorid,
@@ -217,12 +208,10 @@ function RoteItem({
             return;
           }
           toast.success(
-            `${rote.archived ? t("unarchive") : t("archive")}${t(
-              "messages.editSuccess",
-            )}`,
+            `${rote.archived ? t('unarchive') : t('archive')}${t('messages.editSuccess')}`,
             {
               id: toastId,
-            },
+            }
           );
 
           mutate &&
@@ -232,16 +221,16 @@ function RoteItem({
                 return currentData?.map((page) =>
                   Array.isArray(page)
                     ? page.map((r) => (r.id === rote.id ? res.data.data : r))
-                    : page,
+                    : page
                 );
               },
               {
                 revalidate: false,
-              },
+              }
             );
         })
         .catch(() => {
-          toast.error(t("messages.editFailed"), {
+          toast.error(t('messages.editFailed'), {
             id: toastId,
           });
         });
@@ -253,7 +242,7 @@ function RoteItem({
           to={`/rote/${rote.id}`}
         >
           <Layers className="size-4" />
-          {t("details")}
+          {t('details')}
         </Link>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
@@ -263,18 +252,14 @@ function RoteItem({
           }}
         >
           <Bell className="size-4" />
-          {"回顾"}
+          {'回顾'}
         </div>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={editRotePin}
         >
-          {rote.pin ? (
-            <PinOff className="size-4" />
-          ) : (
-            <PinIcon className="size-4" />
-          )}
-          {rote.pin ? t("unpinned") : t("pinned")}
+          {rote.pin ? <PinOff className="size-4" /> : <PinIcon className="size-4" />}
+          {rote.pin ? t('unpinned') : t('pinned')}
         </div>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
@@ -284,14 +269,14 @@ function RoteItem({
           }}
         >
           <Edit3 className="size-4" />
-          {t("edit")}
+          {t('edit')}
         </div>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={editRoteArchived}
         >
           <Save className="size-4" />
-          {rote.archived ? t("unarchive") : t("archive")}
+          {rote.archived ? t('unarchive') : t('archive')}
         </div>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold hover:bg-opacityLight dark:hover:bg-opacityDark"
@@ -301,14 +286,14 @@ function RoteItem({
           }}
         >
           <Share className="size-4" />
-          {t("share")}
+          {t('share')}
         </div>
         <div
           className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold text-red-500 hover:bg-opacityLight dark:hover:bg-opacityDark"
           onClick={deleteRoteFn}
         >
           <Trash2 className="size-4" />
-          {t("delete")}
+          {t('delete')}
         </div>
       </div>
     );
@@ -319,28 +304,23 @@ function RoteItem({
       ref={ref}
       id={`Rote_${rote.id}`}
       className={`flex w-full translate-y-5 animate-show gap-4 border-b border-opacityLight bg-bgLight/5 opacity-0 duration-300 first:border-t-[0] last:border-b-[0] dark:border-opacityDark dark:bg-bgDark/5 ${
-        !randomRoteStyle && "px-5 py-4"
+        !randomRoteStyle && 'px-5 py-4'
       }`}
     >
       {!randomRoteStyle && (
-        <Link
-          className="hidden shrink-0 text-black sm:block"
-          to={`/${rote.author!.username}`}
-        >
+        <Link className="hidden shrink-0 text-black sm:block" to={`/${rote.author!.username}`}>
           <Avatar
             className="bg-[#00000010]"
             size={{ xs: 24, sm: 32, md: 40, lg: 40, xl: 50, xxl: 50 }}
             icon={<User className="size-4 text-[#00000030]" />}
             src={
-              rote.author!.username === profile?.username
-                ? profile?.avatar
-                : rote.author!.avatar
+              rote.author!.username === profile?.username ? profile?.avatar : rote.author!.avatar
             }
           />
         </Link>
       )}
 
-      <div className="flex w-full flex-col">
+      <div className="flex flex-grow flex-col overflow-hidden">
         <div className="flex w-full cursor-default items-center gap-2">
           {!randomRoteStyle && (
             <Link
@@ -356,23 +336,20 @@ function RoteItem({
           <span className="noScrollBar overflow-scroll text-nowrap font-normal text-gray-500">
             {!randomRoteStyle && (
               <>
-                <Link to={`/${rote.author!.username}`}>
-                  {`@${rote.author!.username}`}
-                </Link>
-                <span>·</span>{" "}
+                <Link to={`/${rote.author!.username}`}>{`@${rote.author!.username}`}</Link>
+                <span>·</span>{' '}
               </>
             )}
 
             <Tooltip
               placement="bottom"
-              title={moment.utc(rote.createdAt).format("YYYY/MM/DD HH:mm:ss")}
+              title={moment.utc(rote.createdAt).format('YYYY/MM/DD HH:mm:ss')}
             >
               <span
                 className={`${
-                  new Date().getTime() - new Date(rote.createdAt).getTime() >
-                  60 * 1000
-                    ? ""
-                    : "bg-primaryGreenGradient bg-clip-text text-transparent"
+                  new Date().getTime() - new Date(rote.createdAt).getTime() > 60 * 1000
+                    ? ''
+                    : 'bg-primaryGreenGradient bg-clip-text text-transparent'
                 }`}
               >
                 {formatTimeAgo(rote.createdAt)}
@@ -384,20 +361,20 @@ function RoteItem({
             {rote.pin ? (
               <Tooltip
                 placement="bottom"
-                title={rote.pin ? t("tooltips.pinned") : t("tooltips.unpinned")}
+                title={rote.pin ? t('tooltips.pinned') : t('tooltips.unpinned')}
               >
                 <PinIcon className={`size-4 cursor-pointer rounded-md`} />
               </Tooltip>
             ) : null}
 
-            {rote.state === "public" ? (
-              <Tooltip placement="bottom" title={t("tooltips.public")}>
+            {rote.state === 'public' ? (
+              <Tooltip placement="bottom" title={t('tooltips.public')}>
                 <Globe2Icon className={`size-4 cursor-pointer rounded-md`} />
               </Tooltip>
             ) : null}
 
             {rote.archived ? (
-              <Tooltip placement="bottom" title={t("tooltips.archived")}>
+              <Tooltip placement="bottom" title={t('tooltips.archived')}>
                 <Archive className={`size-4 cursor-pointer rounded-md`} />
               </Tooltip>
             ) : null}
@@ -405,38 +382,34 @@ function RoteItem({
             {rote.updatedAt !== rote.createdAt ? (
               <Tooltip
                 placement="bottom"
-                title={moment.utc(rote.updatedAt).format("YYYY/MM/DD HH:mm:ss")}
+                title={moment.utc(rote.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
               >
                 <Edit className={`size-4 cursor-pointer rounded-md`} />
               </Tooltip>
             ) : null}
 
-            {rote.state === "public" ? (
-              <Tooltip placement="bottom" title={t("tooltips.copyLink")}>
+            {rote.state === 'public' ? (
+              <Tooltip placement="bottom" title={t('tooltips.copyLink')}>
                 <LinkIcon
                   className={`size-4 cursor-pointer rounded-md`}
                   onClick={() => {
-                    navigator.clipboard.writeText(
-                      `${window.location.origin}/rote/${rote.id}`,
-                    );
-                    toast.success(t("messages.copySuccess"));
+                    navigator.clipboard.writeText(`${window.location.origin}/rote/${rote.id}`);
+                    toast.success(t('messages.copySuccess'));
                   }}
                 />
               </Tooltip>
             ) : null}
           </span>
-          {profile?.username === rote.author!.username &&
-            inView &&
-            mutate !== undefined && (
-              <Popover
-                placement="bottomRight"
-                open={open}
-                onOpenChange={handleOpenChange}
-                content={actionsMenu(rote)}
-              >
-                <Ellipsis className="absolute right-2 top-2 z-10 size-8 rounded-full p-2 hover:bg-opacityLight dark:hover:bg-opacityDark" />
-              </Popover>
-            )}
+          {profile?.username === rote.author!.username && inView && mutate !== undefined && (
+            <Popover
+              placement="bottomRight"
+              open={open}
+              onOpenChange={handleOpenChange}
+              content={actionsMenu(rote)}
+            >
+              <Ellipsis className="absolute right-2 top-2 z-10 size-8 rounded-full p-2 hover:bg-opacityLight dark:hover:bg-opacityDark" />
+            </Popover>
+          )}
         </div>
 
         <div className="relative whitespace-pre-line break-words font-zhengwen text-[16px]">
@@ -445,9 +418,7 @@ function RoteItem({
               isExpanded ? (
                 <Linkify>{rote.content}</Linkify>
               ) : (
-                <Linkify>
-                  {`${rote.content.slice(0, roteContentExpandedLetter)}...`}
-                </Linkify>
+                <Linkify>{`${rote.content.slice(0, roteContentExpandedLetter)}...`}</Linkify>
               )
             ) : (
               <Linkify>{rote.content}</Linkify>
@@ -462,7 +433,7 @@ function RoteItem({
                   className="absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t from-bgLight via-bgLight/80 to-transparent pt-8 text-primary duration-300 dark:from-bgDark dark:via-bgDark/80"
                 >
                   <ArrowDownLeft className="size-4" />
-                  {t("expand")}
+                  {t('expand')}
                 </div>
               )}
             </>
@@ -478,12 +449,12 @@ function RoteItem({
                     <img
                       className={`${
                         rote.attachments.length % 3 === 0
-                          ? "aspect-1 w-[calc(1/3*100%-2.6667px)]"
+                          ? 'aspect-1 w-[calc(1/3*100%-2.6667px)]'
                           : rote.attachments.length % 2 === 0
-                            ? "aspect-1 w-[calc(1/2*100%-2px)]"
+                            ? 'aspect-1 w-[calc(1/2*100%-2px)]'
                             : rote.attachments.length === 1
-                              ? "w-full max-w-[500px] rounded-2xl"
-                              : "aspect-1 w-[calc(1/3*100%-2.6667px)]"
+                              ? 'w-full max-w-[500px] rounded-2xl'
+                              : 'aspect-1 w-[calc(1/3*100%-2.6667px)]'
                       } grow bg-opacityLight object-cover dark:bg-opacityDark`}
                       src={file.compressUrl || file.url}
                       loading="lazy"
@@ -500,7 +471,7 @@ function RoteItem({
             return (
               <Link
                 key={tag}
-                to={"/filter"}
+                to={'/filter'}
                 state={{
                   tags: [tag],
                 }}
@@ -517,7 +488,7 @@ function RoteItem({
       {inView && (
         <>
           <Modal
-            title={t("edit")}
+            title={t('edit')}
             open={isEditModalOpen}
             onCancel={() => {
               setIsEditModalOpen(false);
@@ -526,14 +497,10 @@ function RoteItem({
             destroyOnClose={true}
             footer={null}
           >
-            <RoteInputModel
-              rote={rote}
-              submitEdit={submitEdit}
-              mutate={mutate}
-            />
+            <RoteInputModel rote={rote} submitEdit={submitEdit} mutate={mutate} />
           </Modal>
           <Modal
-            title={t("share")}
+            title={t('share')}
             open={isShareCardModalOpen}
             onCancel={onShareCardModelCancel}
             maskClosable={true}
@@ -543,7 +510,7 @@ function RoteItem({
             <RoteShareCard rote={rote}></RoteShareCard>
           </Modal>
           <Modal
-            title={"创建提醒"}
+            title={'创建提醒'}
             open={isNoticeCreateBoardModalOpen}
             onCancel={() => {
               setIsNoticeCreateBoardModalOpen(false);
