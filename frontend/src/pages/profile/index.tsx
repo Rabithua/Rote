@@ -165,7 +165,7 @@ function ProfilePage() {
           href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="dark:bg-primaryDark/10 dark:hover:bg-primaryDark/20 flex cursor-pointer items-center justify-center gap-2 border-[0.5px] bg-primary/10 py-4 text-primary hover:text-primary/80"
+          className="flex cursor-pointer items-center justify-center gap-2 border-[0.5px] py-4 hover:bg-opacityLight dark:hover:bg-opacityDark"
         >
           <Rss className="size-5" />
           <div className="text-xl">RSS</div>
