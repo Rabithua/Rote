@@ -835,7 +835,7 @@ routerV1.get(
     const feed = await generateRssFeed(notes, user, feedOptions, baseUrl);
 
     // 设置正确的Content-Type
-    res.setHeader('Content-Type', 'application/rss+xml');
+    res.setHeader('Content-Type', 'application/xml');
     res.send(feed);
   })
 );

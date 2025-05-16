@@ -120,5 +120,5 @@ export async function generateRssFeed(
   }
 
   // 返回RSS 2.0格式的输出
-  return feed.json1();
+  return feed.rss2();
 }
