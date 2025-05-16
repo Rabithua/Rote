@@ -1,6 +1,5 @@
-import { Rote, User } from '@prisma/client';
+import { User } from '@prisma/client';
 import { Feed } from 'feed';
-import moment from 'moment';
 
 export interface RssFeedOptions {
   title: string;
@@ -26,7 +25,7 @@ export interface RssFeedOptions {
  * @returns RSS Feed XML字符串
  */
 export async function generateRssFeed(
-  notes: Rote[],
+  notes: any[],
   user: User,
   options: RssFeedOptions,
   baseUrl: string
@@ -36,15 +35,11 @@ export async function generateRssFeed(
     title: options.title,
     description: options.description,
     id: options.id,
-    link: options.link,
     image: options.image,
     favicon: options.favicon,
     copyright: options.copyright,
     updated: notes.length > 0 ? new Date(notes[0].updatedAt) : new Date(),
     generator: 'Rote RSS Generator',
-    feedLinks: {
-      rss2: `${baseUrl}/v1/api/rss/${user.username}`,
-    },
     author: {
       name: options.author.name,
       email: options.author.email,
@@ -52,21 +47,56 @@ export async function generateRssFeed(
     },
   });
 
+  console.log(notes);
+
   // 将笔记添加到Feed中
   for (const note of notes) {
     const noteUrl = `${baseUrl}/note/${note.id}`;
     const content = note.content ? note.content.toString() : '';
 
+    // 如果有content，则取content第一行作为title，否则用原有逻辑
+    let title: string;
+    if (note.title) {
+      title = note.title;
+    } else if (content.trim().length > 0) {
+      // 按换行符分割，取第一行作为title
+      title = content.split(/\r?\n/)[0].trim();
+    } else {
+      title = 'Note';
+    }
+
+    // 将换行符替换为 <br />
+    let htmlContent = content.replace(/\r?\n/g, '<br />');
+
+    // 如果有附件，将图片添加到内容中
+    if (note.attachments && note.attachments.length > 0) {
+      note.attachments.forEach((attachment: any) => {
+        if (
+          attachment.url &&
+          attachment.details &&
+          attachment.details.mimetype?.startsWith('image/')
+        ) {
+          htmlContent += `<br /><img src="${attachment.url}" alt="Attachment Image" />`;
+        }
+      });
+    }
+
     feed.addItem({
-      title: note.title || moment(note.createdAt).format('YYYY-MM-DD HH:mm:ss'),
+      title,
       id: note.id,
       link: noteUrl,
       description: content.length > 200 ? content.substring(0, 200) + '...' : content,
-      content: content,
+      image:
+        note.attachments &&
+        note.attachments.length > 0 &&
+        note.attachments[0].details &&
+        note.attachments[0].details.mimetype?.startsWith('image/')
+          ? note.attachments[0].url
+          : options.image,
+      content: htmlContent,
       author: [
         {
           name: user.nickname || user.username,
-          link: `${baseUrl}/user/${user.username}`,
         },
       ],
       date: new Date(note.updatedAt),
@@ -80,7 +110,7 @@ export async function generateRssFeed(
     notes.forEach((note) => {
       if (note.tags) {
         const noteTags = Array.isArray(note.tags) ? note.tags : [];
-        noteTags.forEach((tag) => tags.add(tag));
+        noteTags.forEach((tag: any) => tags.add(tag));
       }
     });
 
@@ -90,5 +120,5 @@ export async function generateRssFeed(
   }
 
   // 返回RSS 2.0格式的输出
-  return feed.rss2();
+  return feed.json1();
 }

@@ -814,16 +814,15 @@ routerV1.get(
 
     // 设置RSS feed选项
     const feedOptions: RssFeedOptions = {
-      title: `${user.nickname || user.username} 的笔记`,
+      title: `${user.nickname || user.username}`,
       description: user.description || `这里是 ${user.nickname || user.username} 的笔记RSS订阅`,
-      id: `${baseUrl}/user/${user.username}`,
-      link: `${baseUrl}/user/${user.username}`,
-      favicon: `${baseUrl}/favicon.ico`,
+      id: `${user.username}`,
+      link: `${baseUrl}/v1/api/rss/${user.username}`,
+      favicon: user.avatar,
       copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
       author: {
         name: user.nickname || user.username,
         email: user.email,
-        link: `${baseUrl}/user/${user.username}`,
       },
     };
 

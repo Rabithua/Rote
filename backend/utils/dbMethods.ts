@@ -826,6 +826,7 @@ export async function getRssData(
             avatar: true,
           },
         },
+        attachments: true,
       },
     });
 
