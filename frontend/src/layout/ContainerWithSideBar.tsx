@@ -1,9 +1,8 @@
 import FloatBtns from '@/components/FloatBtns';
 import { SideContentLayout } from '@/components/layout/SideContentLayout';
 import { Drawer } from 'antd';
-import { ChartLine } from 'lucide-react';
+import { Layers } from 'lucide-react';
 import { ReactNode, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 function ContainerWithSideBar({
   sidebar,
@@ -14,7 +13,6 @@ function ContainerWithSideBar({
   sidebarHeader?: ReactNode;
   children?: ReactNode;
 }) {
-  const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
   const [drawOpen, setDrawOpen] = useState(false);
 
   return (
@@ -35,17 +33,11 @@ function ContainerWithSideBar({
           className="block w-fit cursor-pointer rounded-md bg-bgDark px-4 py-2 text-textDark duration-300 hover:scale-105 md:hidden dark:bg-bgLight dark:text-textLight"
           onClick={() => setDrawOpen(!drawOpen)}
         >
-          <ChartLine className="size-4" />
+          <Layers className="size-4" />
         </div>
       </FloatBtns>
 
-      <Drawer
-        open={drawOpen}
-        onClose={() => setDrawOpen(false)}
-        placement="bottom"
-        height={'80%'}
-        title={t('statistics')}
-      >
+      <Drawer open={drawOpen} onClose={() => setDrawOpen(false)} placement="bottom" height={'80%'}>
         {sidebar}
       </Drawer>
     </div>

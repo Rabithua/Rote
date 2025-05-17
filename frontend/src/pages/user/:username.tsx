@@ -9,7 +9,7 @@ import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { Profile } from '@/types/main';
 import { useAPIGet } from '@/utils/fetcher';
 import { Avatar } from 'antd';
-import { ChartLine, Globe2, Rss, Stars, User } from 'lucide-react';
+import { Globe2, Rss, Stars, StarsIcon, User } from 'lucide-react';
 import moment from 'moment';
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
@@ -119,15 +119,6 @@ function UserPage() {
             }}
           />
         )}
-
-        <FloatBtns>
-          <div
-            className="block w-fit cursor-pointer rounded-md bg-bgDark px-4 py-2 text-textDark duration-300 hover:scale-105 md:hidden dark:bg-bgLight dark:text-textLight"
-            onClick={() => setDrawOpen(!drawOpen)}
-          >
-            <ChartLine className="size-4" />
-          </div>
-        </FloatBtns>
       </ContainerWithSideBar>
     </>
   );
