@@ -10,9 +10,9 @@
 
 ### Docker
 
-[docker-compose-example.yml](https://github.com/Rabithua/Rote/blob/main/docker-compose-example.yml)
+[docker-compose-example.yml Deprecated](https://github.com/Rabithua/Rote/blob/main/docker-compose-example.yml)
 
-[bilibili 视频教程](https://www.bilibili.com/video/BV1es3aeKEQu)
+[bilibili 视频教程 Deprecated](https://www.bilibili.com/video/BV1es3aeKEQu)
 
 ## Develop
 
