@@ -1,18 +1,21 @@
-import path from "path";
-import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import dotenv from "dotenv";
+import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react-swc';
+import dotenv from 'dotenv';
+import path from 'path';
+import { defineConfig } from 'vite';
 dotenv.config();
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': path.resolve(__dirname, './src'),
     },
   },
   define: {
-    "process.env": process.env, // 注入 process.env
+    'process.env': process.env, // 注入 process.env
+  },
+  preview: {
+    host: true, // 允许所有主机访问
   },
 });
