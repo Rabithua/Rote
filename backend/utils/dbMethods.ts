@@ -1,12 +1,16 @@
-import crypto from "crypto";
-import { UploadResult } from "../types/main";
-import prisma from "./prisma";
+import crypto from 'crypto';
+import { UploadResult } from '../types/main';
+import prisma from './prisma';
+import { r2deletehandler } from './r2';
 
 // Define unified error type
 class DatabaseError extends Error {
-  constructor(message: string, public originalError?: any) {
+  constructor(
+    message: string,
+    public originalError?: any
+  ) {
     super(message);
-    this.name = "DatabaseError";
+    this.name = 'DatabaseError';
   }
 }
 
@@ -15,7 +19,7 @@ export async function allUser() {
     const users = await prisma.user.findMany();
     return users;
   } catch (error: any) {
-    throw new DatabaseError("Failed to get all users", error);
+    throw new DatabaseError('Failed to get all users', error);
   }
 }
 
@@ -38,13 +42,7 @@ export async function createUser(data: {
 }) {
   try {
     let salt = crypto.randomBytes(16);
-    let passwordhash = crypto.pbkdf2Sync(
-      data.password,
-      salt,
-      310000,
-      32,
-      "sha256"
-    );
+    let passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
 
     const user = await prisma.user.create({
       data: {
@@ -57,14 +55,11 @@ export async function createUser(data: {
     });
     return user;
   } catch (error: any) {
-    throw new DatabaseError("Failed to create user", error);
+    throw new DatabaseError('Failed to create user', error);
   }
 }
 
-export async function addSubScriptionToUser(
-  userId: string,
-  subScription: any
-): Promise<any> {
+export async function addSubScriptionToUser(userId: string, subScription: any): Promise<any> {
   try {
     const subScriptionRespon = await prisma.userSwSubScription.create({
       data: {
@@ -80,7 +75,7 @@ export async function addSubScriptionToUser(
     });
     return subScriptionRespon;
   } catch (error) {
-    throw new DatabaseError("Failed to add subscription", error);
+    throw new DatabaseError('Failed to add subscription', error);
   }
 }
 
@@ -91,7 +86,7 @@ export async function findSubScriptionToUser(subId: string): Promise<any> {
     });
 
     if (!subscription) {
-      throw new DatabaseError("Subscription not found");
+      throw new DatabaseError('Subscription not found');
     }
 
     return subscription;
@@ -103,9 +98,26 @@ export async function findSubScriptionToUser(subId: string): Promise<any> {
   }
 }
 
-export async function findSubScriptionToUserByendpoint(
-  endpoint: string
-): Promise<any> {
+export async function findSubScriptionToUserByUserId(userId: string): Promise<any> {
+  try {
+    const subscriptions = await prisma.userSwSubScription.findMany({
+      where: { userid: userId },
+    });
+
+    if (!subscriptions) {
+      throw new DatabaseError('Subscriptions not found');
+    }
+
+    return subscriptions;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to find subscriptions for user: ${userId}`, error);
+  }
+}
+
+export async function findSubScriptionToUserByendpoint(endpoint: string): Promise<any> {
   try {
     const subscription = await prisma.userSwSubScription.findUnique({
       where: { endpoint },
@@ -113,7 +125,7 @@ export async function findSubScriptionToUserByendpoint(
     });
     return subscription;
   } catch (error) {
-    throw new DatabaseError("Failed to find subscription by endpoint", error);
+    throw new DatabaseError('Failed to find subscription by endpoint', error);
   }
 }
 
@@ -140,7 +152,7 @@ export async function passportCheckUser(data: { username: string }) {
       user: user,
     };
   } catch (error) {
-    throw new DatabaseError("Failed to authenticate user", error);
+    throw new DatabaseError('Failed to authenticate user', error);
   }
 }
 
@@ -163,7 +175,7 @@ export async function createRote(data: any): Promise<any> {
     });
     return rote;
   } catch (error) {
-    throw new DatabaseError("Failed to create note", error);
+    throw new DatabaseError('Failed to create note', error);
   }
 }
 
@@ -192,13 +204,15 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    const { id, authorid, ...dataClean } = data;
+    console.log('Editing rote with data:', data);
+
+    const { id, authorid, attachments, userreaction, visitorreaction, author, ...cleanData } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,
         authorid: data.authorid,
       },
-      data: dataClean,
+      data: cleanData,
       include: {
         author: {
           select: {
@@ -214,6 +228,8 @@ export async function editRote(data: any): Promise<any> {
     });
     return rote;
   } catch (error) {
+    console.log(error);
+
     throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
   }
 }
@@ -232,17 +248,89 @@ export async function deleteRote(data: any): Promise<any> {
   }
 }
 
-export async function deleteAttachments(roteid: string): Promise<any> {
+export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: string): Promise<any> {
+  try {
+    const attachments = await prisma.attachment.findMany({
+      where: { roteid, userid },
+      select: { details: true },
+    });
+
+    if (attachments.length === 0) {
+      return { count: 0 };
+    }
+
+    const result = await prisma.attachment.deleteMany({
+      where: { roteid, userid },
+    });
+
+    attachments.forEach(({ details }) => {
+      // @ts-ignore
+      const key = details?.key;
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.log(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+    });
+
+    return result;
+  } catch (error) {
+    throw new DatabaseError(`Failed to delete attachments for rote: ${roteid}`, error);
+  }
+}
+
+export async function deleteAttachments(
+  attachments: {
+    id: string;
+    key?: string;
+  }[],
+  userid: string
+): Promise<any> {
+  try {
+    const dbAttachments = await prisma.attachment.findMany({
+      where: {
+        id: {
+          in: attachments.map((e) => e.id),
+        },
+        userid,
+      },
+    });
+
+    if (dbAttachments.length !== attachments.length) {
+      throw new DatabaseError('Some attachments not found or unauthorized');
+    }
+
+    const result = await prisma.attachment.deleteMany({
+      where: {
+        id: {
+          in: attachments.map((e) => e.id),
+        },
+        userid,
+      },
+    });
+
+    attachments.forEach(({ key }) => {
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.log(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+    });
+
+    return result;
+  } catch (error) {
+    throw new DatabaseError('Failed to delete attachments', error);
+  }
+}
+
+export async function deleteAttachment(id: string, userid: string): Promise<any> {
   try {
     const result = await prisma.attachment.deleteMany({
-      where: { roteid },
+      where: { id, userid },
     });
     return result;
   } catch (error) {
-    throw new DatabaseError(
-      `Failed to delete attachments for rote: ${roteid}`,
-      error
-    );
+    throw new DatabaseError(`Failed to delete attachment: ${id} for user: ${userid}`, error);
   }
 }
 
@@ -266,7 +354,7 @@ export async function findMyRote(
       },
       skip: skip ? skip : 0,
       take: limit ? limit : 20,
-      orderBy: [{ pin: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ pin: 'desc' }, { createdAt: 'desc' }],
       include: {
         author: {
           select: {
@@ -282,7 +370,7 @@ export async function findMyRote(
     });
     return rotes;
   } catch (error) {
-    throw new DatabaseError("Failed to find user rotes", error);
+    throw new DatabaseError('Failed to find user rotes', error);
   }
 }
 
@@ -300,14 +388,14 @@ export async function findUserPublicRote(
           {
             authorid: userid,
             archived,
-            state: "public",
+            state: 'public',
           },
           { ...filter },
         ],
       },
       skip: skip ? skip : 0,
       take: limit ? limit : 20,
-      orderBy: [{ pin: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ pin: 'desc' }, { createdAt: 'desc' }],
       include: {
         author: {
           select: {
@@ -323,7 +411,7 @@ export async function findUserPublicRote(
     });
     return rotes;
   } catch (error) {
-    throw new DatabaseError("Failed to find public rotes", error);
+    throw new DatabaseError('Failed to find public rotes', error);
   }
 }
 
@@ -335,11 +423,11 @@ export async function findPublicRote(
   try {
     const rotes = await prisma.rote.findMany({
       where: {
-        AND: [{ state: "public" }, { ...filter }],
+        AND: [{ state: 'public' }, { ...filter }],
       },
       skip: skip ? skip : 0,
       take: limit ? limit : 20,
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ createdAt: 'desc' }],
       include: {
         author: {
           select: {
@@ -355,7 +443,7 @@ export async function findPublicRote(
     });
     return rotes;
   } catch (error) {
-    throw new DatabaseError("Failed to find public rotes", error);
+    throw new DatabaseError('Failed to find public rotes', error);
   }
 }
 
@@ -368,7 +456,7 @@ export async function getMyTags(userid: string): Promise<any> {
     const allTags = Array.from(new Set(rotes.flatMap((item) => item.tags)));
     return allTags;
   } catch (error) {
-    throw new DatabaseError("Failed to get user tags", error);
+    throw new DatabaseError('Failed to get user tags', error);
   }
 }
 
@@ -383,7 +471,7 @@ export async function getMySession(userid: string): Promise<any> {
     });
     return sessions;
   } catch (error) {
-    throw new DatabaseError("Failed to get user sessions", error);
+    throw new DatabaseError('Failed to get user sessions', error);
   }
 }
 
@@ -391,13 +479,13 @@ export async function generateOpenKey(userid: string): Promise<any> {
   try {
     const openKey = await prisma.userOpenKey.create({
       data: {
-        permissions: ["SENDROTE"],
+        permissions: ['SENDROTE'],
         userid,
       },
     });
     return openKey;
   } catch (error) {
-    throw new DatabaseError("Failed to generate open key", error);
+    throw new DatabaseError('Failed to generate open key', error);
   }
 }
 
@@ -408,25 +496,22 @@ export async function getMyOpenKey(userid: string): Promise<any> {
     });
     return openKeys;
   } catch (error) {
-    throw new DatabaseError("Failed to get user open keys", error);
+    throw new DatabaseError('Failed to get user open keys', error);
   }
 }
 
-export async function deleteMyOneOpenKey(
-  userid: string,
-  id: string
-): Promise<any> {
+export async function deleteMyOneOpenKey(userid: string, id: string): Promise<any> {
   try {
     const openKey = await prisma.userOpenKey.findUnique({
       where: { id },
     });
 
     if (!openKey) {
-      throw new DatabaseError("Open key not found");
+      throw new DatabaseError('Open key not found');
     }
 
     if (openKey.userid !== userid) {
-      throw new DatabaseError("Unauthorized to delete this open key");
+      throw new DatabaseError('Unauthorized to delete this open key');
     }
 
     const result = await prisma.userOpenKey.delete({
@@ -452,11 +537,11 @@ export async function editMyOneOpenKey(
     });
 
     if (!openKey) {
-      throw new DatabaseError("Open key not found");
+      throw new DatabaseError('Open key not found');
     }
 
     if (openKey.userid !== userid) {
-      throw new DatabaseError("Unauthorized to edit this open key");
+      throw new DatabaseError('Unauthorized to edit this open key');
     }
 
     const result = await prisma.userOpenKey.update({
@@ -479,7 +564,7 @@ export async function getOneOpenKey(id: string): Promise<any> {
     });
 
     if (!openKey) {
-      throw new DatabaseError("Open key not found");
+      throw new DatabaseError('Open key not found');
     }
 
     return openKey;
@@ -503,7 +588,7 @@ export async function createAttachments(
       url: e.url,
       compressUrl: e.compressUrl,
       details: e.details,
-      storage: "R2",
+      storage: 'R2',
     }));
 
     const attachments_new = await prisma.$transaction(
@@ -515,7 +600,7 @@ export async function createAttachments(
     );
     return attachments_new;
   } catch (error) {
-    throw new DatabaseError("Failed to create attachments", error);
+    throw new DatabaseError('Failed to create attachments', error);
   }
 }
 
@@ -532,7 +617,7 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
     });
     return user;
   } catch (error) {
-    throw new DatabaseError("Failed to update user profile", error);
+    throw new DatabaseError('Failed to update user profile', error);
   }
 }
 
@@ -552,7 +637,7 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
     });
 
     if (!user) {
-      throw new DatabaseError("User not found");
+      throw new DatabaseError('User not found');
     }
 
     return user;
@@ -564,11 +649,7 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
   }
 }
 
-export async function getHeatMap(
-  userId: string,
-  startDate: string,
-  endDate: string
-): Promise<any> {
+export async function getHeatMap(userId: string, startDate: string, endDate: string): Promise<any> {
   try {
     const rotes = await prisma.rote.findMany({
       where: {
@@ -585,12 +666,12 @@ export async function getHeatMap(
     }
 
     return rotes.reduce((acc: any, item: any) => {
-      const date = item.createdAt.toISOString().split("T")[0];
+      const date = item.createdAt.toISOString().split('T')[0];
       acc[date] = (acc[date] || 0) + 1;
       return acc;
     }, {});
   } catch (error) {
-    throw new DatabaseError("Failed to generate heatmap data", error);
+    throw new DatabaseError('Failed to generate heatmap data', error);
   }
 }
 
@@ -604,7 +685,7 @@ export async function getSiteMapData(): Promise<any> {
     });
     return users;
   } catch (error) {
-    throw new DatabaseError("Failed to get sitemap data", error);
+    throw new DatabaseError('Failed to get sitemap data', error);
   }
 }
 
@@ -613,7 +694,7 @@ export async function getStatus(): Promise<boolean> {
     await prisma.rote.findFirst();
     return true;
   } catch (error) {
-    throw new DatabaseError("Failed to check database status", error);
+    throw new DatabaseError('Failed to check database status', error);
   }
 }
 
@@ -621,7 +702,7 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
   try {
     const allCount = await prisma.rote.count({ where: { authorid } });
     if (allCount === 0) {
-      throw new DatabaseError("No rotes found for user");
+      throw new DatabaseError('No rotes found for user');
     }
 
     const random = Math.floor(Math.random() * allCount);
@@ -647,20 +728,20 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
     if (error instanceof DatabaseError) {
       throw error;
     }
-    throw new DatabaseError("Failed to find random user rote", error);
+    throw new DatabaseError('Failed to find random user rote', error);
   }
 }
 
 export async function findRandomPublicRote(): Promise<any> {
   try {
-    const allCount = await prisma.rote.count({ where: { state: "public" } });
+    const allCount = await prisma.rote.count({ where: { state: 'public' } });
     if (allCount === 0) {
-      throw new DatabaseError("No public rotes found");
+      throw new DatabaseError('No public rotes found');
     }
 
     const random = Math.floor(Math.random() * allCount);
     const rote = await prisma.rote.findFirst({
-      where: { state: "public" },
+      where: { state: 'public' },
       skip: random,
       include: {
         author: {
@@ -681,7 +762,7 @@ export async function findRandomPublicRote(): Promise<any> {
     if (error instanceof DatabaseError) {
       throw error;
     }
-    throw new DatabaseError("Failed to find random public rote", error);
+    throw new DatabaseError('Failed to find random public rote', error);
   }
 }
 
@@ -698,35 +779,22 @@ export async function changeUserPassword(
     });
 
     if (!user) {
-      throw new DatabaseError("User not found");
+      throw new DatabaseError('User not found');
     }
 
     const passwordhash = user.passwordhash;
     const salt = user.salt;
 
-    const oldpasswordhash = crypto.pbkdf2Sync(
-      oldpassword,
-      salt,
-      310000,
-      32,
-      "sha256"
-    );
+    const oldpasswordhash = crypto.pbkdf2Sync(oldpassword, salt, 310000, 32, 'sha256');
 
     if (
-      Buffer.from(oldpasswordhash).toString("hex") !==
-      Buffer.from(passwordhash).toString("hex")
+      Buffer.from(oldpasswordhash).toString('hex') !== Buffer.from(passwordhash).toString('hex')
     ) {
-      throw new DatabaseError("Incorrect old password");
+      throw new DatabaseError('Incorrect old password');
     }
 
     const newSalt = crypto.randomBytes(16);
-    const newpasswordhash = crypto.pbkdf2Sync(
-      newpassword,
-      newSalt,
-      310000,
-      32,
-      "sha256"
-    );
+    const newpasswordhash = crypto.pbkdf2Sync(newpassword, newSalt, 310000, 32, 'sha256');
 
     const userUpdate = await prisma.user.update({
       where: {
@@ -743,7 +811,7 @@ export async function changeUserPassword(
     if (error instanceof DatabaseError) {
       throw error;
     }
-    throw new DatabaseError("Failed to change password", error);
+    throw new DatabaseError('Failed to change password', error);
   }
 }
 
@@ -759,7 +827,7 @@ export async function statistics(authorid: string): Promise<any> {
       attachmentsCount: attachments.length,
     };
   } catch (error) {
-    throw new DatabaseError("Failed to get user statistics", error);
+    throw new DatabaseError('Failed to get user statistics', error);
   }
 }
 
@@ -782,6 +850,57 @@ export async function exportData(authorid: string): Promise<any> {
     });
     return { notes };
   } catch (error) {
-    throw new DatabaseError("Failed to export user data", error);
+    throw new DatabaseError('Failed to export user data', error);
+  }
+}
+
+export async function getRssData(
+  username: string,
+  limit = 20
+): Promise<{ user: any; notes: any[] }> {
+  try {
+    // 先查找用户信息
+    const user = await prisma.user.findFirst({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        email: true,
+        avatar: true,
+        description: true,
+      },
+    });
+
+    if (!user) {
+      throw new Error('用户不存在');
+    }
+
+    // 查找该用户的公开笔记
+    const notes = await prisma.rote.findMany({
+      where: {
+        authorid: user.id,
+        state: 'public',
+        archived: false,
+      },
+      orderBy: {
+        updatedAt: 'desc', // 按更新日期降序排序
+      },
+      take: limit,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+      },
+    });
+
+    return { user, notes };
+  } catch (error) {
+    throw new DatabaseError('获取RSS数据失败', error);
   }
 }

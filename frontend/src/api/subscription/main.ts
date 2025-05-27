@@ -2,6 +2,24 @@
 
 import { instance } from "../request";
 
+export interface Subscription {
+  keys: {
+    auth: string;
+    p256dh: string;
+  };
+  id: string;
+  userid: string;
+  endpoint: string;
+  expirationTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * @deprecated 保存订阅信息到服务器
+ * @param subscription 订阅对象
+ * @returns Promise<any>
+ */
 export function saveSubscription(subscription: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -20,6 +38,11 @@ export function saveSubscription(subscription: any): Promise<any> {
   });
 }
 
+/**
+ * @deprecated 删除指定的订阅
+ * @param subId 订阅ID
+ * @returns Promise<any>
+ */
 export function deleteSubscription(subId: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -38,6 +61,11 @@ export function deleteSubscription(subId: any): Promise<any> {
   });
 }
 
+/**
+ * @deprecated 向指定订阅发送测试通知
+ * @param subId 订阅ID
+ * @returns Promise<any>
+ */
 export function sendNotificationTest(subId: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -58,6 +86,25 @@ export function sendNotificationTest(subId: any): Promise<any> {
     })
       .then(function (response) {
         resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+/**
+ * @deprecated 获取所有订阅列表
+ * @returns Promise<Subscription[]>
+ */
+export function getSubscriptionList(): Promise<Subscription[]> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "get",
+      url: "/v1/api/swSubScription",
+    })
+      .then(function (response) {
+        resolve(response.data.data);
       })
       .catch((e: any) => {
         reject(e);

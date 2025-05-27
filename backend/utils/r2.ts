@@ -1,13 +1,13 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import formidable from "formidable";
-import fs from "fs/promises";
-import sharp from "sharp";
-import { UploadResult } from "../types/main";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import formidable from 'formidable';
+import fs from 'fs/promises';
+import sharp from 'sharp';
+import { UploadResult } from '../types/main';
 
-const cacheControl = "public, max-age=31536000"; // 1 year cache
+const cacheControl = 'public, max-age=31536000'; // 1 year cache
 
 const s3 = new S3Client({
-  region: "auto",
+  region: 'auto',
   endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId: `${process.env.R2_ACCESS_KEY_ID}`,
@@ -45,11 +45,11 @@ async function r2uploadhandler(file: formidable.File) {
     Bucket: `${process.env.R2_BUCKET}`,
     Key: webpKey,
     Body: webpBuffer,
-    ContentType: "image/webp",
+    ContentType: 'image/webp',
     cacheControl,
     Metadata: {
-      "original-filename": file.originalFilename || "",
-      "upload-date": new Date().toISOString(),
+      'original-filename': file.originalFilename || '',
+      'upload-date': new Date().toISOString(),
     },
   };
 
@@ -75,17 +75,17 @@ async function r2uploadhandler(file: formidable.File) {
     };
 
     // Check original file upload result
-    if (originalResult.status === "fulfilled") {
+    if (originalResult.status === 'fulfilled') {
       result.url = `https://${process.env.R2_URL_PREFIX}/${originalKey}`;
     } else {
-      console.log("Error uploading original file:", originalResult.reason);
+      console.log('Error uploading original file:', originalResult.reason);
     }
 
     // Check WebP file upload result
-    if (webpResult.status === "fulfilled") {
+    if (webpResult.status === 'fulfilled') {
       result.compressUrl = `https://${process.env.R2_URL_PREFIX}/${webpKey}`;
     } else {
-      console.log("Error uploading WebP file:", webpResult.reason);
+      console.log('Error uploading WebP file:', webpResult.reason);
     }
 
     // Return null if both uploads failed
@@ -96,9 +96,30 @@ async function r2uploadhandler(file: formidable.File) {
     // Return result, may contain one or both URLs
     return result;
   } catch (err) {
-    console.log("Unexpected error during file upload:", err);
+    console.log('Unexpected error during file upload:', err);
     return null;
   }
 }
 
-export { r2uploadhandler, s3 };
+async function r2deletehandler(key: string) {
+  const deleteParams = {
+    Bucket: `${process.env.R2_BUCKET}`,
+    Key: key,
+  };
+  const deleteCommand = new DeleteObjectCommand(deleteParams);
+  try {
+    const deleteResult = await s3.send(deleteCommand);
+    if (deleteResult.$metadata.httpStatusCode === 204) {
+      console.log(`Successfully deleted ${key}`);
+      return true;
+    } else {
+      console.log(`Failed to delete ${key}`);
+      return false;
+    }
+  } catch (err) {
+    console.log(`Error deleting ${key}:`, err);
+    return false;
+  }
+}
+
+export { r2deletehandler, r2uploadhandler, s3 };

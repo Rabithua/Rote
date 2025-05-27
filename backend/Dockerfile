@@ -1,5 +1,5 @@
 # Use a smaller base image
-FROM node:18.18.0-alpine
+FROM node:22.15.0-alpine
 
 
 # Install OpenSSL

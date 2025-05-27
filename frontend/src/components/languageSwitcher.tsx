@@ -3,7 +3,7 @@ import i18next from "i18next";
 function LanguageSwitcher() {
   function switchLng() {
     let lngNow = i18next.language.slice(0, 2);
-    i18next.changeLanguage(lngNow === "zh" ? "en" : "zh").then((t) => {
+    i18next.changeLanguage(lngNow === "zh" ? "en" : "zh").then(() => {
       console.log(`Now language is ${i18next.language} `);
     });
   }

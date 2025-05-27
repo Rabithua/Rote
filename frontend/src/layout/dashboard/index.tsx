@@ -1,163 +1,150 @@
-import { logOut } from "@/api/login/main";
-import { useProfile } from "@/state/profile";
-import { useShowLeftNav } from "@/state/showLeftNav";
-import {
-  ExperimentOutlined,
-  GlobalOutlined,
-  HomeOutlined,
-  InboxOutlined,
-  LoginOutlined,
-  LogoutOutlined,
-  MenuUnfoldOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import type { Profile } from '@/types/main';
+import { get, post } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
+import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
+import type { JSX } from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import { Link, Outlet, useLocation } from 'react-router-dom';
+
+interface IconType {
+  svg: JSX.Element;
+  link?: string;
+  name: string;
+  callback?: () => void;
+}
 
 function LayoutDashboard() {
   const location = useLocation();
-  const [profile, setProfile] = useProfile();
-  const [ifshowLeftNav, setIfshowLeftNav] = useShowLeftNav();
+  const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
 
-  const { t } = useTranslation("translation", { keyPrefix: "pages.mine" });
-  
-  const [icons, setIcons] = useState([
-    {
-      svg: <LoginOutlined />,
-      link: "/login",
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
-      name: "login",
-    },
-  ]);
+  const iconsData: IconType[][] = [
+    [
+      {
+        svg: <Home className="size-4" />,
+        link: '/home',
+        name: 'home',
+      },
+      {
+        svg: <Globe2 className="size-4" />,
+        link: '/explore',
+        name: 'explore',
+      },
 
-  useEffect(() => {
-    if (profile) {
-      setIcons([
-        {
-          svg: <HomeOutlined />,
-          link: "/home",
+      {
+        svg: <Archive className="size-4" />,
+        link: '/archived',
+        name: 'archived',
+      },
+      {
+        svg: <User className="size-4" />,
+        link: '/profile',
 
-          name: "home",
-        },
-        {
-          svg: <GlobalOutlined />,
-          link: "/explore",
-
-          name: "explore",
-        },
-
-        {
-          svg: <InboxOutlined />,
-          link: "/archived",
-
-          name: "archived",
-        },
-        {
-          svg: <UserOutlined />,
-          link: "/profile",
-
-          name: "profile",
-        },
-        {
-          svg: <ExperimentOutlined />,
-          link: "/experiment",
-
-          name: "experiment",
-        },
-      ]);
-    } else {
-      setIcons([
-        {
-          svg: <LoginOutlined />,
-          link: "/login",
-
-          name: "login",
-        },
-      ]);
-    }
-  }, [profile]);
-
-  function changeLeftNavVb() {
-    setIfshowLeftNav(!ifshowLeftNav);
-  }
+        name: 'profile',
+      },
+      {
+        svg: <Snail className="size-4" />,
+        link: '/experiment',
+        name: 'experiment',
+      },
+      {
+        svg: <LogOut className="size-4" />,
+        name: 'logout',
+        callback: logOutFn,
+      },
+    ],
+    [
+      {
+        svg: <LogIn className="size-4" />,
+        link: '/login',
+        name: 'login',
+      },
+    ],
+  ];
 
   function logOutFn() {
-    const toastId = toast.loading(t("messages.loggingOut"));
-    logOut()
-      .then(() => {
-        toast.success(t("messages.logoutSuccess"), {
+    const toastId = toast.loading(t('messages.loggingOut'));
+    post('/auth/logout')
+      .then(async () => {
+        toast.success(t('messages.logoutSuccess'), {
           id: toastId,
         });
 
-        setProfile(null);
+        window.location.reload();
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.log(err);
-        toast.error("err.response.data.data.msg", {
+        toast.error('err.response.data.data.msg', {
           id: toastId,
         });
       });
   }
 
+  function IconRenderItem(icon: IconType) {
+    return icon.link ? (
+      <Link
+        key={icon.link}
+        to={icon.link}
+        onClick={() => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+      >
+        <div
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
+            location.pathname === icon.link
+              ? 'bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight'
+              : ''
+          } `}
+        >
+          {icon.svg}
+          <div className="hidden shrink-0 tracking-widest lg:block">
+            {t(`leftNavBar.${icon.name}`)}
+          </div>
+        </div>
+      </Link>
+    ) : (
+      <div
+        key={icon.name}
+        className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
+          location.pathname === icon.link
+            ? 'bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight'
+            : ''
+        } ${icon.name === 'logout' ? 'hover:bg-red-600/10 hover:text-red-600' : ''} `}
+        onClick={() => {
+          icon.callback && icon.callback();
+        }}
+      >
+        {icon.svg}
+        <div className="hidden shrink-0 tracking-widest lg:block">
+          {t(`leftNavBar.${icon.name}`)}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className=" bg-bgLight text-textLight w-full h-dvh dark:bg-bgDark dark:text-textDark">
-      <div className=" max-w-[1440px] lg:w-[90%] font-sans flex mx-auto">
-        {ifshowLeftNav ? (
-          <div className=" sticky top-0 flex lg:w-[200px] px-1 sm:px-2 lg:px-4 shrink-0 border-r border-opacityLight dark:border-opacityDark flex-col gap-4 items-start justify-center">
-            {icons.map((icon, index) => {
-              return (
-                <Link key={icon.link} to={icon.link}>
-                  <div
-                    className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full ${
-                      location.pathname === icon.link
-                        ? " bg-bgDark text-textDark hover:bg-bgDark dark:hover:bg-bgLight dark:bg-bgLight dark:text-textLight"
-                        : ""
-                    } `}
-                  >
-                    {icon.svg}
-                    <div className=" shrink-0 hidden tracking-widest lg:block">
-                      {t(`leftNavBar.${icon.name}`)}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+    <div className="bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark mx-auto w-full max-w-6xl">
+      <div className="mx-auto flex w-dvw max-w-[1440px] divide-x-1 font-sans lg:w-[90%]">
+        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 lg:w-[200px] lg:px-4">
+          {isLoading ? (
+            <LoadingPlaceholder className="py-8" size={6} />
+          ) : profile ? (
+            iconsData[0].map((icon) => {
+              return IconRenderItem(icon);
+            })
+          ) : (
+            iconsData[1].map((icon) => {
+              return IconRenderItem(icon);
+            })
+          )}
+        </div>
 
-            {profile && (
-              <div
-                className={` hover:bg-[#00000010] dark:hover:bg-[#ffffff10] cursor-pointer duration-300 text-base flex gap-2 items-center justify-center px-3 p-2 rounded-full`}
-                onClick={logOutFn}
-              >
-                <LogoutOutlined />
-                <div className=" shrink-0 hidden tracking-widest lg:block">
-                  {t(`leftNavBar.logout`)}
-                </div>
-              </div>
-            )}
-
-            <div
-              className=" absolute bottom-8 flex cursor-pointer duration-300 sm:hidden gap-2 items-center justify-center px-3 p-1 rounded-full hover:bg-[#00000010] dark:hover:bg-[#ffffff10]"
-              onClick={changeLeftNavVb}
-            >
-              <div className=" w-8 h-8 p-1 shrink-0 text-base">
-                <MenuUnfoldOutlined />
-              </div>
-              <div className=" shrink-0 hidden tracking-widest lg:block">
-                {t(`leftNavBar.fold`)}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div
-            className=" sm:hidden active:scale-95 z-10 fixed bottom-8 left-0 px-4 py-2 rounded-r-md bg-bgDark dark:bg-bgLight text-bgLight dark:text-bgDark"
-            onClick={changeLeftNavVb}
-          >
-            <MenuUnfoldOutlined />
-          </div>
-        )}
-        <div className=" flex-1 noScrollBar h-dvh noScrollBar overflow-y-visible overflow-x-hidden relative">
+        <div className="relative min-w-0 flex-1 overflow-visible">
           <Outlet />
         </div>
       </div>

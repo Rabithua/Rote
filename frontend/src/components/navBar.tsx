@@ -1,32 +1,34 @@
-import { LeftOutlined } from "@ant-design/icons";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function NavBar() {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.navBar",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.navBar',
   });
   let location = useLocation();
   const navigate = useNavigate();
 
   function back() {
-    const doesAnyHistoryEntryExist = location.key !== "default";
+    const doesAnyHistoryEntryExist = location.key !== 'default';
     if (doesAnyHistoryEntryExist) {
       navigate(-1);
     } else {
-      navigate("/home");
+      navigate('/home');
     }
   }
   return (
     <>
-      {window.history.state && window.history.state.idx > 0 && (
-        <div className=" duration-300 sticky top-0 z-10 w-full flex overflow-x-scroll noScrollBar items-center bg-bgLight/90 dark:bg-bgDark/90 backdrop-blur-xl">
-          <LeftOutlined className=" p-4 cursor-pointer" onClick={back} />
-          <div className=" font-semibold cursor-pointer" onClick={back}>
-            {t("back")}
-          </div>
+      <div
+        className={`noScrollBar bg-bgLight/90 dark:bg-bgDark/90 sticky top-0 z-10 w-full items-center gap-2 overflow-x-scroll px-2 py-4 backdrop-blur-xl duration-300 ${
+          window.history.state && window.history.state.idx > 0 ? 'flex' : 'hidden'
+        }`}
+      >
+        <ArrowLeft className="size-8 cursor-pointer p-1" onClick={back} />
+        <div className="cursor-pointer text-lg font-medium" onClick={back}>
+          {t('back')}
         </div>
-      )}
+      </div>
     </>
   );
 }

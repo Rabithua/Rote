@@ -1,49 +1,35 @@
-import { UploadOutlined } from "@ant-design/icons";
-import { message } from "antd";
-import { useRef } from "react";
-import { useTranslation } from "react-i18next";
+import { Upload } from 'lucide-react';
+import { useRef } from 'react';
 
-export default function Uploader({ fileList, setFileList }: any) {
+export default function FileSelector({ callback, id, disabled }: any) {
   const fileInputRef = useRef(null);
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.uploader",
-  });
   return (
-    <div className={` ${fileList.length >= 9 ? "hidden" : ""}`}>
+    <div>
       <div
         onClick={() => {
           //@ts-ignore
           fileInputRef.current?.click();
         }}
-        className=" active:scale-95 duration-300 cursor-pointer w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-opacityLight dark:bg-opacityDark border border-opacityLight dark:border-opacityDark overflow-hidden"
+        className="bg-opacityLight dark:bg-opacityDark flex h-20 w-20 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg duration-300 active:scale-95"
       >
-        <UploadOutlined className=" text-2xl " />
+        <Upload className="size-6" />
       </div>
       <input
         ref={fileInputRef}
-        className=" hidden"
+        className="hidden"
         type="file"
-        id="file"
+        id={`file-${id}`}
         multiple
         accept="image/*"
+        disabled={disabled}
         onInput={() => {
-          const input = document.querySelector("#file");
-          //@ts-ignore
-          let files = Object.values(input.files);
+          const input = document.querySelector(`#file-${id}`) as HTMLInputElement;
 
-          const updatedFileList: Array<any> = files.map(async (file: any) => {
-            const src = URL.createObjectURL(file);
-            return { file, src };
-          });
+          let files = input.files ? Object.values(input.files) : [];
 
-          if (fileList.length + updatedFileList.length > 9) {
-            message.error(t("fileLimit"));
-          }
-
-          Promise.all(updatedFileList).then((newFileList) => {
-            setFileList(fileList.concat(newFileList).slice(0, 9));
-          });
+          callback(files);
         }}
+        title="Attachments Uploader"
       />
     </div>
   );

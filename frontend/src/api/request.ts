@@ -28,6 +28,12 @@ instance.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (error.response && error.response.status === 401) {
+      if (localStorage.getItem("profile")) {
+        localStorage.removeItem("profile");
+        window.location.href = "/login";
+      }
+    }
     // 捕获响应错误，但不显示错误消息
     return Promise.reject(error);
   }

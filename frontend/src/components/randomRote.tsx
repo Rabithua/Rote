@@ -1,46 +1,38 @@
-import { apiGetRandomRote } from "@/api/rote/main";
-import { RedoOutlined } from "@ant-design/icons/lib/icons";
-import { useEffect, useState } from "react";
-import RoteItem from "./roteItem";
-import { useTranslation } from "react-i18next";
+import { type Rote } from '@/types/main';
+import { get } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
+import { RefreshCcwIcon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import LoadingPlaceholder from './LoadingPlaceholder';
+import RoteItem from './roteItem';
 
 export default function RandomRote() {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.randomRote",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.randomRote',
   });
 
-  const [rote, setRote] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: rote,
+    isLoading,
+    isValidating,
+    mutate,
+    error,
+  } = useAPIGet<Rote>('randomRote', () => get('/notes/random').then((res) => res.data));
 
-  useEffect(() => {
-    getRandomRoteFun();
-  }, []);
-
-  function getRandomRoteFun() {
-    setLoading(true);
-    apiGetRandomRote()
-      .then((res: any) => {
-        setLoading(false);
-        setRote(res.data);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }
-  return (
-    rote && (
-      <div className=" shrink-0">
-        <div className=" flex gap-2 bg-bgLight dark:bg-bgDark text-md font-semibold py-2">
-          {t("title")}
-          <RedoOutlined
-            className={` cursor-pointer hover:opacity-50 duration-300 ml-auto ${
-              loading && "animate-spin"
-            }`}
-            onClick={getRandomRoteFun}
-          />
-        </div>
-        <RoteItem rote_param={rote} randomRoteStyle />
+  return isLoading ? (
+    <LoadingPlaceholder size={6} className="py-8" error={error} />
+  ) : rote ? (
+    <div className="shrink-0 p-4">
+      <div className="text-md flex gap-2 py-2 font-semibold">
+        {t('title')}
+        <RefreshCcwIcon
+          className={`ml-auto size-4 cursor-pointer duration-300 hover:opacity-50 ${
+            isValidating && 'animate-spin'
+          }`}
+          onClick={() => mutate()}
+        />
       </div>
-    )
-  );
+      <RoteItem rote={rote} randomRoteStyle />
+    </div>
+  ) : null;
 }

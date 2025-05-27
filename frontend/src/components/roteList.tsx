@@ -1,28 +1,35 @@
-import { Rote, Rotes } from "@/types/main";
-import { LoadingOutlined } from "@ant-design/icons";
-import Empty from "antd/es/empty";
-import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import RoteItem from "./roteItem";
+import type { Rotes } from '@/types/main';
 
-function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
-  const [rotesToRender, setRotesToRender] = useState<Rotes>([]);
+import { MessageSquareDashed } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import LoadingPlaceholder from './LoadingPlaceholder';
+import RoteItem from './roteItem';
 
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.roteList",
+import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
+
+function RoteList({
+  data,
+  loadMore,
+  mutate,
+}: {
+  data?: Rotes[];
+  loadMore: () => void;
+  mutate: SWRInfiniteKeyedMutator<Rotes>;
+}) {
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.roteList',
   });
 
-  const countRef = useRef<number>(0);
-  const loading = useRef<boolean>(false);
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  const [hasMore, setHasMore] = useState(true);
+  const rotes: Rotes = data ? ([] as Rotes).concat(...data) : [];
+  const isEmpty = data?.[0]?.length === 0;
+  // TODO:如何优雅处理limit字段的传输
+  // const limit = getProps(0, []).limit || 20;
+  const limit = 20;
+  const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < limit);
 
-  useEffect(() => {
-    countRef.current = rotesToRender.length;
-  }, [rotesToRender.length]);
-
-  // 监听loaderRef显示事件，加载更多
   useEffect(() => {
     const currentloaderRef = loaderRef.current;
 
@@ -32,110 +39,40 @@ function RoteList({ api, apiProps }: { api: any; apiProps: any }) {
 
     const options = {
       root: null, // 使用视口作为根元素
-      rootMargin: "0px", // 根元素的边距
+      rootMargin: '0px', // 根元素的边距
       threshold: 0.5, // 元素可见度的阈值
     };
 
-    let observer: IntersectionObserver;
-
-    function loadMore() {
-      if (loading.current === true || !hasMore) return;
-
-      loading.current = true;
-
-      api({
-        skip: countRef.current,
-        ...apiProps,
-      })
-        .then((res: any) => {
-          if (res.data.data.length !== 20) {
-            setHasMore(false);
-          }
-
-          setRotesToRender([...rotesToRender, ...res.data.data]);
-          countRef.current += res.data.data.length;
-        })
-        .catch(() => {})
-        .finally(() => {
-          loading.current = false;
-        });
-    }
-
-    observer = new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries) => {
       const target = entries[0];
       if (target.isIntersecting) {
         loadMore();
       }
     }, options);
 
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
+    // 使用之前保存的引用而不是直接访问 loaderRef.current
+    observer.observe(currentloaderRef);
 
     return () => {
-      if (loaderRef.current) {
-        observer.unobserve(loaderRef.current);
-      }
+      // 在清理函数中使用相同的引用
+      observer.unobserve(currentloaderRef);
     };
-  }, [rotesToRender]);
-
-  useEffect(() => {
-    setRotesToRender([]);
-    setHasMore(true);
-
-    api(apiProps)
-      .then((res: any) => {
-        if (res.data.data.length !== 20) {
-          setHasMore(false);
-        }
-
-        setRotesToRender(res.data.data);
-        countRef.current = res.data.data.length;
-      })
-      .catch(() => {});
-  }, [apiProps]);
-
-  function updateRote(rote: Rote) {
-    setRotesToRender((prev) => {
-      return prev.map((r) => {
-        if (r.id === rote.id) {
-          return rote;
-        }
-        return r;
-      });
-    });
-  }
-
-  function deleteRote(id: string) {
-    setRotesToRender((prev) => prev.filter((rote) => rote.id !== id));
-  }
+  }, [loadMore]);
 
   return (
-    <div className=" flex flex-col w-full relative">
-      {rotesToRender.map((item: any, index: any) => {
-        return (
-          <RoteItem
-            rote_param={item}
-            updateRote={updateRote}
-            deleteRote={deleteRote}
-            key={item.id}
-          ></RoteItem>
-        );
+    <div className="relative flex w-full flex-col divide-y-1">
+      {rotes.map((item: any) => {
+        return <RoteItem rote={item} key={item.id} mutate={mutate} />;
       })}
-      {!hasMore ? null : (
-        <div
-          ref={loaderRef}
-          className=" flex justify-center text-lg items-center py-8 gap-3 bg-bgLight dark:bg-bgDark"
-        >
-          <LoadingOutlined />
+      {isReachingEnd ? null : (
+        <div ref={loaderRef}>
+          <LoadingPlaceholder className="py-8" size={6} />
         </div>
       )}
-      {!hasMore && rotesToRender.length === 0 ? (
-        <div className=" shrink-0 dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={t("empty")}
-          />
+      {isReachingEnd && rotes.length === 0 ? (
+        <div className="bg-bgLight dark:bg-bgDark flex shrink-0 flex-col items-center justify-center gap-4 py-8">
+          <MessageSquareDashed className="text-muted-foreground size-10" />
+          <div className="text-textLight dark:text-textDark text-center">{t('empty')}</div>
         </div>
       ) : null}
     </div>

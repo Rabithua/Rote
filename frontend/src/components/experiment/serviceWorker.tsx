@@ -1,93 +1,76 @@
-import {
-  saveSubscription,
-  deleteSubscription,
-  sendNotificationTest,
-} from "@/api/subscription/main";
-import {
-  checkPermission,
-  requestNotificationPermission,
-  registerSW,
-} from "@/utils/main";
-import { NotificationFilled } from "@ant-design/icons";
-import { Divider, Switch } from "antd";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
+import { Divider } from '@/components/ui/divider';
+import { Switch } from '@/components/ui/switch';
+import { del, post } from '@/utils/api';
+import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
+import { Bell } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function ServiceWorker() {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "pages.experiment.serviceWorker",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'pages.experiment.serviceWorker',
   });
   const [swReady, setSwReady] = useState(false);
-  const [swLoading, setSwLoading] = useState(true);
+  const [, setSwLoading] = useState(true);
   const [noticeId, setNoticeId] = useState<any>(null);
 
-  useEffect(() => {
-    listenSw();
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistration().then(async (registration) => {
-        if (registration) {
-          try {
-            registration?.active?.postMessage({ method: "subNotice" });
-          } catch (error) {}
-          // console.log("Service Worker is installed.");
-        } else {
-          // console.log("Service Worker is not installed.");
-        }
-        setSwLoading(false);
-      });
-    } else {
+  const initializeServiceWorker = async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+
+    try {
+      listenSw();
+
+      if (registration && registration.active) {
+        registration.active.postMessage({ method: 'subNotice' });
+      } else {
+        console.log('Service Worker is not installed.');
+      }
+    } catch (error) {
+      console.error('Error initializing Service Worker:', error);
+    } finally {
       setSwLoading(false);
-      console.log("Service Worker is not supported.");
     }
-  }, []);
+  };
 
   function listenSw() {
-    console.log("listenSw");
-    navigator.serviceWorker.removeEventListener("message", async (event) => {});
-    navigator.serviceWorker.addEventListener("message", async (event) => {
-      if (event.data.method === "subNoticeResponse") {
-        try {
-          const response = await saveSubscription(
-            JSON.parse(event.data.payload)
-          );
-          if (response.data.data.id) {
-            setSwLoading(false);
-            setSwReady(true);
-            setNoticeId(response.data.data.id);
+    navigator.serviceWorker.removeEventListener('message', async () => {});
+    navigator.serviceWorker.addEventListener('message', async (event) => {
+      switch (event.data.method) {
+        case 'subNoticeResponse':
+          {
+            const response = await post('/subscriptions', JSON.parse(event.data.payload));
+
+            if (response.data.id) {
+              setSwLoading(false);
+              setSwReady(true);
+              setNoticeId(response.data.id);
+            }
           }
-        } catch (error) {}
+          break;
+
+        default:
+          console.warn('Unknown message from Service Worker:', event.data);
+          break;
       }
     });
   }
 
   async function sub() {
-    const toastId = toast.loading(t("permissionProcessing"));
+    const toastId = toast.loading(t('permissionProcessing'));
     try {
       setSwLoading(true);
       checkPermission();
       await requestNotificationPermission();
-      await registerSW();
-      try {
-        const registration = await registerSW();
+      const registration = await registerSW();
 
-        if (registration) {
-          console.log(registration);
-          try {
-            listenSw();
-            setTimeout(() => {
-              registration?.active?.postMessage({ method: "subNotice" });
-            }, 300);
-          } catch (error) {}
-          console.log("Service Worker is installed.");
-        } else {
-          console.log("Service Worker is not installed.");
-        }
-      } catch (error) {}
-      toast.success(t("complete"), {
-        id: toastId,
-      });
-      setSwReady(true);
+      if (!registration.active) {
+        return toast.error(t('swNotActive'), {
+          id: toastId,
+        });
+      }
+
+      initializeServiceWorker();
     } catch (error: any) {
       toast.error(error, {
         id: toastId,
@@ -96,8 +79,8 @@ export default function ServiceWorker() {
   }
   async function unSub() {
     setSwLoading(true);
-    deleteSubscription(noticeId)
-      .then((res) => {
+    del('/subscriptions/' + noticeId)
+      .then(() => {
         setSwLoading(false);
         setNoticeId(null);
         setSwReady(false);
@@ -110,29 +93,46 @@ export default function ServiceWorker() {
 
   async function noticeTest() {
     try {
-      const resp = await sendNotificationTest(noticeId);
+      const resp = await post('/subscriptions/' + noticeId + '/notify', {
+        title: '自在废物',
+        body: '这是我的博客。',
+        image: `https://r2.rote.ink/others%2Flogo.png`,
+        data: {
+          type: 'openUrl',
+          url: 'https://rabithua.club',
+        },
+      });
       console.log(resp);
-      toast.success(t("sendSuccess"));
+      toast.success(t('sendSuccess'));
     } catch (error) {}
   }
 
+  useEffect(() => {
+    if (navigator.serviceWorker) {
+      setSwLoading(true);
+      initializeServiceWorker();
+    } else {
+      setSwLoading(false);
+    }
+
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', listenSw);
+    };
+  }, []);
+
   return (
-    <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border border-opacityLight dark:border-opacityDark rounded-xl p-4 bg-opacityLight dark:bg-opacityDark">
-      <div className=" text-2xl font-semibold">
-        {t("title")} <br />
-        <div className=" font-normal mt-2 text-sm text-gray-500">
-          {t("description")}
-        </div>
+    <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
+      <div className="text-2xl font-semibold">
+        {t('title')} <br />
+        <div className="mt-2 text-sm font-normal text-gray-500">{t('description')}</div>
       </div>
       <Divider></Divider>
-      <div className=" flex gap-2 items-center">
-        <span className=" font-semibold">{t("status")}</span>
+      <div className="flex items-center gap-2">
+        <span className="font-semibold">{t('status')}</span>
         <Switch
           disabled={!navigator.serviceWorker}
-          className=" bg-bgLight dark:bg-bgDark"
+          className="bg-opacityLight dark:bg-opacityDark"
           checked={swReady}
-          loading={swLoading}
-          size="default"
           onChange={(e) => {
             if (e) {
               sub();
@@ -143,22 +143,22 @@ export default function ServiceWorker() {
         />
       </div>
       {noticeId && (
-        <div className=" flex mt-2 text-gray-500 gap-2 items-center">
-          <span className=" shrink-0">{t("serviceId")}</span>
-          <span className=" text-ellipsis overflow-hidden">{noticeId}</span>
+        <div className="mt-2 flex items-center gap-2 text-gray-500">
+          <span className="shrink-0">{t('serviceId')}</span>
+          <span className="overflow-hidden text-ellipsis">{noticeId}</span>
           <div
-            className=" duration-300 active:scale-95 py-1 shrink-0 px-2 bg-bgLight cursor-pointer rounded-md flex gap-1"
+            className="bg-bgLight flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
             onClick={noticeTest}
           >
-            <NotificationFilled />
-            {t("notificationTest")}
+            <Bell className="size-4" />
+            {t('notificationTest')}
           </div>
         </div>
       )}
       {noticeId && (
-        <div className=" mt-2 flex flex-col gap-2">
-          <div className=" font-semibold">{t("example")}</div>
-          <div className=" whitespace-pre text-red-700 font-mono overflow-x-scroll p-3 rounded-xl bg-bgLight">
+        <div className="mt-2 flex flex-col gap-2">
+          <div className="font-semibold">{t('example')}</div>
+          <div className="bg-opacityLight dark:bg-opacityDark overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
             {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
 --data '{
@@ -171,6 +171,13 @@ export default function ServiceWorker() {
 }
 }'`}
           </div>
+        </div>
+      )}
+
+      {!navigator.serviceWorker && (
+        <div className="bg-bgLight/90 dark:bg-bgDark/90 dark:text-textDark absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-xl">
+          <div className="text-2xl">🤕</div>
+          <div>{t('notSupported')}</div>
         </div>
       )}
     </div>

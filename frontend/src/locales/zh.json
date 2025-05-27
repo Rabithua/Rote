@@ -103,6 +103,7 @@
       "statistics": "统计 / Static"
     },
     "profile": {
+      "title": "个人资料",
       "editProfile": "编辑资料",
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
@@ -127,7 +128,8 @@
       "uploadSuccess": "上传成功",
       "uploadFailed": "上传失败",
       "editSuccess": "修改成功",
-      "editFailed": "修改失败"
+      "editFailed": "修改失败",
+      "sideBarTitle": "除了这些...还有"
     },
     "rote": {
       "loading": "加载中...",
@@ -141,6 +143,8 @@
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
       "publicNotes": "已公开的笔记 / Public Note",
+      "rssSubscribe": "RSS 订阅",
+      "sideBarTitle": "除了这些...还有",
       "helmet": {
         "loading": "加载中...",
         "defaultDesc": "rote.ink"
@@ -149,10 +153,16 @@
     "filter": {
       "includeTags": "包含标签：",
       "allTags": "所有标签：",
-      "none": "无"
+      "none": "无",
+      "data": "数据统计"
     },
     "explore": {
-      "title": "探索 / Explore"
+      "title": "探索 / Explore",
+      "sideBarTitle": "探索✨",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch"
     },
     "experiment": {
       "title": "实验室",
@@ -177,11 +187,14 @@
         "permissionProcessing": "权限处理中...",
         "complete": "完成",
         "sendSuccess": "发送成功！",
-        "example": "使用示例："
+        "example": "使用示例：",
+        "notSupported": "当前浏览器不支持 ServiceWorker",
+        "swNotActive": "ServiceWorker 未激活"
       }
     },
     "archived": {
-      "title": "归档"
+      "title": "归档 / Archived",
+      "statistics": "统计 / Static"
     }
   },
   "components": {
@@ -235,6 +248,12 @@
         "private": "私密",
         "public": "公开"
       },
+      "uploading": "上传中...",
+      "uploadSuccess": "上传成功",
+      "uploadFailed": "上传失败",
+      "deleting": "删除中...",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败",
       "error": {
         "emptyContent": "内容不能为空"
       }
@@ -257,7 +276,8 @@
       "sendFailed": "发送失败",
       "error": {
         "emptyContent": "内容不能为空"
-      }
+      },
+      "recentPosts": "以上是最近的笔记"
     },
     "roteItem": {
       "details": "详情",
@@ -274,9 +294,12 @@
         "unpinned": "未置顶",
         "public": "公开",
         "archived": "已归档",
-        "edited": "已编辑：{{time}}"
+        "edited": "已编辑：{{time}}",
+        "copyLink": "复制链接",
+        "copySuccess": "链接已复制到剪贴板"
       },
       "messages": {
+        "copySuccess": "内容已复制到剪贴板",
         "sending": "发送中...",
         "sendSuccess": "发送成功",
         "sendFailed": "发送失败",
@@ -289,7 +312,7 @@
       }
     },
     "roteList": {
-      "empty": "这里什么也没有"
+      "empty": "还没有发布任何内容"
     },
     "roteShareCard": {
       "copyLink": "复制链接",

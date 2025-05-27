@@ -1,5 +1,5 @@
-import { OpenKeys } from "@/types/main";
-import { atom, useAtom } from "jotai";
+import { type OpenKeys } from '@/types/main';
+import { atom, useAtom } from 'jotai';
 
 const openKeysAtom = atom<OpenKeys>([]);
 

@@ -98,6 +98,7 @@
       "statistics": "Statistics"
     },
     "profile": {
+      "title": "Profile",
       "editProfile": "Edit Profile",
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time:",
@@ -122,7 +123,8 @@
       "uploadSuccess": "Upload successful",
       "uploadFailed": "Upload failed",
       "editSuccess": "Edit successful",
-      "editFailed": "Edit failed"
+      "editFailed": "Edit failed",
+      "sideBarTitle": "Besides... there are also"
     },
     "rote": {
       "loading": "Loading...",
@@ -136,6 +138,8 @@
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time: ",
       "publicNotes": "Public Notes",
+      "rssSubscribe": "RSS Feed",
+      "sideBarTitle": "Besides... there are also",
       "helmet": {
         "loading": "loading...",
         "defaultDesc": "rote.ink"
@@ -144,10 +148,16 @@
     "filter": {
       "includeTags": "Including Tags:",
       "allTags": "All Tags:",
-      "none": "NONE"
+      "none": "NONE",
+      "data": "Data Statistics"
     },
     "explore": {
-      "title": "Explore"
+      "title": "Explore",
+      "sideBarTitle": "Explore✨",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch"
     },
     "experiment": {
       "title": "Experiment",
@@ -172,11 +182,14 @@
         "permissionProcessing": "Processing permissions...",
         "complete": "Complete",
         "sendSuccess": "Sent successfully!",
-        "example": "Usage Example:"
+        "example": "Usage Example:",
+        "notSupported": "Current browser does not support ServiceWorker",
+        "swNotActive": "ServiceWorker is not active, please refresh the page"
       }
     },
     "archived": {
-      "title": "Archive"
+      "title": "Archive",
+      "statistics": "Statistics"
     }
   },
   "error": {
@@ -234,6 +247,12 @@
         "private": "Private",
         "public": "Public"
       },
+      "uploading": "Uploading...",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
+      "deleting": "Deleting...",
+      "deleteSuccess": "Delete successful",
+      "deleteFailed": "Delete failed",
       "error": {
         "emptyContent": "Content cannot be empty"
       }
@@ -256,7 +275,8 @@
       "sendFailed": "Send failed",
       "error": {
         "emptyContent": "Content cannot be empty"
-      }
+      },
+      "recentPosts": "The above are recent notes"
     },
     "roteItem": {
       "details": "Details",
@@ -273,9 +293,12 @@
         "unpinned": "Unpinned",
         "public": "Public",
         "archived": "Archived",
-        "edited": "Edited at: {{time}}"
+        "edited": "Edited at: {{time}}",
+        "copyLink": "Copy Link",
+        "copyLinkSuccess": "Link copied to clipboard"
       },
       "messages": {
+        "copySuccess": "Content copied to clipboard",
         "sending": "Sending...",
         "sendSuccess": "Send successful",
         "sendFailed": "Send failed",

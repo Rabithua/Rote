@@ -1,0 +1,24 @@
+/* 引入谷歌Serif字体 */
+.noto-serif-sc-light {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 300;
+    font-style: normal;
+}
+
+.noto-serif-sc-regular {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+.noto-serif-sc-semibold {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 600;
+    font-style: normal;
+}
+
+.noto-serif-sc-black {
+    font-family: "Noto Serif SC", serif;
+    font-weight: 900;
+    font-style: normal;
+}

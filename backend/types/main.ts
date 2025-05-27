@@ -8,3 +8,17 @@ export interface UploadResult {
     hash: string | null | undefined;
   };
 }
+
+export interface NotificationOptions {
+  title: string;
+  body?: string;
+  icon?: string;
+  timestamp?: number;
+  tag?: string;
+  badge?: string;
+  image?: string;
+  vibrate?: number[];
+  data?: any;
+  silent?: boolean;
+  requireInteraction?: boolean;
+}

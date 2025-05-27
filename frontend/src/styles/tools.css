@@ -1,0 +1,45 @@
+@layer utilities {
+    .textareaInit {
+        @apply border-none text-base ring-0 text-pretty shadow-none outline-none;
+        @apply focus:ring-0 focus:outline-none;
+        @apply min-h-40 max-h-[60dvh];
+        @apply duration-200;
+        @apply transition-all;
+        background-color: transparent !important;
+    }
+
+    .animation-timeline-view {
+        animation-timeline: view();
+    }
+
+    .noScrollBar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .noScrollBar {
+        scrollbar-width: none;
+        /* 隐藏火狐的滚动条 */
+        -ms-overflow-style: none;
+        /* 隐藏IE和Edge的滚动条 */
+    }
+
+    a:hover {
+        color: inherit;
+        /* 继承父元素的颜色 */
+        text-decoration: none;
+        /* 可选：去掉下划线 */
+    }
+
+    .aTagStyle a {
+        text-decoration: underline;
+        color: #0c9849;
+        word-break: break-all;
+    }
+
+    *[class="day"] {
+        @apply duration-300;
+        @apply animate-show;
+        @apply opacity-0;
+        @apply cursor-pointer;
+    }
+}

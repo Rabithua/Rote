@@ -5,18 +5,22 @@
     "source.organizeImports": "always"
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
   "[prisma]": {
     "editor.defaultFormatter": "Prisma.prisma"
   },
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "editor.tabSize": 2,
   "editor.wordWrap": "on",
-  "editor.minimap.enabled": true,
+  "editor.minimap.enabled": false,
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
   "editor.suggestSelection": "first",
@@ -24,5 +28,9 @@
   "files.autoSaveDelay": 1000,
   "explorer.confirmDelete": false,
   "explorer.confirmDragAndDrop": false,
-  "javascript.updateImportsOnFileMove.enabled": "always"
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "postman.settings.dotenv-detection-notification-visibility": false,
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

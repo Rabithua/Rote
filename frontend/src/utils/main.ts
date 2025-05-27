@@ -1,4 +1,4 @@
-import { Rotes } from "@/types/main";
+import type { Rotes } from "@/types/main";
 import toast from "react-hot-toast";
 
 export function formatTimeAgo(givenTime: string): string {
@@ -55,7 +55,7 @@ export async function registerSW() {
   const registration = await navigator.serviceWorker.register("sw.js");
 
   if (registration.active) {
-    toast.success("ServiceWorker注册成功！");
+    toast.success("Service Worker registered successfully!");
   }
 
   return registration;
@@ -65,10 +65,13 @@ export async function requestNotificationPermission() {
   const permission = await Notification.requestPermission();
 
   if (permission !== "granted") {
+    toast.error(
+      "Notification permission denied. Please enable it in your browser settings.",
+    );
     throw new Error("Notification permission not granted");
   }
 
-  toast.success("授权成功");
+  toast.success("Permission granted successfully");
   return;
 }
 
