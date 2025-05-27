@@ -8,14 +8,15 @@ cmds = ["bun install"]
 cmds = ["bun run build"]
 
 [start]
-cmd = "bun run preview"
+cmd = "bun run preview --port 3000 --host"
 
 [variables]
 NODE_ENV = "production"
+PORT = "3000"
 
 [nixpkgs]
 # 指定 nixpkgs 版本
 channel = "unstable"
 
 [deploy]
-startCmd = "bun run preview"
+startCmd = "bun run preview --port 3000 --host"
