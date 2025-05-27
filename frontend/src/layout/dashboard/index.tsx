@@ -1,9 +1,10 @@
 import { logOut } from '@/api/login/main';
 import { getMyProfile } from '@/api/user/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import { Profile } from '@/types/main';
+import type { Profile } from '@/types/main';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
+import type { JSX } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
@@ -126,9 +127,9 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark">
-      <div className="mx-auto flex w-dvw max-w-[1440px] font-sans lg:w-[90%]">
-        <div className="fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around border-r-0 border-t border-opacityLight bg-bgLight/90 px-1 py-2 pb-5 text-textLight backdrop-blur-2xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:border-r sm:border-t-0 sm:px-2 lg:w-[200px] lg:px-4 dark:border-opacityDark dark:bg-bgDark/90 dark:text-textDark">
+    <div className="bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark mx-auto w-full max-w-6xl">
+      <div className="mx-auto flex w-dvw max-w-[1440px] divide-x-1 font-sans lg:w-[90%]">
+        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-2xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 lg:w-[200px] lg:px-4">
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (

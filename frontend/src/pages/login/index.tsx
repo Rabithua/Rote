@@ -1,86 +1,69 @@
-import { loginByPassword, registerBypassword } from "@/api/login/main";
-import { apiGetStatus } from "@/api/rote/main";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { Link, useNavigate } from "react-router-dom";
-import { z } from "zod";
-
-import { getMyProfile } from "@/api/user/main";
-import LoadingPlaceholder from "@/components/LoadingPlaceholder";
-import Logo from "@/components/logo";
-import mainJson from "@/json/main.json";
-import { Profile } from "@/types/main";
-import { useAPIGet } from "@/utils/fetcher";
-import { Input } from "antd";
-import { useTranslation } from "react-i18next";
+import { loginByPassword, registerBypassword } from '@/api/login/main';
+import { apiGetStatus } from '@/api/rote/main';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
+import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
+import mainJson from '@/json/main.json';
+import { getMyProfile } from '@/api/user/main';
+import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import Logo from '@/components/logo';
+import type { Profile } from '@/types/main';
+import { useAPIGet } from '@/utils/fetcher';
+import { Input } from '@/components/ui/input';
+import { useTranslation } from 'react-i18next';
+const { safeRoutes } = mainJson;
 
 function Login() {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "pages.login",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'pages.login',
   });
 
-  const { safeRoutes } = mainJson;
-
   const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet(
-    "checkStatus",
-    apiGetStatus,
+    'checkStatus',
+    apiGetStatus
   );
 
-  const { data: profile, mutate } = useAPIGet<Profile>(
-    "profile",
-    getMyProfile,
-  );
+  const { data: profile, mutate } = useAPIGet<Profile>('profile', getMyProfile);
 
-  const [type, setType] = useState("login");
+  const [type, setType] = useState('login');
   const navigate = useNavigate();
 
   const [disbled, setDisbled] = useState(false);
 
   const [loginData, setLoginData] = useState({
-    username: "",
-    password: "",
+    username: '',
+    password: '',
   });
 
   const [registerData, setRegisterData] = useState({
-    username: "",
-    password: "",
-    email: "",
-    nickname: "",
+    username: '',
+    password: '',
+    email: '',
+    nickname: '',
   });
 
   const LoginDataZod = z.object({
-    username: z
-      .string()
-      .min(1, t("validation.usernameRequired"))
-      .max(20, t("validation.usernameMaxLength")),
-    password: z
-      .string()
-      .min(1, t("validation.passwordRequired"))
-      .max(30, t("validation.passwordMaxLength")),
+    username: z.string().min(1, t('usernameRequired')).max(20, t('usernameMaxLength')),
+    password: z.string().min(1, t('passwordRequired')).max(30, t('passwordMaxLength')),
   });
 
   const RegisterDataZod = z.object({
     username: z
       .string()
-      .min(1, t("validation.usernameRequired"))
-      .max(20, t("validation.usernameMaxLength"))
-      .regex(/^[A-Za-z0-9_-]+$/, t("validation.usernameFormat"))
+      .min(1, t('usernameRequired'))
+      .max(20, t('usernameMaxLength'))
+      .regex(/^[A-Za-z0-9_-]+$/, t('usernameFormat'))
       .refine((value) => !safeRoutes.includes(value), {
-        message: t("validation.usernameConflict"),
+        message: t('usernameConflict'),
       }),
-    password: z
-      .string()
-      .min(1, t("validation.passwordRequired"))
-      .max(30, t("validation.passwordMaxLength")),
+    password: z.string().min(1, t('passwordRequired')).max(30, t('passwordMaxLength')),
     email: z
       .string()
-      .min(1, t("validation.emailRequired"))
-      .max(30, t("validation.emailMaxLength"))
-      .email(t("validation.emailFormat")),
-    nickname: z
-      .string()
-      .min(1, t("validation.nicknameRequired"))
-      .max(20, t("validation.nicknameMaxLength")),
+      .min(1, t('emailRequired'))
+      .max(30, t('emailMaxLength'))
+      .email(t('emailFormat')),
+    nickname: z.string().min(1, t('nicknameRequired')).max(20, t('nicknameMaxLength')),
   });
 
   function login() {
@@ -91,26 +74,26 @@ function Login() {
       return;
     }
 
-    const toastId = toast.loading(t("messages.loggingIn"));
+    const toastId = toast.loading(t('messages.loggingIn'));
     setDisbled(true);
     loginByPassword(loginData)
       .then(async (res) => {
-        toast.success(t("messages.loginSuccess"), {
+        toast.success(t('messages.loginSuccess'), {
           id: toastId,
         });
         setDisbled(false);
         mutate();
-        navigate("/home");
+        navigate('/home');
       })
       .catch((err) => {
         console.log(err);
         setDisbled(false);
-        if ("code" in err.response?.data) {
+        if ('code' in err.response?.data) {
           toast.error(err.response.data.msg, {
             id: toastId,
           });
         } else {
-          toast.error(t("messages.backendDown"), {
+          toast.error(t('messages.backendDown'), {
             id: toastId,
           });
         }
@@ -125,21 +108,21 @@ function Login() {
       return;
     }
 
-    const toastId = toast.loading(t("messages.registering"));
+    const toastId = toast.loading(t('messages.registering'));
     setDisbled(false);
     registerBypassword(registerData)
       .then(() => {
-        toast.success(t("messages.registerSuccess"), {
+        toast.success(t('messages.registerSuccess'), {
           id: toastId,
         });
         setDisbled(false);
         setRegisterData({
-          username: "",
-          password: "",
-          email: "",
-          nickname: "",
+          username: '',
+          password: '',
+          email: '',
+          nickname: '',
         });
-        setType("login");
+        setType('login');
       })
       .catch((err) => {
         setDisbled(false);
@@ -150,7 +133,7 @@ function Login() {
   }
 
   function handleInputChange(e: any, key: string) {
-    if (type === "login") {
+    if (type === 'login') {
       const { value } = e.target;
       setLoginData((prevState) => ({
         ...prevState,
@@ -166,182 +149,153 @@ function Login() {
   }
 
   function changeType() {
-    setType(type === "login" ? "register" : "login");
+    setType(type === 'login' ? 'register' : 'login');
   }
 
   function handleLoginKeyDown(e: any) {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       login();
     }
   }
 
   function handleRegisterKeyDown(e: any) {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       register();
     }
   }
 
   useEffect(() => {
     if (profile) {
-      navigate("/home");
+      navigate('/home');
     } else {
     }
   }, [profile, navigate]);
 
   return (
-    <div className="h-dvh w-full dark:bg-bgDark bg-bgLight relative flex items-center justify-center">
-      <div className=" opacity-0 translate-y-5 animate-show px-8 py-6 w-80 border-[1px] border-opacityLight dark:bg-opacityDark shadow-card dark:text-white rounded-lg flex flex-col gap-2 pb-10 z-10">
-        {isCheckingStatus
-          ? (
-            <LoadingPlaceholder
-              className=" py-8"
-              size={6}
-            />
-          )
-          : backendStatusOk
-          ? (
-            <>
-              <div className=" mb-4">
-                <Logo className=" w-32" color="#07C160" />
-              </div>
-              <div className=" flex flex-col gap-2">
-                {type === "login"
-                  ? (
-                    <>
-                      <div className=" text-md ">
-                        {t("fields.username")}
-                      </div>
-                      <Input
-                        placeholder="username"
-                        className=" text-md rounded-md font-mono "
-                        maxLength={20}
-                        value={loginData.username}
-                        onInput={(e) => handleInputChange(e, "username")}
-                      />
-                      <div className=" text-md ">
-                        {t("fields.password")}
-                      </div>
-                      <Input
-                        placeholder="possword"
-                        type="password"
-                        className=" text-md rounded-md font-mono "
-                        maxLength={30}
-                        value={loginData.password}
-                        onInput={(e) => handleInputChange(e, "password")}
-                        onKeyDown={handleLoginKeyDown}
-                      />
-                    </>
-                  )
-                  : (
-                    <>
-                      <div className=" text-md ">
-                        {t("fields.username")}
-                      </div>
-                      <Input
-                        placeholder="username"
-                        className=" text-md rounded-md font-mono "
-                        maxLength={20}
-                        value={registerData.username}
-                        onInput={(e) => handleInputChange(e, "username")}
-                      />
-                      <div className=" text-md ">
-                        {t("fields.email")}
-                      </div>
-                      <Input
-                        placeholder="someone@mail.com"
-                        className=" text-md rounded-md font-mono "
-                        maxLength={20}
-                        value={registerData.email}
-                        onInput={(e) => handleInputChange(e, "email")}
-                      />
-                      <div className=" text-md ">
-                        {t("fields.nickname")}
-                      </div>
-                      <Input
-                        placeholder="nickname"
-                        className=" text-md rounded-md font-mono "
-                        maxLength={20}
-                        value={registerData.nickname}
-                        onInput={(e) => handleInputChange(e, "nickname")}
-                      />
+    <div className="dark:bg-bgDark bg-bgLight relative flex h-dvh w-full items-center justify-center">
+      <div className="animate-show dark:bg-opacityDark shadow-card z-10 flex w-80 translate-y-5 flex-col gap-2 rounded-lg px-8 py-6 pb-10 opacity-0 dark:text-white">
+        {isCheckingStatus ? (
+          <LoadingPlaceholder className="py-8" size={6} />
+        ) : backendStatusOk ? (
+          <>
+            <div className="mb-4">
+              <Logo className="w-32" color="#07C160" />
+            </div>
+            <div className="flex flex-col gap-2">
+              {type === 'login' ? (
+                <>
+                  <div className="text-md">{t('fields.username')}</div>
+                  <Input
+                    placeholder="username"
+                    className="text-md rounded-md font-mono"
+                    maxLength={20}
+                    value={loginData.username}
+                    onInput={(e) => handleInputChange(e, 'username')}
+                  />
+                  <div className="text-md">{t('fields.password')}</div>
+                  <Input
+                    placeholder="possword"
+                    type="password"
+                    className="text-md rounded-md font-mono"
+                    maxLength={30}
+                    value={loginData.password}
+                    onInput={(e) => handleInputChange(e, 'password')}
+                    onKeyDown={handleLoginKeyDown}
+                  />
+                </>
+              ) : (
+                <>
+                  <div className="text-md">{t('fields.username')}</div>
+                  <Input
+                    placeholder="username"
+                    className="text-md rounded-md font-mono"
+                    maxLength={20}
+                    value={registerData.username}
+                    onInput={(e) => handleInputChange(e, 'username')}
+                  />
+                  <div className="text-md">{t('fields.email')}</div>
+                  <Input
+                    placeholder="someone@mail.com"
+                    className="text-md rounded-md font-mono"
+                    maxLength={20}
+                    value={registerData.email}
+                    onInput={(e) => handleInputChange(e, 'email')}
+                  />
+                  <div className="text-md">{t('fields.nickname')}</div>
+                  <Input
+                    placeholder="nickname"
+                    className="text-md rounded-md font-mono"
+                    maxLength={20}
+                    value={registerData.nickname}
+                    onInput={(e) => handleInputChange(e, 'nickname')}
+                  />
 
-                      <div className=" text-md ">
-                        {t("fields.password")}
-                      </div>
-                      <Input
-                        placeholder="possword"
-                        type="password"
-                        className=" text-md rounded-md font-mono "
-                        maxLength={30}
-                        value={registerData.password}
-                        onInput={(e) => handleInputChange(e, "password")}
-                        onKeyDown={handleRegisterKeyDown}
-                      />
-                    </>
-                  )}
-                <div className=" mt-4 flex flex-col gap-2">
-                  {type === "login"
-                    ? (
-                      <>
-                        <button
-                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white "
-                          disabled={disbled}
-                          onClick={login}
-                        >
-                          {t("buttons.login")}
-                        </button>
-                        <button
-                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black "
-                          disabled={disbled}
-                          onClick={changeType}
-                        >
-                          {t("buttons.register")}
-                        </button>
-                      </>
-                    )
-                    : (
-                      <>
-                        <div
-                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-black text-white "
-                          onClick={register}
-                        >
-                          {t("buttons.register")}
-                        </div>
-                        <div
-                          className=" cursor-pointer duration-300 active:scale-95 w-full text-center rounded-md px-3 py-2 bg-bgLight dark:text-black "
-                          onClick={changeType}
-                        >
-                          {t("buttons.back")}
-                        </div>
-                      </>
-                    )}
-                </div>
+                  <div className="text-md">{t('fields.password')}</div>
+                  <Input
+                    placeholder="possword"
+                    type="password"
+                    className="text-md rounded-md font-mono"
+                    maxLength={30}
+                    value={registerData.password}
+                    onInput={(e) => handleInputChange(e, 'password')}
+                    onKeyDown={handleRegisterKeyDown}
+                  />
+                </>
+              )}
+              <div className="mt-4 flex flex-col gap-2">
+                {type === 'login' ? (
+                  <>
+                    <button
+                      className="w-full cursor-pointer rounded-md bg-black px-3 py-2 text-center text-white duration-300 active:scale-95"
+                      disabled={disbled}
+                      onClick={login}
+                    >
+                      {t('buttons.login')}
+                    </button>
+                    <button
+                      className="bg-bgLight w-full cursor-pointer rounded-md px-3 py-2 text-center duration-300 active:scale-95 dark:text-black"
+                      disabled={disbled}
+                      onClick={changeType}
+                    >
+                      {t('buttons.register')}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className="w-full cursor-pointer rounded-md bg-black px-3 py-2 text-center text-white duration-300 active:scale-95"
+                      onClick={register}
+                    >
+                      {t('buttons.register')}
+                    </div>
+                    <div
+                      className="bg-bgLight w-full cursor-pointer rounded-md px-3 py-2 text-center duration-300 active:scale-95 dark:text-black"
+                      onClick={changeType}
+                    >
+                      {t('buttons.back')}
+                    </div>
+                  </>
+                )}
               </div>
+            </div>
 
-              <div className=" flex gap-1 items-center justify-center  cursor-pointer duration-300 active:scale-95">
-                <Link to="/explore">
-                  <div className=" hover:opacity-60 duration-300">
-                    {t("nav.explore")}
-                  </div>
-                </Link>
-                <span className=" px-2">/</span>
-                <Link to="/landing">
-                  <div className=" hover:opacity-60 duration-300">
-                    {t("nav.home")}
-                  </div>
-                </Link>
-              </div>
-            </>
-          )
-          : (
-            <>
-              <div className=" ">{t("error.backendIssue")}</div>
-              <div>{JSON.stringify(backendStatusOk)}</div>
-              <div className=" text-gray-500">
-                {t("error.dockerDeployment")}
-              </div>
-            </>
-          )}
+            <div className="flex cursor-pointer items-center justify-center gap-1 duration-300 active:scale-95">
+              <Link to="/explore">
+                <div className="duration-300 hover:opacity-60">{t('nav.explore')}</div>
+              </Link>
+              <span className="px-2">/</span>
+              <Link to="/landing">
+                <div className="duration-300 hover:opacity-60">{t('nav.home')}</div>
+              </Link>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className=" ">{t('error.backendIssue')}</div>
+            <div>{JSON.stringify(backendStatusOk)}</div>
+            <div className="text-gray-500">{t('error.dockerDeployment')}</div>
+          </>
+        )}
       </div>
     </div>
   );

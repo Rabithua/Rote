@@ -1,7 +1,8 @@
-import { apiGetMyRote, apiGetMyTags } from '@/api/rote/main';
+import { apiGetMyTags } from '@/api/rote/main';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import type { ApiGetRotesParams } from '@/types/main';
 import { useAPIGet } from '@/utils/fetcher';
 import { ActivityIcon } from 'lucide-react';
 import { useState } from 'react';
@@ -19,6 +20,17 @@ function MineFilter() {
       hasEvery: location.state.tags || [],
     },
   });
+
+  const getProps = (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
+    return {
+      apiType: 'mine',
+      params: {
+        skip: pageIndex * 20,
+        limit: 20,
+      },
+      filter: filter,
+    };
+  };
 
   function TagsBlock() {
     const tagsClickHandler = (tag: string) => {
@@ -38,14 +50,14 @@ function MineFilter() {
     };
 
     return (
-      <div className="bg-opacityLight p-4 font-semibold dark:bg-opacityDark">
+      <div className="bg-opacityLight dark:bg-opacityDark p-4 font-semibold">
         <div className="my-2 flex flex-wrap items-center gap-2">
           {t('includeTags')}
           {filter.tags.hasEvery.length > 0
             ? filter.tags.hasEvery.map((tag: any, index: any) => {
                 return (
                   <div
-                    className="cursor-pointer rounded-md bg-opacityLight px-2 py-1 text-xs font-normal duration-300 hover:scale-95 dark:bg-opacityDark"
+                    className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
                     key={`tag-${index}`}
                     onClick={() => tagsClickHandler(tag)}
                   >
@@ -61,7 +73,7 @@ function MineFilter() {
             ? tags.map((tag) => {
                 return (
                   <div key={tag} onClick={() => tagsClickHandler(tag)}>
-                    <div className="cursor-pointer rounded-md border-[1px] px-2 py-1 text-xs font-normal duration-300 hover:scale-95 dark:border-opacityDark">
+                    <div className="cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
                       {tag}
                     </div>
                   </div>
@@ -76,21 +88,21 @@ function MineFilter() {
   function SideBar() {
     return (
       <div className="grid grid-cols-2">
-        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+        <div className="gap2 flex flex-col items-center justify-center py-4">
           <div className="font-mono text-xl font-black">{tags?.length}</div>
-          <div className="font-light">TAG</div>
+          <div className="font-light">SOMETHING</div>
         </div>
-        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+        <div className="gap2 flex flex-col items-center justify-center py-4">
           <div className="font-mono text-xl font-black">{tags?.length}</div>
-          <div className="font-light">TAG</div>
+          <div className="font-light">SOMETHING</div>
         </div>
-        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+        <div className="gap2 flex flex-col items-center justify-center py-4">
           <div className="font-mono text-xl font-black">{tags?.length}</div>
-          <div className="font-light">TAG</div>
+          <div className="font-light">SOMETHING</div>
         </div>
-        <div className="gap2 flex flex-col items-center justify-center border-[0.5px] py-4">
+        <div className="gap2 flex flex-col items-center justify-center py-4">
           <div className="font-mono text-xl font-black">{tags?.length}</div>
-          <div className="font-light">TAG</div>
+          <div className="font-light">SOMETHING</div>
         </div>
       </div>
     );
@@ -100,7 +112,7 @@ function MineFilter() {
     <ContainerWithSideBar
       sidebar={<SideBar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 border-b p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
           <div className="flex h-8 items-center gap-2">
             <ActivityIcon className="size-5" />
             {t('data')}
@@ -112,13 +124,7 @@ function MineFilter() {
       <div className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible`}>
         <TagsBlock />
 
-        <RoteList
-          api={apiGetMyRote}
-          apiProps={{
-            limit: 20,
-            filter,
-          }}
-        />
+        <RoteList getProps={getProps} />
       </div>
     </ContainerWithSideBar>
   );

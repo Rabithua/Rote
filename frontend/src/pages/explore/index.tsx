@@ -1,12 +1,11 @@
-import { apiGetPublicRote } from '@/api/rote/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavHeader from '@/components/navHeader';
 import RandomCat from '@/components/RandomCat';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { getPropsPublic } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import { Eye, GitFork, Github, Globe2, MessageCircleQuestionIcon, Star } from 'lucide-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useSWR from 'swr';
@@ -14,8 +13,6 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 function ExplorePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });
-
-  const [drawOpen, setDrawOpen] = useState(false);
 
   const SideBar = () => {
     const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
@@ -47,7 +44,7 @@ function ExplorePage() {
     ];
 
     return (
-      <div className="flex w-full flex-col gap-4">
+      <div className="flex w-full flex-col divide-y-1">
         {isRoteGithubDataLoading ? (
           <LoadingPlaceholder className="py-8" size={6} />
         ) : (
@@ -68,7 +65,7 @@ function ExplorePage() {
         )}
 
         <div className="flex flex-col">
-          <div className="border-t p-4 pb-0 font-semibold">
+          <div className="p-4 pb-0 font-semibold">
             EveDayOneCat <br />
             <div className="text-sm font-normal text-gray-500">
               <Link to={'http://motions.cat/index.html'} target="_blank">
@@ -87,8 +84,8 @@ function ExplorePage() {
     <ContainerWithSideBar
       sidebar={<SideBar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 border-b p-4 text-lg font-semibold">
-          <div className="h-8 flex gap-2 items-center">
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+          <div className="flex h-8 items-center gap-2">
             <Github className="size-5" />
             {t('sideBarTitle')}
           </div>
@@ -96,13 +93,7 @@ function ExplorePage() {
       }
     >
       <NavHeader title={t('title')} icon={<Globe2 className="size-6" />} />
-      <RoteList
-        api={apiGetPublicRote}
-        apiProps={{
-          limit: 20,
-          filter: {},
-        }}
-      />
+      <RoteList getProps={getPropsPublic} />
     </ContainerWithSideBar>
   );
 }

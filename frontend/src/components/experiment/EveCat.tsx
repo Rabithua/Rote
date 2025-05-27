@@ -1,17 +1,14 @@
-import { Divider } from "antd";
-import { Link } from "react-router-dom";
-import RandomCat from "../RandomCat";
+import { Divider } from '@/components/ui/divider';
+import { Link } from 'react-router-dom';
+import RandomCat from '../RandomCat';
 
 export default function EveCat() {
   return (
-    <div className=" w-full sm:w-[calc(50%-4px)] noScrollBar relative overflow-y-scroll overflow-x-hidden aspect-1 border-b p-4">
-      <div className=" text-2xl font-semibold">
+    <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
+      <div className="text-2xl font-semibold">
         EveDayOneCat <br />
-        <div className=" font-normal mt-2 text-sm text-gray-500">
-          <Link
-            to={"http://motions.cat/index.html"}
-            target="_blank"
-          >
+        <div className="mt-2 text-sm font-normal text-gray-500">
+          <Link to={'http://motions.cat/index.html'} target="_blank">
             From: http://motions.cat/index.html
           </Link>
         </div>

@@ -1,42 +1,31 @@
-import { message } from "antd";
-import { Upload } from "lucide-react";
-import { useRef } from "react";
-import { useTranslation } from "react-i18next";
+import { Upload } from 'lucide-react';
+import { useRef } from 'react';
 
-export default function Uploader({ fileList, callback, id }: any) {
+export default function FileSelector({ callback, id, disabled }: any) {
   const fileInputRef = useRef(null);
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.uploader",
-  });
   return (
-    <div className={` ${fileList.length >= 9 ? "hidden" : ""}`}>
+    <div>
       <div
         onClick={() => {
           //@ts-ignore
           fileInputRef.current?.click();
         }}
-        className=" active:scale-95 duration-300 cursor-pointer w-20 h-20 flex flex-col items-center justify-center rounded-lg bg-opacityLight dark:bg-opacityDark border border-opacityLight dark:border-opacityDark overflow-hidden"
+        className="bg-opacityLight dark:bg-opacityDark flex h-20 w-20 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg duration-300 active:scale-95"
       >
-        <Upload className=" size-6 " />
+        <Upload className="size-6" />
       </div>
       <input
         ref={fileInputRef}
-        className=" hidden"
+        className="hidden"
         type="file"
         id={`file-${id}`}
         multiple
         accept="image/*"
+        disabled={disabled}
         onInput={() => {
-          const input = document.querySelector(
-            `#file-${id}`,
-          ) as HTMLInputElement;
+          const input = document.querySelector(`#file-${id}`) as HTMLInputElement;
 
           let files = input.files ? Object.values(input.files) : [];
-
-          if (fileList.length + files.length > 9) {
-            message.error(t("fileLimit"));
-            return [];
-          }
 
           callback(files);
         }}

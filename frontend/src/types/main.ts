@@ -31,9 +31,10 @@ export type Rote = {
     nickname: string;
     avatar: string;
   };
-  attachments: Attachment[];
-  userreaction?: any[]; // 你可以根据实际情况定义userreaction的类型
-  visitorreaction?: any[]; // 你可以根据实际情况定义visitorreaction的类型
+  attachments: (Attachment | File)[];
+  // TODO: add reaction feature
+  userreaction?: any[];
+  visitorreaction?: any[];
 };
 
 export type Attachment = {
@@ -79,16 +80,16 @@ export type RotesAction =
 
 export type Profile =
   | {
-      id: string;
-      email: string;
-      username: string;
-      nickname: string;
-      description: string;
-      cover: string;
-      avatar: string;
-      createdAt: string;
-      updatedAt: string;
-    }
+    id: string;
+    email: string;
+    username: string;
+    nickname: string;
+    description: string;
+    cover: string;
+    avatar: string;
+    createdAt: string;
+    updatedAt: string;
+  }
   | undefined;
 
 export type ProfileAction =
@@ -132,4 +133,19 @@ export type TempState = {
   editOne: null | Rote;
   removeOne: null | string;
   newAttachments: null | Attachment[];
+};
+
+export type ApiGetRotesParams = {
+  archived?: boolean;
+  filter?: {
+    tags?: {
+      hasEvery?: string[];
+    };
+  };
+  apiType?: "mine" | "public" | "userPublic";
+  params?: {
+    username?: string;
+    limit?: number;
+    skip?: number;
+  };
 };

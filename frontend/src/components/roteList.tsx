@@ -1,36 +1,22 @@
-import { Rotes } from "@/types/main";
-import { useAPIInfinite } from "@/utils/fetcher";
+import type { Rotes } from '@/types/main';
+import { useAPIInfinite } from '@/utils/fetcher';
 
-import Empty from "antd/es/empty";
-import { useEffect, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { SWRConfiguration } from "swr";
-import LoadingPlaceholder from "./LoadingPlaceholder";
-import RoteItem from "./roteItem";
+import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { SWRConfiguration } from 'swr';
+import LoadingPlaceholder from './LoadingPlaceholder';
+import RoteItem from './roteItem';
+import { MessageSquareDashed } from 'lucide-react';
+import { apiGetRotes } from '@/api/rote/main';
 
-function RoteList(
-  { api, apiProps, options }: {
-    api: any;
-    apiProps: any;
-    options?: SWRConfiguration;
-  },
-) {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.roteList",
+function RoteList({ getProps, options }: { getProps: any; options?: SWRConfiguration }) {
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.roteList',
   });
 
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  const getProps = (pageIndex: number, previousPageData: Rotes | null) => {
-    if (previousPageData && !previousPageData.length) return null;
-    return {
-      limit: 20,
-      skip: pageIndex * 20,
-      ...apiProps,
-    };
-  };
-
-  const { data, mutate, loadMore } = useAPIInfinite(getProps, api, {
+  const { data, mutate, loadMore } = useAPIInfinite(getProps, apiGetRotes, {
     ...options,
     initialSize: 0,
     revalidateFirstPage: false,
@@ -38,8 +24,8 @@ function RoteList(
 
   const rotes: Rotes = data ? [].concat(...data) : [];
   const isEmpty = data?.[0]?.length === 0;
-  const isReachingEnd = isEmpty ||
-    (data && data[data.length - 1]?.length < apiProps.limit);
+  const limit = getProps(0, []).limit || 20;
+  const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < limit);
 
   useEffect(() => {
     const currentloaderRef = loaderRef.current;
@@ -50,7 +36,7 @@ function RoteList(
 
     const options = {
       root: null, // 使用视口作为根元素
-      rootMargin: "0px", // 根元素的边距
+      rootMargin: '0px', // 根元素的边距
       threshold: 0.5, // 元素可见度的阈值
     };
 
@@ -71,27 +57,21 @@ function RoteList(
   }, [loadMore]);
 
   return (
-    <div className=" flex flex-col w-full relative">
+    <div className="relative flex w-full flex-col divide-y-1">
       {rotes.map((item: any) => {
         return <RoteItem rote={item} key={item.id} mutate={mutate} />;
       })}
       {isReachingEnd ? null : (
-        <div
-          ref={loaderRef}
-        >
-          <LoadingPlaceholder className=" py-8" size={6} />
+        <div ref={loaderRef}>
+          <LoadingPlaceholder className="py-8" size={6} />
         </div>
       )}
-      {isReachingEnd && rotes.length === 0
-        ? (
-          <div className=" shrink-0 dark:border-opacityDark bg-bgLight dark:bg-bgDark py-4">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={t("empty")}
-            />
-          </div>
-        )
-        : null}
+      {isReachingEnd && rotes.length === 0 ? (
+        <div className="bg-bgLight dark:bg-bgDark flex shrink-0 flex-col items-center justify-center gap-4 py-8">
+          <MessageSquareDashed className="text-muted-foreground size-10" />
+          <div className="text-textLight dark:text-textDark text-center">{t('empty')}</div>
+        </div>
+      ) : null}
     </div>
   );
 }

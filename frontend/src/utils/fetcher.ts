@@ -1,7 +1,8 @@
-import axios, { AxiosResponse } from "axios";
+import type { ApiGetRotesParams, Rotes } from "@/types/main";
+import axios, { type AxiosResponse } from "axios";
 import { useCallback } from "react";
-import useSWR, { SWRConfiguration } from "swr";
-import useSWRInfinite, { SWRInfiniteConfiguration } from "swr/infinite";
+import useSWR, { type SWRConfiguration } from "swr";
+import useSWRInfinite, { type SWRInfiniteConfiguration } from "swr/infinite";
 
 type HttpMethod = "GET" | "POST" | "DELETE";
 
@@ -15,7 +16,7 @@ export const api = axios.create({
 export const fetcher = async <ApiResponse, TData = unknown>(
   method: HttpMethod,
   url: string,
-  data?: TData
+  data?: TData,
 ): Promise<ApiResponse> => {
   try {
     const response: AxiosResponse<ApiResponse> = await api.request({
@@ -37,7 +38,7 @@ export const swrMutationFetcher = async <TResponse, TData = unknown>(
   url: string,
   {
     arg,
-  }: { arg: { method: HttpMethod; data?: TData; optimisticData?: TResponse } }
+  }: { arg: { method: HttpMethod; data?: TData; optimisticData?: TResponse } },
 ): Promise<TResponse> => {
   const { method, data } = arg;
   return fetcher<TResponse, TData>(method, url, data);
@@ -62,12 +63,12 @@ interface APIGetProps {
 export function useAPIGet<TData>(
   props: APIGetProps | string,
   fetcher: (data: any) => Promise<any>,
-  options?: SWRConfiguration<TData>
+  options?: SWRConfiguration<TData>,
 ) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<TData>(
     props,
     fetcher,
-    options
+    options,
   );
 
   return {
@@ -82,7 +83,7 @@ export function useAPIGet<TData>(
 export function useAPIInfinite<TData = unknown>(
   getKey: (pageIndex: number, previousPageData: TData | null) => string | null,
   fetcher: (data: any) => Promise<any>,
-  options?: SWRInfiniteConfiguration
+  options?: SWRInfiniteConfiguration,
 ) {
   const { data, size, setSize, isLoading, isValidating, mutate } =
     useSWRInfinite(getKey, fetcher, options);
@@ -101,3 +102,44 @@ export function useAPIInfinite<TData = unknown>(
     loadMore,
   };
 }
+
+export const getPropsMine = (
+  pageIndex: number,
+  _previousPageData: Rotes,
+): ApiGetRotesParams => {
+  return {
+    archived: false,
+    apiType: "mine",
+    params: {
+      limit: 20,
+      skip: pageIndex * 20,
+    },
+  };
+};
+
+export const getPropsMineArchived = (
+  pageIndex: number,
+  _previousPageData: Rotes,
+): ApiGetRotesParams => {
+  return {
+    archived: true,
+    apiType: "mine",
+    params: {
+      limit: 20,
+      skip: pageIndex * 20,
+    },
+  };
+};
+
+export const getPropsPublic = (
+  pageIndex: number,
+  _previousPageData: Rotes,
+): ApiGetRotesParams => {
+  return {
+    apiType: "public",
+    params: {
+      limit: 20,
+      skip: pageIndex * 20,
+    },
+  };
+};

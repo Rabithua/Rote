@@ -1,3 +1,4 @@
+import type { ApiGetRotesParams } from "@/types/main";
 import { instance } from "../request";
 
 export function apiAddRote(data: any): Promise<any> {
@@ -34,59 +35,30 @@ export function apiGetSingleRote(id: any): Promise<any> {
   });
 }
 
-export function apiGetMyRote(data: any): Promise<any> {
-  let { filter, ...params } = data;
-
+export function apiGetRotes(
+  data: ApiGetRotesParams,
+): Promise<any> {
+  let { filter, apiType, params } = data;
+  let url = "";
+  switch (apiType) {
+    case "mine":
+      url = "/v1/api/getMyRote";
+      break;
+    case "public":
+      url = "/v1/api/getPublicRote";
+      break;
+    case "userPublic":
+      url = "/v1/api/getUserPublicRote";
+      break;
+    default:
+      throw new Error("Unknown rote type");
+  }
   return new Promise((resolve, reject) => {
     instance({
       method: "post",
-      url: "/v1/api/getMyRote",
+      url,
       params,
-      data: {
-        filter: filter,
-      },
-    })
-      .then(function (response) {
-        resolve(response.data.data);
-      })
-      .catch((e: any) => {
-        reject(e);
-      });
-  });
-}
-
-export function apiGetPublicRote(data: any): Promise<any> {
-  let { filter, ...params } = data;
-  // console.log(filter)
-  return new Promise((resolve, reject) => {
-    instance({
-      method: "post",
-      url: "/v1/api/getPublicRote",
-      params,
-      data: {
-        filter: filter,
-      },
-    })
-      .then(function (response) {
-        resolve(response.data.data);
-      })
-      .catch((e: any) => {
-        reject(e);
-      });
-  });
-}
-
-export function apiGetUserPublicRote(data: any): Promise<any> {
-  let { filter, ...params } = data;
-  // console.log(filter)
-  return new Promise((resolve, reject) => {
-    instance({
-      method: "post",
-      url: "/v1/api/getUserPublicRote",
-      params,
-      data: {
-        filter: filter,
-      },
+      data: { filter },
     })
       .then(function (response) {
         resolve(response.data.data);
@@ -118,6 +90,27 @@ export function apiDeleteMyRote(data: any): Promise<any> {
     instance({
       method: "delete",
       url: "/v1/api/oneRote",
+      data,
+    })
+      .then(function (response) {
+        resolve(response);
+      })
+      .catch((e: any) => {
+        reject(e);
+      });
+  });
+}
+
+export function apiDeleteMyAttachments(data: {
+  attachments: {
+    id: string;
+    key?: string;
+  }[];
+}): Promise<any> {
+  return new Promise((resolve, reject) => {
+    instance({
+      method: "delete",
+      url: "/v1/api/deleteAttachments",
       data,
     })
       .then(function (response) {
@@ -255,7 +248,7 @@ export function apiDeleteOneMyOpenKey(id: string): Promise<any> {
 
 export function apiEditOneMyOpenKey(
   id: string,
-  permissions: string[]
+  permissions: string[],
 ): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({

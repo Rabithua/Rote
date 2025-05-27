@@ -20,7 +20,7 @@ export default function NavBar() {
   return (
     <>
       <div
-        className={`noScrollBar sticky top-0 z-10 px-2 gap-2 w-full items-center overflow-x-scroll border-b bg-bgLight/90 py-4 backdrop-blur-xl duration-300 dark:bg-bgDark/90 ${
+        className={`noScrollBar bg-bgLight/90 dark:bg-bgDark/90 sticky top-0 z-10 w-full items-center gap-2 overflow-x-scroll px-2 py-4 backdrop-blur-xl duration-300 ${
           window.history.state && window.history.state.idx > 0 ? 'flex' : 'hidden'
         }`}
       >

@@ -5,7 +5,7 @@ const TOTALCAT = 164;
 const excludedNumbers = [127, 0];
 
 export default function RandomCat() {
-  const [randomCat, setRandomCat] = useState('0001'); // 默认值而不是null
+  const [randomCat, setRandomCat] = useState('0001');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +22,6 @@ export default function RandomCat() {
 
     const formattedCat = random.toString().padStart(4, '0');
     setRandomCat(formattedCat);
-    // 不再使用setTimeout，直接设置新的randomCat
   }
 
   //MARK:NOISY
@@ -33,14 +32,14 @@ export default function RandomCat() {
 
   return (
     <div
-      className="size-100 relative m-4 max-w-full cursor-pointer border-[3px] border-black duration-300 hover:scale-95"
+      className="relative m-4 w-fit cursor-pointer overflow-hidden rounded-2xl duration-300 hover:scale-95"
       onClick={() => {
         getRandomInt();
         // playSound();
       }}
     >
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-bgLight/90 py-16 backdrop:blur-xl dark:bg-bgDark/90">
+        <div className="bg-bgLight/90 dark:bg-bgDark/90 absolute inset-0 flex items-center justify-center py-16 backdrop:blur-xl">
           <img
             className="size-6 animate-spin"
             src={'https://r2.rote.ink/evecat/loading_roll.gif'}

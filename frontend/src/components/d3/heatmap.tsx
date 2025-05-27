@@ -1,45 +1,33 @@
 // src/Heatmap.tsx
-import { apiGetMyHeatMap } from "@/api/others/main";
-import { HeatMapDay } from "@/types/main";
-import { useAPIGet } from "@/utils/fetcher";
-import { Empty } from "antd";
-import moment from "moment";
-import React from "react";
-import toast from "react-hot-toast";
-import { useTranslation } from "react-i18next";
-import LoadingPlaceholder from "../LoadingPlaceholder";
+import { apiGetMyHeatMap } from '@/api/others/main';
+import type { HeatMapDay } from '@/types/main';
+import { useAPIGet } from '@/utils/fetcher';
+import moment from 'moment';
+import React from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import LoadingPlaceholder from '../LoadingPlaceholder';
+import { SquareDashed } from 'lucide-react';
 
 const Heatmap: React.FC = () => {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.d3.heatmap",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.d3.heatmap',
   });
 
-  const { data: heatmapData, isLoading } = useAPIGet<
-    {
-      [key: string]: number;
-    }
-  >(
-    "heatmap",
-    apiGetMyHeatMap,
-  );
+  const { data: heatmapData, isLoading } = useAPIGet<{
+    [key: string]: number;
+  }>('heatmap', apiGetMyHeatMap);
 
-  const colors = [
-    "#cccccc20",
-    "#07C16030",
-    "#07C16050",
-    "#07C16070",
-    "#07C16090",
-    "#07C160",
-  ];
+  const colors = ['#cccccc20', '#07C16030', '#07C16050', '#07C16070', '#07C16090', '#07C160'];
 
   const daysOfWeek = [
-    t("daysOfWeek.Sun"),
-    t("daysOfWeek.Mon"),
-    t("daysOfWeek.Tue"),
-    t("daysOfWeek.Wed"),
-    t("daysOfWeek.Thu"),
-    t("daysOfWeek.Fri"),
-    t("daysOfWeek.Sat"),
+    t('daysOfWeek.Sun'),
+    t('daysOfWeek.Mon'),
+    t('daysOfWeek.Tue'),
+    t('daysOfWeek.Wed'),
+    t('daysOfWeek.Thu'),
+    t('daysOfWeek.Fri'),
+    t('daysOfWeek.Sat'),
   ];
 
   function parseDays(data: any) {
@@ -57,11 +45,7 @@ const Heatmap: React.FC = () => {
 
     // 生成起止日期之间的所有日期
     const dates = [];
-    for (
-      let d = new Date(startDate);
-      d <= endDate;
-      d.setDate(d.getDate() + 1)
-    ) {
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d));
     }
 
@@ -70,7 +54,7 @@ const Heatmap: React.FC = () => {
     let currentWeek: HeatMapDay[] = [];
 
     dates.forEach((date) => {
-      const dateString = date.toISOString().split("T")[0];
+      const dateString = date.toISOString().split('T')[0];
       const notesCount = data[dateString] || 0;
       currentWeek.push({ date, notesCount });
       if (date.getDay() === 6) {
@@ -87,66 +71,51 @@ const Heatmap: React.FC = () => {
   }
 
   const handleDayClick = (day: HeatMapDay) => {
-    toast(
-      `${moment.utc(day.date).format("YYYY/MM/DD")} ${day.notesCount} Notes.`,
-      {
-        icon: "🌱",
-      },
-    );
+    toast(`${moment.utc(day.date).format('YYYY/MM/DD')} ${day.notesCount} Notes.`, {
+      icon: '🌱',
+    });
   };
 
   return (
     <>
-      {isLoading
-        ? (
-          <LoadingPlaceholder
-            className=" py-8"
-            size={6}
-          />
-        )
-        : heatmapData && Object.keys(heatmapData).length === 0
-        ? (
-          <div className=" shrink-0 border-t-[1px] border-opacityLight dark:border-opacityDark py-4">
-            <Empty
-              className=" dark:text-textDark"
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={t("noData")}
-            />
+      {isLoading ? (
+        <LoadingPlaceholder className="py-8" size={6} />
+      ) : heatmapData && Object.keys(heatmapData).length === 0 ? (
+        <div className="shrink-0 py-4">
+          <div className="flex w-full flex-col items-center justify-center gap-4 py-4 text-sm">
+            <SquareDashed className="text-muted-foreground size-8" />
+            {t('noData')}
           </div>
-        )
-        : (
-          <div className=" flex gap-2">
-            <div className=" flex flex-col justify-around shrink-0">
-              {daysOfWeek.map((day) => (
-                <div key={day} className=" text-[10px] text-right">
-                  {day}
-                </div>
-              ))}
-            </div>
-            <div className=" flex md:gap-1 gap-1.5 overflow-y-scroll noScrollBar">
-              {parseDays(heatmapData).map((week: any, index: number) => (
-                <div
-                  key={`week_${index}`}
-                  className=" flex flex-col md:gap-1 gap-1.5"
-                >
-                  {week.map((day: any, index: number) => (
-                    <div
-                      key={index}
-                      className=" size-5 md:size-4 rounded-sm hover:scale-105 duration-300"
-                      style={{
-                        backgroundColor: day.notesCount
-                          ? colors[Math.min(day.notesCount, colors.length - 1)]
-                          : colors[0],
-                      }}
-                      onClick={() => handleDayClick(day)}
-                    >
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
+        </div>
+      ) : (
+        <div className="flex gap-2 p-4">
+          <div className="flex shrink-0 flex-col justify-around">
+            {daysOfWeek.map((day) => (
+              <div key={day} className="text-right text-[10px]">
+                {day}
+              </div>
+            ))}
           </div>
-        )}
+          <div className="noScrollBar flex gap-1.5 overflow-y-scroll md:gap-1">
+            {parseDays(heatmapData).map((week: any, index: number) => (
+              <div key={`week_${index}`} className="flex flex-col gap-1.5 md:gap-1">
+                {week.map((day: any, index: number) => (
+                  <div
+                    key={index}
+                    className="size-5 duration-300 hover:scale-105 md:size-4"
+                    style={{
+                      backgroundColor: day.notesCount
+                        ? colors[Math.min(day.notesCount, colors.length - 1)]
+                        : colors[0],
+                    }}
+                    onClick={() => handleDayClick(day)}
+                  ></div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </>
   );
 };

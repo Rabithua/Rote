@@ -1,15 +1,11 @@
-// eslint.config.js
-const { FlatCompat } = require('@eslint/eslintrc');
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
 
-const compat = new FlatCompat();
-
-module.exports = antfu(
+export default tseslint.config(
+  { ignores: ['dist'] },
   {
-    ignores: ['dist', 'build', 'node_modules', '*.min.js', '*.d.ts'],
-  },
-
-  // Legacy config
-  ...compat.config({
     extends: [
       // 使用 ESLint 推荐的规则集
       'eslint:recommended',
@@ -28,18 +24,22 @@ module.exports = antfu(
       // 使用 promise 插件推荐的规则集
       'plugin:promise/recommended',
       // 使用 Prettier 推荐的规则集，必须放在最后
-      'plugin:prettier/recommended',
-    ],
-    // 声明使用的插件
-    plugins: [
-      '@typescript-eslint',
-      'react',
-      'react-hooks',
-      'jsx-a11y',
-      'import',
-      'promise',
-      'prettier',
-    ],
+      'plugin:prettier/recommended',],
+    files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
+      '@typescript-eslint': tseslint,
+      'react': require('eslint-plugin-react'),
+      'jsx-a11y': require('eslint-plugin-jsx-a11y'),
+      'import': require('eslint-plugin-import'),
+      'promise': require('eslint-plugin-promise'),
+      'prettier': require('eslint-plugin-prettier'),
+    },
     rules: {
       // JavaScript 规则
       'no-console': 'warn', // 警告使用 console
@@ -70,7 +70,5 @@ module.exports = antfu(
       // Prettier 规则
       'prettier/prettier': ['error', {}, { usePrettierrc: true }], // 使用 .prettierrc 文件中的配置
     },
-  })
-
-  // Other flat configs...
-);
+  },
+)

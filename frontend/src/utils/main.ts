@@ -1,4 +1,4 @@
-import { Rotes } from "@/types/main";
+import type { Rotes } from "@/types/main";
 import toast from "react-hot-toast";
 
 export function formatTimeAgo(givenTime: string): string {

@@ -1,18 +1,22 @@
-import { EditorType } from "@/types/main";
-import { useAtom } from "jotai";
-import { atomWithStorage } from "jotai/utils";
+import type { Rote } from '@/types/main';
+import { atom } from 'jotai';
+import { atomWithStorage } from 'jotai/utils';
 
-const editorAtom = atomWithStorage<EditorType>("editor", {
-  content: "",
+export const emptyRote: Rote = {
+  content: '',
   tags: [],
-  state: "private",
-  archived: false,
+  attachments: [],
   pin: false,
-  type: "rote",
-});
+  archived: false,
+  state: 'private',
+  id: '',
+  createdAt: '',
+  updatedAt: '',
+};
 
-export function useEditor(): [EditorType, (editor: EditorType) => void] {
-  const [editor, setEditor] = useAtom(editorAtom);
+const editor_newRoteAtom = atomWithStorage<Rote>('editor_newRoteAtom', emptyRote);
+const editor_editRoteAtom = atom<Rote>(emptyRote);
 
-  return [editor, setEditor];
+export function useEditor() {
+  return { editor_newRoteAtom, editor_editRoteAtom };
 }

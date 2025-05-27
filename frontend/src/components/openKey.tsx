@@ -1,65 +1,64 @@
-import rote from "@/pages/home";
-import { Modal, Popover } from "antd";
-import { useState } from "react";
-import toast from "react-hot-toast";
-import OpenKeyEditModel from "./openKeyEditModel";
-import { apiDeleteOneMyOpenKey } from "@/api/rote/main";
-import { useOpenKeys } from "@/state/openKeys";
-import { useTranslation } from "react-i18next";
-import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Trash2 } from "lucide-react";
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+
+import { useState } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+import toast from 'react-hot-toast';
+import OpenKeyEditModel from './openKeyEditModel';
+import { apiDeleteOneMyOpenKey } from '@/api/rote/main';
+import { useOpenKeys } from '@/state/openKeys';
+import { useTranslation } from 'react-i18next';
+import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Terminal, Trash2 } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 function OpenKeyItem({ openKey }: any) {
-  const { t } = useTranslation("translation", {
-    keyPrefix: "components.openKey",
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.openKey',
   });
-  const [open, setOpen] = useState(false);
+  const [, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [openKeys, setOpenKeys] = useOpenKeys();
+  const [openKeysData, setOpenKeysData] = useOpenKeys();
   const [hidekey, setHideKey] = useState(true);
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-  };
-
-  function actionsMenu(rote: any) {
+  function actionsMenu() {
     function deleteOpenKey() {
       setOpen(false);
-      const toastId = toast.loading(t("deleting"));
+      const toastId = toast.loading(t('deleting'));
       apiDeleteOneMyOpenKey(openKey.id)
         .then((res) => {
-          toast.success(t("deleteSuccess"), {
+          toast.success(t('deleteSuccess'), {
             id: toastId,
           });
-          setOpenKeys(openKeys.filter((key) => key.id !== res.data.data.id));
+          setOpenKeysData(openKeysData.filter((key) => key.id !== res.data.data.id));
         })
-        .catch((err) => {
-          toast.error(t("deleteFailed"), {
+        .catch(() => {
+          toast.error(t('deleteFailed'), {
             id: toastId,
           });
         });
     }
 
     return (
-      <div className=" flex flex-col">
-        <div
-          className=" py-1 px-2 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer items-center"
+      <>
+        <DropdownMenuItem
           onClick={() => {
             setOpen(false);
             setIsModalOpen(true);
-            // setEditRote(rote);
           }}
         >
           <Edit className="size-4" />
-          {t("edit")}
-        </div>
-        <div
-          className=" py-1 px-2 text-red-500 rounded-md font-semibold hover:bg-[#00000010] flex gap-2 cursor-pointer items-center"
-          onClick={deleteOpenKey}
-        >
+          {t('edit')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={deleteOpenKey} variant="destructive">
           <Trash2 className="size-4" />
-          {t("delete")}
-        </div>
-      </div>
+          {t('delete')}
+        </DropdownMenuItem>
+      </>
     );
   }
 
@@ -74,51 +73,46 @@ function OpenKeyItem({ openKey }: any) {
 
   async function copyToClipboard(): Promise<void> {
     const text = `${
-      process.env.REACT_APP_BASEURL_PRD || "http://localhost:3000"
+      process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'
     }/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(t("copySuccess"));
+      toast.success(t('copySuccess'));
     } catch (err) {
-      toast.error(t("copyFailed"));
+      toast.error(t('copyFailed'));
     }
   }
 
   return (
-    <div className=" opacity-0 translate-y-5 animate-show cursor-pointer duration-300 p-4 bg-bgLight dark:bg-bgDark  border-t-[1px] border-opacityLight dark:border-opacityDark">
-      <div className=" flex items-center break-all mr-auto font-semibold font-mono">
-        {hidekey
-          ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
-          : openKey.id}
-        {hidekey
-          ? (
-            <EyeIcon
-              onClick={changeHideKey}
-              className=" ml-1 hover:bg-[#00000010] rounded-lg size-8 p-2"
-            />
-          )
-          : (
-            <EyeClosed
-              onClick={changeHideKey}
-              className=" ml-1 hover:bg-[#00000010] size-8 rounded-lg p-2"
-            />
-          )}
-        <Popover
-          placement="bottomRight"
-          open={open}
-          onOpenChange={handleOpenChange}
-          content={actionsMenu(rote)}
-        >
-          <Ellipsis className=" absolute right-2 top-2 size-8 hover:bg-[#00000010] rounded-lg p-2" />
-        </Popover>
+    <div className="animate-show bg-bgLight dark:bg-bgDark cursor-pointer p-4 opacity-0 duration-300">
+      <div className="mr-auto flex items-center font-mono font-semibold break-all">
+        {hidekey ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}` : openKey.id}
+        {hidekey ? (
+          <EyeIcon
+            onClick={changeHideKey}
+            className="ml-1 size-8 rounded-lg p-2 hover:bg-[#00000010]"
+          />
+        ) : (
+          <EyeClosed
+            onClick={changeHideKey}
+            className="ml-1 size-8 rounded-lg p-2 hover:bg-[#00000010]"
+          />
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Ellipsis className="absolute top-2 right-2 size-8 rounded-lg p-2 hover:bg-[#00000010]" />
+          </DropdownMenuTrigger>
+
+          <DropdownMenuContent align="end">{actionsMenu()}</DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <div className="">
-        {t("permissions")}：{openKey.permissions.join(",")}
+        {t('permissions')}：{openKey.permissions.join(',')}
       </div>
       <div className="">
-        {t("example")}：
-        <span className=" font-mono break-all">
-          {process.env.REACT_APP_BASEURL_PRD || "http://localhost:3000"}
+        {t('example')}：
+        <span className="font-mono break-all">
+          {process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}
           /v1/api/openkey/onerote?openkey=
           {hidekey
             ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
@@ -126,23 +120,22 @@ function OpenKeyItem({ openKey }: any) {
           &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private
         </span>
         <span onClick={copyToClipboard}>
-          <Copy className=" ml-auto hover:bg-[#00000010] rounded-lg size-8 p-2" />
+          <Copy className="ml-auto size-8 rounded-lg p-2 hover:bg-[#00000010]" />
         </span>
       </div>
-      <Modal
-        title="OpenKey"
-        open={isModalOpen}
-        onCancel={onModelCancel}
-        maskClosable={true}
-        destroyOnClose={true}
-        footer={null}
-      >
-        <OpenKeyEditModel
-          close={onModelCancel}
-          openKey={openKey}
-        >
-        </OpenKeyEditModel>
-      </Modal>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent>
+          <Alert>
+            <Terminal className="h-4 w-4" />
+            <AlertTitle>Still Developing!</AlertTitle>
+            <AlertDescription>
+              The OpenKey edit feature is still under development. Maybe not work well.
+            </AlertDescription>
+          </Alert>
+          <OpenKeyEditModel close={onModelCancel} openKey={openKey}></OpenKeyEditModel>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

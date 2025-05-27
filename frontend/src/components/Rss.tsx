@@ -6,12 +6,12 @@ export default function RssBlock({ username }: { username?: string }) {
 
   return (
     <div className="shrink-0">
-      <div className="mb-2 mt-2">
+      <div className="mt-2 mb-2">
         <a
           href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${username}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="dark:bg-primaryDark/10 dark:hover:bg-primaryDark/20 dark:hover:text-primaryDark/80 flex w-fit items-center gap-2 rounded-md bg-primary/10 px-3 py-1.5 text-primary transition-all hover:bg-primary/20 hover:text-primary/80"
+          className="text-theme dark:hover:bg-primaryDark/20 dark:hover:text-theme/80 bg-primary/10 hover:bg-primary/20 hover:text-theme/80 flex w-fit items-center gap-2 rounded-md px-3 py-1.5 transition-all"
         >
           <Rss className="size-4" />
           <span>{t('rssSubscribe')}</span>

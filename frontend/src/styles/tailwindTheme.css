@@ -1,0 +1,57 @@
+@theme {
+    /* Background Images */
+    --background-image-primary: linear-gradient(272deg, rgba(7, 193, 96, 0.96) -0.55%, rgba(178, 207, 62, 0.96) 99.45%);
+    --background-image-primaryGreenGradient: linear-gradient(327deg, #07C160 18.08%, rgba(62, 207, 74, 0.96) 64.28%, rgba(153, 230, 38, 0.40) 111.94%, rgba(250, 255, 0, 0.00) 158.87%);
+
+    /* Colors */
+    --color-bgLight: #ffffff;
+    --color-bgDark: #000000;
+    --color-opacityLight: #00000010;
+    --color-opacityDark: #ffffff20;
+    --color-textDark: #E7E9EA;
+    --color-textLight: #0F1419;
+    --color-theme: #07C160;
+
+    /* Animations */
+    --animate-meteor-effect: meteor 5s linear infinite;
+    --animate-show: show 600ms ease-in-out forwards;
+
+    /* Font Families */
+    --font-serif: "Noto Serif SC", serif;
+    --font-zhengwen: "Optima-Regular,Optima", "PingFangSC-light", "PingFangTC-light", "PingFang SC", "Cambria", "Cochin", "Georgia", "Times", "Times New Roma";
+
+    /* Box Shadows */
+    --box-shadow-card: 0px 0px 60px rgba(0, 0, 0, 0.05);
+
+    /* Border Colors */
+    --border-color-DEFAULT: #00000010;
+    --border-color-dark: #ffffff10;
+}
+
+@keyframes meteor {
+    0% {
+        transform: rotate(215deg) translateX(0);
+        opacity: 1;
+    }
+
+    70% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: rotate(215deg) translateX(-500px);
+        opacity: 0;
+    }
+}
+
+@keyframes show {
+    0% {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    100% {
+        transform: translateY(0px);
+        opacity: 1;
+    }
+}

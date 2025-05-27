@@ -1,29 +1,25 @@
-import { apiGetSingleRote } from "@/api/rote/main";
-import LoadingPlaceholder from "@/components/LoadingPlaceholder";
-import NavBar from "@/components/navBar";
-import RoteItem from "@/components/roteItem";
+import { apiGetSingleRote } from '@/api/rote/main';
+import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import NavBar from '@/components/navBar';
+import RoteItem from '@/components/roteItem';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
-import { Rote } from "@/types/main";
-import { useAPIGet } from "@/utils/fetcher";
-import Avatar from "antd/es/avatar";
-import { User } from "lucide-react";
-import { useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import type { Rote } from '@/types/main';
+import { useAPIGet } from '@/utils/fetcher';
+import { User } from 'lucide-react';
+import { useEffect } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 function SingleRotePage() {
   // const { t } = useTranslation("translation", { keyPrefix: "pages.rote" });
   const navigate = useNavigate();
   const { roteid } = useParams();
 
-  const {
-    data: rote,
-    isLoading,
-    error,
-  } = useAPIGet<Rote>(roteid || "", apiGetSingleRote);
+  const { data: rote, isLoading, error } = useAPIGet<Rote>(roteid || '', apiGetSingleRote);
 
   useEffect(() => {
     if (!roteid) {
-      navigate("/404");
+      navigate('/404');
     }
   }, [roteid, navigate]);
 
@@ -32,9 +28,7 @@ function SingleRotePage() {
   }
 
   return (
-    <div
-      className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible pb-20`}
-    >
+    <div className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible pb-20`}>
       <NavBar />
       {isLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
@@ -46,29 +40,28 @@ function SingleRotePage() {
           </div>
           {rote.author && (
             <Link to={`/${rote.author.username}`}>
-              <div className="fixed bottom-16 left-0 right-0 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full border border-opacityLight bg-bgLight/90 px-6 py-2 shadow-card backdrop-blur-3xl duration-300 hover:scale-95 dark:border-opacityDark dark:bg-bgDark/90">
-                <Avatar
-                  size={{ xs: 40 }}
-                  icon={<User className="size-4 text-[#00000030]" />}
-                  className="border"
-                  src={rote?.author.avatar}
-                />
+              <div className="bg-bgLight/90 shadow-card dark:bg-bgDark/90 fixed right-0 bottom-16 left-0 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full px-6 py-2 backdrop-blur-3xl duration-300 hover:scale-95">
+                <Avatar className="size-10 bg-[#00000010] text-black">
+                  {rote?.author.avatar ? (
+                    <AvatarImage src={rote.author.avatar} />
+                  ) : (
+                    <AvatarFallback>
+                      <User className="size-4 text-[#00000030]" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
                 <div className="flex items-center gap-2">
-                  <div className="text-base font-semibold text-textLight dark:text-textDark">
+                  <div className="text-textLight dark:text-textDark text-base font-semibold">
                     {rote?.author.nickname}
                   </div>
-                  <div className="text-md text-gray-500">
-                    @{rote?.author.username}
-                  </div>
+                  <div className="text-md text-gray-500">@{rote?.author.username}</div>
                 </div>
               </div>
             </Link>
           )}
         </>
       ) : (
-        <div className="flex h-full w-full items-center justify-center">
-          {error}
-        </div>
+        <div className="flex h-full w-full items-center justify-center">{error}</div>
       )}
     </div>
   );
