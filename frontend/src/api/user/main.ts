@@ -1,10 +1,10 @@
-import { instance } from "../request";
+import { instance } from '../request';
 
 export function apiGetUserInfoByUsername(username: string): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
-      method: "get",
-      url: "/v1/api/getUserInfo",
+      method: 'get',
+      url: '/v1/api/getUserInfo',
       params: {
         username,
       },
@@ -18,11 +18,15 @@ export function apiGetUserInfoByUsername(username: string): Promise<any> {
   });
 }
 
+/**
+ * 获取个人资料
+ * @deprecated 请使用新的API调用方式: get('/users/me/profile').then(res => res.data)
+ */
 export function getMyProfile(): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
-      method: "get",
-      url: "/v1/api/profile",
+      method: 'get',
+      url: '/v1/api/profile',
       withCredentials: true,
     })
       .then(function (response) {
@@ -37,11 +41,11 @@ export function getMyProfile(): Promise<any> {
 export function apiUploadAvatar(formData: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
-      method: "post",
-      url: "/v1/api/upload",
+      method: 'post',
+      url: '/v1/api/upload',
       data: formData,
       headers: {
-        "Content-Type": "multipart/form-data",
+        'Content-Type': 'multipart/form-data',
       },
     })
       .then(function (response) {
@@ -56,8 +60,8 @@ export function apiUploadAvatar(formData: any): Promise<any> {
 export function apiSaveProfile(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
-      method: "post",
-      url: "/v1/api/profile",
+      method: 'post',
+      url: '/v1/api/profile',
       data: data,
     })
       .then(function (response) {

@@ -304,6 +304,23 @@ notesRouter.post(
   })
 );
 
+// 获取随机笔记 - 移到前面避免被当作ID匹配
+notesRouter.get(
+  '/random',
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    let rote;
+
+    if (user) {
+      rote = await findMyRandomRote(user.id);
+    } else {
+      rote = await findRandomPublicRote();
+    }
+
+    res.status(200).json(createResponse(rote));
+  })
+);
+
 // 获取笔记详情
 notesRouter.get(
   '/:id',
@@ -433,23 +450,6 @@ notesRouter.get(
     const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
     const rote = await findPublicRote(parsedSkip, parsedLimit, filter);
-
-    res.status(200).json(createResponse(rote));
-  })
-);
-
-// 获取随机笔记
-notesRouter.get(
-  '/random',
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    let rote;
-
-    if (user) {
-      rote = await findMyRandomRote(user.id);
-    } else {
-      rote = await findRandomPublicRote();
-    }
 
     res.status(200).json(createResponse(rote));
   })
