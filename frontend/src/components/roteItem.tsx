@@ -1,3 +1,4 @@
+import Linkify from 'linkify-react';
 import {
   Archive,
   ArrowDownLeft,
@@ -15,16 +16,22 @@ import {
   Trash2,
   User,
 } from 'lucide-react';
-import Linkify from 'linkify-react';
 
-import { apiDeleteMyRote, apiEditMyRote } from '@/api/rote/main';
-import { getMyProfile } from '@/api/user/main';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mainJson from '@/json/main.json';
+import { useEditor } from '@/state/editor';
 import type { Profile, Rote, Rotes } from '@/types/main';
+import { del, get, put } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAtom } from 'jotai';
 import moment from 'moment';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
@@ -33,19 +40,11 @@ import { useInView } from 'react-intersection-observer';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 import 'react-photo-view/dist/react-photo-view.css';
 import { Link } from 'react-router-dom';
+import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
+import RoteEditor from './editor/RoteEditor';
 import NoticeCreateBoard from './NoticeCreateBoard';
 import RoteShareCard from './roteShareCard';
-import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  DropdownMenuItem,
-} from '@/components/ui/dropdown-menu';
-import RoteEditor from './editor/RoteEditor';
-import { useAtom } from 'jotai';
-import { useEditor } from '@/state/editor';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
@@ -69,8 +68,9 @@ function RoteItem({
 
   const [isExpanded, setIsExpanded] = useState<any>(false);
 
-  const { data: profile } = useAPIGet<Profile>('profile', getMyProfile);
-
+  const { data: profile } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
@@ -78,10 +78,7 @@ function RoteItem({
   function actionsMenu(rote: Rote) {
     function deleteRoteFn() {
       const toastId = toast.loading(t('messages.deleting'));
-      apiDeleteMyRote({
-        id: rote.id,
-        authorid: rote.authorid,
-      })
+      del('/notes/' + rote.id)
         .then(() => {
           toast.success(t('messages.deleteSuccess'), {
             id: toastId,
@@ -109,7 +106,7 @@ function RoteItem({
 
     function editRotePin() {
       const toastId = toast.loading(t('messages.editing'));
-      apiEditMyRote({
+      put('/notes/' + rote.id, {
         id: rote.id,
         authorid: rote.authorid,
         pin: !rote.pin,
@@ -148,7 +145,7 @@ function RoteItem({
     }
     function editRoteArchived() {
       const toastId = toast.loading(t('messages.editing'));
-      apiEditMyRote({
+      put('/notes/' + rote.id, {
         id: rote.id,
         authorid: rote.authorid,
         archived: !rote.archived,

@@ -1,10 +1,10 @@
-import { apiGetSingleRote } from '@/api/rote/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import RoteItem from '@/components/roteItem';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import type { Rote } from '@/types/main';
+import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { User } from 'lucide-react';
 import { useEffect } from 'react';
@@ -15,7 +15,11 @@ function SingleRotePage() {
   const navigate = useNavigate();
   const { roteid } = useParams();
 
-  const { data: rote, isLoading, error } = useAPIGet<Rote>(roteid || '', apiGetSingleRote);
+  const {
+    data: rote,
+    isLoading,
+    error,
+  } = useAPIGet<Rote>(roteid || '', () => get('/notes/' + roteid).then((res) => res.data));
 
   useEffect(() => {
     if (!roteid) {
@@ -40,7 +44,7 @@ function SingleRotePage() {
           </div>
           {rote.author && (
             <Link to={`/${rote.author.username}`}>
-              <div className="bg-bgLight/90 shadow-card dark:bg-bgDark/90 fixed right-0 bottom-16 left-0 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full px-6 py-2 backdrop-blur-3xl duration-300 hover:scale-95">
+              <div className="bg-bgLight/90 shadow-card dark:bg-bgDark/90 fixed right-0 bottom-16 left-0 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full px-6 py-2 backdrop-blur-xl duration-300 hover:scale-95">
                 <Avatar className="size-10 bg-[#00000010] text-black">
                   {rote?.author.avatar ? (
                     <AvatarImage src={rote.author.avatar} />

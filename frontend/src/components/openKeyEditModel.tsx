@@ -1,10 +1,10 @@
 import mainJson from '@/json/main.json';
-import { useState, useMemo } from 'react';
-import { apiEditOneMyOpenKey } from '@/api/rote/main';
-import toast from 'react-hot-toast';
 import { useOpenKeys } from '@/state/openKeys';
-import { useTranslation } from 'react-i18next';
+import { put } from '@/utils/api';
 import { Save } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '../components/ui/checkbox';
 
 function OpenKeyEditModel({ openKey, close }: any) {
@@ -47,7 +47,7 @@ function OpenKeyEditModel({ openKey, close }: any) {
     }
     close();
     const toastId = toast.loading(t('saving'));
-    apiEditOneMyOpenKey(openKey.id, checkedList)
+    put('/api-keys/' + openKey.id, { permissions: checkedList })
       .then((res) => {
         toast.success(t('saveSuccess'), {
           id: toastId,

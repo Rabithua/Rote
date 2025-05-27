@@ -1,10 +1,10 @@
-import { apiGetRandomRote } from '@/api/rote/main';
 import { type Rote } from '@/types/main';
+import { get } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
 import { RefreshCcwIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LoadingPlaceholder from './LoadingPlaceholder';
 import RoteItem from './roteItem';
-import { useAPIGet } from '@/utils/fetcher';
 
 export default function RandomRote() {
   const { t } = useTranslation('translation', {
@@ -17,7 +17,7 @@ export default function RandomRote() {
     isValidating,
     mutate,
     error,
-  } = useAPIGet<Rote>('randomRote', apiGetRandomRote);
+  } = useAPIGet<Rote>('randomRote', () => get('/notes/random').then((res) => res.data));
 
   return isLoading ? (
     <LoadingPlaceholder size={6} className="py-8" error={error} />

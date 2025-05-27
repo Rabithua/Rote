@@ -3,15 +3,15 @@ export type Tag = {
   label: string;
 };
 
-export type RoteState = "private" | "public";
+export type RoteState = 'private' | 'public';
 
 export type Tags = Tag[];
 
 export type TagsAction =
-  | { type: "addOne"; tag: Tag }
-  | { type: "addMore"; tags: Tags }
-  | { type: "deleted"; tag: Tag }
-  | { type: "freshAll"; tags: Tags };
+  | { type: 'addOne'; tag: Tag }
+  | { type: 'addMore'; tags: Tags }
+  | { type: 'deleted'; tag: Tag }
+  | { type: 'freshAll'; tags: Tags };
 
 export type Rote = {
   id: string;
@@ -72,35 +72,35 @@ export type Attachment = {
 export type Rotes = Rote[];
 
 export type RotesAction =
-  | { type: "addOne"; rote: Rote }
-  | { type: "add"; rotes: Rotes }
-  | { type: "freshAll"; rotes: Rotes }
-  | { type: "updateOne"; rote: Rote }
-  | { type: "deleted"; roteid: string[] };
+  | { type: 'addOne'; rote: Rote }
+  | { type: 'add'; rotes: Rotes }
+  | { type: 'freshAll'; rotes: Rotes }
+  | { type: 'updateOne'; rote: Rote }
+  | { type: 'deleted'; roteid: string[] };
 
 export type Profile =
   | {
-    id: string;
-    email: string;
-    username: string;
-    nickname: string;
-    description: string;
-    cover: string;
-    avatar: string;
-    createdAt: string;
-    updatedAt: string;
-  }
+      id: string;
+      email: string;
+      username: string;
+      nickname: string;
+      description: string;
+      cover: string;
+      avatar: string;
+      createdAt: string;
+      updatedAt: string;
+    }
   | undefined;
 
 export type ProfileAction =
-  | { type: "updateProfile"; profile: Profile }
-  | { type: "setLoading"; isLoading: boolean }
-  | { type: "setError"; error: string };
+  | { type: 'updateProfile'; profile: Profile }
+  | { type: 'setLoading'; isLoading: boolean }
+  | { type: 'setError'; error: string };
 
 export type OpenKey = {
   id: string;
   userid: string;
-  permissions: string;
+  permissions: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -108,11 +108,11 @@ export type OpenKey = {
 export type OpenKeys = OpenKey[];
 
 export type OpenKeysAction =
-  | { type: "addOne"; openKey: OpenKey }
-  | { type: "addMore"; openKeys: OpenKeys }
-  | { type: "init"; openKeys: OpenKeys }
-  | { type: "updateOne"; openKey: OpenKey }
-  | { type: "delete"; openKeyid: string };
+  | { type: 'addOne'; openKey: OpenKey }
+  | { type: 'addMore'; openKeys: OpenKeys }
+  | { type: 'init'; openKeys: OpenKeys }
+  | { type: 'updateOne'; openKey: OpenKey }
+  | { type: 'delete'; openKeyid: string };
 
 export type HeatMapDay = {
   date: Date;
@@ -125,7 +125,7 @@ export type EditorType = {
   state: RoteState;
   archived: boolean;
   pin: boolean;
-  type: "rote";
+  type: 'rote';
 };
 
 export type TempState = {
@@ -142,10 +142,16 @@ export type ApiGetRotesParams = {
       hasEvery?: string[];
     };
   };
-  apiType?: "mine" | "public" | "userPublic";
+  apiType?: 'mine' | 'public' | 'userPublic';
   params?: {
     username?: string;
     limit?: number;
     skip?: number;
+    archived?: boolean;
   };
+};
+
+export type Statistics = {
+  noteCount: number;
+  attachmentsCount: number;
 };

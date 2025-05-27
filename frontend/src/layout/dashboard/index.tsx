@@ -1,7 +1,6 @@
-import { getMyProfile } from '@/api/user/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import type { Profile } from '@/types/main';
-import { post } from '@/utils/api';
+import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
@@ -18,7 +17,9 @@ interface IconType {
 
 function LayoutDashboard() {
   const location = useLocation();
-  const { data: profile, isLoading } = useAPIGet<Profile>('profile', getMyProfile);
+  const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
@@ -129,7 +130,7 @@ function LayoutDashboard() {
   return (
     <div className="bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark mx-auto w-full max-w-6xl">
       <div className="mx-auto flex w-dvw max-w-[1440px] divide-x-1 font-sans lg:w-[90%]">
-        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-2xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 lg:w-[200px] lg:px-4">
+        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 lg:w-[200px] lg:px-4">
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (

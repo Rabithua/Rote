@@ -1,35 +1,20 @@
-import { apiGetStatistics } from '@/api/rote/main';
 import { Divider } from '@/components/ui/divider';
+import type { Statistics } from '@/types/main';
+import { get } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
 import { DownloadCloud } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import LoadingPlaceholder from '../LoadingPlaceholder';
+
 export default function ExportData() {
   const { t } = useTranslation('translation', {
     keyPrefix: 'pages.experiment.exportData',
   });
-  const [loading, setLoading] = useState(true);
-  const [statisics, setStatistics] = useState<any>({
-    noteCount: 0,
-    attachmentsCount: 0,
-  });
 
-  function exportData() {
-    apiGetStatistics()
-      .then((res: any) => {
-        setLoading(false);
-        console.log(res);
-        setStatistics(res.data.data);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }
-
-  useEffect(() => {
-    exportData();
-  }, []);
+  const { isLoading, data } = useAPIGet<Statistics>('statistics', () =>
+    get('/users/me/statistics').then((res) => res.data)
+  );
 
   return (
     <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
@@ -38,17 +23,17 @@ export default function ExportData() {
         <div className="mt-2 text-sm font-normal text-gray-500">{t('description')}</div>
       </div>
       <Divider></Divider>
-      {loading ? (
+      {isLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
       ) : (
         <>
           <div className="flex items-center justify-around p-4">
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="text-4xl font-semibold">{statisics.noteCount}</div>
+              <div className="text-4xl font-semibold">{data?.noteCount}</div>
               <div className="text-sm text-gray-500">{t('noteCount')}</div>
             </div>
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="text-4xl font-semibold">{statisics.attachmentsCount}</div>
+              <div className="text-4xl font-semibold">{data?.attachmentsCount}</div>
               <div className="text-sm text-gray-500">{t('attachmentCount')}</div>
             </div>
           </div>

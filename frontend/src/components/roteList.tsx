@@ -1,30 +1,33 @@
 import type { Rotes } from '@/types/main';
-import { useAPIInfinite } from '@/utils/fetcher';
 
+import { MessageSquareDashed } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { SWRConfiguration } from 'swr';
 import LoadingPlaceholder from './LoadingPlaceholder';
 import RoteItem from './roteItem';
-import { MessageSquareDashed } from 'lucide-react';
-import { apiGetRotes } from '@/api/rote/main';
 
-function RoteList({ getProps, options }: { getProps: any; options?: SWRConfiguration }) {
+import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
+
+function RoteList({
+  data,
+  loadMore,
+  mutate,
+}: {
+  data?: Rotes[];
+  loadMore: () => void;
+  mutate: SWRInfiniteKeyedMutator<Rotes>;
+}) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteList',
   });
 
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  const { data, mutate, loadMore } = useAPIInfinite(getProps, apiGetRotes, {
-    ...options,
-    initialSize: 0,
-    revalidateFirstPage: false,
-  });
-
-  const rotes: Rotes = data ? [].concat(...data) : [];
+  const rotes: Rotes = data ? ([] as Rotes).concat(...data) : [];
   const isEmpty = data?.[0]?.length === 0;
-  const limit = getProps(0, []).limit || 20;
+  // TODO:如何优雅处理limit字段的传输
+  // const limit = getProps(0, []).limit || 20;
+  const limit = 20;
   const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < limit);
 
   useEffect(() => {

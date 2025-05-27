@@ -1,7 +1,6 @@
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import * as React from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -10,9 +9,11 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { apiGetMyTags } from '@/api/rote/main';
+import { cn } from '@/lib/utils';
+import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 
 export function TagSelector({
@@ -25,13 +26,32 @@ export function TagSelector({
   callback?: (tags: string[]) => void;
 }) {
   const [open, setOpen] = React.useState(false);
-  const { data: availableTags } = useAPIGet<string[]>('tags', apiGetMyTags);
+  const { data: availableTags } = useAPIGet<string[]>('tags', () =>
+    get('/users/me/tags').then((res) => res.data)
+  );
+
+  const [inputValue, setInputValue] = React.useState('');
 
   const handleTagSelect = (tag: string) => {
     const updatedTags = tags.includes(tag) ? tags.filter((t) => t !== tag) : [...tags, tag];
 
     setTags(updatedTags);
     callback?.(updatedTags);
+  };
+
+  const handleAddCustomTag = () => {
+    if (inputValue.trim() && !availableTags?.includes(inputValue)) {
+      const newTag = inputValue.trim();
+      handleTagSelect(newTag);
+      setInputValue('');
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && inputValue.trim()) {
+      e.preventDefault();
+      handleAddCustomTag();
+    }
   };
 
   return (
@@ -52,9 +72,29 @@ export function TagSelector({
       </PopoverTrigger>
       <PopoverContent className="w-[140px] p-0">
         <Command>
-          <CommandInput placeholder="搜索标签..." />
+          <CommandInput
+            placeholder="搜索标签..."
+            value={inputValue}
+            onValueChange={setInputValue}
+            onKeyDown={handleInputKeyDown}
+          />
           <CommandList>
-            <CommandEmpty>未找到标签。</CommandEmpty>
+            <CommandEmpty>
+              <div className="flex flex-col items-center px-1 py-2">
+                <p className="text-muted-foreground mb-1 text-sm">未找到标签</p>
+                {inputValue.trim() && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddCustomTag}
+                    className="flex w-full items-center gap-1"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>添加 "{inputValue}"</span>
+                  </Button>
+                )}
+              </div>
+            </CommandEmpty>
             <CommandGroup>
               {availableTags?.map((tag) => (
                 <CommandItem key={tag} value={tag} onSelect={() => handleTagSelect(tag)}>
@@ -65,6 +105,17 @@ export function TagSelector({
                 </CommandItem>
               ))}
             </CommandGroup>
+            {inputValue.trim() && !availableTags?.includes(inputValue) && (
+              <>
+                <CommandSeparator />
+                <CommandGroup>
+                  <CommandItem onSelect={handleAddCustomTag}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    {inputValue}
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

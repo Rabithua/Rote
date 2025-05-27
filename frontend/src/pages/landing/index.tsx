@@ -1,6 +1,6 @@
-import { getMyProfile } from '@/api/user/main';
 import Logo from '@/components/logo';
 import type { Profile } from '@/types/main';
+import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -34,8 +34,9 @@ function Landing() {
     // },
   ];
 
-  const { data: profile } = useAPIGet<Profile>('profile', getMyProfile);
-
+  const { data: profile } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
   return (
     <div className="flex min-h-dvh w-full flex-col items-center justify-center dark:text-white">
       <div className="mt-10 mb-4 flex h-full w-[96%] max-w-[1080px] flex-col gap-5 sm:w-[80%]">

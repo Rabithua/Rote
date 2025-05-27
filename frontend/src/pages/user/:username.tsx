@@ -1,30 +1,35 @@
-import { apiGetUserInfoByUsername } from '@/api/user/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import NavHeader from '@/components/navHeader';
 import RoteList from '@/components/roteList';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
-import { useAPIGet } from '@/utils/fetcher';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { get } from '@/utils/api';
+import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
+import { getRotesV2 } from '@/utils/roteApi';
+import Linkify from 'linkify-react';
 import { Globe2, Rss, Stars, User } from 'lucide-react';
 import moment from 'moment';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
-import Linkify from 'linkify-react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 function UserPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.user' });
   const navigate = useNavigate();
   const { username }: any = useParams();
-  const { data: userInfo, isLoading } = useAPIGet<Profile>(username, apiGetUserInfoByUsername, {
-    onError: (err) => {
-      if (err.response?.status === 404 || err.response?.status === 500) {
-        navigate('/404');
-      }
-    },
-  });
+  const { data: userInfo, isLoading } = useAPIGet<Profile>(
+    username,
+    (key) => get('/users/' + key).then((res) => res.data),
+    {
+      onError: (err) => {
+        if (err.response?.status === 404 || err.response?.status === 500) {
+          navigate('/404');
+        }
+      },
+    }
+  );
 
   const getPropsUserPublic = (pageIndex: number, _previousPageData: Rotes): ApiGetRotesParams => {
     return {
@@ -36,6 +41,11 @@ function UserPage() {
       },
     };
   };
+
+  const { data, mutate, loadMore } = useAPIInfinite(getPropsUserPublic, getRotesV2, {
+    initialSize: 0,
+    revalidateFirstPage: false,
+  });
 
   const SideBar = () => {
     return (
@@ -122,7 +132,7 @@ function UserPage() {
 
         <NavHeader title={t('publicNotes')} icon={<Globe2 className="size-6" />} />
 
-        {userInfo && <RoteList getProps={getPropsUserPublic} />}
+        {userInfo && <RoteList data={data} loadMore={loadMore} mutate={mutate} />}
       </ContainerWithSideBar>
     </>
   );

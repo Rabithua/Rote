@@ -1,9 +1,10 @@
-import { apiGetMyTags } from '@/api/rote/main';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams } from '@/types/main';
-import { useAPIGet } from '@/utils/fetcher';
+import { get } from '@/utils/api';
+import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
+import { getRotesV2 } from '@/utils/roteApi';
 import { ActivityIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,14 +13,7 @@ import { useLocation } from 'react-router-dom';
 function MineFilter() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
 
-  const { data: tags } = useAPIGet<string[]>('tags', apiGetMyTags);
-
-  const location = useLocation();
-  const [filter, setFilter] = useState({
-    tags: {
-      hasEvery: location.state.tags || [],
-    },
-  });
+  const { data: tags } = useAPIGet<string[]>('tags', () => get('/users/me/tags').then((res) => res.data));
 
   const getProps = (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
     return {
@@ -31,6 +25,18 @@ function MineFilter() {
       filter: filter,
     };
   };
+
+  const { data, mutate, loadMore } = useAPIInfinite(getProps, getRotesV2, {
+    initialSize: 0,
+    revalidateFirstPage: false,
+  });
+
+  const location = useLocation();
+  const [filter, setFilter] = useState({
+    tags: {
+      hasEvery: location.state.tags || [],
+    },
+  });
 
   function TagsBlock() {
     const tagsClickHandler = (tag: string) => {
@@ -124,7 +130,7 @@ function MineFilter() {
       <div className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible`}>
         <TagsBlock />
 
-        <RoteList getProps={getProps} />
+        <RoteList data={data} loadMore={loadMore} mutate={mutate} />
       </div>
     </ContainerWithSideBar>
   );

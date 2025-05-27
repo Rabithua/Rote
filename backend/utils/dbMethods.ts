@@ -204,13 +204,15 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    const { id, authorid, attachments, userreaction, visitorreaction, author, ...dataClean } = data;
+    console.log('Editing rote with data:', data);
+
+    const { id, authorid, attachments, userreaction, visitorreaction, author, ...cleanData } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,
         authorid: data.authorid,
       },
-      data: dataClean,
+      data: cleanData,
       include: {
         author: {
           select: {
@@ -226,6 +228,8 @@ export async function editRote(data: any): Promise<any> {
     });
     return rote;
   } catch (error) {
+    console.log(error);
+
     throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
   }
 }

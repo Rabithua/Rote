@@ -1,11 +1,7 @@
-import {
-  deleteSubscription,
-  saveSubscription,
-  sendNotificationTest,
-} from '@/api/subscription/main';
-import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Divider } from '@/components/ui/divider';
 import { Switch } from '@/components/ui/switch';
+import { del, post } from '@/utils/api';
+import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -43,11 +39,12 @@ export default function ServiceWorker() {
       switch (event.data.method) {
         case 'subNoticeResponse':
           {
-            const response = await saveSubscription(JSON.parse(event.data.payload));
-            if (response.data.data.id) {
+            const response = await post('/subscriptions', JSON.parse(event.data.payload));
+
+            if (response.data.id) {
               setSwLoading(false);
               setSwReady(true);
-              setNoticeId(response.data.data.id);
+              setNoticeId(response.data.id);
             }
           }
           break;
@@ -82,8 +79,8 @@ export default function ServiceWorker() {
   }
   async function unSub() {
     setSwLoading(true);
-    deleteSubscription(noticeId)
-      .then((res) => {
+    del('/subscriptions/' + noticeId)
+      .then(() => {
         setSwLoading(false);
         setNoticeId(null);
         setSwReady(false);
@@ -96,7 +93,15 @@ export default function ServiceWorker() {
 
   async function noticeTest() {
     try {
-      const resp = await sendNotificationTest(noticeId);
+      const resp = await post('/subscriptions/' + noticeId + '/notify', {
+        title: '自在废物',
+        body: '这是我的博客。',
+        image: `https://r2.rote.ink/others%2Flogo.png`,
+        data: {
+          type: 'openUrl',
+          url: 'https://rabithua.club',
+        },
+      });
       console.log(resp);
       toast.success(t('sendSuccess'));
     } catch (error) {}
@@ -170,7 +175,7 @@ export default function ServiceWorker() {
       )}
 
       {!navigator.serviceWorker && (
-        <div className="bg-bgLight/90 dark:bg-bgDark/90 dark:text-textDark absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-sm">
+        <div className="bg-bgLight/90 dark:bg-bgDark/90 dark:text-textDark absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-xl">
           <div className="text-2xl">🤕</div>
           <div>{t('notSupported')}</div>
         </div>

@@ -1,20 +1,19 @@
 import slogenImg from '@/assets/img/slogen.svg';
 import Heatmap from '@/components/d3/heatmap';
+import RoteEditor from '@/components/editor/RoteEditor';
 import Logo from '@/components/logo';
 import RandomRote from '@/components/randomRote';
 import RoteList from '@/components/roteList';
 import TagMap from '@/components/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { useEditor } from '@/state/editor';
+import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
+import { get } from '@/utils/api';
+import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
+import { getRotesV2 } from '@/utils/roteApi';
+import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { ChartAreaIcon, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import RoteEditor from '@/components/editor/RoteEditor';
-import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
-import { getMyProfile } from '@/api/user/main';
-import type { Profile } from '@/types/main';
-import { getPropsMine, useAPIGet } from '@/utils/fetcher';
-import { useEditor } from '@/state/editor';
-import { mutate } from 'swr';
-import { unstable_serialize } from 'swr/infinite';
 
 const SideBar = () => {
   return (
@@ -28,7 +27,28 @@ const SideBar = () => {
 
 function HomePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
-  const { data: profile } = useAPIGet<Profile>('profile', getMyProfile);
+  const { data: profile } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
+
+  const getPropsMineUnArchived = (
+    pageIndex: number,
+    _previousPageData: Rotes
+  ): ApiGetRotesParams => {
+    return {
+      apiType: 'mine',
+      params: {
+        limit: 20,
+        skip: pageIndex * 20,
+        archived: false,
+      },
+    };
+  };
+
+  const { data, mutate, loadMore } = useAPIInfinite(getPropsMineUnArchived, getRotesV2, {
+    initialSize: 0,
+    revalidateFirstPage: false,
+  });
 
   return (
     <ContainerWithSideBar
@@ -64,11 +84,11 @@ function HomePage() {
           roteAtom={useEditor().editor_newRoteAtom}
           callback={() => {
             console.log('callback');
-            mutate(unstable_serialize(getPropsMine));
+            mutate();
           }}
         />
       </div>
-      <RoteList getProps={getPropsMine} />
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );
 }

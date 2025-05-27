@@ -1,26 +1,33 @@
-import { apiGenerateOpenKey, apiGetMyOpenKey } from '@/api/rote/main';
-import { apiSaveProfile, apiUploadAvatar, getMyProfile } from '@/api/user/main';
+import defaultCover from '@/assets/img/defaultCover.png';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavHeader from '@/components/navHeader';
 import OpenKeyItem from '@/components/openKey';
-import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import { useOpenKeys } from '@/state/openKeys';
-import type { Profile } from '@/types/main';
-import { useAPIGet } from '@/utils/fetcher';
-import { Divider } from '@/components/ui/divider';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit, Loader, LoaderPinwheel, Rss, Stars, User, UserCircle2 } from 'lucide-react';
+import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import type { OpenKeys, Profile } from '@/types/main';
+import { get, post, put } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
+import Linkify from 'linkify-react';
+import {
+  Edit,
+  KeyRoundIcon,
+  Loader,
+  LoaderPinwheel,
+  Rss,
+  Stars,
+  User,
+  UserCircle2,
+} from 'lucide-react';
 import moment from 'moment';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import AvatarEditor from 'react-avatar-editor';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import Linkify from 'linkify-react';
 import { Link } from 'react-router-dom';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import defaultCover from '@/assets/img/defaultCover.png';
 
 function ProfilePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
@@ -31,30 +38,26 @@ function ProfilePage() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const [coverChangeing, setCoverChangeing] = useState(false);
 
-  const { data: profile, mutate } = useAPIGet<Profile>('profile', getMyProfile);
+  const { data: profile, mutate } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
+
+  const {
+    data: openKeys,
+    mutate: mutateOpenKeys,
+    isLoading: openKeyLoading,
+  } = useAPIGet<OpenKeys>('openKeys', () => get('/api-keys').then((res) => res.data));
+
   const [editProfile, setEditProfile] = useState<any>(profile);
-  const [openKeys, setOpenKeys] = useOpenKeys();
-  const [openKeyLoading, setOpenKeyLoading] = useState(true);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
 
-  useEffect(() => {
-    apiGetMyOpenKey()
-      .then((res: any) => {
-        setOpenKeys(res.data.data);
-        setOpenKeyLoading(false);
-      })
-      .catch(() => {
-        setOpenKeyLoading(false);
-      });
-  }, [setOpenKeys]);
-
   function generateOpenKeyFun() {
     const toastId = toast.loading(t('creating'));
-    apiGenerateOpenKey()
-      .then((res: any) => {
-        setOpenKeys([...openKeys, res.data.data]);
+    post('/api-keys')
+      .then(() => {
+        mutateOpenKeys();
         toast.success(t('createSuccess'), {
           id: toastId,
         });
@@ -93,7 +96,9 @@ function ProfilePage() {
                 type: 'image/png',
               })
             );
-            apiUploadAvatar(formData).then((res) => {
+            post('/attachments', formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            }).then((res) => {
               console.log(res);
               setEditProfile({
                 ...editProfile,
@@ -114,7 +119,7 @@ function ProfilePage() {
 
   function saveProfile() {
     setProfileEditing(true);
-    apiSaveProfile(editProfile)
+    put('/users/me/profile', editProfile)
       .then(() => {
         toast.success(t('editSuccess'));
         mutate();
@@ -137,22 +142,24 @@ function ProfilePage() {
       const formData = new FormData();
       formData.append('images', selectedFile);
 
-      apiUploadAvatar(formData).then((res) => {
-        console.log(res);
-        let url = res.data.data[0].compressUrl || res.data.data[0].url;
+      post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(
+        (res) => {
+          console.log(res);
+          let url = res.data.data[0].compressUrl || res.data.data[0].url;
 
-        apiSaveProfile({
-          cover: url,
-        })
-          .then(() => {
-            mutate();
-            setCoverChangeing(false);
+          put('/users/me/profile', {
+            cover: url,
           })
-          .catch((err) => {
-            console.error('Error edit Profile:', err);
-            setCoverChangeing(false);
-          });
-      });
+            .then(() => {
+              mutate();
+              setCoverChangeing(false);
+            })
+            .catch((err) => {
+              console.error('Error edit Profile:', err);
+              setCoverChangeing(false);
+            });
+        }
+      );
     }
   }
 
@@ -200,7 +207,7 @@ function ProfilePage() {
               alt=""
             />
             <div
-              className="absolute right-3 bottom-1 cursor-pointer rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-md"
+              className="absolute right-3 bottom-1 cursor-pointer rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl"
               onClick={() => {
                 // @ts-ignore
                 inputCoverRef.current?.click();
@@ -273,16 +280,14 @@ function ProfilePage() {
               <LoadingPlaceholder className="py-8" size={6} />
             ) : (
               <>
-                {openKeys.map((openKey: any) => {
-                  return <OpenKeyItem key={openKey.id} openKey={openKey}></OpenKeyItem>;
+                {openKeys?.map((openKey: any) => {
+                  return <OpenKeyItem key={openKey.id} openKey={openKey} mutate={mutateOpenKeys} />;
                 })}
-                <div
-                  onClick={generateOpenKeyFun}
-                  className="bg-bgLight text-theme dark:bg-bgDark cursor-pointer p-4"
-                >
-                  <div className="mr-auto font-mono font-semibold break-all">
-                    {openKeys.length === 0 ? t('noOpenKey') : t('addOpenKey')}
-                  </div>
+                <div className="flex flex-col items-center justify-center gap-4 py-8">
+                  {openKeys?.length === 0 && <KeyRoundIcon className="size-8 text-gray-500" />}
+                  <Button variant="secondary" onClick={generateOpenKeyFun} className="cursor-pointer p-4">
+                    {openKeys?.length === 0 ? t('noOpenKey') : t('addOpenKey')}
+                  </Button>
                 </div>
               </>
             )}

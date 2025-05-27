@@ -75,7 +75,7 @@ const result = await post('/notes', { content: 'New note' });
 
 | 旧方法                      | 新方法                                                                                   |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
-| `apiUploadAvatar(formData)` | `post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })` |
+| `apiUploadFiles(formData)` | `post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })` |
 | `apiDeleteAttachment(id)`   | `del('/attachments/' + id)`                                                              |
 | `apiDeleteAttachments(ids)` | `del('/attachments', { data: { ids } })`                                                 |
 

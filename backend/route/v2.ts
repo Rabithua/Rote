@@ -46,7 +46,7 @@ import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
 import { UploadResult } from '../types/main';
 import { JobNames } from '../types/schedule';
 import { asyncHandler, errorHandler } from '../utils/handlers';
-import { bodyTypeCheck, isAuthenticated, isAuthor, sanitizeUserData } from '../utils/main';
+import { bodyTypeCheck, isAuthenticated, sanitizeUserData } from '../utils/main';
 import { r2uploadhandler } from '../utils/r2';
 import { generateRssFeed, RssFeedOptions } from '../utils/rss';
 import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
@@ -321,67 +321,6 @@ notesRouter.get(
   })
 );
 
-// 获取笔记详情
-notesRouter.get(
-  '/:id',
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { id } = req.params;
-
-    if (!id || id.length !== 24) {
-      throw new Error('Invalid or missing ID');
-    }
-
-    const rote = await findRoteById(id);
-    if (!rote) {
-      throw new Error('Note not found');
-    }
-
-    if (rote.state === 'public') {
-      res.status(200).json(createResponse(rote));
-      return;
-    }
-
-    if (rote.authorid === user?.id) {
-      res.status(200).json(createResponse(rote));
-      return;
-    }
-
-    throw new Error('Access denied: note is private');
-  })
-);
-
-// 更新笔记
-notesRouter.put(
-  '/:id',
-  isAuthor,
-  bodyTypeCheck,
-  asyncHandler(async (req, res) => {
-    const rote = req.body;
-    const data = await editRote(rote);
-
-    res.status(200).json(createResponse(data));
-  })
-);
-
-// 删除笔记
-notesRouter.delete(
-  '/:id',
-  isAuthor,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const rote = req.body;
-    if (!rote) {
-      throw new Error('Note data is required');
-    }
-
-    const data = await deleteRote(rote);
-    await deleteRoteAttachmentsByRoteId(rote.id, user.id);
-
-    res.status(200).json(createResponse(data));
-  })
-);
-
 // 获取当前用户的笔记列表
 notesRouter.get(
   '/',
@@ -455,6 +394,65 @@ notesRouter.get(
   })
 );
 
+// 获取笔记详情
+notesRouter.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { id } = req.params;
+
+    if (!id || id.length !== 24) {
+      throw new Error('Invalid or missing ID');
+    }
+
+    const rote = await findRoteById(id);
+    if (!rote) {
+      throw new Error('Note not found');
+    }
+
+    if (rote.state === 'public') {
+      res.status(200).json(createResponse(rote));
+      return;
+    }
+
+    if (rote.authorid === user?.id) {
+      res.status(200).json(createResponse(rote));
+      return;
+    }
+
+    throw new Error('Access denied: note is private');
+  })
+);
+
+// 更新笔记
+notesRouter.put(
+  '/:id',
+  isAuthenticated,
+  bodyTypeCheck,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const rote = req.body;
+    const data = await editRote({ ...rote, authorid: user.id });
+
+    res.status(200).json(createResponse(data));
+  })
+);
+
+// 删除笔记
+notesRouter.delete(
+  '/:id',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const id = req.params.id;
+
+    const data = await deleteRote({ id, authorid: user.id });
+    await deleteRoteAttachmentsByRoteId(id, user.id);
+
+    res.status(200).json(createResponse(data));
+  })
+);
+
 // 通知相关路由
 const notificationsRouter = express.Router();
 
@@ -486,7 +484,7 @@ subscriptionsRouter.post(
   '/',
   isAuthenticated,
   asyncHandler(async (req, res) => {
-    const { subscription } = req.body;
+    const subscription = req.body;
     const user = req.user as User;
 
     if (!subscription) {
@@ -695,7 +693,7 @@ attachmentsRouter.post(
 // 删除单个附件
 attachmentsRouter.delete(
   '/:id',
-  isAuthor,
+  isAuthenticated,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { id } = req.params;

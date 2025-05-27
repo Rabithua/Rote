@@ -3,8 +3,10 @@ import NavHeader from '@/components/navHeader';
 import RandomCat from '@/components/RandomCat';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import { getPropsPublic } from '@/utils/fetcher';
+import type { ApiGetRotesParams, Rotes } from '@/types/main';
+import { useAPIInfinite } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
+import { getRotesV2 } from '@/utils/roteApi';
 import { Eye, GitFork, Github, Globe2, MessageCircleQuestionIcon, Star } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -13,6 +15,21 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 function ExplorePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });
+
+  const getPropsPublic = (pageIndex: number, _previousPageData: Rotes): ApiGetRotesParams => {
+    return {
+      apiType: 'public',
+      params: {
+        limit: 20,
+        skip: pageIndex * 20,
+      },
+    };
+  };
+
+  const { data, mutate, loadMore } = useAPIInfinite(getPropsPublic, getRotesV2, {
+    initialSize: 0,
+    revalidateFirstPage: false,
+  });
 
   const SideBar = () => {
     const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
@@ -93,7 +110,7 @@ function ExplorePage() {
       }
     >
       <NavHeader title={t('title')} icon={<Globe2 className="size-6" />} />
-      <RoteList getProps={getPropsPublic} />
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );
 }

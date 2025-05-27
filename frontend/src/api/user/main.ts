@@ -1,5 +1,8 @@
 import { instance } from '../request';
 
+/**
+ * @deprecated 请使用新的API调用方式: get(`/users/${username}/info`).then(res => res.data)
+ */
 export function apiGetUserInfoByUsername(username: string): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -37,7 +40,10 @@ export function getMyProfile(): Promise<any> {
       });
   });
 }
-
+/**
+ * 上传头像
+ * @deprecated 请使用新的API调用方式: post('/users/me/avatar', formData).then(res => res.data)
+ */
 export function apiUploadAvatar(formData: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({
@@ -57,6 +63,10 @@ export function apiUploadAvatar(formData: any): Promise<any> {
   });
 }
 
+/**
+ * 保存个人资料
+ * @deprecated 请使用新的API调用方式: post('/users/me/profile', data).then(res => res.data)
+ */
 export function apiSaveProfile(data: any): Promise<any> {
   return new Promise((resolve, reject) => {
     instance({

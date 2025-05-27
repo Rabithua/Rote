@@ -1,12 +1,10 @@
-import { apiGetStatus } from '@/api/rote/main';
-import { getMyProfile } from '@/api/user/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import Logo from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import mainJson from '@/json/main.json';
 import type { Profile } from '@/types/main';
-import { post } from '@/utils/api';
+import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -20,12 +18,13 @@ function Login() {
     keyPrefix: 'pages.login',
   });
 
-  const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet(
-    'checkStatus',
-    apiGetStatus
+  const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet('checkStatus', () =>
+    get('/site/status').then((res) => res.data)
   );
 
-  const { data: profile, mutate } = useAPIGet<Profile>('profile', getMyProfile);
+  const { data: profile, mutate } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
 
   const [type, setType] = useState('login');
   const navigate = useNavigate();

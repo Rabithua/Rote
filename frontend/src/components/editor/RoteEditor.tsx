@@ -1,18 +1,18 @@
-import { apiAddRote, apiEditMyRote, apiUploadFiles } from '@/api/rote/main';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { TagSelector } from '@/components/ui/others/TagSelector';
+import FileSelector from '@/components/uploader';
 import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';
-import { Textarea } from '../ui/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { TagSelector } from '@/components/ui/others/TagSelector';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useState } from 'react';
-import FileSelector from '@/components/uploader';
+import { Textarea } from '../ui/textarea';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
 const { roteMaxLetter } = mainJson;
 
@@ -53,9 +53,10 @@ function RoteEditor({
     setSubmitting(true);
 
     (rote.id
-      ? apiEditMyRote(rote)
-      : apiAddRote({
+      ? put('/notes/' + rote.id, rote)
+      : post('/notes', {
           ...rote,
+          id: undefined,
           content: rote.content.trim(),
         })
     )
@@ -63,7 +64,7 @@ function RoteEditor({
         toast.success(t('sendSuccess'), {
           id: toastId,
         });
-        await uploadAttachments(res.data.data);
+        await uploadAttachments(res.data);
       })
       .catch(() => {
         toast.error(t('sendFailed'), {
@@ -95,8 +96,10 @@ function RoteEditor({
             formData.append('images', file);
           }
         });
-        apiUploadFiles(formData, _rote.id).then((res) => {
-          if (res.data.code !== 0) return;
+        post(`/attachments?noteId=${_rote.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        }).then((res) => {
+          if (res.code !== 0) return;
           toast.success(t('uploadSuccess'), {
             id: toastId,
           });
@@ -201,7 +204,7 @@ function RoteEditor({
                 />
                 <div
                   onClick={() => deleteFile(index)}
-                  className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-3xl duration-300 hover:scale-95"
+                  className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
                 >
                   <X className="size-3 text-white" />
                 </div>

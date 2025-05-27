@@ -1,4 +1,4 @@
-import { apiGetMyTags } from '@/api/rote/main';
+import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { ArrowDownLeft, Tag } from 'lucide-react';
 import { useState } from 'react';
@@ -11,7 +11,9 @@ export default function TagMap() {
     keyPrefix: 'components.tagMap',
   });
 
-  const { data: tags, isLoading } = useAPIGet<string[]>('tags', apiGetMyTags);
+  const { data: tags, isLoading } = useAPIGet<string[]>('tags', () =>
+    get('/users/me/tags').then((res) => res.data)
+  );
 
   const [isCollapsed, setIsCollapsed] = useState(true);
 

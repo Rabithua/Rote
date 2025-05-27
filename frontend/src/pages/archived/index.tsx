@@ -4,12 +4,30 @@ import RandomRote from '@/components/randomRote';
 import RoteList from '@/components/roteList';
 import TagMap from '@/components/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import { getPropsMineArchived } from '@/utils/fetcher';
+import type { ApiGetRotesParams, Rotes } from '@/types/main';
+import { useAPIInfinite } from '@/utils/fetcher';
+import { getRotesV2 } from '@/utils/roteApi';
 import { Archive, ChartAreaIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 function ArchivedPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.archived' });
+
+  const getPropsMineArchived = (pageIndex: number, _previousPageData: Rotes): ApiGetRotesParams => {
+    return {
+      apiType: 'mine',
+      params: {
+        limit: 20,
+        skip: pageIndex * 20,
+        archived: true,
+      },
+    };
+  };
+
+  const { data, mutate, loadMore } = useAPIInfinite(getPropsMineArchived, getRotesV2, {
+    initialSize: 0,
+    revalidateFirstPage: false,
+  });
 
   const SideBar = () => {
     return (
@@ -34,7 +52,7 @@ function ArchivedPage() {
       }
     >
       <NavHeader title={t('title')} icon={<Archive className="size-6" />} />
-      <RoteList getProps={getPropsMineArchived} />
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );
 }

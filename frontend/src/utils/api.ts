@@ -47,9 +47,16 @@ api.interceptors.response.use(
 export const get = <T = any>(
   url: string,
   params?: any,
+  data?: any,
   config?: AxiosRequestConfig
 ): Promise<T> => {
-  return api.get(url, { ...config, params });
+  return api.request({
+    method: 'get',
+    url,
+    params,
+    data,
+    ...config,
+  });
 };
 
 export const post = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {

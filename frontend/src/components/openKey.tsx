@@ -1,40 +1,40 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 
-import { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useState } from 'react';
 
-import toast from 'react-hot-toast';
-import OpenKeyEditModel from './openKeyEditModel';
-import { apiDeleteOneMyOpenKey } from '@/api/rote/main';
-import { useOpenKeys } from '@/state/openKeys';
-import { useTranslation } from 'react-i18next';
+import type { OpenKey } from '@/types/main';
+import { del } from '@/utils/api';
 import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Terminal, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import type { KeyedMutator } from 'swr';
+import OpenKeyEditModel from './openKeyEditModel';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-function OpenKeyItem({ openKey }: any) {
+function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMutator<OpenKey[]> }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.openKey',
   });
   const [, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [openKeysData, setOpenKeysData] = useOpenKeys();
   const [hidekey, setHideKey] = useState(true);
 
   function actionsMenu() {
     function deleteOpenKey() {
       setOpen(false);
       const toastId = toast.loading(t('deleting'));
-      apiDeleteOneMyOpenKey(openKey.id)
-        .then((res) => {
+      del('/api-keys/' + openKey.id)
+        .then(() => {
           toast.success(t('deleteSuccess'), {
             id: toastId,
           });
-          setOpenKeysData(openKeysData.filter((key) => key.id !== res.data.data.id));
+          mutate && mutate();
         })
         .catch(() => {
           toast.error(t('deleteFailed'), {
