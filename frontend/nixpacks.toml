@@ -1,0 +1,21 @@
+[phases.setup]
+nixPkgs = ["nodejs", "nodePackages.pnpm", "bun"]
+
+[phases.install]
+cmds = ["bun install"]
+
+[phases.build]
+cmds = ["bun run build"]
+
+[start]
+cmd = "bun run preview"
+
+[variables]
+NODE_ENV = "production"
+
+[nixpkgs]
+# 指定 nixpkgs 版本
+channel = "unstable"
+
+[deploy]
+startCmd = "bun run preview"
