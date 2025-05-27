@@ -9,9 +9,10 @@ import {
   createRote,
   createUser,
   deleteAttachment,
+  deleteAttachments,
   deleteMyOneOpenKey,
   deleteRote,
-  deleteRoteAttachments,
+  deleteRoteAttachmentsByRoteId,
   deleteSubScription,
   editMyOneOpenKey,
   editMyProfile,
@@ -223,10 +224,10 @@ routerV1.post(
   isAuthenticated,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
-    const { title, content, type, tags, state, archived, pin, editor, attachments } = req.body;
+    const { title, content, type, tags, state, archived, pin, editor } = req.body;
     const user = req.user as User;
 
-    if (!content && !attachments) {
+    if (!content) {
       throw new Error('Content is required');
     }
 
@@ -430,7 +431,7 @@ routerV1.delete(
     }
 
     const data = await deleteRote(rote);
-    await deleteRoteAttachments(rote.id, user.id);
+    await deleteRoteAttachmentsByRoteId(rote.id, user.id);
 
     res.send({
       code: 0,
@@ -495,6 +496,26 @@ routerV1.post(
     const data = await createAttachments(user.id, roteid, uploadResults);
 
     res.status(200).json({
+      code: 0,
+      msg: 'ok',
+      data,
+    });
+  })
+);
+
+routerV1.delete(
+  '/deleteAttachments',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { attachments } = req.body;
+
+    if (!attachments || attachments.length === 0) {
+      throw new Error('No attachments to delete');
+    }
+
+    const data = await deleteAttachments(attachments, user.id);
+    res.send({
       code: 0,
       msg: 'ok',
       data,

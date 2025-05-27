@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { UploadResult } from '../types/main';
 import prisma from './prisma';
+import { r2deletehandler } from './r2';
 
 // Define unified error type
 class DatabaseError extends Error {
@@ -203,7 +204,7 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    const { id, authorid, ...dataClean } = data;
+    const { id, authorid, attachments, userreaction, visitorreaction, author, ...dataClean } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,
@@ -243,14 +244,78 @@ export async function deleteRote(data: any): Promise<any> {
   }
 }
 
-export async function deleteRoteAttachments(roteid: string, userid: string): Promise<any> {
+export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: string): Promise<any> {
   try {
+    const attachments = await prisma.attachment.findMany({
+      where: { roteid, userid },
+      select: { details: true },
+    });
+
+    if (attachments.length === 0) {
+      return { count: 0 };
+    }
+
     const result = await prisma.attachment.deleteMany({
       where: { roteid, userid },
     });
+
+    attachments.forEach(({ details }) => {
+      // @ts-ignore
+      const key = details?.key;
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.log(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+    });
+
     return result;
   } catch (error) {
     throw new DatabaseError(`Failed to delete attachments for rote: ${roteid}`, error);
+  }
+}
+
+export async function deleteAttachments(
+  attachments: {
+    id: string;
+    key?: string;
+  }[],
+  userid: string
+): Promise<any> {
+  try {
+    const dbAttachments = await prisma.attachment.findMany({
+      where: {
+        id: {
+          in: attachments.map((e) => e.id),
+        },
+        userid,
+      },
+    });
+
+    if (dbAttachments.length !== attachments.length) {
+      throw new DatabaseError('Some attachments not found or unauthorized');
+    }
+
+    const result = await prisma.attachment.deleteMany({
+      where: {
+        id: {
+          in: attachments.map((e) => e.id),
+        },
+        userid,
+      },
+    });
+
+    attachments.forEach(({ key }) => {
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.log(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+    });
+
+    return result;
+  } catch (error) {
+    throw new DatabaseError('Failed to delete attachments', error);
   }
 }
 

@@ -5,11 +5,7 @@
         "archived"
     ],
     "roteType": [
-        "rote",
-        "journal",
-        "todo",
-        "lucky",
-        "article"
+        "Rote"
     ],
     "editorType": [
         "normal",
