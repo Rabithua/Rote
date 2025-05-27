@@ -71,7 +71,7 @@ function HomePage() {
         />
       </div>
       <div className="flex gap-4 p-4">
-        <Avatar className="size-10 shrink-0 overflow-hidden rounded-full">
+        <Avatar className="hidden size-10 shrink-0 overflow-hidden rounded-full sm:block">
           {profile?.avatar ? (
             <AvatarImage src={profile.avatar} />
           ) : (
