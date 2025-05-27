@@ -1,5 +1,6 @@
 {
-  "name": "my-react-app",
+  "name": "rote-web-frontend",
+  "description": "Frontend for Rote Web, a web application for managing and sharing knowledge.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -44,8 +45,8 @@
     "mobile-detect": "^1.4.5",
     "moment": "^2.30.1",
     "react": "^19.1.0",
-    "react-avatar-editor": "^13.0.2",
     "react-dom": "^19.1.0",
+    "react-easy-crop": "^5.4.2",
     "react-helmet-async": "^2.0.5",
     "react-hot-toast": "^2.5.2",
     "react-i18next": "^15.5.2",

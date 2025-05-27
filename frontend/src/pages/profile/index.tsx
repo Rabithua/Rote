@@ -23,8 +23,9 @@ import {
   UserCircle2,
 } from 'lucide-react';
 import moment from 'moment';
-import { useRef, useState } from 'react';
-import AvatarEditor from 'react-avatar-editor';
+import { useCallback, useRef, useState } from 'react';
+import type { Area } from 'react-easy-crop';
+import Cropper from 'react-easy-crop';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -33,7 +34,9 @@ function ProfilePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const inputAvatarRef = useRef(null);
   const inputCoverRef = useRef(null);
-  const AvatarEditorRef = useRef(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const [coverChangeing, setCoverChangeing] = useState(false);
@@ -80,40 +83,93 @@ function ProfilePage() {
     setIsAvatarModalOpen(true);
   }
 
-  async function avatarEditSave() {
-    if (AvatarEditorRef.current) {
-      setAvatarUploading(true);
-      // @ts-ignore
-      const canvas = AvatarEditorRef.current.getImage().toDataURL();
-      fetch(canvas)
-        .then((res) => res.blob())
-        .then((blob) => {
-          try {
-            const formData = new FormData();
-            formData.append(
-              'images',
-              new File([blob], 'cropped_image.png', {
-                type: 'image/png',
-              })
-            );
-            post('/attachments', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            }).then((res) => {
-              console.log(res);
-              setEditProfile({
-                ...editProfile,
-                avatar: res.data.data[0].compressUrl || res.data.data[0].url,
-              });
-              setAvatarUploading(false);
-              setIsAvatarModalOpen(false);
-              toast.success(t('uploadSuccess'));
-            });
-          } catch (error) {
-            toast.error(t('uploadFailed'));
-            setAvatarUploading(false);
-            console.error('Error uploading image:', error);
+  // 生成裁剪后的图片
+  const createCroppedImage = async (imageSrc: File | Blob, pixelCrop: Area): Promise<Blob> => {
+    const image = new Image();
+    image.src = URL.createObjectURL(imageSrc);
+
+    return new Promise((resolve, reject) => {
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          reject(new Error('Could not get canvas context'));
+          return;
+        }
+
+        // 设置画布尺寸为裁剪区域的尺寸
+        canvas.width = pixelCrop.width;
+        canvas.height = pixelCrop.height;
+
+        // 在画布上绘制裁剪后的图像
+        ctx.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          0,
+          0,
+          pixelCrop.width,
+          pixelCrop.height
+        );
+
+        // 将画布转换为Blob
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Canvas is empty'));
           }
-        });
+        }, 'image/png');
+      };
+
+      image.onerror = () => {
+        reject(new Error('Could not load image'));
+      };
+    });
+  };
+
+  // 裁剪完成回调
+  const onCropComplete = useCallback((_: any, croppedAreaPixelsData: Area) => {
+    setCroppedAreaPixels(croppedAreaPixelsData);
+  }, []);
+
+  // 保存头像
+  async function avatarEditSave() {
+    if (!croppedAreaPixels || !editProfile.avatar_file) {
+      toast.error(t('cropError'));
+      return;
+    }
+
+    try {
+      setAvatarUploading(true);
+      const croppedImage = await createCroppedImage(editProfile.avatar_file, croppedAreaPixels);
+
+      const formData = new FormData();
+      formData.append(
+        'images',
+        new File([croppedImage], 'cropped_image.png', {
+          type: 'image/png',
+        })
+      );
+
+      const res = await post('/attachments', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      setEditProfile({
+        ...editProfile,
+        avatar: res.data[0].compressUrl || res.data[0].url,
+      });
+      setAvatarUploading(false);
+      setIsAvatarModalOpen(false);
+      toast.success(t('uploadSuccess'));
+    } catch (error) {
+      toast.error(t('uploadFailed'));
+      setAvatarUploading(false);
+      console.error('Error uploading image:', error);
     }
   }
 
@@ -226,7 +282,7 @@ function ProfilePage() {
               <LoaderPinwheel className={`size-4 ${coverChangeing && 'animate-spin'}`} />
             </div>
           </div>
-          <div className="mx-4 flex h-16">
+          <div className="mx-4 flex h-16 items-center">
             <Avatar
               className="gLight size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] text-black sm:block"
               onClick={() => {
@@ -241,15 +297,15 @@ function ProfilePage() {
                 </AvatarFallback>
               )}
             </Avatar>
-            <div
-              className="bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight mt-auto ml-auto flex h-fit cursor-pointer items-center gap-2 rounded-md px-4 py-1 duration-300 select-none active:scale-95"
+            <Button
+              className="ml-auto"
               onClick={() => {
                 setIsModalOpen(true);
               }}
             >
               <Edit className="size-4" />
               {t('editProfile')}
-            </div>
+            </Button>
           </div>
           <div className="mx-4 flex flex-col gap-1">
             <Link to={`/${profile?.username}`}>
@@ -285,7 +341,11 @@ function ProfilePage() {
                 })}
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                   {openKeys?.length === 0 && <KeyRoundIcon className="size-8 text-gray-500" />}
-                  <Button variant="secondary" onClick={generateOpenKeyFun} className="cursor-pointer p-4">
+                  <Button
+                    variant="secondary"
+                    onClick={generateOpenKeyFun}
+                    className="cursor-pointer p-4"
+                  >
                     {openKeys?.length === 0 ? t('noOpenKey') : t('addOpenKey')}
                   </Button>
                 </div>
@@ -366,10 +426,8 @@ function ProfilePage() {
                     });
                   }}
                 />
-                <div
-                  className={`mt-4 flex w-full cursor-pointer items-center justify-center rounded-md bg-black px-3 py-2 text-center font-semibold text-white duration-300 active:scale-95 ${
-                    profileEditing ? 'bg-gray-700' : 'bg-black'
-                  }`}
+                <Button
+                  className={`mt-4 flex w-full items-center justify-center`}
                   onClick={() => {
                     if (!profileEditing) {
                       saveProfile();
@@ -378,7 +436,7 @@ function ProfilePage() {
                 >
                   {profileEditing && <Loader className="mr-2 size-4 animate-spin" />}
                   {profileEditing ? t('editing') : t('save')}
-                </div>
+                </Button>
               </div>
             </div>
           </DialogContent>
@@ -388,21 +446,19 @@ function ProfilePage() {
             <DialogHeader>
               <DialogTitle>{t('cropAvatar')}</DialogTitle>
             </DialogHeader>
-            <AvatarEditor
-              ref={AvatarEditorRef}
-              className="mx-auto"
-              image={editProfile.avatar_file}
-              width={150}
-              height={150}
-              border={50}
-              color={[0, 0, 0, 0.6]}
-              scale={1}
-              rotate={0}
-            />
-            <div
-              className={`mt-4 w-full cursor-pointer rounded-md bg-black px-3 py-2 text-center font-semibold text-white duration-300 active:scale-95 ${
-                avatarUploading ? 'bg-gray-700' : 'bg-black'
-              }`}
+            <div className="relative h-[300px] w-full">
+              <Cropper
+                image={editProfile.avatar_file && URL.createObjectURL(editProfile.avatar_file)}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+            <Button
+              className={`mt-4 w-full`}
               onClick={() => {
                 if (!avatarUploading) {
                   avatarEditSave();
@@ -411,7 +467,7 @@ function ProfilePage() {
             >
               {avatarUploading && <Loader className="mr-2 size-4 animate-spin" />}
               {avatarUploading ? t('uploading') : t('done')}
-            </div>
+            </Button>
           </DialogContent>
         </Dialog>
       </div>
