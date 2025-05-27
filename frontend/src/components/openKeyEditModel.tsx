@@ -54,7 +54,7 @@ function OpenKeyEditModel({ openKey, close }: any) {
         });
         setOpenKeys(openKeys.map((key) => (key.id === res.data.data.id ? res.data.data : key)));
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error(t('saveFailed'), {
           id: toastId,
         });

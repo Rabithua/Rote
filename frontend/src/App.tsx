@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { HelmetProvider, Helmet } from 'react-helmet-async';
+import { HelmetProvider, Helmet } from '@dr.pogodin/react-helmet';
 import { Toaster } from 'react-hot-toast';
 import { SWRConfig } from 'swr';
 import GlobalRouterProvider from './route/main';

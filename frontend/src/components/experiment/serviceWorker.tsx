@@ -12,7 +12,7 @@ export default function ServiceWorker() {
     keyPrefix: 'pages.experiment.serviceWorker',
   });
   const [swReady, setSwReady] = useState(false);
-  const [swLoading, setSwLoading] = useState(true);
+  const [, setSwLoading] = useState(true);
   const [noticeId, setNoticeId] = useState<any>(null);
 
   const initializeServiceWorker = async () => {
@@ -34,7 +34,7 @@ export default function ServiceWorker() {
   };
 
   function listenSw() {
-    navigator.serviceWorker.removeEventListener('message', async (event) => {});
+    navigator.serviceWorker.removeEventListener('message', async () => {});
     navigator.serviceWorker.addEventListener('message', async (event) => {
       switch (event.data.method) {
         case 'subNoticeResponse':

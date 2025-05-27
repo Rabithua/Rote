@@ -11,7 +11,7 @@ import { getRotesV2 } from '@/utils/roteApi';
 import Linkify from 'linkify-react';
 import { Globe2, Rss, Stars, User } from 'lucide-react';
 import moment from 'moment';
-import { Helmet } from 'react-helmet-async';
+import { Helmet } from '@dr.pogodin/react-helmet';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 

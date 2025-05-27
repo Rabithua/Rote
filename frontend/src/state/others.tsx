@@ -1,4 +1,4 @@
-import { TempState } from "@/types/main";
+import type { TempState } from "@/types/main";
 import { useAtom } from "jotai";
 import { atomWithStorage } from "jotai/utils";
 
