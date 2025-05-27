@@ -1,7 +1,7 @@
-import { logOut } from '@/api/login/main';
 import { getMyProfile } from '@/api/user/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import type { Profile } from '@/types/main';
+import { post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
@@ -68,7 +68,7 @@ function LayoutDashboard() {
 
   function logOutFn() {
     const toastId = toast.loading(t('messages.loggingOut'));
-    logOut()
+    post('/auth/logout')
       .then(async () => {
         toast.success(t('messages.logoutSuccess'), {
           id: toastId,
@@ -76,7 +76,7 @@ function LayoutDashboard() {
 
         window.location.reload();
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.log(err);
         toast.error('err.response.data.data.msg', {
           id: toastId,

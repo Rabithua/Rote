@@ -1,17 +1,18 @@
-import { loginByPassword, registerBypassword } from '@/api/login/main';
 import { apiGetStatus } from '@/api/rote/main';
-import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import { Link, useNavigate } from 'react-router-dom';
-import { z } from 'zod';
-import mainJson from '@/json/main.json';
 import { getMyProfile } from '@/api/user/main';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import Logo from '@/components/logo';
-import type { Profile } from '@/types/main';
-import { useAPIGet } from '@/utils/fetcher';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import mainJson from '@/json/main.json';
+import type { Profile } from '@/types/main';
+import { post } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
+import { z } from 'zod';
 const { safeRoutes } = mainJson;
 
 function Login() {
@@ -76,8 +77,8 @@ function Login() {
 
     const toastId = toast.loading(t('messages.loggingIn'));
     setDisbled(true);
-    loginByPassword(loginData)
-      .then(async (res) => {
+    post('/auth/login', loginData)
+      .then(() => {
         toast.success(t('messages.loginSuccess'), {
           id: toastId,
         });
@@ -85,7 +86,7 @@ function Login() {
         mutate();
         navigate('/home');
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.log(err);
         setDisbled(false);
         if ('code' in err.response?.data) {
@@ -110,7 +111,7 @@ function Login() {
 
     const toastId = toast.loading(t('messages.registering'));
     setDisbled(false);
-    registerBypassword(registerData)
+    post('/auth/register', registerData)
       .then(() => {
         toast.success(t('messages.registerSuccess'), {
           id: toastId,
@@ -124,7 +125,7 @@ function Login() {
         });
         setType('login');
       })
-      .catch((err) => {
+      .catch((err: any) => {
         setDisbled(false);
         toast.error(err.response.data.msg, {
           id: toastId,
@@ -245,20 +246,12 @@ function Login() {
               <div className="mt-4 flex flex-col gap-2">
                 {type === 'login' ? (
                   <>
-                    <button
-                      className="w-full cursor-pointer rounded-md bg-black px-3 py-2 text-center text-white duration-300 active:scale-95"
-                      disabled={disbled}
-                      onClick={login}
-                    >
+                    <Button disabled={disbled} onClick={login}>
                       {t('buttons.login')}
-                    </button>
-                    <button
-                      className="bg-bgLight w-full cursor-pointer rounded-md px-3 py-2 text-center duration-300 active:scale-95 dark:text-black"
-                      disabled={disbled}
-                      onClick={changeType}
-                    >
+                    </Button>
+                    <Button variant="secondary" disabled={disbled} onClick={changeType}>
                       {t('buttons.register')}
-                    </button>
+                    </Button>
                   </>
                 ) : (
                   <>

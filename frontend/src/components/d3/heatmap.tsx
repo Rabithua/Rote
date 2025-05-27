@@ -1,22 +1,31 @@
 // src/Heatmap.tsx
-import { apiGetMyHeatMap } from '@/api/others/main';
 import type { HeatMapDay } from '@/types/main';
+import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
+import { SquareDashed } from 'lucide-react';
 import moment from 'moment';
 import React from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import LoadingPlaceholder from '../LoadingPlaceholder';
-import { SquareDashed } from 'lucide-react';
 
 const Heatmap: React.FC = () => {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.d3.heatmap',
   });
 
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - (70 + startDate.getDay() || 7));
+
   const { data: heatmapData, isLoading } = useAPIGet<{
     [key: string]: number;
-  }>('heatmap', apiGetMyHeatMap);
+  }>('heatmap', () =>
+    get('/users/me/heatmap', {
+      startDate,
+      endDate,
+    }).then((res) => res.data)
+  );
 
   const colors = ['#cccccc20', '#07C16030', '#07C16050', '#07C16070', '#07C16090', '#07C160'];
 
