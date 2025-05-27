@@ -16,6 +16,7 @@ export default defineConfig({
     'process.env': process.env, // 注入 process.env
   },
   preview: {
-    host: true, // 允许所有主机访问
+    host: true,
+    allowedHosts: true,
   },
 });
