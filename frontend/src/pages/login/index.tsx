@@ -5,6 +5,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/animate-ui/radix/tabs';
+import { TypingText } from '@/components/animate-ui/text/typing';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import Logo from '@/components/logo';
 import { Button } from '@/components/ui/button';
@@ -284,11 +285,11 @@ function Login() {
                 </TabsContents>
               </Tabs>
             ) : (
-              <>
+              <div>
                 <div className=" ">{t('error.backendIssue')}</div>
                 <div>{JSON.stringify(backendStatusOk)}</div>
-                <div className="text-gray-500">{t('error.dockerDeployment')}</div>
-              </>
+                <TypingText className='text-sm opacity-60' text={t('error.dockerDeployment')} />
+              </div>
             )}
           </>
         )}
