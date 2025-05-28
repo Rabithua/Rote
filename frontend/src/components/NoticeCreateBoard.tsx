@@ -1,9 +1,10 @@
-import { getSubscriptionList, type Subscription } from '@/api/subscription/main';
+import type { Subscription } from '@/types/main';
+import { get } from '@/utils/api';
 import useSWR from 'swr';
 import LoadingPlaceholder from './LoadingPlaceholder';
 
 function NoticeCreateBoard() {
-  const { data, isLoading } = useSWR('/v1/api/getSwSubScription', getSubscriptionList);
+  const { data, isLoading } = useSWR('/v1/api/getSwSubScription', () => get('/subscriptions'));
 
   return (
     <div className="divide-y-1">

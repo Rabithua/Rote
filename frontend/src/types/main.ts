@@ -150,3 +150,16 @@ export type Statistics = {
   noteCount: number;
   attachmentsCount: number;
 };
+
+export interface Subscription {
+  keys: {
+    auth: string;
+    p256dh: string;
+  };
+  id: string;
+  userid: string;
+  endpoint: string;
+  expirationTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
