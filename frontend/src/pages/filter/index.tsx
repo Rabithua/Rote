@@ -8,7 +8,7 @@ import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { ActivityIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
@@ -27,20 +27,32 @@ function MineFilter() {
   });
 
   const getProps = (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
+    const params: any = {
+      skip: pageIndex * 20,
+      limit: 20,
+    };
+
+    if (filter.tags.hasEvery.length > 0) {
+      params.tag = filter.tags.hasEvery;
+    }
+
     return {
       apiType: 'mine',
-      params: {
-        skip: pageIndex * 20,
-        limit: 20,
-      },
-      filter: filter,
+      params,
     };
   };
 
   const { data, mutate, loadMore } = useAPIInfinite(getProps, getRotesV2, {
-    initialSize: 0,
-    revalidateFirstPage: false,
+    initialSize: 1,
+    revalidateFirstPage: true,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
   });
+
+  // 当 filter 变化时重新加载数据
+  useEffect(() => {
+    mutate();
+  }, [filter, mutate]);
 
   function TagsBlock() {
     const tagsClickHandler = (tag: string) => {

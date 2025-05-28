@@ -137,11 +137,6 @@ export type TempState = {
 
 export type ApiGetRotesParams = {
   archived?: boolean;
-  filter?: {
-    tags?: {
-      hasEvery?: string[];
-    };
-  };
   apiType?: 'mine' | 'public' | 'userPublic';
   params?: {
     username?: string;

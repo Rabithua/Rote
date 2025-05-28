@@ -8,12 +8,12 @@ import { get } from './api';
 export async function getRotesV2(props: ApiGetRotesParams) {
   console.log('getRotesV2 called with props:', props);
 
-  const { apiType, params, filter } = props;
+  const { apiType, params } = props;
 
   switch (apiType) {
     case 'mine':
       // 获取我的笔记列表
-      return get('/notes', params, { filter }).then((res) => res.data);
+      return get('/notes', params).then((res) => res.data);
 
     case 'public':
       // 获取公开笔记列表
