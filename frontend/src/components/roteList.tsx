@@ -61,9 +61,9 @@ function RoteList({
 
   return (
     <div className="relative flex w-full flex-col divide-y-1">
-      {rotes.map((item: any) => {
-        return <RoteItem rote={item} key={item.id} mutate={mutate} />;
-      })}
+      {rotes.map((item: any) => (
+        <RoteItem rote={item} key={item.id} mutate={mutate} />
+      ))}
       {isReachingEnd ? null : (
         <div ref={loaderRef}>
           <LoadingPlaceholder className="py-8" size={6} />

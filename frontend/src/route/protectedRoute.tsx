@@ -20,13 +20,10 @@ export const ProtectedRoute = ({ children }: any) => {
     return md.os() === 'iOS' && md.userAgent() === 'Safari';
   };
 
-  const isPwa = () => {
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true ||
-      ('serviceWorker' in navigator && navigator.serviceWorker.controller !== null)
-    );
-  };
+  const isPwa = () =>
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true ||
+    ('serviceWorker' in navigator && navigator.serviceWorker.controller !== null);
 
   useEffect(() => {
     if (isPwa()) {

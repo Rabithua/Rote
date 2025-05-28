@@ -91,10 +91,9 @@ function Login() {
         navigate('/home');
       })
       .catch((err: any) => {
-        console.log(err);
         setDisbled(false);
-        if ('code' in err.response?.data) {
-          toast.error(err.response.data.msg);
+        if ('code' in (err.response?.data || {})) {
+          toast.error(err.response?.data?.msg || t('messages.backendDown'));
         } else {
           toast.error(t('messages.backendDown'));
         }
@@ -124,7 +123,7 @@ function Login() {
       })
       .catch((err: any) => {
         setDisbled(false);
-        toast.error(err.response.data.msg);
+        toast.error(err.response?.data?.msg || t('messages.backendDown'));
       });
   }
 
@@ -159,7 +158,6 @@ function Login() {
   useEffect(() => {
     if (profile) {
       navigate('/home');
-    } else {
     }
   }, [profile, navigate]);
 
@@ -288,7 +286,7 @@ function Login() {
               <div>
                 <div className=" ">{t('error.backendIssue')}</div>
                 <div>{JSON.stringify(backendStatusOk)}</div>
-                <TypingText className='text-sm opacity-60' text={t('error.dockerDeployment')} />
+                <TypingText className="text-sm opacity-60" text={t('error.dockerDeployment')} />
               </div>
             )}
           </>

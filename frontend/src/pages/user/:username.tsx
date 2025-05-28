@@ -22,7 +22,7 @@ function UserPage() {
   const { username }: any = useParams();
   const { data: userInfo, isLoading } = useAPIGet<Profile>(
     username,
-    (key) => get('/users/' + key).then((res) => res.data),
+    () => get('/users/' + username).then((res) => res.data),
     {
       onError: (err) => {
         if (err.response?.status === 404 || err.response?.status === 500) {
@@ -32,43 +32,42 @@ function UserPage() {
     }
   );
 
-  const getPropsUserPublic = (pageIndex: number, _previousPageData: Rotes): ApiGetRotesParams => {
-    return {
-      apiType: 'userPublic',
-      params: {
-        username: username,
-        skip: pageIndex * 20,
-        limit: 20,
-      },
-    };
-  };
+  const getPropsUserPublic = (
+    pageIndex: number,
+    _previousPageData: Rotes | null
+  ): ApiGetRotesParams | null => ({
+    apiType: 'userPublic',
+    params: {
+      username: username,
+      skip: pageIndex * 20,
+      limit: 20,
+    },
+  });
 
   const { data, mutate, loadMore } = useAPIInfinite(getPropsUserPublic, getRotesV2, {
     initialSize: 0,
     revalidateFirstPage: false,
   });
 
-  const SideBar = () => {
-    return (
-      <div className="grid grid-cols-3 divide-x-1 border-b">
-        <a
-          href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
-        >
-          <Rss className="size-5" />
-          <div className="text-xl">RSS</div>
-        </a>
-        <div className="flex items-center justify-center gap-2 py-4">
-          <div className="text-xl">☝️</div>
-        </div>
-        <div className="flex items-center justify-center gap-2 py-4">
-          <div className="text-xl">🤓</div>
-        </div>
+  const SideBar = () => (
+    <div className="grid grid-cols-3 divide-x-1 border-b">
+      <a
+        href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${username}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
+      >
+        <Rss className="size-5" />
+        <div className="text-xl">RSS</div>
+      </a>
+      <div className="flex items-center justify-center gap-2 py-4">
+        <div className="text-xl">☝️</div>
       </div>
-    );
-  };
+      <div className="flex items-center justify-center gap-2 py-4">
+        <div className="text-xl">🤓</div>
+      </div>
+    </div>
+  );
 
   return isLoading ? (
     <LoadingPlaceholder className="h-dvh w-full" size={6} />

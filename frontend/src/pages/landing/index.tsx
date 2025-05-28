@@ -60,20 +60,16 @@ function Landing() {
           {/* <div className=" flex text-[#07c16020] text-3xl">RSS</div> */}
           <div className="flex flex-wrap items-center text-xl font-semibold whitespace-pre-wrap md:text-3xl">
             <span className="pr-2">{t('links')}</span>
-            {links.map((item, index) => {
-              return (
-                <div key={item.name}>
-                  <Link to={profile && item.name === 'login' ? '/home' : item.href}>
-                    <span className="no-underline duration-300 hover:text-[#07c160] active:scale-95">
-                      {profile && item.href === '/login'
-                        ? t(`dashboard`)
-                        : t(`linksItems.${index}`)}
-                    </span>
-                  </Link>
-                  {index + 1 < links.length ? <span className="px-2">/</span> : null}
-                </div>
-              );
-            })}
+            {links.map((item, index) => (
+              <div key={item.name}>
+                <Link to={profile && item.name === 'login' ? '/home' : item.href}>
+                  <span className="no-underline duration-300 hover:text-[#07c160] active:scale-95">
+                    {profile && item.href === '/login' ? t(`dashboard`) : t(`linksItems.${index}`)}
+                  </span>
+                </Link>
+                {index + 1 < links.length ? <span className="px-2">/</span> : null}
+              </div>
+            ))}
           </div>
         </div>
       </div>

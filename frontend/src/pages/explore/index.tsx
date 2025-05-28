@@ -16,15 +16,16 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 function ExplorePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });
 
-  const getPropsPublic = (pageIndex: number, _previousPageData: Rotes): ApiGetRotesParams => {
-    return {
-      apiType: 'public',
-      params: {
-        limit: 20,
-        skip: pageIndex * 20,
-      },
-    };
-  };
+  const getPropsPublic = (
+    pageIndex: number,
+    _previousPageData: Rotes | null
+  ): ApiGetRotesParams | null => ({
+    apiType: 'public',
+    params: {
+      limit: 20,
+      skip: pageIndex * 20,
+    },
+  });
 
   const { data, mutate, loadMore } = useAPIInfinite(getPropsPublic, getRotesV2, {
     initialSize: 0,

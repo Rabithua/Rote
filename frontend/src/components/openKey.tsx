@@ -34,7 +34,9 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
           toast.success(t('deleteSuccess'), {
             id: toastId,
           });
-          mutate && mutate();
+          if (mutate) {
+            mutate();
+          }
         })
         .catch(() => {
           toast.error(t('deleteFailed'), {
@@ -78,7 +80,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
     try {
       await navigator.clipboard.writeText(text);
       toast.success(t('copySuccess'));
-    } catch (err) {
+    } catch {
       toast.error(t('copyFailed'));
     }
   }

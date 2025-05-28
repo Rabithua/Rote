@@ -3,7 +3,7 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import type { ApiGetRotesParams } from '@/types/main';
+import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
@@ -49,7 +49,10 @@ function MineFilter() {
     revalidateOnReconnect: false,
   });
 
-  // 当 filter 变化时重新加载数据
+  const { isLoading, data: statisticsData } = useAPIGet<Statistics>('statistics', () =>
+    get('/users/me/statistics').then((res) => res.data)
+  );
+
   useEffect(() => {
     mutate();
   }, [filter, mutate]);
@@ -80,31 +83,27 @@ function MineFilter() {
         <div className="relative z-10 flex flex-wrap items-center gap-2">
           {t('includeTags')}
           {filter.tags.hasEvery.length > 0
-            ? filter.tags.hasEvery.map((tag: any, index: any) => {
-                return (
-                  <div
-                    className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
-                    key={`tag-${index}`}
-                    onClick={() => tagsClickHandler(tag)}
-                  >
-                    {tag}
-                  </div>
-                );
-              })
+            ? filter.tags.hasEvery.map((tag: any, index: any) => (
+                <div
+                  className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
+                  key={`tag-${index}`}
+                  onClick={() => tagsClickHandler(tag)}
+                >
+                  {tag}
+                </div>
+              ))
             : t('none')}
         </div>
         <div className="relative z-10 flex flex-wrap items-center gap-2 font-normal text-gray-500">
           {t('allTags')}
           {tags && tags.length > 0
-            ? tags.map((tag) => {
-                return (
-                  <div key={tag} onClick={() => tagsClickHandler(tag)}>
-                    <div className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
-                      {tag}
-                    </div>
+            ? tags.map((tag) => (
+                <div key={tag} onClick={() => tagsClickHandler(tag)}>
+                  <div className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
+                    {tag}
                   </div>
-                );
-              })
+                </div>
+              ))
             : t('none')}
         </div>
         <div className="from-bgLight dark:via-bgDark/40 via-bgLight/40 sticky bottom-0 z-20 h-8 w-full bg-gradient-to-t to-transparent"></div>
@@ -113,23 +112,23 @@ function MineFilter() {
   }
 
   function SideBar() {
-    return (
+    return isLoading ? (
+      <div></div>
+    ) : (
       <div className="grid grid-cols-2">
         <div className="gap2 flex flex-col items-center justify-center py-4">
-          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />
-          <div className="font-light">SOMETHING</div>
+          <SlidingNumber
+            className="font-mono text-xl font-black"
+            number={statisticsData?.noteCount || 0}
+          />
+          <div className="font-light">{t('note')}</div>
         </div>
         <div className="gap2 flex flex-col items-center justify-center py-4">
-          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />{' '}
-          <div className="font-light">SOMETHING</div>
-        </div>
-        <div className="gap2 flex flex-col items-center justify-center py-4">
-          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />{' '}
-          <div className="font-light">SOMETHING</div>
-        </div>
-        <div className="gap2 flex flex-col items-center justify-center py-4">
-          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />{' '}
-          <div className="font-light">SOMETHING</div>
+          <SlidingNumber
+            className="font-mono text-xl font-black"
+            number={statisticsData?.attachmentsCount || 0}
+          />
+          <div className="font-light">{t('attachment')}</div>
         </div>
       </div>
     );

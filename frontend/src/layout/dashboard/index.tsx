@@ -77,8 +77,7 @@ function LayoutDashboard() {
 
         window.location.reload();
       })
-      .catch((err: any) => {
-        console.log(err);
+      .catch(() => {
         toast.error('err.response.data.data.msg', {
           id: toastId,
         });
@@ -116,7 +115,9 @@ function LayoutDashboard() {
             : ''
         } ${icon.name === 'logout' ? 'hover:bg-red-600/10 hover:text-red-600' : ''} `}
         onClick={() => {
-          icon.callback && icon.callback();
+          if (icon.callback) {
+            icon.callback();
+          }
         }}
       >
         {icon.svg}
@@ -134,13 +135,9 @@ function LayoutDashboard() {
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (
-            iconsData[0].map((icon) => {
-              return IconRenderItem(icon);
-            })
+            iconsData[0].map((icon) => IconRenderItem(icon))
           ) : (
-            iconsData[1].map((icon) => {
-              return IconRenderItem(icon);
-            })
+            iconsData[1].map((icon) => IconRenderItem(icon))
           )}
         </div>
 

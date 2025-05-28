@@ -69,7 +69,7 @@ function RoteShareCard({ rote }: any) {
         cacheBust: true,
       };
 
-      let dataUrl = await toPng(element, options);
+      const dataUrl = await toPng(element, options);
 
       if (!dataUrl) {
         toast.error(t('imageGenerationFailed'), {
@@ -87,13 +87,11 @@ function RoteShareCard({ rote }: any) {
       toast.success(t('imageSaved'), {
         id: toastId,
       });
-    } else {
-      console.error(t('elementNotFound'));
     }
   }
 
   function copyLink() {
-    let url = `${window.location.origin}/rote/${rote.id}`;
+    const url = `${window.location.origin}/rote/${rote.id}`;
     navigator.clipboard.writeText(url);
     toast.success(t('linkCopied'));
   }
@@ -101,9 +99,7 @@ function RoteShareCard({ rote }: any) {
   function ColorList() {
     return (
       <div className="mr-auto flex gap-2">
-        {themes.map((theme: any, index: any) => {
-          return colorBlock(theme, index);
-        })}
+        {themes.map((theme: any, index: any) => colorBlock(theme, index))}
       </div>
     );
   }
@@ -136,42 +132,38 @@ function RoteShareCard({ rote }: any) {
         </div>
         {rote.attachments.length > 0 && (
           <div className="my-2 flex w-full flex-wrap gap-1 overflow-hidden rounded-2xl">
-            {rote.attachments.map((file: Attachment) => {
-              return (
-                <img
-                  key={file.id}
-                  className={` ${
-                    rote.attachments.length % 3 === 0
-                      ? 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                      : rote.attachments.length % 2 === 0
-                        ? 'aspect-square w-[calc(1/2*100%-2px)]'
-                        : rote.attachments.length === 1
-                          ? 'w-full max-w-[500px] rounded-2xl'
-                          : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                  } bg-opacityLight dark:bg-opacityDark grow object-cover`}
-                  src={
-                    file.compressUrl
-                      ? file.compressUrl + '?' + new Date().getTime()
-                      : file.url + '?' + new Date().getTime()
-                  }
-                  alt=""
-                  crossOrigin="anonymous"
-                />
-              );
-            })}
+            {rote.attachments.map((file: Attachment) => (
+              <img
+                key={file.id}
+                className={` ${
+                  rote.attachments.length % 3 === 0
+                    ? 'aspect-square w-[calc(1/3*100%-2.6667px)]'
+                    : rote.attachments.length % 2 === 0
+                      ? 'aspect-square w-[calc(1/2*100%-2px)]'
+                      : rote.attachments.length === 1
+                        ? 'w-full max-w-[500px] rounded-2xl'
+                        : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
+                } bg-opacityLight dark:bg-opacityDark grow object-cover`}
+                src={
+                  file.compressUrl
+                    ? file.compressUrl + '?' + new Date().getTime()
+                    : file.url + '?' + new Date().getTime()
+                }
+                alt=""
+                crossOrigin="anonymous"
+              />
+            ))}
           </div>
         )}
         <div className="md:text-md flex flex-wrap items-center gap-2 font-serif text-xs md:font-bold">
-          {rote.tags.map((tag: any) => {
-            return (
-              <span
-                className={`rounded-md px-2 py-1 md:px-3 ${themes[themeIndex].tagClass}`}
-                key={tag}
-              >
-                {tag}
-              </span>
-            );
-          })}
+          {rote.tags.map((tag: any) => (
+            <span
+              className={`rounded-md px-2 py-1 md:px-3 ${themes[themeIndex].tagClass}`}
+              key={tag}
+            >
+              {tag}
+            </span>
+          ))}
         </div>
         <div className="mt-2 flex w-full justify-between">
           <div className={`flex items-center gap-2 ${themes[themeIndex].authorClass}`}>

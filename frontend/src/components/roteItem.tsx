@@ -66,7 +66,7 @@ function RoteItem({
   const [isShareCardModalOpen, setIsShareCardModalOpen] = useState<boolean>(false);
   const [isNoticeCreateBoardModalOpen, setIsNoticeCreateBoardModalOpen] = useState<boolean>(false);
 
-  const [isExpanded, setIsExpanded] = useState<any>(false);
+  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
   const { data: profile } = useAPIGet<Profile>('profile', () =>
     get('/users/me/profile').then((res) => res.data)
@@ -84,18 +84,18 @@ function RoteItem({
             id: toastId,
           });
 
-          mutate &&
+          if (mutate) {
             mutate(
-              (currentData) => {
+              (currentData) =>
                 // 处理嵌套数组结构
-                return currentData?.map((page) =>
+                currentData?.map((page) =>
                   Array.isArray(page) ? page.filter((r) => r.id !== rote.id) : page
-                ) as Rotes;
-              },
+                ) as Rotes,
               {
                 revalidate: false,
               }
             );
+          }
         })
         .catch(() => {
           toast.error(t('messages.deleteFailed'), {
@@ -122,20 +122,20 @@ function RoteItem({
             }
           );
 
-          mutate &&
+          if (mutate) {
             mutate(
-              (currentData) => {
+              (currentData) =>
                 // 处理嵌套数组结构
-                return currentData?.map((page) =>
+                currentData?.map((page) =>
                   Array.isArray(page)
                     ? page.map((r) => (r.id === rote.id ? res.data.data : r))
                     : page
-                ) as Rotes;
-              },
+                ) as Rotes,
               {
                 revalidate: false,
               }
             );
+          }
         })
         .catch(() => {
           toast.error(t('messages.editFailed'), {
@@ -161,20 +161,20 @@ function RoteItem({
             }
           );
 
-          mutate &&
+          if (mutate) {
             mutate(
-              (currentData) => {
+              (currentData) =>
                 // 处理嵌套数组结构
-                return currentData?.map((page) =>
+                currentData?.map((page) =>
                   Array.isArray(page)
                     ? page.map((r) => (r.id === rote.id ? res.data.data : r))
                     : page
-                ) as Rotes;
-              },
+                ) as Rotes,
               {
                 revalidate: false,
               }
             );
+          }
         })
         .catch(() => {
           toast.error(t('messages.editFailed'), {
@@ -404,45 +404,41 @@ function RoteItem({
         {rote.attachments.length > 0 && (
           <div className="my-2 flex w-fit flex-wrap gap-1 overflow-hidden rounded-2xl">
             <PhotoProvider>
-              {rote.attachments.map((file: any, index: any) => {
-                return (
-                  <PhotoView key={`files_${index}`} src={file.url}>
-                    <img
-                      className={`${
-                        rote.attachments.length % 3 === 0
-                          ? 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                          : rote.attachments.length % 2 === 0
-                            ? 'aspect-square w-[calc(1/2*100%-2px)]'
-                            : rote.attachments.length === 1
-                              ? 'w-full max-w-[500px] rounded-2xl'
-                              : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                      } bg-opacityLight dark:bg-opacityDark grow object-cover`}
-                      src={file.compressUrl || file.url}
-                      loading="lazy"
-                      alt=""
-                    />
-                  </PhotoView>
-                );
-              })}
+              {rote.attachments.map((file: any, index: any) => (
+                <PhotoView key={`files_${index}`} src={file.url}>
+                  <img
+                    className={`${
+                      rote.attachments.length % 3 === 0
+                        ? 'aspect-square w-[calc(1/3*100%-2.6667px)]'
+                        : rote.attachments.length % 2 === 0
+                          ? 'aspect-square w-[calc(1/2*100%-2px)]'
+                          : rote.attachments.length === 1
+                            ? 'w-full max-w-[500px] rounded-2xl'
+                            : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
+                    } bg-opacityLight dark:bg-opacityDark grow object-cover`}
+                    src={file.compressUrl || file.url}
+                    loading="lazy"
+                    alt=""
+                  />
+                </PhotoView>
+              ))}
             </PhotoProvider>
           </div>
         )}
         <div className="my-2 flex flex-wrap items-center gap-2">
-          {rote.tags.map((tag: any) => {
-            return (
-              <Link
-                key={tag}
-                to={'/filter'}
-                state={{
-                  tags: [tag],
-                }}
-              >
-                <div className="bg-opacityLight dark:bg-opacityDark rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
-                  {tag}
-                </div>
-              </Link>
-            );
-          })}
+          {rote.tags.map((tag: any) => (
+            <Link
+              key={tag}
+              to={'/filter'}
+              state={{
+                tags: [tag],
+              }}
+            >
+              <div className="bg-opacityLight dark:bg-opacityDark rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
+                {tag}
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 
@@ -457,7 +453,9 @@ function RoteItem({
                 roteAtom={useEditor().editor_editRoteAtom}
                 callback={() => {
                   setIsEditModalOpen(false);
-                  mutate && mutate();
+                  if (mutate) {
+                    mutate();
+                  }
                 }}
               />
             </DialogContent>

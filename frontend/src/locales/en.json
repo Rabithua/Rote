@@ -149,7 +149,9 @@
       "includeTags": "Including Tags:",
       "allTags": "All Tags:",
       "none": "NONE",
-      "data": "Data Statistics"
+      "data": "Data Statistics",
+      "note": "Note",
+      "attachment": "Attachment"
     },
     "explore": {
       "title": "Explore",

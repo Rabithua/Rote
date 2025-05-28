@@ -10,7 +10,6 @@ const AppWrapper = () => {
   const windowQuery = window.matchMedia('(prefers-color-scheme:dark)');
 
   const darkModeChange = useCallback((event: MediaQueryListEvent) => {
-    console.log(event.matches ? true : false);
     setIsDarkMode(event.matches ? true : false);
   }, []);
 

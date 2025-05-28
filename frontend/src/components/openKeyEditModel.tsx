@@ -2,17 +2,28 @@ import mainJson from '@/json/main.json';
 import { useOpenKeys } from '@/state/openKeys';
 import { put } from '@/utils/api';
 import { Save } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Checkbox } from '../components/ui/checkbox';
 
-function OpenKeyEditModel({ openKey, close }: any) {
+interface OpenKey {
+  id: string;
+  permissions: string[];
+}
+
+interface OpenKeyEditModelProps {
+  openKey: OpenKey;
+  close: () => void;
+}
+
+function OpenKeyEditModel({ openKey, close }: OpenKeyEditModelProps) {
   const { t, i18n } = useTranslation('translation', {
     keyPrefix: 'components.openKeyEditModel',
   });
   const [openKeys, setOpenKeys] = useOpenKeys();
-  const defaultCheckedList: any = openKey.permissions;
+  const defaultCheckedList: string[] = openKey.permissions;
+  const checkboxRef = useRef<HTMLButtonElement>(null);
 
   const processedOptions = useMemo(
     () =>
@@ -23,21 +34,19 @@ function OpenKeyEditModel({ openKey, close }: any) {
     [i18n.language]
   );
 
-  const [checkedList, setCheckedList] = useState<any[]>(defaultCheckedList);
+  const [checkedList, setCheckedList] = useState<string[]>(defaultCheckedList);
 
   const checkAll = processedOptions.length === checkedList.length;
 
-  const indeterminate = checkedList.length > 0 && checkedList.length < processedOptions.length;
-
-  const onChange = (value: any) => {
-    setCheckedList((prev: any[]) =>
+  const onChange = (value: string) => {
+    setCheckedList((prev: string[]) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]
     );
   };
 
   // 修正 onCheckAllChange 以适配 shadcn Checkbox 的 onCheckedChange 签名
   const onCheckAllChange = (checked: boolean) => {
-    setCheckedList(checked ? processedOptions.map((option: any) => option.value) : []);
+    setCheckedList(checked ? processedOptions.map((option) => option.value) : []);
   };
 
   function save() {
@@ -64,7 +73,7 @@ function OpenKeyEditModel({ openKey, close }: any) {
   return (
     <div>
       <div className="flex flex-wrap gap-3">
-        {processedOptions.map((option: any) => (
+        {processedOptions.map((option) => (
           <label
             key={option.value}
             className="bg-muted/60 flex w-fit cursor-pointer items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200 select-none"
@@ -80,12 +89,7 @@ function OpenKeyEditModel({ openKey, close }: any) {
       </div>
       <div className="mt-8 flex items-center gap-4 border-t pt-8">
         <Checkbox
-          ref={(el) => {
-            if (el) {
-              // @ts-ignore
-              el.indeterminate = indeterminate;
-            }
-          }}
+          ref={checkboxRef}
           onCheckedChange={onCheckAllChange}
           checked={checkAll}
           className="accent-primary ml-auto scale-110"

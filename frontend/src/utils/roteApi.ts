@@ -6,8 +6,6 @@ import { get } from './api';
  * 替代旧的 apiGetRotes 函数
  */
 export async function getRotesV2(props: ApiGetRotesParams) {
-  console.log('getRotesV2 called with props:', props);
-
   const { apiType, params } = props;
 
   switch (apiType) {

@@ -12,7 +12,6 @@ export default function FloatBtns({
     const container = scrollContainerName ? document.querySelector(scrollContainerName) : window;
 
     if (container) {
-      console.log(container);
       if (container === window) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (container instanceof HTMLElement) {

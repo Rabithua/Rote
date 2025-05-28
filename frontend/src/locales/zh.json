@@ -154,7 +154,9 @@
       "includeTags": "包含标签：",
       "allTags": "所有标签：",
       "none": "无",
-      "data": "数据统计"
+      "data": "数据统计",
+      "note": "笔记",
+      "attachment": "附件"
     },
     "explore": {
       "title": "探索 / Explore",

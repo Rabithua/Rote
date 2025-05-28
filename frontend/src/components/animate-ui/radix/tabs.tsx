@@ -42,15 +42,11 @@ function TabsList({
   const localRef = React.useRef<HTMLDivElement | null>(null);
   React.useImperativeHandle(ref, () => localRef.current as HTMLDivElement);
 
-  const [activeValue, setActiveValue] = React.useState<string | undefined>(
-    undefined,
-  );
+  const [activeValue, setActiveValue] = React.useState<string | undefined>(undefined);
 
   const getActiveValue = React.useCallback(() => {
     if (!localRef.current) return;
-    const activeTab = localRef.current.querySelector<HTMLElement>(
-      '[data-state="active"]',
-    );
+    const activeTab = localRef.current.querySelector<HTMLElement>('[data-state="active"]');
     if (!activeTab) return;
     setActiveValue(activeTab.getAttribute('data-value') ?? undefined);
   }, []);
@@ -76,7 +72,7 @@ function TabsList({
   return (
     <MotionHighlight
       controlledItems
-      className={cn('rounded-sm bg-background shadow-sm', activeClassName)}
+      className={cn('bg-background rounded-sm shadow-sm', activeClassName)}
       value={activeValue}
       transition={transition}
     >
@@ -85,7 +81,7 @@ function TabsList({
         data-slot="tabs-list"
         className={cn(
           'bg-muted text-muted-foreground inline-flex h-10 w-fit items-center justify-center rounded-lg p-[4px]',
-          className,
+          className
         )}
         {...props}
       >
@@ -103,8 +99,8 @@ function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
       <TabsPrimitive.Trigger
         data-slot="tabs-trigger"
         className={cn(
-          'inline-flex cursor-pointer items-center size-full justify-center whitespace-nowrap rounded-sm px-2 py-1 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:text-foreground z-[1]',
-          className,
+          'ring-offset-background focus-visible:ring-ring data-[state=active]:text-foreground z-[1] inline-flex size-full cursor-pointer items-center justify-center rounded-sm px-2 py-1 text-sm font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
+          className
         )}
         value={value}
         {...props}

@@ -21,12 +21,7 @@ type SlidingNumberRollerProps = {
   transition: SpringOptions;
 };
 
-function SlidingNumberRoller({
-  prevValue,
-  value,
-  place,
-  transition,
-}: SlidingNumberRollerProps) {
+function SlidingNumberRoller({ prevValue, value, place, transition }: SlidingNumberRollerProps) {
   const startNumber = Math.floor(prevValue / place) % 10;
   const targetNumber = Math.floor(value / place) % 10;
   const animatedValue = useSpring(startNumber, transition);
@@ -136,32 +131,29 @@ function SlidingNumber({
 
   const effectiveNumber = React.useMemo(
     () => (!isInView ? 0 : Math.abs(Number(number))),
-    [number, isInView],
+    [number, isInView]
   );
 
   const formatNumber = React.useCallback(
-    (num: number) =>
-      decimalPlaces != null ? num.toFixed(decimalPlaces) : num.toString(),
-    [decimalPlaces],
+    (num: number) => (decimalPlaces != null ? num.toFixed(decimalPlaces) : num.toString()),
+    [decimalPlaces]
   );
 
   const numberStr = formatNumber(effectiveNumber);
   const [newIntStrRaw, newDecStrRaw = ''] = numberStr.split('.');
-  const newIntStr =
-    padStart && newIntStrRaw?.length === 1 ? '0' + newIntStrRaw : newIntStrRaw;
+  const newIntStr = padStart && newIntStrRaw?.length === 1 ? '0' + newIntStrRaw : newIntStrRaw;
 
   const prevFormatted = formatNumber(prevNumberRef.current);
   const [prevIntStrRaw = '', prevDecStrRaw = ''] = prevFormatted.split('.');
-  const prevIntStr =
-    padStart && prevIntStrRaw.length === 1
-      ? '0' + prevIntStrRaw
-      : prevIntStrRaw;
+  const prevIntStr = padStart && prevIntStrRaw.length === 1 ? '0' + prevIntStrRaw : prevIntStrRaw;
 
-  const adjustedPrevInt = React.useMemo(() => {
-    return prevIntStr.length > (newIntStr?.length ?? 0)
-      ? prevIntStr.slice(-(newIntStr?.length ?? 0))
-      : prevIntStr.padStart(newIntStr?.length ?? 0, '0');
-  }, [prevIntStr, newIntStr]);
+  const adjustedPrevInt = React.useMemo(
+    () =>
+      prevIntStr.length > (newIntStr?.length ?? 0)
+        ? prevIntStr.slice(-(newIntStr?.length ?? 0))
+        : prevIntStr.padStart(newIntStr?.length ?? 0, '0'),
+    [prevIntStr, newIntStr]
+  );
 
   const adjustedPrevDec = React.useMemo(() => {
     if (!newDecStrRaw) return '';
@@ -176,20 +168,17 @@ function SlidingNumber({
 
   const intDigitCount = newIntStr?.length ?? 0;
   const intPlaces = React.useMemo(
-    () =>
-      Array.from({ length: intDigitCount }, (_, i) =>
-        Math.pow(10, intDigitCount - i - 1),
-      ),
-    [intDigitCount],
+    () => Array.from({ length: intDigitCount }, (_, i) => Math.pow(10, intDigitCount - i - 1)),
+    [intDigitCount]
   );
   const decPlaces = React.useMemo(
     () =>
       newDecStrRaw
         ? Array.from({ length: newDecStrRaw.length }, (_, i) =>
-            Math.pow(10, newDecStrRaw.length - i - 1),
+            Math.pow(10, newDecStrRaw.length - i - 1)
           )
         : [],
-    [newDecStrRaw],
+    [newDecStrRaw]
   );
 
   const newDecValue = newDecStrRaw ? parseInt(newDecStrRaw, 10) : 0;

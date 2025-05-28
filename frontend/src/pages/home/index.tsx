@@ -15,15 +15,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { ChartAreaIcon, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-const SideBar = () => {
-  return (
-    <>
-      <Heatmap />
-      <TagMap />
-      <RandomRote />
-    </>
-  );
-};
+const SideBar = () => (
+  <>
+    <Heatmap />
+    <TagMap />
+    <RandomRote />
+  </>
+);
 
 function HomePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
@@ -33,8 +31,8 @@ function HomePage() {
 
   const getPropsMineUnArchived = (
     pageIndex: number,
-    _previousPageData: Rotes
-  ): ApiGetRotesParams => {
+    _previousPageData: Rotes | null
+  ): ApiGetRotesParams | null => {
     return {
       apiType: 'mine',
       params: {
@@ -83,7 +81,6 @@ function HomePage() {
         <RoteEditor
           roteAtom={useEditor().editor_newRoteAtom}
           callback={() => {
-            console.log('callback');
             mutate();
           }}
         />

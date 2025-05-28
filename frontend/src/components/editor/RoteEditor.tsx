@@ -18,13 +18,7 @@ const { roteMaxLetter } = mainJson;
 
 type RoteAtomType = PrimitiveAtom<Rote>;
 
-function RoteEditor({
-  roteAtom,
-  callback,
-}: {
-  roteAtom: RoteAtomType;
-  callback?: (rote: Rote) => void;
-}) {
+function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?: () => void }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteInputSimple',
   });
@@ -73,7 +67,9 @@ function RoteEditor({
       })
       .finally(() => {
         setSubmitting(false);
-        callback && callback(rote);
+        if (callback) {
+          callback();
+        }
         setRote(emptyRote);
       });
   }
@@ -105,17 +101,17 @@ function RoteEditor({
           });
           reslove(res);
         });
-      } catch (error) {
+      } catch {
         toast.error(t('uploadFailed'), {
           id: toastId,
         });
-        console.error('Error uploading image:', error);
+        // Error uploading image
         reject();
       }
     });
   }
 
-  function handleNormalINputKeyDown(e: any) {
+  function handleNormalINputKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === 'Enter' && e.ctrlKey) {
       submit();
     }
@@ -138,8 +134,8 @@ function RoteEditor({
               ...prevRote,
               attachments: [...prevRote.attachments, file],
             }));
-          } catch (error) {
-            console.log('Error creating object URL:', error);
+          } catch {
+            /* empty */
           }
         }
       }
@@ -158,7 +154,7 @@ function RoteEditor({
             attachments: [...prevRote.attachments, file],
           }));
         } else {
-          console.warn(`File ${file.name} is not an image and was skipped.`);
+          // File is not an image and was skipped
         }
       });
     }
@@ -172,7 +168,7 @@ function RoteEditor({
         className={`textareaInit lg:text-lg`}
         maxLength={roteMaxLetter}
         disabled={submiting}
-        onInput={(e: any) => {
+        onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
           setRote({
             ...rote,
             content: e.currentTarget.value,
@@ -180,44 +176,40 @@ function RoteEditor({
         }}
         onPaste={handlePaste}
         onDrop={handleDrop}
-        onDragOver={(e: any) => e.preventDefault()}
+        onDragOver={(e: React.DragEvent<HTMLTextAreaElement>) => e.preventDefault()}
         onKeyDown={handleNormalINputKeyDown}
         rows={3}
       />
 
       {process.env.REACT_APP_ALLOW_UPLOAD_FILE === 'true' && (
         <div className="flex flex-wrap gap-2">
-          {rote.attachments.map((file, index: number) => {
-            return (
+          {rote.attachments.map((file, index: number) => (
+            <div
+              className="bg-bgLight relative h-20 w-20 overflow-hidden rounded-lg"
+              key={'attachments_' + index}
+            >
+              <img
+                className="h-full w-full object-cover"
+                height={80}
+                width={80}
+                src={
+                  file instanceof File ? URL.createObjectURL(file) : file.compressUrl || file.url
+                }
+                alt="uploaded"
+              />
               <div
-                className="bg-bgLight relative h-20 w-20 overflow-hidden rounded-lg"
-                key={'attachments_' + index}
+                onClick={() => deleteFile(index)}
+                className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
               >
-                <img
-                  className="h-full w-full object-cover"
-                  height={80}
-                  width={80}
-                  src={
-                    file instanceof File ? URL.createObjectURL(file) : file.compressUrl || file.url
-                  }
-                  alt="uploaded"
-                />
-                <div
-                  onClick={() => deleteFile(index)}
-                  className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
-                >
-                  <X className="size-3 text-white" />
-                </div>
+                <X className="size-3 text-white" />
               </div>
-            );
-          })}
+            </div>
+          ))}
           {rote.attachments.length < 9 && (
             <FileSelector
               id={rote.id || 'rote-editor-file-selector'}
               disabled={submiting}
               callback={(newFileList: File[]) => {
-                console.log('FileSelector callback', newFileList);
-
                 setRote((prevRote) => ({
                   ...prevRote,
                   attachments: [...prevRote.attachments, ...newFileList],
@@ -229,24 +221,22 @@ function RoteEditor({
       )}
 
       <div className={`animate-show flex shrink-0 flex-wrap gap-2 opacity-0 duration-300`}>
-        {rote.tags.map((item: string) => {
-          return (
-            <div
-              className="bg-opacityLight dark:bg-opacityDark flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
-              onClick={() => {
-                const newTags = rote.tags.filter((tag) => tag !== item);
-                setRote({
-                  ...rote,
-                  tags: newTags,
-                });
-              }}
-              key={item}
-            >
-              {item}
-              <X className="size-3 text-[#00000080] duration-300 hover:scale-95" />
-            </div>
-          );
-        })}
+        {rote.tags.map((item: string) => (
+          <div
+            className="bg-opacityLight dark:bg-opacityDark flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
+            onClick={() => {
+              const newTags = rote.tags.filter((tag) => tag !== item);
+              setRote({
+                ...rote,
+                tags: newTags,
+              });
+            }}
+            key={item}
+          >
+            {item}
+            <X className="size-3 text-[#00000080] duration-300 hover:scale-95" />
+          </div>
+        ))}
       </div>
 
       <div className="noScrollBar flex flex-wrap items-center gap-2 overflow-x-scroll">
@@ -255,13 +245,11 @@ function RoteEditor({
           setTags={(value: string[]) => {
             setRote({
               ...rote,
-              tags: value.map((tag) => {
-                return tag.trim();
-              }),
+              tags: value.map((tag) => tag.trim()),
             });
           }}
-          callback={(value: string[]) => {
-            console.log('TagSelector', value);
+          callback={(_value: string[]) => {
+            // TagSelector callback - could be used for debugging or additional logic
           }}
         />
         <Tooltip>

@@ -22,8 +22,8 @@ export function TagSelector({
   callback,
 }: {
   tags: string[];
-  setTags: (tags: string[]) => void;
-  callback?: (tags: string[]) => void;
+  setTags: (_tags: string[]) => void;
+  callback?: (_tags: string[]) => void;
 }) {
   const [open, setOpen] = React.useState(false);
   const { data: availableTags } = useAPIGet<string[]>('tags', () =>

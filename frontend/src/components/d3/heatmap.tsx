@@ -39,7 +39,7 @@ const Heatmap: React.FC = () => {
     t('daysOfWeek.Sat'),
   ];
 
-  function parseDays(data: any) {
+  function parseDays(data: { [key: string]: number } | undefined): HeatMapDay[][] {
     if (isLoading || !data) {
       return [];
     }
@@ -106,11 +106,11 @@ const Heatmap: React.FC = () => {
             ))}
           </div>
           <div className="noScrollBar flex gap-1.5 overflow-y-scroll md:gap-1">
-            {parseDays(heatmapData).map((week: any, index: number) => (
+            {parseDays(heatmapData).map((week: HeatMapDay[], index: number) => (
               <div key={`week_${index}`} className="flex flex-col gap-1.5 md:gap-1">
-                {week.map((day: any, index: number) => (
+                {week.map((day: HeatMapDay, dayIndex: number) => (
                   <div
-                    key={index}
+                    key={dayIndex}
                     className="size-5 duration-300 hover:scale-105 md:size-4"
                     style={{
                       backgroundColor: day.notesCount

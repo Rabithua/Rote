@@ -31,21 +31,19 @@ export default function TagMap() {
             tags.length > 20 && isCollapsed ? 'max-h-80 overflow-hidden' : 'max-h-full'
           }`}
         >
-          {tags.map((item: string) => {
-            return (
-              <Link
-                key={item}
-                to={'/filter'}
-                state={{
-                  tags: [item],
-                }}
-              >
-                <div className="bg-opacityLight dark:bg-opacityDark flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
-                  {item}
-                </div>
-              </Link>
-            );
-          })}
+          {tags.map((item: string) => (
+            <Link
+              key={item}
+              to={'/filter'}
+              state={{
+                tags: [item],
+              }}
+            >
+              <div className="bg-opacityLight dark:bg-opacityDark flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
+                {item}
+              </div>
+            </Link>
+          ))}
           {tags.length > 20 && isCollapsed && (
             <div
               onClick={toggleCollapse}

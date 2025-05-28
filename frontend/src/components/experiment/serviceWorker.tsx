@@ -13,7 +13,7 @@ export default function ServiceWorker() {
   });
   const [swReady, setSwReady] = useState(false);
   const [, setSwLoading] = useState(true);
-  const [noticeId, setNoticeId] = useState<any>(null);
+  const [noticeId, setNoticeId] = useState<string | null>(null);
 
   const initializeServiceWorker = async () => {
     const registration = await navigator.serviceWorker.getRegistration();
@@ -24,10 +24,10 @@ export default function ServiceWorker() {
       if (registration && registration.active) {
         registration.active.postMessage({ method: 'subNotice' });
       } else {
-        console.log('Service Worker is not installed.');
+        // Service Worker is not installed
       }
-    } catch (error) {
-      console.error('Error initializing Service Worker:', error);
+    } catch {
+      // Error initializing Service Worker
     } finally {
       setSwLoading(false);
     }
@@ -50,7 +50,7 @@ export default function ServiceWorker() {
           break;
 
         default:
-          console.warn('Unknown message from Service Worker:', event.data);
+          // Unknown message from Service Worker
           break;
       }
     });
@@ -71,8 +71,8 @@ export default function ServiceWorker() {
       }
 
       initializeServiceWorker();
-    } catch (error: any) {
-      toast.error(error, {
+    } catch (error: unknown) {
+      toast.error(String(error), {
         id: toastId,
       });
     }
@@ -85,15 +85,15 @@ export default function ServiceWorker() {
         setNoticeId(null);
         setSwReady(false);
       })
-      .catch((err) => {
+      .catch(() => {
         setSwLoading(false);
-        console.log(err);
+        // Handle unsubscribe error
       });
   }
 
   async function noticeTest() {
     try {
-      const resp = await post('/subscriptions/' + noticeId + '/notify', {
+      await post('/subscriptions/' + noticeId + '/notify', {
         title: '自在废物',
         body: '这是我的博客。',
         image: `https://r2.rote.ink/others%2Flogo.png`,
@@ -102,9 +102,10 @@ export default function ServiceWorker() {
           url: 'https://rabithua.club',
         },
       });
-      console.log(resp);
       toast.success(t('sendSuccess'));
-    } catch (error) {}
+    } catch {
+      // 忽略错误，只是测试功能
+    }
   }
 
   useEffect(() => {

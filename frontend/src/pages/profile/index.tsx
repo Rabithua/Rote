@@ -32,8 +32,8 @@ import { Link } from 'react-router-dom';
 
 function ProfilePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
-  const inputAvatarRef = useRef(null);
-  const inputCoverRef = useRef(null);
+  const inputAvatarRef = useRef<HTMLInputElement>(null);
+  const inputCoverRef = useRef<HTMLInputElement>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -74,8 +74,6 @@ function ProfilePage() {
 
   function handleFileChange(event: any) {
     const selectedFile = event.target.files[0];
-    // 在这里处理选择的文件
-    console.log(selectedFile);
     setEditProfile({
       ...editProfile,
       avatar_file: selectedFile,
@@ -166,10 +164,9 @@ function ProfilePage() {
       setAvatarUploading(false);
       setIsAvatarModalOpen(false);
       toast.success(t('uploadSuccess'));
-    } catch (error) {
+    } catch {
       toast.error(t('uploadFailed'));
       setAvatarUploading(false);
-      console.error('Error uploading image:', error);
     }
   }
 
@@ -182,11 +179,10 @@ function ProfilePage() {
         setIsModalOpen(false);
         setProfileEditing(false);
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error(t('editFailed'));
         setIsModalOpen(false);
         setProfileEditing(false);
-        console.error('Error edit Profile:', err);
       });
   }
 
@@ -200,8 +196,7 @@ function ProfilePage() {
 
       post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(
         (res) => {
-          console.log(res);
-          let url = res.data.data[0].compressUrl || res.data.data[0].url;
+          const url = res.data.data[0].compressUrl || res.data.data[0].url;
 
           put('/users/me/profile', {
             cover: url,
@@ -210,8 +205,7 @@ function ProfilePage() {
               mutate();
               setCoverChangeing(false);
             })
-            .catch((err) => {
-              console.error('Error edit Profile:', err);
+            .catch(() => {
               setCoverChangeing(false);
             });
         }
@@ -219,27 +213,25 @@ function ProfilePage() {
     }
   }
 
-  const SideBar = () => {
-    return (
-      <div className="grid grid-cols-3 divide-x-1 border-b">
-        <a
-          href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
-        >
-          <Rss className="size-5" />
-          <div className="text-xl">RSS</div>
-        </a>
-        <div className="flex items-center justify-center gap-2 py-4">
-          <div className="text-xl">☝️</div>
-        </div>
-        <div className="flex items-center justify-center gap-2 py-4">
-          <div className="text-xl">🤓</div>
-        </div>
+  const SideBar = () => (
+    <div className="grid grid-cols-3 divide-x-1 border-b">
+      <a
+        href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
+      >
+        <Rss className="size-5" />
+        <div className="text-xl">RSS</div>
+      </a>
+      <div className="flex items-center justify-center gap-2 py-4">
+        <div className="text-xl">☝️</div>
       </div>
-    );
-  };
+      <div className="flex items-center justify-center gap-2 py-4">
+        <div className="text-xl">🤓</div>
+      </div>
+    </div>
+  );
 
   return (
     <ContainerWithSideBar
@@ -265,7 +257,6 @@ function ProfilePage() {
             <div
               className="absolute right-3 bottom-1 cursor-pointer rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl"
               onClick={() => {
-                // @ts-ignore
                 inputCoverRef.current?.click();
               }}
             >
@@ -336,9 +327,9 @@ function ProfilePage() {
               <LoadingPlaceholder className="py-8" size={6} />
             ) : (
               <>
-                {openKeys?.map((openKey: any) => {
-                  return <OpenKeyItem key={openKey.id} openKey={openKey} mutate={mutateOpenKeys} />;
-                })}
+                {openKeys?.map((openKey: any) => (
+                  <OpenKeyItem key={openKey.id} openKey={openKey} mutate={mutateOpenKeys} />
+                ))}
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
                   {openKeys?.length === 0 && <KeyRoundIcon className="size-8 text-gray-500" />}
                   <Button

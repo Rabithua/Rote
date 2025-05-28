@@ -13,31 +13,30 @@ import { useTranslation } from 'react-i18next';
 function ArchivedPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.archived' });
 
-  const getPropsMineArchived = (pageIndex: number, _previousPageData: Rotes): ApiGetRotesParams => {
-    return {
-      apiType: 'mine',
-      params: {
-        limit: 20,
-        skip: pageIndex * 20,
-        archived: true,
-      },
-    };
-  };
+  const getPropsMineArchived = (
+    pageIndex: number,
+    _previousPageData: Rotes | null
+  ): ApiGetRotesParams => ({
+    apiType: 'mine',
+    params: {
+      limit: 20,
+      skip: pageIndex * 20,
+      archived: true,
+    },
+  });
 
   const { data, mutate, loadMore } = useAPIInfinite(getPropsMineArchived, getRotesV2, {
     initialSize: 0,
     revalidateFirstPage: false,
   });
 
-  const SideBar = () => {
-    return (
-      <>
-        <Heatmap />
-        <TagMap />
-        <RandomRote />
-      </>
-    );
-  };
+  const SideBar = () => (
+    <>
+      <Heatmap />
+      <TagMap />
+      <RandomRote />
+    </>
+  );
 
   return (
     <ContainerWithSideBar

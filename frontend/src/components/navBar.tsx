@@ -6,7 +6,7 @@ export default function NavBar() {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.navBar',
   });
-  let location = useLocation();
+  const location = useLocation();
   const navigate = useNavigate();
 
   function back() {
