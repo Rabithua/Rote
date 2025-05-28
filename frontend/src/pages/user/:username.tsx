@@ -1,3 +1,4 @@
+import defaultCover from '@/assets/img/defaultCover.png';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import NavHeader from '@/components/navHeader';
@@ -8,10 +9,10 @@ import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
+import { Helmet } from '@dr.pogodin/react-helmet';
 import Linkify from 'linkify-react';
 import { Globe2, Rss, Stars, User } from 'lucide-react';
 import moment from 'moment';
-import { Helmet } from '@dr.pogodin/react-helmet';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -98,11 +99,7 @@ function UserPage() {
         <NavBar />
         <div className="pb-4">
           <div className="relative aspect-[3] max-h-80 w-full overflow-hidden">
-            <img
-              className="h-full w-full"
-              src={userInfo?.cover || require('@/assets/img/defaultCover.png')}
-              alt=""
-            />
+            <img className="h-full w-full" src={userInfo?.cover || defaultCover} alt="" />
           </div>
           <div className="mx-4 flex h-16">
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}
