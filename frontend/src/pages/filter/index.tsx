@@ -1,3 +1,5 @@
+import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
+import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
@@ -13,7 +15,16 @@ import { useLocation } from 'react-router-dom';
 function MineFilter() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
 
-  const { data: tags } = useAPIGet<string[]>('tags', () => get('/users/me/tags').then((res) => res.data));
+  const { data: tags } = useAPIGet<string[]>('tags', () =>
+    get('/users/me/tags').then((res) => res.data)
+  );
+
+  const location = useLocation();
+  const [filter, setFilter] = useState({
+    tags: {
+      hasEvery: location.state.tags || [],
+    },
+  });
 
   const getProps = (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
     return {
@@ -29,13 +40,6 @@ function MineFilter() {
   const { data, mutate, loadMore } = useAPIInfinite(getProps, getRotesV2, {
     initialSize: 0,
     revalidateFirstPage: false,
-  });
-
-  const location = useLocation();
-  const [filter, setFilter] = useState({
-    tags: {
-      hasEvery: location.state.tags || [],
-    },
   });
 
   function TagsBlock() {
@@ -56,8 +60,12 @@ function MineFilter() {
     };
 
     return (
-      <div className="bg-opacityLight dark:bg-opacityDark p-4 font-semibold">
-        <div className="my-2 flex flex-wrap items-center gap-2">
+      <div className="relative max-h-[25vh] space-y-4 overflow-y-scroll p-4 pb-0 font-semibold">
+        <StarsBackground
+          className="absolute inset-0 flex items-center justify-center bg-none!"
+          starColor="#07C160"
+        />
+        <div className="relative z-10 flex flex-wrap items-center gap-2">
           {t('includeTags')}
           {filter.tags.hasEvery.length > 0
             ? filter.tags.hasEvery.map((tag: any, index: any) => {
@@ -73,13 +81,13 @@ function MineFilter() {
               })
             : t('none')}
         </div>
-        <div className="my-2 flex max-h-[25vh] flex-wrap items-center gap-2 overflow-y-scroll font-normal text-gray-500">
+        <div className="relative z-10 flex flex-wrap items-center gap-2 font-normal text-gray-500">
           {t('allTags')}
           {tags && tags.length > 0
             ? tags.map((tag) => {
                 return (
                   <div key={tag} onClick={() => tagsClickHandler(tag)}>
-                    <div className="cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
+                    <div className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
                       {tag}
                     </div>
                   </div>
@@ -87,6 +95,7 @@ function MineFilter() {
               })
             : t('none')}
         </div>
+        <div className="from-bgLight dark:via-bgDark/40 via-bgLight/40 sticky bottom-0 z-20 h-8 w-full bg-gradient-to-t to-transparent"></div>
       </div>
     );
   }
@@ -95,19 +104,19 @@ function MineFilter() {
     return (
       <div className="grid grid-cols-2">
         <div className="gap2 flex flex-col items-center justify-center py-4">
-          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />
           <div className="font-light">SOMETHING</div>
         </div>
         <div className="gap2 flex flex-col items-center justify-center py-4">
-          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />{' '}
           <div className="font-light">SOMETHING</div>
         </div>
         <div className="gap2 flex flex-col items-center justify-center py-4">
-          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />{' '}
           <div className="font-light">SOMETHING</div>
         </div>
         <div className="gap2 flex flex-col items-center justify-center py-4">
-          <div className="font-mono text-xl font-black">{tags?.length}</div>
+          <SlidingNumber className="font-mono text-xl font-black" number={tags?.length || 0} />{' '}
           <div className="font-light">SOMETHING</div>
         </div>
       </div>
@@ -127,11 +136,8 @@ function MineFilter() {
       }
     >
       <NavBar />
-      <div className={`noScrollBar relative flex-1 overflow-x-hidden overflow-y-visible`}>
-        <TagsBlock />
-
-        <RoteList data={data} loadMore={loadMore} mutate={mutate} />
-      </div>
+      <TagsBlock />
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );
 }

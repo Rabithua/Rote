@@ -50,6 +50,8 @@ export const get = <T = any>(
   data?: any,
   config?: AxiosRequestConfig
 ): Promise<T> => {
+  console.log(`GET request to ${url} with params:`, params, 'and data:', data);
+  
   return api.request({
     method: 'get',
     url,

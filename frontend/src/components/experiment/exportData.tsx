@@ -6,6 +6,7 @@ import { DownloadCloud } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import LoadingPlaceholder from '../LoadingPlaceholder';
+import { SlidingNumber } from '../animate-ui/text/sliding-number';
 
 export default function ExportData() {
   const { t } = useTranslation('translation', {
@@ -29,11 +30,17 @@ export default function ExportData() {
         <>
           <div className="flex items-center justify-around p-4">
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="text-4xl font-semibold">{data?.noteCount}</div>
+              <SlidingNumber
+                className="text-4xl font-semibold"
+                number={data?.noteCount || '0'}
+              ></SlidingNumber>
               <div className="text-sm text-gray-500">{t('noteCount')}</div>
             </div>
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="text-4xl font-semibold">{data?.attachmentsCount}</div>
+              <SlidingNumber
+                className="text-4xl font-semibold"
+                number={data?.attachmentsCount || '0'}
+              ></SlidingNumber>
               <div className="text-sm text-gray-500">{t('attachmentCount')}</div>
             </div>
           </div>
