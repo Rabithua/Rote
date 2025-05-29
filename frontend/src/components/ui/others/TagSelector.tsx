@@ -61,7 +61,7 @@ export function TagSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[160px] justify-between overflow-hidden"
+          className="w-[120px] sm:w-[160px] justify-between overflow-hidden"
           style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           <span className="flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap">
