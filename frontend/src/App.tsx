@@ -55,7 +55,7 @@ const AppWrapper = () => {
               if (retryCount >= 3) return;
             },
             refreshInterval: 0,
-            revalidateOnFocus: false,
+            revalidateOnFocus: true,
             revalidateOnReconnect: true,
           }}
         >
