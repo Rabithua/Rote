@@ -204,7 +204,6 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    console.log('Editing rote with data:', data);
 
     const { id, authorid, attachments, userreaction, visitorreaction, author, ...cleanData } = data;
     const rote = await prisma.rote.update({
@@ -228,7 +227,7 @@ export async function editRote(data: any): Promise<any> {
     });
     return rote;
   } catch (error) {
-    console.log(error);
+    console.error(`Error updating rote: ${data.id}`, error);
 
     throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
   }
@@ -268,7 +267,7 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
       const key = details?.key;
       if (key) {
         r2deletehandler(key).catch((err) => {
-          console.log(`Failed to delete attachment from R2: ${key}`, err);
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
         });
       }
     });
@@ -312,7 +311,7 @@ export async function deleteAttachments(
     attachments.forEach(({ key }) => {
       if (key) {
         r2deletehandler(key).catch((err) => {
-          console.log(`Failed to delete attachment from R2: ${key}`, err);
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
         });
       }
     });

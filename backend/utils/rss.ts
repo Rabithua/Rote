@@ -47,7 +47,7 @@ export async function generateRssFeed(
     },
   });
 
-  console.log(notes);
+  console.log('');
 
   // 将笔记添加到Feed中
   for (const note of notes) {
