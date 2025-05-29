@@ -7,7 +7,9 @@
 @custom-variant dark (&:is(.dark *));
 
 html {
-  font-size: 120%;
+  @media (width >=40rem) {
+    font-size: 120%;
+  }
 }
 
 html,
