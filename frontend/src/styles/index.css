@@ -14,7 +14,7 @@ html {
 
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-bgLight dark:bg-bgDark;
 
   @media (prefers-color-scheme: dark) {
     color-scheme: dark;
