@@ -1,5 +1,4 @@
-import { Loader } from 'lucide-react';
-import RandomCat from './RandomCat';
+import { Loader, Unplug } from 'lucide-react';
 
 export default function LoadingPlaceholder({
   className,
@@ -14,11 +13,10 @@ export default function LoadingPlaceholder({
     <div className={`flex items-center justify-center dark:text-white ${className}`}>
       {error ? (
         <div className="flex flex-col items-center justify-center gap-4">
-          <RandomCat />
-          <div className="font-thin">Error:{error.message}</div>
+          <Unplug className={`text-red-500 size-${size || 6}`} />
         </div>
       ) : (
-        <Loader className={`animate-spin size-${size || 6}`} />
+        <Loader className={`animate-spin opacity-40 size-${size || 6}`} />
       )}
     </div>
   );
