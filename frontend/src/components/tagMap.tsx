@@ -47,7 +47,7 @@ export default function TagMap() {
           {tags.length > 20 && isCollapsed && (
             <div
               onClick={toggleCollapse}
-              className="from-bgLight via-bgLight/80 text-theme dark:from-bgDark dark:via-bgDark/80 absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t to-transparent pt-8 duration-300"
+              className="from-bgLight via-bgLight/80 text-theme dark:from-bgDark dark:via-bgDark/80 absolute bottom-0 left-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t to-transparent pt-8 duration-300"
             >
               <ArrowDownLeft className="size-4" />
               {t('expand')}

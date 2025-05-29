@@ -243,7 +243,7 @@ function RoteItem({
       }`}
     >
       {!randomRoteStyle && (
-        <Link className="hidden shrink-0 text-black sm:block" to={`/${rote.author!.username}`}>
+        <Link className="hidden shrink-0 text-black xl:block" to={`/${rote.author!.username}`}>
           <Avatar className="size-[40px] bg-[#00000010]">
             {rote.author!.username === profile?.username ? (
               profile?.avatar ? (
@@ -268,7 +268,7 @@ function RoteItem({
         <div className="flex w-full cursor-default items-center gap-2">
           {!randomRoteStyle && (
             <Link
-              className="cursor-pointer font-semibold hover:underline"
+              className="shrink-0 cursor-pointer font-semibold hover:underline"
               to={`/${rote.author!.username}`}
             >
               {rote.author!.username === profile?.username
@@ -364,7 +364,7 @@ function RoteItem({
           {profile?.username === rote.author!.username && inView && mutate !== undefined && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Ellipsis className="hover:bg-opacityLight dark:hover:bg-opacityDark absolute top-2 right-2 z-10 size-8 rounded-full p-2" />
+                <Ellipsis className="hover:bg-opacityLight dark:hover:bg-opacityDark fixed top-2 right-2 z-10 size-8 rounded-md p-2 backdrop-blur-xl" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="z-50 min-w-[180px]">
                 {actionsMenu(rote)}
@@ -373,7 +373,7 @@ function RoteItem({
           )}
         </div>
 
-        <div className="font-zhengwen relative text-[16px] break-words whitespace-pre-line">
+        <div className="font-zhengwen relative break-words whitespace-pre-line">
           <div className="aTagStyle">
             {rote.content.length > roteContentExpandedLetter ? (
               isExpanded ? (
@@ -391,7 +391,7 @@ function RoteItem({
               {!isExpanded && (
                 <div
                   onClick={toggleExpand}
-                  className="from-bgLight via-bgLight/80 text-theme dark:from-bgDark dark:via-bgDark/80 absolute bottom-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t to-transparent pt-8 duration-300"
+                  className="from-bgLight via-bgLight/80 text-theme dark:from-bgDark dark:via-bgDark/80 absolute bottom-0 left-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t to-transparent pt-8 duration-300"
                 >
                   <ArrowDownLeft className="size-4" />
                   {t('expand')}

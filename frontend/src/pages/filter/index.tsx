@@ -1,5 +1,6 @@
 import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
+import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
@@ -11,6 +12,34 @@ import { ActivityIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+
+function SideBar() {
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
+  const { isLoading, data: statisticsData } = useAPIGet<Statistics>('statistics', () =>
+    get('/users/me/statistics').then((res) => res.data)
+  );
+
+  return isLoading ? (
+    <LoadingPlaceholder className="py-8" size={6} />
+  ) : (
+    <div className="grid grid-cols-2 divide-x-1 border-b">
+      <div className="gap2 flex flex-col items-center justify-center py-4">
+        <SlidingNumber
+          className="font-mono text-xl font-black"
+          number={statisticsData?.noteCount || 0}
+        />
+        <div className="font-light">{t('note')}</div>
+      </div>
+      <div className="gap2 flex flex-col items-center justify-center py-4">
+        <SlidingNumber
+          className="font-mono text-xl font-black"
+          number={statisticsData?.attachmentsCount || 0}
+        />
+        <div className="font-light">{t('attachment')}</div>
+      </div>
+    </div>
+  );
+}
 
 function MineFilter() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
@@ -49,10 +78,6 @@ function MineFilter() {
     revalidateOnReconnect: false,
   });
 
-  const { isLoading, data: statisticsData } = useAPIGet<Statistics>('statistics', () =>
-    get('/users/me/statistics').then((res) => res.data)
-  );
-
   useEffect(() => {
     mutate();
   }, [filter, mutate]);
@@ -75,62 +100,41 @@ function MineFilter() {
     };
 
     return (
-      <div className="relative max-h-[25vh] space-y-4 overflow-y-scroll p-4 pb-0 font-semibold">
-        <StarsBackground
-          className="absolute inset-0 flex items-center justify-center bg-none!"
-          starColor="#07C160"
-        />
-        <div className="relative z-10 flex flex-wrap items-center gap-2">
-          {t('includeTags')}
-          {filter.tags.hasEvery.length > 0
-            ? filter.tags.hasEvery.map((tag: any, index: any) => (
-                <div
-                  className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
-                  key={`tag-${index}`}
-                  onClick={() => tagsClickHandler(tag)}
-                >
-                  {tag}
-                </div>
-              ))
-            : t('none')}
-        </div>
-        <div className="relative z-10 flex flex-wrap items-center gap-2 font-normal text-gray-500">
-          {t('allTags')}
-          {tags && tags.length > 0
-            ? tags.map((tag) => (
-                <div key={tag} onClick={() => tagsClickHandler(tag)}>
-                  <div className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
+      <StarsBackground
+        pointerEvents={false}
+        starColor="#07C160"
+        className="relative max-h-[25vh] overflow-hidden bg-none"
+      >
+        <div className="relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none p-4 pb-0 font-semibold">
+          <div className="relative flex flex-wrap items-center gap-2">
+            {t('includeTags')}
+            {filter.tags.hasEvery.length > 0
+              ? filter.tags.hasEvery.map((tag: any, index: any) => (
+                  <div
+                    className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
+                    key={`tag-${index}`}
+                    onClick={() => tagsClickHandler(tag)}
+                  >
                     {tag}
                   </div>
-                </div>
-              ))
-            : t('none')}
+                ))
+              : t('none')}
+          </div>
+          <div className="relative flex flex-wrap items-center gap-2 font-normal text-gray-500">
+            {t('allTags')}
+            {tags && tags.length > 0
+              ? tags.map((tag) => (
+                  <div key={tag} onClick={() => tagsClickHandler(tag)}>
+                    <div className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
+                      {tag}
+                    </div>
+                  </div>
+                ))
+              : t('none')}
+          </div>
+          <div className="from-bgLight dark:from-bgDark dark:via-bgDark/40 via-bgLight/40 sticky bottom-0 z-1 h-8 w-full bg-gradient-to-t to-transparent"></div>
         </div>
-        <div className="from-bgLight dark:via-bgDark/40 via-bgLight/40 sticky bottom-0 z-20 h-8 w-full bg-gradient-to-t to-transparent"></div>
-      </div>
-    );
-  }
-
-  function SideBar() {
-    return isLoading ? (
-      <div></div>
-    ) : (
-      <div className="grid grid-cols-2">
-        <div className="gap2 flex flex-col items-center justify-center py-4">
-          <SlidingNumber
-            className="font-mono text-xl font-black"
-            number={statisticsData?.noteCount || 0}
-          />
-          <div className="font-light">{t('note')}</div>
-        </div>
-        <div className="gap2 flex flex-col items-center justify-center py-4">
-          <SlidingNumber
-            className="font-mono text-xl font-black"
-            number={statisticsData?.attachmentsCount || 0}
-          />
-          <div className="font-light">{t('attachment')}</div>
-        </div>
-      </div>
+      </StarsBackground>
     );
   }
 

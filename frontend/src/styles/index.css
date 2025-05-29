@@ -6,6 +6,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+html {
+  font-size: 120%;
+}
+
 html,
 body {
   @apply bg-white dark:bg-gray-950;

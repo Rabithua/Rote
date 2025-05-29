@@ -100,7 +100,7 @@ const Heatmap: React.FC = () => {
         <div className="flex gap-2 p-4">
           <div className="flex shrink-0 flex-col justify-around">
             {daysOfWeek.map((day) => (
-              <div key={day} className="text-right text-[10px]">
+              <div key={day} className="text-right text-xs">
                 {day}
               </div>
             ))}

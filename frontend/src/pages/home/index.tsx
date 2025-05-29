@@ -32,16 +32,14 @@ function HomePage() {
   const getPropsMineUnArchived = (
     pageIndex: number,
     _previousPageData: Rotes | null
-  ): ApiGetRotesParams | null => {
-    return {
-      apiType: 'mine',
-      params: {
-        limit: 20,
-        skip: pageIndex * 20,
-        archived: false,
-      },
-    };
-  };
+  ): ApiGetRotesParams | null => ({
+    apiType: 'mine',
+    params: {
+      limit: 20,
+      skip: pageIndex * 20,
+      archived: false,
+    },
+  });
 
   const { data, mutate, loadMore } = useAPIInfinite(getPropsMineUnArchived, getRotesV2, {
     initialSize: 0,
@@ -60,7 +58,7 @@ function HomePage() {
         </div>
       }
     >
-      <div className="group bg-bgLight dark:bg-bgDark sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-2 font-light text-gray-600">
+      <div className="group bg-bgLight dark:bg-bgDark sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-3 font-light text-gray-600">
         <Logo className="w-24" color="#07C160" />
         <img
           className="mb-[2px] ml-2 h-4 text-green-600 opacity-0 duration-300 group-hover:opacity-100"
@@ -69,7 +67,7 @@ function HomePage() {
         />
       </div>
       <div className="flex gap-4 p-4">
-        <Avatar className="hidden size-10 shrink-0 overflow-hidden rounded-full sm:block">
+        <Avatar className="hidden size-10 shrink-0 overflow-hidden rounded-full xl:block">
           {profile?.avatar ? (
             <AvatarImage src={profile.avatar} />
           ) : (

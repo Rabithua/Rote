@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 import {
   type HTMLMotionProps,
   motion,
@@ -8,11 +8,11 @@ import {
   type Transition,
   useMotionValue,
   useSpring,
-} from 'motion/react';
+} from "motion/react";
 
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 
-type StarLayerProps = HTMLMotionProps<'div'> & {
+type StarLayerProps = HTMLMotionProps<"div"> & {
   count: number;
   size: number;
   transition: Transition;
@@ -26,18 +26,18 @@ function generateStars(count: number, starColor: string) {
     const y = Math.floor(Math.random() * 4000) - 2000;
     shadows.push(`${x}px ${y}px ${starColor}`);
   }
-  return shadows.join(', ');
+  return shadows.join(", ");
 }
 
 function StarLayer({
   count = 1000,
   size = 1,
-  transition = { repeat: Infinity, duration: 50, ease: 'linear' },
-  starColor = '#fff',
+  transition = { repeat: Infinity, duration: 50, ease: "linear" },
+  starColor = "#fff",
   className,
   ...props
 }: StarLayerProps) {
-  const [boxShadow, setBoxShadow] = React.useState<string>('');
+  const [boxShadow, setBoxShadow] = React.useState<string>("");
 
   React.useEffect(() => {
     setBoxShadow(generateStars(count, starColor));
@@ -48,11 +48,11 @@ function StarLayer({
       data-slot="star-layer"
       animate={{ y: [0, -2000] }}
       transition={transition}
-      className={cn('absolute top-0 left-0 h-[2000px] w-full', className)}
+      className={cn("absolute top-0 left-0 w-full h-[2000px]", className)}
       {...props}
     >
       <div
-        className="absolute rounded-full bg-transparent"
+        className="absolute bg-transparent rounded-full"
         style={{
           width: `${size}px`,
           height: `${size}px`,
@@ -60,7 +60,7 @@ function StarLayer({
         }}
       />
       <div
-        className="absolute top-[2000px] rounded-full bg-transparent"
+        className="absolute bg-transparent rounded-full top-[2000px]"
         style={{
           width: `${size}px`,
           height: `${size}px`,
@@ -71,11 +71,12 @@ function StarLayer({
   );
 }
 
-type StarsBackgroundProps = React.ComponentProps<'div'> & {
+type StarsBackgroundProps = React.ComponentProps<"div"> & {
   factor?: number;
   speed?: number;
   transition?: SpringOptions;
   starColor?: string;
+  pointerEvents?: boolean;
 };
 
 function StarsBackground({
@@ -84,7 +85,8 @@ function StarsBackground({
   factor = 0.05,
   speed = 50,
   transition = { stiffness: 50, damping: 20 },
-  starColor = '#fff',
+  starColor = "#fff",
+  pointerEvents = true,
   ...props
 }: StarsBackgroundProps) {
   const offsetX = useMotionValue(1);
@@ -109,17 +111,20 @@ function StarsBackground({
     <div
       data-slot="stars-background"
       className={cn(
-        'relative size-full overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]',
+        "relative size-full overflow-hidden bg-[radial-gradient(ellipse_at_bottom,_#262626_0%,_#000_100%)]",
         className
       )}
       onMouseMove={handleMouseMove}
       {...props}
     >
-      <motion.div style={{ x: springX, y: springY }}>
+      <motion.div
+        style={{ x: springX, y: springY }}
+        className={cn({ "pointer-events-none": !pointerEvents })}
+      >
         <StarLayer
           count={1000}
           size={1}
-          transition={{ repeat: Infinity, duration: speed, ease: 'linear' }}
+          transition={{ repeat: Infinity, duration: speed, ease: "linear" }}
           starColor={starColor}
         />
         <StarLayer
@@ -128,7 +133,7 @@ function StarsBackground({
           transition={{
             repeat: Infinity,
             duration: speed * 2,
-            ease: 'linear',
+            ease: "linear",
           }}
           starColor={starColor}
         />
@@ -138,7 +143,7 @@ function StarsBackground({
           transition={{
             repeat: Infinity,
             duration: speed * 3,
-            ease: 'linear',
+            ease: "linear",
           }}
           starColor={starColor}
         />
@@ -148,4 +153,9 @@ function StarsBackground({
   );
 }
 
-export { StarLayer, StarsBackground, type StarLayerProps, type StarsBackgroundProps };
+export {
+  StarLayer,
+  StarsBackground,
+  type StarLayerProps,
+  type StarsBackgroundProps,
+};

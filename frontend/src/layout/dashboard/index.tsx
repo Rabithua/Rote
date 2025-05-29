@@ -101,7 +101,7 @@ function LayoutDashboard() {
           } `}
         >
           {icon.svg}
-          <div className="hidden shrink-0 tracking-widest lg:block">
+          <div className="hidden shrink-0 tracking-widest xl:block">
             {t(`leftNavBar.${icon.name}`)}
           </div>
         </div>
@@ -121,7 +121,7 @@ function LayoutDashboard() {
         }}
       >
         {icon.svg}
-        <div className="hidden shrink-0 tracking-widest lg:block">
+        <div className="hidden shrink-0 tracking-widest xl:block">
           {t(`leftNavBar.${icon.name}`)}
         </div>
       </div>
@@ -130,8 +130,8 @@ function LayoutDashboard() {
 
   return (
     <div className="bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark mx-auto w-full max-w-6xl">
-      <div className="mx-auto flex w-dvw max-w-[1440px] divide-x-1 font-sans lg:w-[90%]">
-        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 lg:w-[200px] lg:px-4">
+      <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
+        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (
