@@ -15,10 +15,6 @@ html {
 html,
 body {
   @apply bg-bgLight dark:bg-bgDark;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-  }
 }
 
 @theme inline {
