@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { createRote, findMyRote } from '../utils/dbMethods';
+import { createRote, findMyRote, searchMyRotes } from '../utils/dbMethods';
 import { asyncHandler } from '../utils/handlers';
 import { bodyTypeCheck, isOpenKeyOk, queryTypeCheck } from '../utils/main';
 
@@ -174,6 +174,64 @@ router.get(
 
     const rotes = await findMyRote(
       req.openKey.userid,
+      parsedSkip,
+      parsedLimit,
+      filter,
+      archived ? (archived === 'true' ? true : false) : undefined
+    );
+
+    res.status(200).json(createResponse(rotes));
+  })
+);
+
+// Search notes using API key
+router.get(
+  '/notes/search',
+  isOpenKeyOk,
+  queryTypeCheck,
+  asyncHandler(async (req, res) => {
+    const { keyword, skip, limit, archived, tag, ...otherParams } = req.query;
+
+    if (!req.openKey) {
+      throw new Error('API key is required');
+    }
+
+    if (!keyword || typeof keyword !== 'string') {
+      throw new Error('Keyword is required');
+    }
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      let tags: string[] = [];
+      if (Array.isArray(tag)) {
+        tags = tag
+          .filter((t) => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => (t as string).trim());
+      } else if (typeof tag === 'string' && tag.trim().length > 0) {
+        tags = [tag.trim()];
+      }
+
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived', 'keyword'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
+
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+
+    const rotes = await searchMyRotes(
+      req.openKey.userid,
+      keyword,
       parsedSkip,
       parsedLimit,
       filter,

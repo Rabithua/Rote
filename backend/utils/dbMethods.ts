@@ -204,7 +204,6 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-
     const { id, authorid, attachments, userreaction, visitorreaction, author, ...cleanData } = data;
     const rote = await prisma.rote.update({
       where: {
@@ -901,5 +900,152 @@ export async function getRssData(
     return { user, notes };
   } catch (error) {
     throw new DatabaseError('获取RSS数据失败', error);
+  }
+}
+
+// 搜索相关方法
+export async function searchMyRotes(
+  authorid: string,
+  keyword: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any = {},
+  archived: any = false
+): Promise<any> {
+  try {
+    const searchFilter = {
+      AND: [
+        {
+          authorid,
+          archived,
+        },
+        {
+          OR: [
+            { content: { contains: keyword, mode: 'insensitive' } },
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { tags: { hasSome: [keyword] } },
+          ],
+        },
+        { ...filter },
+      ],
+    };
+
+    const rotes = await prisma.rote.findMany({
+      where: searchFilter,
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ pin: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError('Failed to search user rotes', error);
+  }
+}
+
+export async function searchPublicRotes(
+  keyword: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any = {}
+): Promise<any> {
+  try {
+    const searchFilter = {
+      AND: [
+        { state: 'public' },
+        {
+          OR: [
+            { content: { contains: keyword, mode: 'insensitive' } },
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { tags: { hasSome: [keyword] } },
+          ],
+        },
+        { ...filter },
+      ],
+    };
+
+    const rotes = await prisma.rote.findMany({
+      where: searchFilter,
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ createdAt: 'desc' }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError('Failed to search public rotes', error);
+  }
+}
+
+export async function searchUserPublicRotes(
+  userid: string,
+  keyword: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any = {},
+  archived: any = false
+): Promise<any> {
+  try {
+    const searchFilter = {
+      AND: [
+        {
+          authorid: userid,
+          archived,
+          state: 'public',
+        },
+        {
+          OR: [
+            { content: { contains: keyword, mode: 'insensitive' } },
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { tags: { hasSome: [keyword] } },
+          ],
+        },
+        { ...filter },
+      ],
+    };
+
+    const rotes = await prisma.rote.findMany({
+      where: searchFilter,
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ pin: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        userreaction: true,
+        visitorreaction: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError('Failed to search user public rotes', error);
   }
 }
