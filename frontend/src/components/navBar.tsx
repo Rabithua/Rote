@@ -20,9 +20,7 @@ export default function NavBar() {
   return (
     <>
       <div
-        className={`noScrollBar bg-bgLight/90 dark:bg-bgDark/90 sticky top-0 z-10 w-full items-center gap-2 overflow-x-scroll px-2 py-4 backdrop-blur-xl duration-300 ${
-          window.history.state && window.history.state.idx > 0 ? 'flex' : 'hidden'
-        }`}
+        className={`noScrollBar bg-bgLight/90 dark:bg-bgDark/90 sticky top-0 z-10 flex w-full items-center gap-2 overflow-x-scroll px-2 py-4 backdrop-blur-xl duration-300`}
       >
         <ArrowLeft className="size-8 cursor-pointer p-1" onClick={back} />
         <div className="cursor-pointer text-lg font-medium" onClick={back}>

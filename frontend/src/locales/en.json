@@ -128,6 +128,7 @@
     },
     "rote": {
       "loading": "Loading...",
+      "sideBarTitle": "Relative Information",
       "authorInfo": {
         "nickname": "Nickname",
         "username": "Username"

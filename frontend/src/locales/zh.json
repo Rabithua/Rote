@@ -133,6 +133,7 @@
     },
     "rote": {
       "loading": "加载中...",
+      "sideBarTitle": "相关信息",
       "authorInfo": {
         "nickname": "昵称",
         "username": "用户名"
