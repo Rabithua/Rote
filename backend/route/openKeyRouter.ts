@@ -56,7 +56,7 @@ router.get(
     const rote = {
       content,
       state: state || 'private',
-      type: type || 'rote',
+      type: type || 'Rote',
       tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
       pin: !!pin,
     };
