@@ -7,6 +7,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
+import { Button } from './ui/button';
 import { SoftBottom } from './ui/SoftBottom';
 
 function RoteShareCard({ rote }: any) {
@@ -44,9 +45,10 @@ function RoteShareCard({ rote }: any) {
     },
   ];
   const [themeIndex, setThemeIndex] = useState(1);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   async function saveImage(): Promise<void> {
-    const toastId = toast.loading(t('generatingImage'));
+    setIsGenerating(true);
     const element: any = document.querySelector('#shareCanva');
     if (element) {
       // 获取元素的宽度和高度
@@ -66,9 +68,8 @@ function RoteShareCard({ rote }: any) {
       const dataUrl = await toPng(element, options);
 
       if (!dataUrl) {
-        toast.error(t('imageGenerationFailed'), {
-          id: toastId,
-        });
+        toast.error(t('imageGenerationFailed'));
+        setIsGenerating(false);
         return;
       }
 
@@ -78,9 +79,10 @@ function RoteShareCard({ rote }: any) {
         saveAs(dataUrl, `${rote.id}.png`);
       }
 
-      toast.success(t('imageSaved'), {
-        id: toastId,
-      });
+      toast.success(t('imageSaved'));
+      setIsGenerating(false);
+    } else {
+      setIsGenerating(false);
     }
   }
 
@@ -192,20 +194,14 @@ function RoteShareCard({ rote }: any) {
       <div className="flex flex-wrap justify-end gap-2">
         <ColorList />
 
-        <div
-          className="text-textLight dark:bg-bgLight dark:text-textLight flex cursor-pointer items-center gap-2 rounded-md px-4 py-1 duration-300 select-none active:scale-95"
-          onClick={copyLink}
-        >
+        <Button variant="secondary" onClick={copyLink}>
           <Link className="size-4" />
           {t('copyLink')}
-        </div>
-        <div
-          className="flex cursor-pointer items-center gap-2 rounded-md bg-black px-4 py-1 text-white duration-300 select-none active:scale-95"
-          onClick={saveImage}
-        >
+        </Button>
+        <Button disabled={isGenerating} onClick={saveImage} className="gap-2">
           <Save className="size-4" />
-          {t('save')}
-        </div>
+          {isGenerating ? t('generatingImage') : t('save')}
+        </Button>
       </div>
 
       <SoftBottom className="translate-y-1" spacer />
