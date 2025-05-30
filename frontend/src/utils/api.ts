@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 // API版本路径
-const API_PATH = '/api/v2';
+const API_PATH = '/v2/api';
 
 // 请求拦截器
 api.interceptors.request.use(

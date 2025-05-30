@@ -115,7 +115,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
         {t('example')}：
         <span className="font-mono break-all">
           {process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}
-          /v1/api/openkey/onerote?openkey=
+          /v2/api/openkey/notes/create?openkey=
           {hidekey
             ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
             : openKey.id}

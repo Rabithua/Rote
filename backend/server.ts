@@ -59,7 +59,7 @@ app.use(
 );
 
 app.use('/v1/api', routerV1);
-app.use('/api/v2', routerV2); // New RESTful API
+app.use('/v2/api', routerV2); // New RESTful API
 
 app.get('*', (req, res) => {
   res.status(404).send({

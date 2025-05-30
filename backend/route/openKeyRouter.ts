@@ -39,7 +39,7 @@ const router = express.Router();
 
 // Create note using API key - GET method (kept for backward compatibility)
 router.get(
-  '/notes',
+  '/notes/create',
   isOpenKeyOk,
   queryTypeCheck,
   asyncHandler(async (req, res) => {
@@ -53,11 +53,24 @@ router.get(
       throw new Error('API key permission does not match');
     }
 
+    // 处理标签，过滤空白标签
+    const processTags = (tags: any): string[] => {
+      if (Array.isArray(tags)) {
+        return tags
+          .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
+          .map((t) => t.trim());
+      }
+      if (tags && typeof tags === 'string' && tags.trim().length > 0) {
+        return [tags.trim()];
+      }
+      return [];
+    };
+
     const rote = {
       content,
       state: state || 'private',
       type: type || 'Rote',
-      tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
+      tags: processTags(tag),
       pin: !!pin,
     };
 
@@ -86,11 +99,27 @@ router.post(
       throw new Error('API key permission does not match');
     }
 
+    // 处理标签，过滤空白标签
+    const processTags = (tags: any): string[] => {
+      if (Array.isArray(tags)) {
+        return tags
+          .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
+          .map((t) => t.trim());
+      }
+      if (tags && typeof tags === 'string' && tags.trim().length > 0) {
+        return tags
+          .split(' ')
+          .filter((t) => t.trim().length > 0)
+          .map((t) => t.trim());
+      }
+      return [];
+    };
+
     const rote = {
       content,
       state: state || 'private',
       type: type || 'rote',
-      tags: Array.isArray(tags) ? tags : tags ? tags.split(' ') : [],
+      tags: processTags(tags),
       pin: !!pin,
     };
 
@@ -117,9 +146,17 @@ router.get(
     // 构建过滤器对象
     const filter: any = {};
 
-    // 处理标签过滤
+    // 处理标签过滤，过滤空白标签
     if (tag) {
-      const tags = Array.isArray(tag) ? tag : [tag];
+      let tags: string[] = [];
+      if (Array.isArray(tag)) {
+        tags = tag
+          .filter((t) => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => (t as string).trim());
+      } else if (typeof tag === 'string' && tag.trim().length > 0) {
+        tags = [tag.trim()];
+      }
+
       if (tags.length > 0) {
         filter.tags = { hasEvery: tags };
       }

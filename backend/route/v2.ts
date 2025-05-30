@@ -849,7 +849,7 @@ router.use('/subscriptions', subscriptionsRouter);
 router.use('/api-keys', apiKeysRouter);
 router.use('/attachments', attachmentsRouter);
 router.use('/site', siteRouter);
-router.use('/open-key', openKeyRouter);
+router.use('/openkey', openKeyRouter);
 
 // 全局错误处理
 router.use(errorHandler);
