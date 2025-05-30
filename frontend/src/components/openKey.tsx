@@ -89,7 +89,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
     <div className="animate-show bg-bgLight dark:bg-bgDark cursor-pointer p-4 opacity-0 duration-300">
       <div className="mr-auto flex items-center font-mono font-semibold break-all">
         {hidekey ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}` : openKey.id}
-        {hidekey ? (
+        {!hidekey ? (
           <EyeIcon
             onClick={changeHideKey}
             className="ml-1 size-8 rounded-lg p-2 hover:bg-[#00000010]"
@@ -111,7 +111,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
       <div className="">
         {t('permissions')}：{openKey.permissions.join(',')}
       </div>
-      <div className="">
+      <div className="text-primary/30">
         {t('example')}：
         <span className="font-mono break-all">
           {process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}

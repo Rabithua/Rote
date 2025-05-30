@@ -1,12 +1,13 @@
 import type { Attachment } from '@/types/main';
 import { saveAs } from 'file-saver';
 import { toPng } from 'html-to-image';
-import { Link, Save, Zap } from 'lucide-react';
+import { Link, Save } from 'lucide-react';
 import moment from 'moment';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
+import { SoftBottom } from './ui/SoftBottom';
 
 function RoteShareCard({ rote }: any) {
   const { t } = useTranslation('translation', {
@@ -42,13 +43,6 @@ function RoteShareCard({ rote }: any) {
       qrcodeColor: '#2d3748',
     },
   ];
-  const decoration = [
-    {
-      neme: '流星',
-      class: 'liuxing',
-    },
-  ];
-  const [decorationIndex, setDecorationIndex] = useState<any>(null);
   const [themeIndex, setThemeIndex] = useState(1);
 
   async function saveImage(): Promise<void> {
@@ -117,17 +111,17 @@ function RoteShareCard({ rote }: any) {
   }
 
   return (
-    <div className="flex w-full cursor-default flex-col gap-5">
+    <div className="relative flex max-h-[60dvh] w-full cursor-default flex-col gap-5 overflow-scroll">
       <div
         className={`relative flex w-full flex-col gap-2 p-8 duration-300 ${
           themes[themeIndex].cardClass
-        } ${decorationIndex !== null && decoration[decorationIndex].class}`}
+        } `}
         id="shareCanva"
       >
         <div className="font-sm opacity-60">
           {moment().utc(rote.createdAt).format('YYYY/MM/DD HH:mm:ss')}
         </div>
-        <div className="font-serif leading-7 font-medium tracking-wide break-words whitespace-pre-line md:text-xl">
+        <div className="font-serif leading-7 font-light tracking-wide break-words whitespace-pre-line md:text-lg">
           {rote.content}
         </div>
         {rote.attachments.length > 0 && (
@@ -155,7 +149,7 @@ function RoteShareCard({ rote }: any) {
             ))}
           </div>
         )}
-        <div className="md:text-md flex flex-wrap items-center gap-2 font-serif text-xs md:font-bold">
+        <div className="md:text-md flex flex-wrap items-center gap-2 font-serif text-xs">
           {rote.tags.map((tag: any) => (
             <span
               className={`rounded-md px-2 py-1 md:px-3 ${themes[themeIndex].tagClass}`}
@@ -197,20 +191,7 @@ function RoteShareCard({ rote }: any) {
       </div>
       <div className="flex flex-wrap justify-end gap-2">
         <ColorList />
-        <div
-          className={`flex cursor-pointer items-center gap-2 rounded-md px-4 py-1 duration-300 select-none active:scale-95 ${
-            decorationIndex !== null && 'bg-gray-100'
-          }`}
-          onClick={() => {
-            if (decorationIndex === null) {
-              setDecorationIndex(0);
-            } else {
-              setDecorationIndex(null);
-            }
-          }}
-        >
-          <Zap className="size-4" />
-        </div>
+
         <div
           className="text-textLight dark:bg-bgLight dark:text-textLight flex cursor-pointer items-center gap-2 rounded-md px-4 py-1 duration-300 select-none active:scale-95"
           onClick={copyLink}
@@ -226,6 +207,8 @@ function RoteShareCard({ rote }: any) {
           {t('save')}
         </div>
       </div>
+
+      <SoftBottom className="translate-y-1" spacer />
     </div>
   );
 }

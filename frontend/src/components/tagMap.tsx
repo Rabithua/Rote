@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import LoadingPlaceholder from './LoadingPlaceholder';
+import { SoftBottom } from './ui/SoftBottom';
 
 export default function TagMap() {
   const { t } = useTranslation('translation', {
@@ -45,13 +46,15 @@ export default function TagMap() {
             </Link>
           ))}
           {tags.length > 20 && isCollapsed && (
-            <div
-              onClick={toggleCollapse}
-              className="from-bgLight via-bgLight/80 text-theme dark:from-bgDark dark:via-bgDark/80 absolute bottom-0 left-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t to-transparent pt-8 duration-300"
-            >
-              <ArrowDownLeft className="size-4" />
-              {t('expand')}
-            </div>
+            <SoftBottom>
+              <div
+                className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
+                onClick={toggleCollapse}
+              >
+                <ArrowDownLeft className="size-4" />
+                {t('expand')}
+              </div>
+            </SoftBottom>
           )}
         </div>
       ) : (

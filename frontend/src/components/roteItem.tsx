@@ -45,6 +45,7 @@ import RoteEditor from './editor/RoteEditor';
 import NoticeCreateBoard from './NoticeCreateBoard';
 import RoteShareCard from './roteShareCard';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { SoftBottom } from './ui/SoftBottom';
 const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
@@ -389,13 +390,15 @@ function RoteItem({
           {rote.content.length > roteContentExpandedLetter && (
             <>
               {!isExpanded && (
-                <div
-                  onClick={toggleExpand}
-                  className="from-bgLight via-bgLight/80 text-theme dark:from-bgDark dark:via-bgDark/80 absolute bottom-0 left-0 flex w-full cursor-pointer items-center justify-center gap-1 bg-gradient-to-t to-transparent pt-8 duration-300"
-                >
-                  <ArrowDownLeft className="size-4" />
-                  {t('expand')}
-                </div>
+                <SoftBottom>
+                  <div
+                    className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
+                    onClick={toggleExpand}
+                  >
+                    <ArrowDownLeft className="size-4" />
+                    {t('expand')}
+                  </div>
+                </SoftBottom>
               )}
             </>
           )}
@@ -460,14 +463,13 @@ function RoteItem({
               />
             </DialogContent>
           </Dialog>
+
           <Dialog open={isShareCardModalOpen} onOpenChange={setIsShareCardModalOpen}>
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t('share')}</DialogTitle>
-              </DialogHeader>
               <RoteShareCard rote={rote}></RoteShareCard>
             </DialogContent>
           </Dialog>
+
           <Dialog
             open={isNoticeCreateBoardModalOpen}
             onOpenChange={setIsNoticeCreateBoardModalOpen}
