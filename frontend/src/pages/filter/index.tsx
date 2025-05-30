@@ -3,13 +3,14 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
+import { Input } from '@/components/ui/input';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
-import { ActivityIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ActivityIcon, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
@@ -49,57 +50,110 @@ function MineFilter() {
   );
 
   const location = useLocation();
+  const initialKeyword = location.state?.initialKeyword || '';
+
   const [filter, setFilter] = useState({
     tags: {
-      hasEvery: location.state.tags || [],
+      hasEvery: location.state?.tags || [],
     },
+    keyword: initialKeyword,
   });
 
-  const getProps = (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
-    const params: any = {
-      skip: pageIndex * 20,
-      limit: 20,
-    };
+  // 用于存储实际搜索的关键词
+  const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
 
-    if (filter.tags.hasEvery.length > 0) {
-      params.tag = filter.tags.hasEvery;
-    }
+  // 用于跟踪是否是初始渲染
+  const isInitialMount = useRef(true);
 
-    return {
-      apiType: 'mine',
-      params,
-    };
-  };
+  // 搜索处理函数
+  const handleSearch = useCallback(() => {
+    setSearchKeyword(filter.keyword);
+  }, [filter.keyword]);
+
+  // 构建API参数，使用实际搜索关键词
+  const getProps = useCallback(
+    (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
+      const params: any = {
+        skip: pageIndex * 20,
+        limit: 20,
+      };
+
+      if (filter.tags.hasEvery.length > 0) {
+        params.tag = filter.tags.hasEvery;
+      }
+
+      if (searchKeyword.trim()) {
+        params.keyword = searchKeyword.trim();
+      }
+
+      return {
+        apiType: 'mine',
+        params,
+      };
+    },
+    [filter.tags.hasEvery, searchKeyword]
+  );
 
   const { data, mutate, loadMore } = useAPIInfinite(getProps, getRotesV2, {
     initialSize: 1,
-    revalidateFirstPage: true,
+    revalidateFirstPage: false,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   });
 
   useEffect(() => {
-    mutate();
-  }, [filter, mutate]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+  }, [filter.tags.hasEvery, searchKeyword]);
 
-  function TagsBlock() {
-    const tagsClickHandler = (tag: string) => {
-      setFilter((prevState) => {
-        const newTags = prevState.tags.hasEvery.includes(tag)
-          ? prevState.tags.hasEvery.filter((t: any) => t !== tag)
-          : [...prevState.tags.hasEvery, tag];
+  const SearchBox = useMemo(
+    () => (
+      <div className="bg-opacityLight dark:bg-opacityDark flex items-center gap-2">
+        <Input
+          placeholder={t('searchPlaceholder')}
+          className="inputOrTextAreaInit focus:bg-opacityLight dark:focus:bg-opacityDark px-4"
+          value={filter.keyword}
+          onChange={(e) => {
+            setFilter((prevState) => ({
+              ...prevState,
+              keyword: e.target.value,
+            }));
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              handleSearch();
+            }
+          }}
+        />
+        <Search
+          className="hover:bg-opacityLight dark:hover:bg-opacityDark size-10 shrink-0 p-3"
+          onClick={handleSearch}
+        />
+      </div>
+    ),
+    [t, filter.keyword, handleSearch]
+  );
 
-        return {
-          ...prevState,
-          tags: {
-            ...prevState.tags,
-            hasEvery: newTags,
-          },
-        };
-      });
-    };
+  const tagsClickHandler = useCallback((tag: string) => {
+    setFilter((prevState) => {
+      const newTags = prevState.tags.hasEvery.includes(tag)
+        ? prevState.tags.hasEvery.filter((t: any) => t !== tag)
+        : [...prevState.tags.hasEvery, tag];
 
-    return (
+      return {
+        ...prevState,
+        tags: {
+          ...prevState.tags,
+          hasEvery: newTags,
+        },
+      };
+    });
+  }, []);
+
+  const TagsBlock = useMemo(
+    () => (
       <StarsBackground
         pointerEvents={false}
         starColor="#07C160"
@@ -135,8 +189,9 @@ function MineFilter() {
           <div className="from-bgLight dark:from-bgDark dark:via-bgDark/40 via-bgLight/40 sticky bottom-0 z-1 h-8 w-full bg-gradient-to-t to-transparent"></div>
         </div>
       </StarsBackground>
-    );
-  }
+    ),
+    [t, filter.tags.hasEvery, tags, tagsClickHandler]
+  );
 
   return (
     <ContainerWithSideBar
@@ -151,7 +206,8 @@ function MineFilter() {
       }
     >
       <NavBar />
-      <TagsBlock />
+      {SearchBox}
+      {TagsBlock}
       <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );

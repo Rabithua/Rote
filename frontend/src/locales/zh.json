@@ -157,7 +157,9 @@
       "none": "无",
       "data": "数据统计",
       "note": "笔记",
-      "attachment": "附件"
+      "attachment": "附件",
+      "searchPlaceholder": "搜索笔记内容、标题或标签...",
+      "searchButton": "搜索"
     },
     "explore": {
       "title": "探索 / Explore",
@@ -237,6 +239,11 @@
       "saveSuccess": "保存成功",
       "saveFailed": "保存失败",
       "minimumPermission": "至少需要一个权限"
+    },
+    "sidebarSearch": {
+      "title": "快速搜索",
+      "placeholder": "搜索笔记...",
+      "button": "前往"
     },
     "randomRote": {
       "title": "随机回顾"

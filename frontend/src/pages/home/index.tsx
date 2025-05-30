@@ -4,6 +4,7 @@ import RoteEditor from '@/components/editor/RoteEditor';
 import Logo from '@/components/logo';
 import RandomRote from '@/components/randomRote';
 import RoteList from '@/components/roteList';
+import SidebarSearch from '@/components/sidebarSearch';
 import TagMap from '@/components/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { useEditor } from '@/state/editor';
@@ -17,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 
 const SideBar = () => (
   <>
+    <SidebarSearch />
     <Heatmap />
     <TagMap />
     <RandomRote />

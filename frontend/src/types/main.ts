@@ -143,6 +143,8 @@ export type ApiGetRotesParams = {
     limit?: number;
     skip?: number;
     archived?: boolean;
+    tag?: string | string[];
+    keyword?: string;
   };
 };
 

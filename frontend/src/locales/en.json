@@ -152,7 +152,9 @@
       "none": "NONE",
       "data": "Data Statistics",
       "note": "Note",
-      "attachment": "Attachment"
+      "attachment": "Attachment",
+      "searchPlaceholder": "Search note content, title, or tags...",
+      "searchButton": "Search"
     },
     "explore": {
       "title": "Explore",
@@ -236,6 +238,11 @@
       "saveSuccess": "Save successful",
       "saveFailed": "Save failed",
       "minimumPermission": "At least one permission is required"
+    },
+    "sidebarSearch": {
+      "title": "Quick Search",
+      "placeholder": "Search notes...",
+      "button": "Go"
     },
     "randomRote": {
       "title": "Random Review"
