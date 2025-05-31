@@ -2,11 +2,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import type { Subscription } from '@/types/main';
-import { get, post } from '@/utils/api';
-import { Bell, MoreVertical, Terminal } from 'lucide-react';
+import { del, get, post } from '@/utils/api';
+import { Bell, MoreVertical, Terminal, Trash2 } from 'lucide-react';
 import moment from 'moment';
 import toast from 'react-hot-toast';
 import useSWR from 'swr';
@@ -48,6 +49,24 @@ export default function SubList() {
       mutate();
     } catch (error: any) {
       toast.error('测试失败: ' + (error.message || '未知错误'), { id: loadingToast });
+    }
+  };
+
+  const handleDeleteSubscription = async (subscriptionId: string) => {
+    if (!confirm('确定要删除这个订阅吗？')) {
+      return;
+    }
+
+    const loadingToast = toast.loading('正在删除订阅...');
+
+    try {
+      await del(`/subscriptions/${subscriptionId}`);
+      toast.success('订阅删除成功', { id: loadingToast });
+
+      // 刷新订阅列表
+      mutate();
+    } catch (error: any) {
+      toast.error('删除失败: ' + (error.message || '未知错误'), { id: loadingToast });
     }
   };
 
@@ -94,6 +113,14 @@ export default function SubList() {
                       >
                         <Bell className="mr-2 size-4" />
                         测试通知
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => handleDeleteSubscription(item.id)}
+                        className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                      >
+                        <Trash2 className="mr-2 size-4" />
+                        删除订阅
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

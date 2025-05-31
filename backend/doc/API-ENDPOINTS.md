@@ -108,6 +108,7 @@
 | --------------------------- | -------- | -------- | ------------ | ---- |
 | `/subscriptions`            | POST     | 需要登录 | 添加订阅     | v2   |
 | `/subscriptions`            | GET      | 需要登录 | 获取用户订阅 | v2   |
+| `/subscriptions/test-all`   | POST     | 需要登录 | 测试所有端点 | v2   |
 | `/subscriptions/:id`        | PUT      | 需要登录 | 更新订阅     | v2   |
 | `/subscriptions/:id`        | DELETE   | 需要登录 | 删除订阅     | v2   |
 | `/subscriptions/:id/notify` | POST     | 无       | 发送通知     | v2   |
