@@ -24,7 +24,7 @@ export default function SidebarSearch() {
   };
 
   return (
-    <div className="bg-opacityLight dark:bg-opacityDark flex items-center gap-2">
+    <div className="flex items-center gap-2">
       <Input
         placeholder={t('placeholder')}
         className="inputOrTextAreaInit focus:bg-opacityLight dark:focus:bg-opacityDark px-4"
