@@ -53,10 +53,6 @@ export default function SubList() {
   };
 
   const handleDeleteSubscription = async (subscriptionId: string) => {
-    if (!confirm('确定要删除这个订阅吗？')) {
-      return;
-    }
-
     const loadingToast = toast.loading('正在删除订阅...');
 
     try {
