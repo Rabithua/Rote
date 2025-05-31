@@ -2,7 +2,6 @@ import Linkify from 'linkify-react';
 import {
   Archive,
   ArrowDownLeft,
-  Bell,
   Edit,
   Edit3,
   Ellipsis,
@@ -194,14 +193,14 @@ function RoteItem({
             {t('details')}
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem
+        {/* <DropdownMenuItem
           onSelect={() => {
             setIsNoticeCreateBoardModalOpen(true);
           }}
         >
           <Bell className="size-4" />
           {'回顾'}
-        </DropdownMenuItem>
+        </DropdownMenuItem> */}
         <DropdownMenuItem onSelect={editRotePin}>
           {rote.pin ? <PinOff className="size-4" /> : <PinIcon className="size-4" />}
           {rote.pin ? t('unpinned') : t('pinned')}
@@ -474,7 +473,7 @@ function RoteItem({
             open={isNoticeCreateBoardModalOpen}
             onOpenChange={setIsNoticeCreateBoardModalOpen}
           >
-            <DialogContent>
+            <DialogContent className="block">
               <DialogHeader>
                 <DialogTitle>{'创建提醒'}</DialogTitle>
               </DialogHeader>

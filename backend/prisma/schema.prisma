@@ -37,6 +37,8 @@ model UserSwSubScription {
   user           User             @relation(fields: [userid], references: [id])
   userid         String           @db.ObjectId
   endpoint       String           @unique
+  note           String?          @default("")
+  status         String           @default("active")
   expirationTime String?
   keys           SubScriptionKeys
   createdAt      DateTime         @default(now())
