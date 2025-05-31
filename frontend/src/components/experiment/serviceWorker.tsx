@@ -1,62 +1,13 @@
 import { Divider } from '@/components/ui/divider';
 import { Switch } from '@/components/ui/switch';
-import type { Subscription } from '@/types/main';
-import { del, get, post } from '@/utils/api';
+import { del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import useSWR from 'swr';
-import LoadingPlaceholder from '../LoadingPlaceholder';
 import { SoftBottom } from '../ui/SoftBottom';
-
-async function noticeTest(noticeId: string) {
-  try {
-    await post('/subscriptions/' + noticeId + '/notify', {
-      title: '自在废物',
-      body: '这是我的博客。',
-      image: `https://r2.rote.ink/others%2Flogo.png`,
-      data: {
-        type: 'openUrl',
-        url: 'https://rabithua.club',
-      },
-    });
-  } catch {
-    // 忽略错误，只是测试功能
-  }
-}
-
-function SubList() {
-  const { data, isLoading } = useSWR('/v1/api/getSwSubScription', () =>
-    get('/subscriptions').then((res) => res.data)
-  );
-
-  return (
-    <div className="divide-y-1">
-      {isLoading ? (
-        <LoadingPlaceholder className="py-8" size={6} />
-      ) : (
-        <div className="space-y-4">
-          <h1 className="text-xl font-semibold">已订阅的通知端点</h1>
-          <div className="relative divide-y-1">
-            {data?.map((item: Subscription) => (
-              <div key={item.id} className="p-2">
-                <div className="flex items-center gap-4">
-                  <h2 className="grow truncate text-xl font-semibold">{item.id}</h2>
-                  <Bell className="size-8 p-2" onClick={() => noticeTest(item.id)} />
-                </div>
-                <p className="text-xs break-words whitespace-break-spaces opacity-50">
-                  {item.endpoint}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+import SubList, { noticeTest } from './SubList';
 
 export default function ServiceWorker() {
   const { t } = useTranslation('translation', {
