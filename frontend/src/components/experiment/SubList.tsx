@@ -7,6 +7,7 @@ import {
 import type { Subscription } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { Bell, MoreVertical, Terminal } from 'lucide-react';
+import moment from 'moment';
 import toast from 'react-hot-toast';
 import useSWR from 'swr';
 import LoadingPlaceholder from '../LoadingPlaceholder';
@@ -65,7 +66,7 @@ export default function SubList() {
           </div>
           <div className="relative divide-y-1">
             {data?.map((item: Subscription) => (
-              <div key={item.id} className="p-2">
+              <div key={item.id} className="space-y-2 p-2">
                 <div className="flex items-center gap-4">
                   <h2 className="grow truncate text-xl font-semibold">{item.id}</h2>
                   <span
@@ -100,6 +101,9 @@ export default function SubList() {
                 <p className="font-mono text-xs break-words whitespace-break-spaces opacity-50">
                   {item.endpoint}
                 </p>
+                <div className="font-mono text-xs">
+                  {moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}
+                </div>
               </div>
             ))}
           </div>
