@@ -40,6 +40,7 @@ import {
   searchPublicRotes,
   searchUserPublicRotes,
   statistics,
+  updateSubScription,
 } from '../utils/dbMethods';
 import webpush from '../utils/webpush';
 
@@ -728,6 +729,104 @@ subscriptionsRouter.delete(
 
     const data = await deleteSubScription(id);
     res.status(200).json(createResponse(data));
+  })
+);
+
+// 更新订阅
+subscriptionsRouter.put(
+  '/:id',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const user = req.user as User;
+    const updateData = req.body;
+
+    if (!id) {
+      throw new Error('Subscription ID is required');
+    }
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      throw new Error('Update data is required');
+    }
+
+    const data = await updateSubScription(id, user.id, updateData);
+    res.status(200).json(createResponse(data));
+  })
+);
+
+// 批量测试所有端点
+subscriptionsRouter.post(
+  '/test-all',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+
+    if (!webpush) {
+      throw new Error('Valid keys not found');
+    }
+
+    // 获取用户所有订阅
+    const subscriptions = await findSubScriptionToUserByUserId(user.id);
+
+    const testResults: Array<{
+      id: string;
+      status: 'success' | 'failed';
+      error?: string;
+    }> = [];
+
+    // 测试消息
+    const testMessage = {
+      title: '端点测试',
+      body: '这是一条测试消息，用于验证端点是否可用。',
+      image: `https://r2.rote.ink/others%2Flogo.png`,
+      data: {
+        type: 'test',
+        url: 'https://rabithua.club',
+      },
+    };
+
+    // 批量测试所有端点
+    for (const subscription of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            keys: subscription.keys,
+          },
+          JSON.stringify(testMessage)
+        );
+
+        testResults.push({
+          id: subscription.id,
+          status: 'success',
+        });
+
+        // 如果测试成功且当前状态不是active，更新为active
+        if (subscription.status !== 'active') {
+          await updateSubScription(subscription.id, user.id, { status: 'active' });
+        }
+      } catch (error: any) {
+        testResults.push({
+          id: subscription.id,
+          status: 'failed',
+          error: error.message || 'Unknown error',
+        });
+
+        // 如果测试失败，更新状态为inactive
+        await updateSubScription(subscription.id, user.id, { status: 'inactive' });
+      }
+    }
+
+    res.status(200).json(
+      createResponse({
+        totalTested: subscriptions.length,
+        results: testResults,
+        summary: {
+          success: testResults.filter((r) => r.status === 'success').length,
+          failed: testResults.filter((r) => r.status === 'failed').length,
+        },
+      })
+    );
   })
 );
 

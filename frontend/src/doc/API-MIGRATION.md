@@ -68,6 +68,7 @@ const result = await post('/notes', { content: 'New note' });
 | ---------------------------------- | --------------------------------------------------- |
 | `apiAddSubscription(data)`         | `post('/subscriptions', data)`                      |
 | `apiGetSubscription()`             | `get('/subscriptions')`                             |
+| `apiUpdateSubscription(id, data)`  | `put('/subscriptions/' + id, data)`                 |
 | `apiDeleteSubscription(id)`        | `del('/subscriptions/' + id)`                       |
 | `apiSendNotification(id, message)` | `post('/subscriptions/' + id + '/notify', message)` |
 
@@ -75,7 +76,7 @@ const result = await post('/notes', { content: 'New note' });
 
 | 旧方法                      | 新方法                                                                                   |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
-| `apiUploadFiles(formData)` | `post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })` |
+| `apiUploadFiles(formData)`  | `post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })` |
 | `apiDeleteAttachment(id)`   | `del('/attachments/' + id)`                                                              |
 | `apiDeleteAttachments(ids)` | `del('/attachments', { data: { ids } })`                                                 |
 

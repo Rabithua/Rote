@@ -6,11 +6,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Subscription } from '@/types/main';
 import { get, post } from '@/utils/api';
-import { Bell, MoreVertical } from 'lucide-react';
+import { Bell, MoreVertical, Terminal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import useSWR from 'swr';
 import LoadingPlaceholder from '../LoadingPlaceholder';
-import { Button } from '../ui/button';
 
 export async function noticeTest(noticeId: string) {
   try {
@@ -29,9 +28,27 @@ export async function noticeTest(noticeId: string) {
 }
 
 export default function SubList() {
-  const { data, isLoading } = useSWR('/v1/api/getSwSubScription', () =>
+  const { data, isLoading, mutate } = useSWR('/v1/api/getSwSubScription', () =>
     get('/subscriptions').then((res) => res.data)
   );
+
+  const handleTestAllEndpoints = async () => {
+    const loadingToast = toast.loading('正在测试所有端点...');
+
+    try {
+      const response = await post('/subscriptions/test-all');
+      const result = response.data;
+
+      toast.success(`测试完成！成功: ${result.summary.success}, 失败: ${result.summary.failed}`, {
+        id: loadingToast,
+      });
+
+      // 刷新订阅列表以显示更新后的状态
+      mutate();
+    } catch (error: any) {
+      toast.error('测试失败: ' + (error.message || '未知错误'), { id: loadingToast });
+    }
+  };
 
   return (
     <div className="divide-y-1">
@@ -39,13 +56,27 @@ export default function SubList() {
         <LoadingPlaceholder className="py-8" size={6} />
       ) : (
         <div className="space-y-4">
-          <h1 className="text-xl font-semibold">已订阅的通知端点</h1>
-          <Button>测试所有端点</Button>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-xl font-semibold">已订阅的通知端点</h1>
+            <div className="bg-opacityLight dark:bg-opacityDark flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm">
+              <Terminal onClick={handleTestAllEndpoints} className="size-3 opacity-50" />
+              测试所有端点
+            </div>
+          </div>
           <div className="relative divide-y-1">
             {data?.map((item: Subscription) => (
               <div key={item.id} className="p-2">
                 <div className="flex items-center gap-4">
                   <h2 className="grow truncate text-xl font-semibold">{item.id}</h2>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-1 text-xs ${
+                      item.status === 'active'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }`}
+                  >
+                    {item.status === 'active' ? '正常' : '不可用'}
+                  </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <div className="bg-bgLight flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95">
@@ -66,7 +97,7 @@ export default function SubList() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <p className="text-xs break-words whitespace-break-spaces opacity-50">
+                <p className="font-mono text-xs break-words whitespace-break-spaces opacity-50">
                   {item.endpoint}
                 </p>
               </div>

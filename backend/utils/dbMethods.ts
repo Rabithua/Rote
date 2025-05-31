@@ -140,6 +140,65 @@ export async function deleteSubScription(subId: string): Promise<any> {
   }
 }
 
+export async function updateSubScription(
+  subId: string,
+  userId: string,
+  updateData: any
+): Promise<any> {
+  try {
+    // 首先验证订阅是否存在且属于当前用户
+    const existingSubscription = await prisma.userSwSubScription.findUnique({
+      where: { id: subId },
+    });
+
+    if (!existingSubscription) {
+      throw new DatabaseError('Subscription not found');
+    }
+
+    if (existingSubscription.userid !== userId) {
+      throw new DatabaseError('User does not match');
+    }
+
+    // 准备更新数据
+    const updateFields: any = {};
+
+    if (updateData.endpoint) {
+      updateFields.endpoint = updateData.endpoint;
+    }
+
+    if (updateData.expirationTime !== undefined) {
+      updateFields.expirationTime = updateData.expirationTime;
+    }
+
+    if (updateData.status) {
+      updateFields.status = updateData.status;
+    }
+
+    if (updateData.note !== undefined) {
+      updateFields.note = updateData.note;
+    }
+
+    if (updateData.keys) {
+      updateFields.keys = {
+        auth: updateData.keys.auth,
+        p256dh: updateData.keys.p256dh,
+      };
+    }
+
+    const result = await prisma.userSwSubScription.update({
+      where: { id: subId },
+      data: updateFields,
+    });
+
+    return result;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to update subscription: ${subId}`, error);
+  }
+}
+
 export async function passportCheckUser(data: { username: string }) {
   try {
     const user = await prisma.user.findFirst({

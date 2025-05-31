@@ -161,6 +161,8 @@ export interface Subscription {
   id: string;
   userid: string;
   endpoint: string;
+  status?: string;
+  note?: string;
   expirationTime: string | null;
   createdAt: string;
   updatedAt: string;
