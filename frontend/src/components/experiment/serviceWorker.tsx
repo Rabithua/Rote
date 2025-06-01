@@ -135,7 +135,7 @@ export default function ServiceWorker() {
           <div
             className="bg-bgLight flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
             onClick={() => {
-              noticeTest(noticeId).then(() => {
+              noticeTest(noticeId, '自在废物', '这是我的博客。').then(() => {
                 toast.success(t('notificationSent'));
               });
             }}

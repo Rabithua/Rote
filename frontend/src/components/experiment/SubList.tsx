@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,17 +8,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Subscription } from '@/types/main';
 import { del, get, post } from '@/utils/api';
-import { Bell, MoreVertical, Terminal, Trash2 } from 'lucide-react';
+import { Bell, Loader, MoreVertical, Terminal, Trash2 } from 'lucide-react';
 import moment from 'moment';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import LoadingPlaceholder from '../LoadingPlaceholder';
 
-export async function noticeTest(noticeId: string) {
+export async function noticeTest(noticeId: string, title: string, body: string) {
   try {
     await post('/subscriptions/' + noticeId + '/notify', {
-      title: '自在废物',
-      body: '这是我的博客。',
+      title,
+      body,
       image: `https://r2.rote.ink/others%2Flogo.png`,
       data: {
         type: 'openUrl',
@@ -30,39 +33,62 @@ export async function noticeTest(noticeId: string) {
 }
 
 export default function SubList() {
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'pages.experiment.subscriptions',
+  });
+
+  const [isTestingAll, setIsTestingAll] = useState(false);
+
   const { data, isLoading, mutate } = useSWR('/v1/api/getSwSubScription', () =>
     get('/subscriptions').then((res) => res.data)
   );
 
   const handleTestAllEndpoints = async () => {
-    const loadingToast = toast.loading('正在测试所有端点...');
+    setIsTestingAll(true);
+    const loadingToast = toast.loading(t('messages.testingAllEndpoints'));
 
     try {
       const response = await post('/subscriptions/test-all');
       const result = response.data;
 
-      toast.success(`测试完成！成功: ${result.summary.success}, 失败: ${result.summary.failed}`, {
-        id: loadingToast,
-      });
+      toast.success(
+        t('messages.testCompleted', {
+          success: result.summary.success,
+          failed: result.summary.failed,
+        }),
+        {
+          id: loadingToast,
+        }
+      );
 
       // 刷新订阅列表以显示更新后的状态
       mutate();
     } catch (error: any) {
-      toast.error('测试失败: ' + (error.message || '未知错误'), { id: loadingToast });
+      toast.error(t('messages.testFailed', { error: error.message || 'Unknown error' }), {
+        id: loadingToast,
+      });
+    } finally {
+      setIsTestingAll(false);
     }
   };
 
   const handleDeleteSubscription = async (subscriptionId: string) => {
-    const loadingToast = toast.loading('正在删除订阅...');
+    if (!confirm(t('messages.confirmDelete'))) {
+      return;
+    }
+
+    const loadingToast = toast.loading(t('messages.deletingSubscription'));
 
     try {
       await del(`/subscriptions/${subscriptionId}`);
-      toast.success('订阅删除成功', { id: loadingToast });
+      toast.success(t('messages.deleteSuccess'), { id: loadingToast });
 
       // 刷新订阅列表
       mutate();
     } catch (error: any) {
-      toast.error('删除失败: ' + (error.message || '未知错误'), { id: loadingToast });
+      toast.error(t('messages.deleteFailed', { error: error.message || 'Unknown error' }), {
+        id: loadingToast,
+      });
     }
   };
 
@@ -73,11 +99,21 @@ export default function SubList() {
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between gap-2">
-            <h1 className="text-xl font-semibold">已订阅的通知端点</h1>
-            <div className="bg-opacityLight dark:bg-opacityDark flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm">
-              <Terminal onClick={handleTestAllEndpoints} className="size-3 opacity-50" />
-              测试所有端点
-            </div>
+            <h1 className="text-xl font-semibold">{t('title')}</h1>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={isTestingAll}
+              onClick={handleTestAllEndpoints}
+              className="flex cursor-pointer items-center gap-2"
+            >
+              {isTestingAll ? (
+                <Loader className="size-3 animate-spin" />
+              ) : (
+                <Terminal className="size-3" />
+              )}
+              {t('testAllEndpoints')}
+            </Button>
           </div>
           <div className="relative divide-y-1">
             {data?.map((item: Subscription) => (
@@ -91,7 +127,7 @@ export default function SubList() {
                         : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                     }`}
                   >
-                    {item.status === 'active' ? '正常' : '不可用'}
+                    {item.status === 'active' ? t('statusActive') : t('statusInactive')}
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -102,13 +138,17 @@ export default function SubList() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
                         onClick={() => {
-                          noticeTest(item.id).then(() => {
-                            toast.success('测试通知已发送');
+                          noticeTest(
+                            item.id,
+                            t('testNotificationContent.title'),
+                            t('testNotificationContent.body')
+                          ).then(() => {
+                            toast.success(t('messages.testNotificationSent'));
                           });
                         }}
                       >
                         <Bell className="mr-2 size-4" />
-                        测试通知
+                        {t('testNotification')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -116,7 +156,7 @@ export default function SubList() {
                         className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
                       >
                         <Trash2 className="mr-2 size-4" />
-                        删除订阅
+                        {t('deleteSubscription')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

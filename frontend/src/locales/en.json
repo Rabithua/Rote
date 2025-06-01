@@ -190,6 +190,28 @@
         "example": "Usage Example:",
         "notSupported": "Current browser does not support ServiceWorker",
         "swNotActive": "ServiceWorker is not active, please refresh the page"
+      },
+      "subscriptions": {
+        "title": "Subscribed Notification Endpoints",
+        "testAllEndpoints": "Test All Endpoints",
+        "testNotification": "Test Notification",
+        "deleteSubscription": "Delete Subscription",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "testNotificationContent": {
+          "title": "Rote Blog",
+          "body": "This is my blog."
+        },
+        "messages": {
+          "testingAllEndpoints": "Testing all endpoints...",
+          "testCompleted": "Test completed! Success: {{success}}, Failed: {{failed}}",
+          "testFailed": "Test failed: {{error}}",
+          "deletingSubscription": "Deleting subscription...",
+          "deleteSuccess": "Subscription deleted successfully",
+          "deleteFailed": "Delete failed: {{error}}",
+          "testNotificationSent": "Test notification sent",
+          "confirmDelete": "Are you sure you want to delete this subscription?"
+        }
       }
     },
     "archived": {

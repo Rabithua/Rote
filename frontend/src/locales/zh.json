@@ -195,6 +195,28 @@
         "example": "使用示例：",
         "notSupported": "当前浏览器不支持 ServiceWorker",
         "swNotActive": "ServiceWorker 未激活"
+      },
+      "subscriptions": {
+        "title": "已订阅的通知端点",
+        "testAllEndpoints": "测试所有端点",
+        "testNotification": "测试通知",
+        "deleteSubscription": "删除订阅",
+        "statusActive": "正常",
+        "statusInactive": "不可用",
+        "testNotificationContent": {
+          "title": "自在废物",
+          "body": "这是我的博客。"
+        },
+        "messages": {
+          "testingAllEndpoints": "正在测试所有端点...",
+          "testCompleted": "测试完成！成功: {{success}}, 失败: {{failed}}",
+          "testFailed": "测试失败: {{error}}",
+          "deletingSubscription": "正在删除订阅...",
+          "deleteSuccess": "订阅删除成功",
+          "deleteFailed": "删除失败: {{error}}",
+          "testNotificationSent": "测试通知已发送",
+          "confirmDelete": "确定要删除这个订阅吗？"
+        }
       }
     },
     "archived": {
