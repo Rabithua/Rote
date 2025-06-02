@@ -8,13 +8,8 @@
 
 ## Deploy
 
-### Docker
-
 To Be Continue...
 
-## Develop
-
-look `frontend/README.md` or `backend/README.md`
 
 ## Technology stack
 ![Frame 1](https://github.com/Rabithua/Rote/assets/34543831/fc00f797-82bc-47fe-8c75-36ea0b1f6f76)
