@@ -3,6 +3,7 @@ import prettier from 'eslint-plugin-prettier';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
+import youMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -26,6 +27,7 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
       react: react,
       prettier: prettier,
+      'react-you-might-not-need-an-effect': youMightNotNeedAnEffect,
     },
     settings: {
       react: {
@@ -52,6 +54,9 @@ export default tseslint.config(
 
       // Prettier 规则
       'prettier/prettier': ['error', {}, { usePrettierrc: true }], // 使用 .prettierrc 文件中的配置
+
+      // 用来处理 ai 的抽象 useEffect 用法
+      'react-you-might-not-need-an-effect/you-might-not-need-an-effect': 'warn',
     },
   },
   // Service Worker 特殊配置

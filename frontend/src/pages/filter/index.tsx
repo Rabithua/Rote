@@ -10,7 +10,7 @@ import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { ActivityIcon, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
@@ -62,9 +62,6 @@ function MineFilter() {
   // 用于存储实际搜索的关键词
   const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
 
-  // 用于跟踪是否是初始渲染
-  const isInitialMount = useRef(true);
-
   // 搜索处理函数
   const handleSearch = useCallback(() => {
     setSearchKeyword(filter.keyword);
@@ -100,13 +97,6 @@ function MineFilter() {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   });
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-  }, [filter.tags.hasEvery, searchKeyword]);
 
   const SearchBox = useMemo(
     () => (
