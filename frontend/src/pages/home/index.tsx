@@ -4,7 +4,7 @@ import RoteEditor from '@/components/editor/RoteEditor';
 import Logo from '@/components/logo';
 import RandomRote from '@/components/randomRote';
 import RoteList from '@/components/roteList';
-import SidebarSearch from '@/components/sidebarSearch';
+import SearchBar from '@/components/sidebarSearch';
 import TagMap from '@/components/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { useEditor } from '@/state/editor';
@@ -15,15 +15,28 @@ import { getRotesV2 } from '@/utils/roteApi';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { ChartAreaIcon, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
-const SideBar = () => (
-  <>
-    <SidebarSearch />
-    <Heatmap />
-    <TagMap />
-    <RandomRote />
-  </>
-);
+const SideBar = () => {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <SearchBar
+        onSearch={(keyword) => {
+          navigate('/filter', {
+            state: {
+              initialKeyword: keyword.trim(),
+            },
+          });
+        }}
+      />
+      <Heatmap />
+      <TagMap />
+      <RandomRote />
+    </>
+  );
+};
 
 function HomePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });

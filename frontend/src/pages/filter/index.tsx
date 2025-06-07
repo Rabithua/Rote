@@ -3,13 +3,13 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
-import { Input } from '@/components/ui/input';
+import SearchBar from '@/components/sidebarSearch';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
-import { ActivityIcon, Search } from 'lucide-react';
+import { ActivityIcon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -50,24 +50,14 @@ function MineFilter() {
   );
 
   const location = useLocation();
-  const initialKeyword = location.state?.initialKeyword || '';
 
   const [filter, setFilter] = useState({
     tags: {
       hasEvery: location.state?.tags || [],
     },
-    keyword: initialKeyword,
+    keyword: location.state?.initialKeyword || '',
   });
 
-  // 用于存储实际搜索的关键词
-  const [searchKeyword, setSearchKeyword] = useState(initialKeyword);
-
-  // 搜索处理函数
-  const handleSearch = useCallback(() => {
-    setSearchKeyword(filter.keyword);
-  }, [filter.keyword]);
-
-  // 构建API参数，使用实际搜索关键词
   const getProps = useCallback(
     (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
       const params: any = {
@@ -79,8 +69,8 @@ function MineFilter() {
         params.tag = filter.tags.hasEvery;
       }
 
-      if (searchKeyword.trim()) {
-        params.keyword = searchKeyword.trim();
+      if (filter.keyword.trim()) {
+        params.keyword = filter.keyword.trim();
       }
 
       return {
@@ -88,7 +78,7 @@ function MineFilter() {
         params,
       };
     },
-    [filter.tags.hasEvery, searchKeyword]
+    [filter.tags.hasEvery, filter.keyword]
   );
 
   const { data, mutate, loadMore } = useAPIInfinite(getProps, getRotesV2, {
@@ -97,34 +87,6 @@ function MineFilter() {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   });
-
-  const SearchBox = useMemo(
-    () => (
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder={t('searchPlaceholder')}
-          className="inputOrTextAreaInit focus:bg-opacityLight dark:focus:bg-opacityDark px-4"
-          value={filter.keyword}
-          onChange={(e) => {
-            setFilter((prevState) => ({
-              ...prevState,
-              keyword: e.target.value,
-            }));
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              handleSearch();
-            }
-          }}
-        />
-        <Search
-          className="hover:bg-opacityLight dark:hover:bg-opacityDark size-10 shrink-0 p-3"
-          onClick={handleSearch}
-        />
-      </div>
-    ),
-    [t, filter.keyword, handleSearch]
-  );
 
   const tagsClickHandler = useCallback((tag: string) => {
     setFilter((prevState) => {
@@ -196,7 +158,15 @@ function MineFilter() {
       }
     >
       <NavBar />
-      {SearchBox}
+      <SearchBar
+        defaultValue={filter.keyword}
+        onSearch={(keyword) => {
+          setFilter((prevState) => ({
+            ...prevState,
+            keyword: keyword.trim(),
+          }));
+        }}
+      />
       {TagsBlock}
       <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>

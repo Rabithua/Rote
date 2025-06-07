@@ -14,6 +14,8 @@
     --color-opacityDark: #ffffff20;
     --color-textDark: #E7E9EA;
     --color-textLight: #0F1419;
+    --color-textLightSecondary: #00000030;
+    --color-textDarkSecondary: #ffffff30;
     --color-theme: #07C160;
 
     /* Animations */
