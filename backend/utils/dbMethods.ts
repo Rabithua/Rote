@@ -252,8 +252,7 @@ export async function createRote(data: any): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rote;
@@ -275,8 +274,7 @@ export async function findRoteById(id: string): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rote;
@@ -287,7 +285,7 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    const { id, authorid, attachments, userreaction, visitorreaction, author, ...cleanData } = data;
+    const { id, authorid, attachments, reactions, author, ...cleanData } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,
@@ -303,8 +301,7 @@ export async function editRote(data: any): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rote;
@@ -445,8 +442,7 @@ export async function findMyRote(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -486,8 +482,7 @@ export async function findUserPublicRote(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -518,8 +513,7 @@ export async function findPublicRote(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -799,8 +793,7 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
 
@@ -833,8 +826,7 @@ export async function findRandomPublicRote(): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
 
@@ -925,8 +917,7 @@ export async function exportData(authorid: string): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return { notes };
@@ -1057,8 +1048,7 @@ export async function searchMyRotes(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -1102,8 +1092,7 @@ export async function searchPublicRotes(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -1153,12 +1142,64 @@ export async function searchUserPublicRotes(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
   } catch (error) {
     throw new DatabaseError('Failed to search user public rotes', error);
+  }
+}
+
+// 反应相关方法
+export async function addReaction(data: {
+  type: string;
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+  visitorInfo?: any;
+  metadata?: any;
+}): Promise<any> {
+  try {
+    const reaction = await prisma.reaction.create({
+      data: {
+        type: data.type,
+        roteid: data.roteid,
+        userid: data.userid,
+        visitorId: data.visitorId,
+        visitorInfo: data.visitorInfo,
+        metadata: data.metadata,
+      },
+    });
+    return reaction;
+  } catch (error) {
+    throw new DatabaseError('Failed to add reaction', error);
+  }
+}
+
+export async function removeReaction(data: {
+  type: string;
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+}): Promise<any> {
+  try {
+    const whereClause: any = {
+      type: data.type,
+      roteid: data.roteid,
+    };
+
+    if (data.userid) {
+      whereClause.userid = data.userid;
+    } else if (data.visitorId) {
+      whereClause.visitorId = data.visitorId;
+    }
+
+    const reaction = await prisma.reaction.deleteMany({
+      where: whereClause,
+    });
+    return reaction;
+  } catch (error) {
+    throw new DatabaseError('Failed to remove reaction', error);
   }
 }

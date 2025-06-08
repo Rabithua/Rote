@@ -27,7 +27,7 @@ model User {
   rotes              Rote[]
   attachments        Attachment[]
   openkey            UserOpenKey[]
-  userreaction       UserReaction[]
+  userreaction       Reaction[]
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 }
@@ -64,22 +64,21 @@ model UserOpenKey {
 }
 
 model Rote {
-  id              String            @id @default(auto()) @map("_id") @db.ObjectId
-  title           String?           @default("")
-  type            String?           @default("Rote")
-  tags            String[]          @default([])
-  content         String
-  state           String            @default("private")
-  archived        Boolean?          @default(false)
-  author          User              @relation(fields: [authorid], references: [id])
-  authorid        String            @db.ObjectId
-  pin             Boolean           @default(false)
-  editor          String?           @default("normal")
-  attachments     Attachment[]
-  userreaction    UserReaction[]
-  visitorreaction VisitorReaction[]
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  title       String?      @default("")
+  type        String?      @default("Rote")
+  tags        String[]     @default([])
+  content     String
+  state       String       @default("private")
+  archived    Boolean?     @default(false)
+  author      User         @relation(fields: [authorid], references: [id])
+  authorid    String       @db.ObjectId
+  pin         Boolean      @default(false)
+  editor      String?      @default("normal")
+  attachments Attachment[]
+  reactions   Reaction[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 }
 
 model Attachment {
@@ -96,24 +95,24 @@ model Attachment {
   rote        Rote?    @relation(fields: [roteid], references: [id])
 }
 
-model UserReaction {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type      String
-  user      User     @relation(fields: [userid], references: [id])
-  userid    String   @db.ObjectId
-  rote      Rote     @relation(fields: [roteid], references: [id])
-  roteid    String   @db.ObjectId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+model Reaction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  type        String // 支持任意 Emoji 或反应类型字符串
+  user        User?    @relation(fields: [userid], references: [id])
+  userid      String?  @db.ObjectId
+  visitorId   String? // 可以是 IP 地址、设备指纹或临时 ID
+  visitorInfo Json? // 存储访客的额外信息（IP、User-Agent等）
+  rote        Rote     @relation(fields: [roteid], references: [id])
+  roteid      String   @db.ObjectId
+  metadata    Json? // 可以存储额外的反应数据
+  isActive    Boolean  @default(true) // 软删除标记
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-model VisitorReaction {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  type      String
-  rote      Rote     @relation(fields: [roteid], references: [id])
-  roteid    String   @db.ObjectId
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@unique([userid, roteid, type], name: "unique_user_reaction")
+  @@unique([visitorId, roteid, type], name: "unique_visitor_reaction")
+  @@index([roteid, type]) // 便于查询某个 Rote 的特定类型反应
+  @@index([userid]) // 便于查询用户的所有反应
 }
 
 model Session {

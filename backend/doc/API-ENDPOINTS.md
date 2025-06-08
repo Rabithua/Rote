@@ -55,10 +55,10 @@
 
 ### 4. RSS相关
 
-| 接口路径               | HTTP方法 | 认证要求 | 描述                 | 版本 |
-| ---------------------- | -------- | -------- | -------------------- | ---- |
-| `/users/:username/rss` | GET      | 无       | 获取用户RSS订阅      | v2   |
-| `/rss/public`          | GET      | 无       | 获取所有公开笔记RSS  | v2   |
+| 接口路径               | HTTP方法 | 认证要求 | 描述                | 版本 |
+| ---------------------- | -------- | -------- | ------------------- | ---- |
+| `/users/:username/rss` | GET      | 无       | 获取用户RSS订阅     | v2   |
+| `/rss/public`          | GET      | 无       | 获取所有公开笔记RSS | v2   |
 
 #### RSS功能说明
 
@@ -111,13 +111,76 @@
 - **标签精确匹配**: 标签搜索采用精确匹配
 - **OR逻辑**: 关键词在任一字段匹配即返回
 
-### 7. 通知相关
+### 7. 反应系统相关 🆕
+
+| 接口路径                   | HTTP方法 | 认证要求 | 描述     | 版本 |
+| -------------------------- | -------- | -------- | -------- | ---- |
+| `/reactions`               | POST     | 无       | 添加反应 | v2   |
+| `/reactions/:roteid/:type` | DELETE   | 无       | 删除反应 | v2   |
+
+#### 反应系统功能说明
+
+- **支持用户类型**: 已登录用户和匿名访客
+- **反应类型**: 支持任意emoji表情反应（如：👍、❤️、😊等）
+- **多重反应**: 同一用户可以对同一笔记添加多种不同类型的反应
+- **访客识别**: 使用设备指纹技术识别匿名访客
+- **实时更新**: 反应数据会实时更新到笔记详情中
+
+#### 添加反应
+
+```bash
+POST /api/v2/reactions
+Content-Type: application/json
+
+# 已登录用户添加反应
+{
+  "type": "👍",
+  "roteid": "507f1f77bcf86cd799439011",
+  "metadata": {
+    "source": "web"
+  }
+}
+
+# 匿名访客添加反应
+{
+  "type": "❤️",
+  "roteid": "507f1f77bcf86cd799439011",
+  "visitorId": "fp_1234567890abcdef",
+  "visitorInfo": {
+    "browser": "Chrome",
+    "os": "macOS"
+  },
+  "metadata": {
+    "source": "web"
+  }
+}
+```
+
+#### 删除反应
+
+```bash
+# 已登录用户删除反应
+DELETE /api/v2/reactions/507f1f77bcf86cd799439011/👍
+
+# 匿名访客删除反应（需要visitorId参数）
+DELETE /api/v2/reactions/507f1f77bcf86cd799439011/❤️?visitorId=fp_1234567890abcdef
+```
+
+#### 参数说明
+
+- `type`: 反应类型，支持任意emoji字符
+- `roteid`: 笔记ID（24位MongoDB ObjectId）
+- `visitorId`: 访客设备指纹ID（匿名用户必需）
+- `visitorInfo`: 访客信息（可选，用于统计分析）
+- `metadata`: 附加元数据（可选）
+
+### 8. 通知相关
 
 | 接口路径         | HTTP方法 | 认证要求 | 描述     | 版本 |
 | ---------------- | -------- | -------- | -------- | ---- |
 | `/notifications` | POST     | 需要登录 | 创建通知 | v2   |
 
-### 8. 订阅相关
+### 9. 订阅相关
 
 | 接口路径                    | HTTP方法 | 认证要求 | 描述         | 版本 |
 | --------------------------- | -------- | -------- | ------------ | ---- |
@@ -128,7 +191,7 @@
 | `/subscriptions/:id`        | DELETE   | 需要登录 | 删除订阅     | v2   |
 | `/subscriptions/:id/notify` | POST     | 无       | 发送通知     | v2   |
 
-### 9. API密钥相关
+### 10. API密钥相关
 
 | 接口路径        | HTTP方法 | 认证要求 | 描述            | 版本 |
 | --------------- | -------- | -------- | --------------- | ---- |
@@ -137,7 +200,7 @@
 | `/api-keys/:id` | PUT      | 需要登录 | 更新API密钥     | v2   |
 | `/api-keys/:id` | DELETE   | 需要登录 | 删除API密钥     | v2   |
 
-### 10. 附件相关
+### 11. 附件相关
 
 | 接口路径           | HTTP方法 | 认证要求 | 描述         | 版本 |
 | ------------------ | -------- | -------- | ------------ | ---- |
@@ -145,7 +208,7 @@
 | `/attachments`     | DELETE   | 需要登录 | 批量删除附件 | v2   |
 | `/attachments/:id` | DELETE   | 需要登录 | 删除单个附件 | v2   |
 
-### 11. OpenKey API（API密钥访问）
+### 12. OpenKey API（API密钥访问）
 
 | 接口路径                | HTTP方法 | 认证要求 | 描述                 | 版本 |
 | ----------------------- | -------- | -------- | -------------------- | ---- |
@@ -215,6 +278,39 @@ GET /api/v2/openkey/notes/search?keyword=test
 Authorization: Bearer your-api-key-here
 ```
 
+### 反应系统
+
+```bash
+# 添加反应（已登录用户）
+POST /api/v2/reactions
+Content-Type: application/json
+
+{
+  "type": "👍",
+  "roteid": "507f1f77bcf86cd799439011"
+}
+
+# 添加反应（匿名访客）
+POST /api/v2/reactions
+Content-Type: application/json
+
+{
+  "type": "❤️",
+  "roteid": "507f1f77bcf86cd799439011",
+  "visitorId": "fp_1234567890abcdef",
+  "visitorInfo": {
+    "browser": "Chrome",
+    "os": "macOS"
+  }
+}
+
+# 删除反应（已登录用户）
+DELETE /api/v2/reactions/507f1f77bcf86cd799439011/👍
+
+# 删除反应（匿名访客）
+DELETE /api/v2/reactions/507f1f77bcf86cd799439011/❤️?visitorId=fp_1234567890abcdef
+```
+
 ### RSS订阅
 
 ```bash
@@ -257,7 +353,16 @@ GET /api/v2/rss/public
 
 ## 更新日志
 
-### v2.2.0 (最新)
+### v2.3.0 (最新)
+
+- ✅ 新增反应系统功能
+- ✅ 支持已登录用户和匿名访客反应 (`/reactions`)
+- ✅ 支持任意emoji表情反应
+- ✅ 支持多重反应（同一用户可添加多种反应）
+- ✅ 设备指纹技术识别匿名访客
+- ✅ 反应数据实时更新到笔记详情
+
+### v2.2.0
 
 - ✅ 新增RSS订阅功能
 - ✅ 支持用户RSS订阅 (`/users/:username/rss`)
