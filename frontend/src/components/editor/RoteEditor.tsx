@@ -1,7 +1,7 @@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { TagSelector } from '@/components/ui/others/TagSelector';
-import FileSelector from '@/components/uploader';
+import { TagSelector } from '@/components/others/TagSelector';
+import FileSelector from '@/components/others/uploader';
 import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';

@@ -1,4 +1,4 @@
-import Logo from '@/components/logo';
+import Logo from '@/components/others/logo';
 import type { Profile } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';

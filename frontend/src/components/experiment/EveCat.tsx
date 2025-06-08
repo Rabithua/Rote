@@ -1,6 +1,6 @@
 import { Divider } from '@/components/ui/divider';
 import { Link } from 'react-router-dom';
-import RandomCat from '../RandomCat';
+import RandomCat from '../others/RandomCat';
 
 export default function EveCat() {
   return (

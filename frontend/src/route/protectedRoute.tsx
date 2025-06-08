@@ -1,4 +1,4 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { useIosSafariToastDone } from '@/state/iosSafariToastDone';
 import type { Profile } from '@/types/main';
 import { get } from '@/utils/api';

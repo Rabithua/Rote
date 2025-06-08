@@ -7,7 +7,7 @@ import moment from 'moment';
 import React from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import LoadingPlaceholder from '../LoadingPlaceholder';
+import LoadingPlaceholder from '../others/LoadingPlaceholder';
 
 const Heatmap: React.FC = () => {
   const { t } = useTranslation('translation', {

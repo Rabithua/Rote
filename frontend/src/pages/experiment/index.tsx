@@ -2,7 +2,7 @@ import EveCat from '@/components/experiment/EveCat';
 import ExportData from '@/components/experiment/exportData';
 import ImportData from '@/components/experiment/importData';
 import ServiceWorker from '@/components/experiment/serviceWorker';
-import NavHeader from '@/components/navHeader';
+import NavHeader from '@/components/layout/navHeader';
 import { Snail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

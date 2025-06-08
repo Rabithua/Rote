@@ -1,7 +1,7 @@
 import defaultCover from '@/assets/img/defaultCover.png';
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import NavHeader from '@/components/navHeader';
-import OpenKeyItem from '@/components/openKey';
+import NavHeader from '@/components/layout/navHeader';
+import OpenKeyItem from '@/components/openKey/openKey';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

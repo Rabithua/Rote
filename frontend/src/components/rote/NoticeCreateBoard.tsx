@@ -1,8 +1,8 @@
 import type { Subscription } from '@/types/main';
 import { get } from '@/utils/api';
 import useSWR from 'swr';
-import LoadingPlaceholder from './LoadingPlaceholder';
-import { SoftBottom } from './ui/SoftBottom';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { SoftBottom } from '@/components/others/SoftBottom';
 
 function NoticeCreateBoard() {
   const { data, isLoading } = useSWR('/v1/api/getSwSubScription', () =>

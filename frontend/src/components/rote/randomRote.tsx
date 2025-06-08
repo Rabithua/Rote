@@ -3,8 +3,8 @@ import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { RefreshCcwIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import LoadingPlaceholder from './LoadingPlaceholder';
-import RoteItem from './roteItem';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import RoteItem from '@/components/rote/roteItem';
 
 export default function RandomRote() {
   const { t } = useTranslation('translation', {

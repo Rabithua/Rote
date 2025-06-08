@@ -4,8 +4,8 @@ import { ArrowDownLeft, Tag } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import LoadingPlaceholder from './LoadingPlaceholder';
-import { SoftBottom } from './ui/SoftBottom';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { SoftBottom } from '@/components/others/SoftBottom';
 
 export default function TagMap() {
   const { t } = useTranslation('translation', {

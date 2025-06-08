@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import type { Attachment } from '@/types/main';
 import { saveAs } from 'file-saver';
 import { toPng } from 'html-to-image';
@@ -7,8 +8,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
-import { Button } from './ui/button';
-import { SoftBottom } from './ui/SoftBottom';
+import { SoftBottom } from '@/components/others/SoftBottom';
 
 function RoteShareCard({ rote }: any) {
   const { t } = useTranslation('translation', {

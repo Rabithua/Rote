@@ -1,4 +1,4 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import LayoutDashboard from '@/layout/dashboard';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';

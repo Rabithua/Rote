@@ -6,7 +6,7 @@ import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { SoftBottom } from '../ui/SoftBottom';
+import { SoftBottom } from '../others/SoftBottom';
 import SubList, { noticeTest } from './SubList';
 
 export default function ServiceWorker() {

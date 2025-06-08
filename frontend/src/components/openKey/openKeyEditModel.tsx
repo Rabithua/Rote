@@ -5,7 +5,7 @@ import { Save } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import { Checkbox } from '../components/ui/checkbox';
+import { Checkbox } from '../ui/checkbox';
 
 interface OpenKey {
   id: string;

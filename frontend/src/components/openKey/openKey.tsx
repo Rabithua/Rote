@@ -14,8 +14,8 @@ import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Terminal, Trash2 } from 'luci
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import OpenKeyEditModel from './openKeyEditModel';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
 function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMutator<OpenKey[]> }) {
   const { t } = useTranslation('translation', {

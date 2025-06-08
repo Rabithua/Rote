@@ -14,7 +14,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
-import LoadingPlaceholder from '../LoadingPlaceholder';
+import LoadingPlaceholder from '../others/LoadingPlaceholder';
 
 export async function noticeTest(noticeId: string, title: string, body: string) {
   try {

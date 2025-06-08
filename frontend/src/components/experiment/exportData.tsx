@@ -5,8 +5,8 @@ import { useAPIGet } from '@/utils/fetcher';
 import { DownloadCloud } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import LoadingPlaceholder from '../LoadingPlaceholder';
 import { SlidingNumber } from '../animate-ui/text/sliding-number';
+import LoadingPlaceholder from '../others/LoadingPlaceholder';
 
 export default function ExportData() {
   const { t } = useTranslation('translation', {

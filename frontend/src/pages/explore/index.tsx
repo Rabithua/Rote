@@ -1,7 +1,7 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import NavHeader from '@/components/navHeader';
-import RandomCat from '@/components/RandomCat';
-import RoteList from '@/components/roteList';
+import NavHeader from '@/components/layout/navHeader';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import RandomCat from '@/components/others/RandomCat';
+import RoteList from '@/components/rote/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Rotes } from '@/types/main';
 import { useAPIInfinite } from '@/utils/fetcher';

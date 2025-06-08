@@ -1,4 +1,4 @@
-import FloatBtns from '@/components/FloatBtns';
+import FloatBtns from '@/components/layout/FloatBtns';
 import { SideContentLayout } from '@/components/layout/SideContentLayout';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';

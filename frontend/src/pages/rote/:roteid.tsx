@@ -1,6 +1,6 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import NavBar from '@/components/navBar';
-import RoteItem from '@/components/roteItem';
+import NavBar from '@/components/layout/navBar';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import RoteItem from '@/components/rote/roteItem';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 

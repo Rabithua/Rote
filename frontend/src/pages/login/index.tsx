@@ -6,8 +6,8 @@ import {
   TabsTrigger,
 } from '@/components/animate-ui/radix/tabs';
 import { TypingText } from '@/components/animate-ui/text/typing';
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import Logo from '@/components/logo';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

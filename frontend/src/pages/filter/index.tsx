@@ -1,9 +1,9 @@
 import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import NavBar from '@/components/navBar';
-import RoteList from '@/components/roteList';
-import SearchBar from '@/components/SearchBox';
+import NavBar from '@/components/layout/navBar';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import SearchBar from '@/components/others/SearchBox';
+import RoteList from '@/components/rote/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';

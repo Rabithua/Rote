@@ -1,11 +1,11 @@
 import slogenImg from '@/assets/img/slogen.svg';
 import Heatmap from '@/components/d3/heatmap';
 import RoteEditor from '@/components/editor/RoteEditor';
-import Logo from '@/components/logo';
-import RandomRote from '@/components/randomRote';
-import RoteList from '@/components/roteList';
-import SearchBar from '@/components/SearchBox';
-import TagMap from '@/components/tagMap';
+import Logo from '@/components/others/logo';
+import SearchBar from '@/components/others/SearchBox';
+import RandomRote from '@/components/rote/randomRote';
+import RoteList from '@/components/rote/roteList';
+import TagMap from '@/components/others/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { useEditor } from '@/state/editor';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';

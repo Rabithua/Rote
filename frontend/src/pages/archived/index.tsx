@@ -1,8 +1,8 @@
 import Heatmap from '@/components/d3/heatmap';
-import NavHeader from '@/components/navHeader';
-import RandomRote from '@/components/randomRote';
-import RoteList from '@/components/roteList';
-import TagMap from '@/components/tagMap';
+import NavHeader from '@/components/layout/navHeader';
+import RandomRote from '@/components/rote/randomRote';
+import RoteList from '@/components/rote/roteList';
+import TagMap from '@/components/others/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Rotes } from '@/types/main';
 import { useAPIInfinite } from '@/utils/fetcher';

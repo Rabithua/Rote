@@ -1,4 +1,4 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';

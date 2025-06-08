@@ -16,6 +16,8 @@ import {
   User,
 } from 'lucide-react';
 
+import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
+import RoteShareCard from '@/components/rote/roteShareCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -40,11 +42,9 @@ import { PhotoProvider, PhotoView } from 'react-photo-view';
 import 'react-photo-view/dist/react-photo-view.css';
 import { Link } from 'react-router-dom';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
-import RoteEditor from './editor/RoteEditor';
-import NoticeCreateBoard from './NoticeCreateBoard';
-import RoteShareCard from './roteShareCard';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { SoftBottom } from './ui/SoftBottom';
+import RoteEditor from '../editor/RoteEditor';
+import { SoftBottom } from '../others/SoftBottom';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
