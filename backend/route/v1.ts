@@ -50,7 +50,6 @@ import { bodyTypeCheck, isAuthenticated, isAuthor, sanitizeUserData } from '../u
 import { r2uploadhandler } from '../utils/r2';
 import { generateRssFeed, RssFeedOptions } from '../utils/rss';
 import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
-import useOpenKey from './useOpenKey';
 
 let routerV1 = express.Router();
 
@@ -860,8 +859,6 @@ routerV1.get(
     res.send(feed);
   })
 );
-
-routerV1.use('/openKey', useOpenKey);
 
 routerV1.use(errorHandler);
 
