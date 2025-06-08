@@ -100,7 +100,7 @@ const Heatmap: React.FC = () => {
         <div className="flex gap-2 p-4">
           <div className="flex shrink-0 flex-col justify-around">
             {daysOfWeek.map((day) => (
-              <div key={day} className="text-right text-xs">
+              <div key={day} className="text-primary/70 text-right text-xs">
                 {day}
               </div>
             ))}
@@ -111,7 +111,7 @@ const Heatmap: React.FC = () => {
                 {week.map((day: HeatMapDay, dayIndex: number) => (
                   <div
                     key={dayIndex}
-                    className="size-5 duration-300 hover:scale-105 md:size-4"
+                    className="size-5 rounded-xs duration-300 hover:scale-105 md:size-4"
                     style={{
                       backgroundColor: day.notesCount
                         ? colors[Math.min(day.notesCount, colors.length - 1)]

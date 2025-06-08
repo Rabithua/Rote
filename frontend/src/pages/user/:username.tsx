@@ -55,7 +55,7 @@ function UserPage() {
         href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${username}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
+        className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"
       >
         <Rss className="size-5" />
         <div className="text-xl">RSS</div>
@@ -102,7 +102,7 @@ function UserPage() {
           </div>
           <div className="mx-4 flex h-16">
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}
-            <Avatar className="bg-bgLight dark:bg-bgDark size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block">
+            <Avatar className="bg-background size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block">
               {userInfo?.avatar ? (
                 <AvatarImage src={userInfo.avatar} />
               ) : (
@@ -114,13 +114,13 @@ function UserPage() {
           </div>
           <div className="mx-4 flex flex-col gap-1">
             <div className="text-2xl font-semibold">{userInfo?.nickname}</div>
-            <div className="text-base text-gray-500">@{userInfo?.username}</div>
+            <div className="text-info text-base">@{userInfo?.username}</div>
             <div className="text-base">
               <div className="aTagStyle break-words whitespace-pre-line">
                 <Linkify>{(userInfo?.description as any) || t('noDescription')}</Linkify>
               </div>
             </div>
-            <div className="text-base text-gray-500">
+            <div className="text-info text-base">
               {`${t('registerTime')}${moment.utc(userInfo?.createdAt).format('YYYY/MM/DD HH:mm:ss')}`}
             </div>
           </div>

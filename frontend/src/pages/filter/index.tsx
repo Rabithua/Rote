@@ -3,7 +3,7 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import LoadingPlaceholder from '@/components/LoadingPlaceholder';
 import NavBar from '@/components/navBar';
 import RoteList from '@/components/roteList';
-import SearchBar from '@/components/sidebarSearch';
+import SearchBar from '@/components/SearchBox';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
@@ -117,7 +117,7 @@ function MineFilter() {
             {filter.tags.hasEvery.length > 0
               ? filter.tags.hasEvery.map((tag: any, index: any) => (
                   <div
-                    className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
+                    className="bg-foreground/3 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
                     key={`tag-${index}`}
                     onClick={() => tagsClickHandler(tag)}
                   >
@@ -126,19 +126,19 @@ function MineFilter() {
                 ))
               : t('none')}
           </div>
-          <div className="relative flex flex-wrap items-center gap-2 font-normal text-gray-500">
+          <div className="text-info relative flex flex-wrap items-center gap-2 font-normal">
             {t('allTags')}
             {tags && tags.length > 0
               ? tags.map((tag) => (
                   <div key={tag} onClick={() => tagsClickHandler(tag)}>
-                    <div className="bg-opacityLight dark:bg-opacityDark cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
+                    <div className="bg-foreground/3 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
                       {tag}
                     </div>
                   </div>
                 ))
               : t('none')}
           </div>
-          <div className="from-bgLight dark:from-bgDark dark:via-bgDark/40 via-bgLight/40 sticky bottom-0 z-1 h-8 w-full bg-gradient-to-t to-transparent"></div>
+          <div className="from-background via-background/40 sticky bottom-0 z-1 h-8 w-full bg-gradient-to-t to-transparent"></div>
         </div>
       </StarsBackground>
     ),

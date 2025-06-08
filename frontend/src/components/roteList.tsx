@@ -70,9 +70,9 @@ function RoteList({
         </div>
       )}
       {isReachingEnd && rotes.length === 0 ? (
-        <div className="bg-bgLight dark:bg-bgDark flex shrink-0 flex-col items-center justify-center gap-4 py-8">
+        <div className="bg-background flex shrink-0 flex-col items-center justify-center gap-4 py-8">
           <MessageSquareDashed className="text-muted-foreground size-10" />
-          <div className="text-textLight dark:text-textDark text-center">{t('empty')}</div>
+          <div className="text-primary text-center">{t('empty')}</div>
         </div>
       ) : null}
     </div>

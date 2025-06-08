@@ -139,7 +139,7 @@ function RoteShareCard({ rote }: any) {
                       : rote.attachments.length === 1
                         ? 'w-full max-w-[500px] rounded-2xl'
                         : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                } bg-opacityLight dark:bg-opacityDark grow object-cover`}
+                } bg-foreground/3 grow object-cover`}
                 src={
                   file.compressUrl
                     ? file.compressUrl + '?' + new Date().getTime()

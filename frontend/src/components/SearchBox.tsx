@@ -26,7 +26,7 @@ export default function SearchBar({
       <Input
         name="keyword" // 添加 name 属性
         placeholder={t('placeholder')}
-        className="inputOrTextAreaInit focus:bg-opacityLight dark:focus:bg-opacityDark placeholder:text-textLightSecondary dark:placeholder:text-textDarkSecondary px-4 text-sm!"
+        className="inputOrTextAreaInit focus:bg-foreground/3 rounded-none px-4 text-sm!"
         defaultValue={defaultValue}
         onChange={(e) => {
           onChange?.(e.target.value);
@@ -40,7 +40,7 @@ export default function SearchBar({
       />
       <button
         type="submit"
-        className="hover:bg-opacityLight dark:hover:bg-opacityDark flex size-10 shrink-0 items-center justify-center p-3"
+        className="hover:bg-foreground/3 flex size-10 shrink-0 items-center justify-center p-3 duration-300"
         aria-label={t('search')}
       >
         <Search />

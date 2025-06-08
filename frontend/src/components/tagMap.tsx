@@ -40,7 +40,7 @@ export default function TagMap() {
                 tags: [item],
               }}
             >
-              <div className="bg-opacityLight dark:bg-opacityDark flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
+              <div className="bg-foreground/3 flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
                 {item}
               </div>
             </Link>
@@ -58,7 +58,7 @@ export default function TagMap() {
           )}
         </div>
       ) : (
-        <div className="bg-bgLight dark:bg-bgDark shrink-0 py-4">
+        <div className="bg-background shrink-0 py-4">
           <div className="flex w-full flex-col items-center justify-center gap-4 py-4 text-sm">
             <Tag className="text-muted-foreground size-8" />
             {t('noTags')}

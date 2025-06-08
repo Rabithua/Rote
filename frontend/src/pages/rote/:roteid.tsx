@@ -41,21 +41,19 @@ function SingleRotePage() {
         {rote?.author && (
           <div className="border-b p-4">
             <Link to={`/${rote.author.username}`} className="block">
-              <div className="mb-3 flex items-center gap-3">
-                <Avatar className="size-12 bg-[#00000010] text-black">
+              <div className="flex items-center gap-3">
+                <Avatar className="bg-foreground/5 text-primary size-12">
                   {rote.author.avatar ? (
                     <AvatarImage src={rote.author.avatar} />
                   ) : (
                     <AvatarFallback>
-                      <User className="size-6 text-[#00000030]" />
+                      <User className="text-info size-6" />
                     </AvatarFallback>
                   )}
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <div className="text-textLight dark:text-textDark truncate font-semibold">
-                    {rote.author.nickname}
-                  </div>
-                  <div className="truncate text-sm text-gray-500">@{rote.author.username}</div>
+                  <div className="text-primary truncate font-semibold">{rote.author.nickname}</div>
+                  <div className="text-info truncate text-sm">@{rote.author.username}</div>
                 </div>
               </div>
             </Link>
@@ -66,7 +64,7 @@ function SingleRotePage() {
             href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${rote?.author?.username}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
+            className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"
           >
             <Rss className="size-5" />
             <div className="text-xl">RSS</div>
@@ -98,20 +96,18 @@ function SingleRotePage() {
       <RoteItem rote={rote} />
       {rote.author && (
         <Link to={`/${rote.author.username}`}>
-          <div className="bg-bgLight/90 shadow-card dark:bg-bgDark/90 fixed right-0 bottom-16 left-0 z-30 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full border px-6 py-2 backdrop-blur-xl duration-300 hover:scale-95 md:hidden">
-            <Avatar className="size-10 bg-[#00000010] text-black">
+          <div className="bg-background/90 fixed right-0 bottom-16 left-0 z-30 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full border px-6 py-2 backdrop-blur-xl duration-300 hover:scale-95 md:hidden">
+            <Avatar className="text-primary bg-foreground/5 size-10">
               {rote?.author.avatar ? (
                 <AvatarImage src={rote.author.avatar} />
               ) : (
                 <AvatarFallback>
-                  <User className="size-4 text-[#00000030]" />
+                  <User className="text-primary size-4" />
                 </AvatarFallback>
               )}
             </Avatar>
             <div className="flex items-center gap-2">
-              <div className="text-textLight dark:text-textDark text-base font-semibold">
-                {rote?.author.nickname}
-              </div>
+              <div className="text-primary text-base font-semibold">{rote?.author.nickname}</div>
             </div>
           </div>
         </Link>

@@ -4,7 +4,7 @@ import RoteEditor from '@/components/editor/RoteEditor';
 import Logo from '@/components/logo';
 import RandomRote from '@/components/randomRote';
 import RoteList from '@/components/roteList';
-import SearchBar from '@/components/sidebarSearch';
+import SearchBar from '@/components/SearchBox';
 import TagMap from '@/components/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { useEditor } from '@/state/editor';
@@ -73,7 +73,7 @@ function HomePage() {
         </div>
       }
     >
-      <div className="group bg-bgLight dark:bg-bgDark sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-3 font-light text-gray-600">
+      <div className="group bg-background sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-3 font-light text-gray-600">
         <Logo className="w-24" color="#07C160" />
         <img
           className="mb-[2px] ml-2 h-4 text-green-600 opacity-0 duration-300 group-hover:opacity-100"

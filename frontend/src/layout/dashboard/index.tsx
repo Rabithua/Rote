@@ -94,10 +94,10 @@ function LayoutDashboard() {
         }}
       >
         <div
-          className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
+          className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
             location.pathname === icon.link
-              ? 'bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight'
-              : ''
+              ? 'bg-foreground text-primary-foreground'
+              : 'hover:bg-foreground/5'
           } `}
         >
           {icon.svg}
@@ -109,10 +109,10 @@ function LayoutDashboard() {
     ) : (
       <div
         key={icon.name}
-        className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 hover:bg-[#00000010] dark:hover:bg-[#ffffff10] ${
+        className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
           location.pathname === icon.link
-            ? 'bg-bgDark text-textDark hover:bg-bgDark dark:bg-bgLight dark:text-textLight dark:hover:bg-bgLight'
-            : ''
+            ? 'bg-foreground text-primary-foreground'
+            : 'hover:bg-foreground/5'
         } ${icon.name === 'logout' ? 'hover:bg-red-600/10 hover:text-red-600' : ''} `}
         onClick={() => {
           if (icon.callback) {
@@ -129,9 +129,9 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className="bg-bgLight text-textLight dark:bg-bgDark dark:text-textDark mx-auto w-full max-w-6xl">
+    <div className="bg-background text-primary mx-auto w-full max-w-6xl">
       <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
-        <div className="bg-bgLight/90 text-textLight dark:bg-bgDark/90 dark:text-textDark fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
+        <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (

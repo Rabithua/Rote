@@ -7,7 +7,7 @@ export default function EveCat() {
     <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
       <div className="text-2xl font-semibold">
         EveDayOneCat <br />
-        <div className="mt-2 text-sm font-normal text-gray-500">
+        <div className="text-info mt-2 text-sm font-normal">
           <Link to={'http://motions.cat/index.html'} target="_blank">
             From: http://motions.cat/index.html
           </Link>

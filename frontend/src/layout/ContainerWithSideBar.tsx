@@ -34,7 +34,7 @@ function ContainerWithSideBar({
 
       <FloatBtns>
         <div
-          className="bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight block w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105 md:hidden"
+          className="bg-foreground text-primary-foreground block w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105 md:hidden"
           onClick={() => setDrawOpen(!drawOpen)}
         >
           <Layers className="size-4" />

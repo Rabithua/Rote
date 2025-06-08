@@ -162,7 +162,7 @@ function Login() {
   }, [profile, navigate]);
 
   return (
-    <div className="dark:bg-bgDark bg-bgLight relative flex h-dvh w-full items-center justify-center">
+    <div className="bg-background relative flex h-dvh w-full items-center justify-center">
       <div className="animate-show z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0 dark:text-white">
         {isCheckingStatus ? (
           <LoadingPlaceholder className="py-8" size={6} />
@@ -173,16 +173,13 @@ function Login() {
             </div>
 
             {backendStatusOk ? (
-              <Tabs
-                defaultValue="login"
-                className="bg-opacityLight dark:bg-opacityDark w-full rounded-lg"
-              >
+              <Tabs defaultValue="login" className="bg-foreground/3 w-full rounded-lg">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
                   <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
                 </TabsList>
 
-                <TabsContents className="bg-bgLight dark:bg-bgDark mx-1 -mt-2 mb-1 h-full rounded-sm">
+                <TabsContents className="bg-background mx-1 -mt-2 mb-1 h-full rounded-sm">
                   <div className="space-y-4 p-4">
                     <TabsContent value="login" className="space-y-4 py-4">
                       <div className="space-y-5">

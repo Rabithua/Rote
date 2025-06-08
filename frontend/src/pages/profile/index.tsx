@@ -219,7 +219,7 @@ function ProfilePage() {
         href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
+        className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"
       >
         <Rss className="size-5" />
         <div className="text-xl">RSS</div>
@@ -275,7 +275,7 @@ function ProfilePage() {
           </div>
           <div className="mx-4 flex h-16 items-center">
             <Avatar
-              className="gLight size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] text-black sm:block"
+              className="gLight text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
               onClick={() => {
                 (inputAvatarRef.current as HTMLInputElement | null)?.click();
               }}
@@ -301,16 +301,14 @@ function ProfilePage() {
           <div className="mx-4 flex flex-col gap-1">
             <Link to={`/${profile?.username}`}>
               <h1 className="w-fit text-2xl font-semibold hover:underline">{profile?.nickname}</h1>
-              <h2 className="w-fit text-base text-gray-500 hover:underline">
-                @{profile?.username}
-              </h2>
+              <h2 className="text-info w-fit text-base hover:underline">@{profile?.username}</h2>
             </Link>
             <div className="text-base">
               <div className="aTagStyle break-words whitespace-pre-line">
                 <Linkify>{(profile?.description as any) || t('noDescription')}</Linkify>
               </div>
             </div>
-            <div className="text-base text-gray-500">
+            <div className="text-info text-base">
               {t('registerTime')}
               {moment.utc(profile?.createdAt).format('YYYY/MM/DD HH:mm:ss')}
             </div>
@@ -320,7 +318,7 @@ function ProfilePage() {
         <div className="flex flex-col divide-y-1">
           <div className="p-4 text-2xl font-semibold">
             OpenKey <br />
-            <div className="mt-2 text-sm font-normal text-gray-500">{t('openKeyDescription')}</div>
+            <div className="text-info mt-2 text-sm font-normal">{t('openKeyDescription')}</div>
           </div>
           <div className="flex flex-col divide-y-1">
             {openKeyLoading ? (
@@ -331,7 +329,7 @@ function ProfilePage() {
                   <OpenKeyItem key={openKey.id} openKey={openKey} mutate={mutateOpenKeys} />
                 ))}
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
-                  {openKeys?.length === 0 && <KeyRoundIcon className="size-8 text-gray-500" />}
+                  {openKeys?.length === 0 && <KeyRoundIcon className="text-info size-8" />}
                   <Button
                     variant="secondary"
                     onClick={generateOpenKeyFun}
@@ -363,7 +361,7 @@ function ProfilePage() {
                 />
                 {/* 编辑弹窗内头像同理 */}
                 <Avatar
-                  className="mx-auto my-2 block size-20 shrink-0 cursor-pointer bg-[#00000010] text-black"
+                  className="text-primary mx-auto my-2 block size-20 shrink-0 cursor-pointer bg-[#00000010]"
                   onClick={() => {
                     (inputAvatarRef.current as HTMLInputElement | null)?.click();
                   }}

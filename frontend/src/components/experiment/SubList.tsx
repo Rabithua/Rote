@@ -131,7 +131,7 @@ export default function SubList() {
                   </span>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <div className="bg-bgLight flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95">
+                      <div className="bg-background flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95">
                         <MoreVertical className="size-4" />
                       </div>
                     </DropdownMenuTrigger>

@@ -161,7 +161,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   }
 
   return (
-    <div className="bg-bgLight dark:bg-bgDark grow space-y-2">
+    <div className="bg-background grow space-y-2">
       <Textarea
         value={rote.content}
         placeholder={t('contentPlaceholder')}
@@ -185,7 +185,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         <div className="flex flex-wrap gap-2">
           {rote.attachments.map((file, index: number) => (
             <div
-              className="bg-bgLight relative h-20 w-20 overflow-hidden rounded-lg"
+              className="bg-background relative h-20 w-20 overflow-hidden rounded-lg"
               key={'attachments_' + index}
             >
               <img
@@ -223,7 +223,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       <div className={`animate-show flex shrink-0 flex-wrap gap-2 opacity-0 duration-300`}>
         {rote.tags.map((item: string) => (
           <div
-            className="bg-opacityLight dark:bg-opacityDark flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
+            className="bg-foreground/3 flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
             onClick={() => {
               const newTags = rote.tags.filter((tag) => tag !== item);
               setRote({
@@ -256,7 +256,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           <TooltipTrigger asChild>
             <PinIcon
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
-                rote.pin ? 'bg-opacityLight dark:bg-opacityDark' : ''
+                rote.pin ? 'bg-foreground/3' : ''
               }`}
               onClick={() => {
                 setRote({
@@ -272,7 +272,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           <TooltipTrigger asChild>
             <Archive
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
-                rote.archived ? 'bg-opacityLight dark:bg-opacityDark' : ''
+                rote.archived ? 'bg-foreground/3' : ''
               }`}
               onClick={() => {
                 setRote({
@@ -288,7 +288,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           <TooltipTrigger asChild>
             <Globe2
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
-                rote.state === 'public' ? 'bg-opacityLight dark:bg-opacityDark' : ''
+                rote.state === 'public' ? 'bg-foreground/3' : ''
               }`}
               onClick={() => {
                 setRote({

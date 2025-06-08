@@ -13,7 +13,7 @@ function NoticeCreateBoard() {
     <div className="divide-y-1">
       <div className="flex flex-col items-center justify-center pb-4">
         <h1 className="text-2xl font-bold">通知订阅</h1>
-        <p className="text-gray-500">开发中...</p>
+        <p className="text-info">开发中...</p>
       </div>
       {isLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />

@@ -4,6 +4,7 @@
         @apply focus:ring-0 focus:outline-none;
         @apply duration-200;
         @apply transition-all;
+        @apply placeholder:text-info;
         background-color: transparent !important;
     }
 

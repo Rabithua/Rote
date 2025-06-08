@@ -25,7 +25,7 @@ export default function FloatBtns({
       {/* 渲染子组件 */}
       {children}
       <div
-        className="bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105"
+        className="bg-primary text-primary-foreground w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105"
         onClick={goTop}
       >
         <ArrowUp className="size-4" />

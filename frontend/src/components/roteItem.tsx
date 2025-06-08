@@ -186,7 +186,7 @@ function RoteItem({
       <>
         <DropdownMenuItem asChild>
           <Link
-            className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold"
+            className="bg-foreground/3 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold"
             to={`/rote/${rote.id}`}
           >
             <Layers className="size-4" />
@@ -238,12 +238,12 @@ function RoteItem({
     <div
       ref={ref}
       id={`Rote_${rote.id}`}
-      className={`animate-show bg-bgLight/5 dark:bg-bgDark/5 flex w-full gap-4 opacity-0 duration-300 ${
+      className={`animate-show bg-background/5 flex w-full gap-4 opacity-0 duration-300 ${
         !randomRoteStyle && 'px-5 py-4'
       }`}
     >
       {!randomRoteStyle && (
-        <Link className="hidden shrink-0 text-black xl:block" to={`/${rote.author!.username}`}>
+        <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author!.username}`}>
           <Avatar className="size-[40px] bg-[#00000010]">
             {rote.author!.username === profile?.username ? (
               profile?.avatar ? (
@@ -277,7 +277,7 @@ function RoteItem({
             </Link>
           )}
 
-          <span className="noScrollBar overflow-scroll font-normal text-nowrap text-gray-500">
+          <span className="noScrollBar text-info overflow-scroll font-normal text-nowrap">
             {!randomRoteStyle && (
               <>
                 <Link to={`/${rote.author!.username}`}>{`@${rote.author!.username}`}</Link>
@@ -305,7 +305,7 @@ function RoteItem({
             </Tooltip>
           </span>
 
-          <span className="flex gap-1 text-gray-500">
+          <span className="text-info flex gap-1">
             {rote.pin ? (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -364,7 +364,7 @@ function RoteItem({
           {profile?.username === rote.author!.username && inView && mutate !== undefined && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Ellipsis className="hover:bg-opacityLight dark:hover:bg-opacityDark fixed top-2 right-2 z-10 size-8 rounded-md p-2 backdrop-blur-xl" />
+                <Ellipsis className="hover:bg-foreground/3 fixed top-2 right-2 z-10 size-8 rounded-md p-2 backdrop-blur-xl duration-300" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="z-50 min-w-[180px]">
                 {actionsMenu(rote)}
@@ -417,7 +417,7 @@ function RoteItem({
                           : rote.attachments.length === 1
                             ? 'w-full max-w-[500px] rounded-2xl'
                             : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                    } bg-opacityLight dark:bg-opacityDark grow object-cover`}
+                    } bg-foreground/3 grow object-cover`}
                     src={file.compressUrl || file.url}
                     loading="lazy"
                     alt=""
@@ -436,7 +436,7 @@ function RoteItem({
                 tags: [tag],
               }}
             >
-              <div className="bg-opacityLight dark:bg-opacityDark rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
+              <div className="bg-foreground/3 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
                 {tag}
               </div>
             </Link>

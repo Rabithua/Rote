@@ -110,14 +110,14 @@ export default function ServiceWorker() {
     <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
       <div className="text-2xl font-semibold">
         {t('title')} <br />
-        <div className="mt-2 text-sm font-normal text-gray-500">{t('description')}</div>
+        <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
       </div>
       <Divider></Divider>
       <div className="flex items-center gap-2">
         <span className="font-semibold">{t('status')}</span>
         <Switch
           disabled={!navigator.serviceWorker}
-          className="bg-opacityLight dark:bg-opacityDark"
+          className="bg-foreground/3"
           checked={swReady}
           onChange={(e) => {
             if (e) {
@@ -129,11 +129,11 @@ export default function ServiceWorker() {
         />
       </div>
       {noticeId && (
-        <div className="mt-2 flex items-center gap-2 text-gray-500">
+        <div className="text-info mt-2 flex items-center gap-2">
           <span className="shrink-0">{t('serviceId')}</span>
           <span className="overflow-hidden text-ellipsis">{noticeId}</span>
           <div
-            className="bg-bgLight flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
+            className="bg-background flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
             onClick={() => {
               noticeTest(noticeId, '自在废物', '这是我的博客。').then(() => {
                 toast.success(t('notificationSent'));
@@ -148,7 +148,7 @@ export default function ServiceWorker() {
       {noticeId && (
         <div className="mt-2 flex flex-col gap-2">
           <div className="font-semibold">{t('example')}</div>
-          <div className="bg-opacityLight dark:bg-opacityDark overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
+          <div className="bg-foreground/3 overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
             {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
 --data '{
@@ -168,7 +168,7 @@ export default function ServiceWorker() {
       <SoftBottom className="translate-y-4" spacer />
 
       {!navigator.serviceWorker && (
-        <div className="bg-bgLight/90 dark:bg-bgDark/90 dark:text-textDark absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-xl">
+        <div className="bg-background/90 absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-xl">
           <div className="text-2xl">🤕</div>
           <div>{t('notSupported')}</div>
         </div>

@@ -21,7 +21,7 @@ export default function ExportData() {
     <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
       <div className="text-2xl font-semibold">
         {t('title')} <br />
-        <div className="mt-2 text-sm font-normal text-gray-500">{t('description')}</div>
+        <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
       </div>
       <Divider></Divider>
       {isLoading ? (
@@ -34,19 +34,19 @@ export default function ExportData() {
                 className="text-4xl font-semibold"
                 number={data?.noteCount || '0'}
               ></SlidingNumber>
-              <div className="text-sm text-gray-500">{t('noteCount')}</div>
+              <div className="text-info text-sm">{t('noteCount')}</div>
             </div>
             <div className="flex flex-col items-center justify-center gap-2">
               <SlidingNumber
                 className="text-4xl font-semibold"
                 number={data?.attachmentsCount || '0'}
               ></SlidingNumber>
-              <div className="text-sm text-gray-500">{t('attachmentCount')}</div>
+              <div className="text-info text-sm">{t('attachmentCount')}</div>
             </div>
           </div>
           <Link
             to={`${process.env.REACT_APP_BASEURL_PRD}/v1/api/exportData`}
-            className="dark:bg-opacityDark mx-auto mt-6 flex w-fit cursor-pointer items-center gap-2 rounded-md bg-black px-6 py-2 text-white duration-300 select-none hover:text-white active:scale-95"
+            className="bg-foreground text-primary-foreground hover:text-primary-foreground mx-auto mt-6 flex w-fit cursor-pointer items-center gap-2 rounded-md px-6 py-2 duration-300 select-none active:scale-95"
             target="_blank"
             rel="noreferrer"
           >

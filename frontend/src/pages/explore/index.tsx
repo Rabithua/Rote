@@ -85,7 +85,7 @@ function ExplorePage() {
         <div className="flex flex-col">
           <div className="p-4 pb-0 font-semibold">
             EveDayOneCat <br />
-            <div className="text-sm font-normal text-gray-500">
+            <div className="text-info text-sm font-normal">
               <Link to={'http://motions.cat/index.html'} target="_blank">
                 From: http://motions.cat/index.html
               </Link>

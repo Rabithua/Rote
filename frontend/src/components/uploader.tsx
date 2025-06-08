@@ -15,7 +15,7 @@ export default function FileSelector({ callback, id, disabled }: FileSelectorPro
         onClick={() => {
           fileInputRef.current?.click();
         }}
-        className="bg-opacityLight dark:bg-opacityDark flex h-20 w-20 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg duration-300 active:scale-95"
+        className="bg-foreground/3 flex h-20 w-20 cursor-pointer flex-col items-center justify-center overflow-hidden rounded-lg duration-300 active:scale-95"
       >
         <Upload className="size-6" />
       </div>
