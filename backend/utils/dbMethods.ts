@@ -117,6 +117,30 @@ export async function findSubScriptionToUserByUserId(userId: string): Promise<an
   }
 }
 
+// 获取所有活跃的订阅 - 用于公开笔记通知
+export async function findAllActiveSubscriptions(): Promise<any> {
+  try {
+    const subscriptions = await prisma.userSwSubScription.findMany({
+      where: {
+        status: 'active',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+          },
+        },
+      },
+    });
+
+    return subscriptions;
+  } catch (error) {
+    throw new DatabaseError('Failed to find all active subscriptions', error);
+  }
+}
+
 export async function findSubScriptionToUserByendpoint(endpoint: string): Promise<any> {
   try {
     const subscription = await prisma.userSwSubScription.findUnique({
@@ -959,6 +983,36 @@ export async function getRssData(
     return { user, notes };
   } catch (error) {
     throw new DatabaseError('获取RSS数据失败', error);
+  }
+}
+
+export async function getAllPublicRssData(limit = 20): Promise<{ notes: any[] }> {
+  try {
+    // 查找所有公开笔记
+    const notes = await prisma.rote.findMany({
+      where: {
+        state: 'public',
+        archived: false,
+      },
+      orderBy: {
+        updatedAt: 'desc', // 按更新日期降序排序
+      },
+      take: limit,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+      },
+    });
+
+    return { notes };
+  } catch (error) {
+    throw new DatabaseError('获取所有公开笔记RSS数据失败', error);
   }
 }
 

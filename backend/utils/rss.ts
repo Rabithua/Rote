@@ -47,8 +47,6 @@ export async function generateRssFeed(
     },
   });
 
-  console.log('');
-
   // 将笔记添加到Feed中
   for (const note of notes) {
     const noteUrl = `${baseUrl}/note/${note.id}`;
@@ -96,7 +94,9 @@ export async function generateRssFeed(
       content: htmlContent,
       author: [
         {
-          name: user.nickname || user.username,
+          name: note.author
+            ? note.author.nickname || note.author.username
+            : user.nickname || user.username,
         },
       ],
       date: new Date(note.updatedAt),

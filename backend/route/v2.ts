@@ -28,6 +28,7 @@ import {
   findSubScriptionToUserByUserId,
   findUserPublicRote,
   generateOpenKey,
+  getAllPublicRssData,
   getHeatMap,
   getMyOpenKey,
   getMySession,
@@ -1073,6 +1074,48 @@ router.get(
 
     // Generate RSS feed
     const feed = await generateRssFeed(notes, user, feedOptions, baseUrl);
+
+    // Set proper Content-Type
+    res.setHeader('Content-Type', 'application/xml');
+    res.send(feed);
+  })
+);
+
+// 获取所有公开笔记的RSS
+router.get(
+  '/rss/public',
+  asyncHandler(async (req, res) => {
+    // Get all public RSS data
+    const { notes } = await getAllPublicRssData();
+
+    // Base URL from environment variable or default value
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+
+    // Set RSS feed options for public notes
+    const feedOptions: RssFeedOptions = {
+      title: 'Rote - 所有公开笔记',
+      description: '这里是所有用户的公开笔记RSS订阅',
+      id: 'public-notes',
+      link: `${baseUrl}/api/v2/rss/public`,
+      copyright: `© ${new Date().getFullYear()} Rote`,
+      author: {
+        name: 'Rote',
+        email: 'hello@rote.ink',
+      },
+    };
+
+    // Create a virtual user object for the feed generation
+    const virtualUser = {
+      id: 'public',
+      username: 'public',
+      nickname: 'Rote',
+      email: 'hello@rote.ink',
+      avatar: null,
+      description: 'All public notes from Rote users',
+    };
+
+    // Generate RSS feed
+    const feed = await generateRssFeed(notes, virtualUser as any, feedOptions, baseUrl);
 
     // Set proper Content-Type
     res.setHeader('Content-Type', 'application/xml');
