@@ -112,9 +112,6 @@ function RoteItem({
         pin: !rote.pin,
       })
         .then((res) => {
-          if (res.data.code !== 0) {
-            return;
-          }
           toast.success(
             `${rote.pin ? t('unpinned') : t('pinned')}${t('messages.editSuccess', '成功')}`,
             {
@@ -127,9 +124,7 @@ function RoteItem({
               (currentData) =>
                 // 处理嵌套数组结构
                 currentData?.map((page) =>
-                  Array.isArray(page)
-                    ? page.map((r) => (r.id === rote.id ? res.data.data : r))
-                    : page
+                  Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data : r)) : page
                 ) as Rotes,
               {
                 revalidate: false,
@@ -151,9 +146,6 @@ function RoteItem({
         archived: !rote.archived,
       })
         .then((res) => {
-          if (res.data.code !== 0) {
-            return;
-          }
           toast.success(
             `${rote.archived ? t('unarchive') : t('archive')}${t('messages.editSuccess')}`,
             {
@@ -166,9 +158,7 @@ function RoteItem({
               (currentData) =>
                 // 处理嵌套数组结构
                 currentData?.map((page) =>
-                  Array.isArray(page)
-                    ? page.map((r) => (r.id === rote.id ? res.data.data : r))
-                    : page
+                  Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data : r)) : page
                 ) as Rotes,
               {
                 revalidate: false,
