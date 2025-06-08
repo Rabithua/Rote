@@ -4,7 +4,6 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -48,9 +47,28 @@ export function TagSelector({
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && inputValue.trim()) {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      handleAddCustomTag();
+
+      // 首先尝试获取当前选中的 CommandItem
+      const selectedItem = document.querySelector(
+        '[data-selected="true"][data-slot="command-item"]'
+      );
+
+      if (selectedItem) {
+        // 如果有选中的项目，获取其值并添加该标签
+        const tagValue = selectedItem.getAttribute('data-value');
+        if (tagValue) {
+          handleTagSelect(tagValue);
+          setInputValue('');
+          return;
+        }
+      }
+
+      // 如果没有选中的项目且有输入值，则添加自定义标签
+      if (inputValue.trim()) {
+        handleAddCustomTag();
+      }
     }
   };
 
@@ -61,7 +79,7 @@ export function TagSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[120px] sm:w-[160px] justify-between overflow-hidden"
+          className="w-[120px] justify-between overflow-hidden sm:w-[160px]"
           style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           <span className="flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap">
@@ -70,7 +88,7 @@ export function TagSelector({
           <ChevronsUpDown className="ml-2 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[140px] p-0">
+      <PopoverContent className="h-50 w-[140px] p-0">
         <Command>
           <CommandInput
             placeholder="搜索标签..."
@@ -79,22 +97,6 @@ export function TagSelector({
             onKeyDown={handleInputKeyDown}
           />
           <CommandList>
-            <CommandEmpty>
-              <div className="flex flex-col items-center px-1 py-2">
-                <p className="text-muted-foreground mb-1 text-sm">未找到标签</p>
-                {inputValue.trim() && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAddCustomTag}
-                    className="flex w-full items-center gap-1"
-                  >
-                    <Plus className="h-3 w-3" />
-                    <span>添加 "{inputValue}"</span>
-                  </Button>
-                )}
-              </div>
-            </CommandEmpty>
             <CommandGroup>
               {availableTags?.map((tag) => (
                 <CommandItem key={tag} value={tag} onSelect={() => handleTagSelect(tag)}>
