@@ -2,7 +2,7 @@ import defaultCover from '@/assets/img/defaultCover.png';
 import NavBar from '@/components/layout/navBar';
 import NavHeader from '@/components/layout/navHeader';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import RoteList from '@/components/roteList';
+import RoteList from '@/components/rote/roteList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
