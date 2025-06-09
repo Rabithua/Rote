@@ -21,6 +21,7 @@ function SingleRotePage() {
     data: rote,
     isLoading,
     error,
+    mutate,
   } = useAPIGet<Rote>(roteid || '', () => get('/notes/' + roteid).then((res) => res.data));
 
   useEffect(() => {
@@ -93,7 +94,7 @@ function SingleRotePage() {
       className="pb-16"
     >
       <NavBar />
-      <RoteItem rote={rote} />
+      <RoteItem rote={rote} mutateSingle={mutate} />
       {rote.author && (
         <Link to={`/${rote.author.username}`}>
           <div className="bg-background/90 fixed right-0 bottom-16 left-0 z-30 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full border px-6 py-2 backdrop-blur-xl duration-300 hover:scale-95 md:hidden">

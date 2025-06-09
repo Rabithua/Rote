@@ -31,6 +31,7 @@ import mainJson from '@/json/main.json';
 import type { Profile, Rote, Rotes } from '@/types/main';
 
 import 'react-photo-view/dist/react-photo-view.css';
+import type { KeyedMutator } from 'swr';
 
 const { roteContentExpandedLetter } = mainJson;
 
@@ -38,10 +39,12 @@ function RoteItem({
   rote,
   randomRoteStyle,
   mutate,
+  mutateSingle,
 }: {
   rote: Rote;
   randomRoteStyle?: boolean;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
+  mutateSingle?: KeyedMutator<Rote>;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
@@ -189,18 +192,21 @@ function RoteItem({
               </Tooltip>
             ) : null}
           </span>
-          {profile?.username === rote.author!.username && inView && mutate !== undefined && (
-            <RoteActionsMenu
-              rote={rote}
-              mutate={mutate}
-              onEdit={() => {
-                setRote(rote);
-                setIsEditModalOpen(true);
-              }}
-              onShare={() => setIsShareCardModalOpen(true)}
-              onNoticeCreate={() => setIsNoticeCreateBoardModalOpen(true)}
-            />
-          )}
+          {profile?.username === rote.author!.username &&
+            inView &&
+            (mutate !== undefined || mutateSingle !== undefined) && (
+              <RoteActionsMenu
+                rote={rote}
+                mutate={mutate}
+                mutateSingle={mutateSingle}
+                onEdit={() => {
+                  setRote(rote);
+                  setIsEditModalOpen(true);
+                }}
+                onShare={() => setIsShareCardModalOpen(true)}
+                onNoticeCreate={() => setIsNoticeCreateBoardModalOpen(true)}
+              />
+            )}
         </div>
 
         <div className="font-zhengwen relative break-words whitespace-pre-line">
@@ -274,7 +280,7 @@ function RoteItem({
           ))}
         </div>
 
-        <ReactionsPart rote={rote} mutate={mutate} />
+        <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
       </div>
 
       {inView && (
@@ -290,6 +296,9 @@ function RoteItem({
                   setIsEditModalOpen(false);
                   if (mutate) {
                     mutate();
+                  }
+                  if (mutateSingle) {
+                    mutateSingle();
                   }
                 }}
               />

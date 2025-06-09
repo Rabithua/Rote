@@ -8,15 +8,18 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import type { KeyedMutator } from 'swr';
 
 const { preReactions } = mainJson;
 
 export function ReactionsPart({
   rote,
   mutate,
+  mutateSingle,
 }: {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
+  mutateSingle?: KeyedMutator<Rote>;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
@@ -80,26 +83,39 @@ export function ReactionsPart({
 
     // 更新本地状态
     updateLocalReactions(existingReaction: any, newReaction?: any) {
-      if (!mutate) return;
+      if (mutate) {
+        mutate(
+          (currentData) =>
+            currentData?.map((page) =>
+              Array.isArray(page)
+                ? page.map((r) =>
+                    r.id === rote.id
+                      ? {
+                          ...r,
+                          reactions: existingReaction
+                            ? r.reactions.filter((item: any) => item.id !== existingReaction.id)
+                            : [...r.reactions, newReaction],
+                        }
+                      : r
+                  )
+                : page
+            ) as Rotes,
+          { revalidate: false }
+        );
+      }
 
-      mutate(
-        (currentData) =>
-          currentData?.map((page) =>
-            Array.isArray(page)
-              ? page.map((r) =>
-                  r.id === rote.id
-                    ? {
-                        ...r,
-                        reactions: existingReaction
-                          ? r.reactions.filter((item: any) => item.id !== existingReaction.id)
-                          : [...r.reactions, newReaction],
-                      }
-                    : r
-                )
-              : page
-          ) as Rotes,
-        { revalidate: false }
-      );
+      if (mutateSingle) {
+        mutateSingle(
+          (currentRote) =>
+            currentRote && {
+              ...currentRote,
+              reactions: existingReaction
+                ? currentRote.reactions.filter((item) => item.id !== existingReaction.id)
+                : [...currentRote.reactions, newReaction],
+            },
+          { revalidate: false }
+        );
+      }
     },
   };
 

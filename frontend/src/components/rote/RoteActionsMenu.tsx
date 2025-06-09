@@ -12,10 +12,12 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { Rote, Rotes } from '@/types/main';
 import { del, put } from '@/utils/api';
+import type { KeyedMutator } from 'swr';
 
 interface RoteActionsMenuProps {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
+  mutateSingle?: KeyedMutator<Rote>;
   onEdit: () => void;
   onShare: () => void;
   onNoticeCreate?: () => void;
@@ -24,6 +26,7 @@ interface RoteActionsMenuProps {
 export default function RoteActionsMenu({
   rote,
   mutate,
+  mutateSingle,
   onEdit,
   onShare,
   onNoticeCreate,
@@ -51,6 +54,10 @@ export default function RoteActionsMenu({
               revalidate: false,
             }
           );
+        }
+
+        if (mutateSingle) {
+          mutateSingle();
         }
       })
       .catch(() => {
@@ -87,6 +94,12 @@ export default function RoteActionsMenu({
             }
           );
         }
+
+        if (mutateSingle) {
+          mutateSingle(() => res.data, {
+            revalidate: false,
+          });
+        }
       })
       .catch(() => {
         toast.error(t('messages.editFailed'), {
@@ -121,6 +134,12 @@ export default function RoteActionsMenu({
               revalidate: false,
             }
           );
+        }
+
+        if (mutateSingle) {
+          mutateSingle(() => res.data, {
+            revalidate: false,
+          });
         }
       })
       .catch(() => {
