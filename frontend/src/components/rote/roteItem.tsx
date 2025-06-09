@@ -274,7 +274,7 @@ function RoteItem({
           ))}
         </div>
 
-        {inView && <ReactionsPart rote={rote} mutate={mutate} />}
+        <ReactionsPart rote={rote} mutate={mutate} />
       </div>
 
       {inView && (
