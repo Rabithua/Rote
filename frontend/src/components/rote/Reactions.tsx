@@ -176,9 +176,9 @@ export function ReactionsPart({
           return (
             <div
               key={type}
-              className={`flex h-6 cursor-pointer items-center gap-2 rounded-full px-2 text-xs duration-300 ${
+              className={`flex h-6 cursor-pointer items-center gap-2 rounded-full px-2 pr-3 text-xs duration-300 ${
                 hasUserReacted
-                  ? 'bg-theme/20 text-theme border-theme/30 hover:bg-theme/30 border-[0.5px]'
+                  ? 'bg-theme/10 text-theme border-theme/30 hover:bg-theme/30 border-[0.5px]'
                   : 'bg-foreground/5 hover:bg-foreground/10'
               }`}
               onClick={() => onReactionClick(type)}
