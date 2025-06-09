@@ -1,31 +1,37 @@
+import { useState } from 'react';
+
+import { useAtom } from 'jotai';
 import Linkify from 'linkify-react';
 import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon, User } from 'lucide-react';
-
-import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
-import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
-import RoteShareCard from '@/components/rote/roteShareCard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import mainJson from '@/json/main.json';
-import { useEditor } from '@/state/editor';
-import type { Profile, Rote, Rotes } from '@/types/main';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
-import { formatTimeAgo } from '@/utils/main';
-import { useAtom } from 'jotai';
 import moment from 'moment';
-import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
-import 'react-photo-view/dist/react-photo-view.css';
 import { Link } from 'react-router-dom';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
+
+import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
+import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
+import RoteShareCard from '@/components/rote/roteShareCard';
 import RoteEditor from '../editor/RoteEditor';
 import { SoftBottom } from '../others/SoftBottom';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { ReactionsPart } from './Reactions';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+
+import { useEditor } from '@/state/editor';
+import { get } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
+import { formatTimeAgo } from '@/utils/main';
+
+import mainJson from '@/json/main.json';
+import type { Profile, Rote, Rotes } from '@/types/main';
+
+import 'react-photo-view/dist/react-photo-view.css';
+
 const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
