@@ -35,118 +35,102 @@ export default function RoteActionsMenu({
     keyPrefix: 'components.roteItem',
   });
 
+  /**
+   * Rote 操作相关的辅助函数集合
+   */
+  const roteHelpers = {
+    // 更新本地状态 - 删除操作
+    updateLocalRoteDelete() {
+      if (mutate) {
+        mutate(
+          (currentData) =>
+            currentData?.map((page) =>
+              Array.isArray(page) ? page.filter((r) => r.id !== rote.id) : page
+            ) as Rotes,
+          { revalidate: false }
+        );
+      }
+
+      if (mutateSingle) {
+        mutateSingle();
+      }
+    },
+
+    // 更新本地状态 - 编辑操作
+    updateLocalRoteEdit(updatedRote: Rote) {
+      if (mutate) {
+        mutate(
+          (currentData) =>
+            currentData?.map((page) =>
+              Array.isArray(page) ? page.map((r) => (r.id === rote.id ? updatedRote : r)) : page
+            ) as Rotes,
+          { revalidate: false }
+        );
+      }
+
+      if (mutateSingle) {
+        mutateSingle(() => updatedRote, { revalidate: false });
+      }
+    },
+
+    // 执行 API 请求并处理本地状态更新
+    async executeRoteAction(
+      action: () => Promise<any>,
+      onSuccess: (_res?: any) => void,
+      loadingMessage: string,
+      successMessage: string,
+      errorMessage: string
+    ) {
+      const toastId = toast.loading(loadingMessage);
+
+      try {
+        const res = await action();
+        toast.success(successMessage, { id: toastId });
+        onSuccess(res);
+      } catch {
+        toast.error(errorMessage, { id: toastId });
+      }
+    },
+  };
+
   function deleteRoteFn() {
-    const toastId = toast.loading(t('messages.deleting'));
-    del('/notes/' + rote.id)
-      .then(() => {
-        toast.success(t('messages.deleteSuccess'), {
-          id: toastId,
-        });
-
-        if (mutate) {
-          mutate(
-            (currentData) =>
-              // 处理嵌套数组结构
-              currentData?.map((page) =>
-                Array.isArray(page) ? page.filter((r) => r.id !== rote.id) : page
-              ) as Rotes,
-            {
-              revalidate: false,
-            }
-          );
-        }
-
-        if (mutateSingle) {
-          mutateSingle();
-        }
-      })
-      .catch(() => {
-        toast.error(t('messages.deleteFailed'), {
-          id: toastId,
-        });
-      });
+    roteHelpers.executeRoteAction(
+      () => del('/notes/' + rote.id),
+      () => roteHelpers.updateLocalRoteDelete(),
+      t('messages.deleting'),
+      t('messages.deleteSuccess'),
+      t('messages.deleteFailed')
+    );
   }
 
   function editRotePin() {
-    const toastId = toast.loading(t('messages.editing'));
-    put('/notes/' + rote.id, {
-      id: rote.id,
-      authorid: rote.authorid,
-      pin: !rote.pin,
-    })
-      .then((res) => {
-        toast.success(
-          `${rote.pin ? t('unpinned') : t('pinned')}${t('messages.editSuccess', '成功')}`,
-          {
-            id: toastId,
-          }
-        );
-
-        if (mutate) {
-          mutate(
-            (currentData) =>
-              // 处理嵌套数组结构
-              currentData?.map((page) =>
-                Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data : r)) : page
-              ) as Rotes,
-            {
-              revalidate: false,
-            }
-          );
-        }
-
-        if (mutateSingle) {
-          mutateSingle(() => res.data, {
-            revalidate: false,
-          });
-        }
-      })
-      .catch(() => {
-        toast.error(t('messages.editFailed'), {
-          id: toastId,
-        });
-      });
+    roteHelpers.executeRoteAction(
+      () =>
+        put('/notes/' + rote.id, {
+          id: rote.id,
+          authorid: rote.authorid,
+          pin: !rote.pin,
+        }),
+      (res) => roteHelpers.updateLocalRoteEdit(res.data),
+      t('messages.editing'),
+      `${rote.pin ? t('unpinned') : t('pinned')}${t('messages.editSuccess', '成功')}`,
+      t('messages.editFailed')
+    );
   }
 
   function editRoteArchived() {
-    const toastId = toast.loading(t('messages.editing'));
-    put('/notes/' + rote.id, {
-      id: rote.id,
-      authorid: rote.authorid,
-      archived: !rote.archived,
-    })
-      .then((res) => {
-        toast.success(
-          `${rote.archived ? t('unarchive') : t('archive')}${t('messages.editSuccess')}`,
-          {
-            id: toastId,
-          }
-        );
-
-        if (mutate) {
-          mutate(
-            (currentData) =>
-              // 处理嵌套数组结构
-              currentData?.map((page) =>
-                Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data : r)) : page
-              ) as Rotes,
-            {
-              revalidate: false,
-            }
-          );
-        }
-
-        if (mutateSingle) {
-          mutateSingle(() => res.data, {
-            revalidate: false,
-          });
-        }
-      })
-      .catch(() => {
-        toast.error(t('messages.editFailed'), {
-          id: toastId,
-        });
-      });
+    roteHelpers.executeRoteAction(
+      () =>
+        put('/notes/' + rote.id, {
+          id: rote.id,
+          authorid: rote.authorid,
+          archived: !rote.archived,
+        }),
+      (res) => roteHelpers.updateLocalRoteEdit(res.data),
+      t('messages.editing'),
+      `${rote.archived ? t('unarchive') : t('archive')}${t('messages.editSuccess')}`,
+      t('messages.editFailed')
+    );
   }
 
   return (
