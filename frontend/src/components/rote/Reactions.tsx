@@ -239,7 +239,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
           <SmilePlus className="bg-foreground/5 size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
         </PopoverTrigger>
         <PopoverContent side="bottom" className="bg-background/90 w-fit p-0 backdrop-blur-sm">
-          <div className="flex flex-wrap divide-x">
+          <div className="flex w-[80dvw] max-w-xs flex-wrap divide-x divide-y">
             {preReactions.map((reaction) => (
               <div
                 className="flex size-10 cursor-pointer items-center justify-center"
