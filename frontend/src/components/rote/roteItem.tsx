@@ -251,7 +251,7 @@ function RoteItem({
                         : rote.attachments.length % 2 === 0
                           ? 'aspect-square w-[calc(1/2*100%-2px)]'
                           : rote.attachments.length === 1
-                            ? 'w-full max-w-[500px] rounded-2xl'
+                            ? 'w-full max-w-[500px] rounded-2xl border-[0.5px]'
                             : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
                     } bg-foreground/3 grow object-cover`}
                     src={file.compressUrl || file.url}
