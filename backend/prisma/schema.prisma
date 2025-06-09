@@ -105,7 +105,6 @@ model Reaction {
   rote        Rote     @relation(fields: [roteid], references: [id])
   roteid      String   @db.ObjectId
   metadata    Json? // 可以存储额外的反应数据
-  isActive    Boolean  @default(true) // 软删除标记
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
