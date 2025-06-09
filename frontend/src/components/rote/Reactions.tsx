@@ -6,21 +6,44 @@ import { SmilePlus } from 'lucide-react';
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import type { KeyedMutator } from 'swr';
 
 const { preReactions } = mainJson;
 
-export function ReactionsPart({
-  rote,
-  mutate,
-  mutateSingle,
-}: {
+// 类型定义
+interface ReactionData {
+  type: string;
+  roteid: string;
+  metadata: { source: string };
+  visitorId?: string;
+  visitorInfo?: any;
+}
+
+interface ReactionsPartProps {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
-}) {
+}
+
+// 访客ID缓存
+let visitorIdCache: string | null = null;
+
+// 访客ID管理工具
+const getVisitorId = async (): Promise<string | null> => {
+  if (visitorIdCache) return visitorIdCache;
+
+  try {
+    const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+    visitorIdCache = await generateVisitorId();
+    return visitorIdCache;
+  } catch {
+    return null;
+  }
+};
+
+export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
   });
@@ -32,71 +55,55 @@ export function ReactionsPart({
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useState<string | null>(null);
 
+  const isAuthenticated = !!profile?.id;
+
+  // 初始化访客ID
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      getVisitorId().then(setVisitorId);
+    }
+  }, [isAuthenticated]);
+
   /**
-   * 反应处理相关的辅助函数集合
+   * 查找用户的现有反应
    */
-  const reactionHelpers = {
-    // 获取现有反应
-    async findExistingReaction(reaction: string, isAuthenticated: boolean) {
+  const findUserReaction = React.useCallback(
+    (reactionType: string): Reaction | undefined => {
       if (isAuthenticated) {
-        return rote.reactions.find((r) => r.type === reaction && r.userid === profile?.id);
+        return rote.reactions.find((r) => r.type === reactionType && r.userid === profile?.id);
       }
 
-      try {
-        const { generateVisitorId } = await import('@/utils/deviceFingerprint');
-        const visitorId = await generateVisitorId();
-        return rote.reactions.find((r) => r.type === reaction && r.visitorId === visitorId);
-      } catch {
-        return null;
+      if (visitorId) {
+        return rote.reactions.find((r) => r.type === reactionType && r.visitorId === visitorId);
       }
+
+      return undefined;
     },
+    [rote.reactions, isAuthenticated, profile?.id, visitorId]
+  );
 
-    // 删除反应
-    async removeReaction(reaction: string, isAuthenticated: boolean) {
-      if (isAuthenticated) {
-        return await del(`/reactions/${rote.id}/${reaction}`);
-      }
-
-      const { generateVisitorId } = await import('@/utils/deviceFingerprint');
-      const visitorId = await generateVisitorId();
-      return await del(
-        `/reactions/${rote.id}/${reaction}?visitorId=${encodeURIComponent(visitorId)}`
-      );
-    },
-
-    // 添加反应
-    async addReaction(reaction: string, isAuthenticated: boolean) {
-      const reactionData: any = {
-        type: reaction,
-        roteid: rote.id,
-        metadata: { source: 'web' },
+  /**
+   * 更新本地反应状态
+   */
+  const updateLocalReactions = React.useCallback(
+    (existingReaction?: Reaction, newReaction?: Reaction) => {
+      const updateReactions = (reactions: Reaction[]) => {
+        if (existingReaction) {
+          return reactions.filter((item) => item.id !== existingReaction.id);
+        }
+        if (newReaction) {
+          return [...reactions, newReaction];
+        }
+        return reactions;
       };
 
-      if (!isAuthenticated) {
-        const { generateVisitorId, getVisitorInfo } = await import('@/utils/deviceFingerprint');
-        reactionData.visitorId = await generateVisitorId();
-        reactionData.visitorInfo = getVisitorInfo();
-      }
-
-      return await post('/reactions', reactionData);
-    },
-
-    // 更新本地状态
-    updateLocalReactions(existingReaction: any, newReaction?: any) {
       if (mutate) {
         mutate(
           (currentData) =>
             currentData?.map((page) =>
               Array.isArray(page)
                 ? page.map((r) =>
-                    r.id === rote.id
-                      ? {
-                          ...r,
-                          reactions: existingReaction
-                            ? r.reactions.filter((item: any) => item.id !== existingReaction.id)
-                            : [...r.reactions, newReaction],
-                        }
-                      : r
+                    r.id === rote.id ? { ...r, reactions: updateReactions(r.reactions) } : r
                   )
                 : page
             ) as Rotes,
@@ -109,95 +116,116 @@ export function ReactionsPart({
           (currentRote) =>
             currentRote && {
               ...currentRote,
-              reactions: existingReaction
-                ? currentRote.reactions.filter((item) => item.id !== existingReaction.id)
-                : [...currentRote.reactions, newReaction],
+              reactions: updateReactions(currentRote.reactions),
             },
           { revalidate: false }
         );
       }
     },
-  };
+    [mutate, mutateSingle, rote.id]
+  );
 
   /**
-   * 处理反应的主要函数
-   * 支持已登录用户和匿名访客
+   * 处理反应点击
    */
-  async function onReaction(reaction: string) {
-    const toastId = toast.loading(t('messages.sending'));
-    const isAuthenticated = !!profile?.id;
+  const handleReaction = React.useCallback(
+    async (reactionType: string) => {
+      const toastId = toast.loading(t('messages.sending'));
 
-    try {
-      const existingReaction = await reactionHelpers.findExistingReaction(
-        reaction,
-        isAuthenticated
-      );
+      try {
+        const existingReaction = findUserReaction(reactionType);
 
-      if (existingReaction) {
-        // 取消现有反应
-        await reactionHelpers.removeReaction(reaction, isAuthenticated);
-        toast.success(t('messages.reactCancelSuccess'), { id: toastId });
-        reactionHelpers.updateLocalReactions(existingReaction);
-      } else {
-        // 添加新反应
-        const res = await reactionHelpers.addReaction(reaction, isAuthenticated);
-        toast.success(t('messages.reactSuccess'), { id: toastId });
-        reactionHelpers.updateLocalReactions(null, res.data);
+        if (existingReaction) {
+          // 删除现有反应
+          if (isAuthenticated) {
+            await del(`/reactions/${rote.id}/${reactionType}`);
+          } else {
+            const currentVisitorId = await getVisitorId();
+            if (currentVisitorId) {
+              await del(
+                `/reactions/${rote.id}/${reactionType}?visitorId=${encodeURIComponent(currentVisitorId)}`
+              );
+            }
+          }
+
+          toast.success(t('messages.reactCancelSuccess'), { id: toastId });
+          updateLocalReactions(existingReaction);
+        } else {
+          // 添加新反应
+          const reactionData: ReactionData = {
+            type: reactionType,
+            roteid: rote.id,
+            metadata: { source: 'web' },
+          };
+
+          if (!isAuthenticated) {
+            const currentVisitorId = await getVisitorId();
+            if (currentVisitorId) {
+              const { getVisitorInfo } = await import('@/utils/deviceFingerprint');
+              reactionData.visitorId = currentVisitorId;
+              reactionData.visitorInfo = getVisitorInfo();
+            }
+          }
+
+          const response = await post('/reactions', reactionData);
+          toast.success(t('messages.reactSuccess'), { id: toastId });
+          updateLocalReactions(undefined, response.data);
+        }
+      } catch {
+        toast.error(t('messages.reactFailed'), { id: toastId });
       }
-    } catch {
-      toast.error(t('messages.reactFailed'), { id: toastId });
-    }
-  }
-
-  // 异步获取访客ID（仅针对匿名用户）
-  React.useEffect(() => {
-    if (!profile?.id) {
-      import('@/utils/deviceFingerprint').then(({ generateVisitorId }) => {
-        generateVisitorId()
-          .then(setVisitorId)
-          .catch(() => setVisitorId(null));
-      });
-    }
-  }, [profile?.id]);
-
-  function onReactionClick(reaction: string) {
-    setOpen(false);
-    onReaction(reaction);
-  }
-
-  // 按 type 分组 reactions
-  const groupedReactions = rote.reactions.reduce(
-    (acc, reaction) => {
-      const type = reaction.type;
-      if (!acc[type]) {
-        acc[type] = [];
-      }
-      acc[type].push(reaction);
-      return acc;
     },
-    {} as Record<string, Reaction[]>
+    [rote.id, isAuthenticated, findUserReaction, updateLocalReactions, t]
+  );
+
+  /**
+   * 处理反应选择器点击
+   */
+  const handleReactionClick = React.useCallback(
+    (reactionType: string) => {
+      setOpen(false);
+      handleReaction(reactionType);
+    },
+    [handleReaction]
+  );
+
+  // 按类型分组反应
+  const groupedReactions = React.useMemo(
+    () =>
+      rote.reactions.reduce(
+        (acc, reaction) => {
+          if (!acc[reaction.type]) {
+            acc[reaction.type] = [];
+          }
+          acc[reaction.type].push(reaction);
+          return acc;
+        },
+        {} as Record<string, Reaction[]>
+      ),
+    [rote.reactions]
+  );
+
+  // 检查用户是否对某个反应做出过响应
+  const hasUserReacted = React.useCallback(
+    (reactionType: string): boolean => !!findUserReaction(reactionType),
+    [findUserReaction]
   );
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {Object.entries(groupedReactions).map(([type, reactionGroup]) => {
-          // 检查用户是否已经对该反应做出过响应
-          const hasUserReacted = profile?.id
-            ? reactionGroup.some((reaction) => reaction.userid === profile.id)
-            : visitorId
-              ? reactionGroup.some((reaction) => reaction.visitorId === visitorId)
-              : false;
+          const userReacted = hasUserReacted(type);
 
           return (
             <div
               key={type}
               className={`flex h-6 cursor-pointer items-center gap-2 rounded-full px-2 pr-3 text-xs duration-300 ${
-                hasUserReacted
+                userReacted
                   ? 'bg-theme/10 text-theme border-theme/30 hover:bg-theme/30 border-[0.5px]'
                   : 'bg-foreground/5 hover:bg-foreground/10'
               }`}
-              onClick={() => onReactionClick(type)}
+              onClick={() => handleReactionClick(type)}
             >
               <span>{type}</span>
               <span className="text-xs">{reactionGroup.length}</span>
@@ -219,7 +247,7 @@ export function ReactionsPart({
               >
                 <span
                   className="duration-300 hover:scale-120"
-                  onClick={() => onReactionClick(reaction)}
+                  onClick={() => handleReactionClick(reaction)}
                 >
                   {reaction}
                 </span>
