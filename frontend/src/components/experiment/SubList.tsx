@@ -98,8 +98,8 @@ export default function SubList() {
         <LoadingPlaceholder className="py-8" size={6} />
       ) : (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-xl font-semibold">{t('title')}</h1>
+          <div className="mx-2 flex items-center justify-between gap-2">
+            <h1 className="text-lg font-semibold">{t('title')}</h1>
             <Button
               variant="secondary"
               size="sm"
@@ -119,7 +119,7 @@ export default function SubList() {
             {data?.map((item: Subscription) => (
               <div key={item.id} className="space-y-2 p-2">
                 <div className="flex items-center gap-4">
-                  <h2 className="grow truncate text-xl font-semibold">{item.id}</h2>
+                  <h2 className="grow truncate text-lg">{item.id}</h2>
                   <span
                     className={`shrink-0 rounded-full px-2 py-1 text-xs ${
                       item.status === 'active'
@@ -161,7 +161,7 @@ export default function SubList() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <p className="font-mono text-xs break-words whitespace-break-spaces opacity-50">
+                <p className="font-mono text-xs font-thin break-words whitespace-break-spaces opacity-50">
                   {item.endpoint}
                 </p>
                 <div className="font-mono text-xs">

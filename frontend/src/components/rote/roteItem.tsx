@@ -317,7 +317,10 @@ function RoteItem({
           >
             <DialogContent className="block">
               <DialogHeader>
-                <DialogTitle>{'创建提醒'}</DialogTitle>
+                <div className="flex items-center gap-4 border-b pb-4">
+                  <h1 className="text-xl font-semibold">{t('noticeSubcription')}</h1>
+                  <p className="text-info font-thin">{t('development')}</p>
+                </div>
               </DialogHeader>
               <NoticeCreateBoard />
             </DialogContent>

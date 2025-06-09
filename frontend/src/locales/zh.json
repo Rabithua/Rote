@@ -321,6 +321,8 @@
       "share": "生成分享图",
       "delete": "删除",
       "expand": "展开",
+      "noticeSubcription": "订阅通知",
+      "development": "开发中...",
       "tooltips": {
         "pinned": "已置顶",
         "unpinned": "未置顶",

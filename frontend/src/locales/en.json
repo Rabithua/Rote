@@ -320,6 +320,8 @@
       "share": "Generate Share Image",
       "delete": "Delete",
       "expand": "Expand",
+      "noticeSubcription": "Subscribe to Notifications",
+      "development": "In Development...",
       "tooltips": {
         "pinned": "Pinned",
         "unpinned": "Unpinned",

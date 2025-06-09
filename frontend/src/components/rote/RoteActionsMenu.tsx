@@ -149,7 +149,6 @@ export default function RoteActionsMenu({
           </Link>
         </DropdownMenuItem>
 
-        {/* 取消注释以启用提醒功能 */}
         {onNoticeCreate && (
           <DropdownMenuItem onSelect={onNoticeCreate}>
             <Bell className="size-4" />
