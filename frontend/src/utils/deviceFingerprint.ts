@@ -3,8 +3,6 @@
  * 用于识别未登录访客的设备和浏览器特征
  */
 
-import { debug } from 'console';
-
 interface DeviceInfo {
   userAgent: string;
   language: string;
@@ -241,7 +239,7 @@ function getAudioFingerprint(): Promise<string> {
 
       oscillator.start(0);
     } catch {
-      debug('Audio fingerprinting failed');
+      console.error('Audio fingerprinting failed');
       resolve('audio_not_supported');
     }
   });
@@ -300,7 +298,7 @@ export async function generateVisitorId(): Promise<string> {
 
     return visitorId;
   } catch (error) {
-    debug('Failed to generate visitor ID:', error);
+    console.error('Failed to generate visitor ID:', error);
     // 降级方案：使用简单的随机 ID
     const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     localStorage.setItem('rote_visitor_id', fallbackId);

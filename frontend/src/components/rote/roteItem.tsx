@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import mainJson from '@/json/main.json';
 import { useEditor } from '@/state/editor';
 import type { Profile, Rote, Rotes } from '@/types/main';
-import { del, get, put } from '@/utils/api';
+import { del, get, post, put } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import { useAtom } from 'jotai';
@@ -45,6 +45,7 @@ import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 import RoteEditor from '../editor/RoteEditor';
 import { SoftBottom } from '../others/SoftBottom';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { ReactionsPart } from './Reactions';
 const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
@@ -222,6 +223,45 @@ function RoteItem({
         </DropdownMenuItem>
       </>
     );
+  }
+
+  function onReaction(reaction: string) {
+    const toastId = toast.loading(t('messages.reacting'));
+
+    post('/reactions', {
+      type: reaction,
+      roteid: rote.id,
+      metadata: {
+        source: 'web',
+      },
+    })
+      .then((res) => {
+        toast.success(t('messages.reactSuccess'), {
+          id: toastId,
+        });
+
+        if (mutate) {
+          mutate(
+            (currentData) =>
+              // 处理嵌套数组结构
+              currentData?.map((page) =>
+                Array.isArray(page)
+                  ? page.map((r) =>
+                      r.id === rote.id ? { ...r, reactions: [...r.reactions, res.data] } : r
+                    )
+                  : page
+              ) as Rotes,
+            {
+              revalidate: false,
+            }
+          );
+        }
+      })
+      .catch(() => {
+        toast.error(t('messages.reactFailed'), {
+          id: toastId,
+        });
+      });
   }
 
   return (
@@ -432,6 +472,9 @@ function RoteItem({
             </Link>
           ))}
         </div>
+
+        {/* 反应面板 */}
+        {inView && <ReactionsPart reactions={rote.reactions} onReaction={onReaction} />}
       </div>
 
       {inView && (
