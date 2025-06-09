@@ -1,26 +1,137 @@
 import mainJson from '@/json/main.json';
-import type { Profile, Reaction } from '@/types/main';
-import { get } from '@/utils/api';
+import type { Profile, Reaction, Rote, Rotes } from '@/types/main';
+import { del, get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { SmilePlus } from 'lucide-react';
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 const { preReactions } = mainJson;
 
 export function ReactionsPart({
-  reactions,
-  onReaction,
+  rote,
+  mutate,
 }: {
-  reactions: Reaction[];
-  onReaction: (_reaction: string) => void;
+  rote: Rote;
+  mutate?: SWRInfiniteKeyedMutator<Rotes>;
 }) {
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.roteItem',
+  });
+
   const { data: profile } = useAPIGet<Profile>('profile', () =>
     get('/users/me/profile').then((res) => res.data)
   );
 
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useState<string | null>(null);
+
+  /**
+   * 反应处理相关的辅助函数集合
+   */
+  const reactionHelpers = {
+    // 获取现有反应
+    async findExistingReaction(reaction: string, isAuthenticated: boolean) {
+      if (isAuthenticated) {
+        return rote.reactions.find((r) => r.type === reaction && r.userid === profile?.id);
+      }
+
+      try {
+        const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+        const visitorId = await generateVisitorId();
+        return rote.reactions.find((r) => r.type === reaction && r.visitorId === visitorId);
+      } catch {
+        return null;
+      }
+    },
+
+    // 删除反应
+    async removeReaction(reaction: string, isAuthenticated: boolean) {
+      if (isAuthenticated) {
+        return await del(`/reactions/${rote.id}/${reaction}`);
+      }
+
+      const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+      const visitorId = await generateVisitorId();
+      return await del(
+        `/reactions/${rote.id}/${reaction}?visitorId=${encodeURIComponent(visitorId)}`
+      );
+    },
+
+    // 添加反应
+    async addReaction(reaction: string, isAuthenticated: boolean) {
+      const reactionData: any = {
+        type: reaction,
+        roteid: rote.id,
+        metadata: { source: 'web' },
+      };
+
+      if (!isAuthenticated) {
+        const { generateVisitorId, getVisitorInfo } = await import('@/utils/deviceFingerprint');
+        reactionData.visitorId = await generateVisitorId();
+        reactionData.visitorInfo = getVisitorInfo();
+      }
+
+      return await post('/reactions', reactionData);
+    },
+
+    // 更新本地状态
+    updateLocalReactions(existingReaction: any, newReaction?: any) {
+      if (!mutate) return;
+
+      mutate(
+        (currentData) =>
+          currentData?.map((page) =>
+            Array.isArray(page)
+              ? page.map((r) =>
+                  r.id === rote.id
+                    ? {
+                        ...r,
+                        reactions: existingReaction
+                          ? r.reactions.filter((item: any) => item.id !== existingReaction.id)
+                          : [...r.reactions, newReaction],
+                      }
+                    : r
+                )
+              : page
+          ) as Rotes,
+        { revalidate: false }
+      );
+    },
+  };
+
+  /**
+   * 处理反应的主要函数
+   * 支持已登录用户和匿名访客
+   */
+  async function onReaction(reaction: string) {
+    const toastId = toast.loading(t('messages.sending'));
+    const isAuthenticated = !!profile?.id;
+
+    try {
+      const existingReaction = await reactionHelpers.findExistingReaction(
+        reaction,
+        isAuthenticated
+      );
+
+      if (existingReaction) {
+        // 取消现有反应
+        await reactionHelpers.removeReaction(reaction, isAuthenticated);
+        toast.success(t('messages.reactCancelSuccess'), { id: toastId });
+        reactionHelpers.updateLocalReactions(existingReaction);
+      } else {
+        // 添加新反应
+        const res = await reactionHelpers.addReaction(reaction, isAuthenticated);
+        toast.success(t('messages.reactSuccess'), { id: toastId });
+        reactionHelpers.updateLocalReactions(null, res.data);
+      }
+    } catch {
+      toast.error(t('messages.reactFailed'), { id: toastId });
+    }
+  }
 
   // 异步获取访客ID（仅针对匿名用户）
   React.useEffect(() => {
@@ -39,7 +150,7 @@ export function ReactionsPart({
   }
 
   // 按 type 分组 reactions
-  const groupedReactions = reactions.reduce(
+  const groupedReactions = rote.reactions.reduce(
     (acc, reaction) => {
       const type = reaction.type;
       if (!acc[type]) {

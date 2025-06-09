@@ -1,35 +1,15 @@
 import Linkify from 'linkify-react';
-import {
-  Archive,
-  ArrowDownLeft,
-  Edit,
-  Edit3,
-  Ellipsis,
-  Globe2Icon,
-  Layers,
-  LinkIcon,
-  PinIcon,
-  PinOff,
-  Save,
-  Share,
-  Trash2,
-  User,
-} from 'lucide-react';
+import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon, User } from 'lucide-react';
 
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
+import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
 import RoteShareCard from '@/components/rote/roteShareCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import mainJson from '@/json/main.json';
 import { useEditor } from '@/state/editor';
 import type { Profile, Rote, Rotes } from '@/types/main';
-import { del, get, post, put } from '@/utils/api';
+import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import { useAtom } from 'jotai';
@@ -75,259 +55,6 @@ function RoteItem({
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
-
-  function actionsMenu(rote: Rote) {
-    function deleteRoteFn() {
-      const toastId = toast.loading(t('messages.deleting'));
-      del('/notes/' + rote.id)
-        .then(() => {
-          toast.success(t('messages.deleteSuccess'), {
-            id: toastId,
-          });
-
-          if (mutate) {
-            mutate(
-              (currentData) =>
-                // 处理嵌套数组结构
-                currentData?.map((page) =>
-                  Array.isArray(page) ? page.filter((r) => r.id !== rote.id) : page
-                ) as Rotes,
-              {
-                revalidate: false,
-              }
-            );
-          }
-        })
-        .catch(() => {
-          toast.error(t('messages.deleteFailed'), {
-            id: toastId,
-          });
-        });
-    }
-
-    function editRotePin() {
-      const toastId = toast.loading(t('messages.editing'));
-      put('/notes/' + rote.id, {
-        id: rote.id,
-        authorid: rote.authorid,
-        pin: !rote.pin,
-      })
-        .then((res) => {
-          toast.success(
-            `${rote.pin ? t('unpinned') : t('pinned')}${t('messages.editSuccess', '成功')}`,
-            {
-              id: toastId,
-            }
-          );
-
-          if (mutate) {
-            mutate(
-              (currentData) =>
-                // 处理嵌套数组结构
-                currentData?.map((page) =>
-                  Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data : r)) : page
-                ) as Rotes,
-              {
-                revalidate: false,
-              }
-            );
-          }
-        })
-        .catch(() => {
-          toast.error(t('messages.editFailed'), {
-            id: toastId,
-          });
-        });
-    }
-    function editRoteArchived() {
-      const toastId = toast.loading(t('messages.editing'));
-      put('/notes/' + rote.id, {
-        id: rote.id,
-        authorid: rote.authorid,
-        archived: !rote.archived,
-      })
-        .then((res) => {
-          toast.success(
-            `${rote.archived ? t('unarchive') : t('archive')}${t('messages.editSuccess')}`,
-            {
-              id: toastId,
-            }
-          );
-
-          if (mutate) {
-            mutate(
-              (currentData) =>
-                // 处理嵌套数组结构
-                currentData?.map((page) =>
-                  Array.isArray(page) ? page.map((r) => (r.id === rote.id ? res.data : r)) : page
-                ) as Rotes,
-              {
-                revalidate: false,
-              }
-            );
-          }
-        })
-        .catch(() => {
-          toast.error(t('messages.editFailed'), {
-            id: toastId,
-          });
-        });
-    }
-    return (
-      <>
-        <DropdownMenuItem asChild>
-          <Link
-            className="bg-foreground/3 flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 font-semibold"
-            to={`/rote/${rote.id}`}
-          >
-            <Layers className="size-4" />
-            {t('details')}
-          </Link>
-        </DropdownMenuItem>
-        {/* <DropdownMenuItem
-          onSelect={() => {
-            setIsNoticeCreateBoardModalOpen(true);
-          }}
-        >
-          <Bell className="size-4" />
-          {'回顾'}
-        </DropdownMenuItem> */}
-        <DropdownMenuItem onSelect={editRotePin}>
-          {rote.pin ? <PinOff className="size-4" /> : <PinIcon className="size-4" />}
-          {rote.pin ? t('unpinned') : t('pinned')}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={() => {
-            setRote(rote);
-            setIsEditModalOpen(true);
-          }}
-        >
-          <Edit3 className="size-4" />
-          {t('edit')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={editRoteArchived}>
-          <Save className="size-4" />
-          {rote.archived ? t('unarchive') : t('archive')}
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onSelect={() => {
-            setIsShareCardModalOpen(true);
-          }}
-        >
-          <Share className="size-4" />
-          {t('share')}
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={deleteRoteFn} className="text-red-500 focus:text-red-500">
-          <Trash2 className="size-4 text-red-500" />
-          {t('delete')}
-        </DropdownMenuItem>
-      </>
-    );
-  }
-
-  /**
-   * 反应处理相关的辅助函数集合
-   */
-  const reactionHelpers = {
-    // 获取现有反应
-    async findExistingReaction(reaction: string, isAuthenticated: boolean) {
-      if (isAuthenticated) {
-        return rote.reactions.find((r) => r.type === reaction && r.userid === profile?.id);
-      }
-
-      try {
-        const { generateVisitorId } = await import('@/utils/deviceFingerprint');
-        const visitorId = await generateVisitorId();
-        return rote.reactions.find((r) => r.type === reaction && r.visitorId === visitorId);
-      } catch {
-        return null;
-      }
-    },
-
-    // 删除反应
-    async removeReaction(reaction: string, isAuthenticated: boolean) {
-      if (isAuthenticated) {
-        return await del(`/reactions/${rote.id}/${reaction}`);
-      }
-
-      const { generateVisitorId } = await import('@/utils/deviceFingerprint');
-      const visitorId = await generateVisitorId();
-      return await del(
-        `/reactions/${rote.id}/${reaction}?visitorId=${encodeURIComponent(visitorId)}`
-      );
-    },
-
-    // 添加反应
-    async addReaction(reaction: string, isAuthenticated: boolean) {
-      const reactionData: any = {
-        type: reaction,
-        roteid: rote.id,
-        metadata: { source: 'web' },
-      };
-
-      if (!isAuthenticated) {
-        const { generateVisitorId, getVisitorInfo } = await import('@/utils/deviceFingerprint');
-        reactionData.visitorId = await generateVisitorId();
-        reactionData.visitorInfo = getVisitorInfo();
-      }
-
-      return await post('/reactions', reactionData);
-    },
-
-    // 更新本地状态
-    updateLocalReactions(existingReaction: any, newReaction?: any) {
-      if (!mutate) return;
-
-      mutate(
-        (currentData) =>
-          currentData?.map((page) =>
-            Array.isArray(page)
-              ? page.map((r) =>
-                  r.id === rote.id
-                    ? {
-                        ...r,
-                        reactions: existingReaction
-                          ? r.reactions.filter((item: any) => item.id !== existingReaction.id)
-                          : [...r.reactions, newReaction],
-                      }
-                    : r
-                )
-              : page
-          ) as Rotes,
-        { revalidate: false }
-      );
-    },
-  };
-
-  /**
-   * 处理反应的主要函数
-   * 支持已登录用户和匿名访客
-   */
-  async function onReaction(reaction: string) {
-    const toastId = toast.loading(t('messages.sending'));
-    const isAuthenticated = !!profile?.id;
-
-    try {
-      const existingReaction = await reactionHelpers.findExistingReaction(
-        reaction,
-        isAuthenticated
-      );
-
-      if (existingReaction) {
-        // 取消现有反应
-        await reactionHelpers.removeReaction(reaction, isAuthenticated);
-        toast.success(t('messages.reactCancelSuccess'), { id: toastId });
-        reactionHelpers.updateLocalReactions(existingReaction);
-      } else {
-        // 添加新反应
-        const res = await reactionHelpers.addReaction(reaction, isAuthenticated);
-        toast.success(t('messages.reactSuccess'), { id: toastId });
-        reactionHelpers.updateLocalReactions(null, res.data);
-      }
-    } catch {
-      toast.error(t('messages.reactFailed'), { id: toastId });
-    }
-  }
 
   return (
     <div
@@ -457,14 +184,16 @@ function RoteItem({
             ) : null}
           </span>
           {profile?.username === rote.author!.username && inView && mutate !== undefined && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Ellipsis className="hover:bg-foreground/3 fixed top-2 right-2 z-10 size-8 rounded-md p-2 backdrop-blur-xl duration-300" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-50 min-w-[180px]">
-                {actionsMenu(rote)}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <RoteActionsMenu
+              rote={rote}
+              mutate={mutate}
+              onEdit={() => {
+                setRote(rote);
+                setIsEditModalOpen(true);
+              }}
+              onShare={() => setIsShareCardModalOpen(true)}
+              onNoticeCreate={() => setIsNoticeCreateBoardModalOpen(true)}
+            />
           )}
         </div>
 
@@ -522,6 +251,7 @@ function RoteItem({
             </PhotoProvider>
           </div>
         )}
+
         <div className="my-2 flex flex-wrap items-center gap-2">
           {rote.tags.map((tag: any) => (
             <Link
@@ -538,8 +268,7 @@ function RoteItem({
           ))}
         </div>
 
-        {/* 反应面板 */}
-        {inView && <ReactionsPart reactions={rote.reactions} onReaction={onReaction} />}
+        {inView && <ReactionsPart rote={rote} mutate={mutate} />}
       </div>
 
       {inView && (
