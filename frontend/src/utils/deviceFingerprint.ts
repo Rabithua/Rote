@@ -239,7 +239,6 @@ function getAudioFingerprint(): Promise<string> {
 
       oscillator.start(0);
     } catch {
-      console.error('Audio fingerprinting failed');
       resolve('audio_not_supported');
     }
   });
@@ -297,9 +296,7 @@ export async function generateVisitorId(): Promise<string> {
     localStorage.setItem('rote_visitor_id', visitorId);
 
     return visitorId;
-  } catch (error) {
-    console.error('Failed to generate visitor ID:', error);
-    // 降级方案：使用简单的随机 ID
+  } catch {
     const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     localStorage.setItem('rote_visitor_id', fallbackId);
     return fallbackId;
