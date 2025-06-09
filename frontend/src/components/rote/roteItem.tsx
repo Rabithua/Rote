@@ -225,25 +225,96 @@ function RoteItem({
     );
   }
 
-  function onReaction(reaction: string) {
-    const toastId = toast.loading(t('messages.reacting'));
+  async function onReaction(reaction: string) {
+    const toastId = toast.loading(t('messages.sending'));
+    const isAuthenticated = !!profile?.id;
 
-    post('/reactions', {
-      type: reaction,
-      roteid: rote.id,
-      metadata: {
-        source: 'web',
-      },
-    })
-      .then((res) => {
+    // 检查用户是否已经对该反应做出过响应
+    let existingReaction: any = null;
+
+    if (isAuthenticated) {
+      existingReaction = rote.reactions.find((r) => r.type === reaction && r.userid === profile.id);
+    } else {
+      // 对于匿名用户，我们需要先获取 visitorId 来检查
+      try {
+        const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+        const visitorId = await generateVisitorId();
+        existingReaction = rote.reactions.find(
+          (r) => r.type === reaction && r.visitorId === visitorId
+        );
+      } catch {
+        // 如果获取设备指纹失败，则认为没有现有反应
+        existingReaction = null;
+      }
+    }
+
+    try {
+      if (existingReaction) {
+        // 取消反应
+        if (isAuthenticated) {
+          await del(`/reactions/${rote.id}/${reaction}`);
+        } else {
+          const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+          const visitorId = await generateVisitorId();
+          await del(`/reactions/${rote.id}/${reaction}?visitorId=${encodeURIComponent(visitorId)}`);
+        }
+
+        toast.success(t('messages.reactCancelSuccess'), {
+          id: toastId,
+        });
+
+        // 从本地状态中移除反应
+        if (mutate) {
+          mutate(
+            (currentData) =>
+              currentData?.map((page) =>
+                Array.isArray(page)
+                  ? page.map((r) =>
+                      r.id === rote.id
+                        ? {
+                            ...r,
+                            reactions: r.reactions.filter(
+                              (reactionItem: any) => reactionItem.id !== existingReaction.id
+                            ),
+                          }
+                        : r
+                    )
+                  : page
+              ) as Rotes,
+            {
+              revalidate: false,
+            }
+          );
+        }
+      } else {
+        // 添加新反应
+        const reactionData: any = {
+          type: reaction,
+          roteid: rote.id,
+          metadata: {
+            source: 'web',
+          },
+        };
+
+        if (!isAuthenticated) {
+          const { generateVisitorId, getVisitorInfo } = await import('@/utils/deviceFingerprint');
+          const visitorId = await generateVisitorId();
+          const visitorInfo = getVisitorInfo();
+
+          reactionData.visitorId = visitorId;
+          reactionData.visitorInfo = visitorInfo;
+        }
+
+        const res = await post('/reactions', reactionData);
+
         toast.success(t('messages.reactSuccess'), {
           id: toastId,
         });
 
+        // 添加反应到本地状态
         if (mutate) {
           mutate(
             (currentData) =>
-              // 处理嵌套数组结构
               currentData?.map((page) =>
                 Array.isArray(page)
                   ? page.map((r) =>
@@ -256,12 +327,13 @@ function RoteItem({
             }
           );
         }
-      })
-      .catch(() => {
-        toast.error(t('messages.reactFailed'), {
-          id: toastId,
-        });
+      }
+    } catch {
+      // 如果操作失败，显示错误消息
+      toast.error(t('messages.reactFailed'), {
+        id: toastId,
       });
+    }
   }
 
   return (

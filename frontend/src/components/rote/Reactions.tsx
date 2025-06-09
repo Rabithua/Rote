@@ -3,7 +3,7 @@ import type { Profile, Reaction } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { SmilePlus } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 const { preReactions } = mainJson;
@@ -20,6 +20,18 @@ export function ReactionsPart({
   );
 
   const [open, setOpen] = useState(false);
+  const [visitorId, setVisitorId] = useState<string | null>(null);
+
+  // 异步获取访客ID（仅针对匿名用户）
+  React.useEffect(() => {
+    if (!profile?.id) {
+      import('@/utils/deviceFingerprint').then(({ generateVisitorId }) => {
+        generateVisitorId()
+          .then(setVisitorId)
+          .catch(() => setVisitorId(null));
+      });
+    }
+  }, [profile?.id]);
 
   function onReactionClick(reaction: string) {
     setOpen(false);
@@ -43,8 +55,12 @@ export function ReactionsPart({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {Object.entries(groupedReactions).map(([type, reactionGroup]) => {
-          const hasUserReacted =
-            profile?.id && reactionGroup.some((reaction) => reaction.userid === profile.id);
+          // 检查用户是否已经对该反应做出过响应
+          const hasUserReacted = profile?.id
+            ? reactionGroup.some((reaction) => reaction.userid === profile.id)
+            : visitorId
+              ? reactionGroup.some((reaction) => reaction.visitorId === visitorId)
+              : false;
 
           return (
             <div

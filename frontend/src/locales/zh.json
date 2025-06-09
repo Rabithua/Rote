@@ -340,7 +340,9 @@
         "deleteFailed": "删除失败",
         "editing": "编辑中...",
         "editSuccess": "成功",
-        "editFailed": "编辑失败"
+        "editFailed": "编辑失败",
+        "reactSuccess": "表情添加成功",
+        "reactCancelSuccess": "表情取消成功"
       }
     },
     "roteList": {

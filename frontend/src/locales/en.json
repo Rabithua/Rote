@@ -339,7 +339,9 @@
         "deleteFailed": "Delete failed",
         "editing": "Editing...",
         "editSuccess": "successful",
-        "editFailed": "Edit failed"
+        "editFailed": "Edit failed",
+        "reactSuccess": "Reaction added successfully",
+        "reactCancelSuccess": "Reaction removed successfully"
       }
     },
     "roteList": {
