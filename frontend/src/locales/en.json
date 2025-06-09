@@ -341,7 +341,8 @@
         "editSuccess": "successful",
         "editFailed": "Edit failed",
         "reactSuccess": "Reaction added successfully",
-        "reactCancelSuccess": "Reaction removed successfully"
+        "reactCancelSuccess": "Reaction removed successfully",
+        "reactFailed": "Failed to react"
       }
     },
     "roteList": {

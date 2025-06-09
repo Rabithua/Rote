@@ -342,7 +342,8 @@
         "editSuccess": "成功",
         "editFailed": "编辑失败",
         "reactSuccess": "表情添加成功",
-        "reactCancelSuccess": "表情取消成功"
+        "reactCancelSuccess": "表情取消成功",
+        "reactFailed": "表情操作失败"
       }
     },
     "roteList": {

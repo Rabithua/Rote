@@ -225,114 +225,107 @@ function RoteItem({
     );
   }
 
+  /**
+   * 反应处理相关的辅助函数集合
+   */
+  const reactionHelpers = {
+    // 获取现有反应
+    async findExistingReaction(reaction: string, isAuthenticated: boolean) {
+      if (isAuthenticated) {
+        return rote.reactions.find((r) => r.type === reaction && r.userid === profile?.id);
+      }
+
+      try {
+        const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+        const visitorId = await generateVisitorId();
+        return rote.reactions.find((r) => r.type === reaction && r.visitorId === visitorId);
+      } catch {
+        return null;
+      }
+    },
+
+    // 删除反应
+    async removeReaction(reaction: string, isAuthenticated: boolean) {
+      if (isAuthenticated) {
+        return await del(`/reactions/${rote.id}/${reaction}`);
+      }
+
+      const { generateVisitorId } = await import('@/utils/deviceFingerprint');
+      const visitorId = await generateVisitorId();
+      return await del(
+        `/reactions/${rote.id}/${reaction}?visitorId=${encodeURIComponent(visitorId)}`
+      );
+    },
+
+    // 添加反应
+    async addReaction(reaction: string, isAuthenticated: boolean) {
+      const reactionData: any = {
+        type: reaction,
+        roteid: rote.id,
+        metadata: { source: 'web' },
+      };
+
+      if (!isAuthenticated) {
+        const { generateVisitorId, getVisitorInfo } = await import('@/utils/deviceFingerprint');
+        reactionData.visitorId = await generateVisitorId();
+        reactionData.visitorInfo = getVisitorInfo();
+      }
+
+      return await post('/reactions', reactionData);
+    },
+
+    // 更新本地状态
+    updateLocalReactions(existingReaction: any, newReaction?: any) {
+      if (!mutate) return;
+
+      mutate(
+        (currentData) =>
+          currentData?.map((page) =>
+            Array.isArray(page)
+              ? page.map((r) =>
+                  r.id === rote.id
+                    ? {
+                        ...r,
+                        reactions: existingReaction
+                          ? r.reactions.filter((item: any) => item.id !== existingReaction.id)
+                          : [...r.reactions, newReaction],
+                      }
+                    : r
+                )
+              : page
+          ) as Rotes,
+        { revalidate: false }
+      );
+    },
+  };
+
+  /**
+   * 处理反应的主要函数
+   * 支持已登录用户和匿名访客
+   */
   async function onReaction(reaction: string) {
     const toastId = toast.loading(t('messages.sending'));
     const isAuthenticated = !!profile?.id;
 
-    // 检查用户是否已经对该反应做出过响应
-    let existingReaction: any = null;
-
-    if (isAuthenticated) {
-      existingReaction = rote.reactions.find((r) => r.type === reaction && r.userid === profile.id);
-    } else {
-      // 对于匿名用户，我们需要先获取 visitorId 来检查
-      try {
-        const { generateVisitorId } = await import('@/utils/deviceFingerprint');
-        const visitorId = await generateVisitorId();
-        existingReaction = rote.reactions.find(
-          (r) => r.type === reaction && r.visitorId === visitorId
-        );
-      } catch {
-        // 如果获取设备指纹失败，则认为没有现有反应
-        existingReaction = null;
-      }
-    }
-
     try {
+      const existingReaction = await reactionHelpers.findExistingReaction(
+        reaction,
+        isAuthenticated
+      );
+
       if (existingReaction) {
-        // 取消反应
-        if (isAuthenticated) {
-          await del(`/reactions/${rote.id}/${reaction}`);
-        } else {
-          const { generateVisitorId } = await import('@/utils/deviceFingerprint');
-          const visitorId = await generateVisitorId();
-          await del(`/reactions/${rote.id}/${reaction}?visitorId=${encodeURIComponent(visitorId)}`);
-        }
-
-        toast.success(t('messages.reactCancelSuccess'), {
-          id: toastId,
-        });
-
-        // 从本地状态中移除反应
-        if (mutate) {
-          mutate(
-            (currentData) =>
-              currentData?.map((page) =>
-                Array.isArray(page)
-                  ? page.map((r) =>
-                      r.id === rote.id
-                        ? {
-                            ...r,
-                            reactions: r.reactions.filter(
-                              (reactionItem: any) => reactionItem.id !== existingReaction.id
-                            ),
-                          }
-                        : r
-                    )
-                  : page
-              ) as Rotes,
-            {
-              revalidate: false,
-            }
-          );
-        }
+        // 取消现有反应
+        await reactionHelpers.removeReaction(reaction, isAuthenticated);
+        toast.success(t('messages.reactCancelSuccess'), { id: toastId });
+        reactionHelpers.updateLocalReactions(existingReaction);
       } else {
         // 添加新反应
-        const reactionData: any = {
-          type: reaction,
-          roteid: rote.id,
-          metadata: {
-            source: 'web',
-          },
-        };
-
-        if (!isAuthenticated) {
-          const { generateVisitorId, getVisitorInfo } = await import('@/utils/deviceFingerprint');
-          const visitorId = await generateVisitorId();
-          const visitorInfo = getVisitorInfo();
-
-          reactionData.visitorId = visitorId;
-          reactionData.visitorInfo = visitorInfo;
-        }
-
-        const res = await post('/reactions', reactionData);
-
-        toast.success(t('messages.reactSuccess'), {
-          id: toastId,
-        });
-
-        // 添加反应到本地状态
-        if (mutate) {
-          mutate(
-            (currentData) =>
-              currentData?.map((page) =>
-                Array.isArray(page)
-                  ? page.map((r) =>
-                      r.id === rote.id ? { ...r, reactions: [...r.reactions, res.data] } : r
-                    )
-                  : page
-              ) as Rotes,
-            {
-              revalidate: false,
-            }
-          );
-        }
+        const res = await reactionHelpers.addReaction(reaction, isAuthenticated);
+        toast.success(t('messages.reactSuccess'), { id: toastId });
+        reactionHelpers.updateLocalReactions(null, res.data);
       }
     } catch {
-      // 如果操作失败，显示错误消息
-      toast.error(t('messages.reactFailed'), {
-        id: toastId,
-      });
+      toast.error(t('messages.reactFailed'), { id: toastId });
     }
   }
 
