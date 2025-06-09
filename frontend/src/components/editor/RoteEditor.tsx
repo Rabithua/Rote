@@ -1,7 +1,7 @@
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { TagSelector } from '@/components/others/TagSelector';
 import FileSelector from '@/components/others/uploader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';
@@ -234,7 +234,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
             key={item}
           >
             {item}
-            <X className="size-3 text-[#00000080] duration-300 hover:scale-95" />
+            <X className="text-primary size-3 duration-300 hover:scale-95" />
           </div>
         ))}
       </div>
