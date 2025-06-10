@@ -189,11 +189,13 @@
         "title": "ServiceWoker通知",
         "description": "ServiceWorker可以使用某些高级功能，比如后台通知等。",
         "status": "状态：",
+        "noStatus": "无状态",
         "serviceId": "服务标识:",
         "notificationTest": "通知测试",
         "permissionProcessing": "权限处理中...",
         "complete": "完成",
         "sendSuccess": "发送成功！",
+        "sendFailed": "发送失败",
         "example": "使用示例：",
         "notSupported": "当前浏览器不支持 ServiceWorker",
         "swNotActive": "ServiceWorker 未激活"

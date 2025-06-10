@@ -273,7 +273,7 @@ function RoteItem({
                 tags: [tag],
               }}
             >
-              <div className="bg-foreground/3 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
+              <div className="bg-foreground/10 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
                 {tag}
               </div>
             </Link>

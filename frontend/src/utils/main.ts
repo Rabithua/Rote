@@ -46,8 +46,6 @@ export function checkPermission() {
     throw new Error('No support for Push API');
   }
 
-  toast.success('权限检查通过');
-
   return;
 }
 
@@ -69,7 +67,6 @@ export async function requestNotificationPermission() {
     throw new Error('Notification permission not granted');
   }
 
-  toast.success('Permission granted successfully');
   return;
 }
 

@@ -59,7 +59,6 @@ export default function ServiceWorker() {
   }
 
   async function sub() {
-    const toastId = toast.loading(t('permissionProcessing'));
     try {
       setSwLoading(true);
       checkPermission();
@@ -67,30 +66,26 @@ export default function ServiceWorker() {
       const registration = await registerSW();
 
       if (!registration.active) {
-        return toast.error(t('swNotActive'), {
-          id: toastId,
-        });
+        toast.error(t('swNotActive'));
+        return;
       }
 
       initializeServiceWorker();
     } catch (error: unknown) {
-      toast.error(String(error), {
-        id: toastId,
-      });
+      toast.error(String(error));
     }
   }
   async function unSub() {
     setSwLoading(true);
-    del('/subscriptions/' + noticeId)
-      .then(() => {
-        setSwLoading(false);
-        setNoticeId(null);
-        setSwReady(false);
-      })
-      .catch(() => {
-        setSwLoading(false);
-        // Handle unsubscribe error
-      });
+    try {
+      await del('/subscriptions/' + noticeId);
+      setSwLoading(false);
+      setNoticeId(null);
+      setSwReady(false);
+    } catch {
+      setSwLoading(false);
+      // 静默处理错误，用户可以通过UI状态了解结果
+    }
   }
 
   useEffect(() => {
@@ -116,11 +111,10 @@ export default function ServiceWorker() {
       <div className="flex items-center gap-2">
         <span className="font-semibold">{t('status')}</span>
         <Switch
-          disabled={!navigator.serviceWorker}
           className="bg-foreground/3"
           checked={swReady}
-          onChange={(e) => {
-            if (e) {
+          onClick={() => {
+            if (!swReady) {
               sub();
             } else {
               unSub();
@@ -135,9 +129,13 @@ export default function ServiceWorker() {
           <div
             className="bg-background flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
             onClick={() => {
-              noticeTest(noticeId, '自在废物', '这是我的博客。').then(() => {
-                toast.success(t('notificationSent'));
-              });
+              noticeTest(noticeId, '自在废物', '这是我的博客。')
+                .then(() => {
+                  toast.success(t('sendSuccess'));
+                })
+                .catch(() => {
+                  toast.error(t('sendFailed'));
+                });
             }}
           >
             <Bell className="size-4" />

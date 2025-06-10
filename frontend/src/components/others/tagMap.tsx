@@ -40,7 +40,7 @@ export default function TagMap() {
                 tags: [item],
               }}
             >
-              <div className="bg-foreground/3 flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
+              <div className="bg-foreground/10 flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
                 {item}
               </div>
             </Link>

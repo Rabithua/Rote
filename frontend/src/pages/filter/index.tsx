@@ -111,13 +111,13 @@ function MineFilter() {
         starColor="#07C160"
         className="relative max-h-[25vh] overflow-hidden bg-none"
       >
-        <div className="relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none p-4 pb-0 font-semibold">
+        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none p-4 pb-0 font-semibold">
           <div className="relative flex flex-wrap items-center gap-2">
             {t('includeTags')}
             {filter.tags.hasEvery.length > 0
               ? filter.tags.hasEvery.map((tag: any, index: any) => (
                   <div
-                    className="bg-foreground/3 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
+                    className="bg-foreground/10 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
                     key={`tag-${index}`}
                     onClick={() => tagsClickHandler(tag)}
                   >
@@ -131,7 +131,7 @@ function MineFilter() {
             {tags && tags.length > 0
               ? tags.map((tag) => (
                   <div key={tag} onClick={() => tagsClickHandler(tag)}>
-                    <div className="bg-foreground/3 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
+                    <div className="bg-foreground/6 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
                       {tag}
                     </div>
                   </div>

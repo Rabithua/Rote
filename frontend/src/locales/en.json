@@ -184,11 +184,13 @@
         "title": "ServiceWorker Notification",
         "description": "ServiceWorker enables advanced features like background notifications.",
         "status": "Status:",
+        "noStatus": "No status",
         "serviceId": "Service ID:",
         "notificationTest": "Test Notification",
         "permissionProcessing": "Processing permissions...",
         "complete": "Complete",
         "sendSuccess": "Sent successfully!",
+        "sendFailed": "Send failed",
         "example": "Usage Example:",
         "notSupported": "Current browser does not support ServiceWorker",
         "swNotActive": "ServiceWorker is not active, please refresh the page"
