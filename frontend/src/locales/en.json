@@ -231,6 +231,7 @@
     "d3": {
       "heatmap": {
         "noData": "No HeatMap Data",
+        "note": "Note",
         "notes": "Notes",
         "daysOfWeek": {
           "Sun": "Sun",

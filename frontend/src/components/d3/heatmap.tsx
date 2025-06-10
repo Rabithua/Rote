@@ -1,11 +1,11 @@
 // src/Heatmap.tsx
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { HeatMapDay } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { SquareDashed } from 'lucide-react';
 import moment from 'moment';
 import React from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';
 
@@ -79,12 +79,6 @@ const Heatmap: React.FC = () => {
     return weeks;
   }
 
-  const handleDayClick = (day: HeatMapDay) => {
-    toast(`${moment.utc(day.date).format('YYYY/MM/DD')} ${day.notesCount} Notes.`, {
-      icon: '🌱',
-    });
-  };
-
   return (
     <>
       {isLoading ? (
@@ -109,16 +103,26 @@ const Heatmap: React.FC = () => {
             {parseDays(heatmapData).map((week: HeatMapDay[], index: number) => (
               <div key={`week_${index}`} className="flex flex-col gap-1.5 md:gap-1">
                 {week.map((day: HeatMapDay, dayIndex: number) => (
-                  <div
-                    key={dayIndex}
-                    className="size-5 rounded-xs duration-300 hover:scale-105 md:size-4"
-                    style={{
-                      backgroundColor: day.notesCount
-                        ? colors[Math.min(day.notesCount, colors.length - 1)]
-                        : colors[0],
-                    }}
-                    onClick={() => handleDayClick(day)}
-                  ></div>
+                  <Tooltip key={dayIndex}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="size-5 cursor-pointer rounded-xs duration-300 hover:scale-105 md:size-4"
+                        style={{
+                          backgroundColor: day.notesCount
+                            ? colors[Math.min(day.notesCount, colors.length - 1)]
+                            : colors[0],
+                        }}
+                      ></div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-center">
+                        <div>{moment.utc(day.date).format('YYYY/MM/DD')}</div>
+                        <div className="text-xs opacity-80">
+                          {day.notesCount} {day.notesCount === 1 ? t('note') : t('notes')}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             ))}

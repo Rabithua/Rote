@@ -232,6 +232,7 @@
     "d3": {
       "heatmap": {
         "noData": "热力图暂无数据",
+        "note": "笔记",
         "notes": "笔记",
         "daysOfWeek": {
           "Sun": "周日",
