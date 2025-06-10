@@ -108,10 +108,11 @@ model Reaction {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@unique([userid, roteid, type], name: "unique_user_reaction")
-  @@unique([visitorId, roteid, type], name: "unique_visitor_reaction")
+
+  @@unique([userid, visitorId, roteid, type], name: "unique_reaction")
   @@index([roteid, type]) // 便于查询某个 Rote 的特定类型反应
   @@index([userid]) // 便于查询用户的所有反应
+  @@index([visitorId]) // 便于查询访客的所有反应
 }
 
 model Session {
