@@ -11,8 +11,8 @@ import { del, get, post } from '@/utils/api';
 import { Bell, Loader, MoreVertical, Terminal, Trash2 } from 'lucide-react';
 import moment from 'moment';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import useSWR from 'swr';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';
 

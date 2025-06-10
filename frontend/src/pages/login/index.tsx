@@ -16,9 +16,9 @@ import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { z } from 'zod';
 const { safeRoutes } = mainJson;
 

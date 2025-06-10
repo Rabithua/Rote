@@ -4,11 +4,11 @@ import { useAtom } from 'jotai';
 import Linkify from 'linkify-react';
 import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon, User } from 'lucide-react';
 import moment from 'moment';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';

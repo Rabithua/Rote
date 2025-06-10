@@ -5,8 +5,8 @@ import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import MobileDetect from 'mobile-detect';
 import { useEffect } from 'react';
-import toast from 'react-hot-toast';
 import { Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export const ProtectedRoute = ({ children }: any) => {
   const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>

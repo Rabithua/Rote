@@ -4,8 +4,8 @@ import { del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { SoftBottom } from '../others/SoftBottom';
 import SubList, { noticeTest } from './SubList';
 

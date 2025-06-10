@@ -1,5 +1,5 @@
 import type { Rotes } from '@/types/main';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 
 export function formatTimeAgo(givenTime: string): string {
   const givenDate = new Date(givenTime);

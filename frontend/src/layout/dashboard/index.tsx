@@ -4,9 +4,9 @@ import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface IconType {
   svg: JSX.Element;

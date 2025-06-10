@@ -26,9 +26,9 @@ import moment from 'moment';
 import { useCallback, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import Cropper from 'react-easy-crop';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 function ProfilePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });

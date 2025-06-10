@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { HelmetProvider, Helmet } from '@dr.pogodin/react-helmet';
-import { Toaster } from 'react-hot-toast';
+import { Toaster } from '@/components/ui/sonner';
 import { SWRConfig } from 'swr';
 import GlobalRouterProvider from './route/main';
 import { ThemeProvider } from './components/theme-provider';
@@ -62,7 +62,7 @@ const AppWrapper = () => {
           <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
             <GlobalRouterProvider />
           </ThemeProvider>
-          <Toaster position="top-right" reverseOrder={false} />
+          <Toaster position="top-right" />
         </SWRConfig>
       </HelmetProvider>
     </React.StrictMode>

@@ -1,3 +1,4 @@
+import { SoftBottom } from '@/components/others/SoftBottom';
 import { Button } from '@/components/ui/button';
 import type { Attachment } from '@/types/main';
 import { saveAs } from 'file-saver';
@@ -5,10 +6,9 @@ import { toPng } from 'html-to-image';
 import { Link, Save } from 'lucide-react';
 import moment from 'moment';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
-import { SoftBottom } from '@/components/others/SoftBottom';
+import { toast } from 'sonner';
 
 function RoteShareCard({ rote }: any) {
   const { t } = useTranslation('translation', {

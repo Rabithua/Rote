@@ -9,7 +9,7 @@ import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
 import { useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
