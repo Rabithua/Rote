@@ -167,7 +167,9 @@
       "star": "Stars",
       "fork": "Forks",
       "issues": "Issues",
-      "watch": "Watch"
+      "watch": "Watch",
+      "githubOpenSource": "Rote 已在 Github 开源，欢迎 Star!",
+      "lastPushTime": "上次推送时间："
     },
     "experiment": {
       "title": "实验室",

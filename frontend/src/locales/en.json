@@ -162,7 +162,9 @@
       "star": "Stars",
       "fork": "Forks",
       "issues": "Issues",
-      "watch": "Watch"
+      "watch": "Watch",
+      "githubOpenSource": "Rote is open source on Github, welcome to Star!",
+      "lastPushTime": "Last push time: "
     },
     "experiment": {
       "title": "Experiment",

@@ -68,7 +68,7 @@ function ExplorePage() {
           <LoadingPlaceholder className="py-8" size={6} />
         ) : (
           <Link target="_blank" to={roteGithubData.html_url} className="flex flex-col gap-2 p-4">
-            <div className="text-sm font-thin">Rote 已在 Github 开源，欢迎 Star!</div>
+            <div className="text-sm font-thin">{t('githubOpenSource')}</div>
             <div className="grid w-4/5 grid-cols-2 justify-between gap-2">
               {dataRender.map((item) => (
                 <div key={item.key} className="flex items-center gap-2">
@@ -79,7 +79,10 @@ function ExplorePage() {
                 </div>
               ))}
             </div>
-            <div className="">上次推送时间：{formatTimeAgo(roteGithubData.pushed_at)}</div>
+            <div className="text-info text-xs">
+              {t('lastPushTime')}
+              {formatTimeAgo(roteGithubData.pushed_at)}
+            </div>
           </Link>
         )}
 
