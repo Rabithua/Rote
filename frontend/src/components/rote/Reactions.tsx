@@ -4,10 +4,8 @@ import mainJson from '@/json/main.json';
 import type { Profile, Reaction, Rote, Rotes } from '@/types/main';
 import { del, get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
-import { SmilePlus } from 'lucide-react';
+import { Loader, SmilePlus } from 'lucide-react';
 import React, { useState } from 'react';
-import toast from 'react-hot-toast';
-import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
@@ -45,16 +43,13 @@ const getVisitorId = async (): Promise<string | null> => {
 };
 
 export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps) {
-  const { t } = useTranslation('translation', {
-    keyPrefix: 'components.roteItem',
-  });
-
   const { data: profile } = useAPIGet<Profile>('profile', () =>
     get('/users/me/profile').then((res) => res.data)
   );
 
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isAuthenticated = !!profile?.id;
 
@@ -131,7 +126,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
    */
   const handleReaction = React.useCallback(
     async (reactionType: string) => {
-      const toastId = toast.loading(t('messages.sending'));
+      setIsLoading(true);
 
       try {
         const existingReaction = findUserReaction(reactionType);
@@ -149,7 +144,6 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
             }
           }
 
-          toast.success(t('messages.reactCancelSuccess'), { id: toastId });
           updateLocalReactions(existingReaction);
         } else {
           // 添加新反应
@@ -169,14 +163,15 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
           }
 
           const response = await post('/reactions', reactionData);
-          toast.success(t('messages.reactSuccess'), { id: toastId });
           updateLocalReactions(undefined, response.data);
         }
       } catch {
-        toast.error(t('messages.reactFailed'), { id: toastId });
+        // 静默处理错误
+      } finally {
+        setIsLoading(false);
       }
     },
-    [rote.id, isAuthenticated, findUserReaction, updateLocalReactions, t]
+    [rote.id, isAuthenticated, findUserReaction, updateLocalReactions]
   );
 
   /**
@@ -237,7 +232,11 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger>
-          <SmilePlus className="bg-foreground/5 size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
+          {isLoading ? (
+            <Loader className="bg-foreground/5 size-6 animate-spin cursor-pointer rounded-2xl p-1 duration-300" />
+          ) : (
+            <SmilePlus className="bg-foreground/5 size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
+          )}
         </PopoverTrigger>
         <PopoverContent side="bottom" className="bg-background/90 w-fit p-0 backdrop-blur-sm">
           <div className="grid grid-cols-6 divide-x divide-y">
