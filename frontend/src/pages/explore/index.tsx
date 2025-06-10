@@ -1,3 +1,4 @@
+import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import NavHeader from '@/components/layout/navHeader';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RandomCat from '@/components/others/RandomCat';
@@ -72,8 +73,8 @@ function ExplorePage() {
               {dataRender.map((item) => (
                 <div key={item.key} className="flex items-center gap-2">
                   {item.icon}
-                  <div className="text-sm">
-                    {roteGithubData[item.key]} {item.title}
+                  <div className="flex items-center gap-1 text-sm">
+                    <SlidingNumber number={roteGithubData[item.key]} /> {item.title}
                   </div>
                 </div>
               ))}

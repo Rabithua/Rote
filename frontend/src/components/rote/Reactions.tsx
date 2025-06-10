@@ -1,3 +1,5 @@
+import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import mainJson from '@/json/main.json';
 import type { Profile, Reaction, Rote, Rotes } from '@/types/main';
 import { del, get, post } from '@/utils/api';
@@ -8,7 +10,6 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 const { preReactions } = mainJson;
 
@@ -228,7 +229,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
               onClick={() => handleReactionClick(type)}
             >
               <span>{type}</span>
-              <span className="text-xs">{reactionGroup.length}</span>
+              <SlidingNumber className="text-xs" number={reactionGroup.length} />
             </div>
           );
         })}
