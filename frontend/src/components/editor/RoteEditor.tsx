@@ -9,8 +9,8 @@ import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 
@@ -60,8 +60,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         });
         await uploadAttachments(res.data);
       })
-      .catch(() => {
-        toast.error(t('sendFailed'), {
+      .catch((error) => {
+        toast.error(`${t('sendFailed')}: ${error.response.data.message}`, {
           id: toastId,
         });
       })
