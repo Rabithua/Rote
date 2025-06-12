@@ -101,8 +101,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           });
           reslove(res);
         });
-      } catch {
-        toast.error(t('uploadFailed'), {
+      } catch (error) {
+        toast.error(`${t('uploadFailed')}: ${(error as any).response?.data?.message ?? ''}`, {
           id: toastId,
         });
         // Error uploading image

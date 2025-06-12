@@ -133,8 +133,8 @@ export default function ServiceWorker() {
                 .then(() => {
                   toast.success(t('sendSuccess'));
                 })
-                .catch(() => {
-                  toast.error(t('sendFailed'));
+                .catch((error) => {
+                  toast.error(`${t('sendFailed')}: ${error.response.data.message}`);
                 });
             }}
           >
