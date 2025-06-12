@@ -8,6 +8,7 @@ import { PrismaSessionStore } from '@quixo3/prisma-session-store';
 import prisma from './utils/prisma';
 
 import { rateLimiterMiddleware } from './middleware/limiter';
+import { errorHandler } from './utils/handlers';
 import { recorderIpAndTime } from './utils/recoder';
 
 import routerV1 from './route/v1';
@@ -61,10 +62,13 @@ app.use(
 app.use('/v1/api', routerV1);
 app.use('/v2/api', routerV2); // New RESTful API
 
+// Global error handler (must be after all routes)
+app.use(errorHandler);
+
 app.get('*', (req, res) => {
   res.status(404).send({
     code: 1,
-    msg: 'Api not found!',
+    message: 'Api not found!',
     data: null,
   });
 });
