@@ -43,7 +43,7 @@ export default function NavBar({ title, icon, children, onNavClick }: NavHeaderP
         <div className="flex items-center divide-x-1">
           {!isMainNavPage && (
             <div
-              className="hover:text-theme flex cursor-pointer items-center gap-2 px-2 duration-300"
+              className="hover:text-theme flex cursor-pointer items-center gap-2 pr-2 duration-300"
               onClick={(e) => {
                 e.stopPropagation();
                 back();
