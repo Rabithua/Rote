@@ -7,7 +7,7 @@ import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { Rote } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
-import { Navigation, Rss, User } from 'lucide-react';
+import { Navigation, RefreshCw, Rss, User } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -22,7 +22,15 @@ function SingleRotePage() {
     isLoading,
     error,
     mutate,
+    isValidating,
   } = useAPIGet<Rote>(roteid || '', () => get('/notes/' + roteid).then((res) => res.data));
+
+  const refreshData = () => {
+    if (isLoading || isValidating) {
+      return;
+    }
+    mutate();
+  };
 
   useEffect(() => {
     if (!roteid) {
@@ -93,7 +101,12 @@ function SingleRotePage() {
       }
       className="pb-16"
     >
-      <NavBar />
+      <NavBar onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
       <RoteItem rote={rote} mutateSingle={mutate} />
       {rote.author && (
         <Link to={`/${rote.author.username}`}>

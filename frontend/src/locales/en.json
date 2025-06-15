@@ -147,6 +147,7 @@
       }
     },
     "filter": {
+      "title": "Filter",
       "includeTags": "Including Tags:",
       "allTags": "All Tags:",
       "none": "NONE",

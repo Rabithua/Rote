@@ -152,6 +152,7 @@
       }
     },
     "filter": {
+      "title": "筛选 / Filter",
       "includeTags": "包含标签：",
       "allTags": "所有标签：",
       "none": "无",

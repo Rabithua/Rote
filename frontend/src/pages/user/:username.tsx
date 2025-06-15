@@ -1,6 +1,5 @@
 import defaultCover from '@/assets/img/defaultCover.png';
 import NavBar from '@/components/layout/navBar';
-import NavHeader from '@/components/layout/navHeader';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteList from '@/components/rote/roteList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,7 +10,7 @@ import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import Linkify from 'linkify-react';
-import { Globe2, Rss, Stars, User } from 'lucide-react';
+import { Globe2, RefreshCw, Rss, Stars, User } from 'lucide-react';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -44,10 +43,23 @@ function UserPage() {
     },
   });
 
-  const { data, mutate, loadMore } = useAPIInfinite(getPropsUserPublic, getRotesV2, {
+  const {
+    data,
+    mutate,
+    loadMore,
+    isLoading: isRoteLoading,
+    isValidating,
+  } = useAPIInfinite(getPropsUserPublic, getRotesV2, {
     initialSize: 0,
     revalidateFirstPage: false,
   });
+
+  const refreshData = () => {
+    if (isRoteLoading || isValidating) {
+      return;
+    }
+    mutate();
+  };
 
   const SideBar = () => (
     <div className="grid grid-cols-3 divide-x-1 border-b">
@@ -95,7 +107,28 @@ function UserPage() {
           </div>
         }
       >
-        <NavBar />
+        <NavBar
+          title={
+            <>
+              <Avatar className="bg-background size-6 shrink-0 border sm:block">
+                {userInfo?.avatar ? (
+                  <AvatarImage src={userInfo.avatar} />
+                ) : (
+                  <AvatarFallback>
+                    <User className="size-4 text-[#00000010]" />
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <span>{userInfo?.nickname || userInfo?.username}</span>
+            </>
+          }
+          onNavClick={refreshData}
+        >
+          {isLoading ||
+            (isValidating && (
+              <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+            ))}
+        </NavBar>
         <div className="pb-4">
           <div className="relative aspect-[3] max-h-80 w-full overflow-hidden">
             <img className="h-full w-full" src={userInfo?.cover || defaultCover} alt="" />
@@ -126,7 +159,10 @@ function UserPage() {
           </div>
         </div>
 
-        <NavHeader title={t('publicNotes')} icon={<Globe2 className="size-6" />} />
+        <div className="bg-background flex w-full items-center gap-2 px-2 py-4 text-lg font-semibold">
+          <Globe2 className="ml-2 size-6" />
+          {t('publicNotes')}
+        </div>
 
         {userInfo && <RoteList data={data} loadMore={loadMore} mutate={mutate} />}
       </ContainerWithSideBar>

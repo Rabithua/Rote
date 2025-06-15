@@ -1,5 +1,5 @@
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
-import NavHeader from '@/components/layout/navHeader';
+import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RandomCat from '@/components/others/RandomCat';
 import RoteList from '@/components/rote/roteList';
@@ -8,7 +8,15 @@ import type { ApiGetRotesParams, Rotes } from '@/types/main';
 import { useAPIInfinite } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import { getRotesV2 } from '@/utils/roteApi';
-import { Eye, GitFork, Github, Globe2, MessageCircleQuestionIcon, Star } from 'lucide-react';
+import {
+  Eye,
+  GitFork,
+  Github,
+  Globe2,
+  MessageCircleQuestionIcon,
+  RefreshCw,
+  Star,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useSWR from 'swr';
@@ -28,10 +36,21 @@ function ExplorePage() {
     },
   });
 
-  const { data, mutate, loadMore } = useAPIInfinite(getPropsPublic, getRotesV2, {
-    initialSize: 0,
-    revalidateFirstPage: false,
-  });
+  const { data, mutate, loadMore, isLoading, isValidating } = useAPIInfinite(
+    getPropsPublic,
+    getRotesV2,
+    {
+      initialSize: 0,
+      revalidateFirstPage: false,
+    }
+  );
+
+  const refreshData = () => {
+    if (isLoading || isValidating) {
+      return;
+    }
+    mutate();
+  };
 
   const SideBar = () => {
     const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
@@ -114,7 +133,12 @@ function ExplorePage() {
         </div>
       }
     >
-      <NavHeader title={t('title')} icon={<Globe2 className="size-6" />} />
+      <NavBar title={t('title')} icon={<Globe2 className="size-6" />} onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
       <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );

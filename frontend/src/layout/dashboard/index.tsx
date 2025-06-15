@@ -15,6 +15,49 @@ interface IconType {
   callback?: () => void;
 }
 
+export const tabsData: IconType[][] = [
+  [
+    {
+      svg: <Home className="size-4" />,
+      link: '/home',
+      name: 'home',
+    },
+    {
+      svg: <Globe2 className="size-4" />,
+      link: '/explore',
+      name: 'explore',
+    },
+
+    {
+      svg: <Archive className="size-4" />,
+      link: '/archived',
+      name: 'archived',
+    },
+    {
+      svg: <User className="size-4" />,
+      link: '/profile',
+
+      name: 'profile',
+    },
+    {
+      svg: <Snail className="size-4" />,
+      link: '/experiment',
+      name: 'experiment',
+    },
+    {
+      svg: <LogOut className="size-4" />,
+      name: 'logout',
+    },
+  ],
+  [
+    {
+      svg: <LogIn className="size-4" />,
+      link: '/login',
+      name: 'login',
+    },
+  ],
+];
+
 function LayoutDashboard() {
   const location = useLocation();
   const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
@@ -22,50 +65,6 @@ function LayoutDashboard() {
   );
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
-
-  const iconsData: IconType[][] = [
-    [
-      {
-        svg: <Home className="size-4" />,
-        link: '/home',
-        name: 'home',
-      },
-      {
-        svg: <Globe2 className="size-4" />,
-        link: '/explore',
-        name: 'explore',
-      },
-
-      {
-        svg: <Archive className="size-4" />,
-        link: '/archived',
-        name: 'archived',
-      },
-      {
-        svg: <User className="size-4" />,
-        link: '/profile',
-
-        name: 'profile',
-      },
-      {
-        svg: <Snail className="size-4" />,
-        link: '/experiment',
-        name: 'experiment',
-      },
-      {
-        svg: <LogOut className="size-4" />,
-        name: 'logout',
-        callback: logOutFn,
-      },
-    ],
-    [
-      {
-        svg: <LogIn className="size-4" />,
-        link: '/login',
-        name: 'login',
-      },
-    ],
-  ];
 
   function logOutFn() {
     const toastId = toast.loading(t('messages.loggingOut'));
@@ -106,7 +105,7 @@ function LayoutDashboard() {
           </div>
         </div>
       </Link>
-    ) : (
+    ) : icon.name === 'logout' ? (
       <div
         key={icon.name}
         className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
@@ -114,18 +113,14 @@ function LayoutDashboard() {
             ? 'bg-foreground text-primary-foreground'
             : 'hover:bg-foreground/5'
         } ${icon.name === 'logout' ? 'hover:bg-red-600/10 hover:text-red-600' : ''} `}
-        onClick={() => {
-          if (icon.callback) {
-            icon.callback();
-          }
-        }}
+        onClick={logOutFn}
       >
         {icon.svg}
         <div className="hidden shrink-0 tracking-widest xl:block">
           {t(`leftNavBar.${icon.name}`)}
         </div>
       </div>
-    );
+    ) : null;
   }
 
   return (
@@ -135,9 +130,9 @@ function LayoutDashboard() {
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (
-            iconsData[0].map((icon) => IconRenderItem(icon))
+            tabsData[0].map((icon) => IconRenderItem(icon))
           ) : (
-            iconsData[1].map((icon) => IconRenderItem(icon))
+            tabsData[1].map((icon) => IconRenderItem(icon))
           )}
         </div>
 

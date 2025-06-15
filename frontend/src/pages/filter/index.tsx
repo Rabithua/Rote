@@ -9,7 +9,7 @@ import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
-import { ActivityIcon } from 'lucide-react';
+import { ActivityIcon, RefreshCw } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -81,12 +81,19 @@ function MineFilter() {
     [filter.tags.hasEvery, filter.keyword]
   );
 
-  const { data, mutate, loadMore } = useAPIInfinite(getProps, getRotesV2, {
+  const { data, mutate, loadMore, isLoading, isValidating } = useAPIInfinite(getProps, getRotesV2, {
     initialSize: 1,
     revalidateFirstPage: false,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   });
+
+  const refreshData = () => {
+    if (isLoading || isValidating) {
+      return;
+    }
+    mutate();
+  };
 
   const tagsClickHandler = useCallback((tag: string) => {
     setFilter((prevState) => {
@@ -157,7 +164,13 @@ function MineFilter() {
         </div>
       }
     >
-      <NavBar />
+      <NavBar title={t('title')} onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
+
       <SearchBar
         defaultValue={filter.keyword}
         onSearch={(keyword) => {

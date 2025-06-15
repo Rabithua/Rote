@@ -1,5 +1,5 @@
 import defaultCover from '@/assets/img/defaultCover.png';
-import NavHeader from '@/components/layout/navHeader';
+import NavBar from '@/components/layout/navBar';
 import OpenKeyItem from '@/components/openKey/openKey';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -246,7 +246,7 @@ function ProfilePage() {
       }
     >
       <div className="flex flex-col divide-y-1 pb-20">
-        <NavHeader title={t('title')} icon={<UserCircle2 className="size-8" />} />
+        <NavBar title={t('title')} icon={<UserCircle2 className="size-8" />} />
         <div className="pb-4">
           <div className="relative aspect-[3] w-full overflow-hidden">
             <img

@@ -1,13 +1,13 @@
 import Heatmap from '@/components/d3/heatmap';
-import NavHeader from '@/components/layout/navHeader';
+import NavBar from '@/components/layout/navBar';
+import TagMap from '@/components/others/tagMap';
 import RandomRote from '@/components/rote/randomRote';
 import RoteList from '@/components/rote/roteList';
-import TagMap from '@/components/others/tagMap';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Rotes } from '@/types/main';
 import { useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
-import { Archive, ChartAreaIcon } from 'lucide-react';
+import { Archive, ChartAreaIcon, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 function ArchivedPage() {
@@ -25,10 +25,22 @@ function ArchivedPage() {
     },
   });
 
-  const { data, mutate, loadMore } = useAPIInfinite(getPropsMineArchived, getRotesV2, {
-    initialSize: 0,
-    revalidateFirstPage: false,
-  });
+  const { data, mutate, loadMore, isLoading, isValidating } = useAPIInfinite(
+    getPropsMineArchived,
+    getRotesV2,
+    {
+      initialSize: 0,
+      revalidateFirstPage: false,
+    }
+  );
+
+  const refreshData = () => {
+    if (isLoading || isValidating) {
+      return;
+    }
+
+    mutate();
+  };
 
   const SideBar = () => (
     <>
@@ -50,7 +62,13 @@ function ArchivedPage() {
         </div>
       }
     >
-      <NavHeader title={t('title')} icon={<Archive className="size-6" />} />
+      <NavBar title={t('title')} icon={<Archive className="size-6" />} onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
+
       <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );

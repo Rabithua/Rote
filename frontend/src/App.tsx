@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { HelmetProvider, Helmet } from '@dr.pogodin/react-helmet';
 import { Toaster } from '@/components/ui/sonner';
+import { Helmet, HelmetProvider } from '@dr.pogodin/react-helmet';
+import React, { useCallback, useEffect, useState } from 'react';
 import { SWRConfig } from 'swr';
-import GlobalRouterProvider from './route/main';
 import { ThemeProvider } from './components/theme-provider';
+import GlobalRouterProvider from './route/main';
 
 const AppWrapper = () => {
   const [, setIsDarkMode] = useState(false);
