@@ -124,7 +124,7 @@ function MineFilter() {
             {filter.tags.hasEvery.length > 0
               ? filter.tags.hasEvery.map((tag: any, index: any) => (
                   <div
-                    className="bg-foreground/10 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
+                    className="bg-foreground/5 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
                     key={`tag-${index}`}
                     onClick={() => tagsClickHandler(tag)}
                   >

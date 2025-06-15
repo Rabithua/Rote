@@ -1,11 +1,11 @@
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { SoftBottom } from '@/components/others/SoftBottom';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { ArrowDownLeft, Tag } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import { SoftBottom } from '@/components/others/SoftBottom';
 
 export default function TagMap() {
   const { t } = useTranslation('translation', {
@@ -40,7 +40,7 @@ export default function TagMap() {
                 tags: [item],
               }}
             >
-              <div className="bg-foreground/10 flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
+              <div className="bg-foreground/5 flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
                 {item}
               </div>
             </Link>

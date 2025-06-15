@@ -219,7 +219,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
               className={`flex h-6 cursor-pointer items-center gap-2 rounded-full px-2 pr-3 text-xs duration-300 ${
                 userReacted
                   ? 'bg-theme/10 text-theme border-theme/30 hover:bg-theme/30 border-[0.5px]'
-                  : 'bg-foreground/5 hover:bg-foreground/10'
+                  : 'bg-foreground/5 hover:bg-foreground/5'
               }`}
               onClick={() => handleReactionClick(type)}
             >
