@@ -101,31 +101,29 @@ function SingleRotePage() {
       }
       className="pb-16"
     >
-      <NavBar onNavClick={refreshData}>
+      <NavBar
+        onNavClick={refreshData}
+        title={
+          <Link to={`/${rote.author?.username}`} className="flex items-center gap-2 md:hidden">
+            <Avatar className="bg-background size-6 shrink-0 border sm:block">
+              {rote.author?.avatar ? (
+                <AvatarImage src={rote.author?.avatar} />
+              ) : (
+                <AvatarFallback>
+                  <User className="size-4 text-[#00000010]" />
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <span>{rote.author?.nickname || rote.author?.username}</span>
+          </Link>
+        }
+      >
         {isLoading ||
           (isValidating && (
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
           ))}
       </NavBar>
       <RoteItem rote={rote} mutateSingle={mutate} />
-      {rote.author && (
-        <Link to={`/${rote.author.username}`}>
-          <div className="bg-background/90 fixed right-0 bottom-16 left-0 z-30 mx-auto flex w-fit cursor-pointer items-center justify-center gap-4 rounded-full border px-6 py-2 backdrop-blur-xl duration-300 hover:scale-95 md:hidden">
-            <Avatar className="text-primary bg-foreground/5 size-10">
-              {rote?.author.avatar ? (
-                <AvatarImage src={rote.author.avatar} />
-              ) : (
-                <AvatarFallback>
-                  <User className="text-primary size-4" />
-                </AvatarFallback>
-              )}
-            </Avatar>
-            <div className="flex items-center gap-2">
-              <div className="text-primary text-base font-semibold">{rote?.author.nickname}</div>
-            </div>
-          </div>
-        </Link>
-      )}
     </ContainerWithSideBar>
   ) : (
     <div className="flex h-full w-full items-center justify-center">{error}</div>

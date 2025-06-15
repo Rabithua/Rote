@@ -40,7 +40,7 @@ const AppWrapper = () => {
     <React.StrictMode>
       <HelmetProvider>
         <Helmet>
-          <title>Rote - Personal note like twitter</title>
+          <title>Rote</title>
           <link rel="icon" href="https://r2.rote.ink/others/logo.png" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
           <meta name="description" content="Web site created using create-react-app" />
