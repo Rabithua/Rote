@@ -101,29 +101,13 @@ function SingleRotePage() {
       }
       className="pb-16"
     >
-      <NavBar
-        onNavClick={refreshData}
-        title={
-          <Link to={`/${rote.author?.username}`} className="flex items-center gap-2 md:hidden">
-            <Avatar className="bg-background size-6 shrink-0 border sm:block">
-              {rote.author?.avatar ? (
-                <AvatarImage src={rote.author?.avatar} />
-              ) : (
-                <AvatarFallback>
-                  <User className="size-4 text-[#00000010]" />
-                </AvatarFallback>
-              )}
-            </Avatar>
-            <span>{rote.author?.nickname || rote.author?.username}</span>
-          </Link>
-        }
-      >
+      <NavBar onNavClick={refreshData}>
         {isLoading ||
           (isValidating && (
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
           ))}
       </NavBar>
-      <RoteItem rote={rote} mutateSingle={mutate} />
+      <RoteItem showAvatar={false} rote={rote} mutateSingle={mutate} />
     </ContainerWithSideBar>
   ) : (
     <div className="flex h-full w-full items-center justify-center">{error}</div>

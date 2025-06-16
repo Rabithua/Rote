@@ -37,14 +37,14 @@ const { roteContentExpandedLetter } = mainJson;
 
 function RoteItem({
   rote,
-  randomRoteStyle,
   mutate,
   mutateSingle,
+  showAvatar = true,
 }: {
   rote: Rote;
-  randomRoteStyle?: boolean;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
+  showAvatar?: boolean;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
@@ -69,11 +69,9 @@ function RoteItem({
     <div
       ref={ref}
       id={`Rote_${rote.id}`}
-      className={`animate-show bg-background/5 flex w-full gap-4 opacity-0 duration-300 ${
-        !randomRoteStyle && 'px-5 py-4'
-      }`}
+      className={`animate-show bg-background/5 flex w-full gap-4 px-5 py-4 opacity-0 duration-300`}
     >
-      {!randomRoteStyle && (
+      {showAvatar && (
         <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author!.username}`}>
           <Avatar className="size-[40px] bg-[#00000010]">
             {rote.author!.username === profile?.username ? (
@@ -97,25 +95,20 @@ function RoteItem({
 
       <div className="flex flex-grow flex-col overflow-hidden">
         <div className="flex w-full cursor-default items-center gap-2">
-          {!randomRoteStyle && (
-            <Link
-              className="shrink-0 cursor-pointer font-semibold hover:underline"
-              to={`/${rote.author!.username}`}
-            >
-              {rote.author!.username === profile?.username
-                ? profile?.nickname
-                : rote.author!.nickname}
-            </Link>
-          )}
+          <Link
+            className="shrink-0 cursor-pointer font-semibold hover:underline"
+            to={`/${rote.author!.username}`}
+          >
+            {rote.author!.username === profile?.username
+              ? profile?.nickname
+              : rote.author!.nickname}
+          </Link>
 
           <span className="noScrollBar text-info overflow-scroll font-normal text-nowrap">
-            {!randomRoteStyle && (
-              <>
-                <Link to={`/${rote.author!.username}`}>{`@${rote.author!.username}`}</Link>
-                <span>·</span>{' '}
-              </>
-            )}
-
+            <>
+              <Link to={`/${rote.author!.username}`}>{`@${rote.author!.username}`}</Link>
+              <span>·</span>{' '}
+            </>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
