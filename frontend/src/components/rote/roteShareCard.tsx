@@ -1,6 +1,5 @@
 import { SoftBottom } from '@/components/others/SoftBottom';
 import { Button } from '@/components/ui/button';
-import type { Attachment } from '@/types/main';
 import { saveAs } from 'file-saver';
 import { toPng } from 'html-to-image';
 import { Link, Save } from 'lucide-react';
@@ -9,6 +8,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
 import { toast } from 'sonner';
+import AttachmentsGrid from './AttachmentsGrid';
 
 function RoteShareCard({ rote }: any) {
   const { t } = useTranslation('translation', {
@@ -126,31 +126,7 @@ function RoteShareCard({ rote }: any) {
         <div className="font-serif leading-7 font-light tracking-wide break-words whitespace-pre-line md:text-lg">
           {rote.content}
         </div>
-        {rote.attachments.length > 0 && (
-          <div className="my-2 flex w-full flex-wrap gap-1 overflow-hidden rounded-2xl">
-            {rote.attachments.map((file: Attachment) => (
-              <img
-                key={file.id}
-                className={` ${
-                  rote.attachments.length % 3 === 0
-                    ? 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                    : rote.attachments.length % 2 === 0
-                      ? 'aspect-square w-[calc(1/2*100%-2px)]'
-                      : rote.attachments.length === 1
-                        ? 'w-full max-w-[500px] rounded-2xl'
-                        : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                } bg-foreground/3 grow object-cover`}
-                src={
-                  file.compressUrl
-                    ? file.compressUrl + '?' + new Date().getTime()
-                    : file.url + '?' + new Date().getTime()
-                }
-                alt=""
-                crossOrigin="anonymous"
-              />
-            ))}
-          </div>
-        )}
+        <AttachmentsGrid attachments={rote.attachments} />
         <div className="md:text-md flex flex-wrap items-center gap-2 font-serif text-xs">
           {rote.tags.map((tag: any) => (
             <span

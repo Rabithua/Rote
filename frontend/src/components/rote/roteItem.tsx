@@ -6,11 +6,11 @@ import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon, User } fro
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
-import { PhotoProvider, PhotoView } from 'react-photo-view';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
+import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
 import RoteShareCard from '@/components/rote/roteShareCard';
@@ -30,7 +30,6 @@ import { formatTimeAgo } from '@/utils/main';
 import mainJson from '@/json/main.json';
 import type { Profile, Rote, Rotes } from '@/types/main';
 
-import 'react-photo-view/dist/react-photo-view.css';
 import type { KeyedMutator } from 'swr';
 
 const { roteContentExpandedLetter } = mainJson;
@@ -232,30 +231,7 @@ function RoteItem({
           )}
         </div>
 
-        {rote.attachments.length > 0 && (
-          <div className="my-2 flex w-fit flex-wrap gap-1 overflow-hidden rounded-2xl">
-            <PhotoProvider>
-              {rote.attachments.map((file: any, index: any) => (
-                <PhotoView key={`files_${index}`} src={file.url}>
-                  <img
-                    className={`${
-                      rote.attachments.length % 3 === 0
-                        ? 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                        : rote.attachments.length % 2 === 0
-                          ? 'aspect-square w-[calc(1/2*100%-2px)]'
-                          : rote.attachments.length === 1
-                            ? 'w-full max-w-[500px] rounded-2xl border-[0.5px]'
-                            : 'aspect-square w-[calc(1/3*100%-2.6667px)]'
-                    } bg-foreground/3 grow object-cover`}
-                    src={file.compressUrl || file.url}
-                    loading="lazy"
-                    alt=""
-                  />
-                </PhotoView>
-              ))}
-            </PhotoProvider>
-          </div>
-        )}
+        <AttachmentsGrid attachments={rote.attachments} />
 
         <div className="my-2 flex flex-wrap items-center gap-2">
           {rote.tags.map((tag: any) => (
