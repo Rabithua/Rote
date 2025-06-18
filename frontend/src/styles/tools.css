@@ -1,10 +1,10 @@
 @layer utilities {
-    .textareaInit {
+    .inputOrTextAreaInit {
         @apply border-none text-base ring-0 text-pretty shadow-none outline-none;
         @apply focus:ring-0 focus:outline-none;
-        @apply min-h-40 max-h-[60dvh];
         @apply duration-200;
         @apply transition-all;
+        @apply placeholder:text-info;
         background-color: transparent !important;
     }
 

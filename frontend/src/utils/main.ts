@@ -1,5 +1,5 @@
-import type { Rotes } from "@/types/main";
-import toast from "react-hot-toast";
+import type { Rotes } from '@/types/main';
+import { toast } from 'sonner';
 
 export function formatTimeAgo(givenTime: string): string {
   const givenDate = new Date(givenTime);
@@ -14,48 +14,46 @@ export function formatTimeAgo(givenTime: string): string {
   const years = Math.floor(days / 365);
 
   if (years > 0) {
-    return years === 1 ? "1年前" : `${years}年前`;
+    return years === 1 ? '1年前' : `${years}年前`;
   } else if (months > 0) {
-    return months === 1 ? "1个月前" : `${months}个月前`;
+    return months === 1 ? '1个月前' : `${months}个月前`;
   } else if (days >= 7) {
     const weeks = Math.floor(days / 7);
-    return weeks === 1 ? "1周前" : `${weeks}周前`;
+    return weeks === 1 ? '1周前' : `${weeks}周前`;
   } else if (days > 0) {
-    return days === 1 ? "1天前" : `${days}天前`;
+    return days === 1 ? '1天前' : `${days}天前`;
   } else if (hours > 0) {
-    return hours === 1 ? "1小时前" : `${hours}小时前`;
+    return hours === 1 ? '1小时前' : `${hours}小时前`;
   } else if (minutes > 0) {
-    return minutes === 1 ? "1分钟前" : `${minutes}分钟前`;
+    return minutes === 1 ? '1分钟前' : `${minutes}分钟前`;
   } else if (seconds > 10) {
     return `${seconds}秒前`;
   } else {
-    return "刚刚";
+    return '刚刚';
   }
 }
 
 export function checkPermission() {
-  if (!("serviceWorker" in navigator)) {
-    throw new Error("No support for service worker!");
+  if (!('serviceWorker' in navigator)) {
+    throw new Error('No support for service worker!');
   }
 
-  if (!("Notification" in window)) {
-    throw new Error("No support for notification API");
+  if (!('Notification' in window)) {
+    throw new Error('No support for notification API');
   }
 
-  if (!("PushManager" in window)) {
-    throw new Error("No support for Push API");
+  if (!('PushManager' in window)) {
+    throw new Error('No support for Push API');
   }
-
-  toast.success("权限检查通过");
 
   return;
 }
 
 export async function registerSW() {
-  const registration = await navigator.serviceWorker.register("sw.js");
+  const registration = await navigator.serviceWorker.register('sw.js');
 
   if (registration.active) {
-    toast.success("Service Worker registered successfully!");
+    toast.success('Service Worker registered successfully!');
   }
 
   return registration;
@@ -64,14 +62,11 @@ export async function registerSW() {
 export async function requestNotificationPermission() {
   const permission = await Notification.requestPermission();
 
-  if (permission !== "granted") {
-    toast.error(
-      "Notification permission denied. Please enable it in your browser settings.",
-    );
-    throw new Error("Notification permission not granted");
+  if (permission !== 'granted') {
+    toast.error('Notification permission denied. Please enable it in your browser settings.');
+    throw new Error('Notification permission not granted');
   }
 
-  toast.success("Permission granted successfully");
   return;
 }
 

@@ -1,4 +1,4 @@
-import { atom, useAtom } from "jotai";
+import { atom, useAtom } from 'jotai';
 
 const showLeftNavAtom = atom(true);
 

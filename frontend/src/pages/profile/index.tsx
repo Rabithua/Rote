@@ -1,7 +1,7 @@
 import defaultCover from '@/assets/img/defaultCover.png';
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import NavHeader from '@/components/navHeader';
-import OpenKeyItem from '@/components/openKey';
+import NavBar from '@/components/layout/navBar';
+import OpenKeyItem from '@/components/openKey/openKey';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -26,14 +26,14 @@ import moment from 'moment';
 import { useCallback, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import Cropper from 'react-easy-crop';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 function ProfilePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
-  const inputAvatarRef = useRef(null);
-  const inputCoverRef = useRef(null);
+  const inputAvatarRef = useRef<HTMLInputElement>(null);
+  const inputCoverRef = useRef<HTMLInputElement>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -74,8 +74,6 @@ function ProfilePage() {
 
   function handleFileChange(event: any) {
     const selectedFile = event.target.files[0];
-    // 在这里处理选择的文件
-    console.log(selectedFile);
     setEditProfile({
       ...editProfile,
       avatar_file: selectedFile,
@@ -166,10 +164,9 @@ function ProfilePage() {
       setAvatarUploading(false);
       setIsAvatarModalOpen(false);
       toast.success(t('uploadSuccess'));
-    } catch (error) {
+    } catch {
       toast.error(t('uploadFailed'));
       setAvatarUploading(false);
-      console.error('Error uploading image:', error);
     }
   }
 
@@ -182,11 +179,10 @@ function ProfilePage() {
         setIsModalOpen(false);
         setProfileEditing(false);
       })
-      .catch((err) => {
+      .catch(() => {
         toast.error(t('editFailed'));
         setIsModalOpen(false);
         setProfileEditing(false);
-        console.error('Error edit Profile:', err);
       });
   }
 
@@ -200,8 +196,7 @@ function ProfilePage() {
 
       post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(
         (res) => {
-          console.log(res);
-          let url = res.data.data[0].compressUrl || res.data.data[0].url;
+          const url = res.data.data[0].compressUrl || res.data.data[0].url;
 
           put('/users/me/profile', {
             cover: url,
@@ -210,8 +205,7 @@ function ProfilePage() {
               mutate();
               setCoverChangeing(false);
             })
-            .catch((err) => {
-              console.error('Error edit Profile:', err);
+            .catch(() => {
               setCoverChangeing(false);
             });
         }
@@ -219,27 +213,25 @@ function ProfilePage() {
     }
   }
 
-  const SideBar = () => {
-    return (
-      <div className="grid grid-cols-3 divide-x-1 border-b">
-        <a
-          href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:bg-opacityLight dark:hover:bg-opacityDark flex cursor-pointer items-center justify-center gap-2 py-4"
-        >
-          <Rss className="size-5" />
-          <div className="text-xl">RSS</div>
-        </a>
-        <div className="flex items-center justify-center gap-2 py-4">
-          <div className="text-xl">☝️</div>
-        </div>
-        <div className="flex items-center justify-center gap-2 py-4">
-          <div className="text-xl">🤓</div>
-        </div>
+  const SideBar = () => (
+    <div className="grid grid-cols-3 divide-x-1 border-b">
+      <a
+        href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"
+      >
+        <Rss className="size-5" />
+        <div className="text-xl">RSS</div>
+      </a>
+      <div className="flex items-center justify-center gap-2 py-4">
+        <div className="text-xl">☝️</div>
       </div>
-    );
-  };
+      <div className="flex items-center justify-center gap-2 py-4">
+        <div className="text-xl">🤓</div>
+      </div>
+    </div>
+  );
 
   return (
     <ContainerWithSideBar
@@ -254,7 +246,7 @@ function ProfilePage() {
       }
     >
       <div className="flex flex-col divide-y-1 pb-20">
-        <NavHeader title={t('title')} icon={<UserCircle2 className="size-8" />} />
+        <NavBar title={t('title')} icon={<UserCircle2 className="size-8" />} />
         <div className="pb-4">
           <div className="relative aspect-[3] w-full overflow-hidden">
             <img
@@ -265,7 +257,6 @@ function ProfilePage() {
             <div
               className="absolute right-3 bottom-1 cursor-pointer rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl"
               onClick={() => {
-                // @ts-ignore
                 inputCoverRef.current?.click();
               }}
             >
@@ -284,7 +275,7 @@ function ProfilePage() {
           </div>
           <div className="mx-4 flex h-16 items-center">
             <Avatar
-              className="gLight size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] text-black sm:block"
+              className="gLight text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
               onClick={() => {
                 (inputAvatarRef.current as HTMLInputElement | null)?.click();
               }}
@@ -310,16 +301,14 @@ function ProfilePage() {
           <div className="mx-4 flex flex-col gap-1">
             <Link to={`/${profile?.username}`}>
               <h1 className="w-fit text-2xl font-semibold hover:underline">{profile?.nickname}</h1>
-              <h2 className="w-fit text-base text-gray-500 hover:underline">
-                @{profile?.username}
-              </h2>
+              <h2 className="text-info w-fit text-base hover:underline">@{profile?.username}</h2>
             </Link>
             <div className="text-base">
               <div className="aTagStyle break-words whitespace-pre-line">
                 <Linkify>{(profile?.description as any) || t('noDescription')}</Linkify>
               </div>
             </div>
-            <div className="text-base text-gray-500">
+            <div className="text-info text-base">
               {t('registerTime')}
               {moment.utc(profile?.createdAt).format('YYYY/MM/DD HH:mm:ss')}
             </div>
@@ -329,18 +318,18 @@ function ProfilePage() {
         <div className="flex flex-col divide-y-1">
           <div className="p-4 text-2xl font-semibold">
             OpenKey <br />
-            <div className="mt-2 text-sm font-normal text-gray-500">{t('openKeyDescription')}</div>
+            <div className="text-info mt-2 text-sm font-normal">{t('openKeyDescription')}</div>
           </div>
           <div className="flex flex-col divide-y-1">
             {openKeyLoading ? (
               <LoadingPlaceholder className="py-8" size={6} />
             ) : (
               <>
-                {openKeys?.map((openKey: any) => {
-                  return <OpenKeyItem key={openKey.id} openKey={openKey} mutate={mutateOpenKeys} />;
-                })}
+                {openKeys?.map((openKey: any) => (
+                  <OpenKeyItem key={openKey.id} openKey={openKey} mutate={mutateOpenKeys} />
+                ))}
                 <div className="flex flex-col items-center justify-center gap-4 py-8">
-                  {openKeys?.length === 0 && <KeyRoundIcon className="size-8 text-gray-500" />}
+                  {openKeys?.length === 0 && <KeyRoundIcon className="text-info size-8" />}
                   <Button
                     variant="secondary"
                     onClick={generateOpenKeyFun}
@@ -372,7 +361,7 @@ function ProfilePage() {
                 />
                 {/* 编辑弹窗内头像同理 */}
                 <Avatar
-                  className="mx-auto my-2 block size-20 shrink-0 cursor-pointer bg-[#00000010] text-black"
+                  className="text-primary mx-auto my-2 block size-20 shrink-0 cursor-pointer bg-[#00000010]"
                   onClick={() => {
                     (inputAvatarRef.current as HTMLInputElement | null)?.click();
                   }}

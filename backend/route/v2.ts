@@ -3,6 +3,7 @@ import express from 'express';
 import formidable from 'formidable';
 import passport from 'passport';
 import {
+  addReaction,
   addSubScriptionToUser,
   changeUserPassword,
   createAttachments,
@@ -28,6 +29,7 @@ import {
   findSubScriptionToUserByUserId,
   findUserPublicRote,
   generateOpenKey,
+  getAllPublicRssData,
   getHeatMap,
   getMyOpenKey,
   getMySession,
@@ -36,7 +38,12 @@ import {
   getSiteMapData,
   getStatus,
   getUserInfoByUsername,
+  removeReaction,
+  searchMyRotes,
+  searchPublicRotes,
+  searchUserPublicRotes,
   statistics,
+  updateSubScription,
 } from '../utils/dbMethods';
 import webpush from '../utils/webpush';
 
@@ -321,14 +328,169 @@ notesRouter.get(
   })
 );
 
+// 搜索当前用户的笔记
+notesRouter.get(
+  '/search',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const { keyword, skip, limit, archived, tag, ...otherParams } = req.query;
+    const user = req.user as User;
+
+    if (!keyword || typeof keyword !== 'string') {
+      throw new Error('Keyword is required');
+    }
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived', 'keyword'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
+
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+
+    const rotes = await searchMyRotes(
+      user.id,
+      keyword,
+      parsedSkip,
+      parsedLimit,
+      filter,
+      archived ? (archived === 'true' ? true : false) : undefined
+    );
+
+    res.status(200).json(createResponse(rotes));
+  })
+);
+
+// 搜索公开笔记
+notesRouter.get(
+  '/search/public',
+  asyncHandler(async (req, res) => {
+    const { keyword, skip, limit, tag, ...otherParams } = req.query;
+
+    if (!keyword || typeof keyword !== 'string') {
+      throw new Error('Keyword is required');
+    }
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'keyword'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
+
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+
+    const rotes = await searchPublicRotes(keyword, parsedSkip, parsedLimit, filter);
+
+    res.status(200).json(createResponse(rotes));
+  })
+);
+
+// 搜索指定用户的公开笔记
+notesRouter.get(
+  '/search/users/:username',
+  asyncHandler(async (req, res) => {
+    const { username } = req.params;
+    const { keyword, skip, limit, archived, tag, ...otherParams } = req.query;
+
+    if (!username) {
+      throw new Error('Username is required');
+    }
+
+    if (!keyword || typeof keyword !== 'string') {
+      throw new Error('Keyword is required');
+    }
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived', 'keyword'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
+
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+
+    const userInfo = await getUserInfoByUsername(username);
+
+    if (!userInfo.id) {
+      throw new Error('Username not found');
+    }
+
+    const rotes = await searchUserPublicRotes(
+      userInfo.id,
+      keyword,
+      parsedSkip,
+      parsedLimit,
+      filter,
+      archived ? (archived === 'true' ? true : false) : undefined
+    );
+
+    res.status(200).json(createResponse(rotes));
+  })
+);
+
 // 获取当前用户的笔记列表
 notesRouter.get(
   '/',
   isAuthenticated,
   asyncHandler(async (req, res) => {
-    const { skip, limit, archived } = req.query;
-    const filter = req.body.filter || {};
+    const { skip, limit, archived, tag, ...otherParams } = req.query;
     const user = req.user as User;
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
 
     const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
     const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
@@ -350,8 +512,25 @@ notesRouter.get(
   '/users/:username',
   asyncHandler(async (req, res) => {
     const { username } = req.params;
-    const { skip, limit, archived } = req.query;
-    const filter = req.body.filter || {};
+    const { skip, limit, archived, tag, ...otherParams } = req.query;
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
 
     const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
     const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
@@ -382,8 +561,25 @@ notesRouter.get(
 notesRouter.get(
   '/public',
   asyncHandler(async (req, res) => {
-    const { skip, limit } = req.query;
-    const filter = req.body.filter || {};
+    const { skip, limit, tag, ...otherParams } = req.query;
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      const tags = Array.isArray(tag) ? tag : [tag];
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
 
     const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
     const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
@@ -536,6 +732,104 @@ subscriptionsRouter.delete(
 
     const data = await deleteSubScription(id);
     res.status(200).json(createResponse(data));
+  })
+);
+
+// 更新订阅
+subscriptionsRouter.put(
+  '/:id',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const user = req.user as User;
+    const updateData = req.body;
+
+    if (!id) {
+      throw new Error('Subscription ID is required');
+    }
+
+    if (!updateData || Object.keys(updateData).length === 0) {
+      throw new Error('Update data is required');
+    }
+
+    const data = await updateSubScription(id, user.id, updateData);
+    res.status(200).json(createResponse(data));
+  })
+);
+
+// 批量测试所有端点
+subscriptionsRouter.post(
+  '/test-all',
+  isAuthenticated,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+
+    if (!webpush) {
+      throw new Error('Valid keys not found');
+    }
+
+    // 获取用户所有订阅
+    const subscriptions = await findSubScriptionToUserByUserId(user.id);
+
+    const testResults: Array<{
+      id: string;
+      status: 'success' | 'failed';
+      error?: string;
+    }> = [];
+
+    // 测试消息
+    const testMessage = {
+      title: '端点测试',
+      body: '这是一条测试消息，用于验证端点是否可用。',
+      image: `https://r2.rote.ink/others%2Flogo.png`,
+      data: {
+        type: 'test',
+        url: 'https://rabithua.club',
+      },
+    };
+
+    // 批量测试所有端点
+    for (const subscription of subscriptions) {
+      try {
+        await webpush.sendNotification(
+          {
+            endpoint: subscription.endpoint,
+            keys: subscription.keys,
+          },
+          JSON.stringify(testMessage)
+        );
+
+        testResults.push({
+          id: subscription.id,
+          status: 'success',
+        });
+
+        // 如果测试成功且当前状态不是active，更新为active
+        if (subscription.status !== 'active') {
+          await updateSubScription(subscription.id, user.id, { status: 'active' });
+        }
+      } catch (error: any) {
+        testResults.push({
+          id: subscription.id,
+          status: 'failed',
+          error: error.message || 'Unknown error',
+        });
+
+        // 如果测试失败，更新状态为inactive
+        await updateSubScription(subscription.id, user.id, { status: 'inactive' });
+      }
+    }
+
+    res.status(200).json(
+      createResponse({
+        totalTested: subscriptions.length,
+        results: testResults,
+        summary: {
+          success: testResults.filter((r) => r.status === 'success').length,
+          failed: testResults.filter((r) => r.status === 'failed').length,
+        },
+      })
+    );
   })
 );
 
@@ -745,6 +1039,92 @@ siteRouter.get(
   })
 );
 
+// 反应相关路由
+const reactionsRouter = express.Router();
+
+// 添加反应
+reactionsRouter.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { type, roteid, visitorId, visitorInfo, metadata } = req.body;
+
+    if (!type || !roteid) {
+      throw new Error('Type and rote ID are required');
+    }
+
+    // 验证 roteid 格式
+    if (roteid.length !== 24) {
+      throw new Error('Invalid rote ID format');
+    }
+
+    // 检查笔记是否存在
+    const rote = await findRoteById(roteid);
+    if (!rote) {
+      throw new Error('Rote not found');
+    }
+
+    // 构建反应数据
+    const reactionData: any = {
+      type,
+      roteid,
+      metadata,
+    };
+
+    if (user) {
+      // 已登录用户
+      reactionData.userid = user.id;
+    } else {
+      // 访客用户
+      if (!visitorId) {
+        throw new Error('Visitor ID is required for unauthenticated users');
+      }
+      reactionData.visitorId = visitorId;
+      reactionData.visitorInfo = visitorInfo;
+    }
+
+    const reaction = await addReaction(reactionData);
+    res.status(201).json(createResponse(reaction));
+  })
+);
+
+// 删除反应
+reactionsRouter.delete(
+  '/:roteid/:type',
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { roteid, type } = req.params;
+    const { visitorId } = req.query;
+
+    if (!type || !roteid) {
+      throw new Error('Type and rote ID are required');
+    }
+
+    // 验证 roteid 格式
+    if (roteid.length !== 24) {
+      throw new Error('Invalid rote ID format');
+    }
+
+    // 构建删除条件
+    const removeData: any = {
+      type,
+      roteid,
+    };
+
+    if (user) {
+      removeData.userid = user.id;
+    } else {
+      if (!visitorId) {
+        throw new Error('Visitor ID is required for unauthenticated users');
+      }
+      removeData.visitorId = visitorId as string;
+    }
+
+    const result = await removeReaction(removeData);
+    res.status(200).json(createResponse(result));
+  })
+);
+
 // RSS相关路由
 router.get(
   '/users/:username/rss',
@@ -789,16 +1169,59 @@ router.get(
   })
 );
 
+// 获取所有公开笔记的RSS
+router.get(
+  '/rss/public',
+  asyncHandler(async (req, res) => {
+    // Get all public RSS data
+    const { notes } = await getAllPublicRssData();
+
+    // Base URL from environment variable or default value
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+
+    // Set RSS feed options for public notes
+    const feedOptions: RssFeedOptions = {
+      title: 'Rote - 所有公开笔记',
+      description: '这里是所有用户的公开笔记RSS订阅',
+      id: 'public-notes',
+      link: `${baseUrl}/api/v2/rss/public`,
+      copyright: `© ${new Date().getFullYear()} Rote`,
+      author: {
+        name: 'Rote',
+        email: 'hello@rote.ink',
+      },
+    };
+
+    // Create a virtual user object for the feed generation
+    const virtualUser = {
+      id: 'public',
+      username: 'public',
+      nickname: 'Rote',
+      email: 'hello@rote.ink',
+      avatar: null,
+      description: 'All public notes from Rote users',
+    };
+
+    // Generate RSS feed
+    const feed = await generateRssFeed(notes, virtualUser as any, feedOptions, baseUrl);
+
+    // Set proper Content-Type
+    res.setHeader('Content-Type', 'application/xml');
+    res.send(feed);
+  })
+);
+
 // 注册子路由
 router.use('/auth', authRouter);
 router.use('/users', usersRouter);
 router.use('/notes', notesRouter);
+router.use('/reactions', reactionsRouter);
 router.use('/notifications', notificationsRouter);
 router.use('/subscriptions', subscriptionsRouter);
 router.use('/api-keys', apiKeysRouter);
 router.use('/attachments', attachmentsRouter);
 router.use('/site', siteRouter);
-router.use('/open-key', openKeyRouter);
+router.use('/openkey', openKeyRouter);
 
 // 全局错误处理
 router.use(errorHandler);

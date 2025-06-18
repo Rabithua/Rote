@@ -128,6 +128,7 @@
     },
     "rote": {
       "loading": "Loading...",
+      "sideBarTitle": "Relative Information",
       "authorInfo": {
         "nickname": "Nickname",
         "username": "Username"
@@ -146,10 +147,15 @@
       }
     },
     "filter": {
+      "title": "Filter",
       "includeTags": "Including Tags:",
       "allTags": "All Tags:",
       "none": "NONE",
-      "data": "Data Statistics"
+      "data": "Data Statistics",
+      "note": "Note",
+      "attachment": "Attachment",
+      "searchPlaceholder": "Search note content, title, or tags...",
+      "searchButton": "Search"
     },
     "explore": {
       "title": "Explore",
@@ -157,7 +163,9 @@
       "star": "Stars",
       "fork": "Forks",
       "issues": "Issues",
-      "watch": "Watch"
+      "watch": "Watch",
+      "githubOpenSource": "Rote is open source on Github, welcome to Star!",
+      "lastPushTime": "Last push time: "
     },
     "experiment": {
       "title": "Experiment",
@@ -177,14 +185,38 @@
         "title": "ServiceWorker Notification",
         "description": "ServiceWorker enables advanced features like background notifications.",
         "status": "Status:",
+        "noStatus": "No status",
         "serviceId": "Service ID:",
         "notificationTest": "Test Notification",
         "permissionProcessing": "Processing permissions...",
         "complete": "Complete",
         "sendSuccess": "Sent successfully!",
+        "sendFailed": "Send failed",
         "example": "Usage Example:",
         "notSupported": "Current browser does not support ServiceWorker",
         "swNotActive": "ServiceWorker is not active, please refresh the page"
+      },
+      "subscriptions": {
+        "title": "Subscribed Notification Endpoints",
+        "testAllEndpoints": "Test All Endpoints",
+        "testNotification": "Test Notification",
+        "deleteSubscription": "Delete Subscription",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "testNotificationContent": {
+          "title": "Rote Blog",
+          "body": "This is my blog."
+        },
+        "messages": {
+          "testingAllEndpoints": "Testing all endpoints...",
+          "testCompleted": "Test completed! Success: {{success}}, Failed: {{failed}}",
+          "testFailed": "Test failed: {{error}}",
+          "deletingSubscription": "Deleting subscription...",
+          "deleteSuccess": "Subscription deleted successfully",
+          "deleteFailed": "Delete failed: {{error}}",
+          "testNotificationSent": "Test notification sent",
+          "confirmDelete": "Are you sure you want to delete this subscription?"
+        }
       }
     },
     "archived": {
@@ -200,6 +232,7 @@
     "d3": {
       "heatmap": {
         "noData": "No HeatMap Data",
+        "note": "Note",
         "notes": "Notes",
         "daysOfWeek": {
           "Sun": "Sun",
@@ -233,6 +266,11 @@
       "saveSuccess": "Save successful",
       "saveFailed": "Save failed",
       "minimumPermission": "At least one permission is required"
+    },
+    "sidebarSearch": {
+      "title": "Quick Search",
+      "placeholder": "Search notes...",
+      "button": "Go"
     },
     "randomRote": {
       "title": "Random Review"
@@ -285,9 +323,11 @@
       "edit": "Edit",
       "archive": "Archive",
       "unarchive": "Unarchive",
-      "share": "Share",
+      "share": "Generate Share Image",
       "delete": "Delete",
       "expand": "Expand",
+      "noticeSubcription": "Subscribe to Notifications",
+      "development": "In Development...",
       "tooltips": {
         "pinned": "Pinned",
         "unpinned": "Unpinned",

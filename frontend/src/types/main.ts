@@ -13,10 +13,22 @@ export type TagsAction =
   | { type: 'deleted'; tag: Tag }
   | { type: 'freshAll'; tags: Tags };
 
+export interface Reaction {
+  id: string;
+  type: string; // 支持任意 Emoji 或反应类型字符串
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+  visitorInfo?: any; // 存储访客的额外信息（IP、User-Agent等）
+  metadata?: any; // 可以存储额外的反应数据
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type Rote = {
   id: string;
   title?: string;
-  type?: string;
+  type?: 'Rote';
   tags: string[];
   content: string;
   state: RoteState;
@@ -32,9 +44,7 @@ export type Rote = {
     avatar: string;
   };
   attachments: (Attachment | File)[];
-  // TODO: add reaction feature
-  userreaction?: any[];
-  visitorreaction?: any[];
+  reactions: Reaction[];
 };
 
 export type Attachment = {
@@ -137,17 +147,14 @@ export type TempState = {
 
 export type ApiGetRotesParams = {
   archived?: boolean;
-  filter?: {
-    tags?: {
-      hasEvery?: string[];
-    };
-  };
   apiType?: 'mine' | 'public' | 'userPublic';
   params?: {
     username?: string;
     limit?: number;
     skip?: number;
     archived?: boolean;
+    tag?: string | string[];
+    keyword?: string;
   };
 };
 
@@ -155,3 +162,18 @@ export type Statistics = {
   noteCount: number;
   attachmentsCount: number;
 };
+
+export interface Subscription {
+  keys: {
+    auth: string;
+    p256dh: string;
+  };
+  id: string;
+  userid: string;
+  endpoint: string;
+  status?: string;
+  note?: string;
+  expirationTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

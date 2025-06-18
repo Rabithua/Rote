@@ -1,20 +1,20 @@
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 
 export default function ErrorPage() {
-  const { t } = useTranslation("translation", { keyPrefix: "pages.error" });
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.error' });
 
   return (
     <>
-      <main className="h-dvh place-items-center bg-bgLight dark:bg-bgDark px-6 flex justify-center items-center">
+      <main className="bg-background flex h-dvh place-items-center items-center justify-center px-6">
         <div className="flex flex-col gap-5">
-          <p className="text-[100px] lg:text-[200px] text-black dark:text-white font-semibold font-mono bg-black text-transparent bg-clip-text">
+          <p className="text-primary bg-black bg-clip-text font-mono text-[100px] font-semibold lg:text-[200px] dark:text-white">
             404
           </p>
-          <h1 className="text-base lg:text-2xl font-bold tracking-tight text-black/90 dark:text-white/90">
-            {t("pageNotFound")}
+          <h1 className="text-primary/90 text-base font-bold tracking-tight lg:text-2xl dark:text-white/90">
+            {t('pageNotFound')}
           </h1>
-          <p className="text-base leading-7 text-black/90 dark:text-white/90">
-            {t("pageNotFoundDesc")}
+          <p className="text-primary/90 text-base leading-7 dark:text-white/90">
+            {t('pageNotFoundDesc')}
           </p>
         </div>
       </main>

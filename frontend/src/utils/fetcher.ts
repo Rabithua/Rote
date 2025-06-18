@@ -43,12 +43,12 @@ export const swrMutationFetcher = async <TResponse, TData = unknown>(
 };
 
 interface APIGetProps {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export function useAPIGet<TData>(
   props: APIGetProps | string,
-  fetcher: (data: any) => Promise<any>,
+  fetcher: () => Promise<TData>,
   options?: SWRConfiguration<TData>
 ) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<TData>(props, fetcher, options);
@@ -63,8 +63,8 @@ export function useAPIGet<TData>(
 }
 
 export function useAPIInfinite<TData = unknown>(
-  getKey: (pageIndex: number, previousPageData: TData) => ApiGetRotesParams | any,
-  fetcher: (data: any) => Promise<any>,
+  getKey: (_pageIndex: number, _previousPageData: TData | null) => ApiGetRotesParams | null,
+  fetcher: (_data: ApiGetRotesParams) => Promise<TData>,
   options?: SWRInfiniteConfiguration
 ) {
   const { data, size, setSize, isLoading, isValidating, mutate } = useSWRInfinite(

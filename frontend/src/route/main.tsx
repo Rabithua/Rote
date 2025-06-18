@@ -1,4 +1,4 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import LayoutDashboard from '@/layout/dashboard';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
@@ -19,7 +19,9 @@ const SingleRotePage = lazy(() => import('@/pages/rote/:roteid'));
 const ExperimentPage = lazy(() => import('@/pages/experiment'));
 
 export default function GlobalRouterProvider() {
-  const { data: profile, isLoading } = useAPIGet('profile', () => get('/users/me/profile').then((res) => res.data));
+  const { data: profile, isLoading } = useAPIGet('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
 
   const router = createBrowserRouter([
     {

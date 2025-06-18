@@ -133,6 +133,7 @@
     },
     "rote": {
       "loading": "加载中...",
+      "sideBarTitle": "相关信息",
       "authorInfo": {
         "nickname": "昵称",
         "username": "用户名"
@@ -151,10 +152,15 @@
       }
     },
     "filter": {
+      "title": "筛选 / Filter",
       "includeTags": "包含标签：",
       "allTags": "所有标签：",
       "none": "无",
-      "data": "数据统计"
+      "data": "数据统计",
+      "note": "笔记",
+      "attachment": "附件",
+      "searchPlaceholder": "搜索笔记内容、标题或标签...",
+      "searchButton": "搜索"
     },
     "explore": {
       "title": "探索 / Explore",
@@ -162,7 +168,9 @@
       "star": "Stars",
       "fork": "Forks",
       "issues": "Issues",
-      "watch": "Watch"
+      "watch": "Watch",
+      "githubOpenSource": "Rote 已在 Github 开源，欢迎 Star!",
+      "lastPushTime": "上次推送时间："
     },
     "experiment": {
       "title": "实验室",
@@ -182,14 +190,38 @@
         "title": "ServiceWoker通知",
         "description": "ServiceWorker可以使用某些高级功能，比如后台通知等。",
         "status": "状态：",
+        "noStatus": "无状态",
         "serviceId": "服务标识:",
         "notificationTest": "通知测试",
         "permissionProcessing": "权限处理中...",
         "complete": "完成",
         "sendSuccess": "发送成功！",
+        "sendFailed": "发送失败",
         "example": "使用示例：",
         "notSupported": "当前浏览器不支持 ServiceWorker",
         "swNotActive": "ServiceWorker 未激活"
+      },
+      "subscriptions": {
+        "title": "已订阅的通知端点",
+        "testAllEndpoints": "测试所有端点",
+        "testNotification": "测试通知",
+        "deleteSubscription": "删除订阅",
+        "statusActive": "正常",
+        "statusInactive": "不可用",
+        "testNotificationContent": {
+          "title": "自在废物",
+          "body": "这是我的博客。"
+        },
+        "messages": {
+          "testingAllEndpoints": "正在测试所有端点...",
+          "testCompleted": "测试完成！成功: {{success}}, 失败: {{failed}}",
+          "testFailed": "测试失败: {{error}}",
+          "deletingSubscription": "正在删除订阅...",
+          "deleteSuccess": "订阅删除成功",
+          "deleteFailed": "删除失败: {{error}}",
+          "testNotificationSent": "测试通知已发送",
+          "confirmDelete": "确定要删除这个订阅吗？"
+        }
       }
     },
     "archived": {
@@ -201,6 +233,7 @@
     "d3": {
       "heatmap": {
         "noData": "热力图暂无数据",
+        "note": "笔记",
         "notes": "笔记",
         "daysOfWeek": {
           "Sun": "周日",
@@ -234,6 +267,11 @@
       "saveSuccess": "保存成功",
       "saveFailed": "保存失败",
       "minimumPermission": "至少需要一个权限"
+    },
+    "sidebarSearch": {
+      "title": "快速搜索",
+      "placeholder": "搜索笔记...",
+      "button": "前往"
     },
     "randomRote": {
       "title": "随机回顾"
@@ -286,9 +324,11 @@
       "edit": "编辑",
       "archive": "归档",
       "unarchive": "取消归档",
-      "share": "分享",
+      "share": "生成分享图",
       "delete": "删除",
       "expand": "展开",
+      "noticeSubcription": "订阅通知",
+      "development": "开发中...",
       "tooltips": {
         "pinned": "已置顶",
         "unpinned": "未置顶",

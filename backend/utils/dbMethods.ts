@@ -117,6 +117,30 @@ export async function findSubScriptionToUserByUserId(userId: string): Promise<an
   }
 }
 
+// 获取所有活跃的订阅 - 用于公开笔记通知
+export async function findAllActiveSubscriptions(): Promise<any> {
+  try {
+    const subscriptions = await prisma.userSwSubScription.findMany({
+      where: {
+        status: 'active',
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            nickname: true,
+          },
+        },
+      },
+    });
+
+    return subscriptions;
+  } catch (error) {
+    throw new DatabaseError('Failed to find all active subscriptions', error);
+  }
+}
+
 export async function findSubScriptionToUserByendpoint(endpoint: string): Promise<any> {
   try {
     const subscription = await prisma.userSwSubScription.findUnique({
@@ -137,6 +161,65 @@ export async function deleteSubScription(subId: string): Promise<any> {
     return result;
   } catch (error) {
     throw new DatabaseError(`Failed to delete subscription: ${subId}`, error);
+  }
+}
+
+export async function updateSubScription(
+  subId: string,
+  userId: string,
+  updateData: any
+): Promise<any> {
+  try {
+    // 首先验证订阅是否存在且属于当前用户
+    const existingSubscription = await prisma.userSwSubScription.findUnique({
+      where: { id: subId },
+    });
+
+    if (!existingSubscription) {
+      throw new DatabaseError('Subscription not found');
+    }
+
+    if (existingSubscription.userid !== userId) {
+      throw new DatabaseError('User does not match');
+    }
+
+    // 准备更新数据
+    const updateFields: any = {};
+
+    if (updateData.endpoint) {
+      updateFields.endpoint = updateData.endpoint;
+    }
+
+    if (updateData.expirationTime !== undefined) {
+      updateFields.expirationTime = updateData.expirationTime;
+    }
+
+    if (updateData.status) {
+      updateFields.status = updateData.status;
+    }
+
+    if (updateData.note !== undefined) {
+      updateFields.note = updateData.note;
+    }
+
+    if (updateData.keys) {
+      updateFields.keys = {
+        auth: updateData.keys.auth,
+        p256dh: updateData.keys.p256dh,
+      };
+    }
+
+    const result = await prisma.userSwSubScription.update({
+      where: { id: subId },
+      data: updateFields,
+    });
+
+    return result;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to update subscription: ${subId}`, error);
   }
 }
 
@@ -169,8 +252,7 @@ export async function createRote(data: any): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rote;
@@ -192,8 +274,7 @@ export async function findRoteById(id: string): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rote;
@@ -204,9 +285,7 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    console.log('Editing rote with data:', data);
-
-    const { id, authorid, attachments, userreaction, visitorreaction, author, ...cleanData } = data;
+    const { id, authorid, attachments, reactions, author, ...cleanData } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,
@@ -222,13 +301,12 @@ export async function editRote(data: any): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rote;
   } catch (error) {
-    console.log(error);
+    console.error(`Error updating rote: ${data.id}`, error);
 
     throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
   }
@@ -268,7 +346,7 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
       const key = details?.key;
       if (key) {
         r2deletehandler(key).catch((err) => {
-          console.log(`Failed to delete attachment from R2: ${key}`, err);
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
         });
       }
     });
@@ -312,7 +390,7 @@ export async function deleteAttachments(
     attachments.forEach(({ key }) => {
       if (key) {
         r2deletehandler(key).catch((err) => {
-          console.log(`Failed to delete attachment from R2: ${key}`, err);
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
         });
       }
     });
@@ -364,8 +442,7 @@ export async function findMyRote(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -405,8 +482,7 @@ export async function findUserPublicRote(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -437,8 +513,7 @@ export async function findPublicRote(
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return rotes;
@@ -718,8 +793,7 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
 
@@ -752,8 +826,7 @@ export async function findRandomPublicRote(): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
 
@@ -844,8 +917,7 @@ export async function exportData(authorid: string): Promise<any> {
           },
         },
         attachments: true,
-        userreaction: true,
-        visitorreaction: true,
+        reactions: true,
       },
     });
     return { notes };
@@ -902,5 +974,232 @@ export async function getRssData(
     return { user, notes };
   } catch (error) {
     throw new DatabaseError('获取RSS数据失败', error);
+  }
+}
+
+export async function getAllPublicRssData(limit = 20): Promise<{ notes: any[] }> {
+  try {
+    // 查找所有公开笔记
+    const notes = await prisma.rote.findMany({
+      where: {
+        state: 'public',
+        archived: false,
+      },
+      orderBy: {
+        updatedAt: 'desc', // 按更新日期降序排序
+      },
+      take: limit,
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+      },
+    });
+
+    return { notes };
+  } catch (error) {
+    throw new DatabaseError('获取所有公开笔记RSS数据失败', error);
+  }
+}
+
+// 搜索相关方法
+export async function searchMyRotes(
+  authorid: string,
+  keyword: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any = {},
+  archived: any = false
+): Promise<any> {
+  try {
+    const searchFilter = {
+      AND: [
+        {
+          authorid,
+          archived,
+        },
+        {
+          OR: [
+            { content: { contains: keyword, mode: 'insensitive' } },
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { tags: { hasSome: [keyword] } },
+          ],
+        },
+        { ...filter },
+      ],
+    };
+
+    const rotes = await prisma.rote.findMany({
+      where: searchFilter,
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ pin: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        reactions: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError('Failed to search user rotes', error);
+  }
+}
+
+export async function searchPublicRotes(
+  keyword: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any = {}
+): Promise<any> {
+  try {
+    const searchFilter = {
+      AND: [
+        { state: 'public' },
+        {
+          OR: [
+            { content: { contains: keyword, mode: 'insensitive' } },
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { tags: { hasSome: [keyword] } },
+          ],
+        },
+        { ...filter },
+      ],
+    };
+
+    const rotes = await prisma.rote.findMany({
+      where: searchFilter,
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ createdAt: 'desc' }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        reactions: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError('Failed to search public rotes', error);
+  }
+}
+
+export async function searchUserPublicRotes(
+  userid: string,
+  keyword: string,
+  skip: number | undefined,
+  limit: number | undefined,
+  filter: any = {},
+  archived: any = false
+): Promise<any> {
+  try {
+    const searchFilter = {
+      AND: [
+        {
+          authorid: userid,
+          archived,
+          state: 'public',
+        },
+        {
+          OR: [
+            { content: { contains: keyword, mode: 'insensitive' } },
+            { title: { contains: keyword, mode: 'insensitive' } },
+            { tags: { hasSome: [keyword] } },
+          ],
+        },
+        { ...filter },
+      ],
+    };
+
+    const rotes = await prisma.rote.findMany({
+      where: searchFilter,
+      skip: skip ? skip : 0,
+      take: limit ? limit : 20,
+      orderBy: [{ pin: 'desc' }, { createdAt: 'desc' }],
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: true,
+        reactions: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError('Failed to search user public rotes', error);
+  }
+}
+
+// 反应相关方法
+export async function addReaction(data: {
+  type: string;
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+  visitorInfo?: any;
+  metadata?: any;
+}): Promise<any> {
+  try {
+    const reaction = await prisma.reaction.create({
+      data: {
+        type: data.type,
+        roteid: data.roteid,
+        userid: data.userid,
+        visitorId: data.visitorId,
+        visitorInfo: data.visitorInfo,
+        metadata: data.metadata,
+      },
+    });
+    return reaction;
+  } catch (error) {
+    throw new DatabaseError('Failed to add reaction', error);
+  }
+}
+
+export async function removeReaction(data: {
+  type: string;
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+}): Promise<any> {
+  try {
+    const whereClause: any = {
+      type: data.type,
+      roteid: data.roteid,
+    };
+
+    if (data.userid) {
+      whereClause.userid = data.userid;
+    } else if (data.visitorId) {
+      whereClause.visitorId = data.visitorId;
+    }
+
+    const reaction = await prisma.reaction.deleteMany({
+      where: whereClause,
+    });
+    return reaction;
+  } catch (error) {
+    throw new DatabaseError('Failed to remove reaction', error);
   }
 }

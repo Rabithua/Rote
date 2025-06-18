@@ -4,7 +4,7 @@
  */
 
 import express from 'express';
-import { createRote, findMyRote } from '../utils/dbMethods';
+import { createRote, findMyRote, searchMyRotes } from '../utils/dbMethods';
 import { asyncHandler } from '../utils/handlers';
 import { bodyTypeCheck, isOpenKeyOk, queryTypeCheck } from '../utils/main';
 
@@ -39,7 +39,7 @@ const router = express.Router();
 
 // Create note using API key - GET method (kept for backward compatibility)
 router.get(
-  '/notes',
+  '/notes/create',
   isOpenKeyOk,
   queryTypeCheck,
   asyncHandler(async (req, res) => {
@@ -53,11 +53,24 @@ router.get(
       throw new Error('API key permission does not match');
     }
 
+    // 处理标签，过滤空白标签
+    const processTags = (tags: any): string[] => {
+      if (Array.isArray(tags)) {
+        return tags
+          .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
+          .map((t) => t.trim());
+      }
+      if (tags && typeof tags === 'string' && tags.trim().length > 0) {
+        return [tags.trim()];
+      }
+      return [];
+    };
+
     const rote = {
       content,
       state: state || 'private',
-      type: type || 'rote',
-      tags: Array.isArray(tag) ? tag : tag ? [tag] : [],
+      type: type || 'Rote',
+      tags: processTags(tag),
       pin: !!pin,
     };
 
@@ -86,11 +99,27 @@ router.post(
       throw new Error('API key permission does not match');
     }
 
+    // 处理标签，过滤空白标签
+    const processTags = (tags: any): string[] => {
+      if (Array.isArray(tags)) {
+        return tags
+          .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
+          .map((t) => t.trim());
+      }
+      if (tags && typeof tags === 'string' && tags.trim().length > 0) {
+        return tags
+          .split(' ')
+          .filter((t) => t.trim().length > 0)
+          .map((t) => t.trim());
+      }
+      return [];
+    };
+
     const rote = {
       content,
       state: state || 'private',
       type: type || 'rote',
-      tags: Array.isArray(tags) ? tags : tags ? tags.split(' ') : [],
+      tags: processTags(tags),
       pin: !!pin,
     };
 
@@ -108,18 +137,101 @@ router.get(
   '/notes',
   isOpenKeyOk,
   asyncHandler(async (req, res) => {
-    const { skip, limit, archived } = req.query;
-    const filter = req.body.filter || {};
+    const { skip, limit, archived, tag, ...otherParams } = req.query;
 
     if (!req.openKey?.permissions.includes('GETROTE')) {
       throw new Error('API key permission does not match');
     }
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤，过滤空白标签
+    if (tag) {
+      let tags: string[] = [];
+      if (Array.isArray(tag)) {
+        tags = tag
+          .filter((t) => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => (t as string).trim());
+      } else if (typeof tag === 'string' && tag.trim().length > 0) {
+        tags = [tag.trim()];
+      }
+
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
 
     const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
     const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
     const rotes = await findMyRote(
       req.openKey.userid,
+      parsedSkip,
+      parsedLimit,
+      filter,
+      archived ? (archived === 'true' ? true : false) : undefined
+    );
+
+    res.status(200).json(createResponse(rotes));
+  })
+);
+
+// Search notes using API key
+router.get(
+  '/notes/search',
+  isOpenKeyOk,
+  queryTypeCheck,
+  asyncHandler(async (req, res) => {
+    const { keyword, skip, limit, archived, tag, ...otherParams } = req.query;
+
+    if (!req.openKey) {
+      throw new Error('API key is required');
+    }
+
+    if (!keyword || typeof keyword !== 'string') {
+      throw new Error('Keyword is required');
+    }
+
+    // 构建过滤器对象
+    const filter: any = {};
+
+    // 处理标签过滤
+    if (tag) {
+      let tags: string[] = [];
+      if (Array.isArray(tag)) {
+        tags = tag
+          .filter((t) => typeof t === 'string' && t.trim().length > 0)
+          .map((t) => (t as string).trim());
+      } else if (typeof tag === 'string' && tag.trim().length > 0) {
+        tags = [tag.trim()];
+      }
+
+      if (tags.length > 0) {
+        filter.tags = { hasEvery: tags };
+      }
+    }
+
+    // 处理其他过滤参数
+    Object.entries(otherParams).forEach(([key, value]) => {
+      if (!['skip', 'limit', 'archived', 'keyword'].includes(key) && value !== undefined) {
+        filter[key] = value;
+      }
+    });
+
+    const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
+    const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
+
+    const rotes = await searchMyRotes(
+      req.openKey.userid,
+      keyword,
       parsedSkip,
       parsedLimit,
       filter,

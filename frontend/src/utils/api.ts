@@ -11,7 +11,7 @@ const api = axios.create({
 });
 
 // API版本路径
-const API_PATH = '/api/v2';
+const API_PATH = '/v2/api';
 
 // 请求拦截器
 api.interceptors.request.use(
@@ -27,10 +27,9 @@ api.interceptors.request.use(
 
 // 响应拦截器
 api.interceptors.response.use(
-  (response) => {
+  (response) =>
     // 统一处理响应数据，直接返回data字段
-    return response.data;
-  },
+    response.data,
   (error) => {
     // 处理401未授权错误
     if (error.response && error.response.status === 401) {
@@ -44,31 +43,21 @@ api.interceptors.response.use(
 );
 
 // 导出请求方法
-export const get = <T = any>(
-  url: string,
-  params?: any,
-  data?: any,
-  config?: AxiosRequestConfig
-): Promise<T> => {
-  return api.request({
+export const get = <T = any>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> =>
+  api.request({
     method: 'get',
     url,
     params,
-    data,
     ...config,
   });
-};
 
-export const post = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-  return api.post(url, data, config);
-};
+export const post = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  api.post(url, data, config);
 
-export const put = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-  return api.put(url, data, config);
-};
+export const put = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> =>
+  api.put(url, data, config);
 
-export const del = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-  return api.delete(url, config);
-};
+export const del = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
+  api.delete(url, config);
 
 export default api;

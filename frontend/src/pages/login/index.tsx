@@ -1,15 +1,24 @@
-import LoadingPlaceholder from '@/components/LoadingPlaceholder';
-import Logo from '@/components/logo';
+import {
+  Tabs,
+  TabsContent,
+  TabsContents,
+  TabsList,
+  TabsTrigger,
+} from '@/components/animate-ui/radix/tabs';
+import { TypingText } from '@/components/animate-ui/text/typing';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import mainJson from '@/json/main.json';
 import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { z } from 'zod';
 const { safeRoutes } = mainJson;
 
@@ -26,7 +35,6 @@ function Login() {
     get('/users/me/profile').then((res) => res.data)
   );
 
-  const [type, setType] = useState('login');
   const navigate = useNavigate();
 
   const [disbled, setDisbled] = useState(false);
@@ -74,28 +82,20 @@ function Login() {
       return;
     }
 
-    const toastId = toast.loading(t('messages.loggingIn'));
     setDisbled(true);
     post('/auth/login', loginData)
       .then(() => {
-        toast.success(t('messages.loginSuccess'), {
-          id: toastId,
-        });
+        toast.success(t('messages.loginSuccess'));
         setDisbled(false);
         mutate();
         navigate('/home');
       })
       .catch((err: any) => {
-        console.log(err);
         setDisbled(false);
-        if ('code' in err.response?.data) {
-          toast.error(err.response.data.msg, {
-            id: toastId,
-          });
+        if ('code' in (err.response?.data || {})) {
+          toast.error(err.response?.data?.msg || t('messages.backendDown'));
         } else {
-          toast.error(t('messages.backendDown'), {
-            id: toastId,
-          });
+          toast.error(t('messages.backendDown'));
         }
       });
   }
@@ -108,13 +108,10 @@ function Login() {
       return;
     }
 
-    const toastId = toast.loading(t('messages.registering'));
-    setDisbled(false);
+    setDisbled(true);
     post('/auth/register', registerData)
       .then(() => {
-        toast.success(t('messages.registerSuccess'), {
-          id: toastId,
-        });
+        toast.success(t('messages.registerSuccess'));
         setDisbled(false);
         setRegisterData({
           username: '',
@@ -122,18 +119,16 @@ function Login() {
           email: '',
           nickname: '',
         });
-        setType('login');
+        // 注册成功后可以考虑自动切换到登录 tab 或者直接登录
       })
       .catch((err: any) => {
         setDisbled(false);
-        toast.error(err.response.data.msg, {
-          id: toastId,
-        });
+        toast.error(err.response?.data?.msg || t('messages.backendDown'));
       });
   }
 
-  function handleInputChange(e: any, key: string) {
-    if (type === 'login') {
+  function handleInputChange(e: any, key: string, formType: 'login' | 'register') {
+    if (formType === 'login') {
       const { value } = e.target;
       setLoginData((prevState) => ({
         ...prevState,
@@ -146,10 +141,6 @@ function Login() {
         [key]: value,
       }));
     }
-  }
-
-  function changeType() {
-    setType(type === 'login' ? 'register' : 'login');
   }
 
   function handleLoginKeyDown(e: any) {
@@ -167,125 +158,134 @@ function Login() {
   useEffect(() => {
     if (profile) {
       navigate('/home');
-    } else {
     }
   }, [profile, navigate]);
 
   return (
-    <div className="dark:bg-bgDark bg-bgLight relative flex h-dvh w-full items-center justify-center">
-      <div className="animate-show dark:bg-opacityDark shadow-card z-10 flex w-80 translate-y-5 flex-col gap-2 rounded-lg px-8 py-6 pb-10 opacity-0 dark:text-white">
+    <div className="bg-background relative flex h-dvh w-full items-center justify-center">
+      <div className="animate-show z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0 dark:text-white">
         {isCheckingStatus ? (
           <LoadingPlaceholder className="py-8" size={6} />
-        ) : backendStatusOk ? (
+        ) : (
           <>
             <div className="mb-4">
               <Logo className="w-32" color="#07C160" />
             </div>
-            <div className="flex flex-col gap-2">
-              {type === 'login' ? (
-                <>
-                  <div className="text-md">{t('fields.username')}</div>
-                  <Input
-                    placeholder="username"
-                    className="text-md rounded-md font-mono"
-                    maxLength={20}
-                    value={loginData.username}
-                    onInput={(e) => handleInputChange(e, 'username')}
-                  />
-                  <div className="text-md">{t('fields.password')}</div>
-                  <Input
-                    placeholder="possword"
-                    type="password"
-                    className="text-md rounded-md font-mono"
-                    maxLength={30}
-                    value={loginData.password}
-                    onInput={(e) => handleInputChange(e, 'password')}
-                    onKeyDown={handleLoginKeyDown}
-                  />
-                </>
-              ) : (
-                <>
-                  <div className="text-md">{t('fields.username')}</div>
-                  <Input
-                    placeholder="username"
-                    className="text-md rounded-md font-mono"
-                    maxLength={20}
-                    value={registerData.username}
-                    onInput={(e) => handleInputChange(e, 'username')}
-                  />
-                  <div className="text-md">{t('fields.email')}</div>
-                  <Input
-                    placeholder="someone@mail.com"
-                    className="text-md rounded-md font-mono"
-                    maxLength={20}
-                    value={registerData.email}
-                    onInput={(e) => handleInputChange(e, 'email')}
-                  />
-                  <div className="text-md">{t('fields.nickname')}</div>
-                  <Input
-                    placeholder="nickname"
-                    className="text-md rounded-md font-mono"
-                    maxLength={20}
-                    value={registerData.nickname}
-                    onInput={(e) => handleInputChange(e, 'nickname')}
-                  />
 
-                  <div className="text-md">{t('fields.password')}</div>
-                  <Input
-                    placeholder="possword"
-                    type="password"
-                    className="text-md rounded-md font-mono"
-                    maxLength={30}
-                    value={registerData.password}
-                    onInput={(e) => handleInputChange(e, 'password')}
-                    onKeyDown={handleRegisterKeyDown}
-                  />
-                </>
-              )}
-              <div className="mt-4 flex flex-col gap-2">
-                {type === 'login' ? (
-                  <>
-                    <Button disabled={disbled} onClick={login}>
-                      {t('buttons.login')}
-                    </Button>
-                    <Button variant="secondary" disabled={disbled} onClick={changeType}>
-                      {t('buttons.register')}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <div
-                      className="w-full cursor-pointer rounded-md bg-black px-3 py-2 text-center text-white duration-300 active:scale-95"
-                      onClick={register}
-                    >
-                      {t('buttons.register')}
+            {backendStatusOk ? (
+              <Tabs defaultValue="login" className="bg-foreground/3 w-full rounded-lg">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
+                  <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
+                </TabsList>
+
+                <TabsContents className="bg-background mx-1 -mt-2 mb-1 h-full rounded-sm">
+                  <div className="space-y-4 p-4">
+                    <TabsContent value="login" className="space-y-4 py-4">
+                      <div className="space-y-5">
+                        <div className="space-y-2">
+                          <Label htmlFor="login-username">{t('fields.username')}</Label>
+                          <Input
+                            id="login-username"
+                            placeholder="username"
+                            className="text-md rounded-md font-mono"
+                            maxLength={20}
+                            value={loginData.username}
+                            onInput={(e) => handleInputChange(e, 'username', 'login')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="login-password">{t('fields.password')}</Label>
+                          <Input
+                            id="login-password"
+                            placeholder="password"
+                            type="password"
+                            className="text-md rounded-md font-mono"
+                            maxLength={30}
+                            value={loginData.password}
+                            onInput={(e) => handleInputChange(e, 'password', 'login')}
+                            onKeyDown={handleLoginKeyDown}
+                          />
+                        </div>
+                      </div>
+                      <Button disabled={disbled} onClick={login} className="w-full">
+                        {disbled ? t('messages.loggingIn') : t('buttons.login')}
+                      </Button>
+                    </TabsContent>
+
+                    <TabsContent value="register" className="space-y-4 py-4">
+                      <div className="space-y-5">
+                        <div className="space-y-2">
+                          <Label htmlFor="register-username">{t('fields.username')}</Label>
+                          <Input
+                            id="register-username"
+                            placeholder="username"
+                            className="text-md rounded-md font-mono"
+                            maxLength={20}
+                            value={registerData.username}
+                            onInput={(e) => handleInputChange(e, 'username', 'register')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="register-email">{t('fields.email')}</Label>
+                          <Input
+                            id="register-email"
+                            placeholder="someone@mail.com"
+                            className="text-md rounded-md font-mono"
+                            maxLength={30}
+                            value={registerData.email}
+                            onInput={(e) => handleInputChange(e, 'email', 'register')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="register-nickname">{t('fields.nickname')}</Label>
+                          <Input
+                            id="register-nickname"
+                            placeholder="nickname"
+                            className="text-md rounded-md font-mono"
+                            maxLength={20}
+                            value={registerData.nickname}
+                            onInput={(e) => handleInputChange(e, 'nickname', 'register')}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="register-password">{t('fields.password')}</Label>
+                          <Input
+                            id="register-password"
+                            placeholder="password"
+                            type="password"
+                            className="text-md rounded-md font-mono"
+                            maxLength={30}
+                            value={registerData.password}
+                            onInput={(e) => handleInputChange(e, 'password', 'register')}
+                            onKeyDown={handleRegisterKeyDown}
+                          />
+                        </div>
+                      </div>
+                      <Button disabled={disbled} onClick={register} className="w-full">
+                        {disbled ? t('messages.registering') : t('buttons.register')}
+                      </Button>
+                    </TabsContent>
+
+                    <div className="my-4 flex cursor-pointer items-center justify-center gap-1 text-sm duration-300 active:scale-95">
+                      <Link to="/explore">
+                        <div className="duration-300 hover:opacity-60">{t('nav.explore')}</div>
+                      </Link>
+                      <span className="px-2">/</span>
+                      <Link to="/landing">
+                        <div className="duration-300 hover:opacity-60">{t('nav.home')}</div>
+                      </Link>
                     </div>
-                    <div
-                      className="bg-bgLight w-full cursor-pointer rounded-md px-3 py-2 text-center duration-300 active:scale-95 dark:text-black"
-                      onClick={changeType}
-                    >
-                      {t('buttons.back')}
-                    </div>
-                  </>
-                )}
+                  </div>
+                </TabsContents>
+              </Tabs>
+            ) : (
+              <div>
+                <div className=" ">{t('error.backendIssue')}</div>
+                <div>{JSON.stringify(backendStatusOk)}</div>
+                <TypingText className="text-sm opacity-60" text={t('error.dockerDeployment')} />
               </div>
-            </div>
-
-            <div className="flex cursor-pointer items-center justify-center gap-1 duration-300 active:scale-95">
-              <Link to="/explore">
-                <div className="duration-300 hover:opacity-60">{t('nav.explore')}</div>
-              </Link>
-              <span className="px-2">/</span>
-              <Link to="/landing">
-                <div className="duration-300 hover:opacity-60">{t('nav.home')}</div>
-              </Link>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className=" ">{t('error.backendIssue')}</div>
-            <div>{JSON.stringify(backendStatusOk)}</div>
-            <div className="text-gray-500">{t('error.dockerDeployment')}</div>
+            )}
           </>
         )}
       </div>

@@ -1,4 +1,4 @@
-import FloatBtns from '@/components/FloatBtns';
+import FloatBtns from '@/components/layout/FloatBtns';
 import { SideContentLayout } from '@/components/layout/SideContentLayout';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -20,7 +20,7 @@ function ContainerWithSideBar({
   const [drawOpen, setDrawOpen] = useState(false);
 
   return (
-    <div className={`flex min-h-screen divide-x-1 ${className || ''}`}>
+    <div className={`flex min-h-screen md:divide-x-1 ${className || ''}`}>
       <div className="relative min-w-0 flex-1 divide-y-1 overflow-visible pb-20 sm:pb-0">
         {children}
       </div>
@@ -34,7 +34,7 @@ function ContainerWithSideBar({
 
       <FloatBtns>
         <div
-          className="bg-bgDark text-textDark dark:bg-bgLight dark:text-textLight block w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105 md:hidden"
+          className="bg-foreground text-primary-foreground block w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105 md:hidden"
           onClick={() => setDrawOpen(!drawOpen)}
         >
           <Layers className="size-4" />

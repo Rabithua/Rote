@@ -1,13 +1,13 @@
 // src/Heatmap.tsx
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { HeatMapDay } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { SquareDashed } from 'lucide-react';
 import moment from 'moment';
 import React from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
-import LoadingPlaceholder from '../LoadingPlaceholder';
+import LoadingPlaceholder from '../others/LoadingPlaceholder';
 
 const Heatmap: React.FC = () => {
   const { t } = useTranslation('translation', {
@@ -39,7 +39,7 @@ const Heatmap: React.FC = () => {
     t('daysOfWeek.Sat'),
   ];
 
-  function parseDays(data: any) {
+  function parseDays(data: { [key: string]: number } | undefined): HeatMapDay[][] {
     if (isLoading || !data) {
       return [];
     }
@@ -79,12 +79,6 @@ const Heatmap: React.FC = () => {
     return weeks;
   }
 
-  const handleDayClick = (day: HeatMapDay) => {
-    toast(`${moment.utc(day.date).format('YYYY/MM/DD')} ${day.notesCount} Notes.`, {
-      icon: '🌱',
-    });
-  };
-
   return (
     <>
       {isLoading ? (
@@ -100,25 +94,35 @@ const Heatmap: React.FC = () => {
         <div className="flex gap-2 p-4">
           <div className="flex shrink-0 flex-col justify-around">
             {daysOfWeek.map((day) => (
-              <div key={day} className="text-right text-[10px]">
+              <div key={day} className="text-primary/70 text-right text-xs">
                 {day}
               </div>
             ))}
           </div>
           <div className="noScrollBar flex gap-1.5 overflow-y-scroll md:gap-1">
-            {parseDays(heatmapData).map((week: any, index: number) => (
+            {parseDays(heatmapData).map((week: HeatMapDay[], index: number) => (
               <div key={`week_${index}`} className="flex flex-col gap-1.5 md:gap-1">
-                {week.map((day: any, index: number) => (
-                  <div
-                    key={index}
-                    className="size-5 duration-300 hover:scale-105 md:size-4"
-                    style={{
-                      backgroundColor: day.notesCount
-                        ? colors[Math.min(day.notesCount, colors.length - 1)]
-                        : colors[0],
-                    }}
-                    onClick={() => handleDayClick(day)}
-                  ></div>
+                {week.map((day: HeatMapDay, dayIndex: number) => (
+                  <Tooltip key={dayIndex}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className="size-5 cursor-pointer rounded-xs duration-300 hover:scale-105 md:size-4"
+                        style={{
+                          backgroundColor: day.notesCount
+                            ? colors[Math.min(day.notesCount, colors.length - 1)]
+                            : colors[0],
+                        }}
+                      ></div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <div className="text-center">
+                        <div>{moment.utc(day.date).format('YYYY/MM/DD')}</div>
+                        <div className="text-xs opacity-80">
+                          {day.notesCount} {day.notesCount === 1 ? t('note') : t('notes')}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </div>
             ))}

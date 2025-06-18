@@ -9,6 +9,7 @@ export const emptyRote: Rote = {
   pin: false,
   archived: false,
   state: 'private',
+  reactions: [],
   id: '',
   createdAt: '',
   updatedAt: '',

@@ -4,8 +4,10 @@ import { del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { SoftBottom } from '../others/SoftBottom';
+import SubList, { noticeTest } from './SubList';
 
 export default function ServiceWorker() {
   const { t } = useTranslation('translation', {
@@ -13,7 +15,7 @@ export default function ServiceWorker() {
   });
   const [swReady, setSwReady] = useState(false);
   const [, setSwLoading] = useState(true);
-  const [noticeId, setNoticeId] = useState<any>(null);
+  const [noticeId, setNoticeId] = useState<string | null>(null);
 
   const initializeServiceWorker = async () => {
     const registration = await navigator.serviceWorker.getRegistration();
@@ -24,10 +26,10 @@ export default function ServiceWorker() {
       if (registration && registration.active) {
         registration.active.postMessage({ method: 'subNotice' });
       } else {
-        console.log('Service Worker is not installed.');
+        // Service Worker is not installed
       }
-    } catch (error) {
-      console.error('Error initializing Service Worker:', error);
+    } catch {
+      // Error initializing Service Worker
     } finally {
       setSwLoading(false);
     }
@@ -50,14 +52,13 @@ export default function ServiceWorker() {
           break;
 
         default:
-          console.warn('Unknown message from Service Worker:', event.data);
+          // Unknown message from Service Worker
           break;
       }
     });
   }
 
   async function sub() {
-    const toastId = toast.loading(t('permissionProcessing'));
     try {
       setSwLoading(true);
       checkPermission();
@@ -65,46 +66,26 @@ export default function ServiceWorker() {
       const registration = await registerSW();
 
       if (!registration.active) {
-        return toast.error(t('swNotActive'), {
-          id: toastId,
-        });
+        toast.error(t('swNotActive'));
+        return;
       }
 
       initializeServiceWorker();
-    } catch (error: any) {
-      toast.error(error, {
-        id: toastId,
-      });
+    } catch (error: unknown) {
+      toast.error(String(error));
     }
   }
   async function unSub() {
     setSwLoading(true);
-    del('/subscriptions/' + noticeId)
-      .then(() => {
-        setSwLoading(false);
-        setNoticeId(null);
-        setSwReady(false);
-      })
-      .catch((err) => {
-        setSwLoading(false);
-        console.log(err);
-      });
-  }
-
-  async function noticeTest() {
     try {
-      const resp = await post('/subscriptions/' + noticeId + '/notify', {
-        title: '自在废物',
-        body: '这是我的博客。',
-        image: `https://r2.rote.ink/others%2Flogo.png`,
-        data: {
-          type: 'openUrl',
-          url: 'https://rabithua.club',
-        },
-      });
-      console.log(resp);
-      toast.success(t('sendSuccess'));
-    } catch (error) {}
+      await del('/subscriptions/' + noticeId);
+      setSwLoading(false);
+      setNoticeId(null);
+      setSwReady(false);
+    } catch {
+      setSwLoading(false);
+      // 静默处理错误，用户可以通过UI状态了解结果
+    }
   }
 
   useEffect(() => {
@@ -124,17 +105,16 @@ export default function ServiceWorker() {
     <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
       <div className="text-2xl font-semibold">
         {t('title')} <br />
-        <div className="mt-2 text-sm font-normal text-gray-500">{t('description')}</div>
+        <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
       </div>
       <Divider></Divider>
       <div className="flex items-center gap-2">
         <span className="font-semibold">{t('status')}</span>
         <Switch
-          disabled={!navigator.serviceWorker}
-          className="bg-opacityLight dark:bg-opacityDark"
+          className="bg-foreground/3"
           checked={swReady}
-          onChange={(e) => {
-            if (e) {
+          onClick={() => {
+            if (!swReady) {
               sub();
             } else {
               unSub();
@@ -143,12 +123,20 @@ export default function ServiceWorker() {
         />
       </div>
       {noticeId && (
-        <div className="mt-2 flex items-center gap-2 text-gray-500">
+        <div className="text-info mt-2 flex items-center gap-2">
           <span className="shrink-0">{t('serviceId')}</span>
           <span className="overflow-hidden text-ellipsis">{noticeId}</span>
           <div
-            className="bg-bgLight flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
-            onClick={noticeTest}
+            className="bg-background flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
+            onClick={() => {
+              noticeTest(noticeId, '自在废物', '这是我的博客。')
+                .then(() => {
+                  toast.success(t('sendSuccess'));
+                })
+                .catch((error) => {
+                  toast.error(`${t('sendFailed')}: ${error.response.data.message}`);
+                });
+            }}
           >
             <Bell className="size-4" />
             {t('notificationTest')}
@@ -158,7 +146,7 @@ export default function ServiceWorker() {
       {noticeId && (
         <div className="mt-2 flex flex-col gap-2">
           <div className="font-semibold">{t('example')}</div>
-          <div className="bg-opacityLight dark:bg-opacityDark overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
+          <div className="bg-foreground/3 overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
             {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
 --header 'Content-Type: application/json' 
 --data '{
@@ -173,9 +161,12 @@ export default function ServiceWorker() {
           </div>
         </div>
       )}
+      <Divider></Divider>
+      <SubList />
+      <SoftBottom className="translate-y-4" spacer />
 
       {!navigator.serviceWorker && (
-        <div className="bg-bgLight/90 dark:bg-bgDark/90 dark:text-textDark absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-xl">
+        <div className="bg-background/90 absolute top-0 left-0 flex h-full w-full flex-col items-center justify-center gap-2 backdrop-blur-xl">
           <div className="text-2xl">🤕</div>
           <div>{t('notSupported')}</div>
         </div>
