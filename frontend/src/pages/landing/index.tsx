@@ -121,7 +121,7 @@ function Landing() {
   ];
 
   return (
-    <div className="min-h-dvh divide-y bg-[image:repeating-linear-gradient(315deg,_var(--pattern-fg)_0,_var(--pattern-fg)_1px,_transparent_0,_transparent_50%)] [background-size:10px_10px] [background-attachment:fixed] font-sans">
+    <div className="bg-pattern min-h-dvh divide-y font-sans">
       {/* Logo and Title - 更优雅的层次 */}
       <div className="sticky top-0 z-10 w-full bg-white/90 px-6 py-4 backdrop-blur-md">
         <div className="flex w-full items-end gap-4">

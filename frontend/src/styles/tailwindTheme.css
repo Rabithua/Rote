@@ -6,6 +6,7 @@
     /* Background Images */
     --background-image-primary: linear-gradient(272deg, rgba(7, 193, 96, 0.96) -0.55%, rgba(178, 207, 62, 0.96) 99.45%);
     --background-image-primaryGreenGradient: linear-gradient(327deg, #07C160 18.08%, rgba(62, 207, 74, 0.96) 64.28%, rgba(153, 230, 38, 0.40) 111.94%, rgba(250, 255, 0, 0.00) 158.87%);
+    --background-image-pattern: repeating-linear-gradient(315deg, var(--pattern-fg) 0, var(--pattern-fg) 1px, transparent 0, transparent 50%);
 
     /* Colors */
     --color-theme: #07C160;
@@ -20,6 +21,13 @@
 
     /* Box Shadows */
     --box-shadow-card: 0px 0px 60px rgba(0, 0, 0, 0.05);
+}
+
+/* 背景图案工具类 */
+.bg-pattern {
+    background-image: var(--background-image-pattern);
+    background-size: 10px 10px;
+    background-attachment: fixed;
 }
 
 @keyframes meteor {

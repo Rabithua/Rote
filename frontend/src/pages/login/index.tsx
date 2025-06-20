@@ -162,8 +162,8 @@ function Login() {
   }, [profile, navigate]);
 
   return (
-    <div className="bg-background relative flex h-dvh w-full items-center justify-center">
-      <div className="animate-show z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0 dark:text-white">
+    <div className="bg-pattern relative flex h-dvh w-full items-center justify-center">
+      <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
         {isCheckingStatus ? (
           <LoadingPlaceholder className="py-8" size={6} />
         ) : (
@@ -173,7 +173,7 @@ function Login() {
             </div>
 
             {backendStatusOk ? (
-              <Tabs defaultValue="login" className="bg-foreground/3 w-full rounded-lg">
+              <Tabs defaultValue="login" className="bg-muted w-full rounded-lg">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
                   <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
