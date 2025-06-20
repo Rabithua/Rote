@@ -8,20 +8,8 @@
 
 ## Deploy
 
-### Docker
+To Be Continue...
 
-[docker-compose-example.yml](https://github.com/Rabithua/Rote/blob/main/docker-compose-example.yml)
-
-[bilibili 视频教程](https://www.bilibili.com/video/BV1es3aeKEQu)
-
-## Develop
-
-look `frontend/README.md` or `backend/README.md`
 
 ## Technology stack
 ![Frame 1](https://github.com/Rabithua/Rote/assets/34543831/fc00f797-82bc-47fe-8c75-36ea0b1f6f76)
-
-## Technical article
-> use chinese
-- [Docker expose 和 ports 的区别](https://talk.wowow.club/d/282-docker-expose-he-ports-de-qu-bie/4)
-- [记一次令人抓狂的修 bug 经历](https://rabithua.club/archives/796/)
