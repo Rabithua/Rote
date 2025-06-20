@@ -1,20 +1,17 @@
 # Use a smaller base image
 FROM node:22.15.0-alpine
 
+
 # Install OpenSSL
 RUN apk add --no-cache openssl
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files and npm config first for better caching
-COPY package*.json .npmrc ./
-
-# Install dependencies
-RUN npm install --omit=dev
-
-# Copy rest of the project files
+# Copy project files
 COPY . .
+
+RUN npm install --omit=dev
 
 # Expose container port 3000
 EXPOSE 3000

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "node | mongodb | prisma",
   "main": "server.ts",
-  "scripts": {
+    "scripts": {
     "start": "npx ts-node server.ts ",
     "dev": "nodemon server.ts",
     "dev-f": "nodemon server.ts --ignore-errors",
@@ -55,6 +55,7 @@
     "nodemon": "^3.0.1",
     "prettier": "^3.5.3",
     "prisma": "^6.10.0",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.0"
   }
 }
