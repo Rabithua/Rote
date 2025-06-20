@@ -4,7 +4,8 @@ import cors from 'cors';
 import passport from './utils/passport';
 import expressSession = require('express-session');
 
-import { CustomPrismaSessionStore } from './utils/sessionStore';
+import { PrismaSessionStore } from '@rabithua/prisma-session-store';
+import prisma from './utils/prisma';
 
 import { rateLimiterMiddleware } from './middleware/limiter';
 import { errorHandler } from './utils/handlers';
@@ -28,7 +29,8 @@ app.use(
     cookie: {
       maxAge: 31 * 24 * 60 * 60 * 1000,
     },
-    store: new CustomPrismaSessionStore({
+    store: new PrismaSessionStore({
+      prisma: prisma,
       checkPeriod: 2 * 60 * 1000,
     }),
   })

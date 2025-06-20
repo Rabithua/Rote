@@ -23,6 +23,7 @@
     "@aws-sdk/s3-request-presigner": "^3.484.0",
     "@hokify/agenda": "^6.3.0",
     "@prisma/client": "^6.10.0",
+    "@rabithua/prisma-session-store": "^1.0.0",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/express-session": "^1.18.0",
