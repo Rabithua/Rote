@@ -137,7 +137,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
                 ? 'border-theme/30 bg-theme/10 text-theme hover:bg-theme/30 border-[0.5px]'
                 : 'bg-foreground/5 hover:bg-foreground/5'
             }`}
-            onClick={() => handleReactionClick(type)}
+            onClick={() => (isLoading ? undefined : handleReactionClick(type))}
           >
             <span>{type}</span>
             <SlidingNumber className="text-xs" number={reactionGroup.length} />
