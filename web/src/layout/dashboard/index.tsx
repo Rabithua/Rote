@@ -3,7 +3,7 @@ import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import type { JSX } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';

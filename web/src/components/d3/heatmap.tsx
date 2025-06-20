@@ -5,7 +5,7 @@ import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { SquareDashed } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import React from 'react';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';
 

@@ -4,7 +4,7 @@ import { type Rote } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Dice4, RefreshCcwIcon } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 
 export default function RandomRote() {
   const { t } = useTranslation('translation', {

@@ -1,6 +1,6 @@
 // i18n多语言翻译
 import i18n from 'i18next';
-import { initReactI18next } from 'node_modules/react-i18next';
+import { initReactI18next } from 'react-i18next';
 import en from '../locales/en.json';
 import zh from '../locales/zh.json';
 

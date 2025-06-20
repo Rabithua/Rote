@@ -1,6 +1,6 @@
 import { tabsData } from '@/layout/dashboard';
 import { ArrowLeft } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 

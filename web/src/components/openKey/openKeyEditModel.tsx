@@ -2,7 +2,7 @@ import mainJson from '@/json/main.json';
 import { useOpenKeys } from '@/state/openKeys';
 import { put } from '@/utils/api';
 import { Save } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Checkbox } from '../ui/checkbox';

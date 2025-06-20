@@ -4,7 +4,7 @@ import { saveAs } from 'file-saver';
 import { toPng } from 'html-to-image';
 import { Link, Save } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import QRCode from 'react-qr-code';
 import { toast } from 'sonner';

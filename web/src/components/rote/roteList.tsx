@@ -3,7 +3,7 @@ import type { Rotes } from '@/types/main';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteItem from '@/components/rote/roteItem';
 import { MessageSquareDashed } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useRef } from 'react';
 
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';

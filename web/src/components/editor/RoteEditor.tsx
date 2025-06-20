@@ -8,7 +8,7 @@ import type { Attachment, Rote } from '@/types/main';
 import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';

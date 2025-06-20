@@ -4,7 +4,7 @@ import ImportData from '@/components/experiment/importData';
 import ServiceWorker from '@/components/experiment/serviceWorker';
 import NavBar from '@/components/layout/navBar';
 import { Snail } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 
 export default function ExperimentPage() {
   const { t } = useTranslation('translation', {

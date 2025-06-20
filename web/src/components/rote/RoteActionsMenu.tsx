@@ -1,5 +1,5 @@
 import { Bell, Edit3, Ellipsis, Layers, PinIcon, PinOff, Save, Share, Trash2 } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';

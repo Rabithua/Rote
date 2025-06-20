@@ -4,7 +4,7 @@ import { useAtom } from 'jotai';
 import Linkify from 'linkify-react';
 import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon, User } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';

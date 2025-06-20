@@ -17,7 +17,7 @@ import {
   RefreshCw,
   Star,
 } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import useSWR from 'swr';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());

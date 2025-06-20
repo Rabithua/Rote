@@ -1,5 +1,5 @@
 import { Rss } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 
 export default function RssBlock({ username }: { username?: string }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.user' });

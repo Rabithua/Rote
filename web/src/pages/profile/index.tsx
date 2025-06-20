@@ -23,7 +23,7 @@ import {
   UserCircle2,
 } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useCallback, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import Cropper from 'react-easy-crop';

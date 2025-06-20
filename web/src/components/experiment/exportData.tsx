@@ -3,7 +3,7 @@ import type { Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { DownloadCloud } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { SlidingNumber } from '../animate-ui/text/sliding-number';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';

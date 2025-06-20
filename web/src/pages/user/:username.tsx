@@ -12,7 +12,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import Linkify from 'linkify-react';
 import { Globe2, RefreshCw, Rss, Stars, User } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
 function UserPage() {

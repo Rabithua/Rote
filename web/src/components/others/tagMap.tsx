@@ -3,7 +3,7 @@ import { SoftBottom } from '@/components/others/SoftBottom';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { ArrowDownLeft, CircleDashed } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 

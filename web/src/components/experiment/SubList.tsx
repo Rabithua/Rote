@@ -10,7 +10,7 @@ import type { Subscription } from '@/types/main';
 import { del, get, post } from '@/utils/api';
 import { Bell, Loader, MoreVertical, Terminal, Trash2 } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import useSWR from 'swr';

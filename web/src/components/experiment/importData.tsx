@@ -1,5 +1,5 @@
 import { Divider } from '@/components/ui/divider';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';
 

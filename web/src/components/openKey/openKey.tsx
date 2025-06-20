@@ -11,7 +11,7 @@ import { useState } from 'react';
 import type { OpenKey } from '@/types/main';
 import { del } from '@/utils/api';
 import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Terminal, Trash2 } from 'lucide-react';
-import { useTranslation } from 'node_modules/react-i18next';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
