@@ -1,4 +1,5 @@
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
+import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -78,23 +79,23 @@ function Landing() {
   const features = [
     {
       icon: BookOpen,
-      title: '保持克制',
-      description: '一切为了优雅的笔记体验',
+      title: t('coreFeatures.features.restraint.title'),
+      description: t('coreFeatures.features.restraint.description'),
     },
     {
       icon: Sparkles,
-      title: '简单而强大',
-      description: '所有功能限制在 Web 端，PWA 以获得更加体验',
+      title: t('coreFeatures.features.simple.title'),
+      description: t('coreFeatures.features.simple.description'),
     },
     {
       icon: Code,
-      title: '开放接口',
-      description: '开放 API 接口，支持在任意的场景记录或者获取数据',
+      title: t('coreFeatures.features.openApi.title'),
+      description: t('coreFeatures.features.openApi.description'),
     },
     {
       icon: Shield,
-      title: '无拘无束',
-      description: '完全掌控你的数据，自由导出数据',
+      title: t('coreFeatures.features.freedom.title'),
+      description: t('coreFeatures.features.freedom.description'),
     },
   ];
 
@@ -120,18 +121,22 @@ function Landing() {
   ];
 
   return (
-    <div className="min-h-dvh divide-y bg-[image:repeating-linear-gradient(315deg,_var(--pattern-fg)_0,_var(--pattern-fg)_1px,_transparent_0,_transparent_50%)] [background-size:10px_10px] [background-attachment:fixed]">
+    <div className="min-h-dvh divide-y bg-[image:repeating-linear-gradient(315deg,_var(--pattern-fg)_0,_var(--pattern-fg)_1px,_transparent_0,_transparent_50%)] [background-size:10px_10px] [background-attachment:fixed] font-sans">
       {/* Logo and Title - 更优雅的层次 */}
       <div className="sticky top-0 z-10 w-full bg-white/90 px-6 py-4 backdrop-blur-md">
-        <div className="flex w-fit items-end gap-4">
-          <div className="flex justify-center">
+        <div className="flex w-full items-end gap-4">
+          <div className="flex shrink-0 justify-center">
             <Logo className="h-6 w-auto opacity-90" color="#07C160" />
           </div>
 
           {/* 诗句 - 更小更低调 */}
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-info text-sm font-light tracking-wide">{t('poem')}</span>
+          <div className="flex min-w-0 flex-1 gap-2">
+            <span className="text-info truncate text-sm font-light tracking-wide" title={t('poem')}>
+              {t('poem')}
+            </span>
           </div>
+
+          <LanguageSwitcher className="ml-auto shrink-0" />
         </div>
       </div>
 
@@ -144,7 +149,7 @@ function Landing() {
           </h1>
 
           {/* 副标题 - 更清晰的层次 */}
-          <p className="text-info text-lg leading-relaxed font-light">
+          <p className="text-info pb-3 text-xl leading-relaxed font-light">
             {t('openApi')} · {t('data')}
           </p>
         </div>
@@ -191,9 +196,11 @@ function Landing() {
       {/* Features Section */}
       <div className="bg-background divide-y border-x-1 sm:mx-4">
         <div className="space-y-2 divide-y-[0.5px] p-2">
-          <p className="text-theme/20 font-mono text-xs font-light">CORE FEATURES</p>
-          <h2 className="text-3xl font-bold">核心特性</h2>
-          <p className="text-info text-lg font-light">为了更优雅的笔记体验和更少的心智负担</p>
+          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+            {t('coreFeatures.tagline')}
+          </p>
+          <h2 className="text-3xl font-bold">{t('coreFeatures.title')}</h2>
+          <p className="text-info text-lg font-light">{t('coreFeatures.subtitle')}</p>
         </div>
 
         <div className="gap-6 p-2 md:grid md:grid-cols-2">
@@ -218,9 +225,11 @@ function Landing() {
 
       <div className="bg-background divide-y border-x-1 sm:mx-4">
         <div className="space-y-2 divide-y-[0.5px] p-2">
-          <p className="text-theme/20 font-mono text-xs font-light">STILL UNDER CONSTRUCTION</p>
-          <h2 className="text-3xl font-bold">持续施工中...</h2>
-          <p className="text-info text-lg font-light">作为一个长期项目，Rote 仍在不断完善中</p>
+          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+            {t('construction.tagline')}
+          </p>
+          <h2 className="text-3xl font-bold">{t('construction.title')}</h2>
+          <p className="text-info text-lg font-light">{t('construction.subtitle')}</p>
         </div>
         {isRoteGithubDataLoading ? (
           <div className="flex flex-col gap-2 p-2">
@@ -240,7 +249,7 @@ function Landing() {
           </div>
         ) : (
           <div className="flex flex-col gap-2 divide-y-[0.5px] p-2">
-            <div className="flex gap-2 text-sm font-thin">
+            <div className="flex gap-2 pb-2 text-sm font-thin">
               {dataRender.map((item) => (
                 <div key={item.key} className="flex items-center gap-2">
                   {item.icon}
@@ -261,9 +270,11 @@ function Landing() {
       {/* Quick Links Section */}
       <div className="bg-background/80 divide-y-[0.5px] p-2 backdrop:blur-xl sm:p-6">
         <div className="space-y-2 divide-y-[0.5px]">
-          <p className="text-theme/20 font-mono text-xs font-light">EXPlORE MORE</p>
-          <h3 className="text-3xl font-bold">探索更多</h3>
-          <p className="text-info text-lg font-light">这里有几个按钮以供玩耍</p>
+          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+            {t('exploreMore.tagline')}
+          </p>
+          <h3 className="text-3xl font-bold">{t('exploreMore.title')}</h3>
+          <p className="text-info text-lg font-light">{t('exploreMore.subtitle')}</p>
         </div>
 
         <div className="flex flex-row flex-wrap gap-4 py-8">

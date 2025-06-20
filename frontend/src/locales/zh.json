@@ -1,7 +1,7 @@
 {
   "pages": {
     "landing": {
-      "poem": "采菊东篱下，悠然见南山🍃",
+      "poem": "采菊东篱下，悠然见南山",
       "ComingSoon": "开发中...",
       "types": [
         "复杂格式文章",
@@ -28,7 +28,40 @@
       "issues": "Issues",
       "watch": "Watch",
       "githubOpenSource": "Rote 已在 Github 开源，欢迎 Star!",
-      "lastPushTime": "上次推送时间："
+      "lastPushTime": "上次推送时间：",
+      "coreFeatures": {
+        "title": "核心特性",
+        "subtitle": "为了更优雅的笔记体验和更少的心智负担",
+        "tagline": "Core features designed for a modern note-taking experience",
+        "features": {
+          "restraint": {
+            "title": "保持克制",
+            "description": "一切为了优雅的笔记体验"
+          },
+          "simple": {
+            "title": "简单而强大",
+            "description": "所有功能限制在 Web 端，PWA 以获得更加体验"
+          },
+          "openApi": {
+            "title": "开放接口",
+            "description": "开放 API 接口，支持在任意的场景记录或者获取数据"
+          },
+          "freedom": {
+            "title": "无拘无束",
+            "description": "完全掌控你的数据，自由导出数据"
+          }
+        }
+      },
+      "construction": {
+        "title": "持续施工中...",
+        "subtitle": "作为一个长期项目，Rote 仍在不断完善中",
+        "tagline": "STILL UNDER CONSTRUCTION"
+      },
+      "exploreMore": {
+        "title": "探索更多",
+        "subtitle": "这里有几个按钮以供玩耍",
+        "tagline": "EXPlORE MORE"
+      }
     },
     "mine": {
       "leftNavBar": {

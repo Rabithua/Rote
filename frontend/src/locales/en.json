@@ -1,7 +1,7 @@
 {
   "pages": {
     "landing": {
-      "poem": "✏️",
+      "poem": "采菊东篱下，悠然见南山",
       "ComingSoon": "Coming soon",
       "types": [
         "Complex Format Articles",
@@ -22,12 +22,46 @@
         "Download",
         "Donate"
       ],
+      "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
       "issues": "Issues",
       "watch": "Watch",
       "githubOpenSource": "Rote is open source on Github, welcome to Star!",
-      "lastPushTime": "Last push time: "
+      "lastPushTime": "Last push time: ",
+      "coreFeatures": {
+        "title": "Core Features",
+        "subtitle": "For a more elegant note-taking experience and less mental burden",
+        "tagline": "Core features designed for a modern note-taking experience",
+        "features": {
+          "restraint": {
+            "title": "Stay Restrained",
+            "description": "Everything for an elegant note-taking experience"
+          },
+          "simple": {
+            "title": "Simple yet Powerful",
+            "description": "All features are limited to the Web, PWA for better experience"
+          },
+          "openApi": {
+            "title": "Open Interface",
+            "description": "Open API interface, supports recording or getting data in any scenario"
+          },
+          "freedom": {
+            "title": "Unbounded Freedom",
+            "description": "Complete control over your data, free to export data"
+          }
+        }
+      },
+      "construction": {
+        "title": "Still Under Construction...",
+        "subtitle": "As a long-term project, Rote is still being improved",
+        "tagline": "STILL UNDER CONSTRUCTION"
+      },
+      "exploreMore": {
+        "title": "Explore More",
+        "subtitle": "Here are a few buttons to play with",
+        "tagline": "EXPlORE MORE"
+      }
     },
     "mine": {
       "leftNavBar": {
