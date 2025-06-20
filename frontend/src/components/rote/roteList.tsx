@@ -1,10 +1,10 @@
 import type { Rotes } from '@/types/main';
 
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import RoteItem from '@/components/rote/roteItem';
 import { MessageSquareDashed } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import RoteItem from '@/components/rote/roteItem';
 
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
@@ -71,8 +71,8 @@ function RoteList({
       )}
       {isReachingEnd && rotes.length === 0 ? (
         <div className="bg-background flex shrink-0 flex-col items-center justify-center gap-4 py-8">
-          <MessageSquareDashed className="text-muted-foreground size-10" />
-          <div className="text-primary text-center">{t('empty')}</div>
+          <MessageSquareDashed className="text-theme/30 size-10" />
+          <div className="text-info text-center font-light">{t('empty')}</div>
         </div>
       ) : null}
     </div>

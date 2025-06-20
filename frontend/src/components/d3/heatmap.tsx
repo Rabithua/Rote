@@ -85,8 +85,8 @@ const Heatmap: React.FC = () => {
         <LoadingPlaceholder className="py-8" size={6} />
       ) : heatmapData && Object.keys(heatmapData).length === 0 ? (
         <div className="shrink-0 py-4">
-          <div className="flex w-full flex-col items-center justify-center gap-4 py-4 text-sm">
-            <SquareDashed className="text-muted-foreground size-8" />
+          <div className="text-info flex w-full flex-col items-center justify-center gap-4 py-4 text-sm font-light">
+            <SquareDashed className="text-theme/30 size-8" />
             {t('noData')}
           </div>
         </div>

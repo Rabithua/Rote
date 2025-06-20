@@ -2,7 +2,7 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { SoftBottom } from '@/components/others/SoftBottom';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
-import { ArrowDownLeft, Tag } from 'lucide-react';
+import { ArrowDownLeft, CircleDashed } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -59,8 +59,8 @@ export default function TagMap() {
         </div>
       ) : (
         <div className="bg-background shrink-0 py-4">
-          <div className="flex w-full flex-col items-center justify-center gap-4 py-4 text-sm">
-            <Tag className="text-muted-foreground size-8" />
+          <div className="text-info flex w-full flex-col items-center justify-center gap-4 py-4 text-sm font-light">
+            <CircleDashed className="text-theme/30 size-8" />
             {t('noTags')}
           </div>
         </div>
