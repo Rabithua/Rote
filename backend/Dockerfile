@@ -1,20 +1,20 @@
 # Use a smaller base image
 FROM node:22.15.0-alpine
 
-
 # Install OpenSSL
 RUN apk add --no-cache openssl
 
 # Set working directory
 WORKDIR /app
 
-# Copy project files
-COPY . .
+# Copy package files and npm config first for better caching
+COPY package*.json .npmrc ./
 
-# Generate Prisma client
-RUN npm config set registry https://registry.npmmirror.com/
-
+# Install dependencies
 RUN npm install --omit=dev
+
+# Copy rest of the project files
+COPY . .
 
 # Expose container port 3000
 EXPOSE 3000
