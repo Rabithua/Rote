@@ -57,7 +57,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 - 设计原则：严格遵循 RESTful API 设计原则和最佳实践
 - 错误处理：实现统一的错误处理机制和标准化响应格式
 - 功能支持：全面支持分页查询、条件搜索、数据过滤等功能
-- 文档维护：API 接口文档统一维护在 `backend/doc/` 目录
+- 文档维护：API 接口文档统一维护在 `server/doc/` 目录
 - 认证机制：实现基于 API Key 的安全认证机制
 
 ## File Structure Conventions
@@ -65,7 +65,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 ### Backend Structure
 
 ```
-backend/
+server/
 ├── server.ts           # 主服务器文件
 ├── route/             # API 路由
 ├── middleware/        # 中间件
@@ -79,7 +79,7 @@ backend/
 ### Frontend Structure
 
 ```
-frontend/
+web/
 ├── src/
 │   ├── pages/        # 页面组件
 │   ├── components/   # 可复用组件
