@@ -131,7 +131,11 @@ function UserPage() {
         </NavBar>
         <div className="pb-4">
           <div className="relative aspect-[3] max-h-80 w-full overflow-hidden">
-            <img className="h-full w-full" src={userInfo?.cover || defaultCover} alt="" />
+            <img
+              className="h-full w-full object-cover"
+              src={userInfo?.cover || defaultCover}
+              alt=""
+            />
           </div>
           <div className="mx-4 flex h-16">
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}

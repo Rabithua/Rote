@@ -246,7 +246,7 @@ function ProfilePage() {
       }
     >
       <div className="flex flex-col divide-y-1 pb-20">
-        <NavBar title={t('title')} icon={<UserCircle2 className="size-8" />} />
+        <NavBar title={t('title')} icon={<UserCircle2 className="size-8 p-0.5" />} />
         <div className="pb-4">
           <div className="relative aspect-[3] w-full overflow-hidden">
             <img
