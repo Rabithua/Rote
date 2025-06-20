@@ -7,10 +7,10 @@ mongodb
 package-lock.json
 bun.lockb
 bun.lock
-frontend/build
-frontend/public/sitemap.xml
-backend/scripts/compressed
-backend/scripts/uploads
-backend/dist
+web/build
+web/public/sitemap.xml
+server/scripts/compressed
+server/scripts/uploads
+server/dist
 .idea
 .vscode
