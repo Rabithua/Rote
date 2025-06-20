@@ -126,7 +126,9 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
         {Object.entries(groupedReactions).map(([type, reactionGroup]) => (
           <div
             key={type}
-            className={`flex h-6 cursor-pointer items-center gap-2 rounded-full px-2 pr-3 text-xs duration-300 ${
+            className={`flex h-6 ${
+              isLoading ? 'cursor-not-allowed' : 'cursor-pointer'
+            } items-center gap-2 rounded-full px-2 pr-3 text-xs duration-300 ${
               (
                 isAuthenticated
                   ? rote.reactions.some((r) => r.type === type && r.userid === profile?.id)
