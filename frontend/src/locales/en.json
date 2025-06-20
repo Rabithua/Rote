@@ -21,7 +21,13 @@
         "Blog",
         "Download",
         "Donate"
-      ]
+      ],
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch",
+      "githubOpenSource": "Rote is open source on Github, welcome to Star!",
+      "lastPushTime": "Last push time: "
     },
     "mine": {
       "leftNavBar": {

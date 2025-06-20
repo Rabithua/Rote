@@ -22,7 +22,13 @@
         "下载",
         "捐赠"
       ],
-      "dashboard": "仪表盘"
+      "dashboard": "仪表盘",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch",
+      "githubOpenSource": "Rote 已在 Github 开源，欢迎 Star!",
+      "lastPushTime": "上次推送时间："
     },
     "mine": {
       "leftNavBar": {
