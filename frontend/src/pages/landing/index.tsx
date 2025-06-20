@@ -123,7 +123,7 @@ function Landing() {
   return (
     <div className="bg-pattern min-h-dvh divide-y font-sans">
       {/* Logo and Title - 更优雅的层次 */}
-      <div className="sticky top-0 z-10 w-full bg-white/90 px-6 py-4 backdrop-blur-md">
+      <div className="bg-background/90 sticky top-0 z-10 w-full px-6 py-4 backdrop-blur-md">
         <div className="flex w-full items-end gap-4">
           <div className="flex shrink-0 justify-center">
             <Logo className="h-6 w-auto opacity-90" color="#07C160" />
@@ -168,12 +168,11 @@ function Landing() {
 
         {/* CTA Buttons - 更优雅的按钮设计 */}
         <div className="flex flex-row gap-3 px-2">
-          <Button
-            asChild
-            size="lg"
-            className="bg-foreground text-background hover:bg-foreground/90"
-          >
-            <Link className="text-white hover:text-white" to={profile ? '/home' : '/login'}>
+          <Button asChild size="lg">
+            <Link
+              className="text-background hover:text-background"
+              to={profile ? '/home' : '/login'}
+            >
               {profile ? t('dashboard') : t('linksItems.0')}
               <ArrowRight className="ml-2 size-4" />
             </Link>
