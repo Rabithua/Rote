@@ -4,8 +4,7 @@ import cors from 'cors';
 import passport from './utils/passport';
 import expressSession = require('express-session');
 
-import { PrismaSessionStore } from '@quixo3/prisma-session-store';
-import prisma from './utils/prisma';
+import { CustomPrismaSessionStore } from './utils/sessionStore';
 
 import { rateLimiterMiddleware } from './middleware/limiter';
 import { errorHandler } from './utils/handlers';
@@ -29,9 +28,8 @@ app.use(
     cookie: {
       maxAge: 31 * 24 * 60 * 60 * 1000,
     },
-    store: new PrismaSessionStore(prisma, {
+    store: new CustomPrismaSessionStore({
       checkPeriod: 2 * 60 * 1000,
-      dbRecordIdIsSessionId: true,
     }),
   })
 );
