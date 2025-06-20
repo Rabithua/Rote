@@ -126,7 +126,7 @@ function LayoutDashboard() {
   return (
     <div className="bg-background text-primary mx-auto w-full max-w-6xl">
       <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
-        <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-5 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
+        <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
           {isLoading ? (
             <LoadingPlaceholder className="py-8" size={6} />
           ) : profile ? (
