@@ -2,7 +2,10 @@ import express from 'express';
 
 export const errorHandler: express.ErrorRequestHandler = (err, _req, res, _next) => {
   console.error('API Error:', err.message);
-  console.error('Error details:', err);
+  // 只在开发环境下打印完整的错误堆栈
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error details:', err);
+  }
 
   // Prisma unique constraint violation (check both direct error and nested error)
   if (err.code === 'P2002' || err.originalError?.code === 'P2002') {
