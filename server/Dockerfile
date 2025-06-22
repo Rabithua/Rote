@@ -1,20 +1,11 @@
-# Use a smaller base image
-FROM node:22.15.0-alpine
-
-
-# Install OpenSSL
+FROM node:lts-alpine
+ENV NODE_ENV=production
 RUN apk add --no-cache openssl
-
-# Set working directory
-WORKDIR /app
-
-# Copy project files
+WORKDIR /usr/src/app
+COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
+RUN npm install --production --silent && mv node_modules ../
 COPY . .
-
-RUN npm install --omit=dev
-
-# Expose container port 3000
 EXPOSE 3000
-
-# Install dependencies, compile Prisma client and start app on container launch
+RUN chown -R node /usr/src/app
+USER node
 CMD ["sh", "-c", "npx prisma db push && npm start"]
