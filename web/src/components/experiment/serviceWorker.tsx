@@ -3,8 +3,8 @@ import { Switch } from '@/components/ui/switch';
 import { del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SoftBottom } from '../others/SoftBottom';
 import SubList, { noticeTest } from './SubList';
@@ -134,7 +134,8 @@ export default function ServiceWorker() {
                   toast.success(t('sendSuccess'));
                 })
                 .catch((error) => {
-                  toast.error(`${t('sendFailed')}: ${error.response.data.message}`);
+                  const errorMessage = error.response?.data?.message || t('sendFailed');
+                  toast.error(`${t('sendFailed')}: ${errorMessage}`);
                 });
             }}
           >

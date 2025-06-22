@@ -3,8 +3,8 @@ import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import type { JSX } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -76,8 +76,9 @@ function LayoutDashboard() {
 
         window.location.reload();
       })
-      .catch(() => {
-        toast.error('err.response.data.data.msg', {
+      .catch((err: any) => {
+        const errorMessage = err.response?.data?.message || t('messages.logoutFailed');
+        toast.error(errorMessage, {
           id: toastId,
         });
       });

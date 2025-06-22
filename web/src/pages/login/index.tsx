@@ -15,8 +15,8 @@ import mainJson from '@/json/main.json';
 import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
-import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -93,7 +93,9 @@ function Login() {
       .catch((err: any) => {
         setDisbled(false);
         if ('code' in (err.response?.data || {})) {
-          toast.error(err.response?.data?.msg || t('messages.backendDown'));
+          // 使用 message 字段
+          const errorMessage = err.response?.data?.message;
+          toast.error(errorMessage || t('messages.backendDown'));
         } else {
           toast.error(t('messages.backendDown'));
         }
@@ -123,7 +125,9 @@ function Login() {
       })
       .catch((err: any) => {
         setDisbled(false);
-        toast.error(err.response?.data?.msg || t('messages.backendDown'));
+        // 使用 message 字段
+        const errorMessage = err.response?.data?.message;
+        toast.error(errorMessage || t('messages.backendDown'));
       });
   }
 
