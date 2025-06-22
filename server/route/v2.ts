@@ -53,7 +53,7 @@ import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
 import { UploadResult } from '../types/main';
 import { JobNames } from '../types/schedule';
 import { asyncHandler, errorHandler } from '../utils/handlers';
-import { bodyTypeCheck, isAuthenticated, sanitizeUserData } from '../utils/main';
+import { bodyTypeCheck, isAuthenticated, isValidUUID, sanitizeUserData } from '../utils/main';
 import { r2uploadhandler } from '../utils/r2';
 import { generateRssFeed, RssFeedOptions } from '../utils/rss';
 import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
@@ -597,7 +597,8 @@ notesRouter.get(
     const user = req.user as User;
     const { id } = req.params;
 
-    if (!id || id.length !== 24) {
+    // UUID 格式验证
+    if (!id || !isValidUUID(id)) {
       throw new Error('Invalid or missing ID');
     }
 
@@ -933,7 +934,7 @@ apiKeysRouter.delete(
       throw new Error('User ID is required');
     }
 
-    if (!id || id.length !== 24) {
+    if (!id || !isValidUUID(id)) {
       throw new Error('Invalid API Key ID');
     }
 
@@ -992,7 +993,7 @@ attachmentsRouter.delete(
     const user = req.user as User;
     const { id } = req.params;
 
-    if (!id || id.length !== 24) {
+    if (!id || !isValidUUID(id)) {
       throw new Error('Invalid attachment ID');
     }
 
@@ -1054,7 +1055,7 @@ reactionsRouter.post(
     }
 
     // 验证 roteid 格式
-    if (roteid.length !== 24) {
+    if (!isValidUUID(roteid)) {
       throw new Error('Invalid rote ID format');
     }
 
@@ -1101,7 +1102,7 @@ reactionsRouter.delete(
     }
 
     // 验证 roteid 格式
-    if (roteid.length !== 24) {
+    if (!isValidUUID(roteid)) {
       throw new Error('Invalid rote ID format');
     }
 

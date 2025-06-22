@@ -1,4 +1,6 @@
+.env.production
 .env
+.env.development
 node_modules
 ._*
 data
@@ -14,3 +16,5 @@ server/scripts/uploads
 server/dist
 .idea
 .vscode
+
+server/scripts/migration

@@ -2,12 +2,13 @@ import express from 'express';
 
 export const errorHandler: express.ErrorRequestHandler = (err, _req, res, _next) => {
   console.error('API Error:', err.message);
+  console.error('Error details:', err);
 
-  // Prisma unique constraint violation
-  if (err.code === 'P2002') {
+  // Prisma unique constraint violation (check both direct error and nested error)
+  if (err.code === 'P2002' || err.originalError?.code === 'P2002') {
     return res.status(409).json({
       code: 1,
-      message: 'Data already exists',
+      message: 'Username or email already exists',
       data: null,
     });
   }

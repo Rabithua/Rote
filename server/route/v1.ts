@@ -46,7 +46,13 @@ import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
 import { UploadResult } from '../types/main';
 import { JobNames } from '../types/schedule';
 import { asyncHandler, errorHandler } from '../utils/handlers';
-import { bodyTypeCheck, isAuthenticated, isAuthor, sanitizeUserData } from '../utils/main';
+import {
+  bodyTypeCheck,
+  isAuthenticated,
+  isAuthor,
+  isValidUUID,
+  sanitizeUserData,
+} from '../utils/main';
 import { r2uploadhandler } from '../utils/r2';
 import { generateRssFeed, RssFeedOptions } from '../utils/rss';
 import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
@@ -372,7 +378,7 @@ routerV1.get(
     const user = req.user as User;
     const { id } = req.query;
 
-    if (!id || id.length !== 24) {
+    if (!id || !isValidUUID(id.toString())) {
       throw new Error('Invalid or missing ID');
     }
 
@@ -447,7 +453,7 @@ routerV1.delete(
     const user = req.user as User;
     const { id } = req.body;
 
-    if (!id || id.length !== 24) {
+    if (!id || !isValidUUID(id)) {
       throw new Error('Data error');
     }
 
@@ -657,7 +663,7 @@ routerV1.delete(
       throw new Error('Need userid');
     }
 
-    if (!id || id.length !== 24) {
+    if (!id || !isValidUUID(id)) {
       throw new Error('Data error');
     }
 

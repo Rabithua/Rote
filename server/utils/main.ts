@@ -5,6 +5,12 @@ import { getOneOpenKey } from './dbMethods';
 
 const { stateType, roteType, editorType } = mainJson;
 
+// UUID 格式验证函数
+export function isValidUUID(id: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}
+
 export function sanitizeUserData(user: User) {
   delete (user as { passwordhash?: Uint8Array }).passwordhash;
   delete (user as { salt?: Uint8Array }).salt;
