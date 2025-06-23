@@ -166,7 +166,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       <Textarea
         value={rote.content}
         placeholder={t('contentPlaceholder')}
-        className={`inputOrTextAreaInit max-h-[60dvh] min-h-40 lg:text-lg`}
+        className={`inputOrTextAreaInit max-h-[60dvh] min-h-40 break-all lg:text-lg`}
         maxLength={roteMaxLetter}
         disabled={submiting}
         onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
