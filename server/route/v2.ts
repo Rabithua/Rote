@@ -53,11 +53,13 @@ import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
 import { UploadResult } from '../types/main';
 import { JobNames } from '../types/schedule';
 import { asyncHandler, errorHandler } from '../utils/handlers';
+import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
 import { bodyTypeCheck, isAuthenticated, isValidUUID, sanitizeUserData } from '../utils/main';
 import { r2uploadhandler } from '../utils/r2';
 import { generateRssFeed, RssFeedOptions } from '../utils/rss';
 import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
 import openKeyRouter from './openKeyRouter';
+import { authenticateJWT } from '../middleware/jwtAuth';
 
 /**
  * Standard response format
@@ -125,6 +127,50 @@ authRouter.post(
         res.status(200).json(createResponse(sanitizeUserData(user)));
       });
     })(req, res, next);
+  })
+);
+
+// JWT 登录 (新增，用于测试 JWT 认证)
+authRouter.post(
+  '/jwt-login',
+  asyncHandler(async (req, res, next) => {
+    passport.authenticate('local', async (err: any, user: User, data: any) => {
+      if (err || !user) {
+        next(new Error(data.message || 'Authentication failed'));
+        return;
+      }
+
+      try {
+        // 生成 JWT tokens (完全无状态，不存储到数据库)
+        const accessToken = await generateAccessToken({
+          userId: user.id,
+          username: user.username,
+        });
+        const refreshToken = await generateRefreshToken({
+          userId: user.id,
+          username: user.username,
+        });
+
+        res.status(200).json(
+          createResponse({
+            user: sanitizeUserData(user),
+            accessToken,
+            refreshToken,
+          }, 'JWT Login successful')
+        );
+      } catch (error) {
+        next(new Error('Token generation failed'));
+      }
+    })(req, res, next);
+  })
+);
+
+// 测试 JWT 认证功能 (新增端点)
+authRouter.post(
+  '/test-jwt',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    res.status(200).json(createResponse(req.user));
   })
 );
 
