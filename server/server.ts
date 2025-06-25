@@ -2,9 +2,9 @@ import express = require('express');
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import passport from './utils/passport';
-import expressSession = require('express-session');
+// import expressSession = require('express-session');
 
-import { PrismaSessionStore } from '@rabithua/prisma-session-store';
+// import { PrismaSessionStore } from '@rabithua/prisma-session-store';
 import prisma from './utils/prisma';
 
 import { rateLimiterMiddleware } from './middleware/limiter';
@@ -20,7 +20,8 @@ const app: express.Application = express();
 
 const port = process.env.PORT || 3000;
 
-// Configure session
+// Configure session - 临时注释，等待 JWT 实现
+/*
 app.use(
   expressSession({
     secret: process.env.SESSION_SECRET || 'sessionSecret',
@@ -35,6 +36,7 @@ app.use(
     }),
   })
 );
+*/
 
 // record ip and time
 app.use(recorderIpAndTime);
@@ -44,7 +46,7 @@ app.use(rateLimiterMiddleware);
 
 // Initialize Passport
 app.use(passport.initialize());
-app.use(passport.session());
+// app.use(passport.session()); // 临时注释，等待 JWT 实现
 
 // body parser
 app.use(bodyParser.urlencoded({ extended: false }));
