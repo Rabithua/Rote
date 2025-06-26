@@ -40,7 +40,7 @@ export default function RandomRote() {
       {rote.authorid !== profile?.id && (
         <div className="flex min-w-0 items-center gap-2 p-4 text-sm font-light">
           <Globe2Icon className="h-4 w-4 shrink-0" />
-          <div className="truncate">此笔记为用户公开笔记。</div>
+          <div className="truncate">{t('publicNoteHint')}</div>
         </div>
       )}
       <RoteItem rote={rote} showAvatar={false} mutateSingle={mutate} />

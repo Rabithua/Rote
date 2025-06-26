@@ -313,7 +313,8 @@
       "button": "前往"
     },
     "randomRote": {
-      "title": "随机回顾"
+      "title": "随机回顾",
+      "publicNoteHint": "此笔记为用户公开笔记。"
     },
     "roteInputModel": {
       "contentPlaceholder": "Ctrl + ↵ 发送",
