@@ -337,6 +337,7 @@ notesRouter.post(
 // 获取随机笔记 - 移到前面避免被当作ID匹配
 notesRouter.get(
   '/random',
+  optionalJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     let rote;
