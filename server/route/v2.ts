@@ -147,15 +147,6 @@ authRouter.post(
   })
 );
 
-// 测试 JWT 认证功能 (新增端点)
-authRouter.post(
-  '/test-jwt',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    res.status(200).json(createResponse(req.user));
-  })
-);
-
 // 登出
 authRouter.post(
   '/logout',
