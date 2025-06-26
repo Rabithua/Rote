@@ -43,23 +43,23 @@ import {
   searchPublicRotes,
   searchUserPublicRotes,
   statistics,
-  updateSubScription,
+  updateSubScription
 } from '../utils/dbMethods';
 import webpush from '../utils/webpush';
 
 import { randomUUID } from 'crypto';
 import moment from 'moment';
+import { authenticateJWT } from '../middleware/jwtAuth';
 import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
 import { UploadResult } from '../types/main';
 import { JobNames } from '../types/schedule';
 import { asyncHandler, errorHandler } from '../utils/handlers';
-import { generateAccessToken, generateRefreshToken } from '../utils/jwt';
-import { bodyTypeCheck, isAuthenticated, isValidUUID, sanitizeUserData } from '../utils/main';
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
+import { bodyTypeCheck, isValidUUID, sanitizeUserData } from '../utils/main';
 import { r2uploadhandler } from '../utils/r2';
 import { generateRssFeed, RssFeedOptions } from '../utils/rss';
 import { passwordChangeZod, RegisterDataZod } from '../utils/zod';
 import openKeyRouter from './openKeyRouter';
-import { authenticateJWT } from '../middleware/jwtAuth';
 
 /**
  * Standard response format
@@ -109,30 +109,9 @@ authRouter.post(
   })
 );
 
-// 登录
+// 登录 (使用JWT认证)
 authRouter.post(
   '/login',
-  asyncHandler(async (req, res, next) => {
-    passport.authenticate('local', (err: any, user: User, data: any) => {
-      if (err || !user) {
-        next(new Error(data.message || 'Authentication failed'));
-        return;
-      }
-
-      req.logIn(user, (err) => {
-        if (err) {
-          next(new Error('Login failed'));
-          return;
-        }
-        res.status(200).json(createResponse(sanitizeUserData(user)));
-      });
-    })(req, res, next);
-  })
-);
-
-// JWT 登录 (新增，用于测试 JWT 认证)
-authRouter.post(
-  '/jwt-login',
   asyncHandler(async (req, res, next) => {
     passport.authenticate('local', async (err: any, user: User, data: any) => {
       if (err || !user) {
@@ -152,11 +131,14 @@ authRouter.post(
         });
 
         res.status(200).json(
-          createResponse({
-            user: sanitizeUserData(user),
-            accessToken,
-            refreshToken,
-          }, 'JWT Login successful')
+          createResponse(
+            {
+              user: sanitizeUserData(user),
+              accessToken,
+              refreshToken,
+            },
+            'Login successful'
+          )
         );
       } catch (error) {
         next(new Error('Token generation failed'));
@@ -177,7 +159,7 @@ authRouter.post(
 // 登出
 authRouter.post(
   '/logout',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     await new Promise<void>((resolve, reject) => {
       req.logout((err) => {
@@ -193,7 +175,7 @@ authRouter.post(
 // 修改密码
 authRouter.put(
   '/password',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { newpassword, oldpassword } = req.body;
@@ -205,6 +187,42 @@ authRouter.put(
 
     const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);
     res.status(200).json(createResponse(updatedUser));
+  })
+);
+
+// Token 刷新端点
+authRouter.post(
+  '/refresh',
+  asyncHandler(async (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json(createResponse(null, 'Refresh token required', 401));
+    }
+
+    try {
+      const payload = await verifyRefreshToken(refreshToken);
+      const newAccessToken = await generateAccessToken({
+        userId: payload.userId,
+        username: payload.username,
+      });
+      const newRefreshToken = await generateRefreshToken({
+        userId: payload.userId,
+        username: payload.username,
+      });
+
+      res.status(200).json(
+        createResponse(
+          {
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+          },
+          'Token refreshed successfully'
+        )
+      );
+    } catch (error) {
+      res.status(401).json(createResponse(null, 'Invalid refresh token', 401));
+    }
   })
 );
 
@@ -228,7 +246,7 @@ usersRouter.get(
 // 获取当前用户个人资料
 usersRouter.get(
   '/me/profile',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     res.status(200).json(createResponse(req.user as User));
   })
@@ -237,7 +255,7 @@ usersRouter.get(
 // 更新当前用户个人资料
 usersRouter.put(
   '/me/profile',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const data = await editMyProfile(user.id, req.body);
@@ -249,7 +267,7 @@ usersRouter.put(
 // 获取当前用户会话
 usersRouter.get(
   '/me/sessions',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
@@ -264,7 +282,7 @@ usersRouter.get(
 // 获取用户标签
 usersRouter.get(
   '/me/tags',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
@@ -279,7 +297,7 @@ usersRouter.get(
 // 获取用户热力图数据
 usersRouter.get(
   '/me/heatmap',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { startDate, endDate } = req.query;
@@ -296,7 +314,7 @@ usersRouter.get(
 // 获取用户统计信息
 usersRouter.get(
   '/me/statistics',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const data = await statistics(user.id);
@@ -308,7 +326,7 @@ usersRouter.get(
 // 导出用户数据
 usersRouter.get(
   '/me/export',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const data = await exportData(user.id);
@@ -331,7 +349,7 @@ const notesRouter = express.Router();
 // 创建笔记
 notesRouter.post(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
     const { title, content, type, tags, state, archived, pin, editor } = req.body;
@@ -377,7 +395,7 @@ notesRouter.get(
 // 搜索当前用户的笔记
 notesRouter.get(
   '/search',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const { keyword, skip, limit, archived, tag, ...otherParams } = req.query;
     const user = req.user as User;
@@ -515,7 +533,7 @@ notesRouter.get(
 // 获取当前用户的笔记列表
 notesRouter.get(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const { skip, limit, archived, tag, ...otherParams } = req.query;
     const user = req.user as User;
@@ -670,7 +688,7 @@ notesRouter.get(
 // 更新笔记
 notesRouter.put(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -684,7 +702,7 @@ notesRouter.put(
 // 删除笔记
 notesRouter.delete(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const id = req.params.id;
@@ -702,7 +720,7 @@ const notificationsRouter = express.Router();
 // 创建通知
 notificationsRouter.post(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const { type } = req.body;
 
@@ -725,7 +743,7 @@ const subscriptionsRouter = express.Router();
 // 添加订阅
 subscriptionsRouter.post(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const subscription = req.body;
     const user = req.user as User;
@@ -748,7 +766,7 @@ subscriptionsRouter.post(
 // 获取用户订阅
 subscriptionsRouter.get(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const data = await findSubScriptionToUserByUserId(user.id);
@@ -759,7 +777,7 @@ subscriptionsRouter.get(
 // 删除订阅
 subscriptionsRouter.delete(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const user = req.user as User;
@@ -785,7 +803,7 @@ subscriptionsRouter.delete(
 // 更新订阅
 subscriptionsRouter.put(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const user = req.user as User;
@@ -807,7 +825,7 @@ subscriptionsRouter.put(
 // 批量测试所有端点
 subscriptionsRouter.post(
   '/test-all',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
 
@@ -918,7 +936,7 @@ const apiKeysRouter = express.Router();
 // 生成API密钥
 apiKeysRouter.post(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
@@ -933,7 +951,7 @@ apiKeysRouter.post(
 // 获取所有API密钥
 apiKeysRouter.get(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     if (!user.id) {
@@ -948,7 +966,7 @@ apiKeysRouter.get(
 // 更新API密钥
 apiKeysRouter.put(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
@@ -971,7 +989,7 @@ apiKeysRouter.put(
 // 删除API密钥
 apiKeysRouter.delete(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { id } = req.params;
@@ -995,7 +1013,7 @@ const attachmentsRouter = express.Router();
 // 上传附件
 attachmentsRouter.post(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { noteId } = req.query;
@@ -1034,7 +1052,7 @@ attachmentsRouter.post(
 // 删除单个附件
 attachmentsRouter.delete(
   '/:id',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { id } = req.params;
@@ -1051,7 +1069,7 @@ attachmentsRouter.delete(
 // 批量删除附件
 attachmentsRouter.delete(
   '/',
-  isAuthenticated,
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { ids } = req.body;

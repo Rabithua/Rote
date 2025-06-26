@@ -26,57 +26,6 @@ export function sanitizeOtherUserData(user: User) {
   return user;
 }
 
-// Custom authentication middleware
-export function isAuthenticated(req: any, res: any, next: any) {
-  if (req.isAuthenticated()) {
-    next();
-  } else {
-    const error = new Error('Unauthenticated');
-    error.name = 'AuthenticationError';
-    next(error);
-  }
-}
-
-// Custom admin authentication middleware
-export function isAdmin(req: any, res: any, next: any) {
-  if (!req.isAuthenticated()) {
-    const error = new Error('Unauthenticated: please login');
-    error.name = 'AuthenticationError';
-    return next(error);
-  }
-
-  const user = req.user as User;
-  if (user.username !== 'rabithua') {
-    const error = new Error('Unauthenticated: Not admin');
-    error.name = 'AuthorizationError';
-    return next(error);
-  }
-  next();
-}
-
-// Custom author authentication middleware
-export function isAuthor(req: any, res: any, next: any) {
-  if (!req.isAuthenticated()) {
-    const error = new Error('Unauthenticated');
-    error.name = 'AuthenticationError';
-    return next(error);
-  }
-
-  const user = req.user as User;
-  if (!req.body.authorid) {
-    const error = new Error('Need data');
-    error.name = 'ValidationError';
-    return next(error);
-  }
-
-  if (user.id !== req.body.authorid) {
-    const error = new Error('Unauthenticated: Not author');
-    error.name = 'AuthorizationError';
-    return next(error);
-  }
-  next();
-}
-
 // Request body data validation
 export function bodyTypeCheck(req: any, res: any, next: any) {
   const { type, state, editor, permissions } = req.body;
