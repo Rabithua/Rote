@@ -1,15 +1,19 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteItem from '@/components/rote/roteItem';
-import { type Rote } from '@/types/main';
+import { type Profile, type Rote } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
-import { Dice4, RefreshCcwIcon } from 'lucide-react';
+import { Dice4, Globe2Icon, RefreshCcwIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function RandomRote() {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.randomRote',
   });
+
+  const { data: profile } = useAPIGet<Profile>('profile', () =>
+    get('/users/me/profile').then((res) => res.data)
+  );
 
   const {
     data: rote,
@@ -33,6 +37,12 @@ export default function RandomRote() {
           onClick={() => mutate()}
         />
       </div>
+      {rote.authorid !== profile?.id && (
+        <div className="flex min-w-0 items-center gap-2 p-4 text-sm font-light">
+          <Globe2Icon className="h-4 w-4 shrink-0" />
+          <div className="truncate">{t('publicNoteHint')}</div>
+        </div>
+      )}
       <RoteItem rote={rote} showAvatar={false} mutateSingle={mutate} />
     </div>
   ) : null;

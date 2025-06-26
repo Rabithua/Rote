@@ -1,6 +1,7 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import type { Profile } from '@/types/main';
-import { get, post } from '@/utils/api';
+import { get } from '@/utils/api';
+import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
@@ -68,20 +69,24 @@ function LayoutDashboard() {
 
   function logOutFn() {
     const toastId = toast.loading(t('messages.loggingOut'));
-    post('/auth/logout')
-      .then(async () => {
-        toast.success(t('messages.logoutSuccess'), {
-          id: toastId,
-        });
 
-        window.location.reload();
-      })
-      .catch((err: any) => {
-        const errorMessage = err.response?.data?.message || t('messages.logoutFailed');
-        toast.error(errorMessage, {
-          id: toastId,
-        });
+    try {
+      // JWT 登出：清除本地存储的 token
+      authService.logout(false); // 不立即刷新页面，先显示成功消息
+
+      toast.success(t('messages.logoutSuccess'), {
+        id: toastId,
       });
+
+      // 延迟刷新页面，让用户看到成功消息
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch {
+      toast.error(t('messages.logoutFailed'), {
+        id: toastId,
+      });
+    }
   }
 
   function IconRenderItem(icon: IconType) {

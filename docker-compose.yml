@@ -13,7 +13,10 @@ services:
       - R2_URL_PREFIX=<your_s3_or_r2_domain> # S3/R2 储存文件访问域名，如 r2.rote.ink 或自定义 CDN 域名
       - VAPID_PUBLIC_KEY=<your_vapid_public_key> # Web Push 公钥，建议用 secrets
       - VAPID_PRIVATE_KEY=<your_vapid_private_key> # Web Push 私钥，建议用 secrets
-      - SESSION_SECRET=<your_session_secret> # 会话密钥，建议用 secrets
+      - JWT_SECRET=qAvOMJOrwUjwvcsYgTvKcMR+8ZEUD3cDBXfvNkBi8TM= # JWT 密钥，测试用，生产环境请重新生成
+      - JWT_REFRESH_SECRET=/kL+zuJTRBFpYqivSuMsiW132AZQCFHcr/i0pOq9/oI= # JWT 刷新密钥，测试用，生产环境请重新生成
+      - JWT_ACCESS_EXPIRY=15m # JWT 访问令牌过期时间
+      - JWT_REFRESH_EXPIRY=7d # JWT 刷新令牌过期时间
     ports:
       - "3000:3000"
     depends_on:

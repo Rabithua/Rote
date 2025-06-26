@@ -128,16 +128,6 @@ model Reaction {
   @@map("reactions")
 }
 
-model Session {
-  id        String   @id @db.VarChar(255)
-  sid       String   @unique @db.VarChar(255)
-  data      String   @db.Text
-  expiresAt DateTime @db.Timestamptz
-
-  @@index([expiresAt])
-  @@map("sessions")
-}
-
 model SystemSetting {
   id               String   @id @db.VarChar(255)
   webClientSetting Json     @db.JsonB

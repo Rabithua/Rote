@@ -313,7 +313,8 @@
       "button": "Go"
     },
     "randomRote": {
-      "title": "Random Review"
+      "title": "Random Review",
+      "publicNoteHint": "This is a public note from another user."
     },
     "roteInputModel": {
       "contentPlaceholder": "Ctrl + Enter to send",

@@ -6,7 +6,7 @@
 import express from 'express';
 import { createRote, findMyRote, searchMyRotes } from '../utils/dbMethods';
 import { asyncHandler } from '../utils/handlers';
-import { bodyTypeCheck, isOpenKeyOk, queryTypeCheck } from '../utils/main';
+import { isOpenKeyOk, queryTypeCheck } from '../utils/main';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -87,7 +87,6 @@ router.get(
 router.post(
   '/notes',
   isOpenKeyOk,
-  bodyTypeCheck,
   asyncHandler(async (req, res) => {
     const { content, state, type, tags, pin } = req.body;
 

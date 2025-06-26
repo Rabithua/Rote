@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import mainJson from '@/json/main.json';
 import type { Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
+import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -84,7 +85,12 @@ function Login() {
 
     setDisbled(true);
     post('/auth/login', loginData)
-      .then(() => {
+      .then((response) => {
+        const { accessToken, refreshToken } = response.data;
+
+        // 存储 tokens
+        authService.setTokens(accessToken, refreshToken);
+
         toast.success(t('messages.loginSuccess'));
         setDisbled(false);
         mutate();
@@ -93,7 +99,6 @@ function Login() {
       .catch((err: any) => {
         setDisbled(false);
         if ('code' in (err.response?.data || {})) {
-          // 使用 message 字段
           const errorMessage = err.response?.data?.message;
           toast.error(errorMessage || t('messages.backendDown'));
         } else {

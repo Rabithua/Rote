@@ -51,6 +51,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 - 网络请求：使用 `frontend/src/utils/api.ts` 封装好的方法，统一 API 请求
 - 国际化：支持多语言 (i18n)，语言配置文件放置在 `locales/` 目录
 - 设计系统：使用 shadcn/ui 组件系统，保持界面一致性
+- always use Tailwind v4, never use Tailwind v3
 
 ### API 设计规范
 
