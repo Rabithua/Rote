@@ -82,6 +82,17 @@ class AuthService {
       return null;
     }
   }
+
+  /**
+   * 登出 - 清除所有令牌并可选择刷新页面
+   * @param reload 是否刷新页面，默认为 true
+   */
+  logout(reload: boolean = true): void {
+    this.clearTokens();
+    if (reload) {
+      window.location.reload();
+    }
+  }
 }
 
 export const authService = new AuthService();

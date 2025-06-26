@@ -136,7 +136,7 @@ export default function RoteActionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Ellipsis className="hover:bg-foreground/3 fixed top-2 right-2 z-10 size-8 rounded-md p-2 backdrop-blur-xl duration-300" />
+        <Ellipsis className="hover:bg-background/80 bg-background fixed top-2 right-2 z-10 size-8 cursor-pointer rounded-md p-2 duration-300" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="z-50 min-w-[180px]">
         <DropdownMenuItem asChild>
