@@ -10,7 +10,6 @@
         "@prisma/client": "^6.10.0",
         "@types/cors": "^2.8.17",
         "@types/express": "^4.17.21",
-        "@types/express-session": "^1.18.0",
         "@types/formidable": "^3.4.5",
         "@types/node": "^20.9.1",
         "@types/passport": "^1.0.16",
@@ -340,8 +339,6 @@
     "@types/express": ["@types/express@4.17.23", "https://registry.npmmirror.com/@types/express/-/express-4.17.23.tgz", { "dependencies": { "@types/body-parser": "*", "@types/express-serve-static-core": "^4.17.33", "@types/qs": "*", "@types/serve-static": "*" } }, "sha512-Crp6WY9aTYP3qPi2wGDo9iUe/rceX01UMhnF1jmwDcKCFM6cx7YhGP/Mpr3y9AASpfHixIG0E6azCcL5OcDHsQ=="],
 
     "@types/express-serve-static-core": ["@types/express-serve-static-core@4.19.6", "https://registry.npmmirror.com/@types/express-serve-static-core/-/express-serve-static-core-4.19.6.tgz", { "dependencies": { "@types/node": "*", "@types/qs": "*", "@types/range-parser": "*", "@types/send": "*" } }, "sha512-N4LZ2xG7DatVqhCZzOGb1Yi5lMbXSZcmdLDe9EzSndPV2HpWYWzRbaerl2n27irrm94EPpprqa8KpskPT085+A=="],
-
-    "@types/express-session": ["@types/express-session@1.18.2", "https://registry.npmmirror.com/@types/express-session/-/express-session-1.18.2.tgz", { "dependencies": { "@types/express": "*" } }, "sha512-k+I0BxwVXsnEU2hV77cCobC08kIsn4y44C3gC0b46uxZVMaXA04lSPgRLR/bSL2w0t0ShJiG8o4jPzRG/nscFg=="],
 
     "@types/formidable": ["@types/formidable@3.4.5", "https://registry.npmmirror.com/@types/formidable/-/formidable-3.4.5.tgz", { "dependencies": { "@types/node": "*" } }, "sha512-s7YPsNVfnsng5L8sKnG/Gbb2tiwwJTY1conOkJzTMRvJAlLFW1nEua+ADsJQu8N1c0oTHx9+d5nqg10WuT9gHQ=="],
 
