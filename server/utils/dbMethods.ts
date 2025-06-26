@@ -535,21 +535,6 @@ export async function getMyTags(userid: string): Promise<any> {
   }
 }
 
-export async function getMySession(userid: string): Promise<any> {
-  try {
-    const sessions = await prisma.session.findMany({
-      where: {
-        data: {
-          contains: userid,
-        },
-      },
-    });
-    return sessions;
-  } catch (error) {
-    throw new DatabaseError('Failed to get user sessions', error);
-  }
-}
-
 export async function generateOpenKey(userid: string): Promise<any> {
   try {
     const openKey = await prisma.userOpenKey.create({

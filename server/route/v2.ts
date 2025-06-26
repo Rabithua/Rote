@@ -32,7 +32,6 @@ import {
   getAllPublicRssData,
   getHeatMap,
   getMyOpenKey,
-  getMySession,
   getMyTags,
   getRssData,
   getSiteMapData,
@@ -43,13 +42,13 @@ import {
   searchPublicRotes,
   searchUserPublicRotes,
   statistics,
-  updateSubScription
+  updateSubScription,
 } from '../utils/dbMethods';
 import webpush from '../utils/webpush';
 
 import { randomUUID } from 'crypto';
 import moment from 'moment';
-import { authenticateJWT } from '../middleware/jwtAuth';
+import { authenticateJWT, optionalJWT } from '../middleware/jwtAuth';
 import { scheduleNoteOnceNoticeJob } from '../schedule/NoteOnceNoticeJob';
 import { UploadResult } from '../types/main';
 import { JobNames } from '../types/schedule';
@@ -147,22 +146,6 @@ authRouter.post(
   })
 );
 
-// 登出
-authRouter.post(
-  '/logout',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    await new Promise<void>((resolve, reject) => {
-      req.logout((err) => {
-        if (err) reject(err);
-        resolve();
-      });
-    });
-
-    res.status(200).json(createResponse());
-  })
-);
-
 // 修改密码
 authRouter.put(
   '/password',
@@ -251,21 +234,6 @@ usersRouter.put(
     const user = req.user as User;
     const data = await editMyProfile(user.id, req.body);
 
-    res.status(200).json(createResponse(data));
-  })
-);
-
-// 获取当前用户会话
-usersRouter.get(
-  '/me/sessions',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    if (!user.id) {
-      throw new Error('User ID is required');
-    }
-
-    const data = await getMySession(user.id);
     res.status(200).json(createResponse(data));
   })
 );
@@ -1097,6 +1065,9 @@ siteRouter.get(
 
 // 反应相关路由
 const reactionsRouter = express.Router();
+
+// 为 reactions 路由添加可选JWT认证
+reactionsRouter.use(optionalJWT);
 
 // 添加反应
 reactionsRouter.post(
