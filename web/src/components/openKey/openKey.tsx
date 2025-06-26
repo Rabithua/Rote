@@ -76,7 +76,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
   async function copyToClipboard(): Promise<void> {
     const text = `${
       process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'
-    }/v1/api/openkey/onerote?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
+    }/v2/api/openkey/notes/create?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
     try {
       await navigator.clipboard.writeText(text);
       toast.success(t('copySuccess'));
