@@ -1153,50 +1153,6 @@ reactionsRouter.delete(
   })
 );
 
-// RSS相关路由
-router.get(
-  '/users/:username/rss',
-  asyncHandler(async (req, res) => {
-    const { username } = req.params;
-
-    if (!username) {
-      throw new Error('Username is required');
-    }
-
-    // Get RSS data
-    const { user, notes } = await getRssData(username);
-
-    // Base URL from environment variable or default value
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-
-    // Set RSS feed options
-    const feedOptions: RssFeedOptions = {
-      title: `${user.nickname || user.username}`,
-      description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
-      id: `${user.username}`,
-      link: `${baseUrl}/api/v2/users/${user.username}/rss`,
-      favicon: user.avatar,
-      copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
-      author: {
-        name: user.nickname || user.username,
-        email: user.email,
-      },
-    };
-
-    // If user has an avatar, add it to the feed
-    if (user.avatar) {
-      feedOptions.image = user.avatar;
-    }
-
-    // Generate RSS feed
-    const feed = await generateRssFeed(notes, user, feedOptions, baseUrl);
-
-    // Set proper Content-Type
-    res.setHeader('Content-Type', 'application/xml');
-    res.send(feed);
-  })
-);
-
 // 获取所有公开笔记的RSS
 router.get(
   '/rss/public',
@@ -1232,6 +1188,50 @@ router.get(
 
     // Generate RSS feed
     const feed = await generateRssFeed(notes, virtualUser as any, feedOptions, baseUrl);
+
+    // Set proper Content-Type
+    res.setHeader('Content-Type', 'application/xml');
+    res.send(feed);
+  })
+);
+
+// RSS相关路由
+router.get(
+  '/rss/:username',
+  asyncHandler(async (req, res) => {
+    const { username } = req.params;
+
+    if (!username) {
+      throw new Error('Username is required');
+    }
+
+    // Get RSS data
+    const { user, notes } = await getRssData(username);
+
+    // Base URL from environment variable or default value
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+
+    // Set RSS feed options
+    const feedOptions: RssFeedOptions = {
+      title: `${user.nickname || user.username}`,
+      description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
+      id: `${user.username}`,
+      link: `${baseUrl}/api/v2/users/${user.username}/rss`,
+      favicon: user.avatar,
+      copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
+      author: {
+        name: user.nickname || user.username,
+        email: user.email,
+      },
+    };
+
+    // If user has an avatar, add it to the feed
+    if (user.avatar) {
+      feedOptions.image = user.avatar;
+    }
+
+    // Generate RSS feed
+    const feed = await generateRssFeed(notes, user, feedOptions, baseUrl);
 
     // Set proper Content-Type
     res.setHeader('Content-Type', 'application/xml');
