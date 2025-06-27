@@ -1,3 +1,12 @@
+declare global {
+  namespace Express {
+    interface Request {
+      dynamicApiUrl: string;
+      dynamicFrontendUrl: string;
+    }
+  }
+}
+
 export interface UploadResult {
   url: string | null;
   compressUrl: string | null;

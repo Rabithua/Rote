@@ -3,10 +3,9 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import passport from './utils/passport';
 
-import prisma from './utils/prisma';
-
 import { rateLimiterMiddleware } from './middleware/limiter';
 import { errorHandler } from './utils/handlers';
+import { injectDynamicUrls } from './utils/main';
 import { recorderIpAndTime } from './utils/recoder';
 
 import routerV2 from './route/v2'; // RESTful API routes
@@ -19,6 +18,9 @@ const port = process.env.PORT || 3000;
 
 // record ip and time
 app.use(recorderIpAndTime);
+
+// inject dynamic URLs
+app.use(injectDynamicUrls);
 
 // rate limiter
 app.use(rateLimiterMiddleware);

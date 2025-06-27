@@ -1160,15 +1160,12 @@ router.get(
     // Get all public RSS data
     const { notes } = await getAllPublicRssData();
 
-    // Base URL from environment variable or default value
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-
     // Set RSS feed options for public notes
     const feedOptions: RssFeedOptions = {
       title: 'Rote - 所有公开笔记',
       description: '这里是所有用户的公开笔记RSS订阅',
       id: 'public-notes',
-      link: `${baseUrl}/api/v2/rss/public`,
+      link: `${req.dynamicApiUrl}/api/v2/rss/public`,
       copyright: `© ${new Date().getFullYear()} Rote`,
       author: {
         name: 'Rote',
@@ -1187,7 +1184,12 @@ router.get(
     };
 
     // Generate RSS feed
-    const feed = await generateRssFeed(notes, virtualUser as any, feedOptions, baseUrl);
+    const feed = await generateRssFeed(
+      notes,
+      virtualUser as any,
+      feedOptions,
+      req.dynamicFrontendUrl
+    );
 
     // Set proper Content-Type
     res.setHeader('Content-Type', 'application/xml');
@@ -1208,15 +1210,12 @@ router.get(
     // Get RSS data
     const { user, notes } = await getRssData(username);
 
-    // Base URL from environment variable or default value
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
-
     // Set RSS feed options
     const feedOptions: RssFeedOptions = {
       title: `${user.nickname || user.username}`,
       description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
       id: `${user.username}`,
-      link: `${baseUrl}/api/v2/rss/${user.username}`,
+      link: `${req.dynamicApiUrl}/api/v2/rss/${user.username}`,
       favicon: user.avatar,
       copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
       author: {
@@ -1231,7 +1230,7 @@ router.get(
     }
 
     // Generate RSS feed
-    const feed = await generateRssFeed(notes, user, feedOptions, baseUrl);
+    const feed = await generateRssFeed(notes, user, feedOptions, req.dynamicFrontendUrl);
 
     // Set proper Content-Type
     res.setHeader('Content-Type', 'application/xml');

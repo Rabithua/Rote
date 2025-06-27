@@ -1,9 +1,16 @@
 import { User } from '@prisma/client';
 
+import { Request } from 'express';
 import mainJson from '../json/main.json';
 import { getOneOpenKey } from './dbMethods';
 
 const { stateType, roteType, editorType } = mainJson;
+
+export function getApiUrl(req: Request): string {
+  const protocol = req.get('x-forwarded-proto') || req.protocol || 'http';
+  const host = req.get('x-forwarded-host') || req.get('host') || 'localhost:3000';
+  return `${protocol}://${host}`;
+}
 
 // UUID 格式验证函数
 export function isValidUUID(id: string): boolean {
@@ -102,4 +109,11 @@ export function isOpenKeyOk(req: any, res: any, next: any) {
       error.name = 'ValidationError';
       next(error);
     });
+}
+
+export function injectDynamicUrls(req: any, res: any, next: any) {
+  req.dynamicApiUrl = getApiUrl(req);
+  req.dynamicFrontendUrl = process.env.BASE_URL || 'http://localhost:3001';
+
+  next();
 }
