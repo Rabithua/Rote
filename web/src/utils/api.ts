@@ -114,12 +114,9 @@ const refreshTokenRequest = async (): Promise<string> => {
     throw new Error('No refresh token available');
   }
 
-  const response = await axios.post(
-    `${process.env.NODE_ENV === 'production' ? process.env.REACT_APP_BASEURL_PRD : 'http://localhost:3000'}${API_PATH}/auth/refresh`,
-    {
-      refreshToken: refreshTokenValue,
-    }
-  );
+  const response = await axios.post(`${API_URL}/auth/refresh`, {
+    refreshToken: refreshTokenValue,
+  });
 
   const { accessToken, refreshToken: newRefreshToken } = response.data.data;
   authService.setTokens(accessToken, newRefreshToken);
