@@ -49,7 +49,7 @@ export async function generateRssFeed(
 
   // 将笔记添加到Feed中
   for (const note of notes) {
-    const noteUrl = `${baseUrl}/note/${note.id}`;
+    const noteUrl = `${baseUrl}/rote/${note.id}`;
     const content = note.content ? note.content.toString() : '';
 
     // 如果有content，则取content第一行作为title，否则用原有逻辑
