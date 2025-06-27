@@ -1216,7 +1216,7 @@ router.get(
       title: `${user.nickname || user.username}`,
       description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
       id: `${user.username}`,
-      link: `${baseUrl}/api/v2/users/${user.username}/rss`,
+      link: `${baseUrl}/api/v2/rss/${user.username}`,
       favicon: user.avatar,
       copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
       author: {

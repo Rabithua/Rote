@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 
 import type { Rote } from '@/types/main';
-import { get } from '@/utils/api';
+import { API_URL, get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Navigation, RefreshCw, Rss, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -70,7 +70,7 @@ function SingleRotePage() {
         )}
         <div className="grid grid-cols-3 divide-x-1 border-b">
           <a
-            href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${rote?.author?.username}`}
+            href={`${API_URL}/rss/${rote?.author?.username}`}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"

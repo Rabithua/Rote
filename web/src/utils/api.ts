@@ -1,18 +1,22 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { authService } from './auth';
 
+// API版本路径
+const API_PATH = '/v2/api';
+
+export const API_POINT =
+  process.env.NODE_ENV === 'production'
+    ? process.env.REACT_APP_BASEURL_PRD
+    : 'http://localhost:3000';
+
+export const API_URL = `${API_POINT}${API_PATH}`;
+
 // 创建axios实例
 const api = axios.create({
   timeout: 60000,
-  baseURL:
-    process.env.NODE_ENV === 'production'
-      ? process.env.REACT_APP_BASEURL_PRD
-      : 'http://localhost:3000',
+  baseURL: API_POINT,
   withCredentials: true,
 });
-
-// API版本路径
-const API_PATH = '/v2/api';
 
 // 请求拦截器
 api.interceptors.request.use(

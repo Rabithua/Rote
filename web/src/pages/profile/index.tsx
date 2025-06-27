@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { OpenKeys, Profile } from '@/types/main';
-import { get, post, put } from '@/utils/api';
+import { API_URL, get, post, put } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import Linkify from 'linkify-react';
 import {
@@ -216,7 +216,7 @@ function ProfilePage() {
   const SideBar = () => (
     <div className="grid grid-cols-3 divide-x-1 border-b">
       <a
-        href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${profile?.username}`}
+        href={`${API_URL}/rss/${profile?.username}`}
         target="_blank"
         rel="noopener noreferrer"
         className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"

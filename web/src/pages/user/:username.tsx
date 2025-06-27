@@ -5,7 +5,7 @@ import RoteList from '@/components/rote/roteList';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
-import { get } from '@/utils/api';
+import { API_URL, get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { Helmet } from '@dr.pogodin/react-helmet';
@@ -64,7 +64,7 @@ function UserPage() {
   const SideBar = () => (
     <div className="grid grid-cols-3 divide-x-1 border-b">
       <a
-        href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${username}`}
+        href={`${API_URL}/rss/${username}`}
         target="_blank"
         rel="noopener noreferrer"
         className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"
@@ -92,7 +92,7 @@ function UserPage() {
           rel="alternate"
           type="application/rss+xml"
           title={`${userInfo?.nickname || userInfo?.username} RSS`}
-          href={`${process.env.REACT_APP_BASEURL_PRD || 'http://localhost:3000'}/v1/api/rss/${username}`}
+          href={`${API_URL}/rss/${username}`}
         />
       </Helmet>
 
