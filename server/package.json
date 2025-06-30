@@ -7,7 +7,7 @@
     "start": "npx ts-node server.ts ",
     "dev": "nodemon server.ts",
     "dev-f": "nodemon server.ts --ignore-errors",
-    "dbSchemaUpdate": "npx prisma db push && npx prisma generate",
+    "dbSchemaUpdate": "npx prisma db push --accept-data-loss",
     "dockerBuild": "docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .",
     "docker:start": "prisma generate && npm start"
   },

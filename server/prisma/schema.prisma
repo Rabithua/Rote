@@ -25,7 +25,6 @@ model User {
   userreaction       Reaction[]
   createdAt          DateTime             @default(now()) @db.Timestamptz
   updatedAt          DateTime             @updatedAt @db.Timestamptz
-  RefreshToken       RefreshToken[]
 
   @@map("users")
 }
@@ -137,16 +136,4 @@ model SystemSetting {
   updatedAt        DateTime @updatedAt @db.Timestamptz
 
   @@map("system_settings")
-}
-
-model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String   @db.Uuid
-  token     String   @unique @db.Text
-  expiresAt DateTime
-  createdAt DateTime @default(now()) @db.Timestamptz
-
-  @@index([userId])
-  @@map("refresh_tokens")
 }

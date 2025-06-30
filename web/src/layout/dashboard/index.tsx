@@ -1,6 +1,6 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import type { Profile } from '@/types/main';
-import { get, post } from '@/utils/api';
+import { get } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
@@ -71,12 +71,12 @@ function LayoutDashboard() {
     const toastId = toast.loading(t('messages.loggingOut'));
 
     try {
-      await post('/auth/logout', {
-        refreshToken: authService.getRefreshToken(),
-      });
-
       // JWT 登出：清除本地存储的 token
       authService.logout(false); // 不立即刷新页面，先显示成功消息
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
 
       toast.success(t('messages.logoutSuccess'), {
         id: toastId,

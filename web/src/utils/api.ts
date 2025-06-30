@@ -21,11 +21,6 @@ const api = axios.create({
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
-    // 确保所有请求都使用v2 API路径
-    if (config.url && !config.url.startsWith('http')) {
-      config.url = `${API_PATH}${config.url.startsWith('/') ? config.url : `/${config.url}`}`;
-    }
-
     // 添加 JWT token
     const token = authService.getAccessToken();
     if (token && !authService.isTokenExpired(token)) {
@@ -50,11 +45,17 @@ api.interceptors.response.use(
       // 如果是JWT认证失败，尝试刷新token
       if (authService.hasValidRefreshToken() && !originalRequest._retry) {
         if (isRefreshing) {
-          // 如果正在刷新，等待刷新完成
+          // 如果正在刷新，等待刷新完成，并自动重试原请求
           return new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject } as any);
+            failedQueue.push({ resolve, reject });
           })
-            .then(() => api(originalRequest))
+            .then((token) => {
+              // 刷新完成后，自动为原请求补充新token并重试
+              if (token) {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
+              return api(originalRequest);
+            })
             .catch((err) => Promise.reject(err));
         }
 
@@ -62,8 +63,11 @@ api.interceptors.response.use(
         isRefreshing = true;
 
         try {
-          await refreshTokenRequest();
-          processQueue(null);
+          // 刷新token
+          const newToken = await refreshTokenRequest();
+          processQueue(null, newToken);
+          // 刷新成功后，自动为原请求补充新token并重试
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         } catch (refreshError) {
           processQueue(refreshError);
