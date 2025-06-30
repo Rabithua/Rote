@@ -1188,3 +1188,26 @@ export async function removeReaction(data: {
     throw new DatabaseError('Failed to remove reaction', error);
   }
 }
+
+
+// 保存 refresh token
+export async function saveRefreshToken(userId: string, token: string, expiresAt: Date) {
+  return prisma.refreshToken.create({
+    data: { userId, token, expiresAt },
+  });
+}
+
+// 查找 refresh token
+export async function findRefreshToken(token: string) {
+  return prisma.refreshToken.findUnique({ where: { token } });
+}
+
+// 删除 refresh token（登出单设备）
+export async function deleteRefreshToken(token: string) {
+  return prisma.refreshToken.delete({ where: { token } });
+}
+
+// 删除用户所有 refresh token（全部登出）
+export async function deleteAllRefreshTokensByUser(userId: string) {
+  return prisma.refreshToken.deleteMany({ where: { userId } });
+}

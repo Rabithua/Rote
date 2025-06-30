@@ -12,6 +12,7 @@ import {
   deleteAttachment,
   deleteAttachments,
   deleteMyOneOpenKey,
+  deleteRefreshToken,
   deleteRote,
   deleteRoteAttachmentsByRoteId,
   deleteSubScription,
@@ -23,6 +24,7 @@ import {
   findMyRote,
   findPublicRote,
   findRandomPublicRote,
+  findRefreshToken,
   findRoteById,
   findSubScriptionToUser,
   findSubScriptionToUserByendpoint,
@@ -38,6 +40,7 @@ import {
   getStatus,
   getUserInfoByUsername,
   removeReaction,
+  saveRefreshToken,
   searchMyRotes,
   searchPublicRotes,
   searchUserPublicRotes,
@@ -129,6 +132,9 @@ authRouter.post(
           username: user.username,
         });
 
+        const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7天
+        await saveRefreshToken(user.id, refreshToken, expiresAt);
+
         res.status(200).json(
           createResponse(
             {
@@ -143,6 +149,15 @@ authRouter.post(
         next(new Error('Token generation failed'));
       }
     })(req, res, next);
+  })
+);
+
+authRouter.post(
+  '/logout',
+  asyncHandler(async (req, res) => {
+    const { refreshToken } = req.body;
+    if (refreshToken) await deleteRefreshToken(refreshToken);
+    res.status(200).json(createResponse(null, 'Logout success'));
   })
 );
 
@@ -175,7 +190,16 @@ authRouter.post(
     }
 
     try {
+      const dbToken = await findRefreshToken(refreshToken);
+      if (!dbToken || dbToken.expiresAt < new Date()) {
+        if (dbToken) await deleteRefreshToken(refreshToken);
+        return res.status(401).json(createResponse(null, 'Refresh token invalid or expired', 401));
+      }
+
       const payload = await verifyRefreshToken(refreshToken);
+
+      await deleteRefreshToken(refreshToken);
+
       const newAccessToken = await generateAccessToken({
         userId: payload.userId,
         username: payload.username,
@@ -184,6 +208,8 @@ authRouter.post(
         userId: payload.userId,
         username: payload.username,
       });
+      const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7天
+      await saveRefreshToken(payload.userId, newRefreshToken, expiresAt);
 
       res.status(200).json(
         createResponse(
