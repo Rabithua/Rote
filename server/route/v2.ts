@@ -154,6 +154,7 @@ authRouter.post(
 
 authRouter.post(
   '/logout',
+  authenticateJWT,
   asyncHandler(async (req, res) => {
     const { refreshToken } = req.body;
     if (refreshToken) await deleteRefreshToken(refreshToken);

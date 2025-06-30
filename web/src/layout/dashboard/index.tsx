@@ -1,6 +1,6 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import type { Profile } from '@/types/main';
-import { get } from '@/utils/api';
+import { get, post } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
@@ -67,10 +67,14 @@ function LayoutDashboard() {
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
-  function logOutFn() {
+  async function logOutFn() {
     const toastId = toast.loading(t('messages.loggingOut'));
 
     try {
+      await post('/auth/logout', {
+        refreshToken: authService.getRefreshToken(),
+      });
+
       // JWT 登出：清除本地存储的 token
       authService.logout(false); // 不立即刷新页面，先显示成功消息
 
@@ -78,10 +82,7 @@ function LayoutDashboard() {
         id: toastId,
       });
 
-      // 延迟刷新页面，让用户看到成功消息
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
+      window.location.reload();
     } catch {
       toast.error(t('messages.logoutFailed'), {
         id: toastId,
