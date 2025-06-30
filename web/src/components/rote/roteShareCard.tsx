@@ -1,12 +1,12 @@
 import { SoftBottom } from '@/components/others/SoftBottom';
 import { Button } from '@/components/ui/button';
-import { saveAs } from 'file-saver';
-import { toPng } from 'html-to-image';
+import { snapdom } from '@zumer/snapdom';
 import { Link, Save } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import QRCode from 'react-qr-code';
+
 import { toast } from 'sonner';
 import AttachmentsGrid from './AttachmentsGrid';
 
@@ -51,33 +51,19 @@ function RoteShareCard({ rote }: any) {
     setIsGenerating(true);
     const element: any = document.querySelector('#shareCanva');
     if (element) {
-      // 获取元素的宽度和高度
-      const width = element.clientWidth;
-      const height = element.clientHeight;
-
-      // 配置 html2canvas 选项
-      const options: any = {
-        width: width,
-        height: height,
-        canvasWidth: (width * 720) / width,
-        canvasHeight: (height * 720) / width,
-        backgroundColor: null,
-        cacheBust: true,
-      };
-
-      const dataUrl = await toPng(element, options);
-
-      if (!dataUrl) {
-        toast.error(t('imageGenerationFailed'));
-        setIsGenerating(false);
-        return;
-      }
-
-      if (window.saveAs) {
-        window.saveAs(dataUrl, `${rote.id}.png`);
-      } else {
-        saveAs(dataUrl, `${rote.id}.png`);
-      }
+      await snapdom.download(element, {
+        scale: 3,
+        format: 'png',
+        filename: `rote-${rote.id}.png`,
+        crossOrigin: (url) => {
+          // Use credentials for same-origin images
+          if (url.startsWith(window.location.origin)) {
+            return 'use-credentials';
+          }
+          // Use anonymous for cross-origin images
+          return 'anonymous';
+        },
+      });
 
       toast.success(t('imageSaved'));
       setIsGenerating(false);
@@ -123,11 +109,11 @@ function RoteShareCard({ rote }: any) {
         <div className="font-sm opacity-60">
           {moment().utc(rote.createdAt).format('YYYY/MM/DD HH:mm:ss')}
         </div>
-        <div className="font-serif leading-7 font-light tracking-wide break-words whitespace-pre-line md:text-lg">
+        <div className="leading-7 font-light tracking-wide break-words whitespace-pre-line md:text-lg">
           {rote.content}
         </div>
-        <AttachmentsGrid attachments={rote.attachments} />
-        <div className="md:text-md flex flex-wrap items-center gap-2 font-serif text-xs">
+        <AttachmentsGrid attachments={rote.attachments} withTimeStamp={true} />
+        <div className="md:text-md flex flex-wrap items-center gap-2 text-sm">
           {rote.tags.map((tag: any) => (
             <span
               className={`rounded-md px-2 py-1 md:px-3 ${themes[themeIndex].tagClass}`}
