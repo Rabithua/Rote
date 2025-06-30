@@ -55,8 +55,8 @@ const AppWrapper = () => {
               if (retryCount >= 3) return;
             },
             refreshInterval: 0,
-            revalidateOnFocus: true,
-            revalidateOnReconnect: true,
+            revalidateOnFocus: false,
+            revalidateOnReconnect: false,
           }}
         >
           <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
