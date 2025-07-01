@@ -14,7 +14,7 @@ export const API_URL = `${API_POINT}${API_PATH}`;
 // 创建axios实例
 const api = axios.create({
   timeout: 60000,
-  baseURL: API_POINT,
+  baseURL: API_URL,
   withCredentials: true,
 });
 
