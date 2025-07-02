@@ -55,10 +55,11 @@ export async function generateRssFeed(
     // 如果有content，则取content第一行作为title，否则用原有逻辑
     let title: string;
     if (note.title) {
-      title = note.title;
+      title = note.title.length > 12 ? note.title.slice(0, 12) + '…' : note.title;
     } else if (content.trim().length > 0) {
       // 按换行符分割，取第一行作为title
-      title = content.split(/\r?\n/)[0].trim();
+      const firstLine = content.split(/\r?\n/)[0].trim();
+      title = firstLine.length > 12 ? firstLine.slice(0, 12) + '…' : firstLine;
     } else {
       title = 'Note';
     }
