@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SoftBottom } from '../others/SoftBottom';
+import { Button } from '../ui/button';
 import SubList, { noticeTest } from './SubList';
 
 export default function ServiceWorker() {
@@ -125,9 +126,9 @@ export default function ServiceWorker() {
       {noticeId && (
         <div className="text-info mt-2 flex items-center gap-2">
           <span className="shrink-0">{t('serviceId')}</span>
-          <span className="overflow-hidden text-ellipsis">{noticeId}</span>
-          <div
-            className="bg-background flex shrink-0 cursor-pointer items-center gap-1 rounded-md px-2 py-1 duration-300 active:scale-95"
+          <span className="truncate overflow-hidden">{noticeId}</span>
+          <Button
+            variant="secondary"
             onClick={() => {
               noticeTest(noticeId, '自在废物', '这是我的博客。')
                 .then(() => {
@@ -141,7 +142,7 @@ export default function ServiceWorker() {
           >
             <Bell className="size-4" />
             {t('notificationTest')}
-          </div>
+          </Button>
         </div>
       )}
       {noticeId && (
