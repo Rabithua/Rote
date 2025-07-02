@@ -260,7 +260,8 @@
           "deleteFailed": "删除失败: {{error}}",
           "testNotificationSent": "测试通知已发送",
           "confirmDelete": "确定要删除这个订阅吗？"
-        }
+        },
+        "noSubscriptions": "没有订阅的通知端点"
       }
     },
     "archived": {

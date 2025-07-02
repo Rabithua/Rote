@@ -256,7 +256,8 @@
           "deleteFailed": "Delete failed: {{error}}",
           "testNotificationSent": "Test notification sent",
           "confirmDelete": "Are you sure you want to delete this subscription?"
-        }
+        },
+        "noSubscriptions": "No subscribed notification endpoints"
       }
     },
     "archived": {

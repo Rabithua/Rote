@@ -10,8 +10,8 @@ import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { ActivityIcon, RefreshCw } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useCallback, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
 function SideBar() {
@@ -157,7 +157,7 @@ function MineFilter() {
       sidebar={<SideBar />}
       sidebarHeader={
         <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-          <div className="flex h-8 items-center gap-2">
+          <div className="flex items-center gap-2">
             <ActivityIcon className="size-5" />
             {t('data')}
           </div>

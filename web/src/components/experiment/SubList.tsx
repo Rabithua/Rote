@@ -10,8 +10,8 @@ import type { Subscription } from '@/types/main';
 import { del, get, post } from '@/utils/api';
 import { Bell, Loader, MoreVertical, Terminal, Trash2 } from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';
@@ -147,7 +147,7 @@ export default function SubList() {
                           });
                         }}
                       >
-                        <Bell className="mr-2 size-4" />
+                        <Bell className="text-primary size-4" />
                         {t('testNotification')}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -155,7 +155,7 @@ export default function SubList() {
                         onClick={() => handleDeleteSubscription(item.id)}
                         className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
                       >
-                        <Trash2 className="mr-2 size-4" />
+                        <Trash2 className="size-4 text-red-600" />
                         {t('deleteSubscription')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -169,6 +169,9 @@ export default function SubList() {
                 </div>
               </div>
             ))}
+            {data?.length === 0 && (
+              <div className="py-4 text-center text-gray-500">{t('noSubscriptions')}</div>
+            )}
           </div>
         </div>
       )}

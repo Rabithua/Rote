@@ -148,16 +148,16 @@ export default function ServiceWorker() {
         <div className="mt-2 flex flex-col gap-2">
           <div className="font-semibold">{t('example')}</div>
           <div className="bg-foreground/3 overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
-            {`curl --location '${process.env.REACT_APP_BASEURL_PRD}/v1/api/sendSwSubScription?subId=${noticeId}' 
---header 'Content-Type: application/json' 
+            {`curl --location --request POST '${process.env.REACT_APP_BASEURL_PRD}/v2/apisubscriptions/${noticeId}/notify'
+--header 'Content-Type: application/json'
 --data '{
-"title": "自在废物",
-"body": "这是我的博客。",
-"image": "https://r2.rote.ink/others/logo.png",
-"data": {
-"type": "openUrl",
-"url": "https://rabithua.club"
-}
+  "title": "自在废物",
+  "body": "这是我的博客。",
+  "image": "https://r2.rote.ink/others/logo.png",
+  "data": {
+  "type": "openUrl",
+  "url": "https://rabithua.club"
+  }
 }'`}
           </div>
         </div>

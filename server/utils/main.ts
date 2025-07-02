@@ -117,3 +117,18 @@ export function injectDynamicUrls(req: any, res: any, next: any) {
 
   next();
 }
+
+/**
+ * Standard response format
+ * @param data Response data
+ * @param message Response message
+ * @param code Status code
+ * @returns Standardized response object
+ */
+export const createResponse = (data: any = null, message: string = 'success', code: number = 0) => {
+  return {
+    code,
+    message,
+    data,
+  };
+};

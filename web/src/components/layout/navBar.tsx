@@ -49,7 +49,7 @@ export default function NavBar({ title, icon, children, onNavClick }: NavHeaderP
                 back();
               }}
             >
-              <ArrowLeft className="size-8 p-1" />
+              <ArrowLeft className="size-6 p-1" />
               <div>{t('back')}</div>
             </div>
           )}

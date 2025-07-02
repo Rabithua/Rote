@@ -4,9 +4,9 @@
  */
 
 import express from 'express';
-import { createRote, findMyRote, searchMyRotes } from '../utils/dbMethods';
-import { asyncHandler } from '../utils/handlers';
-import { isOpenKeyOk, queryTypeCheck } from '../utils/main';
+import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
+import { asyncHandler } from '../../utils/handlers';
+import { isOpenKeyOk, queryTypeCheck } from '../../utils/main';
 
 declare module 'express-serve-static-core' {
   interface Request {

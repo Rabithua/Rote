@@ -126,7 +126,7 @@ function ExplorePage() {
       sidebar={<SideBar />}
       sidebarHeader={
         <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-          <div className="flex h-8 items-center gap-2">
+          <div className="flex items-center gap-2">
             <Github className="size-5" />
             {t('sideBarTitle')}
           </div>

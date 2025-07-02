@@ -8,8 +8,8 @@ import type { Rote } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { Navigation, RefreshCw, Rss, User } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 function SingleRotePage() {
@@ -96,7 +96,7 @@ function SingleRotePage() {
       sidebarHeader={
         <div className="flex items-center gap-2 p-4 text-lg font-semibold">
           <Navigation className="size-5" />
-          <div className="flex h-8 items-center gap-2">{t('sideBarTitle')}</div>
+          <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
         </div>
       }
       className="pb-16"
