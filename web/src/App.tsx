@@ -41,10 +41,8 @@ const AppWrapper = () => {
       <HelmetProvider>
         <Helmet>
           <title>Rote</title>
-          <link rel="icon" href="https://r2.rote.ink/others/logo.png" />
           <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-          <meta name="description" content="Web site created using create-react-app" />
-          <link rel="apple-touch-startup-image" href="https://r2.rote.ink/others/logo.png" />
+          <link rel="apple-touch-startup-image" href="/logo.png" />
         </Helmet>
         <SWRConfig
           value={{

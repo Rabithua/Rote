@@ -5,7 +5,13 @@
     <title>Rote</title>
     <meta name="description" content="Personal note like twitter" />
     <link rel="icon" type="image/svg+xml" href="/ico.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 让页面在移动端使用 viewport 缩放规则 -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <!-- 禁止 Safari 拖动刷新效果（有些页面不希望有 bounce） -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <!-- Import Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -17,11 +23,11 @@
     <!-- Import manifest -->
     <link rel="manifest" href="/manifest.json" />
     <!-- Some meta -->
-    <link rel="apple-touch-icon" href="https://r2.rote.ink/others/icons/icon@180w.png" />
+    <link rel="apple-touch-icon" href="/icon@180w.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme:light)" />
-    <meta name="theme-color" content="#000000" media="(prefers-color-scheme:dark)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme:dark)" />
     <!-- Umami -->
     <script
       defer
