@@ -17,29 +17,36 @@ import { ChartAreaIcon, RefreshCw, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-const SideBar = () => {
-  const navigate = useNavigate();
-
+function MainPageHeader({
+  refreshData,
+  isLoading,
+  isValidating,
+}: {
+  refreshData: () => void;
+  isLoading?: boolean;
+  isValidating?: boolean;
+}) {
   return (
-    <>
-      <SearchBar
-        onSearch={(keyword) => {
-          navigate('/filter', {
-            state: {
-              initialKeyword: keyword.trim(),
-            },
-          });
-        }}
+    <div
+      className="group bg-background sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-4.5 font-light text-gray-600"
+      onClick={refreshData}
+    >
+      <Logo className="h-6 w-fit" color="#07C160" />
+      <img
+        className="text-theme mb-[2px] ml-2 h-4 opacity-0 duration-300 group-hover:opacity-100"
+        src={slogenImg}
+        alt="slogen"
       />
-      <Heatmap />
-      <TagMap />
-      <RandomRote />
-    </>
-  );
-};
 
-function HomePage() {
-  const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
+      {isLoading ||
+        (isValidating && (
+          <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+        ))}
+    </div>
+  );
+}
+
+function MainPage() {
   const { data: profile } = useAPIGet<Profile>('profile', () =>
     get('/users/me/profile').then((res) => res.data)
   );
@@ -74,32 +81,8 @@ function HomePage() {
   };
 
   return (
-    <ContainerWithSideBar
-      sidebar={<SideBar />}
-      sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-          <div className="flex h-8 items-center gap-2">
-            <ChartAreaIcon className="size-5" />
-            {t('statistics')}
-          </div>
-        </div>
-      }
-    >
-      <div
-        className="group bg-background sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-3 font-light text-gray-600"
-        onClick={refreshData}
-      >
-        <Logo className="w-24" color="#07C160" />
-        <img
-          className="text-theme mb-[2px] ml-2 h-4 opacity-0 duration-300 group-hover:opacity-100"
-          src={slogenImg}
-          alt="slogen"
-        />
-        {isLoading ||
-          (isValidating && (
-            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
-          ))}
-      </div>
+    <>
+      <MainPageHeader refreshData={refreshData} isLoading={isLoading} isValidating={isValidating} />
       <div className="flex gap-4 p-4">
         <Avatar className="hidden size-10 shrink-0 overflow-hidden rounded-full xl:block">
           {profile?.avatar ? (
@@ -118,6 +101,47 @@ function HomePage() {
         />
       </div>
       <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+    </>
+  );
+}
+
+function HomePage() {
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
+
+  const SideBar = () => {
+    const navigate = useNavigate();
+
+    return (
+      <>
+        <SearchBar
+          onSearch={(keyword) => {
+            navigate('/filter', {
+              state: {
+                initialKeyword: keyword.trim(),
+              },
+            });
+          }}
+        />
+        <Heatmap />
+        <TagMap />
+        <RandomRote />
+      </>
+    );
+  };
+
+  return (
+    <ContainerWithSideBar
+      sidebar={<SideBar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+          <div className="flex items-center gap-2">
+            <ChartAreaIcon className="size-5" />
+            {t('statistics')}
+          </div>
+        </div>
+      }
+    >
+      <MainPage />
     </ContainerWithSideBar>
   );
 }

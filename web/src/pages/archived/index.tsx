@@ -10,7 +10,7 @@ import { getRotesV2 } from '@/utils/roteApi';
 import { Archive, ChartAreaIcon, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-function ArchivedPage() {
+function MainPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.archived' });
 
   const getPropsMineArchived = (
@@ -41,6 +41,21 @@ function ArchivedPage() {
 
     mutate();
   };
+  return (
+    <>
+      <NavBar title={t('title')} icon={<Archive className="size-6" />} onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+    </>
+  );
+}
+
+function ArchivedPage() {
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.archived' });
 
   const SideBar = () => (
     <>
@@ -62,14 +77,7 @@ function ArchivedPage() {
         </div>
       }
     >
-      <NavBar title={t('title')} icon={<Archive className="size-6" />} onNavClick={refreshData}>
-        {isLoading ||
-          (isValidating && (
-            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
-          ))}
-      </NavBar>
-
-      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+      <MainPage />
     </ContainerWithSideBar>
   );
 }
