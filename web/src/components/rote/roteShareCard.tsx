@@ -140,7 +140,7 @@ function RoteShareCard({ rote }: any) {
               </div>
             </div>
           </div>
-          <div className="h-10 w-10 shrink-0" title={`${rote.author.nickname} 的个人页面`}>
+          <div className="h-10 w-10 shrink-0">
             <QRCode
               size={40}
               key={themeIndex}
@@ -149,6 +149,7 @@ function RoteShareCard({ rote }: any) {
               style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
               value={`${window.location.origin}/${rote.author.username}`}
               viewBox={`0 0 256 256`}
+              title="qrcode"
             />
           </div>
         </div>
