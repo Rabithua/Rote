@@ -2,13 +2,14 @@ import { TagSelector } from '@/components/others/TagSelector';
 import FileSelector from '@/components/others/uploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useDebounce } from '@/hooks/useDebounce';
 import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';
 import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
@@ -24,36 +25,76 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   });
 
   const [submiting, setSubmitting] = useState(false);
-
   const [rote, setRote] = useAtom(roteAtom);
 
-  function deleteFile(indexToRemove: number) {
-    if (rote.attachments[indexToRemove] instanceof File) {
-      setRote((prevRote) => ({
-        ...prevRote,
-        attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
-      }));
-    }
+  // 使用本地状态存储输入值，提高输入响应性
+  const [localContent, setLocalContent] = useState(rote.content);
+  const contentRef = useRef(rote.content);
+
+  // 防抖更新 jotai 状态，减少不必要的重新渲染
+  const debouncedUpdateContent = useDebounce(
+    useCallback(
+      (content: string) => {
+        if (contentRef.current !== content) {
+          contentRef.current = content;
+          setRote((prevRote) => ({
+            ...prevRote,
+            content,
+          }));
+        }
+      },
+      [setRote]
+    ),
+    300 // 300ms 防抖延迟
+  );
+
+  // 优化的内容更新函数
+  const handleContentChange = useCallback(
+    (content: string) => {
+      setLocalContent(content);
+      debouncedUpdateContent(content);
+    },
+    [debouncedUpdateContent]
+  );
+
+  // 同步外部状态变化到本地状态
+  if (rote.content !== contentRef.current && rote.content !== localContent) {
+    setLocalContent(rote.content);
+    contentRef.current = rote.content;
   }
 
-  function submit() {
-    if (!rote.content.trim() && rote.attachments.length === 0) {
+  // 优化的删除文件函数
+  const deleteFile = useCallback(
+    (indexToRemove: number) => {
+      if (rote.attachments[indexToRemove] instanceof File) {
+        setRote((prevRote) => ({
+          ...prevRote,
+          attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
+        }));
+      }
+    },
+    [rote.attachments, setRote]
+  );
+
+  // 优化的提交函数
+  const submit = useCallback(() => {
+    const contentToSubmit = localContent || rote.content;
+
+    if (!contentToSubmit.trim() && rote.attachments.length === 0) {
       toast.error(t('error.emptyContent'));
       return;
     }
 
     const toastId = toast.loading(t('sending'));
-
     setSubmitting(true);
 
-    (rote.id
-      ? put('/notes/' + rote.id, rote)
-      : post('/notes', {
-          ...rote,
-          id: undefined,
-          content: rote.content.trim(),
-        })
-    )
+    const submitData = {
+      ...rote,
+      content: contentToSubmit.trim(),
+      id: rote.id || undefined,
+    };
+
+    (rote.id ? put('/notes/' + rote.id, submitData) : post('/notes', submitData))
       .then(async (res) => {
         toast.success(t('sendSuccess'), {
           id: toastId,
@@ -72,113 +113,193 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           callback();
         }
         setRote(emptyRote);
+        setLocalContent('');
+        contentRef.current = '';
       });
-  }
+  }, [localContent, rote, t, callback, setRote]);
 
-  function uploadAttachments(_rote: Rote) {
-    if (
-      rote.attachments.filter((file: Attachment | File) => file instanceof File && file.size > 0)
-        .length === 0
-    ) {
-      return [];
-    }
+  // 优化的文件上传函数
+  const uploadAttachments = useCallback(
+    (_rote: Rote) => {
+      const filesToUpload = rote.attachments.filter(
+        (file: Attachment | File) => file instanceof File && file.size > 0
+      );
 
-    return new Promise((reslove, reject) => {
-      const toastId = toast.loading(t('uploading'));
+      if (filesToUpload.length === 0) {
+        return Promise.resolve([]);
+      }
 
-      try {
-        const formData = new FormData();
-        rote.attachments.forEach((file: Attachment | File) => {
-          if (file instanceof File) {
-            formData.append('images', file);
-          }
-        });
-        post(`/attachments?noteId=${_rote.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        }).then((res) => {
-          if (res.code !== 0) return;
-          toast.success(t('uploadSuccess'), {
+      return new Promise((resolve, reject) => {
+        const toastId = toast.loading(t('uploading'));
+
+        try {
+          const formData = new FormData();
+          filesToUpload.forEach((file: Attachment | File) => {
+            if (file instanceof File) {
+              formData.append('images', file);
+            }
+          });
+
+          post(`/attachments?noteId=${_rote.id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+            .then((res) => {
+              if (res.code !== 0) return;
+              toast.success(t('uploadSuccess'), {
+                id: toastId,
+              });
+              resolve(res);
+            })
+            .catch((error) => {
+              toast.error(`${t('uploadFailed')}: ${error.response?.data?.message ?? ''}`, {
+                id: toastId,
+              });
+              reject(error);
+            });
+        } catch (error) {
+          toast.error(`${t('uploadFailed')}: ${(error as any).response?.data?.message ?? ''}`, {
             id: toastId,
           });
-          reslove(res);
-        });
-      } catch (error) {
-        toast.error(`${t('uploadFailed')}: ${(error as any).response?.data?.message ?? ''}`, {
-          id: toastId,
-        });
-        // Error uploading image
-        reject();
+          reject(error);
+        }
+      });
+    },
+    [rote.attachments, t]
+  );
+
+  // 优化的键盘事件处理
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        submit();
       }
-    });
-  }
+    },
+    [submit]
+  );
 
-  function handleNormalINputKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && e.ctrlKey) {
-      submit();
-    }
-  }
+  // 优化的粘贴事件处理
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
 
-  function handlePaste(e: React.ClipboardEvent) {
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.type.startsWith('image/')) {
-        const blob = item.getAsFile();
-        if (blob && blob.size > 0) {
-          try {
-            const file = new File([blob], `pasted-image-${Date.now()}.png`, {
-              type: blob.type,
-            });
-            setRote((prevRote) => ({
-              ...prevRote,
-              attachments: [...prevRote.attachments, file],
-            }));
-          } catch {
-            /* empty */
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (blob && blob.size > 0) {
+            try {
+              const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+                type: blob.type,
+              });
+              setRote((prevRote) => ({
+                ...prevRote,
+                attachments: [...prevRote.attachments, file],
+              }));
+            } catch {
+              /* empty */
+            }
           }
         }
       }
-    }
-  }
+    },
+    [setRote]
+  );
 
-  function handleDrop<T extends HTMLElement>(e: React.DragEvent<T>) {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
+  // 优化的拖拽事件处理
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLTextAreaElement>) => {
+      e.preventDefault();
+      const files = e.dataTransfer.files;
 
-    if (files.length > 0) {
-      Array.from(files).forEach((file) => {
-        if (file.type.startsWith('image/')) {
+      if (files.length > 0) {
+        const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+        if (imageFiles.length > 0) {
           setRote((prevRote) => ({
             ...prevRote,
-            attachments: [...prevRote.attachments, file],
+            attachments: [...prevRote.attachments, ...imageFiles],
           }));
-        } else {
-          // File is not an image and was skipped
         }
-      });
-    }
-  }
+      }
+    },
+    [setRote]
+  );
+
+  // 优化的拖拽悬停事件处理
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+  }, []);
+
+  // 优化的标签更新函数
+  const updateTags = useCallback(
+    (value: string[]) => {
+      setRote((prevRote) => ({
+        ...prevRote,
+        tags: value.map((tag) => tag.trim()),
+      }));
+    },
+    [setRote]
+  );
+
+  // 优化的标签删除函数
+  const removeTag = useCallback(
+    (tagToRemove: string) => {
+      setRote((prevRote) => ({
+        ...prevRote,
+        tags: prevRote.tags.filter((tag) => tag !== tagToRemove),
+      }));
+    },
+    [setRote]
+  );
+
+  // 优化的属性切换函数
+  const toggleProperty = useCallback(
+    (property: keyof Pick<Rote, 'pin' | 'archived'>) => {
+      setRote((prevRote) => ({
+        ...prevRote,
+        [property]: !prevRote[property],
+      }));
+    },
+    [setRote]
+  );
+
+  // 优化的状态切换函数
+  const toggleState = useCallback(() => {
+    setRote((prevRote) => ({
+      ...prevRote,
+      state: prevRote.state === 'public' ? 'private' : 'public',
+    }));
+  }, [setRote]);
+
+  // 优化的文件添加回调
+  const handleFileAdd = useCallback(
+    (newFileList: File[]) => {
+      setRote((prevRote) => ({
+        ...prevRote,
+        attachments: [...prevRote.attachments, ...newFileList],
+      }));
+    },
+    [setRote]
+  );
+
+  // 计算是否显示公开警告
+  const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
 
   return (
     <div className="bg-background grow space-y-2">
       <Textarea
-        value={rote.content}
+        value={localContent}
         placeholder={t('contentPlaceholder')}
         className={`inputOrTextAreaInit max-h-[60dvh] min-h-40 break-all lg:text-lg`}
         maxLength={roteMaxLetter}
         disabled={submiting}
         onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
-          setRote({
-            ...rote,
-            content: e.currentTarget.value,
-          } as Rote);
+          handleContentChange(e.currentTarget.value);
         }}
         onPaste={handlePaste}
         onDrop={handleDrop}
-        onDragOver={(e: React.DragEvent<HTMLTextAreaElement>) => e.preventDefault()}
-        onKeyDown={handleNormalINputKeyDown}
+        onDragOver={handleDragOver}
+        onKeyDown={handleKeyDown}
         rows={3}
       />
 
@@ -210,12 +331,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
             <FileSelector
               id={rote.id || 'rote-editor-file-selector'}
               disabled={submiting}
-              callback={(newFileList: File[]) => {
-                setRote((prevRote) => ({
-                  ...prevRote,
-                  attachments: [...prevRote.attachments, ...newFileList],
-                }));
-              }}
+              callback={handleFileAdd}
             />
           )}
         </div>
@@ -225,13 +341,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         {rote.tags.map((item: string) => (
           <div
             className="bg-foreground/3 flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
-            onClick={() => {
-              const newTags = rote.tags.filter((tag) => tag !== item);
-              setRote({
-                ...rote,
-                tags: newTags,
-              });
-            }}
+            onClick={() => removeTag(item)}
             key={item}
           >
             {item}
@@ -243,12 +353,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       <div className="noScrollBar flex flex-wrap items-center gap-2 overflow-x-scroll">
         <TagSelector
           tags={rote.tags}
-          setTags={(value: string[]) => {
-            setRote({
-              ...rote,
-              tags: value.map((tag) => tag.trim()),
-            });
-          }}
+          setTags={updateTags}
           callback={(_value: string[]) => {
             // TagSelector callback - could be used for debugging or additional logic
           }}
@@ -259,12 +364,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                 rote.pin ? 'bg-foreground/3' : ''
               }`}
-              onClick={() => {
-                setRote({
-                  ...rote,
-                  pin: !rote.pin,
-                });
-              }}
+              onClick={() => toggleProperty('pin')}
             />
           </TooltipTrigger>
           <TooltipContent sideOffset={4}>{t('pin')}</TooltipContent>
@@ -275,12 +375,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                 rote.archived ? 'bg-foreground/3' : ''
               }`}
-              onClick={() => {
-                setRote({
-                  ...rote,
-                  archived: !rote.archived,
-                });
-              }}
+              onClick={() => toggleProperty('archived')}
             />
           </TooltipTrigger>
           <TooltipContent sideOffset={4}>{t('archive')}</TooltipContent>
@@ -291,12 +386,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                 rote.state === 'public' ? 'bg-foreground/3' : ''
               }`}
-              onClick={() => {
-                setRote({
-                  ...rote,
-                  state: rote.state === 'public' ? 'private' : 'public',
-                });
-              }}
+              onClick={toggleState}
             />
           </TooltipTrigger>
           <TooltipContent sideOffset={4}>{t(`stateOptions.${rote.state}`)}</TooltipContent>
@@ -313,7 +403,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         </Button>
       </div>
 
-      {rote.state === 'public' && (
+      {showPublicWarning && (
         <Alert className="animate-show">
           <Globe2Icon className="h-4 w-4" />
           <AlertDescription>你的内容将会被公开，任何人都可以查看。</AlertDescription>

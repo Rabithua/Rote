@@ -11,6 +11,11 @@ export const emptyRote: Rote = {
   state: 'private',
   reactions: [],
   id: '',
+  author: {
+    username: '',
+    nickname: '',
+    avatar: '',
+  },
   createdAt: '',
   updatedAt: '',
 };
