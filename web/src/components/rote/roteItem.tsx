@@ -1,38 +1,42 @@
-import { useState } from 'react';
-
+// RoteItem.tsx（合并优化版）
 import { useAtom } from 'jotai';
 import Linkify from 'linkify-react';
-import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon, User } from 'lucide-react';
+import {
+  Archive,
+  ArrowDownLeft,
+  Edit,
+  Globe2Icon,
+  LinkIcon,
+  PinIcon,
+  SmilePlus,
+  User,
+} from 'lucide-react';
 import moment from 'moment';
-import { useTranslation } from 'react-i18next';
+import { memo, useCallback, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
+import RoteEditor from '@/components/editor/RoteEditor';
+import { SoftBottom } from '@/components/others/SoftBottom';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
+import { ReactionsPart } from '@/components/rote/Reactions';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
 import RoteShareCard from '@/components/rote/roteShareCard';
-import RoteEditor from '../editor/RoteEditor';
-import { SoftBottom } from '../others/SoftBottom';
-import { ReactionsPart } from './Reactions';
-
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 import { useEditor } from '@/state/editor';
+import type { Profile, Rote, Rotes } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
-
-import mainJson from '@/json/main.json';
-import type { Profile, Rote, Rotes } from '@/types/main';
-
 import type { KeyedMutator } from 'swr';
+import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
-const { roteContentExpandedLetter } = mainJson;
+const roteContentExpandedLetter = 280;
 
 function RoteItem({
   rote,
@@ -45,44 +49,32 @@ function RoteItem({
   mutateSingle?: KeyedMutator<Rote>;
   showAvatar?: boolean;
 }) {
-  const { t } = useTranslation('translation', {
-    keyPrefix: 'components.roteItem',
-  });
   const { ref, inView } = useInView();
-
   const [, setRote] = useAtom(useEditor().editor_editRoteAtom);
-  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
-  const [isShareCardModalOpen, setIsShareCardModalOpen] = useState<boolean>(false);
-  const [isNoticeCreateBoardModalOpen, setIsNoticeCreateBoardModalOpen] = useState<boolean>(false);
-
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
-
+  const [modalType, setModalType] = useState<null | 'edit' | 'share' | 'notice'>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { data: profile } = useAPIGet<Profile>('profile', () =>
     get('/users/me/profile').then((res) => res.data)
   );
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
+
+  const isOwner = profile?.username === rote.author.username;
+
+  const onEdit = useCallback(() => {
+    setRote(rote);
+    setModalType('edit');
+  }, [rote]);
 
   return (
     <div
       ref={ref}
       id={`Rote_${rote.id}`}
-      className={`animate-show bg-background/5 flex w-full gap-4 px-5 py-4 opacity-0 duration-300`}
+      className="animate-show bg-background/5 flex w-full gap-4 px-5 py-4 opacity-0 duration-300"
     >
       {showAvatar && (
-        <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author!.username}`}>
+        <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author.username}`}>
           <Avatar className="size-[40px] bg-[#00000010]">
-            {rote.author!.username === profile?.username ? (
-              profile?.avatar ? (
-                <AvatarImage src={profile.avatar} />
-              ) : (
-                <AvatarFallback>
-                  <User className="size-4 text-[#00000030]" />
-                </AvatarFallback>
-              )
-            ) : rote.author!.avatar ? (
-              <AvatarImage src={rote.author!.avatar} />
+            {rote.author.avatar ? (
+              <AvatarImage src={rote.author.avatar} />
             ) : (
               <AvatarFallback>
                 <User className="size-4 text-[#00000030]" />
@@ -92,31 +84,25 @@ function RoteItem({
         </Link>
       )}
 
-      <div className="flex flex-grow flex-col overflow-hidden">
+      <div className="flex flex-grow flex-col space-y-2 overflow-hidden">
+        {/* Header */}
         <div className="flex w-full cursor-default items-center gap-2">
-          <Link
-            className="shrink-0 cursor-pointer font-semibold hover:underline"
-            to={`/${rote.author!.username}`}
-          >
-            {rote.author!.username === profile?.username
-              ? profile?.nickname
-              : rote.author!.nickname}
+          <Link className="shrink-0 font-semibold hover:underline" to={`/${rote.author.username}`}>
+            {isOwner ? profile?.nickname : rote.author.nickname}
           </Link>
 
           <span className="noScrollBar text-info overflow-scroll font-normal text-nowrap">
-            <>
-              <Link to={`/${rote.author!.username}`}>{`@${rote.author!.username}`}</Link>
-              <span>·</span>{' '}
-            </>
+            <Link to={`/${rote.author.username}`}>{`@${rote.author.username}`}</Link>
+            <span>·</span>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span>
                   <span
-                    className={`$${
+                    className={
                       new Date().getTime() - new Date(rote.createdAt).getTime() > 60 * 1000
                         ? ''
                         : 'text-theme'
-                    }`}
+                    }
                   >
                     {formatTimeAgo(rote.createdAt)}
                   </span>
@@ -129,78 +115,73 @@ function RoteItem({
           </span>
 
           <span className="text-info flex gap-1">
-            {rote.pin ? (
+            {rote.pin && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <PinIcon className={`size-4 cursor-pointer rounded-md`} />
+                  <PinIcon className="size-4 cursor-pointer rounded-md" />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>
-                  {rote.pin ? t('tooltips.pinned') : t('tooltips.unpinned')}
-                </TooltipContent>
+                <TooltipContent sideOffset={4}>已置顶</TooltipContent>
               </Tooltip>
-            ) : null}
+            )}
 
-            {rote.state === 'public' ? (
+            {rote.state === 'public' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Globe2Icon className={`size-4 cursor-pointer rounded-md`} />
+                  <Globe2Icon className="size-4 cursor-pointer rounded-md" />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>{t('tooltips.public')}</TooltipContent>
+                <TooltipContent sideOffset={4}>公开</TooltipContent>
               </Tooltip>
-            ) : null}
+            )}
 
-            {rote.archived ? (
+            {rote.archived && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Archive className={`size-4 cursor-pointer rounded-md`} />
+                  <Archive className="size-4 cursor-pointer rounded-md" />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>{t('tooltips.archived')}</TooltipContent>
+                <TooltipContent sideOffset={4}>已归档</TooltipContent>
               </Tooltip>
-            ) : null}
+            )}
 
-            {rote.updatedAt !== rote.createdAt ? (
+            {rote.updatedAt !== rote.createdAt && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Edit className={`size-4 cursor-pointer rounded-md`} />
+                  <Edit className="size-4 cursor-pointer rounded-md" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>
                   {moment.utc(rote.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
                 </TooltipContent>
               </Tooltip>
-            ) : null}
+            )}
 
-            {rote.state === 'public' ? (
+            {rote.state === 'public' && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <LinkIcon
-                    className={`size-4 cursor-pointer rounded-md`}
+                    className="size-4 cursor-pointer rounded-md"
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/rote/${rote.id}`);
-                      toast.success(t('messages.copySuccess'));
+                      toast.success('已复制链接');
                     }}
                   />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>{t('tooltips.copyLink')}</TooltipContent>
+                <TooltipContent sideOffset={4}>复制链接</TooltipContent>
               </Tooltip>
-            ) : null}
-          </span>
-          {profile?.username === rote.author!.username &&
-            inView &&
-            (mutate !== undefined || mutateSingle !== undefined) && (
-              <RoteActionsMenu
-                rote={rote}
-                mutate={mutate}
-                mutateSingle={mutateSingle}
-                onEdit={() => {
-                  setRote(rote);
-                  setIsEditModalOpen(true);
-                }}
-                onShare={() => setIsShareCardModalOpen(true)}
-                onNoticeCreate={() => setIsNoticeCreateBoardModalOpen(true)}
-              />
             )}
+          </span>
+
+          {isOwner && inView && (mutate || mutateSingle) && (
+            <RoteActionsMenu
+              rote={rote}
+              mutate={mutate}
+              mutateSingle={mutateSingle}
+              onEdit={onEdit}
+              onShare={() => setModalType('share')}
+              onNoticeCreate={() => setModalType('notice')}
+            />
+          )}
         </div>
 
+        {/* Content */}
         <div className="font-zhengwen relative break-words whitespace-pre-line">
           <div className="aTagStyle">
             {rote.content.length > roteContentExpandedLetter ? (
@@ -213,82 +194,72 @@ function RoteItem({
               <Linkify>{rote.content}</Linkify>
             )}
           </div>
-
-          {rote.content.length > roteContentExpandedLetter && (
-            <>
-              {!isExpanded && (
-                <SoftBottom>
-                  <div
-                    className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
-                    onClick={toggleExpand}
-                  >
-                    <ArrowDownLeft className="size-4" />
-                    {t('expand')}
-                  </div>
-                </SoftBottom>
-              )}
-            </>
+          {rote.content.length > roteContentExpandedLetter && !isExpanded && (
+            <SoftBottom>
+              <div
+                className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
+                onClick={() => setIsExpanded(true)}
+              >
+                <ArrowDownLeft className="size-4" /> 展开
+              </div>
+            </SoftBottom>
           )}
         </div>
 
-        <AttachmentsGrid attachments={rote.attachments} />
+        {/* Attachments */}
+        {rote.attachments?.length > 0 && <AttachmentsGrid attachments={rote.attachments} />}
 
-        <div className="my-2 flex flex-wrap items-center gap-2">
-          {rote.tags.map((tag: any) => (
-            <Link
-              key={tag}
-              to={'/filter'}
-              state={{
-                tags: [tag],
-              }}
-            >
-              <div className="bg-foreground/5 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
-                {tag}
-              </div>
-            </Link>
-          ))}
-        </div>
+        {/* Tags */}
+        {rote.tags?.length > 0 && (
+          <div className="my-2 flex flex-wrap items-center gap-2">
+            {rote.tags.map((tag) => (
+              <Link key={tag} to="/filter" state={{ tags: [tag] }}>
+                <div className="bg-foreground/5 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
+                  {tag}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
-        <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
+        {/* Reactions */}
+        {inView ? (
+          <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
+        ) : (
+          <SmilePlus className="bg-foreground/5 ml-auto size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
+        )}
       </div>
 
       {inView && (
         <>
-          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <Dialog open={modalType === 'edit'} onOpenChange={() => setModalType(null)}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{t('edit')}</DialogTitle>
+                <DialogTitle>编辑</DialogTitle>
               </DialogHeader>
               <RoteEditor
                 roteAtom={useEditor().editor_editRoteAtom}
                 callback={() => {
-                  setIsEditModalOpen(false);
-                  if (mutate) {
-                    mutate();
-                  }
-                  if (mutateSingle) {
-                    mutateSingle();
-                  }
+                  setModalType(null);
+                  mutate?.();
+                  mutateSingle?.();
                 }}
               />
             </DialogContent>
           </Dialog>
 
-          <Dialog open={isShareCardModalOpen} onOpenChange={setIsShareCardModalOpen}>
+          <Dialog open={modalType === 'share'} onOpenChange={() => setModalType(null)}>
             <DialogContent>
-              <RoteShareCard rote={rote}></RoteShareCard>
+              <RoteShareCard rote={rote} />
             </DialogContent>
           </Dialog>
 
-          <Dialog
-            open={isNoticeCreateBoardModalOpen}
-            onOpenChange={setIsNoticeCreateBoardModalOpen}
-          >
+          <Dialog open={modalType === 'notice'} onOpenChange={() => setModalType(null)}>
             <DialogContent className="block">
               <DialogHeader>
                 <div className="flex items-center gap-4 border-b pb-4">
-                  <h1 className="text-xl font-semibold">{t('noticeSubcription')}</h1>
-                  <p className="text-info font-thin">{t('development')}</p>
+                  <h1 className="text-xl font-semibold">订阅提醒</h1>
+                  <p className="text-info font-thin">开发中</p>
                 </div>
               </DialogHeader>
               <NoticeCreateBoard />
@@ -300,4 +271,4 @@ function RoteItem({
   );
 }
 
-export default RoteItem;
+export default memo(RoteItem);

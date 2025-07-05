@@ -38,7 +38,7 @@ export type Rote = {
   editor?: string;
   createdAt: string;
   updatedAt: string;
-  author?: {
+  author: {
     username: string;
     nickname: string;
     avatar: string;
