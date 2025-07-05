@@ -55,6 +55,7 @@ const AppWrapper = () => {
             refreshInterval: 0,
             revalidateOnFocus: false,
             revalidateOnReconnect: false,
+            revalidateIfStale: false,
           }}
         >
           <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
