@@ -223,7 +223,8 @@
       },
       "importData": {
         "title": "数据导入",
-        "description": "导入来自其他笔记平台的数据。"
+        "description": "导入来自其他笔记平台的数据。",
+        "notSupported": "导入数据功能施工中"
       },
       "serviceWorker": {
         "title": "ServiceWoker通知",

@@ -31,7 +31,7 @@ function MainPageHeader({
       className="group bg-background sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-4.5 font-light text-gray-600"
       onClick={refreshData}
     >
-      <Logo className="h-6 w-fit" color="#07C160" />
+      <Logo className="h-6 w-auto" color="#07C160" />
       <img
         className="text-theme mb-[2px] ml-2 h-4 opacity-0 duration-300 group-hover:opacity-100"
         src={slogenImg}

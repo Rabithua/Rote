@@ -219,7 +219,8 @@
       },
       "importData": {
         "title": "Data Import",
-        "description": "Import data from other note platforms."
+        "description": "Import data from other note platforms.",
+        "notSupported": "Currently not supported."
       },
       "serviceWorker": {
         "title": "ServiceWorker Notification",
