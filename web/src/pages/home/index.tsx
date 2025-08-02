@@ -8,12 +8,10 @@ import RandomRote from '@/components/rote/randomRote';
 import RoteList from '@/components/rote/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { useEditor } from '@/state/editor';
-import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
-import { get } from '@/utils/api';
-import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
+import type { ApiGetRotesParams, Rotes } from '@/types/main';
+import { useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
-import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
-import { ChartAreaIcon, RefreshCw, User } from 'lucide-react';
+import { ChartAreaIcon, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -47,10 +45,6 @@ function MainPageHeader({
 }
 
 function MainPage() {
-  const { data: profile } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
-
   const getPropsMineUnArchived = (
     pageIndex: number,
     _previousPageData: Rotes | null
@@ -84,15 +78,6 @@ function MainPage() {
     <>
       <MainPageHeader refreshData={refreshData} isLoading={isLoading} isValidating={isValidating} />
       <div className="flex gap-4 p-4">
-        <Avatar className="hidden size-10 shrink-0 overflow-hidden rounded-full xl:block">
-          {profile?.avatar ? (
-            <AvatarImage src={profile.avatar} />
-          ) : (
-            <AvatarFallback>
-              <User className="size-4 text-[#00000010]" />
-            </AvatarFallback>
-          )}
-        </Avatar>
         <RoteEditor
           roteAtom={useEditor().editor_newRoteAtom}
           callback={() => {

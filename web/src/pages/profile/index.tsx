@@ -275,7 +275,7 @@ function ProfilePage() {
           </div>
           <div className="mx-4 flex h-16 items-center">
             <Avatar
-              className="gLight text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
+              className="text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
               onClick={() => {
                 (inputAvatarRef.current as HTMLInputElement | null)?.click();
               }}
@@ -283,8 +283,8 @@ function ProfilePage() {
               {profile?.avatar ? (
                 <AvatarImage src={profile.avatar} />
               ) : (
-                <AvatarFallback>
-                  <User className="size-4 text-[#00000010]" />
+                <AvatarFallback className="bg-muted/80">
+                  <User className="text-foreground/10 size-12" />
                 </AvatarFallback>
               )}
             </Avatar>
@@ -369,8 +369,8 @@ function ProfilePage() {
                   {editProfile.avatar ? (
                     <AvatarImage src={editProfile.avatar} />
                   ) : (
-                    <AvatarFallback>
-                      <User className="size-4 text-[#00000030]" />
+                    <AvatarFallback className="bg-muted/80">
+                      <User className="text-foreground/10 size-12" />
                     </AvatarFallback>
                   )}
                 </Avatar>

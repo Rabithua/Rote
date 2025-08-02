@@ -143,8 +143,8 @@ function UserPage() {
               {userInfo?.avatar ? (
                 <AvatarImage src={userInfo.avatar} />
               ) : (
-                <AvatarFallback>
-                  <User className="size-4 text-[#00000010]" />
+                <AvatarFallback className="bg-muted/80">
+                  <User className="text-foreground/10 size-12" />
                 </AvatarFallback>
               )}
             </Avatar>
