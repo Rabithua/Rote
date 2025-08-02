@@ -100,6 +100,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           id: toastId,
         });
         await uploadAttachments(res.data);
+
+        if (callback) {
+          callback();
+        }
+        setRote(emptyRote);
+        setLocalContent('');
+        contentRef.current = '';
       })
       .catch((error) => {
         const errorMessage = error.response?.data?.message || t('sendFailed');
@@ -109,12 +116,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       })
       .finally(() => {
         setSubmitting(false);
-        if (callback) {
-          callback();
-        }
-        setRote(emptyRote);
-        setLocalContent('');
-        contentRef.current = '';
       });
   }, [localContent, rote, t, callback, setRote]);
 

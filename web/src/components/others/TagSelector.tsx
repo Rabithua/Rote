@@ -25,8 +25,12 @@ export function TagSelector({
   callback?: (_tags: string[]) => void;
 }) {
   const [open, setOpen] = React.useState(false);
-  const { data: availableTags } = useAPIGet<string[]>('tags', () =>
-    get('/users/me/tags').then((res) => res.data)
+  const { data: availableTags } = useAPIGet<string[]>(
+    'tags',
+    () => get('/users/me/tags').then((res) => res.data),
+    {
+      revalidateOnFocus: true,
+    }
   );
 
   const [inputValue, setInputValue] = React.useState('');
