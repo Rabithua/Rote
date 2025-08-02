@@ -1,10 +1,9 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import { useIosSafariToastDone } from '@/state/iosSafariToastDone';
 import type { Profile } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import MobileDetect from 'mobile-detect';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -13,7 +12,9 @@ export const ProtectedRoute = ({ children }: any) => {
     get('/users/me/profile').then((res) => res.data)
   );
 
-  const [iosSafariToastDone, setIosSafariToastDone] = useIosSafariToastDone();
+  const [iosSafariToastDone, setIosSafariToastDone] = useState(
+    localStorage.getItem('iosSafariToastDone') === 'true'
+  );
 
   const isIosSafari = () => {
     const md = new MobileDetect(window.navigator.userAgent);
@@ -39,6 +40,7 @@ export const ProtectedRoute = ({ children }: any) => {
         icon: '🤖',
       });
       setIosSafariToastDone(true);
+      localStorage.setItem('iosSafariToastDone', 'true');
     }
   }, [iosSafariToastDone, setIosSafariToastDone]);
 
