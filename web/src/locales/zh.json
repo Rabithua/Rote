@@ -3,25 +3,12 @@
     "landing": {
       "poem": "采菊东篱下，悠然见南山",
       "ComingSoon": "开发中...",
-      "types": [
-        "复杂格式文章",
-        "Text Only",
-        "灵感图库",
-        "日记本",
-        "Todo"
-      ],
+      "types": ["复杂格式文章", "Text Only", "灵感图库", "日记本", "Todo"],
       "slogen": "一个看起来不太一样的个人笔记库🤔",
       "openApi": "开放API，记录的姿势不止一种🤩",
       "data": "对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "links": "链接:",
-      "linksItems": [
-        "登录",
-        "用户指南",
-        "Github",
-        "博客",
-        "下载",
-        "捐赠"
-      ],
+      "linksItems": ["登录", "用户指南", "Github", "博客", "下载", "捐赠"],
       "dashboard": "仪表盘",
       "star": "Stars",
       "fork": "Forks",
@@ -219,7 +206,8 @@
         "description": "导出完整的数据，以便在其他地方使用，json 格式。",
         "noteCount": "笔记数量",
         "attachmentCount": "附件数量",
-        "downloadJson": "下载 Json 格式数据"
+        "downloadJson": "下载 Json 格式数据",
+        "downloading": "下载中..."
       },
       "importData": {
         "title": "数据导入",

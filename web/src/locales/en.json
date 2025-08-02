@@ -3,25 +3,12 @@
     "landing": {
       "poem": "采菊东篱下，悠然见南山",
       "ComingSoon": "Coming soon",
-      "types": [
-        "Complex Format Articles",
-        "Text Only",
-        "Inspiration Gallery",
-        "Diary",
-        "Todo"
-      ],
+      "types": ["Complex Format Articles", "Text Only", "Inspiration Gallery", "Diary", "Todo"],
       "slogen": "A personal note repository that looks different🤔",
       "openApi": "Open API, more than one way to record🤩",
       "data": "Take control of your own data, come and go freely, no data hostage🙅🏻",
       "links": "Links:",
-      "linksItems": [
-        "Login",
-        "User Guide",
-        "Github",
-        "Blog",
-        "Download",
-        "Donate"
-      ],
+      "linksItems": ["Login", "User Guide", "Github", "Blog", "Download", "Donate"],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
@@ -215,7 +202,8 @@
         "description": "Export complete data in JSON format for use elsewhere.",
         "noteCount": "Notes Count",
         "attachmentCount": "Attachments Count",
-        "downloadJson": "Download JSON Data"
+        "downloadJson": "Download JSON Data",
+        "downloading": "Downloading..."
       },
       "importData": {
         "title": "Data Import",
