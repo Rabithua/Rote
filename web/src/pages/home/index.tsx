@@ -62,7 +62,7 @@ function MainPage() {
     getRotesV2,
     {
       initialSize: 0,
-      revalidateFirstPage: false,
+      revalidateOnMount: true,
     }
   );
 
