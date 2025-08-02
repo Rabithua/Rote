@@ -152,7 +152,7 @@ export default function RoteActionsMenu({
         {onNoticeCreate && (
           <DropdownMenuItem onSelect={onNoticeCreate}>
             <Bell className="size-4" />
-            {'回顾'}
+            {t('review')}
           </DropdownMenuItem>
         )}
 
@@ -171,7 +171,37 @@ export default function RoteActionsMenu({
           {rote.archived ? t('unarchive') : t('archive')}
         </DropdownMenuItem>
 
-        <DropdownMenuItem onSelect={onShare}>
+        <DropdownMenuItem
+          onSelect={() => {
+            if (rote.state === 'private') {
+              toast(t('messages.privateNoteCannotShare'), {
+                description: t('messages.privateNoteShareDescription'),
+                action: {
+                  label: t('messages.setPublicAndShare'),
+                  onClick: () => {
+                    roteHelpers.executeRoteAction(
+                      () =>
+                        put('/notes/' + rote.id, {
+                          id: rote.id,
+                          authorid: rote.authorid,
+                          state: 'public',
+                        }),
+                      (res) => {
+                        roteHelpers.updateLocalRoteEdit(res.data);
+                        onShare();
+                      },
+                      t('messages.editing'),
+                      t('messages.editSuccess'),
+                      t('messages.editFailed')
+                    );
+                  },
+                },
+              });
+              return;
+            }
+            onShare();
+          }}
+        >
           <Share className="size-4" />
           {t('share')}
         </DropdownMenuItem>

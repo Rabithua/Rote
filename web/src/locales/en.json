@@ -354,9 +354,10 @@
       "edit": "Edit",
       "archive": "Archive",
       "unarchive": "Unarchive",
-      "share": "Generate Share Image",
+      "share": "Share",
       "delete": "Delete",
       "expand": "Expand",
+      "review": "Review",
       "noticeSubcription": "Subscribe to Notifications",
       "development": "In Development...",
       "tooltips": {
@@ -378,8 +379,12 @@
         "deleteFailed": "Delete failed",
         "editing": "Editing...",
         "editSuccess": "successful",
-        "editFailed": "Edit failed"
-      }
+        "editFailed": "Edit failed",
+        "privateNoteCannotShare": "Private note cannot be shared",
+        "privateNoteShareDescription": "You need to set the note to public before sharing it",
+        "setPublicAndShare": "Set Public and Share"
+      },
+      "linkCopied": "Link copied to clipboard"
     },
     "roteList": {
       "empty": "Nothing here"

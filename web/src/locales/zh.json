@@ -354,9 +354,10 @@
       "edit": "编辑",
       "archive": "归档",
       "unarchive": "取消归档",
-      "share": "生成分享图",
+      "share": "分享",
       "delete": "删除",
       "expand": "展开",
+      "review": "回顾",
       "noticeSubcription": "订阅通知",
       "development": "开发中...",
       "tooltips": {
@@ -378,8 +379,12 @@
         "deleteFailed": "删除失败",
         "editing": "编辑中...",
         "editSuccess": "成功",
-        "editFailed": "编辑失败"
-      }
+        "editFailed": "编辑失败",
+        "privateNoteCannotShare": "私密笔记无法分享",
+        "privateNoteShareDescription": "需要将笔记设置为公开状态才能分享给他人",
+        "setPublicAndShare": "设为公开并分享"
+      },
+      "linkCopied": "链接已复制到剪贴板"
     },
     "roteList": {
       "empty": "还没有发布任何内容"

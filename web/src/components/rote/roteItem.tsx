@@ -23,7 +23,6 @@ import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
-import RoteShareCard from '@/components/rote/roteShareCard';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,6 +34,7 @@ import { useAPIGet } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
+import { useTranslation } from 'react-i18next';
 
 const roteContentExpandedLetter = 280;
 
@@ -49,6 +49,9 @@ function RoteItem({
   mutateSingle?: KeyedMutator<Rote>;
   showAvatar?: boolean;
 }) {
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.roteItem',
+  });
   const { ref, inView } = useInView();
   const [, setRote] = useAtom(useEditor().editor_editRoteAtom);
   const [modalType, setModalType] = useState<null | 'edit' | 'share' | 'notice'>(null);
@@ -175,7 +178,11 @@ function RoteItem({
               mutate={mutate}
               mutateSingle={mutateSingle}
               onEdit={onEdit}
-              onShare={() => setModalType('share')}
+              onShare={() => {
+                const url = `${window.location.origin}/rote/${rote.id}`;
+                navigator.clipboard.writeText(url);
+                toast.success(t('linkCopied'));
+              }}
               onNoticeCreate={() => setModalType('notice')}
             />
           )}
@@ -245,12 +252,6 @@ function RoteItem({
                   mutateSingle?.();
                 }}
               />
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={modalType === 'share'} onOpenChange={() => setModalType(null)}>
-            <DialogContent>
-              <RoteShareCard rote={rote} />
             </DialogContent>
           </Dialog>
 
