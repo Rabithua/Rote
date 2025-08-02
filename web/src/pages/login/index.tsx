@@ -39,6 +39,7 @@ function Login() {
   const navigate = useNavigate();
 
   const [disbled, setDisbled] = useState(false);
+  const [activeTab, setActiveTab] = useState('login');
 
   const [loginData, setLoginData] = useState({
     username: '',
@@ -126,7 +127,8 @@ function Login() {
           email: '',
           nickname: '',
         });
-        // 注册成功后可以考虑自动切换到登录 tab 或者直接登录
+        // 注册成功后自动切换到登录 tab
+        setActiveTab('login');
       })
       .catch((err: any) => {
         setDisbled(false);
@@ -182,7 +184,11 @@ function Login() {
             </div>
 
             {backendStatusOk ? (
-              <Tabs defaultValue="login" className="bg-muted w-full rounded-lg">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="bg-muted w-full rounded-lg"
+              >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
                   <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
