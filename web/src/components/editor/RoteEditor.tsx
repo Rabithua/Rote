@@ -9,7 +9,7 @@ import type { Attachment, Rote } from '@/types/main';
 import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
@@ -27,28 +27,27 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [submiting, setSubmitting] = useState(false);
   const [rote, setRote] = useAtom(roteAtom);
 
-  // 使用本地状态存储输入值，提高输入响应性
   const [localContent, setLocalContent] = useState(rote.content);
-  const contentRef = useRef(rote.content);
 
-  // 防抖更新 jotai 状态，减少不必要的重新渲染
+  useEffect(() => {
+    if (rote.content !== localContent) {
+      setLocalContent(rote.content);
+    }
+  }, [rote.content]);
+
   const debouncedUpdateContent = useDebounce(
     useCallback(
       (content: string) => {
-        if (contentRef.current !== content) {
-          contentRef.current = content;
-          setRote((prevRote) => ({
-            ...prevRote,
-            content,
-          }));
-        }
+        setRote((prevRote) => ({
+          ...prevRote,
+          content,
+        }));
       },
       [setRote]
     ),
-    300 // 300ms 防抖延迟
+    300
   );
 
-  // 优化的内容更新函数
   const handleContentChange = useCallback(
     (content: string) => {
       setLocalContent(content);
@@ -57,13 +56,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [debouncedUpdateContent]
   );
 
-  // 同步外部状态变化到本地状态
-  if (rote.content !== contentRef.current && rote.content !== localContent) {
-    setLocalContent(rote.content);
-    contentRef.current = rote.content;
-  }
-
-  // 优化的删除文件函数
   const deleteFile = useCallback(
     (indexToRemove: number) => {
       if (rote.attachments[indexToRemove] instanceof File) {
@@ -76,50 +68,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [rote.attachments, setRote]
   );
 
-  // 优化的提交函数
-  const submit = useCallback(() => {
-    const contentToSubmit = localContent || rote.content;
-
-    if (!contentToSubmit.trim() && rote.attachments.length === 0) {
-      toast.error(t('error.emptyContent'));
-      return;
-    }
-
-    const toastId = toast.loading(t('sending'));
-    setSubmitting(true);
-
-    const submitData = {
-      ...rote,
-      content: contentToSubmit.trim(),
-      id: rote.id || undefined,
-    };
-
-    (rote.id ? put('/notes/' + rote.id, submitData) : post('/notes', submitData))
-      .then(async (res) => {
-        toast.success(t('sendSuccess'), {
-          id: toastId,
-        });
-        await uploadAttachments(res.data);
-
-        if (callback) {
-          callback();
-        }
-        setRote(emptyRote);
-        setLocalContent('');
-        contentRef.current = '';
-      })
-      .catch((error) => {
-        const errorMessage = error.response?.data?.message || t('sendFailed');
-        toast.error(`${t('sendFailed')}: ${errorMessage}`, {
-          id: toastId,
-        });
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-  }, [localContent, rote, t, callback, setRote]);
-
-  // 优化的文件上传函数
   const uploadAttachments = useCallback(
     (_rote: Rote) => {
       const filesToUpload = rote.attachments.filter(
@@ -168,7 +116,46 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [rote.attachments, t]
   );
 
-  // 优化的键盘事件处理
+  const submit = useCallback(() => {
+    const contentToSubmit = localContent;
+
+    if (!contentToSubmit.trim() && rote.attachments.length === 0) {
+      toast.error(t('error.emptyContent'));
+      return;
+    }
+
+    const toastId = toast.loading(t('sending'));
+    setSubmitting(true);
+
+    const submitData = {
+      ...rote,
+      content: contentToSubmit.trim(),
+      id: rote.id || undefined,
+    };
+
+    (rote.id ? put('/notes/' + rote.id, submitData) : post('/notes', submitData))
+      .then(async (res) => {
+        toast.success(t('sendSuccess'), {
+          id: toastId,
+        });
+        await uploadAttachments(res.data);
+
+        if (callback) {
+          callback();
+        }
+        setRote(emptyRote);
+      })
+      .catch((error) => {
+        const errorMessage = error.response?.data?.message || t('sendFailed');
+        toast.error(`${t('sendFailed')}: ${errorMessage}`, {
+          id: toastId,
+        });
+      })
+      .finally(() => {
+        setSubmitting(false);
+      });
+  }, [localContent, rote, t, callback, setRote, uploadAttachments]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && e.ctrlKey) {
@@ -178,7 +165,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [submit]
   );
 
-  // 优化的粘贴事件处理
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -207,7 +193,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的拖拽事件处理
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLTextAreaElement>) => {
       e.preventDefault();
@@ -226,12 +211,10 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的拖拽悬停事件处理
   const handleDragOver = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
   }, []);
 
-  // 优化的标签更新函数
   const updateTags = useCallback(
     (value: string[]) => {
       setRote((prevRote) => ({
@@ -242,7 +225,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的标签删除函数
   const removeTag = useCallback(
     (tagToRemove: string) => {
       setRote((prevRote) => ({
@@ -253,7 +235,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的属性切换函数
   const toggleProperty = useCallback(
     (property: keyof Pick<Rote, 'pin' | 'archived'>) => {
       setRote((prevRote) => ({
@@ -264,7 +245,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的状态切换函数
   const toggleState = useCallback(() => {
     setRote((prevRote) => ({
       ...prevRote,
@@ -272,7 +252,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     }));
   }, [setRote]);
 
-  // 优化的文件添加回调
   const handleFileAdd = useCallback(
     (newFileList: File[]) => {
       setRote((prevRote) => ({
@@ -283,7 +262,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 计算是否显示公开警告
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
 
   return (
