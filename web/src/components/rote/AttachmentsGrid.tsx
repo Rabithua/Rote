@@ -29,7 +29,6 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
                         : 'aspect-square w-[calc(1/3*100%-3px)]'
                 } bg-foreground/3 grow object-cover`}
                 src={`${file.compressUrl || file.url}?${withTimeStamp ? new Date().getTime() : ''}`}
-                loading="lazy"
                 crossOrigin={withTimeStamp ? 'anonymous' : undefined}
                 alt=""
               />
