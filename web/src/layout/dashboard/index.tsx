@@ -1,4 +1,5 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
 import type { Profile } from '@/types/main';
 import { get } from '@/utils/api';
 import { authService } from '@/utils/auth';
@@ -60,6 +61,7 @@ export const tabsData: IconType[][] = [
 ];
 
 function LayoutDashboard() {
+  useSaveScrollPosition();
   const location = useLocation();
   const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
     get('/users/me/profile').then((res) => res.data)
@@ -71,8 +73,7 @@ function LayoutDashboard() {
     const toastId = toast.loading(t('messages.loggingOut'));
 
     try {
-      // JWT 登出：清除本地存储的 token
-      authService.logout(false); // 不立即刷新页面，先显示成功消息
+      authService.logout(false);
 
       setTimeout(() => {
         window.location.reload();
@@ -81,8 +82,6 @@ function LayoutDashboard() {
       toast.success(t('messages.logoutSuccess'), {
         id: toastId,
       });
-
-      window.location.reload();
     } catch {
       toast.error(t('messages.logoutFailed'), {
         id: toastId,
@@ -92,13 +91,7 @@ function LayoutDashboard() {
 
   function IconRenderItem(icon: IconType) {
     return icon.link ? (
-      <Link
-        key={icon.link}
-        to={icon.link}
-        onClick={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      >
+      <Link key={icon.link} to={icon.link}>
         <div
           className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
             location.pathname === icon.link

@@ -1,19 +1,14 @@
+import { useScrollPosition as useJotaiScrollPosition } from '@/state/scrollRecoder';
+import { throttle } from 'lodash';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import { throttle } from 'lodash';
-import { useScrollPosition as useJotaiScrollPosition } from '@/state/scrollRecoder';
 
 export function useSaveScrollPosition() {
   const { pathname } = useLocation();
   const { getScrollPosition, setScrollPosition } = useJotaiScrollPosition();
 
   useEffect(() => {
-    setTimeout(() => {
-      window.scrollTo({
-        top: getScrollPosition(pathname),
-        behavior: 'smooth',
-      });
-    }, 100);
+    window.scrollTo({ top: getScrollPosition(pathname), behavior: 'instant' });
 
     const handleScroll = throttle(() => {
       setScrollPosition(pathname, window.scrollY);
@@ -24,5 +19,5 @@ export function useSaveScrollPosition() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [pathname, getScrollPosition, setScrollPosition]);
+  }, [pathname]);
 }
