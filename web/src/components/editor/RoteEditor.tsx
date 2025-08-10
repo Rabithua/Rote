@@ -2,12 +2,12 @@ import { TagSelector } from '@/components/others/TagSelector';
 import FileSelector from '@/components/others/uploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useDebounce } from '@/hooks/useDebounce';
 import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';
 import { post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
+import debounce from 'lodash/debounce';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -35,18 +35,18 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     }
   }, [rote.content]);
 
-  const debouncedUpdateContent = useDebounce(
-    useCallback(
-      (content: string) => {
+  const debouncedUpdateContent = useMemo(
+    () =>
+      debounce((content: string) => {
         setRote((prevRote) => ({
           ...prevRote,
           content,
         }));
-      },
-      [setRote]
-    ),
-    300
+      }, 300),
+    [setRote]
   );
+
+  useEffect(() => () => debouncedUpdateContent.cancel(), [debouncedUpdateContent]);
 
   const handleContentChange = useCallback(
     (content: string) => {
