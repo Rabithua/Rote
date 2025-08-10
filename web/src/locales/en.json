@@ -1,0 +1,409 @@
+{
+  "pages": {
+    "landing": {
+      "poem": "采菊东篱下，悠然见南山",
+      "ComingSoon": "Coming soon",
+      "types": ["Complex Format Articles", "Text Only", "Inspiration Gallery", "Diary", "Todo"],
+      "slogen": "A personal note repository that looks different🤔",
+      "openApi": "Open API, more than one way to record🤩",
+      "data": "Take control of your own data, come and go freely, no data hostage🙅🏻",
+      "links": "Links:",
+      "linksItems": ["Login", "User Guide", "Github", "Blog", "Download", "Donate"],
+      "dashboard": "Dashboard",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch",
+      "githubOpenSource": "Rote is open source on Github, welcome to Star!",
+      "lastPushTime": "Last push time: ",
+      "coreFeatures": {
+        "title": "Core Features",
+        "subtitle": "For a more elegant note-taking experience and less mental burden",
+        "tagline": "Core features",
+        "features": {
+          "restraint": {
+            "title": "Stay Restrained",
+            "description": "Everything for an elegant note-taking experience"
+          },
+          "simple": {
+            "title": "Simple yet Powerful",
+            "description": "All features are limited to the Web, PWA for better experience"
+          },
+          "openApi": {
+            "title": "Open Interface",
+            "description": "Open API interface, supports recording or getting data in any scenario"
+          },
+          "freedom": {
+            "title": "Unbounded Freedom",
+            "description": "Complete control over your data, free to export data"
+          }
+        }
+      },
+      "construction": {
+        "title": "Still Under Construction...",
+        "subtitle": "As a long-term project, Rote is still being improved",
+        "tagline": "STILL UNDER CONSTRUCTION"
+      },
+      "exploreMore": {
+        "title": "Explore More",
+        "subtitle": "Here are a few buttons to play with",
+        "tagline": "EXPlORE MORE"
+      }
+    },
+    "mine": {
+      "leftNavBar": {
+        "home": "Home",
+        "explore": "Explore",
+        "archived": "Archive",
+        "profile": "Profile",
+        "experiment": "Experiment",
+        "fold": "Collapse",
+        "login": "Login",
+        "logout": "Logout"
+      },
+      "roteTypes": {
+        "Rote": "Note",
+        "Article": "Article"
+      },
+      "messages": {
+        "loggingOut": "Logging out...",
+        "logoutSuccess": "Logout successful"
+      }
+    },
+    "login": {
+      "validation": {
+        "usernameRequired": "Username is required",
+        "usernameMaxLength": "Username cannot exceed 20 characters",
+        "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
+        "usernameConflict": "This username conflicts with system routes",
+        "passwordRequired": "Password is required",
+        "passwordMaxLength": "Password cannot exceed 30 characters",
+        "emailRequired": "Email is required",
+        "emailMaxLength": "Email cannot exceed 30 characters",
+        "emailFormat": "Invalid email format",
+        "nicknameRequired": "Nickname is required",
+        "nicknameMaxLength": "Nickname cannot exceed 20 characters"
+      },
+      "messages": {
+        "loggingIn": "Logging in...",
+        "loginSuccess": "Login successful",
+        "backendDown": "Backend service is unavailable",
+        "checkDatabase": "Database connection failed",
+        "checkBackend": "Backend service is not responding",
+        "loggingOut": "Logging out...",
+        "logoutSuccess": "Logout successful",
+        "registering": "Registering...",
+        "registerSuccess": "Registration successful"
+      },
+      "fields": {
+        "username": "Username",
+        "password": "Password",
+        "email": "Email",
+        "nickname": "Nickname"
+      },
+      "buttons": {
+        "login": "Login",
+        "register": "Register",
+        "back": "Back",
+        "toHome": "Go to Home",
+        "logout": "Logout"
+      },
+      "nav": {
+        "explore": "Explore",
+        "home": "Home"
+      },
+      "error": {
+        "backendIssue": "Backend service issue",
+        "dockerDeployment": "Using Docker deployment, backend container may take a few minutes to build. Please refresh the page later."
+      },
+      "title": {
+        "login": "Login",
+        "register": "Register"
+      }
+    },
+    "home": {
+      "statistics": "Statistics"
+    },
+    "profile": {
+      "title": "Profile",
+      "editProfile": "Edit Profile",
+      "noDescription": "This person is lazy and hasn't left any description yet...",
+      "registerTime": "Register Time:",
+      "openKeyDescription": "OpenKey allows easy access to permission-specific features. Properly allocate permissions to avoid unnecessary troubles from OpenKey leakage.",
+      "loading": "Loading...",
+      "noOpenKey": "No OpenKey yet, generate one?",
+      "addOpenKey": "Generate an OpenKey",
+      "email": "Email",
+      "username": "Username",
+      "nickname": "Nickname",
+      "description": "Description",
+      "enterNickname": "Enter your nickname...",
+      "enterDescription": "Enter your description...",
+      "editing": "Editing...",
+      "save": "Save",
+      "cropAvatar": "Crop Avatar",
+      "uploading": "Uploading...",
+      "done": "Done",
+      "creating": "Creating...",
+      "createSuccess": "Created successfully",
+      "createFailed": "Creation failed",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
+      "editSuccess": "Edit successful",
+      "editFailed": "Edit failed",
+      "sideBarTitle": "Besides... there are also"
+    },
+    "rote": {
+      "loading": "Loading...",
+      "sideBarTitle": "Relative Information",
+      "authorInfo": {
+        "nickname": "Nickname",
+        "username": "Username"
+      }
+    },
+    "user": {
+      "loading": "Loading...",
+      "noDescription": "This person is lazy and hasn't left any description yet...",
+      "registerTime": "Register Time: ",
+      "publicNotes": "Public Notes",
+      "rssSubscribe": "RSS Feed",
+      "sideBarTitle": "Besides... there are also",
+      "helmet": {
+        "loading": "loading...",
+        "defaultDesc": "rote.ink"
+      }
+    },
+    "filter": {
+      "title": "Filter",
+      "includeTags": "Including Tags:",
+      "allTags": "All Tags:",
+      "none": "NONE",
+      "data": "Data Statistics",
+      "note": "Note",
+      "attachment": "Attachment",
+      "searchPlaceholder": "Search note content, title, or tags...",
+      "searchButton": "Search"
+    },
+    "explore": {
+      "title": "Explore",
+      "sideBarTitle": "Explore✨",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch",
+      "githubOpenSource": "Rote is open source on Github, welcome to Star!",
+      "lastPushTime": "Last push time: "
+    },
+    "experiment": {
+      "title": "Experiment",
+      "description": "Experimental features that might make rote better to use 🤩",
+      "exportData": {
+        "title": "Export Data",
+        "description": "Export complete data in JSON format for use elsewhere.",
+        "noteCount": "Notes Count",
+        "attachmentCount": "Attachments Count",
+        "downloadJson": "Download JSON Data",
+        "downloading": "Downloading..."
+      },
+      "importData": {
+        "title": "Data Import",
+        "description": "Import data from other note platforms.",
+        "notSupported": "Currently not supported."
+      },
+      "serviceWorker": {
+        "title": "ServiceWorker Notification",
+        "description": "ServiceWorker enables advanced features like background notifications.",
+        "status": "Status:",
+        "noStatus": "No status",
+        "serviceId": "Service ID:",
+        "notificationTest": "Test Notification",
+        "permissionProcessing": "Processing permissions...",
+        "complete": "Complete",
+        "sendSuccess": "Sent successfully!",
+        "sendFailed": "Send failed",
+        "example": "Usage Example:",
+        "notSupported": "Current browser does not support ServiceWorker",
+        "swNotActive": "ServiceWorker is not active, please refresh the page"
+      },
+      "subscriptions": {
+        "title": "Subscribed Notification Endpoints",
+        "testAllEndpoints": "Test All Endpoints",
+        "testNotification": "Test Notification",
+        "deleteSubscription": "Delete Subscription",
+        "statusActive": "Active",
+        "statusInactive": "Inactive",
+        "testNotificationContent": {
+          "title": "Rote Blog",
+          "body": "This is my blog."
+        },
+        "messages": {
+          "testingAllEndpoints": "Testing all endpoints...",
+          "testCompleted": "Test completed! Success: {{success}}, Failed: {{failed}}",
+          "testFailed": "Test failed: {{error}}",
+          "deletingSubscription": "Deleting subscription...",
+          "deleteSuccess": "Subscription deleted successfully",
+          "deleteFailed": "Delete failed: {{error}}",
+          "testNotificationSent": "Test notification sent",
+          "confirmDelete": "Are you sure you want to delete this subscription?"
+        },
+        "noSubscriptions": "No subscribed notification endpoints"
+      }
+    },
+    "archived": {
+      "title": "Archive",
+      "statistics": "Statistics"
+    }
+  },
+  "error": {
+    "pageNotFound": "Page not found or an error occurred",
+    "pageNotFoundDesc": "Sorry, we couldn't find the page you were looking for"
+  },
+  "components": {
+    "d3": {
+      "heatmap": {
+        "noData": "No HeatMap Data",
+        "note": "Note",
+        "notes": "Notes",
+        "daysOfWeek": {
+          "Sun": "Sun",
+          "Mon": "Mon",
+          "Tue": "Tue",
+          "Wed": "Wed",
+          "Thu": "Thu",
+          "Fri": "Fri",
+          "Sat": "Sat"
+        }
+      }
+    },
+    "navBar": {
+      "back": "Back"
+    },
+    "openKey": {
+      "permissions": "Permissions",
+      "example": "Example",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleting": "Deleting...",
+      "deleteSuccess": "Delete successful",
+      "deleteFailed": "Delete failed",
+      "copySuccess": "Content copied to clipboard",
+      "copyFailed": "Failed to copy content to clipboard"
+    },
+    "openKeyEditModel": {
+      "selectAll": "Select All",
+      "save": "Save",
+      "saving": "Saving...",
+      "saveSuccess": "Save successful",
+      "saveFailed": "Save failed",
+      "minimumPermission": "At least one permission is required"
+    },
+    "sidebarSearch": {
+      "title": "Quick Search",
+      "placeholder": "Search notes...",
+      "button": "Go"
+    },
+    "randomRote": {
+      "title": "Random Review",
+      "publicNoteHint": "This is a public note from another user."
+    },
+    "roteInputModel": {
+      "contentPlaceholder": "Ctrl + Enter to send",
+      "tagsPlaceholder": "Tags",
+      "pin": "Pin",
+      "archive": "Archive",
+      "send": "Send",
+      "stateOptions": {
+        "private": "Private",
+        "public": "Public"
+      },
+      "uploading": "Uploading...",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
+      "deleting": "Deleting...",
+      "deleteSuccess": "Delete successful",
+      "deleteFailed": "Delete failed",
+      "error": {
+        "emptyContent": "Content cannot be empty"
+      }
+    },
+    "roteInputSimple": {
+      "contentPlaceholder": "Ctrl + ↵ to send",
+      "tagsPlaceholder": "Tags",
+      "pin": "Pin",
+      "archive": "Archive",
+      "send": "Send",
+      "stateOptions": {
+        "private": "Private",
+        "public": "Public"
+      },
+      "uploading": "Uploading...",
+      "uploadSuccess": "Upload successful",
+      "uploadFailed": "Upload failed",
+      "sending": "Sending...",
+      "sendSuccess": "Send successful",
+      "sendFailed": "Send failed",
+      "error": {
+        "emptyContent": "Content cannot be empty"
+      },
+      "recentPosts": "The above are recent notes"
+    },
+    "roteItem": {
+      "details": "Details",
+      "pinned": "Pin",
+      "unpinned": "Unpin",
+      "edit": "Edit",
+      "archive": "Archive",
+      "unarchive": "Unarchive",
+      "share": "Share",
+      "delete": "Delete",
+      "expand": "Expand",
+      "review": "Review",
+      "noticeSubcription": "Subscribe to Notifications",
+      "development": "In Development...",
+      "tooltips": {
+        "pinned": "Pinned",
+        "unpinned": "Unpinned",
+        "public": "Public",
+        "archived": "Archived",
+        "edited": "Edited at: {{time}}",
+        "copyLink": "Copy Link",
+        "copyLinkSuccess": "Link copied to clipboard"
+      },
+      "messages": {
+        "copySuccess": "Content copied to clipboard",
+        "sending": "Sending...",
+        "sendSuccess": "Send successful",
+        "sendFailed": "Send failed",
+        "deleting": "Deleting...",
+        "deleteSuccess": "Delete successful",
+        "deleteFailed": "Delete failed",
+        "editing": "Editing...",
+        "editSuccess": "successful",
+        "editFailed": "Edit failed",
+        "privateNoteCannotShare": "Private note cannot be shared",
+        "privateNoteShareDescription": "You need to set the note to public before sharing it",
+        "setPublicAndShare": "Set Public and Share"
+      },
+      "linkCopied": "Link copied to clipboard"
+    },
+    "roteList": {
+      "empty": "Nothing here"
+    },
+    "roteShareCard": {
+      "copyLink": "Copy Link",
+      "save": "Save",
+      "linkCopied": "Link copied to clipboard",
+      "generatingImage": "Generating image...",
+      "imageSaved": "Image saved",
+      "imageGenerationFailed": "Failed to generate image",
+      "elementNotFound": "Element to save not found"
+    },
+    "tagMap": {
+      "noTags": "No tags yet",
+      "expand": "Expand"
+    },
+    "uploader": {
+      "fileLimit": "File count exceeds limit, excess files removed!"
+    }
+  }
+}

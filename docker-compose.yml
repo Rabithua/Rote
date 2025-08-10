@@ -1,0 +1,66 @@
+version: "3.8"
+services:
+  rote-backend:
+    build:
+      context: ./backend
+    environment:
+      - CORS=http://localhost:3001,https://rote.ink,https://beta.rote.ink,chrome-extension://cahpbdbfdfnmoachkjmcfgbbnmjcbpej
+      - DATABASE_URL=mongodb://prisma:<your_password>@mongodb:27017/Rote?replicaSet=rs0&directConnection=true # <your_password> 请用实际密码或 secrets 替换
+      - R2_BUCKET=rote
+      - R2_ACCOUNT_ID=<your_r2_account_id> # 云存储账号ID，建议用 secrets
+      - R2_ACCESS_KEY_ID=<your_r2_access_key_id> # 云存储AccessKey，建议用 secrets
+      - R2_SECRET_KEY_ID=<your_r2_secret_key_id> # 云存储SecretKey，建议用 secrets
+      - R2_URL_PREFIX=<your_s3_or_r2_domain> # S3/R2 储存文件访问域名，如 r2.rote.ink 或自定义 CDN 域名
+      - VAPID_PUBLIC_KEY=<your_vapid_public_key> # Web Push 公钥，建议用 secrets
+      - VAPID_PRIVATE_KEY=<your_vapid_private_key> # Web Push 私钥，建议用 secrets
+      - JWT_SECRET=qAvOMJOrwUjwvcsYgTvKcMR+8ZEUD3cDBXfvNkBi8TM= # JWT 密钥，测试用，生产环境请重新生成
+      - JWT_REFRESH_SECRET=/kL+zuJTRBFpYqivSuMsiW132AZQCFHcr/i0pOq9/oI= # JWT 刷新密钥，测试用，生产环境请重新生成
+      - JWT_ACCESS_EXPIRY=15m # JWT 访问令牌过期时间
+      - JWT_REFRESH_EXPIRY=7d # JWT 刷新令牌过期时间
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+  rote-frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "3001:3001"
+    environment:
+      - VAPID_PUBLIC_KEY=<your_vapid_public_key> # Web Push 公钥
+      - REACT_APP_ALLOW_UPLOAD_FILE=false # 允许文件上传
+      - REACT_APP_BASEURL_PRD=http://localhost:3000 # 后端API地址
+    depends_on:
+      - rote-backend
+    restart: unless-stopped
+
+  mongodb:
+    image: mongo:6.0
+    container_name: rote-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: prisma
+      MONGO_INITDB_ROOT_PASSWORD: <your_password> # 数据库root密码，建议用 secrets
+      MONGO_INITDB_DATABASE: Rote
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - rote-mongo-data:/data/db
+
+  mongo-init-replica:
+    image: mongo:6.0
+    depends_on:
+      - mongodb
+    entrypoint:
+      [
+        "sh",
+        "-c",
+        "sleep 5 && mongo --host mongodb:27017 --eval 'rs.initiate()'",
+      ]
+    restart: "no"
+
+volumes:
+  rote-mongo-data:

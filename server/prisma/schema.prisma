@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRESQL_URL")
+}
+
+model User {
+  id                 String               @id @default(uuid()) @db.Uuid
+  email              String               @unique @db.VarChar(255)
+  username           String               @unique @db.VarChar(100)
+  passwordhash       Bytes
+  salt               Bytes
+  nickname           String?              @db.VarChar(255)
+  description        String?              @db.Text
+  cover              String?              @db.Text
+  avatar             String?              @db.Text
+  usersetting        Usersetting?
+  userswsubscription UserSwSubScription[]
+  rotes              Rote[]
+  attachments        Attachment[]
+  openkey            UserOpenKey[]
+  userreaction       Reaction[]
+  createdAt          DateTime             @default(now()) @db.Timestamptz
+  updatedAt          DateTime             @updatedAt @db.Timestamptz
+
+  @@map("users")
+}
+
+model UserSwSubScription {
+  id             String   @id @default(uuid()) @db.Uuid
+  user           User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+  userid         String   @db.Uuid
+  endpoint       String   @unique @db.Text
+  note           String?  @default("") @db.Text
+  status         String   @default("active") @db.VarChar(50)
+  expirationTime String?  @db.Text
+  keys           Json     @db.JsonB
+  createdAt      DateTime @default(now()) @db.Timestamptz
+  updatedAt      DateTime @updatedAt @db.Timestamptz
+
+  @@map("user_sw_subscriptions")
+}
+
+model Usersetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  user      User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+  userid    String   @unique @db.Uuid
+  darkmode  Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@map("user_settings")
+}
+
+model UserOpenKey {
+  id          String   @id @default(uuid()) @db.Uuid
+  user        User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+  userid      String   @db.Uuid
+  permissions String[] @default(["SENDROTE"])
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  @@map("user_open_keys")
+}
+
+model Rote {
+  id          String       @id @default(uuid()) @db.Uuid
+  title       String?      @default("") @db.Text
+  type        String?      @default("Rote") @db.VarChar(100)
+  tags        String[]     @default([])
+  content     String       @db.Text
+  state       String       @default("private") @db.VarChar(50)
+  archived    Boolean?     @default(false)
+  author      User         @relation(fields: [authorid], references: [id], onDelete: Cascade)
+  authorid    String       @db.Uuid
+  pin         Boolean      @default(false)
+  editor      String?      @default("normal") @db.VarChar(100)
+  attachments Attachment[]
+  reactions   Reaction[]
+  createdAt   DateTime     @default(now()) @db.Timestamptz
+  updatedAt   DateTime     @updatedAt @db.Timestamptz
+
+  @@index([authorid, state])
+  @@index([authorid, archived])
+  @@index([authorid, createdAt])
+  @@index([tags], type: Gin)
+  @@map("rotes")
+}
+
+model Attachment {
+  id          String   @id @default(uuid()) @db.Uuid
+  url         String   @db.Text
+  compressUrl String?  @default("") @db.Text
+  userid      String?  @db.Uuid
+  roteid      String?  @db.Uuid
+  storage     String   @db.VarChar(100)
+  details     Json     @db.JsonB
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  user        User?    @relation(fields: [userid], references: [id], onDelete: SetNull)
+  rote        Rote?    @relation(fields: [roteid], references: [id], onDelete: SetNull)
+
+  @@index([userid])
+  @@index([roteid])
+  @@map("attachments")
+}
+
+model Reaction {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        String   @db.VarChar(100)
+  user        User?    @relation(fields: [userid], references: [id], onDelete: SetNull)
+  userid      String?  @db.Uuid
+  visitorId   String?  @db.VarChar(255)
+  visitorInfo Json?    @db.JsonB
+  rote        Rote     @relation(fields: [roteid], references: [id], onDelete: Cascade)
+  roteid      String   @db.Uuid
+  metadata    Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  @@unique([userid, visitorId, roteid, type], name: "unique_reaction")
+  @@index([roteid, type])
+  @@index([userid])
+  @@index([visitorId])
+  @@map("reactions")
+}
+
+model SystemSetting {
+  id               String   @id @db.VarChar(255)
+  webClientSetting Json     @db.JsonB
+  storage          Json     @db.JsonB
+  createdAt        DateTime @default(now()) @db.Timestamptz
+  updatedAt        DateTime @updatedAt @db.Timestamptz
+
+  @@map("system_settings")
+}

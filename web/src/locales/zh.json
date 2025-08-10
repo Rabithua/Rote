@@ -1,0 +1,409 @@
+{
+  "pages": {
+    "landing": {
+      "poem": "采菊东篱下，悠然见南山",
+      "ComingSoon": "开发中...",
+      "types": ["复杂格式文章", "Text Only", "灵感图库", "日记本", "Todo"],
+      "slogen": "一个看起来不太一样的个人笔记库🤔",
+      "openApi": "开放API，记录的姿势不止一种🤩",
+      "data": "对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
+      "links": "链接:",
+      "linksItems": ["登录", "用户指南", "Github", "博客", "下载", "捐赠"],
+      "dashboard": "仪表盘",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch",
+      "githubOpenSource": "Rote 已在 Github 开源，欢迎 Star!",
+      "lastPushTime": "上次推送时间：",
+      "coreFeatures": {
+        "title": "核心特性",
+        "subtitle": "为了更优雅的笔记体验和更少的心智负担",
+        "tagline": "Core features",
+        "features": {
+          "restraint": {
+            "title": "保持克制",
+            "description": "一切为了优雅的笔记体验"
+          },
+          "simple": {
+            "title": "简单而强大",
+            "description": "所有功能限制在 Web 端，PWA 以获得更加体验"
+          },
+          "openApi": {
+            "title": "开放接口",
+            "description": "开放 API 接口，支持在任意的场景记录或者获取数据"
+          },
+          "freedom": {
+            "title": "无拘无束",
+            "description": "完全掌控你的数据，自由导出数据"
+          }
+        }
+      },
+      "construction": {
+        "title": "持续施工中...",
+        "subtitle": "作为一个长期项目，Rote 仍在不断完善中",
+        "tagline": "STILL UNDER CONSTRUCTION"
+      },
+      "exploreMore": {
+        "title": "探索更多",
+        "subtitle": "这里有几个按钮以供玩耍",
+        "tagline": "EXPlORE MORE"
+      }
+    },
+    "mine": {
+      "leftNavBar": {
+        "home": "首页",
+        "explore": "探索",
+        "archived": "归档",
+        "profile": "我的",
+        "experiment": "实验",
+        "fold": "收起",
+        "login": "登录",
+        "logout": "登出"
+      },
+      "roteTypes": {
+        "Rote": "笔记",
+        "Article": "文章"
+      },
+      "messages": {
+        "loggingOut": "退出登录中...",
+        "logoutSuccess": "已退出登录"
+      }
+    },
+    "error": {
+      "pageNotFound": "页面未找到或发生错误",
+      "pageNotFoundDesc": "抱歉，我们无法找到您要访问的页面"
+    },
+    "login": {
+      "validation": {
+        "usernameRequired": "请输入用户名",
+        "usernameMaxLength": "用户名不能超过20个字符",
+        "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
+        "usernameConflict": "此用户名与系统路由冲突",
+        "passwordRequired": "请输入密码",
+        "passwordMaxLength": "密码不能超过30个字符",
+        "emailRequired": "请输入邮箱",
+        "emailMaxLength": "邮箱不能超过30个字符",
+        "emailFormat": "邮箱格式不正确",
+        "nicknameRequired": "请输入昵称",
+        "nicknameMaxLength": "昵称不能超过20个字符"
+      },
+      "messages": {
+        "loggingIn": "登录中...",
+        "loginSuccess": "登录成功",
+        "backendDown": "后端服务不可用",
+        "checkDatabase": "数据库连接失败",
+        "checkBackend": "后端服务无响应",
+        "loggingOut": "退出登录中...",
+        "logoutSuccess": "已退出登录",
+        "registering": "注册中...",
+        "registerSuccess": "注册成功"
+      },
+      "fields": {
+        "username": "用户名",
+        "password": "密码",
+        "email": "邮箱",
+        "nickname": "昵称"
+      },
+      "buttons": {
+        "login": "登录",
+        "register": "注册",
+        "back": "返回",
+        "toHome": "前往首页",
+        "logout": "退出登录"
+      },
+      "nav": {
+        "explore": "探索",
+        "home": "首页"
+      },
+      "error": {
+        "backendIssue": "后端服务出现问题",
+        "dockerDeployment": "使用Docker部署，后端容器可能需要几分钟构建，请稍后刷新页面"
+      },
+      "title": {
+        "login": "登录",
+        "register": "注册"
+      }
+    },
+    "home": {
+      "statistics": "统计 / Static"
+    },
+    "profile": {
+      "title": "个人资料",
+      "editProfile": "编辑资料",
+      "noDescription": "这个人很懒，还没留下任何简介...",
+      "registerTime": "注册时间：",
+      "openKeyDescription": "OpenKey 可以轻易的使用权限指定的功能，合理分配权限，避免 OpenKey 泄露带来不必要的麻烦。",
+      "loading": "加载中...",
+      "noOpenKey": "暂时还没有OpenKey，生成一个？",
+      "addOpenKey": "生成一个OpenKey",
+      "email": "邮箱",
+      "username": "用户名",
+      "nickname": "昵称",
+      "description": "简介",
+      "enterNickname": "输入你的昵称...",
+      "enterDescription": "输入你的简介...",
+      "editing": "修改中...",
+      "save": "保存",
+      "cropAvatar": "剪裁头像",
+      "uploading": "上传中...",
+      "done": "完成",
+      "creating": "创建中...",
+      "createSuccess": "创建成功",
+      "createFailed": "创建失败",
+      "uploadSuccess": "上传成功",
+      "uploadFailed": "上传失败",
+      "editSuccess": "修改成功",
+      "editFailed": "修改失败",
+      "sideBarTitle": "除了这些...还有"
+    },
+    "rote": {
+      "loading": "加载中...",
+      "sideBarTitle": "相关信息",
+      "authorInfo": {
+        "nickname": "昵称",
+        "username": "用户名"
+      }
+    },
+    "user": {
+      "loading": "加载中...",
+      "noDescription": "这个人很懒，还没留下任何简介...",
+      "registerTime": "注册时间：",
+      "publicNotes": "已公开的笔记 / Public Note",
+      "rssSubscribe": "RSS 订阅",
+      "sideBarTitle": "除了这些...还有",
+      "helmet": {
+        "loading": "加载中...",
+        "defaultDesc": "rote.ink"
+      }
+    },
+    "filter": {
+      "title": "筛选 / Filter",
+      "includeTags": "包含标签：",
+      "allTags": "所有标签：",
+      "none": "无",
+      "data": "数据统计",
+      "note": "笔记",
+      "attachment": "附件",
+      "searchPlaceholder": "搜索笔记内容、标题或标签...",
+      "searchButton": "搜索"
+    },
+    "explore": {
+      "title": "探索 / Explore",
+      "sideBarTitle": "探索✨",
+      "star": "Stars",
+      "fork": "Forks",
+      "issues": "Issues",
+      "watch": "Watch",
+      "githubOpenSource": "Rote 已在 Github 开源，欢迎 Star!",
+      "lastPushTime": "上次推送时间："
+    },
+    "experiment": {
+      "title": "实验室",
+      "description": "实验性质小功能，有可能会让rote变得更好用🤩",
+      "exportData": {
+        "title": "数据导出",
+        "description": "导出完整的数据，以便在其他地方使用，json 格式。",
+        "noteCount": "笔记数量",
+        "attachmentCount": "附件数量",
+        "downloadJson": "下载 Json 格式数据",
+        "downloading": "下载中..."
+      },
+      "importData": {
+        "title": "数据导入",
+        "description": "导入来自其他笔记平台的数据。",
+        "notSupported": "导入数据功能施工中"
+      },
+      "serviceWorker": {
+        "title": "ServiceWoker通知",
+        "description": "ServiceWorker可以使用某些高级功能，比如后台通知等。",
+        "status": "状态：",
+        "noStatus": "无状态",
+        "serviceId": "服务标识:",
+        "notificationTest": "通知测试",
+        "permissionProcessing": "权限处理中...",
+        "complete": "完成",
+        "sendSuccess": "发送成功！",
+        "sendFailed": "发送失败",
+        "example": "使用示例：",
+        "notSupported": "当前浏览器不支持 ServiceWorker",
+        "swNotActive": "ServiceWorker 未激活"
+      },
+      "subscriptions": {
+        "title": "已订阅的通知端点",
+        "testAllEndpoints": "测试所有端点",
+        "testNotification": "测试通知",
+        "deleteSubscription": "删除订阅",
+        "statusActive": "正常",
+        "statusInactive": "不可用",
+        "testNotificationContent": {
+          "title": "自在废物",
+          "body": "这是我的博客。"
+        },
+        "messages": {
+          "testingAllEndpoints": "正在测试所有端点...",
+          "testCompleted": "测试完成！成功: {{success}}, 失败: {{failed}}",
+          "testFailed": "测试失败: {{error}}",
+          "deletingSubscription": "正在删除订阅...",
+          "deleteSuccess": "订阅删除成功",
+          "deleteFailed": "删除失败: {{error}}",
+          "testNotificationSent": "测试通知已发送",
+          "confirmDelete": "确定要删除这个订阅吗？"
+        },
+        "noSubscriptions": "没有订阅的通知端点"
+      }
+    },
+    "archived": {
+      "title": "归档 / Archived",
+      "statistics": "统计 / Static"
+    }
+  },
+  "components": {
+    "d3": {
+      "heatmap": {
+        "noData": "热力图暂无数据",
+        "note": "笔记",
+        "notes": "笔记",
+        "daysOfWeek": {
+          "Sun": "周日",
+          "Mon": "周一",
+          "Tue": "周二",
+          "Wed": "周三",
+          "Thu": "周四",
+          "Fri": "周五",
+          "Sat": "周六"
+        }
+      }
+    },
+    "navBar": {
+      "back": "返回"
+    },
+    "openKey": {
+      "permissions": "权限",
+      "example": "示例",
+      "edit": "编辑",
+      "delete": "删除",
+      "deleting": "删除中...",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败",
+      "copySuccess": "内容已复制到剪贴板",
+      "copyFailed": "无法复制内容到剪贴板"
+    },
+    "openKeyEditModel": {
+      "selectAll": "全选",
+      "save": "保存",
+      "saving": "保存中...",
+      "saveSuccess": "保存成功",
+      "saveFailed": "保存失败",
+      "minimumPermission": "至少需要一个权限"
+    },
+    "sidebarSearch": {
+      "title": "快速搜索",
+      "placeholder": "搜索笔记...",
+      "button": "前往"
+    },
+    "randomRote": {
+      "title": "随机回顾",
+      "publicNoteHint": "此笔记为用户公开笔记。"
+    },
+    "roteInputModel": {
+      "contentPlaceholder": "Ctrl + ↵ 发送",
+      "tagsPlaceholder": "标签",
+      "pin": "置顶",
+      "archive": "归档",
+      "send": "发送",
+      "stateOptions": {
+        "private": "私密",
+        "public": "公开"
+      },
+      "uploading": "上传中...",
+      "uploadSuccess": "上传成功",
+      "uploadFailed": "上传失败",
+      "deleting": "删除中...",
+      "deleteSuccess": "删除成功",
+      "deleteFailed": "删除失败",
+      "error": {
+        "emptyContent": "内容不能为空"
+      }
+    },
+    "roteInputSimple": {
+      "contentPlaceholder": "Ctrl + ↵ 发送",
+      "tagsPlaceholder": "标签",
+      "pin": "置顶",
+      "archive": "归档",
+      "send": "发送",
+      "stateOptions": {
+        "private": "私密",
+        "public": "公开"
+      },
+      "uploading": "附件上传中...",
+      "uploadSuccess": "附件上传成功",
+      "uploadFailed": "附件上传失败",
+      "sending": "发送中...",
+      "sendSuccess": "发送成功",
+      "sendFailed": "发送失败",
+      "error": {
+        "emptyContent": "内容不能为空"
+      },
+      "recentPosts": "以上是最近的笔记"
+    },
+    "roteItem": {
+      "details": "详情",
+      "pinned": "置顶",
+      "unpinned": "取消置顶",
+      "edit": "编辑",
+      "archive": "归档",
+      "unarchive": "取消归档",
+      "share": "分享",
+      "delete": "删除",
+      "expand": "展开",
+      "review": "回顾",
+      "noticeSubcription": "订阅通知",
+      "development": "开发中...",
+      "tooltips": {
+        "pinned": "已置顶",
+        "unpinned": "未置顶",
+        "public": "公开",
+        "archived": "已归档",
+        "edited": "已编辑：{{time}}",
+        "copyLink": "复制链接",
+        "copySuccess": "链接已复制到剪贴板"
+      },
+      "messages": {
+        "copySuccess": "内容已复制到剪贴板",
+        "sending": "发送中...",
+        "sendSuccess": "发送成功",
+        "sendFailed": "发送失败",
+        "deleting": "删除中...",
+        "deleteSuccess": "删除成功",
+        "deleteFailed": "删除失败",
+        "editing": "编辑中...",
+        "editSuccess": "成功",
+        "editFailed": "编辑失败",
+        "privateNoteCannotShare": "私密笔记无法分享",
+        "privateNoteShareDescription": "需要将笔记设置为公开状态才能分享给他人",
+        "setPublicAndShare": "设为公开并分享"
+      },
+      "linkCopied": "链接已复制到剪贴板"
+    },
+    "roteList": {
+      "empty": "还没有发布任何内容"
+    },
+    "roteShareCard": {
+      "copyLink": "复制链接",
+      "save": "保存",
+      "linkCopied": "链接已复制到剪贴板",
+      "generatingImage": "正在生成图片...",
+      "imageSaved": "图片已保存",
+      "imageGenerationFailed": "图片生成失败",
+      "elementNotFound": "未找到要保存的元素"
+    },
+    "tagMap": {
+      "noTags": "还没有标签",
+      "expand": "展开"
+    },
+    "uploader": {
+      "fileLimit": "文件数量超过限制，已去除多余文件！"
+    }
+  }
+}
