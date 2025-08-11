@@ -664,6 +664,59 @@ export async function createAttachments(
   }
 }
 
+// 将预上传且未绑定的附件绑定到笔记
+export async function bindAttachmentsToRote(
+  userid: string,
+  roteid: string,
+  attachmentIds: string[]
+): Promise<{ count: number }> {
+  try {
+    if (!attachmentIds || attachmentIds.length === 0) {
+      return { count: 0 };
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      // 先严格校验：必须都是当前用户、且尚未绑定
+      const candidates = await tx.attachment.findMany({
+        where: {
+          id: { in: attachmentIds },
+          userid,
+          roteid: { equals: null },
+        },
+        select: { id: true },
+      });
+
+      if (candidates.length !== attachmentIds.length) {
+        throw new DatabaseError(
+          'Some attachments cannot be bound (not found, not owned by user, or already bound)'
+        );
+      }
+
+      const upd = await tx.attachment.updateMany({
+        where: {
+          id: { in: attachmentIds },
+          userid,
+          roteid: { equals: null },
+        },
+        data: { roteid },
+      });
+
+      if (upd.count !== attachmentIds.length) {
+        throw new DatabaseError('Failed to bind all attachments');
+      }
+
+      return upd;
+    });
+
+    return { count: result.count };
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to bind attachments to rote: ${roteid}`, error);
+  }
+}
+
 export async function editMyProfile(userid: any, data: any): Promise<any> {
   try {
     const user = await prisma.user.update({
