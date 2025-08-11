@@ -1,3 +1,5 @@
+import { jwtDecode } from 'jwt-decode';
+
 import type { Rotes } from '@/types/main';
 import { toast } from 'sonner';
 
@@ -78,4 +80,18 @@ export function sortRotesByPinAndCreatedAt(objects: Rotes): Rotes {
       return a.pin ? -1 : 1;
     }
   });
+}
+
+export function isTokenValid() {
+  const token = localStorage.getItem('rote_refresh_token');
+  if (!token) {
+    return false;
+  }
+  console.log('token', token);
+
+  const payload = jwtDecode(token) as { exp: number };
+  console.log('payload', payload);
+  const isExpired = payload.exp * 1000 < Date.now();
+
+  return !isExpired;
 }

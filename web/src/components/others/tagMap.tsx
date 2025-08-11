@@ -12,8 +12,13 @@ export default function TagMap() {
     keyPrefix: 'components.tagMap',
   });
 
-  const { data: tags, isLoading } = useAPIGet<string[]>('tags', () =>
-    get('/users/me/tags').then((res) => res.data)
+  const { data: tags, isLoading } = useAPIGet<string[]>(
+    'tags',
+    () => get('/users/me/tags').then((res) => res.data),
+    {
+      refreshWhenHidden: false,
+      revalidateOnFocus: false,
+    }
   );
 
   const [isCollapsed, setIsCollapsed] = useState(true);

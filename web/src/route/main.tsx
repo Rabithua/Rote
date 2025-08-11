@@ -1,7 +1,6 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import LayoutDashboard from '@/layout/dashboard';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
+import { isTokenValid } from '@/utils/main';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
@@ -19,10 +18,6 @@ const SingleRotePage = lazy(() => import('@/pages/rote/:roteid'));
 const ExperimentPage = lazy(() => import('@/pages/experiment'));
 
 export default function GlobalRouterProvider() {
-  const { data: profile, isLoading } = useAPIGet('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
-
   const router = createBrowserRouter([
     {
       path: 'landing',
@@ -40,7 +35,7 @@ export default function GlobalRouterProvider() {
     },
     {
       path: '',
-      element: profile ? <Navigate to="/home" /> : <Navigate to="/landing" />,
+      element: isTokenValid() ? <Navigate to="/home" /> : <Navigate to="/landing" />,
       errorElement: <ErrorPage />,
       children: [],
     },
@@ -123,11 +118,7 @@ export default function GlobalRouterProvider() {
 
   return (
     <Suspense fallback={<LoadingPlaceholder className="h-dvh w-screen" />}>
-      {isLoading ? (
-        <LoadingPlaceholder className="h-dvh w-dvw" />
-      ) : (
-        <RouterProvider router={router} />
-      )}
+      <RouterProvider router={router} />
     </Suspense>
   );
 }

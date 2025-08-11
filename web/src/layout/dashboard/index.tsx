@@ -1,9 +1,6 @@
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
-import type { Profile } from '@/types/main';
-import { get } from '@/utils/api';
 import { authService } from '@/utils/auth';
-import { useAPIGet } from '@/utils/fetcher';
+import { isTokenValid } from '@/utils/main';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -63,9 +60,6 @@ export const tabsData: IconType[][] = [
 function LayoutDashboard() {
   useSaveScrollPosition();
   const location = useLocation();
-  const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
@@ -127,13 +121,9 @@ function LayoutDashboard() {
     <div className="bg-background text-primary mx-auto w-full max-w-6xl">
       <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
         <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
-          {isLoading ? (
-            <LoadingPlaceholder className="py-8" size={6} />
-          ) : profile ? (
-            tabsData[0].map((icon) => IconRenderItem(icon))
-          ) : (
-            tabsData[1].map((icon) => IconRenderItem(icon))
-          )}
+          {isTokenValid()
+            ? tabsData[0].map((icon) => IconRenderItem(icon))
+            : tabsData[1].map((icon) => IconRenderItem(icon))}
         </div>
 
         <div className="relative min-w-0 flex-1 overflow-visible">

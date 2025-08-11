@@ -20,11 +20,17 @@ const Heatmap: React.FC = () => {
 
   const { data: heatmapData, isLoading } = useAPIGet<{
     [key: string]: number;
-  }>('heatmap', () =>
-    get('/users/me/heatmap', {
-      startDate,
-      endDate,
-    }).then((res) => res.data)
+  }>(
+    'heatmap',
+    () =>
+      get('/users/me/heatmap', {
+        startDate,
+        endDate,
+      }).then((res) => res.data),
+    {
+      refreshWhenHidden: false,
+      revalidateOnFocus: false,
+    }
   );
 
   const colors = ['#cccccc20', '#07C16030', '#07C16050', '#07C16070', '#07C16090', '#07C160'];
