@@ -344,9 +344,16 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
     attachments.forEach(({ details }) => {
       // @ts-ignore
       const key = details?.key;
+      // @ts-ignore
+      const compressKey = details?.compressKey;
       if (key) {
         r2deletehandler(key).catch((err) => {
           console.error(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+      if (compressKey) {
+        r2deletehandler(compressKey).catch((err) => {
+          console.error(`Failed to delete compressed attachment from R2: ${compressKey}`, err);
         });
       }
     });
@@ -372,6 +379,7 @@ export async function deleteAttachments(
         },
         userid,
       },
+      select: { id: true, details: true },
     });
 
     if (dbAttachments.length !== attachments.length) {
@@ -387,10 +395,29 @@ export async function deleteAttachments(
       },
     });
 
-    attachments.forEach(({ key }) => {
+    // 优先使用 DB 中的 details 删除，以涵盖压缩文件；兼容传入 key 的旧行为
+    dbAttachments.forEach(({ details }) => {
+      // @ts-ignore
+      const key = details?.key;
+      // @ts-ignore
+      const compressKey = details?.compressKey;
       if (key) {
         r2deletehandler(key).catch((err) => {
           console.error(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+      if (compressKey) {
+        r2deletehandler(compressKey).catch((err) => {
+          console.error(`Failed to delete compressed attachment from R2: ${compressKey}`, err);
+        });
+      }
+    });
+
+    // 兼容性：如果请求体传入了 key，但 DB 没有 details（历史数据），也尝试删除
+    attachments.forEach(({ key }) => {
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.error(`Failed to delete attachment (compat) from R2: ${key}`, err);
         });
       }
     });
@@ -403,9 +430,33 @@ export async function deleteAttachments(
 
 export async function deleteAttachment(id: string, userid: string): Promise<any> {
   try {
+    // 先查出对象 key，再删除 DB 记录与对象存储
+    const record = await prisma.attachment.findFirst({
+      where: { id, userid },
+      select: { id: true, details: true },
+    });
+
     const result = await prisma.attachment.deleteMany({
       where: { id, userid },
     });
+
+    if (record?.details) {
+      // @ts-ignore
+      const key = record.details?.key;
+      // @ts-ignore
+      const compressKey = record.details?.compressKey;
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+      if (compressKey) {
+        r2deletehandler(compressKey).catch((err) => {
+          console.error(`Failed to delete compressed attachment from R2: ${compressKey}`, err);
+        });
+      }
+    }
+
     return result;
   } catch (error) {
     throw new DatabaseError(`Failed to delete attachment: ${id} for user: ${userid}`, error);
