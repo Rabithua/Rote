@@ -1,5 +1,6 @@
 import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
-import { loadProfileAtom } from '@/state/profile';
+import { loadProfileAtom, profileAtom } from '@/state/profile';
+import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
 import { isTokenValid } from '@/utils/main';
 import { useSetAtom } from 'jotai';
@@ -64,6 +65,8 @@ function LayoutDashboard() {
   useSaveScrollPosition();
   const location = useLocation();
   const loadProfile = useSetAtom(loadProfileAtom);
+  const setProfile = useSetAtom(profileAtom);
+  const setTags = useSetAtom(tagsAtom);
 
   useEffect(() => {
     if (isTokenValid()) {
@@ -78,6 +81,9 @@ function LayoutDashboard() {
 
     try {
       authService.logout(false);
+      // 重置全局缓存，避免脏数据泄露到下一会话
+      setProfile(undefined as any);
+      setTags(null);
 
       setTimeout(() => {
         window.location.reload();
