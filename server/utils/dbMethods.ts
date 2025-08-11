@@ -715,6 +715,84 @@ export async function createAttachments(
   }
 }
 
+// 基于原图对象 Key（details.key）进行幂等写入：存在则更新压缩信息，不存在则创建
+export async function upsertAttachmentsByOriginalKey(
+  userid: string,
+  roteid: string | undefined,
+  data: UploadResult[]
+): Promise<any[]> {
+  try {
+    const results = await prisma.$transaction(async (tx) => {
+      const out: any[] = [];
+      for (const e of data) {
+        const originalKey = (e.details as any)?.key as string | undefined;
+        if (!e.url) {
+          throw new DatabaseError('Missing original url when upserting attachment');
+        }
+
+        if (!originalKey) {
+          // 无 key 无法幂等，降级创建
+          const created = await tx.attachment.create({
+            data: {
+              userid,
+              roteid,
+              url: e.url as string,
+              compressUrl: e.compressUrl || undefined,
+              details: e.details,
+              storage: 'R2',
+            },
+          });
+          out.push(created);
+          continue;
+        }
+
+        const existing = await tx.attachment.findFirst({
+          where: {
+            userid,
+            // JSONB 路径匹配 details.key == originalKey
+            details: {
+              path: ['key'],
+              equals: originalKey,
+            } as any,
+          },
+        });
+
+        if (existing) {
+          // 更新压缩信息与元数据；url 保持为原图
+          const updated = await tx.attachment.update({
+            where: { id: existing.id },
+            data: {
+              roteid: roteid ?? existing.roteid ?? undefined,
+              compressUrl: e.compressUrl ?? existing.compressUrl ?? undefined,
+              details: {
+                ...(existing.details as any),
+                ...(e.details as any),
+              },
+            },
+          });
+          out.push(updated);
+        } else {
+          const created = await tx.attachment.create({
+            data: {
+              userid,
+              roteid,
+              url: e.url as string,
+              compressUrl: e.compressUrl || undefined,
+              details: e.details,
+              storage: 'R2',
+            },
+          });
+          out.push(created);
+        }
+      }
+      return out;
+    });
+    return results;
+  } catch (error) {
+    throw new DatabaseError('Failed to upsert attachments by original key', error);
+  }
+}
+
 // 将预上传且未绑定的附件绑定到笔记
 export async function bindAttachmentsToRote(
   userid: string,

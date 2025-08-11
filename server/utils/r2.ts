@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import formidable from 'formidable';
 import fs from 'fs/promises';
 import sharp from 'sharp';
@@ -129,3 +130,21 @@ async function r2deletehandler(key: string) {
 }
 
 export { r2deletehandler, r2uploadhandler, s3 };
+
+// 生成 PUT 预签名 URL，便于前端直传 R2
+export async function presignPutUrl(
+  key: string,
+  contentType?: string,
+  expiresIn: number = 3600
+): Promise<{ putUrl: string; url: string }> {
+  const command = new PutObjectCommand({
+    Bucket: `${process.env.R2_BUCKET}`,
+    Key: key,
+    ContentType: contentType || undefined,
+    cacheControl,
+  } as any);
+
+  const putUrl = await getSignedUrl(s3 as any, command as any, { expiresIn });
+  const url = `https://${process.env.R2_URL_PREFIX}/${key}`;
+  return { putUrl, url };
+}
