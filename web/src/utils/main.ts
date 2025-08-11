@@ -87,10 +87,8 @@ export function isTokenValid() {
   if (!token) {
     return false;
   }
-  console.log('token', token);
 
   const payload = jwtDecode(token) as { exp: number };
-  console.log('payload', payload);
   const isExpired = payload.exp * 1000 < Date.now();
 
   return !isExpired;
