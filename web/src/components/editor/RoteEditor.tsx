@@ -6,6 +6,9 @@ import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
+import { finalize as finalizeUpload, presign, uploadToSignedUrl } from '@/utils/directUpload';
+// 压缩与并发工具
+import { maybeCompressToWebp, qualityForSize, runConcurrency } from '@/utils/uploadHelpers';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import debounce from 'lodash/debounce';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
@@ -77,36 +80,79 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [rote.attachments, setRote]
   );
 
-  // 选择即上传：把 File 上传到 /attachments，若为编辑态且已有 rote.id 则直接绑定到该 note；否则仅创建“未绑定”的附件
   const uploadFiles = useCallback(
     async (files: File[]) => {
-      if (!files || files.length === 0) return;
-      // 先把本地文件加入列表并标记上传中（乐观预览）
+      if (!files?.length) return;
       setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
       setUploadingFiles((prev) => {
         const next = new Set(prev);
         files.forEach((f) => next.add(f));
         return next;
       });
-      try {
-        const formData = new FormData();
-        files.forEach((file) => formData.append('images', file));
 
-        // 如果是编辑已存在的 note，携带 noteId 让后端直接绑定
-        const url = rote.id ? `/attachments?noteId=${rote.id}` : '/attachments';
-        const res = await post(url, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        if (res.code !== 0) {
-          throw new Error(res.message || 'upload failed');
-        }
-        const newAttachments: Attachment[] = res.data;
-        // 移除本地 File 占位，追加服务端返回的附件
+      try {
+        const signItems = await presign(
+          files.map((f) => ({
+            filename: f.name,
+            contentType: f.type || 'application/octet-stream',
+            size: f.size,
+          }))
+        );
+
+        const pairs = signItems.map((item, idx) => ({ item, file: files[idx] }));
+
+        const CONCURRENCY = 3;
+        const toFinalize: Array<{
+          uuid: string;
+          originalKey: string;
+          compressedKey?: string;
+          size: number;
+          mimetype: string;
+        }> = [];
+
+        await runConcurrency(
+          pairs,
+          async ({ item, file }) => {
+            const compressedBlob = await maybeCompressToWebp(file, {
+              maxWidthOrHeight: 2560,
+              initialQuality: qualityForSize(file.size),
+            });
+
+            // 防御：空文件不上传
+            if (!file || (file as File).size === 0) {
+              throw new Error('empty file');
+            }
+
+            // 原图上传
+            await uploadToSignedUrl(item.original.putUrl, file);
+
+            // 压缩图上传（可选）
+            if (compressedBlob) {
+              await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+            }
+
+            toFinalize.push({
+              uuid: item.uuid,
+              originalKey: item.original.key,
+              compressedKey: compressedBlob ? item.compressed.key : undefined,
+              size: file.size,
+              mimetype: file.type,
+            });
+          },
+          CONCURRENCY
+        );
+
+        // 批量 finalize，减少请求数
+        const finalized = toFinalize.length
+          ? await finalizeUpload(toFinalize, rote.id || undefined)
+          : [];
+
+        // 用后端返回结果替换本地 File 占位
         setRote((prev) => ({
           ...prev,
           attachments: [
             ...prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
-            ...newAttachments,
+            ...(Array.isArray(finalized) ? finalized : []),
           ],
         }));
       } catch (error: any) {
@@ -117,7 +163,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         }));
         toast.error(`${t('uploadFailed')}: ${error?.response?.data?.message ?? ''}`);
       } finally {
-        // 无论成败，都清理上传中标记
+        // 清理上传中标记
         setUploadingFiles((prev) => {
           const next = new Set(prev);
           files.forEach((f) => next.delete(f));
