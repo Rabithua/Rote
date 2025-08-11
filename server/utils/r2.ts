@@ -53,9 +53,7 @@ async function r2uploadhandler(file: formidable.File) {
     cacheControl,
     Metadata: {
       // Header 必须是 ASCII 安全字符，使用 URI 编码避免中文/特殊字符
-      'original-filename': file.originalFilename
-        ? encodeURIComponent(file.originalFilename)
-        : '',
+      'original-filename': file.originalFilename ? encodeURIComponent(file.originalFilename) : '',
       'upload-date': new Date().toISOString(),
     },
   };
