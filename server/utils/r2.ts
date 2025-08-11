@@ -144,7 +144,9 @@ export async function presignPutUrl(
     cacheControl,
   } as any);
 
-  const putUrl = await getSignedUrl(s3 as any, command as any, { expiresIn });
+  const putUrl = await getSignedUrl(s3, command, {
+    expiresIn,
+  });
   const url = `https://${process.env.R2_URL_PREFIX}/${key}`;
   return { putUrl, url };
 }

@@ -207,17 +207,19 @@ attachmentsRouter.post(
       const cUrl = a.compressedKey
         ? `https://${process.env.R2_URL_PREFIX}/${a.compressedKey}`
         : null;
+      const baseDetails: any = {
+        size: a.size || 0,
+        mimetype: a.mimetype || null,
+        mtime: new Date().toISOString(),
+        key: a.originalKey,
+      };
+      if (a.compressedKey) baseDetails.compressKey = a.compressedKey;
+      if (a.hash) baseDetails.hash = a.hash;
+
       return {
         url: oUrl,
         compressUrl: cUrl,
-        details: {
-          size: a.size || 0,
-          mimetype: a.mimetype || null,
-          mtime: new Date(),
-          hash: a.hash || undefined,
-          key: a.originalKey,
-          compressKey: a.compressedKey,
-        },
+        details: baseDetails,
       };
     });
 

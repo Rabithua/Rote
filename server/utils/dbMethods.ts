@@ -746,14 +746,19 @@ export async function upsertAttachmentsByOriginalKey(
           continue;
         }
 
+        // 优先通过 JSON 路径匹配 details.key；兼容性兜底：也尝试用 url 匹配
         const existing = await tx.attachment.findFirst({
           where: {
             userid,
-            // JSONB 路径匹配 details.key == originalKey
-            details: {
-              path: ['key'],
-              equals: originalKey,
-            } as any,
+            OR: [
+              {
+                details: {
+                  path: ['key'],
+                  equals: originalKey,
+                } as any,
+              },
+              { url: e.url as string },
+            ],
           },
         });
 
@@ -789,6 +794,8 @@ export async function upsertAttachmentsByOriginalKey(
     });
     return results;
   } catch (error) {
+    // 打印底层错误，便于排查
+    console.error('[upsertAttachmentsByOriginalKey] error:', error);
     throw new DatabaseError('Failed to upsert attachments by original key', error);
   }
 }
