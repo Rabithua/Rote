@@ -1,10 +1,10 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { SoftBottom } from '@/components/others/SoftBottom';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
+import { loadTagsAtom, tagsAtom } from '@/state/tags';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { ArrowDownLeft, CircleDashed } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function TagMap() {
@@ -12,14 +12,12 @@ export default function TagMap() {
     keyPrefix: 'components.tagMap',
   });
 
-  const { data: tags, isLoading } = useAPIGet<string[]>(
-    'tags',
-    () => get('/users/me/tags').then((res) => res.data),
-    {
-      refreshWhenHidden: false,
-      revalidateOnFocus: false,
-    }
-  );
+  const tags = useAtomValue(tagsAtom);
+  const loadTags = useSetAtom(loadTagsAtom);
+  const isLoading = tags === null;
+  useEffect(() => {
+    if (tags === null) loadTags();
+  }, [tags, loadTags]);
 
   const [isCollapsed, setIsCollapsed] = useState(true);
 

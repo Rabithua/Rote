@@ -5,12 +5,14 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import SearchBar from '@/components/others/SearchBox';
 import RoteList from '@/components/rote/roteList';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { ActivityIcon, RefreshCw } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
@@ -45,9 +47,11 @@ function SideBar() {
 function MineFilter() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
 
-  const { data: tags } = useAPIGet<string[]>('tags', () =>
-    get('/users/me/tags').then((res) => res.data)
-  );
+  const tags = useAtomValue(tagsAtom);
+  const loadTags = useSetAtom(loadTagsAtom);
+  useEffect(() => {
+    if (tags === null) loadTags();
+  }, [tags, loadTags]);
 
   const location = useLocation();
 
