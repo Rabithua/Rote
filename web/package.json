@@ -40,6 +40,7 @@
     "i18next": "^25.2.0",
     "isbot": "^5.1.27",
     "jotai": "^2.12.4",
+    "jwt-decode": "^4.0.0",
     "linkify-react": "^4.3.1",
     "linkifyjs": "^4.3.1",
     "lodash": "^4.17.21",
