@@ -1,11 +1,11 @@
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import mainJson from '@/json/main.json';
+import { profileAtom } from '@/state/profile';
 import { visitorIdAtom } from '@/state/visitorId';
-import type { Profile, Reaction, Rote, Rotes } from '@/types/main';
-import { del, get, post } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
-import { useAtom } from 'jotai';
+import type { Reaction, Rote, Rotes } from '@/types/main';
+import { del, post } from '@/utils/api';
+import { useAtom, useAtomValue } from 'jotai';
 import { Loader, SmilePlus } from 'lucide-react';
 import React, { useState } from 'react';
 import type { KeyedMutator } from 'swr';
@@ -29,9 +29,7 @@ interface ReactionsPartProps {
 }
 
 export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps) {
-  const { data: profile } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  const profile = useAtomValue(profileAtom);
 
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useAtom(visitorIdAtom);

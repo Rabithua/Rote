@@ -1,8 +1,11 @@
 import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
+import { loadProfileAtom } from '@/state/profile';
 import { authService } from '@/utils/auth';
 import { isTokenValid } from '@/utils/main';
+import { useSetAtom } from 'jotai';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -60,6 +63,13 @@ export const tabsData: IconType[][] = [
 function LayoutDashboard() {
   useSaveScrollPosition();
   const location = useLocation();
+  const loadProfile = useSetAtom(loadProfileAtom);
+
+  useEffect(() => {
+    if (isTokenValid()) {
+      loadProfile();
+    }
+  }, [loadProfile]);
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
