@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import mainJson from '@/json/main.json';
 import { emptyRote } from '@/state/editor';
 import type { Attachment, Rote } from '@/types/main';
-import { post, put } from '@/utils/api';
+import { del, post, put } from '@/utils/api';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import debounce from 'lodash/debounce';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
@@ -56,64 +56,51 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [debouncedUpdateContent]
   );
 
+  // 删除附件：先本地移除（乐观），再静默调用后端删除
   const deleteFile = useCallback(
     (indexToRemove: number) => {
-      if (rote.attachments[indexToRemove] instanceof File) {
-        setRote((prevRote) => ({
-          ...prevRote,
-          attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
-        }));
+      const item = rote.attachments[indexToRemove];
+      // 先本地移除
+      setRote((prevRote) => ({
+        ...prevRote,
+        attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
+      }));
+
+      // 异步静默请求后端删除（仅对已上传的附件）
+      if (!(item instanceof File)) {
+        void del(`/attachments/${item.id}`).catch(() => {});
       }
     },
     [rote.attachments, setRote]
   );
 
-  const uploadAttachments = useCallback(
-    (_rote: Rote) => {
-      const filesToUpload = rote.attachments.filter(
-        (file: Attachment | File) => file instanceof File && file.size > 0
-      );
+  // 选择即上传：把 File 上传到 /attachments，若为编辑态且已有 rote.id 则直接绑定到该 note；否则仅创建“未绑定”的附件
+  const uploadFiles = useCallback(
+    async (files: File[]) => {
+      if (!files || files.length === 0) return;
+      const toastId = toast.loading(t('uploading'));
+      try {
+        const formData = new FormData();
+        files.forEach((file) => formData.append('images', file));
 
-      if (filesToUpload.length === 0) {
-        return Promise.resolve([]);
-      }
-
-      return new Promise((resolve, reject) => {
-        const toastId = toast.loading(t('uploading'));
-
-        try {
-          const formData = new FormData();
-          filesToUpload.forEach((file: Attachment | File) => {
-            if (file instanceof File) {
-              formData.append('images', file);
-            }
-          });
-
-          post(`/attachments?noteId=${_rote.id}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          })
-            .then((res) => {
-              if (res.code !== 0) return;
-              toast.success(t('uploadSuccess'), {
-                id: toastId,
-              });
-              resolve(res);
-            })
-            .catch((error) => {
-              toast.error(`${t('uploadFailed')}: ${error.response?.data?.message ?? ''}`, {
-                id: toastId,
-              });
-              reject(error);
-            });
-        } catch (error) {
-          toast.error(`${t('uploadFailed')}: ${(error as any).response?.data?.message ?? ''}`, {
-            id: toastId,
-          });
-          reject(error);
+        // 如果是编辑已存在的 note，携带 noteId 让后端直接绑定
+        const url = rote.id ? `/attachments?noteId=${rote.id}` : '/attachments';
+        const res = await post(url, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (res.code !== 0) {
+          throw new Error(res.message || 'upload failed');
         }
-      });
+        const newAttachments: Attachment[] = res.data;
+        setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...newAttachments] }));
+        toast.success(t('uploadSuccess'), { id: toastId });
+      } catch (error: any) {
+        toast.error(`${t('uploadFailed')}: ${error?.response?.data?.message ?? ''}`, {
+          id: toastId,
+        });
+      }
     },
-    [rote.attachments, t]
+    [rote.id, setRote, t]
   );
 
   const submit = useCallback(() => {
@@ -127,19 +114,25 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     const toastId = toast.loading(t('sending'));
     setSubmitting(true);
 
-    const submitData = {
+    // 对于新建场景，把未绑定的附件 id 带上，由后端绑定
+    const attachmentIds = (
+      rote.attachments.filter((a): a is Attachment => !(a instanceof File)) as Attachment[]
+    )
+      .filter((a) => !a.roteid)
+      .map((a) => a.id);
+
+    const submitData: any = {
       ...rote,
       content: contentToSubmit.trim(),
       id: rote.id || undefined,
+      attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
     };
 
     (rote.id ? put('/notes/' + rote.id, submitData) : post('/notes', submitData))
-      .then(async (res) => {
+      .then(async (_res) => {
         toast.success(t('sendSuccess'), {
           id: toastId,
         });
-        await uploadAttachments(res.data);
-
         if (callback) {
           callback();
         }
@@ -154,7 +147,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       .finally(() => {
         setSubmitting(false);
       });
-  }, [localContent, rote, t, callback, setRote, uploadAttachments]);
+  }, [localContent, rote, t, callback, setRote]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -175,22 +168,15 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         if (item.type.startsWith('image/')) {
           const blob = item.getAsFile();
           if (blob && blob.size > 0) {
-            try {
-              const file = new File([blob], `pasted-image-${Date.now()}.png`, {
-                type: blob.type,
-              });
-              setRote((prevRote) => ({
-                ...prevRote,
-                attachments: [...prevRote.attachments, file],
-              }));
-            } catch {
-              /* empty */
-            }
+            const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+              type: blob.type,
+            });
+            uploadFiles([file]);
           }
         }
       }
     },
-    [setRote]
+    [uploadFiles]
   );
 
   const handleDrop = useCallback(
@@ -201,14 +187,11 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       if (files.length > 0) {
         const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
         if (imageFiles.length > 0) {
-          setRote((prevRote) => ({
-            ...prevRote,
-            attachments: [...prevRote.attachments, ...imageFiles],
-          }));
+          uploadFiles(imageFiles);
         }
       }
     },
-    [setRote]
+    [uploadFiles]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
@@ -254,12 +237,9 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   const handleFileAdd = useCallback(
     (newFileList: File[]) => {
-      setRote((prevRote) => ({
-        ...prevRote,
-        attachments: [...prevRote.attachments, ...newFileList],
-      }));
+      uploadFiles(newFileList);
     },
-    [setRote]
+    [uploadFiles]
   );
 
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
@@ -289,15 +269,23 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               className="bg-background relative h-20 w-20 overflow-hidden rounded-lg"
               key={'attachments_' + index}
             >
-              <img
-                className="h-full w-full object-cover"
-                height={80}
-                width={80}
-                src={
-                  file instanceof File ? URL.createObjectURL(file) : file.compressUrl || file.url
-                }
-                alt="uploaded"
-              />
+              {file instanceof File ? (
+                <img
+                  className="h-full w-full object-cover"
+                  height={80}
+                  width={80}
+                  src={URL.createObjectURL(file)}
+                  alt="preview"
+                />
+              ) : (
+                <img
+                  className="h-full w-full object-cover"
+                  height={80}
+                  width={80}
+                  src={file.compressUrl || file.url}
+                  alt="uploaded"
+                />
+              )}
               <div
                 onClick={() => deleteFile(index)}
                 className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"

@@ -52,7 +52,7 @@ export type Attachment = {
   url: string;
   compressUrl: string;
   userid: string;
-  roteid: string;
+  roteid: string | null;
   storage: string;
   details: {
     fieldname: string;
