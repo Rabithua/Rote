@@ -11,6 +11,8 @@ import debounce from 'lodash/debounce';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PhotoProvider, PhotoView } from 'react-photo-view';
+import 'react-photo-view/dist/react-photo-view.css';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -25,6 +27,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   });
 
   const [submiting, setSubmitting] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [rote, setRote] = useAtom(roteAtom);
 
   const [localContent, setLocalContent] = useState(rote.content);
@@ -78,7 +81,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const uploadFiles = useCallback(
     async (files: File[]) => {
       if (!files || files.length === 0) return;
-      const toastId = toast.loading(t('uploading'));
+      // 先把本地文件加入列表并标记上传中（乐观预览）
+      setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
+      setUploadingFiles((prev) => {
+        const next = new Set(prev);
+        files.forEach((f) => next.add(f));
+        return next;
+      });
       try {
         const formData = new FormData();
         files.forEach((file) => formData.append('images', file));
@@ -92,11 +101,27 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           throw new Error(res.message || 'upload failed');
         }
         const newAttachments: Attachment[] = res.data;
-        setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...newAttachments] }));
-        toast.success(t('uploadSuccess'), { id: toastId });
+        // 移除本地 File 占位，追加服务端返回的附件
+        setRote((prev) => ({
+          ...prev,
+          attachments: [
+            ...prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
+            ...newAttachments,
+          ],
+        }));
       } catch (error: any) {
-        toast.error(`${t('uploadFailed')}: ${error?.response?.data?.message ?? ''}`, {
-          id: toastId,
+        // 失败：移除对应的本地 File 占位，并提示错误
+        setRote((prev) => ({
+          ...prev,
+          attachments: prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
+        }));
+        toast.error(`${t('uploadFailed')}: ${error?.response?.data?.message ?? ''}`);
+      } finally {
+        // 无论成败，都清理上传中标记
+        setUploadingFiles((prev) => {
+          const next = new Set(prev);
+          files.forEach((f) => next.delete(f));
+          return next;
         });
       }
     },
@@ -263,45 +288,51 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       />
 
       {process.env.REACT_APP_ALLOW_UPLOAD_FILE === 'true' && (
-        <div className="flex flex-wrap gap-2">
-          {rote.attachments.map((file, index: number) => (
-            <div
-              className="bg-background relative h-20 w-20 overflow-hidden rounded-lg"
-              key={'attachments_' + index}
-            >
-              {file instanceof File ? (
-                <img
-                  className="h-full w-full object-cover"
-                  height={80}
-                  width={80}
-                  src={URL.createObjectURL(file)}
-                  alt="preview"
-                />
-              ) : (
-                <img
-                  className="h-full w-full object-cover"
-                  height={80}
-                  width={80}
-                  src={file.compressUrl || file.url}
-                  alt="uploaded"
-                />
-              )}
-              <div
-                onClick={() => deleteFile(index)}
-                className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
-              >
-                <X className="size-3 text-white" />
-              </div>
-            </div>
-          ))}
-          {rote.attachments.length < 9 && (
-            <FileSelector
-              id={rote.id || 'rote-editor-file-selector'}
-              disabled={submiting}
-              callback={handleFileAdd}
-            />
-          )}
-        </div>
+        <PhotoProvider>
+          <div className="flex flex-wrap gap-2">
+            {rote.attachments.map((file, index: number) => {
+              const isUploading = file instanceof File && uploadingFiles.has(file);
+              const thumbSrc =
+                file instanceof File ? URL.createObjectURL(file) : file.compressUrl || file.url;
+              const previewSrc = file instanceof File ? thumbSrc : file.url;
+              return (
+                <div
+                  className="bg-background relative h-20 w-20 overflow-hidden rounded-lg"
+                  key={'attachments_' + index}
+                >
+                  <PhotoView src={previewSrc}>
+                    <img
+                      className={`h-full w-full object-cover ${isUploading ? 'opacity-80' : ''}`}
+                      height={80}
+                      width={80}
+                      src={thumbSrc}
+                      alt="uploaded"
+                    />
+                  </PhotoView>
+                  {/* 上传中遮罩与小型 spinner */}
+                  {isUploading && (
+                    <div className="absolute inset-0 grid place-items-center bg-black/30">
+                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
+                    </div>
+                  )}
+                  <div
+                    onClick={() => deleteFile(index)}
+                    className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
+                  >
+                    <X className="size-3 text-white" />
+                  </div>
+                </div>
+              );
+            })}
+            {rote.attachments.length < 9 && (
+              <FileSelector
+                id={rote.id || 'rote-editor-file-selector'}
+                disabled={submiting}
+                callback={handleFileAdd}
+              />
+            )}
+          </div>
+        </PhotoProvider>
       )}
 
       <div className={`animate-show flex shrink-0 flex-wrap gap-2 opacity-0 duration-300`}>
