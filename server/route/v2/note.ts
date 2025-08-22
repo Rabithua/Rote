@@ -1,9 +1,25 @@
+import { User } from '@prisma/client';
 import express from 'express';
-import { User } from "@prisma/client";
-import { authenticateJWT, optionalJWT } from "../../middleware/jwtAuth";
-import { createRote, findMyRandomRote, findRandomPublicRote, searchMyRotes, searchPublicRotes, getUserInfoByUsername, searchUserPublicRotes, findMyRote, findUserPublicRote, findPublicRote, findRoteById, editRote, deleteRote, deleteRoteAttachmentsByRoteId } from "../../utils/dbMethods";
-import { asyncHandler } from "../../utils/handlers";
-import { bodyTypeCheck, createResponse, isValidUUID } from "../../utils/main";
+import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
+import {
+  bindAttachmentsToRote,
+  createRote,
+  deleteRote,
+  deleteRoteAttachmentsByRoteId,
+  editRote,
+  findMyRandomRote,
+  findMyRote,
+  findPublicRote,
+  findRandomPublicRote,
+  findRoteById,
+  findUserPublicRote,
+  getUserInfoByUsername,
+  searchMyRotes,
+  searchPublicRotes,
+  searchUserPublicRotes,
+} from '../../utils/dbMethods';
+import { asyncHandler } from '../../utils/handlers';
+import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
 
 // 笔记相关路由
 const notesRouter = express.Router();
@@ -14,7 +30,18 @@ notesRouter.post(
   authenticateJWT,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
-    const { title, content, type, tags, state, archived, pin, editor } = req.body;
+    const { title, content, type, tags, state, archived, pin, editor, attachmentIds } =
+      req.body as {
+        title?: string;
+        content: string;
+        type?: string;
+        tags?: string[];
+        state?: string;
+        archived?: boolean;
+        pin?: boolean;
+        editor?: string;
+        attachmentIds?: string[];
+      };
     const user = req.user as User;
 
     if (!content) {
@@ -33,7 +60,14 @@ notesRouter.post(
       authorid: user.id,
     });
 
-    res.status(201).json(createResponse(rote));
+    // 如果传入了附件ID，则绑定到新建的笔记
+    if (Array.isArray(attachmentIds) && attachmentIds.length > 0) {
+      await bindAttachmentsToRote(user.id, rote.id, attachmentIds);
+    }
+
+    // 重新读取，返回包含附件、作者、反应详情的完整对象
+    const fullRote = await findRoteById(rote.id);
+    res.status(201).json(createResponse(fullRote));
   })
 );
 

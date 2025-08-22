@@ -28,8 +28,7 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
                         ? 'w-full max-w-[500px] rounded-2xl border-[0.5px]'
                         : 'aspect-square w-[calc(1/3*100%-3px)]'
                 } bg-foreground/3 grow object-cover`}
-                src={`${file.compressUrl || file.url}?${withTimeStamp ? new Date().getTime() : ''}`}
-                loading="lazy"
+                src={`${file.compressUrl || file.url}`}
                 crossOrigin={withTimeStamp ? 'anonymous' : undefined}
                 alt=""
               />

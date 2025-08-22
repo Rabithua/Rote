@@ -1,17 +1,10 @@
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import type { Profile } from '@/types/main';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
+import { isTokenValid } from '@/utils/main';
 import MobileDetect from 'mobile-detect';
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export const ProtectedRoute = ({ children }: any) => {
-  const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
-
   const [iosSafariToastDone, setIosSafariToastDone] = useState(
     localStorage.getItem('iosSafariToastDone') === 'true'
   );
@@ -44,11 +37,5 @@ export const ProtectedRoute = ({ children }: any) => {
     }
   }, [iosSafariToastDone, setIosSafariToastDone]);
 
-  return isLoading ? (
-    <LoadingPlaceholder className="h-dvh w-dvw" size={6} />
-  ) : profile ? (
-    children
-  ) : (
-    <Navigate to="/login" />
-  );
+  return isTokenValid() ? children : <Navigate to="/login" />;
 };

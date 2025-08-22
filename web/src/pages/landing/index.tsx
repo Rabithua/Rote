@@ -3,10 +3,9 @@ import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Profile } from '@/types/main';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
+import { profileAtom } from '@/state/profile';
 import { formatTimeAgo } from '@/utils/main';
+import { useAtomValue } from 'jotai';
 import {
   ArrowRight,
   BookOpen,
@@ -28,9 +27,7 @@ import useSWR from 'swr';
 function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.landing' });
 
-  const { data: profile } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  const profile = useAtomValue(profileAtom);
 
   const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
     'https://api.github.com/repos/rabithua/rote',

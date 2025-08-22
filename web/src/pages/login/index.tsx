@@ -12,10 +12,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import mainJson from '@/json/main.json';
-import type { Profile } from '@/types/main';
+import { loadProfileAtom, profileAtom } from '@/state/profile';
 import { get, post } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
@@ -32,9 +33,8 @@ function Login() {
     get('/site/status').then((res) => res.data)
   );
 
-  const { data: profile, mutate } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  const profile = useAtomValue(profileAtom);
+  const loadProfile = useSetAtom(loadProfileAtom);
 
   const navigate = useNavigate();
 
@@ -94,7 +94,8 @@ function Login() {
 
         toast.success(t('messages.loginSuccess'));
         setDisbled(false);
-        mutate();
+        // 登录成功后刷新全局 profile
+        loadProfile();
         navigate('/home');
       })
       .catch((err: any) => {

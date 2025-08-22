@@ -12,8 +12,9 @@ import {
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
+import { loadTagsAtom, tagsAtom } from '@/state/tags';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { useEffect } from 'react';
 
 export function TagSelector({
   tags,
@@ -25,13 +26,11 @@ export function TagSelector({
   callback?: (_tags: string[]) => void;
 }) {
   const [open, setOpen] = React.useState(false);
-  const { data: availableTags } = useAPIGet<string[]>(
-    'tags',
-    () => get('/users/me/tags').then((res) => res.data),
-    {
-      revalidateOnFocus: true,
-    }
-  );
+  const availableTags = useAtomValue(tagsAtom);
+  const loadTags = useSetAtom(loadTagsAtom);
+  useEffect(() => {
+    if (availableTags === null) loadTags();
+  }, [availableTags, loadTags]);
 
   const [inputValue, setInputValue] = React.useState('');
 

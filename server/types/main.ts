@@ -15,6 +15,9 @@ export interface UploadResult {
     mimetype: string | null;
     mtime: Date | null | undefined;
     hash: string | null | undefined;
+    // 对象存储中的 Key，便于删除和追踪
+    key?: string;
+    compressKey?: string;
   };
 }
 

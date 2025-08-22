@@ -1,8 +1,10 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteItem from '@/components/rote/roteItem';
-import { type Profile, type Rote } from '@/types/main';
+import { profileAtom } from '@/state/profile';
+import { type Rote } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
+import { useAtomValue } from 'jotai';
 import { Dice4, Globe2Icon, RefreshCcwIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -11,9 +13,7 @@ export default function RandomRote() {
     keyPrefix: 'components.randomRote',
   });
 
-  const { data: profile } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  const profile = useAtomValue(profileAtom);
 
   const {
     data: rote,

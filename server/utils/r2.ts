@@ -1,4 +1,5 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import formidable from 'formidable';
 import fs from 'fs/promises';
 import sharp from 'sharp';
@@ -18,8 +19,12 @@ const s3 = new S3Client({
 async function r2uploadhandler(file: formidable.File) {
   const buffer = await fs.readFile(file.filepath);
 
-  // Generate key for original file
-  const originalKey = `uploads/${file.originalFilename}`;
+  // 生成唯一且稳定的对象 Key，避免并发下被同名文件覆盖
+  // 使用 formidable 生成的 newFilename（UUID），并保留原始扩展名
+  const extFromOriginal = file.originalFilename?.includes('.')
+    ? `.${file.originalFilename?.split('.').pop()}`
+    : '';
+  const originalKey = `uploads/${file.newFilename}${extFromOriginal}`;
 
   // Generate key for WebP file
   const webpKey = `compressed/${file.newFilename}.webp`;
@@ -48,7 +53,8 @@ async function r2uploadhandler(file: formidable.File) {
     ContentType: 'image/webp',
     cacheControl,
     Metadata: {
-      'original-filename': file.originalFilename || '',
+      // Header 必须是 ASCII 安全字符，使用 URI 编码避免中文/特殊字符
+      'original-filename': file.originalFilename ? encodeURIComponent(file.originalFilename) : '',
       'upload-date': new Date().toISOString(),
     },
   };
@@ -71,6 +77,9 @@ async function r2uploadhandler(file: formidable.File) {
         mimetype: file.mimetype,
         mtime: file.mtime,
         hash: file.hash,
+        // 存储对象 key，便于后续删除/追踪
+        key: originalKey,
+        compressKey: webpKey,
       },
     };
 
@@ -88,10 +97,8 @@ async function r2uploadhandler(file: formidable.File) {
       console.log('Error uploading WebP file:', webpResult.reason);
     }
 
-    // Return null if both uploads failed
-    if (Object.keys(result).length === 0) {
-      return null;
-    }
+    // 若两者均失败，则返回 null
+    if (!result.url && !result.compressUrl) return null;
 
     // Return result, may contain one or both URLs
     return result;
@@ -123,3 +130,23 @@ async function r2deletehandler(key: string) {
 }
 
 export { r2deletehandler, r2uploadhandler, s3 };
+
+// 生成 PUT 预签名 URL，便于前端直传 R2
+export async function presignPutUrl(
+  key: string,
+  contentType?: string,
+  expiresIn: number = 3600
+): Promise<{ putUrl: string; url: string }> {
+  const command = new PutObjectCommand({
+    Bucket: `${process.env.R2_BUCKET}`,
+    Key: key,
+    ContentType: contentType || undefined,
+    cacheControl,
+  } as any);
+
+  const putUrl = await getSignedUrl(s3, command, {
+    expiresIn,
+  });
+  const url = `https://${process.env.R2_URL_PREFIX}/${key}`;
+  return { putUrl, url };
+}

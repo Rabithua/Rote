@@ -8,9 +8,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import type { OpenKeys, Profile } from '@/types/main';
-import { API_URL, get, post, put } from '@/utils/api';
+import { loadProfileAtom, patchProfileAtom, profileAtom } from '@/state/profile';
+import type { OpenKeys } from '@/types/main';
+import { API_URL, get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
+import { useAtomValue, useSetAtom } from 'jotai';
 import Linkify from 'linkify-react';
 import {
   Edit,
@@ -23,7 +25,7 @@ import {
   UserCircle2,
 } from 'lucide-react';
 import moment from 'moment';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import Cropper from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
@@ -34,6 +36,7 @@ function ProfilePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const inputAvatarRef = useRef<HTMLInputElement>(null);
   const inputCoverRef = useRef<HTMLInputElement>(null);
+
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
@@ -41,9 +44,13 @@ function ProfilePage() {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const [coverChangeing, setCoverChangeing] = useState(false);
 
-  const { data: profile, mutate } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  // 使用 Jotai 托管 profile，避免全量订阅引发的重渲染
+  const profile = useAtomValue(profileAtom);
+  const loadProfile = useSetAtom(loadProfileAtom);
+  const patchProfile = useSetAtom(patchProfileAtom);
+  useEffect(() => {
+    if (!profile) loadProfile();
+  }, [profile, loadProfile]);
 
   const {
     data: openKeys,
@@ -172,10 +179,9 @@ function ProfilePage() {
 
   function saveProfile() {
     setProfileEditing(true);
-    put('/users/me/profile', editProfile)
+    patchProfile(editProfile)
       .then(() => {
         toast.success(t('editSuccess'));
-        mutate();
         setIsModalOpen(false);
         setProfileEditing(false);
       })
@@ -198,11 +204,10 @@ function ProfilePage() {
         (res) => {
           const url = res.data.data[0].compressUrl || res.data.data[0].url;
 
-          put('/users/me/profile', {
+          patchProfile({
             cover: url,
           })
             .then(() => {
-              mutate();
               setCoverChangeing(false);
             })
             .catch(() => {

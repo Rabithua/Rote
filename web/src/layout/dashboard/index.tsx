@@ -1,10 +1,12 @@
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import type { Profile } from '@/types/main';
-import { get } from '@/utils/api';
+import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
+import { loadProfileAtom, profileAtom } from '@/state/profile';
+import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
-import { useAPIGet } from '@/utils/fetcher';
+import { isTokenValid } from '@/utils/main';
+import { useSetAtom } from 'jotai';
 import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -60,10 +62,17 @@ export const tabsData: IconType[][] = [
 ];
 
 function LayoutDashboard() {
+  useSaveScrollPosition();
   const location = useLocation();
-  const { data: profile, isLoading } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  const loadProfile = useSetAtom(loadProfileAtom);
+  const setProfile = useSetAtom(profileAtom);
+  const setTags = useSetAtom(tagsAtom);
+
+  useEffect(() => {
+    if (isTokenValid()) {
+      loadProfile();
+    }
+  }, [loadProfile]);
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
@@ -71,8 +80,10 @@ function LayoutDashboard() {
     const toastId = toast.loading(t('messages.loggingOut'));
 
     try {
-      // JWT 登出：清除本地存储的 token
-      authService.logout(false); // 不立即刷新页面，先显示成功消息
+      authService.logout(false);
+      // 重置全局缓存，避免脏数据泄露到下一会话
+      setProfile(undefined as any);
+      setTags(null);
 
       setTimeout(() => {
         window.location.reload();
@@ -81,8 +92,6 @@ function LayoutDashboard() {
       toast.success(t('messages.logoutSuccess'), {
         id: toastId,
       });
-
-      window.location.reload();
     } catch {
       toast.error(t('messages.logoutFailed'), {
         id: toastId,
@@ -92,13 +101,7 @@ function LayoutDashboard() {
 
   function IconRenderItem(icon: IconType) {
     return icon.link ? (
-      <Link
-        key={icon.link}
-        to={icon.link}
-        onClick={() => {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      >
+      <Link key={icon.link} to={icon.link}>
         <div
           className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
             location.pathname === icon.link
@@ -134,13 +137,9 @@ function LayoutDashboard() {
     <div className="bg-background text-primary mx-auto w-full max-w-6xl">
       <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
         <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
-          {isLoading ? (
-            <LoadingPlaceholder className="py-8" size={6} />
-          ) : profile ? (
-            tabsData[0].map((icon) => IconRenderItem(icon))
-          ) : (
-            tabsData[1].map((icon) => IconRenderItem(icon))
-          )}
+          {isTokenValid()
+            ? tabsData[0].map((icon) => IconRenderItem(icon))
+            : tabsData[1].map((icon) => IconRenderItem(icon))}
         </div>
 
         <div className="relative min-w-0 flex-1 overflow-visible">
