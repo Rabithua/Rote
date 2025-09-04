@@ -3,9 +3,7 @@ import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { profileAtom } from '@/state/profile';
-import { formatTimeAgo } from '@/utils/main';
-import { useAtomValue } from 'jotai';
+import { formatTimeAgo, isTokenValid } from '@/utils/main';
 import {
   ArrowRight,
   BookOpen,
@@ -26,8 +24,6 @@ import useSWR from 'swr';
 
 function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.landing' });
-
-  const profile = useAtomValue(profileAtom);
 
   const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
     'https://api.github.com/repos/rabithua/rote',
@@ -168,9 +164,9 @@ function Landing() {
           <Button asChild size="lg">
             <Link
               className="text-background hover:text-background"
-              to={profile ? '/home' : '/login'}
+              to={isTokenValid() ? '/home' : '/login'}
             >
-              {profile ? t('dashboard') : t('linksItems.0')}
+              {isTokenValid() ? t('dashboard') : t('linksItems.0')}
               <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>

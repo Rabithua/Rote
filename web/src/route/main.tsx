@@ -26,7 +26,7 @@ export default function GlobalRouterProvider() {
     },
     {
       path: 'login',
-      element: <Login />,
+      element: isTokenValid() ? <Navigate to="/home" /> : <Login />,
       errorElement: <ErrorPage />,
     },
     {
