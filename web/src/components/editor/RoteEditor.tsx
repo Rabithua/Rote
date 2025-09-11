@@ -1,9 +1,8 @@
 import { TagSelector } from '@/components/others/TagSelector';
-import FileSelector from '@/components/others/uploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import mainJson from '@/json/main.json';
-import { emptyRote } from '@/state/editor';
+
 import type { Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
 import { finalize as finalizeUpload, presign, uploadToSignedUrl } from '@/utils/directUpload';
@@ -14,11 +13,11 @@ import debounce from 'lodash/debounce';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PhotoProvider, PhotoView } from 'react-photo-view';
 import 'react-photo-view/dist/react-photo-view.css';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import AttachmentList from './AttachmentList';
 
 const { roteMaxLetter } = mainJson;
 
@@ -34,6 +33,31 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [rote, setRote] = useAtom(roteAtom);
 
   const [localContent, setLocalContent] = useState(rote.content);
+
+  // 重置编辑器状态
+  const resetEditor = useCallback(() => {
+    const emptyRote = {
+      content: '',
+      tags: [],
+      attachments: [],
+      pin: false,
+      archived: false,
+      state: 'private' as const,
+      reactions: [],
+      id: '',
+      author: {
+        username: '',
+        nickname: '',
+        avatar: '',
+      },
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    setRote(emptyRote);
+    setLocalContent('');
+    setUploadingFiles(new Set());
+  }, [setRote]);
 
   useEffect(() => {
     if (rote.content !== localContent) {
@@ -108,11 +132,12 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           compressedKey?: string;
           size: number;
           mimetype: string;
+          index: number; // 添加索引来保持顺序
         }> = [];
 
         await runConcurrency(
           pairs,
-          async ({ item, file }) => {
+          async ({ item, file }, index) => {
             const compressedBlob = await maybeCompressToWebp(file, {
               maxWidthOrHeight: 2560,
               initialQuality: qualityForSize(file.size),
@@ -137,14 +162,20 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               compressedKey: compressedBlob ? item.compressed.key : undefined,
               size: file.size,
               mimetype: file.type,
+              index, // 保存原始索引
             });
           },
           CONCURRENCY
         );
 
+        // 按索引排序，确保顺序一致
+        toFinalize.sort((a, b) => a.index - b.index);
+
+        // 移除索引字段
+        const finalizeData = toFinalize.map(({ index: _index, ...rest }) => rest);
         // 批量 finalize，减少请求数
-        const finalized = toFinalize.length
-          ? await finalizeUpload(toFinalize, rote.id || undefined)
+        const finalized = finalizeData.length
+          ? await finalizeUpload(finalizeData, rote.id || undefined)
           : [];
 
         // 用后端返回结果替换本地 File 占位
@@ -192,6 +223,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       .filter((a) => !a.roteid)
       .map((a) => a.id);
 
+    // 对于编辑场景，收集已绑定附件的排序信息
+    const existingAttachmentIds = (
+      rote.attachments.filter((a): a is Attachment => !(a instanceof File)) as Attachment[]
+    )
+      .filter((a) => a.roteid === rote.id)
+      .map((a) => a.id);
+
     const submitData: any = {
       ...rote,
       content: contentToSubmit.trim(),
@@ -199,15 +237,42 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
     };
 
-    (rote.id ? put('/notes/' + rote.id, submitData) : post('/notes', submitData))
-      .then(async (_res) => {
+    const submitPromise = rote.id
+      ? put('/notes/' + rote.id, submitData).then(async (res) => {
+          // 更新笔记后，如果有附件排序变化，发送排序更新请求
+          if (existingAttachmentIds.length > 0) {
+            await put('/attachments/sort', {
+              roteId: rote.id,
+              attachmentIds: existingAttachmentIds,
+            });
+          }
+          return res;
+        })
+      : post('/notes', submitData);
+
+    submitPromise
+      .then(async (res) => {
         toast.success(t('sendSuccess'), {
           id: toastId,
         });
+
+        // 执行回调
         if (callback) {
           callback();
         }
-        setRote(emptyRote);
+
+        // 清理编辑器状态
+        if (callback) {
+          // 有回调说明是在弹窗或组件中，需要重置编辑器
+          resetEditor();
+        } else if (!rote.id) {
+          // 新建笔记成功，重置编辑器为空状态
+          resetEditor();
+        } else if (res?.data) {
+          // 编辑现有笔记，更新为服务器返回的数据
+          setRote(res.data);
+          setLocalContent(res.data.content || '');
+        }
       })
       .catch((error) => {
         const errorMessage = error.response?.data?.message || t('sendFailed');
@@ -313,6 +378,17 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [uploadFiles]
   );
 
+  // 处理附件重新排序
+  const handleAttachmentReorder = useCallback(
+    (reorderedAttachments: (File | Attachment)[]) => {
+      setRote((prevRote) => ({
+        ...prevRote,
+        attachments: reorderedAttachments,
+      }));
+    },
+    [setRote]
+  );
+
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
 
   return (
@@ -334,51 +410,15 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       />
 
       {process.env.REACT_APP_ALLOW_UPLOAD_FILE === 'true' && (
-        <PhotoProvider>
-          <div className="flex flex-wrap gap-2">
-            {rote.attachments.map((file, index: number) => {
-              const isUploading = file instanceof File && uploadingFiles.has(file);
-              const thumbSrc =
-                file instanceof File ? URL.createObjectURL(file) : file.compressUrl || file.url;
-              const previewSrc = file instanceof File ? thumbSrc : file.url;
-              return (
-                <div
-                  className="bg-background relative h-20 w-20 overflow-hidden rounded-lg"
-                  key={'attachments_' + index}
-                >
-                  <PhotoView src={previewSrc}>
-                    <img
-                      className={`h-full w-full object-cover ${isUploading ? 'opacity-80' : ''}`}
-                      height={80}
-                      width={80}
-                      src={thumbSrc}
-                      alt="uploaded"
-                    />
-                  </PhotoView>
-                  {/* 上传中遮罩与小型 spinner */}
-                  {isUploading && (
-                    <div className="absolute inset-0 grid place-items-center bg-black/30">
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/60 border-t-transparent" />
-                    </div>
-                  )}
-                  <div
-                    onClick={() => deleteFile(index)}
-                    className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
-                  >
-                    <X className="size-3 text-white" />
-                  </div>
-                </div>
-              );
-            })}
-            {rote.attachments.length < 9 && (
-              <FileSelector
-                id={rote.id || 'rote-editor-file-selector'}
-                disabled={submiting}
-                callback={handleFileAdd}
-              />
-            )}
-          </div>
-        </PhotoProvider>
+        <AttachmentList
+          attachments={rote.attachments}
+          uploadingFiles={uploadingFiles}
+          onDelete={deleteFile}
+          onReorder={handleAttachmentReorder}
+          onFileAdd={handleFileAdd}
+          roteId={rote.id}
+          disabled={submiting}
+        />
       )}
 
       <div className={`animate-show flex shrink-0 flex-wrap gap-2 opacity-0 duration-300`}>

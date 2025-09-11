@@ -209,6 +209,7 @@ DELETE /api/v2/reactions/507f1f77bcf86cd799439011/❤️?visitorId=fp_1234567890
 | `/attachments/:id`      | DELETE    | 需要登录 | 删除单个附件                  | v2   |
 | `/attachments/presign`  | POST      | 需要登录 | 前端直传：获取 PUT 预签名链接 | v2   |
 | `/attachments/finalize` | POST      | 需要登录 | 前端直传完成回调并写入数据库  | v2   |
+| `/attachments/sort`     | PUT       | 需要登录 | 更新附件排序                  | v2   |
 
 #### 前端直传流程
 
@@ -286,6 +287,35 @@ Content-Type: application/json
 - 预签名默认有效期约 15 分钟；仅允许当前用户命名空间（users/<uid>/）下的对象。
 - finalize 为幂等：若同一 originalKey 已存在，将更新压缩信息与元数据；否则创建新记录。
 - 仍保留 `/attachments` 作为服务器中转上传的兼容接口，推荐前端直传优先。
+
+3. 更新附件排序
+
+```bash
+PUT /api/v2/attachments/sort
+Content-Type: application/json
+
+{
+  "roteId": "note-id",
+  "attachmentIds": ["attachment-id-1", "attachment-id-2", "attachment-id-3"]
+}
+```
+
+响应：
+
+```json
+{
+  "code": 0,
+  "message": "附件排序更新成功",
+  "data": null
+}
+```
+
+说明：
+
+- `roteId`: 要更新附件排序的笔记 ID
+- `attachmentIds`: 按新排序顺序排列的附件 ID 数组
+- 数组中的顺序将作为附件的 `sortIndex`（从 0 开始）
+- 只能更新属于指定笔记的附件排序
 
 ### 12. OpenKey API（API 密钥访问）
 

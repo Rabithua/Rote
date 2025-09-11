@@ -251,7 +251,9 @@ export async function createRote(data: any): Promise<any> {
             avatar: true,
           },
         },
-        attachments: true,
+        attachments: {
+          orderBy: [{ sortIndex: 'asc' } as any, { createdAt: 'asc' }],
+        },
         reactions: true,
       },
     });
@@ -273,7 +275,9 @@ export async function findRoteById(id: string): Promise<any> {
             avatar: true,
           },
         },
-        attachments: true,
+        attachments: {
+          orderBy: [{ sortIndex: 'asc' } as any, { createdAt: 'asc' }],
+        },
         reactions: true,
       },
     });
@@ -285,7 +289,7 @@ export async function findRoteById(id: string): Promise<any> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    const { id, authorid, attachments, reactions, author, ...cleanData } = data;
+    const { id, authorid, reactions, author, attachments, ...cleanData } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,
@@ -300,7 +304,9 @@ export async function editRote(data: any): Promise<any> {
             avatar: true,
           },
         },
-        attachments: true,
+        attachments: {
+          orderBy: [{ sortIndex: 'asc' } as any, { createdAt: 'asc' }],
+        },
         reactions: true,
       },
     });
@@ -361,6 +367,41 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
     return result;
   } catch (error) {
     throw new DatabaseError(`Failed to delete attachments for rote: ${roteid}`, error);
+  }
+}
+
+export async function updateAttachmentsSortOrder(
+  userId: string,
+  roteId: string,
+  attachmentIds: string[]
+): Promise<any> {
+  try {
+    // 验证所有附件都属于该用户和该笔记
+    const attachments = await prisma.attachment.findMany({
+      where: {
+        id: { in: attachmentIds },
+        userid: userId,
+        roteid: roteId,
+      },
+    });
+
+    if (attachments.length !== attachmentIds.length) {
+      throw new DatabaseError('Some attachments not found or unauthorized');
+    }
+
+    // 使用事务批量更新排序索引
+    const results = await prisma.$transaction(
+      attachmentIds.map((id, index) =>
+        prisma.attachment.update({
+          where: { id },
+          data: { sortIndex: index } as any,
+        })
+      )
+    );
+
+    return results;
+  } catch (error) {
+    throw new DatabaseError('Failed to update attachment sort order', error);
   }
 }
 
@@ -693,13 +734,25 @@ export async function createAttachments(
   data: UploadResult[]
 ): Promise<any> {
   try {
-    const attachments = data.map((e: UploadResult) => ({
+    // 如果绑定到笔记，获取当前笔记的最大排序索引
+    let startSortIndex = 0;
+    if (roteid) {
+      const maxSortAttachment = await prisma.attachment.findFirst({
+        where: { roteid },
+        orderBy: { sortIndex: 'desc' } as any,
+        select: { sortIndex: true } as any,
+      });
+      startSortIndex = ((maxSortAttachment as any)?.sortIndex || 0) + 1;
+    }
+
+    const attachments = data.map((e: UploadResult, index: number) => ({
       userid,
       roteid,
       url: e.url,
       compressUrl: e.compressUrl,
       details: e.details,
       storage: 'R2',
+      sortIndex: roteid ? startSortIndex + index : 0,
     }));
 
     const attachments_new = await prisma.$transaction(
@@ -828,20 +881,20 @@ export async function bindAttachmentsToRote(
         );
       }
 
-      const upd = await tx.attachment.updateMany({
-        where: {
-          id: { in: attachmentIds },
-          userid,
-          roteid: { equals: null },
-        },
-        data: { roteid },
-      });
+      // 按照 attachmentIds 的顺序逐个更新，设置对应的 sortIndex
+      const updatePromises = attachmentIds.map((id, index) =>
+        tx.attachment.update({
+          where: { id },
+          data: {
+            roteid,
+            sortIndex: index,
+          } as any,
+        })
+      );
 
-      if (upd.count !== attachmentIds.length) {
-        throw new DatabaseError('Failed to bind all attachments');
-      }
+      const updateResults = await Promise.all(updatePromises);
 
-      return upd;
+      return { count: updateResults.length };
     });
 
     return { count: result.count };

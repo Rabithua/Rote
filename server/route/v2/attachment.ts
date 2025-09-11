@@ -8,6 +8,7 @@ import {
   createAttachments,
   deleteAttachment,
   deleteAttachments,
+  updateAttachmentsSortOrder,
   upsertAttachmentsByOriginalKey,
 } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
@@ -102,6 +103,37 @@ attachmentsRouter.delete(
     }
 
     const data = await deleteAttachments(ids, user.id);
+    res.status(200).json(createResponse(data));
+  })
+);
+
+// 更新附件排序
+attachmentsRouter.put(
+  '/sort',
+  authenticateJWT,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { roteId, attachmentIds } = req.body as {
+      roteId: string;
+      attachmentIds: string[];
+    };
+
+    if (!roteId || !isValidUUID(roteId)) {
+      throw new Error('Invalid rote ID');
+    }
+
+    if (!attachmentIds || !Array.isArray(attachmentIds) || attachmentIds.length === 0) {
+      throw new Error('Invalid attachment IDs');
+    }
+
+    // 验证所有附件ID格式
+    for (const id of attachmentIds) {
+      if (!isValidUUID(id)) {
+        throw new Error(`Invalid attachment ID: ${id}`);
+      }
+    }
+
+    const data = await updateAttachmentsSortOrder(user.id, roteId, attachmentIds);
     res.status(200).json(createResponse(data));
   })
 );
