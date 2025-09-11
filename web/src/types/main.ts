@@ -53,6 +53,7 @@ export type Attachment = {
   compressUrl: string;
   userid: string;
   roteid: string | null;
+  sortIndex: number;
   storage: string;
   details: {
     fieldname: string;
