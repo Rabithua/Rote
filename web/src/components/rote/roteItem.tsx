@@ -29,7 +29,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { useEditor } from '@/state/editor';
 import { profileAtom } from '@/state/profile';
-import type { Rote, Rotes } from '@/types/main';
+import type { Attachment, Rote, Rotes } from '@/types/main';
 import { formatTimeAgo } from '@/utils/main';
 import { useAtomValue } from 'jotai';
 import { useTranslation } from 'react-i18next';
@@ -212,7 +212,11 @@ function RoteItem({
         </div>
 
         {/* Attachments */}
-        {rote.attachments?.length > 0 && <AttachmentsGrid attachments={rote.attachments} />}
+        {rote.attachments?.length > 0 && (
+          <AttachmentsGrid
+            attachments={rote.attachments.filter((a): a is Attachment => !(a instanceof File))}
+          />
+        )}
 
         {/* Tags */}
         {rote.tags?.length > 0 && (

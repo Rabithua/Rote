@@ -43,7 +43,7 @@ export type Rote = {
     nickname: string;
     avatar: string;
   };
-  attachments: Attachment[];
+  attachments: (Attachment | File)[];
   reactions: Reaction[];
 };
 
