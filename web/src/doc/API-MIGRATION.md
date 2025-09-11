@@ -79,6 +79,7 @@ const result = await post('/notes', { content: 'New note' });
 | `apiUploadFiles(formData)`  | `post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })` |
 | `apiDeleteAttachment(id)`   | `del('/attachments/' + id)`                                                              |
 | `apiDeleteAttachments(ids)` | `del('/attachments', { data: { ids } })`                                                 |
+| 无旧方法                    | `put('/attachments/sort', { roteId, attachmentIds })`                                    |
 
 ## 迁移步骤
 
@@ -113,7 +114,6 @@ const result = await post('/notes', { content: 'New note' });
 ## 注意事项
 
 1. 新的API工具会自动处理以下内容：
-
    - 添加基础URL和API版本前缀
    - 处理认证失败的情况
    - 从响应中提取data字段

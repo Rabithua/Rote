@@ -28,13 +28,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 import { useEditor } from '@/state/editor';
-import type { Profile, Rote, Rotes } from '@/types/main';
-import { get } from '@/utils/api';
-import { useAPIGet } from '@/utils/fetcher';
+import { profileAtom } from '@/state/profile';
+import type { Rote, Rotes } from '@/types/main';
 import { formatTimeAgo } from '@/utils/main';
+import { useAtomValue } from 'jotai';
+import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
-import { useTranslation } from 'react-i18next';
 
 const roteContentExpandedLetter = 280;
 
@@ -56,9 +56,7 @@ function RoteItem({
   const [, setRote] = useAtom(useEditor().editor_editRoteAtom);
   const [modalType, setModalType] = useState<null | 'edit' | 'share' | 'notice'>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const { data: profile } = useAPIGet<Profile>('profile', () =>
-    get('/users/me/profile').then((res) => res.data)
-  );
+  const profile = useAtomValue(profileAtom);
 
   const isOwner = profile?.username === rote.author.username;
 

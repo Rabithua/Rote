@@ -1,19 +1,23 @@
 import { TagSelector } from '@/components/others/TagSelector';
-import FileSelector from '@/components/others/uploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { useDebounce } from '@/hooks/useDebounce';
 import mainJson from '@/json/main.json';
-import { emptyRote } from '@/state/editor';
+
 import type { Attachment, Rote } from '@/types/main';
-import { post, put } from '@/utils/api';
+import { del, post, put } from '@/utils/api';
+import { finalize as finalizeUpload, presign, uploadToSignedUrl } from '@/utils/directUpload';
+// 压缩与并发工具
+import { maybeCompressToWebp, qualityForSize, runConcurrency } from '@/utils/uploadHelpers';
 import { useAtom, type PrimitiveAtom } from 'jotai';
+import debounce from 'lodash/debounce';
 import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import 'react-photo-view/dist/react-photo-view.css';
 import { toast } from 'sonner';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import AttachmentList from './AttachmentList';
 
 const { roteMaxLetter } = mainJson;
 
@@ -25,30 +29,55 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   });
 
   const [submiting, setSubmitting] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [rote, setRote] = useAtom(roteAtom);
 
-  // 使用本地状态存储输入值，提高输入响应性
   const [localContent, setLocalContent] = useState(rote.content);
-  const contentRef = useRef(rote.content);
 
-  // 防抖更新 jotai 状态，减少不必要的重新渲染
-  const debouncedUpdateContent = useDebounce(
-    useCallback(
-      (content: string) => {
-        if (contentRef.current !== content) {
-          contentRef.current = content;
-          setRote((prevRote) => ({
-            ...prevRote,
-            content,
-          }));
-        }
+  // 重置编辑器状态
+  const resetEditor = useCallback(() => {
+    const emptyRote = {
+      content: '',
+      tags: [],
+      attachments: [],
+      pin: false,
+      archived: false,
+      state: 'private' as const,
+      reactions: [],
+      id: '',
+      author: {
+        username: '',
+        nickname: '',
+        avatar: '',
       },
-      [setRote]
-    ),
-    300 // 300ms 防抖延迟
+      createdAt: '',
+      updatedAt: '',
+    };
+
+    setRote(emptyRote);
+    setLocalContent('');
+    setUploadingFiles(new Set());
+  }, [setRote]);
+
+  useEffect(() => {
+    if (rote.content !== localContent) {
+      setLocalContent(rote.content);
+    }
+  }, [rote.content]);
+
+  const debouncedUpdateContent = useMemo(
+    () =>
+      debounce((content: string) => {
+        setRote((prevRote) => ({
+          ...prevRote,
+          content,
+        }));
+      }, 300),
+    [setRote]
   );
 
-  // 优化的内容更新函数
+  useEffect(() => () => debouncedUpdateContent.cancel(), [debouncedUpdateContent]);
+
   const handleContentChange = useCallback(
     (content: string) => {
       setLocalContent(content);
@@ -57,28 +86,127 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [debouncedUpdateContent]
   );
 
-  // 同步外部状态变化到本地状态
-  if (rote.content !== contentRef.current && rote.content !== localContent) {
-    setLocalContent(rote.content);
-    contentRef.current = rote.content;
-  }
-
-  // 优化的删除文件函数
+  // 删除附件：先本地移除（乐观），再静默调用后端删除
   const deleteFile = useCallback(
     (indexToRemove: number) => {
-      if (rote.attachments[indexToRemove] instanceof File) {
-        setRote((prevRote) => ({
-          ...prevRote,
-          attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
-        }));
+      const item = rote.attachments[indexToRemove];
+      // 先本地移除
+      setRote((prevRote) => ({
+        ...prevRote,
+        attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
+      }));
+
+      // 异步静默请求后端删除（仅对已上传的附件）
+      if (!(item instanceof File)) {
+        void del(`/attachments/${item.id}`).catch(() => {});
       }
     },
     [rote.attachments, setRote]
   );
 
-  // 优化的提交函数
+  const uploadFiles = useCallback(
+    async (files: File[]) => {
+      if (!files?.length) return;
+      setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
+      setUploadingFiles((prev) => {
+        const next = new Set(prev);
+        files.forEach((f) => next.add(f));
+        return next;
+      });
+
+      try {
+        const signItems = await presign(
+          files.map((f) => ({
+            filename: f.name,
+            contentType: f.type || 'application/octet-stream',
+            size: f.size,
+          }))
+        );
+
+        const pairs = signItems.map((item, idx) => ({ item, file: files[idx] }));
+
+        const CONCURRENCY = 3;
+        const toFinalize: Array<{
+          uuid: string;
+          originalKey: string;
+          compressedKey?: string;
+          size: number;
+          mimetype: string;
+          index: number; // 添加索引来保持顺序
+        }> = [];
+
+        await runConcurrency(
+          pairs,
+          async ({ item, file }, index) => {
+            const compressedBlob = await maybeCompressToWebp(file, {
+              maxWidthOrHeight: 2560,
+              initialQuality: qualityForSize(file.size),
+            });
+
+            // 防御：空文件不上传
+            if (!file || (file as File).size === 0) {
+              throw new Error('empty file');
+            }
+
+            // 原图上传
+            await uploadToSignedUrl(item.original.putUrl, file);
+
+            // 压缩图上传（可选）
+            if (compressedBlob) {
+              await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+            }
+
+            toFinalize.push({
+              uuid: item.uuid,
+              originalKey: item.original.key,
+              compressedKey: compressedBlob ? item.compressed.key : undefined,
+              size: file.size,
+              mimetype: file.type,
+              index, // 保存原始索引
+            });
+          },
+          CONCURRENCY
+        );
+
+        // 按索引排序，确保顺序一致
+        toFinalize.sort((a, b) => a.index - b.index);
+
+        // 移除索引字段
+        const finalizeData = toFinalize.map(({ index: _index, ...rest }) => rest);
+        // 批量 finalize，减少请求数
+        const finalized = finalizeData.length
+          ? await finalizeUpload(finalizeData, rote.id || undefined)
+          : [];
+
+        // 用后端返回结果替换本地 File 占位
+        setRote((prev) => ({
+          ...prev,
+          attachments: [
+            ...prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
+            ...(Array.isArray(finalized) ? finalized : []),
+          ],
+        }));
+      } catch (error: any) {
+        // 失败：移除对应的本地 File 占位，并提示错误
+        setRote((prev) => ({
+          ...prev,
+          attachments: prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
+        }));
+        toast.error(`${t('uploadFailed')}: ${error?.response?.data?.message ?? ''}`);
+      } finally {
+        // 清理上传中标记
+        setUploadingFiles((prev) => {
+          const next = new Set(prev);
+          files.forEach((f) => next.delete(f));
+          return next;
+        });
+      }
+    },
+    [rote.id, setRote, t]
+  );
+
   const submit = useCallback(() => {
-    const contentToSubmit = localContent || rote.content;
+    const contentToSubmit = localContent;
 
     if (!contentToSubmit.trim() && rote.attachments.length === 0) {
       toast.error(t('error.emptyContent'));
@@ -88,25 +216,63 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     const toastId = toast.loading(t('sending'));
     setSubmitting(true);
 
-    const submitData = {
+    // 对于新建场景，把未绑定的附件 id 带上，由后端绑定
+    const attachmentIds = (
+      rote.attachments.filter((a): a is Attachment => !(a instanceof File)) as Attachment[]
+    )
+      .filter((a) => !a.roteid)
+      .map((a) => a.id);
+
+    // 对于编辑场景，收集已绑定附件的排序信息
+    const existingAttachmentIds = (
+      rote.attachments.filter((a): a is Attachment => !(a instanceof File)) as Attachment[]
+    )
+      .filter((a) => a.roteid === rote.id)
+      .map((a) => a.id);
+
+    const submitData: any = {
       ...rote,
       content: contentToSubmit.trim(),
       id: rote.id || undefined,
+      attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
     };
 
-    (rote.id ? put('/notes/' + rote.id, submitData) : post('/notes', submitData))
+    const submitPromise = rote.id
+      ? put('/notes/' + rote.id, submitData).then(async (res) => {
+          // 更新笔记后，如果有附件排序变化，发送排序更新请求
+          if (existingAttachmentIds.length > 0) {
+            await put('/attachments/sort', {
+              roteId: rote.id,
+              attachmentIds: existingAttachmentIds,
+            });
+          }
+          return res;
+        })
+      : post('/notes', submitData);
+
+    submitPromise
       .then(async (res) => {
         toast.success(t('sendSuccess'), {
           id: toastId,
         });
-        await uploadAttachments(res.data);
 
+        // 执行回调
         if (callback) {
           callback();
         }
-        setRote(emptyRote);
-        setLocalContent('');
-        contentRef.current = '';
+
+        // 清理编辑器状态
+        if (callback) {
+          // 有回调说明是在弹窗或组件中，需要重置编辑器
+          resetEditor();
+        } else if (!rote.id) {
+          // 新建笔记成功，重置编辑器为空状态
+          resetEditor();
+        } else if (res?.data) {
+          // 编辑现有笔记，更新为服务器返回的数据
+          setRote(res.data);
+          setLocalContent(res.data.content || '');
+        }
       })
       .catch((error) => {
         const errorMessage = error.response?.data?.message || t('sendFailed');
@@ -119,56 +285,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       });
   }, [localContent, rote, t, callback, setRote]);
 
-  // 优化的文件上传函数
-  const uploadAttachments = useCallback(
-    (_rote: Rote) => {
-      const filesToUpload = rote.attachments.filter(
-        (file: Attachment | File) => file instanceof File && file.size > 0
-      );
-
-      if (filesToUpload.length === 0) {
-        return Promise.resolve([]);
-      }
-
-      return new Promise((resolve, reject) => {
-        const toastId = toast.loading(t('uploading'));
-
-        try {
-          const formData = new FormData();
-          filesToUpload.forEach((file: Attachment | File) => {
-            if (file instanceof File) {
-              formData.append('images', file);
-            }
-          });
-
-          post(`/attachments?noteId=${_rote.id}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          })
-            .then((res) => {
-              if (res.code !== 0) return;
-              toast.success(t('uploadSuccess'), {
-                id: toastId,
-              });
-              resolve(res);
-            })
-            .catch((error) => {
-              toast.error(`${t('uploadFailed')}: ${error.response?.data?.message ?? ''}`, {
-                id: toastId,
-              });
-              reject(error);
-            });
-        } catch (error) {
-          toast.error(`${t('uploadFailed')}: ${(error as any).response?.data?.message ?? ''}`, {
-            id: toastId,
-          });
-          reject(error);
-        }
-      });
-    },
-    [rote.attachments, t]
-  );
-
-  // 优化的键盘事件处理
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
       if (e.key === 'Enter' && e.ctrlKey) {
@@ -178,7 +294,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [submit]
   );
 
-  // 优化的粘贴事件处理
   const handlePaste = useCallback(
     (e: React.ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -189,25 +304,17 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         if (item.type.startsWith('image/')) {
           const blob = item.getAsFile();
           if (blob && blob.size > 0) {
-            try {
-              const file = new File([blob], `pasted-image-${Date.now()}.png`, {
-                type: blob.type,
-              });
-              setRote((prevRote) => ({
-                ...prevRote,
-                attachments: [...prevRote.attachments, file],
-              }));
-            } catch {
-              /* empty */
-            }
+            const file = new File([blob], `pasted-image-${Date.now()}.png`, {
+              type: blob.type,
+            });
+            uploadFiles([file]);
           }
         }
       }
     },
-    [setRote]
+    [uploadFiles]
   );
 
-  // 优化的拖拽事件处理
   const handleDrop = useCallback(
     (e: React.DragEvent<HTMLTextAreaElement>) => {
       e.preventDefault();
@@ -216,22 +323,17 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       if (files.length > 0) {
         const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
         if (imageFiles.length > 0) {
-          setRote((prevRote) => ({
-            ...prevRote,
-            attachments: [...prevRote.attachments, ...imageFiles],
-          }));
+          uploadFiles(imageFiles);
         }
       }
     },
-    [setRote]
+    [uploadFiles]
   );
 
-  // 优化的拖拽悬停事件处理
   const handleDragOver = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
   }, []);
 
-  // 优化的标签更新函数
   const updateTags = useCallback(
     (value: string[]) => {
       setRote((prevRote) => ({
@@ -242,7 +344,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的标签删除函数
   const removeTag = useCallback(
     (tagToRemove: string) => {
       setRote((prevRote) => ({
@@ -253,7 +354,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的属性切换函数
   const toggleProperty = useCallback(
     (property: keyof Pick<Rote, 'pin' | 'archived'>) => {
       setRote((prevRote) => ({
@@ -264,7 +364,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     [setRote]
   );
 
-  // 优化的状态切换函数
   const toggleState = useCallback(() => {
     setRote((prevRote) => ({
       ...prevRote,
@@ -272,18 +371,24 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     }));
   }, [setRote]);
 
-  // 优化的文件添加回调
   const handleFileAdd = useCallback(
     (newFileList: File[]) => {
+      uploadFiles(newFileList);
+    },
+    [uploadFiles]
+  );
+
+  // 处理附件重新排序
+  const handleAttachmentReorder = useCallback(
+    (reorderedAttachments: (File | Attachment)[]) => {
       setRote((prevRote) => ({
         ...prevRote,
-        attachments: [...prevRote.attachments, ...newFileList],
+        attachments: reorderedAttachments,
       }));
     },
     [setRote]
   );
 
-  // 计算是否显示公开警告
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
 
   return (
@@ -305,37 +410,15 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       />
 
       {process.env.REACT_APP_ALLOW_UPLOAD_FILE === 'true' && (
-        <div className="flex flex-wrap gap-2">
-          {rote.attachments.map((file, index: number) => (
-            <div
-              className="bg-background relative h-20 w-20 overflow-hidden rounded-lg"
-              key={'attachments_' + index}
-            >
-              <img
-                className="h-full w-full object-cover"
-                height={80}
-                width={80}
-                src={
-                  file instanceof File ? URL.createObjectURL(file) : file.compressUrl || file.url
-                }
-                alt="uploaded"
-              />
-              <div
-                onClick={() => deleteFile(index)}
-                className="absolute top-1 right-1 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
-              >
-                <X className="size-3 text-white" />
-              </div>
-            </div>
-          ))}
-          {rote.attachments.length < 9 && (
-            <FileSelector
-              id={rote.id || 'rote-editor-file-selector'}
-              disabled={submiting}
-              callback={handleFileAdd}
-            />
-          )}
-        </div>
+        <AttachmentList
+          attachments={rote.attachments}
+          uploadingFiles={uploadingFiles}
+          onDelete={deleteFile}
+          onReorder={handleAttachmentReorder}
+          onFileAdd={handleFileAdd}
+          roteId={rote.id}
+          disabled={submiting}
+        />
       )}
 
       <div className={`animate-show flex shrink-0 flex-wrap gap-2 opacity-0 duration-300`}>

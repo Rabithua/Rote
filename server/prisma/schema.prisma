@@ -98,6 +98,7 @@ model Attachment {
   roteid      String?  @db.Uuid
   storage     String   @db.VarChar(100)
   details     Json     @db.JsonB
+  sortIndex   Int?     @default(0)
   createdAt   DateTime @default(now()) @db.Timestamptz
   updatedAt   DateTime @updatedAt @db.Timestamptz
   user        User?    @relation(fields: [userid], references: [id], onDelete: SetNull)
@@ -105,6 +106,7 @@ model Attachment {
 
   @@index([userid])
   @@index([roteid])
+  @@index([roteid, sortIndex])
   @@map("attachments")
 }
 
