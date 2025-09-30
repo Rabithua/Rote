@@ -1,6 +1,8 @@
 /* eslint-disable */
 // 自定义 Service Worker（injectManifest）
 
+self.__WB_DISABLE_DEV_LOGS = true;
+
 self.skipWaiting();
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -17,10 +19,16 @@ self.addEventListener('activate', (event) => {
 
 // 运行时缓存策略（Workbox 在构建时注入 precache 清单）
 import { clientsClaim } from 'workbox-core';
+import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
 
 clientsClaim();
+
+// 预缓存由 VitePWA 注入的资源清单
+// 注意：必须存在对 self.__WB_MANIFEST 的引用，injectManifest 构建才会注入
+precacheAndRoute(self.__WB_MANIFEST || []);
+cleanupOutdatedCaches();
 
 // r2 静态资源
 registerRoute(
