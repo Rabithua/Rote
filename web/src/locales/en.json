@@ -217,6 +217,7 @@
         "noStatus": "No status",
         "serviceId": "Service ID:",
         "notificationTest": "Test Notification",
+        "sending": "Sending...",
         "permissionProcessing": "Processing permissions...",
         "complete": "Complete",
         "sendSuccess": "Sent successfully!",

@@ -221,6 +221,7 @@
         "noStatus": "无状态",
         "serviceId": "服务标识:",
         "notificationTest": "通知测试",
+        "sending": "发送中...",
         "permissionProcessing": "权限处理中...",
         "complete": "完成",
         "sendSuccess": "发送成功！",
