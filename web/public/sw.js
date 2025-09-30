@@ -4,6 +4,25 @@
 
 // =======================================
 
+// 立即接管新 SW（与前端的更新提示配合）
+self.skipWaiting();
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      // 激活后立即控制现有客户端
+      await self.clients.claim();
+      // 启用导航预加载，加快首个网络请求
+      if ('navigationPreload' in self.registration) {
+        try {
+          await self.registration.navigationPreload.enable();
+        } catch {
+          // 忽略导航预加载错误
+        }
+      }
+    })()
+  );
+});
+
 const VAPID =
   'BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g';
 
@@ -20,6 +39,28 @@ const urlBase64ToUint8Array = (base64String) => {
 
   return outputArray;
 };
+
+// 处理订阅变更事件，自动续订并可回传客户端
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const newSub = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID),
+        });
+        // 广播给所有客户端，便于上报后端保存
+        const allClients = await self.clients.matchAll({ includeUncontrolled: true });
+        for (const client of allClients) {
+          client.postMessage({ method: 'pushsubscriptionchange', payload: JSON.stringify(newSub) });
+        }
+      } catch (err) {
+        // 静默失败，避免中断激活流程
+        console.warn('pushsubscriptionchange failed', err);
+      }
+    })()
+  );
+});
 
 self.addEventListener('message', async (event) => {
   const { method } = event.data;
