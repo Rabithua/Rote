@@ -155,7 +155,7 @@ export default function SubList() {
                         onClick={() => handleDeleteSubscription(item.id)}
                         className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
                       >
-                        <Trash2 className="size-4 text-red-600" />
+                        <Trash2 className="size-4 text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400" />
                         {t('deleteSubscription')}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
