@@ -4,23 +4,6 @@
 
 本文档详细说明 Rote 项目中数据库结构变更的标准操作流程，包括开发环境、生产环境的迁移管理，以及常见问题的解决方案。
 
-## 当前部署配置分析
-
-### 服务部署迁移状态
-
-**当前配置存在问题**：
-
-- Dockerfile 中使用 `npm run dbSchemaUpdate`（即 `prisma db push --accept-data-loss`）
-- 这种方式会跳过迁移历史，直接推送 schema 到数据库
-- **不推荐用于生产环境**，因为会丢失迁移历史记录
-
-### 建议的改进方案
-
-```dockerfile
-# 修改 Dockerfile 中的启动命令
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun run start"]
-```
-
 ## 数据库迁移操作流程
 
 ### 1. 开发环境操作
