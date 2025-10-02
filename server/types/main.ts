@@ -3,6 +3,7 @@ declare global {
     interface Request {
       dynamicApiUrl: string;
       dynamicFrontendUrl: string;
+      user?: User;
     }
   }
 }
@@ -34,3 +35,47 @@ export interface NotificationOptions {
   silent?: boolean;
   requireInteraction?: boolean;
 }
+
+// 用户角色枚举
+export enum UserRole {
+  USER = 'user',
+  ADMIN = 'admin',
+  MODERATOR = 'moderator',
+  SUPER_ADMIN = 'super_admin',
+}
+
+// 角色权限定义
+export interface RolePermissions {
+  canManageUsers: boolean;
+  canManageSystem: boolean;
+  canModerateContent: boolean;
+  canAccessAdminPanel: boolean;
+}
+
+// 角色权限映射
+export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
+  [UserRole.USER]: {
+    canManageUsers: false,
+    canManageSystem: false,
+    canModerateContent: false,
+    canAccessAdminPanel: false,
+  },
+  [UserRole.MODERATOR]: {
+    canManageUsers: false,
+    canManageSystem: false,
+    canModerateContent: true,
+    canAccessAdminPanel: false,
+  },
+  [UserRole.ADMIN]: {
+    canManageUsers: true,
+    canManageSystem: false,
+    canModerateContent: true,
+    canAccessAdminPanel: true,
+  },
+  [UserRole.SUPER_ADMIN]: {
+    canManageUsers: true,
+    canManageSystem: true,
+    canModerateContent: true,
+    canAccessAdminPanel: true,
+  },
+};

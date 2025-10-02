@@ -9,7 +9,7 @@
     "dev-f": "nodemon server.ts --ignore-errors",
     "dbSchemaUpdate": "npx prisma db push --accept-data-loss",
     "dockerBuild": "docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .",
-    "docker:start": "prisma generate && npm start"
+    "docker:start": "bunx prisma migrate deploy && bun run start"
   },
   "keywords": [
     "node",

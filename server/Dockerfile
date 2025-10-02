@@ -8,4 +8,4 @@ COPY . .
 EXPOSE 3000
 RUN chown -R node /usr/src/app && chown -R node /usr/src/node_modules
 USER node
-CMD ["sh", "-c", "npm run dbSchemaUpdate && npm start"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun run start"]

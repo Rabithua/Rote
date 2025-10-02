@@ -4,6 +4,7 @@ import { getAllPublicRssData, getRssData } from '../../utils/dbMethods';
 import { asyncHandler, errorHandler } from '../../utils/handlers';
 import { createResponse } from '../../utils/main';
 import { generateRssFeed, RssFeedOptions } from '../../utils/rss';
+import adminRouter from './admin';
 import apiKeysRouter from './apikey';
 import attachmentsRouter from './attachment';
 import authRouter from './auth';
@@ -118,6 +119,7 @@ router.use('/api-keys', apiKeysRouter);
 router.use('/attachments', attachmentsRouter);
 router.use('/site', siteRouter);
 router.use('/openkey', openKeyRouter);
+router.use('/admin', adminRouter);
 
 // 全局错误处理
 router.use(errorHandler);
