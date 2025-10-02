@@ -3,9 +3,10 @@ ENV NODE_ENV=production
 RUN apk add --no-cache openssl
 WORKDIR /usr/src/app
 COPY ["package.json", "package-lock.json*", "npm-shrinkwrap.json*", "./"]
-RUN npm install --production --silent && mv node_modules ../
+RUN npm install --silent
 COPY . .
+RUN npx prisma generate
 EXPOSE 3000
-RUN chown -R node /usr/src/app && chown -R node /usr/src/node_modules
+RUN chown -R node /usr/src
 USER node
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun run start"]
+CMD ["sh", "-c", "npx prisma db push && npm start"]

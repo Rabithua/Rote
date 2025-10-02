@@ -7,9 +7,9 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 ## Technology Stack
 
 - **运行时环境**: Bun (替代 Node.js，提供更快的性能)
-- **后端技术**: Bun + TypeScript + Express + Prisma + MongoDB
+- **后端技术**: Bun + TypeScript + Express + Prisma + PostgreSQL
 - **前端技术**: React + TypeScript + Vite + Tailwind CSS + Radix UI
-- **数据存储**: MongoDB (数据库) + AWS S3/R2 (文件存储)
+- **数据存储**: PostgreSQL (数据库) + AWS S3/R2 (文件存储)
 - **部署方式**: Docker 容器化部署
 
 ## Code Standards & Guidelines
@@ -32,7 +32,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 ### 后端开发规范 (Bun + Express)
 
 - 运行时环境：使用 Bun 作为 JavaScript 运行时，享受更快的执行性能
-- 数据库操作：使用 Prisma 作为 ORM，统一操作 MongoDB 数据库
+- 数据库操作：使用 Prisma 作为 ORM，统一操作 PostgreSQL 数据库
 - 路由组织：API 路由分为 v1 和 v2 版本，统一放置在 `route/` 目录
 - 中间件管理：所有中间件文件放置在 `middleware/` 目录
 - 工具函数：通用工具函数放置在 `utils/` 目录
@@ -48,7 +48,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 - UI 组件：使用 Radix UI + Tailwind CSS 构建现代化界面
 - 组件组织：页面级组件放置在 `pages/` 目录，可复用组件放置在 `components/` 目录
 - 状态管理：使用 `jotai` 进行状态管理
-- 网络请求：使用 `frontend/src/utils/api.ts` 封装好的方法，统一 API 请求
+- 网络请求：使用 `web/src/utils/api.ts` 封装好的方法，统一 API 请求
 - 国际化：支持多语言 (i18n)，语言配置文件放置在 `locales/` 目录
 - 设计系统：使用 shadcn/ui 组件系统，保持界面一致性
 - always use Tailwind v4, never use Tailwind v3
@@ -58,7 +58,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 - 设计原则：严格遵循 RESTful API 设计原则和最佳实践
 - 错误处理：实现统一的错误处理机制和标准化响应格式
 - 功能支持：全面支持分页查询、条件搜索、数据过滤等功能
-- 文档维护：API 接口文档统一维护在 `server/doc/` 目录
+- 文档维护：API 接口文档统一维护在 `doc/` 目录
 - 认证机制：实现基于 API Key 的安全认证机制
 
 ## File Structure Conventions

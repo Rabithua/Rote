@@ -1,9 +1,9 @@
 import express from 'express';
-import { authenticateJWT } from "../../middleware/jwtAuth";
-import { scheduleNoteOnceNoticeJob } from "../../schedule/NoteOnceNoticeJob";
-import { JobNames } from "../../types/schedule";
-import { asyncHandler } from "../../utils/handlers";
-import { createResponse } from "../../utils/main";
+import { authenticateJWT } from '../../middleware/jwtAuth';
+import { asyncHandler } from '../../utils/handlers';
+import { createResponse } from '../../utils/main';
+// 定时任务功能已移除，占位常量与空实现
+const JobNames = { NoteOnceNoticeJob: 'NoteOnceNoticeJob' } as const;
 
 // 通知相关路由
 const notificationsRouter = express.Router();
@@ -17,7 +17,7 @@ notificationsRouter.post(
 
     switch (type) {
       case JobNames.NoteOnceNoticeJob:
-        await scheduleNoteOnceNoticeJob(req.body);
+        // 定时任务已禁用：此分支不执行任何操作
         break;
 
       default:

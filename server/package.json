@@ -7,9 +7,8 @@
     "start": "npx ts-node server.ts ",
     "dev": "nodemon server.ts",
     "dev-f": "nodemon server.ts --ignore-errors",
-    "dbSchemaUpdate": "npx prisma db push --accept-data-loss",
     "dockerBuild": "docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .",
-    "docker:start": "bunx prisma migrate deploy && bun run start"
+    "docker:start": "prisma generate && npm start"
   },
   "keywords": [
     "node",
@@ -21,8 +20,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.484.0",
     "@aws-sdk/s3-request-presigner": "^3.484.0",
-    "@hokify/agenda": "^6.3.0",
-    "@prisma/client": "^6.10.0",
+    "@prisma/client": "^6.10.1",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/formidable": "^3.4.5",
@@ -52,7 +50,7 @@
     "dotenv": "^16.5.0",
     "nodemon": "^3.0.1",
     "prettier": "^3.5.3",
-    "prisma": "^6.10.0",
+    "prisma": "^6.10.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.0"
   }

@@ -10,8 +10,6 @@ import { recorderIpAndTime } from './utils/recoder';
 
 import routerV2 from './route/v2'; // RESTful API routes
 
-import { startAgenda } from './utils/schedule';
-
 const app: express.Application = express();
 
 const port = process.env.PORT || 3000;
@@ -57,12 +55,3 @@ app.get('*', (req, res) => {
 app.listen(port, () => {
   console.log(`Rote Node backend server listening on port ${port}!`);
 });
-
-startAgenda().then(() => {
-  // scheduleNoteOnceNoticeJob({
-  //   when: "One Minute",
-  //   subId: "67ba96bcc13e4e3e622d6113",
-  //   noteId: "680f39fc819b0a0fcd1339f6",
-  //   userId: "65f2f28eaa85f74b004888a8",
-  // });
-}); // Start the scheduled job
