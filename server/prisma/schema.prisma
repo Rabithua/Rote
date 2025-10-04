@@ -131,12 +131,18 @@ model Reaction {
   @@map("reactions")
 }
 
-model SystemSetting {
-  id               String   @id @db.VarChar(255)
-  webClientSetting Json
-  storage          Json
-  createdAt        DateTime @default(now()) @db.Timestamptz(6)
-  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
+model Setting {
+  id            String   @id @default(uuid()) @db.Uuid
+  group         String   @unique @db.VarChar(100) // site, storage, security, notification, ui, system
+  config        Json // 存储该分组的完整配置对象
+  isRequired    Boolean  @default(false) // 是否为必需分组
+  isInitialized Boolean  @default(false) // 是否已初始化
+  isSystem      Boolean  @default(false) // 是否为系统内部配置
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
 
-  @@map("system_settings")
+  @@index([isRequired])
+  @@index([isInitialized])
+  @@index([isSystem])
+  @@map("settings")
 }
