@@ -13,6 +13,7 @@ import Landing from '@/pages/landing';
 import Login from '@/pages/login';
 import ProfilePage from '@/pages/profile';
 import SingleRotePage from '@/pages/rote/:roteid';
+import SetupPage from '@/pages/setup';
 import UserPage from '@/pages/user/:username';
 
 export default function GlobalRouterProvider() {
@@ -30,6 +31,11 @@ export default function GlobalRouterProvider() {
     {
       path: '404',
       element: <ErrorPage />,
+    },
+    {
+      path: 'setup',
+      element: <SetupPage />,
+      errorElement: <ErrorPage />,
     },
     {
       path: '',

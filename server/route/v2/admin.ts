@@ -1,5 +1,10 @@
 import express from 'express';
-import { authenticateJWT, requireAdmin, requireSuperAdmin } from '../../middleware/jwtAuth';
+import {
+  authenticateJWT,
+  optionalJWT,
+  requireAdmin,
+  requireSuperAdmin,
+} from '../../middleware/jwtAuth';
 import {
   ConfigTestResult,
   InitializationStatus,
@@ -344,13 +349,24 @@ adminRouter.put(
   })
 );
 
-// 测试配置连接（管理员）
+// 测试配置连接（初始化前公开，初始化后需管理员）
 adminRouter.post(
   '/settings/test',
-  authenticateJWT,
-  requireAdmin,
+  optionalJWT,
   asyncHandler(async (req, res) => {
     try {
+      // 若系统已初始化，要求管理员权限
+      const initialized = await isInitialized();
+      if (initialized) {
+        const user = (req.user as any) || null;
+        if (!user) {
+          return res.status(401).json(createResponse(null, 'Authentication required'));
+        }
+        if (!['admin', 'super_admin'].includes(user.role)) {
+          return res.status(403).json(createResponse(null, 'Only admin can test configuration'));
+        }
+      }
+
       const { type, config } = req.body as { type: string; config: any };
 
       if (!type || !config) {

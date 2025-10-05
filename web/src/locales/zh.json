@@ -257,6 +257,81 @@
     "archived": {
       "title": "归档 / Archived",
       "statistics": "统计 / Static"
+    },
+    "setupPage": {
+      "statusChecking": "检查系统状态中..."
+    },
+    "setupWizard": {
+      "title": "Rote 初始化向导",
+      "subtitle": "欢迎使用 Rote！请按照以下步骤完成系统配置",
+      "steps": {
+        "basic": { "title": "基础配置", "description": "设置网站基本信息" },
+        "storage": { "title": "存储配置", "description": "配置 R2 云存储" },
+        "admin": { "title": "管理员账户", "description": "创建管理员账户" }
+      },
+      "labels": {
+        "siteName": "网站名称",
+        "siteDescription": "网站描述",
+        "siteUrl": "网站URL",
+        "accountId": "R2 Account ID",
+        "accessKey": "Access Key",
+        "secretKey": "Secret Key",
+        "bucket": "存储桶名称",
+        "urlPrefix": "URL 前缀",
+        "username": "用户名",
+        "email": "邮箱",
+        "password": "密码",
+        "nickname": "昵称"
+      },
+      "placeholders": {
+        "siteName": "请输入网站名称",
+        "siteDescription": "请输入网站描述",
+        "siteUrl": "https://your-domain.com",
+        "accountId": "your-account-id",
+        "accessKey": "请输入 R2 Access Key",
+        "secretKey": "请输入 R2 Secret Key",
+        "bucket": "请输入存储桶名称",
+        "urlPrefix": "https://bucket.your-domain.com",
+        "adminUsername": "请输入管理员用户名",
+        "adminEmail": "请输入管理员邮箱",
+        "adminPassword": "请输入管理员密码",
+        "adminNickname": "请输入管理员昵称"
+      },
+      "validation": {
+        "siteNameRequired": "网站名称不能为空",
+        "siteUrlRequired": "网站URL不能为空",
+        "siteUrlInvalid": "请输入有效的URL（以http://或https://开头）",
+        "accountIdRequired": "R2 Account ID不能为空",
+        "accessKeyRequired": "Access Key不能为空",
+        "secretKeyRequired": "Secret Key不能为空",
+        "bucketRequired": "存储桶名称不能为空",
+        "urlPrefixRequired": "URL 前缀不能为空",
+        "urlPrefixInvalid": "请输入有效的URL前缀（以http://或https://开头）",
+        "usernameRequired": "用户名不能为空",
+        "emailRequired": "邮箱不能为空",
+        "emailInvalid": "请输入有效的邮箱地址",
+        "passwordRequired": "密码不能为空",
+        "passwordMin": "密码长度至少6位"
+      },
+      "buttons": {
+        "prev": "上一步",
+        "next": "下一步",
+        "finish": "完成配置",
+        "saving": "保存中...",
+        "testConnection": "测试 R2 连接",
+        "testing": "测试连接中..."
+      },
+      "toasts": {
+        "systemInitialized": "系统已经初始化，将跳转到系统设置页面",
+        "initSuccess": "系统初始化成功！",
+        "initFailed": "系统初始化失败，请检查配置",
+        "testSuccess": "R2 连接测试成功！",
+        "testFailed": "连接测试失败: {{error}}",
+        "pleaseFillR2": "请先填写完整的 R2 配置信息"
+      },
+      "ui": {
+        "statistics": "统计 / Static"
+      }
     }
   },
   "components": {
