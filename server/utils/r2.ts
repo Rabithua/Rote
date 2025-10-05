@@ -3,20 +3,80 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import formidable from 'formidable';
 import fs from 'fs/promises';
 import sharp from 'sharp';
+import { StorageConfig } from '../types/config';
 import { UploadResult } from '../types/main';
+import { getGlobalConfig, subscribeConfigChange } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
 
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: `${process.env.R2_ACCESS_KEY_ID}`,
-    secretAccessKey: `${process.env.R2_SECRET_KEY_ID}`,
-  },
+// 配置管理
+let s3: S3Client;
+let bucketName: string;
+let urlPrefix: string;
+
+// 初始化 R2 配置
+function initializeR2Config() {
+  const config = getGlobalConfig<StorageConfig>('storage');
+  if (config && config.endpoint && config.accessKeyId && config.secretAccessKey && config.bucket) {
+    s3 = new S3Client({
+      region: 'auto',
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+    bucketName = config.bucket;
+    urlPrefix = config.urlPrefix || '';
+  } else {
+    // 如果没有有效配置，设置为 null，让调用方处理
+    s3 = null as any;
+    bucketName = '';
+    urlPrefix = '';
+    console.warn(
+      '⚠️  R2 storage configuration not found or incomplete. Storage features will be disabled.'
+    );
+  }
+}
+
+// 订阅配置变更
+subscribeConfigChange('storage', (group, newConfig: StorageConfig) => {
+  console.log('R2 configuration updated');
+  if (
+    newConfig &&
+    newConfig.endpoint &&
+    newConfig.accessKeyId &&
+    newConfig.secretAccessKey &&
+    newConfig.bucket
+  ) {
+    s3 = new S3Client({
+      region: 'auto',
+      endpoint: newConfig.endpoint,
+      credentials: {
+        accessKeyId: newConfig.accessKeyId,
+        secretAccessKey: newConfig.secretAccessKey,
+      },
+    });
+    bucketName = newConfig.bucket;
+    urlPrefix = newConfig.urlPrefix || '';
+  } else {
+    s3 = null as any;
+    bucketName = '';
+    urlPrefix = '';
+    console.warn('⚠️  Invalid R2 storage configuration. Storage features will be disabled.');
+  }
 });
 
+// 初始化配置
+initializeR2Config();
+
 async function r2uploadhandler(file: formidable.File) {
+  if (!s3 || !bucketName) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
   const buffer = await fs.readFile(file.filepath);
 
   // 生成唯一且稳定的对象 Key，避免并发下被同名文件覆盖
@@ -31,7 +91,7 @@ async function r2uploadhandler(file: formidable.File) {
 
   // Upload original file
   const originalParam = {
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: originalKey,
     Body: buffer,
     cacheControl,
@@ -47,7 +107,7 @@ async function r2uploadhandler(file: formidable.File) {
 
   // Upload WebP file
   const webpParam = {
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: webpKey,
     Body: webpBuffer,
     ContentType: 'image/webp',
@@ -85,14 +145,14 @@ async function r2uploadhandler(file: formidable.File) {
 
     // Check original file upload result
     if (originalResult.status === 'fulfilled') {
-      result.url = `https://${process.env.R2_URL_PREFIX}/${originalKey}`;
+      result.url = `${urlPrefix}/${originalKey}`;
     } else {
       console.log('Error uploading original file:', originalResult.reason);
     }
 
     // Check WebP file upload result
     if (webpResult.status === 'fulfilled') {
-      result.compressUrl = `https://${process.env.R2_URL_PREFIX}/${webpKey}`;
+      result.compressUrl = `${urlPrefix}/${webpKey}`;
     } else {
       console.log('Error uploading WebP file:', webpResult.reason);
     }
@@ -109,8 +169,14 @@ async function r2uploadhandler(file: formidable.File) {
 }
 
 async function r2deletehandler(key: string) {
+  if (!s3 || !bucketName) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
   const deleteParams = {
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: key,
   };
   const deleteCommand = new DeleteObjectCommand(deleteParams);
@@ -137,8 +203,14 @@ export async function presignPutUrl(
   contentType?: string,
   expiresIn: number = 3600
 ): Promise<{ putUrl: string; url: string }> {
+  if (!s3 || !bucketName) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
   const command = new PutObjectCommand({
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: key,
     ContentType: contentType || undefined,
     cacheControl,
@@ -147,6 +219,6 @@ export async function presignPutUrl(
   const putUrl = await getSignedUrl(s3, command, {
     expiresIn,
   });
-  const url = `https://${process.env.R2_URL_PREFIX}/${key}`;
+  const url = `${urlPrefix}/${key}`;
   return { putUrl, url };
 }

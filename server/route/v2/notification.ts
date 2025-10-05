@@ -1,4 +1,5 @@
 import express from 'express';
+import { requireNotificationConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse } from '../../utils/main';
@@ -12,6 +13,7 @@ const notificationsRouter = express.Router();
 notificationsRouter.post(
   '/',
   authenticateJWT,
+  requireNotificationConfig,
   asyncHandler(async (req, res) => {
     const { type } = req.body;
 

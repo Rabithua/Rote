@@ -4,9 +4,11 @@ import cors from 'cors';
 import passport from './utils/passport';
 
 import { rateLimiterMiddleware } from './middleware/limiter';
+import { initializeConfig } from './utils/config';
 import { errorHandler } from './utils/handlers';
 import { injectDynamicUrls } from './utils/main';
 import { recorderIpAndTime } from './utils/recoder';
+import { StartupMigration } from './utils/startupMigration';
 
 import routerV2 from './route/v2'; // RESTful API routes
 
@@ -33,7 +35,7 @@ app.use(bodyParser.json());
 // cors
 app.use(
   cors({
-    origin: process.env.CORS?.split(',') || 'http://localhost:3000',
+    origin: process.env.CORS?.split(',') || '*',
     credentials: true,
     optionsSuccessStatus: 200,
   })
@@ -52,6 +54,17 @@ app.get('*', (req, res) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Rote Node backend server listening on port ${port}!`);
+
+  try {
+    // 初始化配置管理器
+    await initializeConfig();
+
+    // 启动时检查系统状态
+    await StartupMigration.checkStartupStatus();
+    await StartupMigration.showConfigStatus();
+  } catch (error) {
+    console.error('❌ Failed to initialize system:', error);
+  }
 });
