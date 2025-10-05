@@ -8,7 +8,10 @@
     "dev": "nodemon server.ts",
     "dev-f": "nodemon server.ts --ignore-errors",
     "dockerBuild": "docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .",
-    "docker:start": "prisma generate && npm start"
+    "docker:start": "prisma generate && npm start",
+    "test:init": "npx ts-node scripts/testInitialization.ts",
+    "test:quick": "npx ts-node scripts/quickTest.ts",
+    "test:all": "npm run test:quick && npm run test:init"
   },
   "keywords": [
     "node",

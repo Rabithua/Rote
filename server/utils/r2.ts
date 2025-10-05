@@ -5,20 +5,15 @@ import fs from 'fs/promises';
 import sharp from 'sharp';
 import { StorageConfig } from '../types/config';
 import { UploadResult } from '../types/main';
-import { getGlobalConfig, subscribeConfigChange } from './config';
+import { getGlobalConfig } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
 
-// 配置管理
-let s3: S3Client;
-let bucketName: string;
-let urlPrefix: string;
-
-// 初始化 R2 配置
-function initializeR2Config() {
+// 动态获取 R2 配置并创建 S3 客户端
+function getR2Client(): { s3: S3Client; bucketName: string; urlPrefix: string } | null {
   const config = getGlobalConfig<StorageConfig>('storage');
   if (config && config.endpoint && config.accessKeyId && config.secretAccessKey && config.bucket) {
-    s3 = new S3Client({
+    const s3 = new S3Client({
       region: 'auto',
       endpoint: config.endpoint,
       credentials: {
@@ -26,56 +21,24 @@ function initializeR2Config() {
         secretAccessKey: config.secretAccessKey,
       },
     });
-    bucketName = config.bucket;
-    urlPrefix = config.urlPrefix || '';
-  } else {
-    // 如果没有有效配置，设置为 null，让调用方处理
-    s3 = null as any;
-    bucketName = '';
-    urlPrefix = '';
-    console.warn(
-      '⚠️  R2 storage configuration not found or incomplete. Storage features will be disabled.'
-    );
+    return {
+      s3,
+      bucketName: config.bucket,
+      urlPrefix: config.urlPrefix || '',
+    };
   }
+  return null;
 }
 
-// 订阅配置变更
-subscribeConfigChange('storage', (group, newConfig: StorageConfig) => {
-  console.log('R2 configuration updated');
-  if (
-    newConfig &&
-    newConfig.endpoint &&
-    newConfig.accessKeyId &&
-    newConfig.secretAccessKey &&
-    newConfig.bucket
-  ) {
-    s3 = new S3Client({
-      region: 'auto',
-      endpoint: newConfig.endpoint,
-      credentials: {
-        accessKeyId: newConfig.accessKeyId,
-        secretAccessKey: newConfig.secretAccessKey,
-      },
-    });
-    bucketName = newConfig.bucket;
-    urlPrefix = newConfig.urlPrefix || '';
-  } else {
-    s3 = null as any;
-    bucketName = '';
-    urlPrefix = '';
-    console.warn('⚠️  Invalid R2 storage configuration. Storage features will be disabled.');
-  }
-});
-
-// 初始化配置
-initializeR2Config();
-
 async function r2uploadhandler(file: formidable.File) {
-  if (!s3 || !bucketName) {
+  const r2Config = getR2Client();
+  if (!r2Config) {
     throw new Error(
       'R2 storage is not configured. Please complete the storage configuration first.'
     );
   }
+
+  const { s3, bucketName, urlPrefix } = r2Config;
 
   const buffer = await fs.readFile(file.filepath);
 
@@ -169,11 +132,14 @@ async function r2uploadhandler(file: formidable.File) {
 }
 
 async function r2deletehandler(key: string) {
-  if (!s3 || !bucketName) {
+  const r2Config = getR2Client();
+  if (!r2Config) {
     throw new Error(
       'R2 storage is not configured. Please complete the storage configuration first.'
     );
   }
+
+  const { s3, bucketName } = r2Config;
 
   const deleteParams = {
     Bucket: bucketName,
@@ -195,7 +161,7 @@ async function r2deletehandler(key: string) {
   }
 }
 
-export { r2deletehandler, r2uploadhandler, s3 };
+export { r2deletehandler, r2uploadhandler };
 
 // 生成 PUT 预签名 URL，便于前端直传 R2
 export async function presignPutUrl(
@@ -203,11 +169,14 @@ export async function presignPutUrl(
   contentType?: string,
   expiresIn: number = 3600
 ): Promise<{ putUrl: string; url: string }> {
-  if (!s3 || !bucketName) {
+  const r2Config = getR2Client();
+  if (!r2Config) {
     throw new Error(
       'R2 storage is not configured. Please complete the storage configuration first.'
     );
   }
+
+  const { s3, bucketName, urlPrefix } = r2Config;
 
   const command = new PutObjectCommand({
     Bucket: bucketName,

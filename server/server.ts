@@ -4,7 +4,7 @@ import cors from 'cors';
 import passport from './utils/passport';
 
 import { rateLimiterMiddleware } from './middleware/limiter';
-import { initializeConfig } from './utils/config';
+import { initializeConfig, validateSystemConfiguration } from './utils/config';
 import { errorHandler } from './utils/handlers';
 import { injectDynamicUrls } from './utils/main';
 import { recorderIpAndTime } from './utils/recoder';
@@ -60,6 +60,9 @@ app.listen(port, async () => {
   try {
     // 初始化配置管理器
     await initializeConfig();
+
+    // 验证关键配置是否正确加载
+    validateSystemConfiguration();
 
     // 启动时检查系统状态
     await StartupMigration.checkStartupStatus();

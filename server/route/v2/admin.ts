@@ -13,6 +13,7 @@ import {
   getConfig,
   getMissingRequiredConfigs,
   isInitialized,
+  refreshConfigCache,
   setConfig,
 } from '../../utils/config';
 import { ConfigTester } from '../../utils/configTester';
@@ -46,7 +47,7 @@ adminRouter.get(
       let hasAdmin = false;
       try {
         const adminCount = await prisma.user.count({
-          where: { role: { in: ['admin', 'superadmin'] } },
+          where: { role: { in: ['admin', 'super_admin'] } },
         });
         hasAdmin = adminCount > 0;
       } catch (error) {
@@ -157,34 +158,34 @@ adminRouter.post(
       }
 
       // 开始初始化流程
-      await prisma.$transaction(async (tx) => {
-        // 1. 保存站点配置
-        await setConfig(
-          'site',
-          {
-            name: setupData.site.name,
-            url: setupData.site.url,
-            description: setupData.site.description || '',
-            defaultLanguage: setupData.site.defaultLanguage || 'zh-CN',
-            apiUrl: '', // 留空，让系统自动检测
-            frontendUrl: setupData.site.url, // 使用站点 URL 作为前端 URL
-          },
-          { isRequired: true, isInitialized: true }
-        );
+      // 1. 保存站点配置
+      await setConfig(
+        'site',
+        {
+          name: setupData.site.name,
+          url: setupData.site.url,
+          description: setupData.site.description || '',
+          defaultLanguage: setupData.site.defaultLanguage || 'zh-CN',
+          apiUrl: '', // 留空，让系统自动检测
+          frontendUrl: setupData.site.url, // 使用站点 URL 作为前端 URL
+        },
+        { isRequired: true, isInitialized: true }
+      );
 
-        // 2. 保存存储配置
-        await setConfig('storage', setupData.storage, { isRequired: true, isInitialized: true });
+      // 2. 保存存储配置
+      await setConfig('storage', setupData.storage, { isRequired: true, isInitialized: true });
 
-        // 3. 保存界面配置
-        await setConfig('ui', setupData.ui, { isRequired: false, isInitialized: true });
+      // 3. 保存界面配置
+      await setConfig('ui', setupData.ui, { isRequired: false, isInitialized: true });
 
-        // 4. 生成并保存安全密钥
-        const securityKeysGenerated = await generateSecurityKeys();
-        if (!securityKeysGenerated) {
-          throw new Error('Failed to generate security keys');
-        }
+      // 4. 生成并保存安全密钥
+      const securityKeysGenerated = await generateSecurityKeys();
+      if (!securityKeysGenerated) {
+        throw new Error('Failed to generate security keys');
+      }
 
-        // 5. 创建管理员用户
+      // 5. 创建管理员用户（在事务中）
+      const adminUser = await prisma.$transaction(async (tx) => {
         const crypto = await import('crypto');
         const salt = crypto.randomBytes(16);
         const passwordhash = crypto.pbkdf2Sync(
@@ -195,14 +196,14 @@ adminRouter.post(
           'sha256'
         );
 
-        const adminUser = await tx.user.create({
+        return await tx.user.create({
           data: {
             username: setupData.admin.username,
             email: setupData.admin.email,
             passwordhash,
             salt,
             nickname: setupData.admin.nickname || setupData.admin.username,
-            role: 'superadmin',
+            role: 'super_admin',
           },
           select: {
             id: true,
@@ -211,46 +212,52 @@ adminRouter.post(
             role: true,
           },
         });
+      });
 
-        // 6. 标记系统为已初始化
-        // 获取当前迁移版本
-        const migrationVersion = (await tx.$queryRaw`
-          SELECT version FROM _prisma_migrations 
+      // 6. 标记系统为已初始化
+      // 获取当前迁移版本
+      let migrationVersion = 'unknown';
+      try {
+        const migrationResult = (await prisma.$queryRaw`
+          SELECT migration_name FROM _prisma_migrations 
           ORDER BY finished_at DESC 
           LIMIT 1
         `) as any[];
+        migrationVersion = migrationResult[0]?.migration_name || 'unknown';
+      } catch (error) {
+        console.log('⚠️  Could not get migration version, using default');
+      }
 
-        await setConfig(
-          'system',
-          {
-            isInitialized: true,
-            initializationVersion: '1.0.0',
-            lastMigrationVersion: migrationVersion[0]?.version || 'unknown',
+      await setConfig(
+        'system',
+        {
+          isInitialized: true,
+          initializationVersion: '1.0.0',
+          lastMigrationVersion: migrationVersion,
+        },
+        { isRequired: true, isSystem: true, isInitialized: true }
+      );
+
+      // 7. 获取生成的密钥（用于响应）
+      const securityConfig = await getConfig('security');
+      const notificationConfig = await getConfig('notification');
+
+      const response: SetupResponse = {
+        success: true,
+        message: 'System initialization completed successfully',
+        data: {
+          adminUser,
+          generatedKeys: {
+            jwtSecret: (securityConfig as any)?.jwtSecret || '',
+            jwtRefreshSecret: (securityConfig as any)?.jwtRefreshSecret || '',
+            sessionSecret: (securityConfig as any)?.sessionSecret || '',
+            vapidPublicKey: (notificationConfig as any)?.vapidPublicKey || '',
+            vapidPrivateKey: (notificationConfig as any)?.vapidPrivateKey || '',
           },
-          { isRequired: true, isSystem: true, isInitialized: true }
-        );
+        },
+      };
 
-        // 7. 获取生成的密钥（用于响应）
-        const securityConfig = await getConfig('security');
-        const notificationConfig = await getConfig('notification');
-
-        const response: SetupResponse = {
-          success: true,
-          message: 'System initialization completed successfully',
-          data: {
-            adminUser,
-            generatedKeys: {
-              jwtSecret: (securityConfig as any)?.jwtSecret || '',
-              jwtRefreshSecret: (securityConfig as any)?.jwtRefreshSecret || '',
-              sessionSecret: (securityConfig as any)?.sessionSecret || '',
-              vapidPublicKey: (notificationConfig as any)?.vapidPublicKey || '',
-              vapidPrivateKey: (notificationConfig as any)?.vapidPrivateKey || '',
-            },
-          },
-        };
-
-        res.status(200).json(createResponse(response.data, response.message));
-      });
+      res.status(200).json(createResponse(response.data, response.message));
     } catch (error: any) {
       console.error('System initialization failed:', error);
       res.status(500).json(createResponse(null, `System initialization failed: ${error.message}`));
@@ -312,7 +319,7 @@ adminRouter.put(
       }
 
       // 对于系统配置，只允许超级管理员修改
-      if (group === 'system' && (req.user as any)?.role !== 'superadmin') {
+      if (group === 'system' && (req.user as any)?.role !== 'super_admin') {
         return res
           .status(403)
           .json(createResponse(null, 'Only super admin can modify system configuration'));
@@ -496,6 +503,20 @@ adminRouter.post(
     } catch (error: any) {
       console.error('Failed to update URL configuration:', error);
       res.status(500).json(createResponse(null, 'Failed to update URL configuration'));
+    }
+  })
+);
+
+// 刷新配置缓存（测试专用）
+adminRouter.post(
+  '/refresh-cache',
+  asyncHandler(async (req, res) => {
+    try {
+      await refreshConfigCache();
+      res.status(200).json(createResponse(null, 'Configuration cache refreshed successfully'));
+    } catch (error: any) {
+      console.error('Failed to refresh configuration cache:', error);
+      res.status(500).json(createResponse(null, 'Failed to refresh configuration cache'));
     }
   })
 );

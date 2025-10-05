@@ -61,8 +61,20 @@ export async function createUser(data: {
 
 export async function addSubScriptionToUser(userId: string, subScription: any): Promise<any> {
   try {
-    const subScriptionRespon = await prisma.userSwSubScription.create({
-      data: {
+    // 使用 upsert 来处理重复的 endpoint
+    const subScriptionRespon = await prisma.userSwSubScription.upsert({
+      where: {
+        endpoint: subScription.endpoint,
+      },
+      update: {
+        userid: userId,
+        expirationTime: subScription.expirationTime,
+        keys: {
+          auth: subScription.keys.auth,
+          p256dh: subScription.keys.p256dh,
+        },
+      },
+      create: {
         userid: userId,
         endpoint: subScription.endpoint,
         expirationTime: subScription.expirationTime,

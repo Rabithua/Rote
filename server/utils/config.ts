@@ -49,6 +49,90 @@ export class ConfigManager {
   }
 
   /**
+   * 强制刷新配置缓存
+   */
+  public async refreshCache(): Promise<void> {
+    try {
+      console.log('🔄 Refreshing configuration cache...');
+
+      // 清空当前缓存
+      this.cache.clear();
+      this.cacheExpiry.clear();
+
+      // 重新加载所有配置
+      this.globalConfig = await this.getAllConfigs();
+
+      console.log('✅ Configuration cache refreshed');
+    } catch (error) {
+      console.error('❌ Failed to refresh configuration cache:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 检查配置管理器状态
+   */
+  public isInitialized(): boolean {
+    return this.configInitialized;
+  }
+
+  /**
+   * 获取配置状态信息
+   */
+  public getConfigStatus(): { initialized: boolean; configCount: number; configs: string[] } {
+    return {
+      initialized: this.configInitialized,
+      configCount: Object.keys(this.globalConfig).length,
+      configs: Object.keys(this.globalConfig),
+    };
+  }
+
+  /**
+   * 验证系统配置是否正确加载
+   */
+  public validateSystemConfiguration(): void {
+    console.log('🔍 Validating system configuration...');
+
+    if (!this.configInitialized) {
+      throw new Error('Configuration manager not initialized');
+    }
+
+    const configStatus = this.getConfigStatus();
+    console.log(`📊 Configuration status: ${configStatus.configCount} configs loaded`);
+    console.log(`📋 Available configs: ${configStatus.configs.join(', ')}`);
+
+    // 验证安全配置
+    const securityConfig = this.getGlobalConfig('security');
+    if (
+      !securityConfig ||
+      !(securityConfig as any).jwtSecret ||
+      !(securityConfig as any).jwtRefreshSecret
+    ) {
+      console.warn('⚠️  Security configuration not properly loaded');
+    } else {
+      console.log('✅ Security configuration loaded');
+    }
+
+    // 验证站点配置
+    const siteConfig = this.getGlobalConfig('site');
+    if (!siteConfig || !(siteConfig as any).name) {
+      console.warn('⚠️  Site configuration not properly loaded');
+    } else {
+      console.log('✅ Site configuration loaded');
+    }
+
+    // 验证存储配置
+    const storageConfig = this.getGlobalConfig('storage');
+    if (!storageConfig || !(storageConfig as any).bucket) {
+      console.warn('⚠️  Storage configuration not properly loaded');
+    } else {
+      console.log('✅ Storage configuration loaded');
+    }
+
+    console.log('✅ System configuration validation completed');
+  }
+
+  /**
    * 获取全局配置（同步，从内存读取）
    */
   public getGlobalConfig<T extends ConfigData>(group: ConfigGroup): T | null {
@@ -317,3 +401,15 @@ export const subscribeConfigChange = (
   group: ConfigGroup,
   listener: ConfigChangeListener
 ): (() => void) => configManager.subscribe(group, listener);
+
+export const refreshConfigCache = (): Promise<void> => configManager.refreshCache();
+
+export const isConfigManagerInitialized = (): boolean => configManager.isInitialized();
+
+export const getConfigManagerStatus = (): {
+  initialized: boolean;
+  configCount: number;
+  configs: string[];
+} => configManager.getConfigStatus();
+
+export const validateSystemConfiguration = (): void => configManager.validateSystemConfiguration();

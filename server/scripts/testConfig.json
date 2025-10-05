@@ -1,0 +1,62 @@
+{
+  "testSettings": {
+    "baseUrl": "http://localhost:3000",
+    "apiBase": "/v2",
+    "timeout": 10000,
+    "retries": 3
+  },
+  "testData": {
+    "site": {
+      "name": "Rote Test Site",
+      "url": "https://test.rote.ink",
+      "description": "Test site for Rote initialization testing",
+      "defaultLanguage": "en"
+    },
+    "storage": {
+      "endpoint": "https://test-account.r2.cloudflarestorage.com",
+      "bucket": "test-bucket",
+      "accessKeyId": "test-access-key-id",
+      "secretAccessKey": "test-secret-access-key",
+      "urlPrefix": "https://test.example.com"
+    },
+    "ui": {
+      "allowRegistration": true,
+      "defaultUserRole": "user",
+      "apiRateLimit": 100,
+      "allowUploadFile": true
+    },
+    "admin": {
+      "username": "testadmin",
+      "email": "admin@test.com",
+      "password": "TestPassword123!",
+      "nickname": "Test Administrator"
+    }
+  },
+  "expectedResults": {
+    "systemStatus": {
+      "initialized": false,
+      "missingConfigs": ["site", "storage", "security", "ui"],
+      "databaseConnected": true,
+      "hasAdminUser": false
+    },
+    "afterInitialization": {
+      "initialized": true,
+      "missingConfigs": [],
+      "databaseConnected": true,
+      "hasAdminUser": true
+    }
+  },
+  "testEndpoints": {
+    "status": "/admin/status",
+    "setup": "/admin/setup",
+    "settings": "/admin/settings",
+    "detectUrls": "/admin/settings/detect-urls",
+    "updateUrls": "/admin/settings/update-urls",
+    "testConfig": "/admin/settings/test",
+    "login": "/auth/login",
+    "refresh": "/auth/refresh",
+    "upload": "/attachments/",
+    "presign": "/attachments/presign",
+    "finalize": "/attachments/finalize"
+  }
+}
