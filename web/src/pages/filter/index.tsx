@@ -120,9 +120,9 @@ function MineFilter() {
       <StarsBackground
         pointerEvents={false}
         starColor="#07C160"
-        className="relative max-h-[25vh] overflow-hidden bg-none"
+        className="relative h-auto max-h-[25vh] overflow-hidden bg-none"
       >
-        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none p-4 pb-0 font-semibold">
+        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none [mask-image:linear-gradient(180deg,#000000_calc(100%-20%),transparent)] p-4 font-semibold">
           <div className="relative flex flex-wrap items-center gap-2">
             {t('includeTags')}
             {filter.tags.hasEvery.length > 0
@@ -149,7 +149,6 @@ function MineFilter() {
                 ))
               : t('none')}
           </div>
-          <div className="from-background via-background/40 sticky bottom-0 z-1 h-8 w-full bg-gradient-to-t to-transparent"></div>
         </div>
       </StarsBackground>
     ),

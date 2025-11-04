@@ -587,7 +587,7 @@ export default function SetupWizard() {
       </div>
 
       {/* 主要内容 */}
-      <Card>
+      <Card className="rounded-none shadow-none">
         <CardContent className="p-6">{renderStepContent()}</CardContent>
       </Card>
 

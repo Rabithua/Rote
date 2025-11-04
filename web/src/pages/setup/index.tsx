@@ -27,7 +27,7 @@ export default function SetupPage() {
 
   return (
     <div className="bg-pattern min-h-screen">
-      <div className="container mx-auto max-w-2xl px-4 py-8">
+      <div className="font-zhengwen container mx-auto max-w-2xl px-4 py-8">
         <SetupWizard />
       </div>
     </div>
