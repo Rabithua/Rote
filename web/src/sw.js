@@ -51,9 +51,96 @@ registerRoute(navigationRoute);
 
 // ========== Push & Notification（迁移自原 sw.js） ==========
 
-const VAPID =
-  (import.meta && import.meta.env && import.meta.env.VITE_VAPID_PUBLIC) ||
-  'BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g';
+// 存储 API URL 配置（可以从主线程接收）
+let apiUrlConfig = null;
+
+// 获取 API URL（前后端分离项目，必须配置）
+function getApiUrl() {
+  if (!apiUrlConfig) {
+    throw new Error('API URL not configured. Please wait for Service Worker initialization.');
+  }
+  return apiUrlConfig;
+}
+
+// 初始化时从缓存读取 API URL
+async function initializeApiUrl() {
+  if (apiUrlConfig) {
+    return; // 已经设置过，不需要重新读取
+  }
+  try {
+    const cache = await caches.open('api-config-cache');
+    const cached = await cache.match('/api-url');
+    if (cached) {
+      const cachedUrl = await cached.text();
+      if (cachedUrl) {
+        apiUrlConfig = cachedUrl;
+      }
+    }
+  } catch (err) {
+    // 忽略错误，API URL 需要从主线程接收
+  }
+}
+
+// 动态获取 VAPID public key
+async function getVapidPublicKey() {
+  try {
+    // 如果 API URL 还没初始化，尝试从缓存读取
+    if (!apiUrlConfig) {
+      await initializeApiUrl();
+    }
+
+    // 如果仍然没有 API URL，抛出错误
+    if (!apiUrlConfig) {
+      throw new Error(
+        'API URL not configured. Please ensure Service Worker is properly initialized.'
+      );
+    }
+
+    // 尝试从缓存获取 VAPID key
+    const cache = await caches.open('vapid-cache');
+    const cached = await cache.match('/vapid-key');
+    if (cached) {
+      const cachedData = await cached.json();
+      // 缓存 5 分钟，如果没过期则使用缓存
+      if (cachedData.timestamp && Date.now() - cachedData.timestamp < 5 * 60 * 1000) {
+        return cachedData.key;
+      }
+    }
+
+    // 从后端 API 获取最新的 VAPID key
+    const apiUrl = getApiUrl();
+    const response = await fetch(`${apiUrl}/site/status`);
+    if (!response.ok) {
+      throw new Error('Failed to fetch site status');
+    }
+    const data = await response.json();
+    const vapidKey = data?.data?.notification?.vapidPublicKey;
+
+    if (!vapidKey) {
+      // 如果没有获取到，使用环境变量或默认值作为后备
+      return (
+        (import.meta && import.meta.env && import.meta.env.VITE_VAPID_PUBLIC) ||
+        'BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g'
+      );
+    }
+
+    // 缓存获取到的 key
+    const cacheData = {
+      key: vapidKey,
+      timestamp: Date.now(),
+    };
+    await cache.put('/vapid-key', new Response(JSON.stringify(cacheData)));
+
+    return vapidKey;
+  } catch (error) {
+    console.error('Failed to get VAPID key:', error);
+    // 如果获取失败，使用环境变量或默认值作为后备
+    return (
+      (import.meta && import.meta.env && import.meta.env.VITE_VAPID_PUBLIC) ||
+      'BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g'
+    );
+  }
+}
 
 const urlBase64ToUint8Array = (base64String) => {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -68,22 +155,40 @@ self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
     (async () => {
       try {
+        // 动态获取最新的 VAPID key
+        const vapidKey = await getVapidPublicKey();
         const newSub = await self.registration.pushManager.subscribe({
           userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID),
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
         const allClients = await self.clients.matchAll({ includeUncontrolled: true });
         for (const client of allClients) {
           client.postMessage({ method: 'pushsubscriptionchange', payload: JSON.stringify(newSub) });
         }
-      } catch (err) {}
+      } catch (err) {
+        console.error('Push subscription change error:', err);
+      }
     })()
   );
 });
 
 self.addEventListener('message', async (event) => {
-  const { method } = event.data || {};
+  const { method, apiUrl } = event.data || {};
   switch (method) {
+    case 'setApiUrl': {
+      // 从主线程接收 API URL 配置
+      if (apiUrl) {
+        apiUrlConfig = apiUrl;
+        // 保存到缓存，以便后续使用
+        try {
+          const cache = await caches.open('api-config-cache');
+          await cache.put('/api-url', new Response(apiUrl));
+        } catch (err) {
+          console.error('Failed to cache API URL:', err);
+        }
+      }
+      break;
+    }
     case 'subNotice': {
       // 为避免 applicationServerKey 变更导致 InvalidStateError，先取消旧订阅再重订阅
       try {
@@ -94,20 +199,39 @@ self.addEventListener('message', async (event) => {
           } catch {}
         }
       } catch {}
-      const subscription = await self.registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID),
-      });
-      if (event.source) {
-        event.source.postMessage({
-          method: 'subNoticeResponse',
-          payload: JSON.stringify(subscription),
+
+      try {
+        // 动态获取最新的 VAPID key
+        const vapidKey = await getVapidPublicKey();
+        const subscription = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey),
         });
-      } else if (event.ports && event.ports[0]) {
-        event.ports[0].postMessage({
-          method: 'subNoticeResponse',
-          payload: JSON.stringify(subscription),
-        });
+        if (event.source) {
+          event.source.postMessage({
+            method: 'subNoticeResponse',
+            payload: JSON.stringify(subscription),
+          });
+        } else if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({
+            method: 'subNoticeResponse',
+            payload: JSON.stringify(subscription),
+          });
+        }
+      } catch (err) {
+        console.error('Subscription error:', err);
+        // 如果订阅失败，通知客户端
+        if (event.source) {
+          event.source.postMessage({
+            method: 'subNoticeResponse',
+            error: 'Failed to subscribe: ' + (err.message || String(err)),
+          });
+        } else if (event.ports && event.ports[0]) {
+          event.ports[0].postMessage({
+            method: 'subNoticeResponse',
+            error: 'Failed to subscribe: ' + (err.message || String(err)),
+          });
+        }
       }
       break;
     }
@@ -135,6 +259,7 @@ self.addEventListener('push', (e) => {
       console.info('Error parsing notification data:', error);
       notice = { title: 'Rote Notification', body: e.data ? e.data.text() : '', tag: 'default' };
     }
+
     const notification = {
       body: notice.body || '未设置消息内容',
       icon: notice.icon || undefined,

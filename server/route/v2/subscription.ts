@@ -1,8 +1,6 @@
 import { User } from '@prisma/client';
 import express from 'express';
-import webpush from 'web-push';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { getGlobalConfig } from '../../utils/config';
 import {
   addSubScriptionToUser,
   deleteSubScription,
@@ -13,6 +11,7 @@ import {
 } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse } from '../../utils/main';
+import webpush from '../../utils/webpush';
 
 // 订阅相关路由
 const subscriptionsRouter = express.Router();
@@ -84,22 +83,10 @@ subscriptionsRouter.post(
   asyncHandler(async (req, res) => {
     const user = req.user as User;
 
-    // 动态获取 VAPID 配置
-    const notificationConfig = getGlobalConfig('notification') as any;
-    if (
-      !notificationConfig ||
-      !notificationConfig.vapidPublicKey ||
-      !notificationConfig.vapidPrivateKey
-    ) {
-      throw new Error('Valid keys not found');
+    // 检查 webpush 是否已正确配置
+    if (!webpush) {
+      throw new Error('Web push service not configured. Please check VAPID keys.');
     }
-
-    // 设置 VAPID 详情
-    webpush.setVapidDetails(
-      'mailto:rabit.hua@gmail.com',
-      notificationConfig.vapidPublicKey,
-      notificationConfig.vapidPrivateKey
-    );
 
     // 获取用户所有订阅
     const subscriptions = await findSubScriptionToUserByUserId(user.id);

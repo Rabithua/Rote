@@ -1,4 +1,5 @@
 import express from 'express';
+import { NotificationConfig } from '../../types/config';
 import { getConfig, isInitialized } from '../../utils/config';
 import { getSiteMapData } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
@@ -28,6 +29,7 @@ siteRouter.get(
       // 获取站点配置
       const siteConfig = await getConfig('site');
       const systemConfig = await getConfig('system');
+      const notificationConfig = await getConfig<NotificationConfig>('notification');
 
       // 检查数据库连接状态
       let databaseConnected = false;
@@ -36,26 +38,6 @@ siteRouter.get(
         databaseConnected = true;
       } catch (_error) {
         // 数据库连接失败
-      }
-
-      // 获取基本统计信息（如果系统已初始化）
-      let stats = null;
-      if (initialized && databaseConnected) {
-        try {
-          const [userCount, roteCount, attachmentCount] = await Promise.all([
-            prisma.user.count(),
-            prisma.rote.count(),
-            prisma.attachment.count(),
-          ]);
-
-          stats = {
-            users: userCount,
-            rotes: roteCount,
-            attachments: attachmentCount,
-          };
-        } catch (_error) {
-          // 统计信息获取失败，不影响基本状态
-        }
       }
 
       // 构建响应数据
@@ -78,8 +60,10 @@ siteRouter.get(
           lastMigration: (systemConfig as any)?.lastMigrationVersion || 'unknown',
         },
 
-        // 统计信息（如果可用）
-        stats,
+        // 通知配置（仅返回 public key）
+        notification: {
+          vapidPublicKey: notificationConfig?.vapidPublicKey || null,
+        },
 
         // 时间戳
         timestamp: new Date().toISOString(),
