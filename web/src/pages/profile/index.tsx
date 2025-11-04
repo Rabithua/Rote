@@ -315,7 +315,7 @@ function ProfilePage() {
             </div>
             <div className="text-info text-base">
               {t('registerTime')}
-              {moment.utc(profile?.createdAt).format('YYYY/MM/DD HH:mm:ss')}
+              {moment(profile?.createdAt).local().format('YYYY/MM/DD HH:mm:ss')}
             </div>
           </div>
         </div>

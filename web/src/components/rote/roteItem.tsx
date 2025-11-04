@@ -110,7 +110,7 @@ function RoteItem({
                 </span>
               </TooltipTrigger>
               <TooltipContent sideOffset={4}>
-                {moment.utc(rote.createdAt).format('YYYY/MM/DD HH:mm:ss')}
+                {moment(rote.createdAt).local().format('YYYY/MM/DD HH:mm:ss')}
               </TooltipContent>
             </Tooltip>
           </span>
@@ -149,7 +149,7 @@ function RoteItem({
                   <Edit className="size-4 cursor-pointer rounded-md" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>
-                  {moment.utc(rote.updatedAt).format('YYYY/MM/DD HH:mm:ss')}
+                  {moment(rote.updatedAt).local().format('YYYY/MM/DD HH:mm:ss')}
                 </TooltipContent>
               </Tooltip>
             )}
