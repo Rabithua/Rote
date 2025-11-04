@@ -9,6 +9,7 @@ export interface SiteConfig {
   defaultLanguage?: string;
   apiUrl?: string; // 动态 API URL
   frontendUrl?: string; // 动态前端 URL
+  allowedOrigins?: string[]; // CORS 允许的 origin 列表，为空或不设置则允许所有
 }
 
 export interface StorageConfig {
