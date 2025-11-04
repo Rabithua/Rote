@@ -104,7 +104,7 @@ export default function ServiceWorker() {
   }, []);
 
   return (
-    <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
+    <div className="noScrollBar relative w-full overflow-x-hidden overflow-y-scroll p-4 sm:aspect-square">
       <div className="text-2xl font-semibold">
         {t('title')} <br />
         <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
