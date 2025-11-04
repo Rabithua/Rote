@@ -224,9 +224,12 @@ subscriptionsRouter.post(
         await updateSubScription(subscription.id, subscription.userid, { status: 'inactive' });
         throw new Error('Subscription expired and has been marked as inactive');
       } else if (error.statusCode === 403) {
-        // 403 Forbidden - 认证失败或VAPID密钥问题，标记为inactive
+        // 403 Forbidden - VAPID 密钥不匹配，需要重新订阅
+        // 这通常发生在 VAPID 密钥被更改后，旧的订阅无法使用新的密钥发送通知
         await updateSubScription(subscription.id, subscription.userid, { status: 'inactive' });
-        throw new Error('Push authentication failed, subscription has been marked as inactive');
+        throw new Error(
+          'VAPID key mismatch: The subscription was created with a different VAPID key. Please re-subscribe to receive notifications.'
+        );
       } else if (error.statusCode === 413) {
         // 413 Payload Too Large
         throw new Error('Message payload too large');

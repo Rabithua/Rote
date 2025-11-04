@@ -117,11 +117,9 @@ async function getVapidPublicKey() {
     const vapidKey = data?.data?.notification?.vapidPublicKey;
 
     if (!vapidKey) {
-      // 如果没有获取到，使用环境变量或默认值作为后备
-      return (
-        (import.meta && import.meta.env && import.meta.env.VITE_VAPID_PUBLIC) ||
-        'BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g'
-      );
+      // 如果没有获取到，使用默认值作为后备
+      // 注意：Service Worker 中无法使用 import.meta，所以只能使用默认值
+      return null;
     }
 
     // 缓存获取到的 key
@@ -134,11 +132,9 @@ async function getVapidPublicKey() {
     return vapidKey;
   } catch (error) {
     console.error('Failed to get VAPID key:', error);
-    // 如果获取失败，使用环境变量或默认值作为后备
-    return (
-      (import.meta && import.meta.env && import.meta.env.VITE_VAPID_PUBLIC) ||
-      'BDYfGAEoJIRguFfy8ZX4Gw1YdFgbTv-C8TKGpJ-CXJX-fPUFWVjAmPKwwWikLAmvYDh5ht1Mi8ac_qFFrc8Oz4g'
-    );
+    // 如果获取失败，使用默认值作为后备
+    // 注意：Service Worker 中无法使用 import.meta，所以只能使用默认值
+    return null;
   }
 }
 
