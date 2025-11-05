@@ -22,9 +22,20 @@ import {
   setConfig,
 } from '../../utils/config';
 import { ConfigTester } from '../../utils/configTester';
+import {
+  checkDatabaseConnection,
+  createAdminUser,
+  deleteUserById,
+  findUserByUsernameOrEmail,
+  getLatestMigrationVersion,
+  getRoleStats,
+  getUserByIdForAdmin,
+  hasAdminUser,
+  listUsers,
+  updateUserRole,
+} from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse } from '../../utils/main';
-import prisma from '../../utils/prisma';
 
 const adminRouter = express.Router();
 
@@ -40,24 +51,10 @@ adminRouter.get(
       const missingRequiredConfigs = await getMissingRequiredConfigs();
 
       // 检查数据库连接
-      let databaseConnected = false;
-      try {
-        await prisma.$queryRaw`SELECT 1`;
-        databaseConnected = true;
-      } catch (error) {
-        console.error('数据库连接检查失败:', error);
-      }
+      const databaseConnected = await checkDatabaseConnection();
 
       // 检查是否有管理员用户
-      let hasAdmin = false;
-      try {
-        const adminCount = await prisma.user.count({
-          where: { role: { in: ['admin', 'super_admin'] } },
-        });
-        hasAdmin = adminCount > 0;
-      } catch (error) {
-        console.error('检查管理员用户失败:', error);
-      }
+      const hasAdmin = await hasAdminUser();
 
       // 生成警告信息
       const warnings: string[] = [];
@@ -152,10 +149,9 @@ adminRouter.post(
       }
 
       // 检查管理员用户是否已存在
-      const existingUser = await prisma.user.findFirst({
-        where: {
-          OR: [{ username: setupData.admin.username }, { email: setupData.admin.email }],
-        },
+      const existingUser = await findUserByUsernameOrEmail({
+        username: setupData.admin.username,
+        email: setupData.admin.email,
       });
 
       if (existingUser) {
@@ -190,48 +186,16 @@ adminRouter.post(
       }
 
       // 5. 创建管理员用户（在事务中）
-      const adminUser = await prisma.$transaction(async (tx) => {
-        const crypto = await import('crypto');
-        const salt = crypto.randomBytes(16);
-        const passwordhash = crypto.pbkdf2Sync(
-          setupData.admin.password,
-          salt,
-          310000,
-          32,
-          'sha256'
-        );
-
-        return await tx.user.create({
-          data: {
-            username: setupData.admin.username,
-            email: setupData.admin.email,
-            passwordhash,
-            salt,
-            nickname: setupData.admin.nickname || setupData.admin.username,
-            role: 'super_admin',
-          },
-          select: {
-            id: true,
-            username: true,
-            email: true,
-            role: true,
-          },
-        });
+      const adminUser = await createAdminUser({
+        username: setupData.admin.username,
+        email: setupData.admin.email,
+        password: setupData.admin.password,
+        nickname: setupData.admin.nickname,
       });
 
       // 6. 标记系统为已初始化
       // 获取当前迁移版本
-      let migrationVersion = 'unknown';
-      try {
-        const migrationResult = (await prisma.$queryRaw`
-          SELECT migration_name FROM _prisma_migrations 
-          ORDER BY finished_at DESC 
-          LIMIT 1
-        `) as any[];
-        migrationVersion = migrationResult[0]?.migration_name || 'unknown';
-      } catch (error) {
-        console.log('⚠️  Could not get migration version, using default');
-      }
+      const migrationVersion = await getLatestMigrationVersion();
 
       await setConfig(
         'system',
@@ -526,6 +490,8 @@ adminRouter.post(
 // 刷新配置缓存（测试专用）
 adminRouter.post(
   '/refresh-cache',
+  authenticateJWT,
+  requireAdmin,
   asyncHandler(async (req, res) => {
     try {
       await refreshConfigCache();
@@ -544,38 +510,7 @@ adminRouter.get(
   requireAdmin,
   asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, role, search } = req.query as any;
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const where: any = {};
-    if (role) {
-      where.role = role;
-    }
-    if (search) {
-      where.OR = [
-        { username: { contains: search as string } },
-        { email: { contains: search as string } },
-        { nickname: { contains: search as string } },
-      ];
-    }
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip,
-        take: Number(limit),
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          nickname: true,
-          role: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.user.count({ where }),
-    ]);
+    const { users, total } = await listUsers({ page, limit, role, search });
 
     res.status(200).json(
       createResponse({
@@ -604,17 +539,7 @@ adminRouter.put(
       throw new Error('Invalid role');
     }
 
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: { role },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        updatedAt: true,
-      },
-    });
+    const user = await updateUserRole(userId, role);
 
     res.status(200).json(createResponse(user, 'User role updated successfully'));
   })
@@ -628,26 +553,7 @@ adminRouter.get(
   asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        nickname: true,
-        description: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            rotes: true,
-            attachments: true,
-            openkey: true,
-          },
-        },
-      },
-    });
+    const user = await getUserByIdForAdmin(userId);
 
     if (!user) {
       throw new Error('User not found');
@@ -665,9 +571,7 @@ adminRouter.delete(
   asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    await prisma.user.delete({
-      where: { id: userId },
-    });
+    await deleteUserById(userId);
 
     res.status(200).json(createResponse(null, 'User deleted successfully'));
   })
@@ -679,19 +583,7 @@ adminRouter.get(
   authenticateJWT,
   requireAdmin,
   asyncHandler(async (_req, res) => {
-    const roleStats = await prisma.user.groupBy({
-      by: ['role'],
-      _count: { role: true },
-    });
-
-    const stats = roleStats.reduce(
-      (acc: Record<string, number>, stat: any) => {
-        acc[stat.role] = stat._count.role;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
+    const stats = await getRoleStats();
     res.status(200).json(createResponse(stats));
   })
 );

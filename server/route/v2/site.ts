@@ -1,10 +1,9 @@
 import express from 'express';
 import { NotificationConfig } from '../../types/config';
 import { getConfig, isInitialized } from '../../utils/config';
-import { getSiteMapData } from '../../utils/dbMethods';
+import { checkDatabaseConnection, getSiteMapData } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse } from '../../utils/main';
-import prisma from '../../utils/prisma';
 
 // 站点数据相关路由
 const siteRouter = express.Router();
@@ -32,13 +31,7 @@ siteRouter.get(
       const notificationConfig = await getConfig<NotificationConfig>('notification');
 
       // 检查数据库连接状态
-      let databaseConnected = false;
-      try {
-        await prisma.$queryRaw`SELECT 1`;
-        databaseConnected = true;
-      } catch (_error) {
-        // 数据库连接失败
-      }
+      const databaseConnected = await checkDatabaseConnection();
 
       // 构建响应数据
       const status = {
