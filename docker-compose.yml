@@ -18,15 +18,14 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
-      - REACT_APP_ALLOW_UPLOAD_FILE=${REACT_APP_ALLOW_UPLOAD_FILE:-true}
-      - REACT_APP_BASEURL_PRD=${REACT_APP_BASEURL_PRD:-http://localhost:3000}
+      # 设置 API 基础 URL ，如果后端启用了反向代理，可以设置为反向代理的URL
+      - VITE_API_BASE=${VITE_API_BASE:-http://<你的服务器IP>:3000}
     depends_on:
       - rote-backend
     restart: unless-stopped
 
   postgres:
-    image: postgres:15
+    image: postgres:17
     container_name: rote-postgres
     restart: unless-stopped
     ports:

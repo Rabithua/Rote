@@ -7,8 +7,8 @@ WORKDIR /app
 ENV BUN_INSTALL_CACHE=0
 ENV BUN_CONFIG_REGISTRY=https://registry.npmjs.org
 
-# 复制依赖文件并安装依赖
-COPY package.json bun.lock ./
+# 复制依赖文件并安装依赖（兼容 bun.lock 或 bun.lockb）
+COPY package.json bun.lock* ./
 RUN bun install
 
 # 复制全部前端代码

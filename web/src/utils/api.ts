@@ -5,9 +5,7 @@ import { authService } from './auth';
 const API_PATH = '/v2/api';
 
 export const API_POINT =
-  process.env.NODE_ENV === 'production'
-    ? process.env.REACT_APP_BASEURL_PRD
-    : 'http://localhost:3000';
+  process.env.NODE_ENV === 'production' ? process.env.VITE_API_BASE : 'http://localhost:3000';
 
 export const API_URL = `${API_POINT}${API_PATH}`;
 
