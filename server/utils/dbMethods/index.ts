@@ -1,4 +1,5 @@
 // 统一导出所有数据库操作方法
+export * from './admin';
 export * from './apikey';
 export * from './attachment';
 export * from './auth';
