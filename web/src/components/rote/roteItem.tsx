@@ -119,7 +119,7 @@ function RoteItem({
             {rote.pin && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <PinIcon className="size-4 cursor-pointer rounded-md" />
+                  <PinIcon className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>已置顶</TooltipContent>
               </Tooltip>
@@ -128,7 +128,7 @@ function RoteItem({
             {rote.state === 'public' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Globe2Icon className="size-4 cursor-pointer rounded-md" />
+                  <Globe2Icon className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>公开</TooltipContent>
               </Tooltip>
@@ -137,7 +137,7 @@ function RoteItem({
             {rote.archived && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Archive className="size-4 cursor-pointer rounded-md" />
+                  <Archive className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>已归档</TooltipContent>
               </Tooltip>
@@ -146,7 +146,7 @@ function RoteItem({
             {rote.updatedAt !== rote.createdAt && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Edit className="size-4 cursor-pointer rounded-md" />
+                  <Edit className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>
                   {moment(rote.updatedAt).local().format('YYYY/MM/DD HH:mm:ss')}
@@ -158,7 +158,7 @@ function RoteItem({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <LinkIcon
-                    className="size-4 cursor-pointer rounded-md"
+                    className="size-4 cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/rote/${rote.id}`);
                       toast.success('已复制链接');
