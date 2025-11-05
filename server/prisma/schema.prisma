@@ -82,6 +82,7 @@ model Rote {
   updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
   attachments Attachment[]
   reactions   Reaction[]
+  changes     RoteChange[]
   author      User         @relation(fields: [authorid], references: [id], onDelete: Cascade)
 
   @@index([authorid, state])
@@ -145,4 +146,21 @@ model Setting {
   @@index([isInitialized])
   @@index([isSystem])
   @@map("settings")
+}
+
+model RoteChange {
+  id        String   @id @default(uuid()) @db.Uuid
+  originid  String   @db.Uuid // 保留原始笔记ID用于iOS客户端同步，即使笔记被删除也保留
+  roteid    String?  @db.Uuid // 外键关联到Rote表，删除笔记时设置为null，不影响originid
+  action    String   @db.VarChar(50) @default("CREATE") // CREATE, UPDATE, DELETE
+  userid    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  rote      Rote?    @relation(fields: [roteid], references: [id], onDelete: SetNull)
+
+  @@index([originid, createdAt])
+  @@index([originid, action])
+  @@index([roteid, createdAt])
+  @@index([userid])
+  @@index([roteid, action])
+  @@map("rote_changes")
 }

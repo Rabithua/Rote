@@ -8,6 +8,7 @@ import adminRouter from './admin';
 import apiKeysRouter from './apikey';
 import attachmentsRouter from './attachment';
 import authRouter from './auth';
+import changeRouter from './change';
 import notesRouter from './note';
 import notificationsRouter from './notification';
 import openKeyRouter from './openKeyRouter';
@@ -120,6 +121,7 @@ router.use('/attachments', attachmentsRouter);
 router.use('/site', siteRouter);
 router.use('/openkey', openKeyRouter);
 router.use('/admin', adminRouter);
+router.use('/changes', changeRouter);
 
 // 全局错误处理
 router.use(errorHandler);
