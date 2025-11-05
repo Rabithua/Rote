@@ -1,5 +1,5 @@
 import express from 'express';
-import { NotificationConfig } from '../../types/config';
+import { NotificationConfig, StorageConfig } from '../../types/config';
 import { getConfig, isInitialized } from '../../utils/config';
 import { checkDatabaseConnection, getSiteMapData } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
@@ -29,9 +29,19 @@ siteRouter.get(
       const siteConfig = await getConfig('site');
       const systemConfig = await getConfig('system');
       const notificationConfig = await getConfig<NotificationConfig>('notification');
+      const storageConfig = (await getConfig('storage')) as Partial<StorageConfig> | null;
 
       // 检查数据库连接状态
       const databaseConnected = await checkDatabaseConnection();
+
+      // 计算 R2 存储是否可用
+      const r2Configured = Boolean(
+        storageConfig &&
+          storageConfig.endpoint &&
+          storageConfig.bucket &&
+          storageConfig.accessKeyId &&
+          storageConfig.secretAccessKey
+      );
 
       // 构建响应数据
       const status = {
@@ -56,6 +66,12 @@ siteRouter.get(
         // 通知配置（仅返回 public key）
         notification: {
           vapidPublicKey: notificationConfig?.vapidPublicKey || null,
+        },
+
+        // 存储配置（用于前端判断是否启用附件上传）
+        storage: {
+          r2Configured,
+          urlPrefix: r2Configured ? storageConfig?.urlPrefix || '' : '',
         },
 
         // 时间戳

@@ -7,6 +7,7 @@ import type { Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
 import { finalize as finalizeUpload, presign, uploadToSignedUrl } from '@/utils/directUpload';
 // 压缩与并发工具
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { maybeCompressToWebp, qualityForSize, runConcurrency } from '@/utils/uploadHelpers';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import debounce from 'lodash/debounce';
@@ -31,6 +32,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [submiting, setSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [rote, setRote] = useAtom(roteAtom);
+  const { data: siteStatus } = useSiteStatus();
+  const canUpload = !!siteStatus?.storage?.r2Configured;
 
   const [localContent, setLocalContent] = useState(rote.content);
 
@@ -409,7 +412,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         rows={3}
       />
 
-      {process.env.REACT_APP_ALLOW_UPLOAD_FILE === 'true' && (
+      {canUpload && (
         <AttachmentList
           attachments={rote.attachments}
           uploadingFiles={uploadingFiles}

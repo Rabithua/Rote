@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadProfileAtom, patchProfileAtom, profileAtom } from '@/state/profile';
 import type { OpenKeys } from '@/types/main';
@@ -33,6 +34,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 function ProfilePage() {
+  const { data: siteStatus } = useSiteStatus();
+  const canUpload = !!siteStatus?.storage?.r2Configured;
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const inputAvatarRef = useRef<HTMLInputElement>(null);
   const inputCoverRef = useRef<HTMLInputElement>(null);
@@ -58,10 +61,15 @@ function ProfilePage() {
     isLoading: openKeyLoading,
   } = useAPIGet<OpenKeys>('openKeys', () => get('/api-keys').then((res) => res.data));
 
-  const [editProfile, setEditProfile] = useState<any>(profile);
+  const [editProfile, setEditProfile] = useState<any>(profile ?? {});
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
+
+  // profile 加载后，同步到可编辑状态，避免初次渲染访问 undefined 属性
+  useEffect(() => {
+    if (profile) setEditProfile(profile);
+  }, [profile]);
 
   function generateOpenKeyFun() {
     const toastId = toast.loading(t('creating'));
@@ -80,6 +88,7 @@ function ProfilePage() {
   }
 
   function handleFileChange(event: any) {
+    if (!canUpload) return;
     const selectedFile = event.target.files[0];
     setEditProfile({
       ...editProfile,
@@ -193,6 +202,7 @@ function ProfilePage() {
   }
 
   function changeCover(event: any) {
+    if (!canUpload) return;
     setCoverChangeing(true);
     const selectedFile = event.target.files[0];
 
@@ -200,9 +210,13 @@ function ProfilePage() {
       const formData = new FormData();
       formData.append('images', selectedFile);
 
-      post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } }).then(
-        (res) => {
-          const url = res.data.data[0].compressUrl || res.data.data[0].url;
+      post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+        .then((res) => {
+          const first = Array.isArray(res.data) ? res.data[0] : undefined;
+          if (!first) {
+            throw new Error('Empty upload result');
+          }
+          const url = first.compressUrl || first.url;
 
           patchProfile({
             cover: url,
@@ -213,8 +227,11 @@ function ProfilePage() {
             .catch(() => {
               setCoverChangeing(false);
             });
-        }
-      );
+        })
+        .catch(() => {
+          setCoverChangeing(false);
+          toast.error(t('uploadFailed'));
+        });
     }
   }
 
@@ -260,8 +277,11 @@ function ProfilePage() {
               alt=""
             />
             <div
-              className="absolute right-3 bottom-1 cursor-pointer rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl"
+              className={`absolute right-3 bottom-1 rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl ${
+                canUpload ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+              }`}
               onClick={() => {
+                if (!canUpload) return;
                 inputCoverRef.current?.click();
               }}
             >
@@ -272,7 +292,7 @@ function ProfilePage() {
                 className="hidden"
                 ref={inputCoverRef}
                 onChange={changeCover}
-                disabled={coverChangeing}
+                disabled={coverChangeing || !canUpload}
                 title="Upload cover image"
               />
               <LoaderPinwheel className={`size-4 ${coverChangeing && 'animate-spin'}`} />
@@ -282,6 +302,7 @@ function ProfilePage() {
             <Avatar
               className="text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
               onClick={() => {
+                if (!canUpload) return;
                 (inputAvatarRef.current as HTMLInputElement | null)?.click();
               }}
             >
@@ -304,7 +325,7 @@ function ProfilePage() {
             </Button>
           </div>
           <div className="mx-4 flex flex-col gap-1">
-            <Link to={`/${profile?.username}`}>
+            <Link className="w-fit" to={`/${profile?.username}`}>
               <h1 className="w-fit text-2xl font-semibold hover:underline">{profile?.nickname}</h1>
               <h2 className="text-info w-fit text-base hover:underline">@{profile?.username}</h2>
             </Link>
@@ -362,16 +383,18 @@ function ProfilePage() {
                   className="hidden"
                   ref={inputAvatarRef}
                   onChange={handleFileChange}
+                  disabled={!canUpload}
                   title="Upload avatar image"
                 />
                 {/* 编辑弹窗内头像同理 */}
                 <Avatar
                   className="text-primary mx-auto my-2 block size-20 shrink-0 cursor-pointer bg-[#00000010]"
                   onClick={() => {
+                    if (!canUpload) return;
                     (inputAvatarRef.current as HTMLInputElement | null)?.click();
                   }}
                 >
-                  {editProfile.avatar ? (
+                  {editProfile?.avatar ? (
                     <AvatarImage src={editProfile.avatar} />
                   ) : (
                     <AvatarFallback className="bg-muted/80">
@@ -384,24 +407,24 @@ function ProfilePage() {
                   disabled
                   className="w-full rounded-md font-mono text-lg"
                   maxLength={20}
-                  value={editProfile.email}
+                  value={editProfile?.email || ''}
                 />
                 <div className="mt-2 text-base font-semibold">{t('username')}</div>
                 <Input
                   disabled
                   className="w-full rounded-md font-mono text-lg"
                   maxLength={20}
-                  value={editProfile.username}
+                  value={editProfile?.username || ''}
                 />
                 <div className="mt-2 text-base font-semibold">{t('nickname')}</div>
                 <Input
                   placeholder={t('enterNickname')}
                   className="w-full rounded-md font-mono text-lg"
                   maxLength={20}
-                  value={editProfile.nickname}
+                  value={editProfile?.nickname || ''}
                   onInput={(e: React.FormEvent<HTMLInputElement>) => {
                     setEditProfile({
-                      ...editProfile,
+                      ...((editProfile as any) || {}),
                       nickname: (e.target as HTMLInputElement).value,
                     });
                   }}
@@ -411,11 +434,11 @@ function ProfilePage() {
                   placeholder={t('enterDescription')}
                   className="w-full rounded-md text-lg"
                   maxLength={300}
-                  value={editProfile.description}
+                  value={editProfile?.description || ''}
                   style={{ height: 120, resize: 'none' }}
                   onInput={(e: React.FormEvent<HTMLTextAreaElement>) => {
                     setEditProfile({
-                      ...editProfile,
+                      ...((editProfile as any) || {}),
                       description: (e.target as HTMLTextAreaElement).value,
                     });
                   }}
@@ -442,7 +465,7 @@ function ProfilePage() {
             </DialogHeader>
             <div className="relative h-[300px] w-full">
               <Cropper
-                image={editProfile.avatar_file && URL.createObjectURL(editProfile.avatar_file)}
+                image={editProfile?.avatar_file && URL.createObjectURL(editProfile.avatar_file)}
                 crop={crop}
                 zoom={zoom}
                 aspect={1}
