@@ -1,21 +1,20 @@
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import LayoutDashboard from '@/layout/dashboard';
 import { isTokenValid } from '@/utils/main';
-import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
 
-const Landing = lazy(() => import('@/pages/landing'));
-const Login = lazy(() => import('@/pages/login'));
-const HomePage = lazy(() => import('@/pages/home'));
-const MineFilter = lazy(() => import('@/pages/filter'));
-const ProfilePage = lazy(() => import('@/pages/profile/index'));
-const ErrorPage = lazy(() => import('@/pages/404'));
-const ExplorePage = lazy(() => import('@/pages/explore'));
-const ArchivedPage = lazy(() => import('@/pages/archived'));
-const UserPage = lazy(() => import('@/pages/user/:username'));
-const SingleRotePage = lazy(() => import('@/pages/rote/:roteid'));
-const ExperimentPage = lazy(() => import('@/pages/experiment'));
+import ErrorPage from '@/pages/404';
+import ArchivedPage from '@/pages/archived';
+import ExperimentPage from '@/pages/experiment';
+import ExplorePage from '@/pages/explore';
+import MineFilter from '@/pages/filter';
+import HomePage from '@/pages/home';
+import Landing from '@/pages/landing';
+import Login from '@/pages/login';
+import ProfilePage from '@/pages/profile';
+import SingleRotePage from '@/pages/rote/:roteid';
+import SetupPage from '@/pages/setup';
+import UserPage from '@/pages/user/:username';
 
 export default function GlobalRouterProvider() {
   const router = createBrowserRouter([
@@ -32,6 +31,11 @@ export default function GlobalRouterProvider() {
     {
       path: '404',
       element: <ErrorPage />,
+    },
+    {
+      path: 'setup',
+      element: <SetupPage />,
+      errorElement: <ErrorPage />,
     },
     {
       path: '',
@@ -116,9 +120,5 @@ export default function GlobalRouterProvider() {
     },
   ]);
 
-  return (
-    <Suspense fallback={<LoadingPlaceholder className="h-dvh w-screen" />}>
-      <RouterProvider router={router} />
-    </Suspense>
-  );
+  return <RouterProvider router={router} />;
 }

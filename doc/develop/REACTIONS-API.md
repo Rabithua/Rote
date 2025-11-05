@@ -2,12 +2,12 @@
 
 ## 概述
 
-反应系统允许用户（包括已登录用户和匿名访客）对笔记添加emoji表情反应。系统支持多种反应类型，同一用户可以对同一笔记添加多种不同的反应。
+反应系统允许用户（包括已登录用户和匿名访客）对笔记添加 emoji 表情反应。系统支持多种反应类型，同一用户可以对同一笔记添加多种不同的反应。
 
 ## 特性
 
 - ✅ **多用户类型支持**: 已登录用户和匿名访客
-- ✅ **任意emoji反应**: 支持任何Unicode emoji字符
+- ✅ **任意 emoji 反应**: 支持任何 Unicode emoji 字符
 - ✅ **多重反应**: 同一用户可添加多种不同反应
 - ✅ **设备指纹识别**: 使用设备指纹技术识别匿名访客
 - ✅ **实时更新**: 反应数据实时更新到笔记详情
@@ -24,7 +24,7 @@
 ```typescript
 interface AddReactionRequest {
   type: string; // emoji反应类型（如：👍、❤️、😊）
-  roteid: string; // 笔记ID（24位MongoDB ObjectId）
+  roteid: string; // 笔记ID（UUID）
   visitorId?: string; // 访客设备指纹ID（匿名用户必需）
   visitorInfo?: {
     // 访客信息（可选）
@@ -50,7 +50,7 @@ interface AddReactionRequest {
   "data": {
     "id": "64f1a2b3c4d5e6f7g8h9i0j1",
     "type": "👍",
-    "roteid": "507f1f77bcf86cd799439011",
+    "roteid": "a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d",
     "userid": "60f1a2b3c4d5e6f7g8h9i0j1",
     "visitorId": null,
     "createdAt": "2025-06-08T10:30:00.000Z",
@@ -65,12 +65,12 @@ interface AddReactionRequest {
 
 **路径参数**:
 
-- `roteid`: 笔记ID
-- `type`: 反应类型（emoji字符）
+- `roteid`: 笔记 ID
+- `type`: 反应类型（emoji 字符）
 
 **查询参数**:
 
-- `visitorId`: 访客设备指纹ID（匿名用户必需）
+- `visitorId`: 访客设备指纹 ID（匿名用户必需）
 
 **响应示例**:
 
@@ -94,7 +94,7 @@ curl -X POST '/api/v2/reactions' \
   -H 'Cookie: connect.sid=...' \
   -d '{
     "type": "👍",
-    "roteid": "507f1f77bcf86cd799439011",
+    "roteid": "a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d",
     "metadata": {
       "source": "web"
     }
@@ -125,11 +125,11 @@ curl -X POST '/api/v2/reactions' \
 
 ```bash
 # 已登录用户
-curl -X DELETE '/api/v2/reactions/507f1f77bcf86cd799439011/👍' \
+curl -X DELETE '/api/v2/reactions/a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d/👍' \
   -H 'Cookie: connect.sid=...'
 
 # 匿名访客
-curl -X DELETE '/api/v2/reactions/507f1f77bcf86cd799439011/❤️?visitorId=fp_1234567890abcdef'
+curl -X DELETE '/api/v2/reactions/a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d/❤️?visitorId=fp_1234567890abcdef'
 ```
 
 ## 数据模型
@@ -174,21 +174,21 @@ interface RoteWithReactions {
 ```typescript
 // 示例设备指纹生成（前端）
 function generateDeviceFingerprint(): string {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.textBaseline = 'top';
-  ctx.font = '14px Arial';
-  ctx.fillText('Device fingerprint', 2, 2);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  ctx.textBaseline = "top";
+  ctx.font = "14px Arial";
+  ctx.fillText("Device fingerprint", 2, 2);
 
   const fingerprint = [
     navigator.userAgent,
     navigator.language,
-    screen.width + 'x' + screen.height,
+    screen.width + "x" + screen.height,
     new Date().getTimezoneOffset(),
     canvas.toDataURL(),
-  ].join('|');
+  ].join("|");
 
-  return 'fp_' + btoa(fingerprint).slice(0, 16);
+  return "fp_" + btoa(fingerprint).slice(0, 16);
 }
 ```
 
@@ -235,12 +235,12 @@ function generateDeviceFingerprint(): string {
 
 ### 常见错误
 
-| 错误码 | 描述                  | 解决方案                 |
-| ------ | --------------------- | ------------------------ |
-| 400    | 缺少必需参数          | 检查请求参数             |
-| 400    | 无效的笔记ID格式      | 确保roteid为24位ObjectId |
-| 404    | 笔记不存在            | 检查笔记ID是否正确       |
-| 400    | 匿名用户缺少visitorId | 提供设备指纹ID           |
+| 错误码 | 描述                   | 解决方案                |
+| ------ | ---------------------- | ----------------------- |
+| 400    | 缺少必需参数           | 检查请求参数            |
+| 400    | 无效的笔记 ID 格式     | 确保 roteid 为有效 UUID |
+| 404    | 笔记不存在             | 检查笔记 ID 是否正确    |
+| 400    | 匿名用户缺少 visitorId | 提供设备指纹 ID         |
 
 ### 错误响应示例
 
@@ -265,15 +265,15 @@ CREATE INDEX idx_reaction_active ON reactions(isActive);
 
 ### 缓存策略
 
-- 笔记反应数据可以缓存5分钟
-- 反应统计数据可以缓存1小时
-- 使用Redis缓存热门笔记的反应数据
+- 笔记反应数据可以缓存 5 分钟
+- 反应统计数据可以缓存 1 小时
+- 使用 Redis 缓存热门笔记的反应数据
 
 ## 安全考虑
 
 ### 防止滥用
 
-- 实施速率限制：每个用户/访客每分钟最多10个反应操作
+- 实施速率限制：每个用户/访客每分钟最多 10 个反应操作
 - 设备指纹验证：防止恶意生成假指纹
 - 反垃圾邮件：监控异常反应模式
 
@@ -281,7 +281,7 @@ CREATE INDEX idx_reaction_active ON reactions(isActive);
 
 - 访客信息仅用于统计，不存储敏感数据
 - 设备指纹不可逆向工程
-- 遵循GDPR等隐私法规
+- 遵循 GDPR 等隐私法规
 
 ---
 

@@ -1,13 +1,13 @@
 import { User } from '@prisma/client';
 import express from 'express';
 import passport from 'passport';
+import { requireSecurityConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { createUser, changeUserPassword } from '../../utils/dbMethods';
+import { changeUserPassword, createUser } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
 import { RegisterDataZod, passwordChangeZod } from '../../utils/zod';
-
 
 // 认证相关路由
 const authRouter = express.Router();
@@ -38,6 +38,7 @@ authRouter.post(
 // 登录 (使用JWT认证)
 authRouter.post(
   '/login',
+  requireSecurityConfig,
   asyncHandler(async (req, res, next) => {
     passport.authenticate('local', async (err: any, user: User, data: any) => {
       if (err || !user) {
@@ -94,6 +95,7 @@ authRouter.put(
 // Token 刷新端点
 authRouter.post(
   '/refresh',
+  requireSecurityConfig,
   asyncHandler(async (req, res) => {
     const { refreshToken } = req.body;
 

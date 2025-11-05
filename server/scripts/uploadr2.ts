@@ -2,40 +2,57 @@
  * Upload files to R2
  */
 
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { config } from "dotenv";
-import { readdir, readFile } from "fs/promises";
-import { extname, join, relative } from "path";
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { PrismaClient } from '@prisma/client';
+import { readdir, readFile } from 'fs/promises';
+import { extname, join, relative } from 'path';
 
-config();
+// 从数据库获取配置
+async function getStorageConfig() {
+  const prisma = new PrismaClient();
+  try {
+    const setting = await prisma.setting.findUnique({
+      where: { group: 'storage' },
+    });
 
-console.log("R2_ACCOUNT_ID:", process.env.R2_ACCOUNT_ID);
-console.log("R2_ACCESS_KEY_ID:", process.env.R2_ACCESS_KEY_ID);
-console.log("R2_SECRET_KEY_ID:", process.env.R2_SECRET_KEY_ID);
-console.log("R2_BUCKET:", process.env.R2_BUCKET);
+    if (!setting) {
+      throw new Error('Storage configuration not found. Please run the initialization first.');
+    }
 
-const s3Client = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: `${process.env.R2_ACCESS_KEY_ID}`,
-    secretAccessKey: `${process.env.R2_SECRET_KEY_ID}`,
-  },
-});
+    return setting.config as any;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
-const bucketName = process.env.R2_BUCKET!;
-const localUploadPath = "./compressed"; // 本地 compressed 文件夹路径
-const bucketPrefix = "compressed/"; // R2 存储桶中的前缀
+// 初始化配置
+let s3Client: S3Client;
+let bucketName: string;
 
-const imageExtensions = [
-  ".jpg",
-  ".jpeg",
-  ".png",
-  ".gif",
-  ".webp",
-  ".svg",
-  ".bmp",
-];
+async function initializeConfig() {
+  const config = await getStorageConfig();
+
+  console.log('Storage Config:');
+  console.log('Endpoint:', config.endpoint);
+  console.log('Access Key ID:', config.accessKeyId ? '***' : 'Not set');
+  console.log('Secret Access Key:', config.secretAccessKey ? '***' : 'Not set');
+  console.log('Bucket:', config.bucket);
+
+  s3Client = new S3Client({
+    region: 'auto',
+    endpoint: config.endpoint,
+    credentials: {
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+    },
+  });
+
+  bucketName = config.bucket;
+}
+const localUploadPath = './compressed'; // 本地 compressed 文件夹路径
+const bucketPrefix = 'compressed/'; // R2 存储桶中的前缀
+
+const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
 
 function isImageFile(filename: string): boolean {
   const ext = extname(filename).toLowerCase();
@@ -101,25 +118,22 @@ async function processDirectory(
 
 async function uploadAllFiles(): Promise<void> {
   try {
+    // 初始化配置
+    await initializeConfig();
+
     const results = await processDirectory(localUploadPath);
 
-    console.log("\nUpload Results:");
-    console.log(
-      `Total files processed: ${
-        results.success + results.failure + results.skipped
-      }`
-    );
+    console.log('\nUpload Results:');
+    console.log(`Total files processed: ${results.success + results.failure + results.skipped}`);
     console.log(`Successfully uploaded: ${results.success}`);
     console.log(`Failed to upload: ${results.failure}`);
     console.log(`Skipped (non-image files): ${results.skipped}`);
 
     if (results.failure > 0) {
-      console.log(
-        "\nPlease check the error messages above for details on failed uploads."
-      );
+      console.log('\nPlease check the error messages above for details on failed uploads.');
     }
   } catch (err) {
-    console.error("Error processing directory:", err);
+    console.error('Error processing directory:', err);
   }
 }
 

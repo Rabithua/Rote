@@ -3,20 +3,43 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import formidable from 'formidable';
 import fs from 'fs/promises';
 import sharp from 'sharp';
+import { StorageConfig } from '../types/config';
 import { UploadResult } from '../types/main';
+import { getGlobalConfig } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
 
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: `${process.env.R2_ACCESS_KEY_ID}`,
-    secretAccessKey: `${process.env.R2_SECRET_KEY_ID}`,
-  },
-});
+// 动态获取 R2 配置并创建 S3 客户端
+function getR2Client(): { s3: S3Client; bucketName: string; urlPrefix: string } | null {
+  const config = getGlobalConfig<StorageConfig>('storage');
+  if (config && config.endpoint && config.accessKeyId && config.secretAccessKey && config.bucket) {
+    const s3 = new S3Client({
+      region: 'auto',
+      endpoint: config.endpoint,
+      credentials: {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+      },
+    });
+    return {
+      s3,
+      bucketName: config.bucket,
+      urlPrefix: config.urlPrefix || '',
+    };
+  }
+  return null;
+}
 
 async function r2uploadhandler(file: formidable.File) {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const { s3, bucketName, urlPrefix } = r2Config;
+
   const buffer = await fs.readFile(file.filepath);
 
   // 生成唯一且稳定的对象 Key，避免并发下被同名文件覆盖
@@ -31,7 +54,7 @@ async function r2uploadhandler(file: formidable.File) {
 
   // Upload original file
   const originalParam = {
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: originalKey,
     Body: buffer,
     cacheControl,
@@ -47,7 +70,7 @@ async function r2uploadhandler(file: formidable.File) {
 
   // Upload WebP file
   const webpParam = {
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: webpKey,
     Body: webpBuffer,
     ContentType: 'image/webp',
@@ -85,14 +108,14 @@ async function r2uploadhandler(file: formidable.File) {
 
     // Check original file upload result
     if (originalResult.status === 'fulfilled') {
-      result.url = `https://${process.env.R2_URL_PREFIX}/${originalKey}`;
+      result.url = `${urlPrefix}/${originalKey}`;
     } else {
       console.log('Error uploading original file:', originalResult.reason);
     }
 
     // Check WebP file upload result
     if (webpResult.status === 'fulfilled') {
-      result.compressUrl = `https://${process.env.R2_URL_PREFIX}/${webpKey}`;
+      result.compressUrl = `${urlPrefix}/${webpKey}`;
     } else {
       console.log('Error uploading WebP file:', webpResult.reason);
     }
@@ -109,8 +132,17 @@ async function r2uploadhandler(file: formidable.File) {
 }
 
 async function r2deletehandler(key: string) {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const { s3, bucketName } = r2Config;
+
   const deleteParams = {
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: key,
   };
   const deleteCommand = new DeleteObjectCommand(deleteParams);
@@ -129,7 +161,7 @@ async function r2deletehandler(key: string) {
   }
 }
 
-export { r2deletehandler, r2uploadhandler, s3 };
+export { r2deletehandler, r2uploadhandler };
 
 // 生成 PUT 预签名 URL，便于前端直传 R2
 export async function presignPutUrl(
@@ -137,8 +169,17 @@ export async function presignPutUrl(
   contentType?: string,
   expiresIn: number = 3600
 ): Promise<{ putUrl: string; url: string }> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const { s3, bucketName, urlPrefix } = r2Config;
+
   const command = new PutObjectCommand({
-    Bucket: `${process.env.R2_BUCKET}`,
+    Bucket: bucketName,
     Key: key,
     ContentType: contentType || undefined,
     cacheControl,
@@ -147,6 +188,6 @@ export async function presignPutUrl(
   const putUrl = await getSignedUrl(s3, command, {
     expiresIn,
   });
-  const url = `https://${process.env.R2_URL_PREFIX}/${key}`;
+  const url = `${urlPrefix}/${key}`;
   return { putUrl, url };
 }

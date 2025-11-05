@@ -1,58 +1,12 @@
 {
   "short_name": "Rote",
   "name": "Rote - A Note App.",
+  "description": "Rote - 一个看起来不太一样的个人笔记库🤔",
   "icons": [
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@96w.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@120w.png",
-      "sizes": "120x120",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@192w.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@128w.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@144w.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@180w.png",
-      "sizes": "180x180",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@192w.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@300w.png",
-      "sizes": "300x300",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@384w.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
-      "src": "https://r2.rote.ink/others/icons/icon@512w.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/ico.svg", "sizes": "any", "type": "image/svg+xml" }
   ],
   "protocol_handlers": [
     {
@@ -64,12 +18,17 @@
       "url": "/?type=%s"
     }
   ],
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "id": "/",
   "scope": "/",
-  "display_override": [
-    "fullscreen"
+  "categories": ["productivity", "utilities"],
+  "orientation": "portrait",
+  "lang": "zh-CN",
+  "shortcuts": [
+    { "name": "新建笔记", "url": "/rote?new=1" },
+    { "name": "搜索", "url": "/explore" }
   ],
+  "display_override": ["fullscreen"],
   "display": "standalone",
   "theme_color": "#ffffff",
   "background_color": "#ffffff"

@@ -158,7 +158,7 @@ function UserPage() {
               </div>
             </div>
             <div className="text-info text-base">
-              {`${t('registerTime')}${moment.utc(userInfo?.createdAt).format('YYYY/MM/DD HH:mm:ss')}`}
+              {`${t('registerTime')}${moment(userInfo?.createdAt).local().format('YYYY/MM/DD HH:mm:ss')}`}
             </div>
           </div>
         </div>

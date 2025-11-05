@@ -2,8 +2,11 @@ import { User } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import formidable from 'formidable';
+import { requireStorageConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
+import { StorageConfig } from '../../types/config';
 import { UploadResult } from '../../types/main';
+import { getGlobalConfig } from '../../utils/config';
 import {
   createAttachments,
   deleteAttachment,
@@ -22,6 +25,7 @@ const attachmentsRouter = express.Router();
 attachmentsRouter.post(
   '/',
   authenticateJWT,
+  requireStorageConfig,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { noteId } = req.query;
@@ -44,7 +48,7 @@ attachmentsRouter.post(
     const imageFiles = Array.isArray(files.images) ? files.images : [files.images];
 
     // 并发控制，避免单次请求时间过长导致中断
-    const CONCURRENCY = Number(process.env.ATTACHMENT_UPLOAD_CONCURRENCY || 3);
+    const CONCURRENCY = 3; // 保留并发配置，因为这是性能调优必需的
     const queue: Promise<void>[] = [];
     const uploadResults: UploadResult[] = [];
 
@@ -143,6 +147,7 @@ export default attachmentsRouter;
 attachmentsRouter.post(
   '/presign',
   authenticateJWT,
+  requireStorageConfig,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { files } = req.body as {
@@ -208,6 +213,7 @@ attachmentsRouter.post(
 attachmentsRouter.post(
   '/finalize',
   authenticateJWT,
+  requireStorageConfig,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { attachments, noteId } = req.body as {
@@ -235,10 +241,10 @@ attachmentsRouter.post(
     }
 
     const uploads: UploadResult[] = attachments.map((a) => {
-      const oUrl = `https://${process.env.R2_URL_PREFIX}/${a.originalKey}`;
-      const cUrl = a.compressedKey
-        ? `https://${process.env.R2_URL_PREFIX}/${a.compressedKey}`
-        : null;
+      const storageConfig = getGlobalConfig<StorageConfig>('storage');
+      const urlPrefix = storageConfig?.urlPrefix;
+      const oUrl = `${urlPrefix}/${a.originalKey}`;
+      const cUrl = a.compressedKey ? `${urlPrefix}/${a.compressedKey}` : null;
       const baseDetails: any = {
         size: a.size || 0,
         mimetype: a.mimetype || null,

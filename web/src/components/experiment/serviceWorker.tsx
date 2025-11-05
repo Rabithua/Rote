@@ -2,7 +2,7 @@ import { Divider } from '@/components/ui/divider';
 import { Switch } from '@/components/ui/switch';
 import { del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
-import { Bell } from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ export default function ServiceWorker() {
   const [swReady, setSwReady] = useState(false);
   const [, setSwLoading] = useState(true);
   const [noticeId, setNoticeId] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   const initializeServiceWorker = async () => {
     const registration = await navigator.serviceWorker.getRegistration();
@@ -103,7 +104,7 @@ export default function ServiceWorker() {
   }, []);
 
   return (
-    <div className="noScrollBar relative aspect-square w-full overflow-x-hidden overflow-y-scroll p-4">
+    <div className="noScrollBar relative w-full overflow-x-hidden overflow-y-scroll p-4 sm:aspect-square">
       <div className="text-2xl font-semibold">
         {t('title')} <br />
         <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
@@ -129,7 +130,10 @@ export default function ServiceWorker() {
           <span className="truncate overflow-hidden">{noticeId}</span>
           <Button
             variant="secondary"
+            disabled={sending}
             onClick={() => {
+              if (!noticeId || sending) return;
+              setSending(true);
               noticeTest(noticeId, '自在废物', '这是我的博客。')
                 .then(() => {
                   toast.success(t('sendSuccess'));
@@ -137,11 +141,16 @@ export default function ServiceWorker() {
                 .catch((error) => {
                   const errorMessage = error.response?.data?.message || t('sendFailed');
                   toast.error(`${t('sendFailed')}: ${errorMessage}`);
-                });
+                })
+                .finally(() => setSending(false));
             }}
           >
-            <Bell className="size-4" />
-            {t('notificationTest')}
+            {sending ? (
+              <Loader2 className="mr-2 size-4 animate-spin" />
+            ) : (
+              <Bell className="mr-2 size-4" />
+            )}
+            {sending ? t('sending') : t('notificationTest')}
           </Button>
         </div>
       )}

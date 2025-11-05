@@ -217,6 +217,7 @@
         "noStatus": "No status",
         "serviceId": "Service ID:",
         "notificationTest": "Test Notification",
+        "sending": "Sending...",
         "permissionProcessing": "Processing permissions...",
         "complete": "Complete",
         "sendSuccess": "Sent successfully!",
@@ -252,6 +253,81 @@
     "archived": {
       "title": "Archive",
       "statistics": "Statistics"
+    },
+    "setupPage": {
+      "statusChecking": "Checking system status..."
+    },
+    "setupWizard": {
+      "title": "Rote Setup Wizard",
+      "subtitle": "Welcome to Rote! Follow the steps to complete the setup",
+      "steps": {
+        "basic": { "title": "Basic Settings", "description": "Set site basics" },
+        "storage": { "title": "Storage Settings", "description": "Configure R2 storage" },
+        "admin": { "title": "Admin Account", "description": "Create admin account" }
+      },
+      "labels": {
+        "siteName": "Site Name",
+        "siteDescription": "Site Description",
+        "siteUrl": "Site URL",
+        "accountId": "R2 Account ID",
+        "accessKey": "Access Key",
+        "secretKey": "Secret Key",
+        "bucket": "Bucket Name",
+        "urlPrefix": "URL Prefix",
+        "username": "Username",
+        "email": "Email",
+        "password": "Password",
+        "nickname": "Nickname"
+      },
+      "placeholders": {
+        "siteName": "Enter site name",
+        "siteDescription": "Enter site description",
+        "siteUrl": "https://your-domain.com",
+        "accountId": "your-account-id",
+        "accessKey": "Enter R2 Access Key",
+        "secretKey": "Enter R2 Secret Key",
+        "bucket": "Enter bucket name",
+        "urlPrefix": "https://bucket.your-domain.com",
+        "adminUsername": "Enter admin username",
+        "adminEmail": "Enter admin email",
+        "adminPassword": "Enter admin password",
+        "adminNickname": "Enter admin nickname"
+      },
+      "validation": {
+        "siteNameRequired": "Site name is required",
+        "siteUrlRequired": "Site URL is required",
+        "siteUrlInvalid": "Please enter a valid URL (starts with http:// or https://)",
+        "accountIdRequired": "R2 Account ID is required",
+        "accessKeyRequired": "Access Key is required",
+        "secretKeyRequired": "Secret Key is required",
+        "bucketRequired": "Bucket name is required",
+        "urlPrefixRequired": "URL prefix is required",
+        "urlPrefixInvalid": "Please enter a valid URL prefix (starts with http:// or https://)",
+        "usernameRequired": "Username is required",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordMin": "Password length must be at least 6"
+      },
+      "buttons": {
+        "prev": "Previous",
+        "next": "Next",
+        "finish": "Finish Setup",
+        "saving": "Saving...",
+        "testConnection": "Test R2 Connection",
+        "testing": "Testing connection..."
+      },
+      "toasts": {
+        "systemInitialized": "System has been initialized, redirecting to settings page",
+        "initSuccess": "System initialized successfully!",
+        "initFailed": "System initialization failed, please check your configuration",
+        "testSuccess": "R2 connection test succeeded!",
+        "testFailed": "Connection test failed: {{error}}",
+        "pleaseFillR2": "Please fill in all R2 configuration fields first"
+      },
+      "ui": {
+        "statistics": "Statistics"
+      }
     }
   },
   "error": {

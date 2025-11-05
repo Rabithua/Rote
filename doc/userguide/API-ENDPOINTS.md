@@ -169,7 +169,7 @@ DELETE /api/v2/reactions/507f1f77bcf86cd799439011/❤️?visitorId=fp_1234567890
 #### 参数说明
 
 - `type`: 反应类型，支持任意 emoji 字符
-- `roteid`: 笔记 ID（24 位 MongoDB ObjectId）
+- `roteid`: 笔记 ID（UUID）
 - `visitorId`: 访客设备指纹 ID（匿名用户必需）
 - `visitorInfo`: 访客信息（可选，用于统计分析）
 - `metadata`: 附加元数据（可选）

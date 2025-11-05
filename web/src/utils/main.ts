@@ -52,12 +52,15 @@ export function checkPermission() {
 }
 
 export async function registerSW() {
-  const registration = await navigator.serviceWorker.register('sw.js');
-
+  if (!('serviceWorker' in navigator)) {
+    throw new Error('No support for service worker!');
+  }
+  // 使用 vite-plugin-pwa 的注册结果：在入口处已调用 virtual:pwa-register
+  // 这里等待已注册的 SW 就绪，避免在开发环境手动注册 /sw.js 引发 MIME 报错
+  const registration = await navigator.serviceWorker.ready;
   if (registration.active) {
     toast.success('Service Worker registered successfully!');
   }
-
   return registration;
 }
 

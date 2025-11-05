@@ -2,6 +2,8 @@ import { User } from '@prisma/client';
 
 import { Request } from 'express';
 import mainJson from '../json/main.json';
+import { SiteConfig } from '../types/config';
+import { getGlobalConfig } from './config';
 import { getOneOpenKey } from './dbMethods';
 
 const { stateType, roteType, editorType } = mainJson;
@@ -112,8 +114,20 @@ export function isOpenKeyOk(req: any, res: any, next: any) {
 }
 
 export function injectDynamicUrls(req: any, res: any, next: any) {
-  req.dynamicApiUrl = getApiUrl(req);
-  req.dynamicFrontendUrl = process.env.BASE_URL || 'http://localhost:3001';
+  // 优先从数据库配置获取，如果没有则动态生成
+  const siteConfig = getGlobalConfig<SiteConfig>('site');
+
+  if (siteConfig?.apiUrl) {
+    req.dynamicApiUrl = siteConfig.apiUrl;
+  } else {
+    req.dynamicApiUrl = getApiUrl(req);
+  }
+
+  if (siteConfig?.frontendUrl) {
+    req.dynamicFrontendUrl = siteConfig.frontendUrl;
+  } else {
+    req.dynamicFrontendUrl = 'http://localhost:3001';
+  }
 
   next();
 }

@@ -3,6 +3,7 @@ import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { formatTimeAgo, isTokenValid } from '@/utils/main';
 import {
   ArrowRight,
@@ -19,11 +20,12 @@ import {
   Star,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import useSWR from 'swr';
 
 function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.landing' });
+  const { isInitialized, isLoading, error } = useSystemStatus();
 
   const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
     'https://api.github.com/repos/rabithua/rote',
@@ -112,6 +114,10 @@ function Landing() {
       external: false,
     },
   ];
+
+  if (!isLoading && !error && !isInitialized) {
+    return <Navigate to="/setup" replace />;
+  }
 
   return (
     <div className="bg-pattern min-h-dvh divide-y font-sans">
