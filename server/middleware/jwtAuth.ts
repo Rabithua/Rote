@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ROLE_PERMISSIONS, UserRole } from '../types/main';
-import { oneUser } from '../utils/dbMethods';
+import { getSafeUser } from '../utils/dbMethods';
 import { verifyAccessToken } from '../utils/jwt';
 
 export async function authenticateJWT(req: Request, res: Response, next: NextFunction) {
@@ -13,7 +13,7 @@ export async function authenticateJWT(req: Request, res: Response, next: NextFun
 
   try {
     const payload = await verifyAccessToken(token);
-    const user = await oneUser(payload.userId);
+    const user = await getSafeUser(payload.userId);
 
     if (!user) {
       return res.status(401).json({ code: 401, message: 'User not found' });
@@ -37,7 +37,7 @@ export async function optionalJWT(req: Request, res: Response, next: NextFunctio
 
   try {
     const payload = await verifyAccessToken(token);
-    const user = await oneUser(payload.userId);
+    const user = await getSafeUser(payload.userId);
 
     if (user) {
       req.user = user;

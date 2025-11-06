@@ -6,6 +6,7 @@ import {
   editMyProfile,
   exportData,
   getHeatMap,
+  getMyProfile,
   getMyTags,
   getUserInfoByUsername,
   statistics,
@@ -35,7 +36,9 @@ usersRouter.get(
   '/me/profile',
   authenticateJWT,
   asyncHandler(async (req, res) => {
-    res.status(200).json(createResponse(req.user as User));
+    const user = req.user as User;
+    const data = await getMyProfile(user.id);
+    res.status(200).json(createResponse(data));
   })
 );
 
