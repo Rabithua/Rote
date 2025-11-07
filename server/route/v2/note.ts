@@ -399,7 +399,9 @@ notesRouter.post(
 
     // 按照请求的 ids 顺序排序返回结果
     const roteMap = new Map(accessibleRotes.map((rote) => [rote.id, rote]));
-    const orderedRotes = uniqueIds.map((id) => roteMap.get(id)).filter((rote) => rote !== undefined);
+    const orderedRotes = uniqueIds
+      .map((id) => roteMap.get(id))
+      .filter((rote) => rote !== undefined);
 
     res.status(200).json(createResponse(orderedRotes));
   })
@@ -444,8 +446,16 @@ notesRouter.put(
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
     const user = req.user as User;
+    const { id } = req.params;
     const rote = req.body;
-    const data = await editRote({ ...rote, authorid: user.id });
+
+    // 验证 ID 格式
+    if (!id || !isValidUUID(id)) {
+      throw new Error('Invalid or missing ID');
+    }
+
+    // 确保使用路由参数中的 id，而不是 body 中的 id（防止不一致）
+    const data = await editRote({ ...rote, id, authorid: user.id });
 
     res.status(200).json(createResponse(data));
   })
