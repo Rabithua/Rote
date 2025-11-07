@@ -12,6 +12,7 @@ import {
   findPublicRote,
   findRandomPublicRote,
   findRoteById,
+  findRotesByIds,
   findUserPublicRote,
   getUserInfoByUsername,
   searchMyRotes,
@@ -351,11 +352,65 @@ notesRouter.get(
   })
 );
 
+// 批量获取笔记
+notesRouter.post(
+  '/batch',
+  optionalJWT,
+  bodyTypeCheck,
+  asyncHandler(async (req, res) => {
+    const user = req.user as User | undefined;
+    const { ids } = req.body as { ids: string[] };
+
+    // 验证 ids 参数
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      throw new Error('ids must be a non-empty array');
+    }
+
+    // 去重并验证每个 id 的格式
+    const uniqueIds = [...new Set(ids)];
+    const invalidIds = uniqueIds.filter((id) => !isValidUUID(id));
+    if (invalidIds.length > 0) {
+      throw new Error(`Invalid UUID format: ${invalidIds.join(', ')}`);
+    }
+
+    // 限制批量获取的数量，防止滥用
+    if (uniqueIds.length > 100) {
+      throw new Error('Maximum 100 notes can be requested at once');
+    }
+
+    // 批量获取笔记
+    const rotes = await findRotesByIds(uniqueIds);
+
+    // 权限过滤：只返回用户有权限访问的笔记
+    const accessibleRotes = rotes.filter((rote) => {
+      // 公开笔记，任何人都可以访问
+      if (rote.state === 'public') {
+        return true;
+      }
+
+      // 私有笔记，只有作者可以访问
+      if (user && rote.authorid === user.id) {
+        return true;
+      }
+
+      // 其他情况（私有笔记且不是作者），无权限访问
+      return false;
+    });
+
+    // 按照请求的 ids 顺序排序返回结果
+    const roteMap = new Map(accessibleRotes.map((rote) => [rote.id, rote]));
+    const orderedRotes = uniqueIds.map((id) => roteMap.get(id)).filter((rote) => rote !== undefined);
+
+    res.status(200).json(createResponse(orderedRotes));
+  })
+);
+
 // 获取笔记详情
 notesRouter.get(
   '/:id',
+  optionalJWT,
   asyncHandler(async (req, res) => {
-    const user = req.user as User;
+    const user = req.user as User | undefined;
     const { id } = req.params;
 
     // UUID 格式验证
