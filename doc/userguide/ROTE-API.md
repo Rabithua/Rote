@@ -10,15 +10,41 @@
 
 ### 字段说明
 
-- **state**: 笔记状态，可选值：`"public"`（公开）、`"private"`（私有）、`"archived"`（归档）
-- **type**: 笔记类型，可选值：`"Rote"`
-- **editor**: 编辑器类型，可选值：`"normal"`（普通）、`"noval"`（小说）
-- **content**: 笔记内容（必填）
+- **id**: 笔记 ID（UUID 格式）
 - **title**: 笔记标题（可选）
+- **type**: 笔记类型，可选值：`"Rote"`（默认）
 - **tags**: 标签数组（可选）
-- **pin**: 是否置顶（布尔值，可选）
-- **archived**: 是否归档（布尔值，可选）
-- **attachmentIds**: 附件 ID 数组（可选）
+- **content**: 笔记内容（必填）
+- **state**: 笔记状态，可选值：`"public"`（公开）、`"private"`（私有）、`"archived"`（归档）
+- **archived**: 是否归档（布尔值，可选，默认 `false`）
+- **authorid**: 作者 ID（UUID 格式）
+- **pin**: 是否置顶（布尔值，可选，默认 `false`）
+- **editor**: 编辑器类型，可选值：`"normal"`（普通，默认）、`"noval"`（小说）
+- **createdAt**: 创建时间（ISO 8601 格式）
+- **updatedAt**: 更新时间（ISO 8601 格式）
+- **attachmentIds**: 附件 ID 数组（可选，创建/更新时使用）
+- **author**: 作者信息对象（包含 `username`、`nickname`、`avatar`）
+- **attachments**: 附件数组，每个附件包含：
+  - `id`: 附件 ID（UUID 格式）
+  - `url`: 附件原始 URL
+  - `compressUrl`: 压缩后的附件 URL（可选）
+  - `storage`: 存储类型（如 `"R2"`）
+  - `details`: 附件详细信息（JSON 对象，包含 `key`、`compressKey`、`width`、`height`、`size`、`mimeType` 等）
+  - `sortIndex`: 排序索引（数字）
+  - `userid`: 用户 ID（UUID 格式，可选）
+  - `roteid`: 笔记 ID（UUID 格式，可选）
+  - `createdAt`: 创建时间（ISO 8601 格式）
+  - `updatedAt`: 更新时间（ISO 8601 格式）
+- **reactions**: 反应数组，每个反应包含：
+  - `id`: 反应 ID（UUID 格式）
+  - `type`: 反应类型（emoji 字符，如 `"👍"`）
+  - `userid`: 用户 ID（UUID 格式，已登录用户，可选）
+  - `visitorId`: 访客设备指纹 ID（匿名用户，可选）
+  - `visitorInfo`: 访客信息（JSON 对象，可选）
+  - `roteid`: 笔记 ID（UUID 格式）
+  - `metadata`: 附加元数据（JSON 对象，可选）
+  - `createdAt`: 创建时间（ISO 8601 格式）
+  - `updatedAt`: 更新时间（ISO 8601 格式）
 
 ---
 
@@ -63,12 +89,24 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
   "message": "success",
   "data": {
     "id": "uuid",
-    "content": "这是一条笔记内容",
     "title": "笔记标题",
-    "state": "public",
+    "type": "Rote",
     "tags": ["标签1", "标签2"],
+    "content": "这是一条笔记内容",
+    "state": "public",
+    "archived": false,
     "authorid": "user-uuid",
-    "createdAt": "2024-01-01T00:00:00.000Z"
+    "pin": false,
+    "editor": "normal",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "author": {
+      "username": "demo",
+      "nickname": "演示用户",
+      "avatar": "https://example.com/avatar.jpg"
+    },
+    "attachments": [],
+    "reactions": []
   }
 }
 ```
@@ -108,11 +146,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/?skip=0&limit=20&archived=fals
   "data": [
     {
       "id": "uuid",
-      "content": "笔记内容",
       "title": "笔记标题",
-      "state": "public",
+      "type": "Rote",
       "tags": ["标签1"],
-      "createdAt": "2024-01-01T00:00:00.000Z"
+      "content": "笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -147,13 +198,58 @@ curl -X GET 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
   "message": "success",
   "data": {
     "id": "uuid",
-    "content": "笔记内容",
     "title": "笔记标题",
-    "state": "public",
+    "type": "Rote",
     "tags": ["标签1"],
+    "content": "笔记内容",
+    "state": "public",
+    "archived": false,
     "authorid": "user-uuid",
+    "pin": false,
+    "editor": "normal",
     "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "author": {
+      "username": "demo",
+      "nickname": "演示用户",
+      "avatar": "https://example.com/avatar.jpg"
+    },
+    "attachments": [
+      {
+        "id": "attachment-uuid",
+        "url": "https://example.com/image.jpg",
+        "compressUrl": "https://example.com/image-compress.jpg",
+        "storage": "R2",
+        "details": {
+          "key": "attachments/image.jpg",
+          "compressKey": "attachments/image-compress.jpg",
+          "width": 1920,
+          "height": 1080,
+          "size": 1024000,
+          "mimeType": "image/jpeg"
+        },
+        "sortIndex": 0,
+        "userid": "user-uuid",
+        "roteid": "uuid",
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "reactions": [
+      {
+        "id": "reaction-uuid",
+        "type": "👍",
+        "userid": "user-uuid",
+        "visitorId": null,
+        "visitorInfo": null,
+        "roteid": "uuid",
+        "metadata": {
+          "source": "web"
+        },
+        "createdAt": "2024-01-01T00:00:00.000Z",
+        "updatedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ]
   }
 }
 ```
@@ -195,23 +291,45 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
   "data": [
     {
       "id": "uuid1",
-      "content": "笔记内容1",
       "title": "笔记标题1",
-      "state": "public",
+      "type": "Rote",
       "tags": ["标签1"],
+      "content": "笔记内容1",
+      "state": "public",
+      "archived": false,
       "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     },
     {
       "id": "uuid2",
-      "content": "笔记内容2",
       "title": "笔记标题2",
-      "state": "private",
+      "type": "Rote",
       "tags": ["标签2"],
+      "content": "笔记内容2",
+      "state": "private",
+      "archived": false,
       "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
-      "updatedAt": "2024-01-01T00:00:00.000Z"
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -264,9 +382,24 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
   "message": "success",
   "data": {
     "id": "uuid",
-    "content": "更新后的笔记内容",
     "title": "更新后的标题",
-    "state": "public"
+    "type": "Rote",
+    "tags": ["标签1"],
+    "content": "更新后的笔记内容",
+    "state": "public",
+    "archived": false,
+    "authorid": "user-uuid",
+    "pin": false,
+    "editor": "normal",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T01:00:00.000Z",
+    "author": {
+      "username": "demo",
+      "nickname": "演示用户",
+      "avatar": "https://example.com/avatar.jpg"
+    },
+    "attachments": [],
+    "reactions": []
   }
 }
 ```
@@ -333,9 +466,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
   "message": "success",
   "data": {
     "id": "uuid",
-    "content": "随机笔记内容",
     "title": "随机笔记标题",
-    "state": "public"
+    "type": "Rote",
+    "tags": ["标签1"],
+    "content": "随机笔记内容",
+    "state": "public",
+    "archived": false,
+    "authorid": "user-uuid",
+    "pin": false,
+    "editor": "normal",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "author": {
+      "username": "demo",
+      "nickname": "演示用户",
+      "avatar": "https://example.com/avatar.jpg"
+    },
+    "attachments": [],
+    "reactions": []
   }
 }
 ```
@@ -371,9 +519,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
   "data": [
     {
       "id": "uuid",
-      "content": "包含关键词的笔记内容",
       "title": "笔记标题",
-      "state": "public"
+      "type": "Rote",
+      "tags": ["标签1"],
+      "content": "包含关键词的笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -413,9 +576,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
   "data": [
     {
       "id": "uuid",
-      "content": "包含关键词的公开笔记内容",
       "title": "笔记标题",
-      "state": "public"
+      "type": "Rote",
+      "tags": ["标签1"],
+      "content": "包含关键词的公开笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -457,9 +635,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
   "data": [
     {
       "id": "uuid",
-      "content": "包含关键词的笔记内容",
       "title": "笔记标题",
-      "state": "public"
+      "type": "Rote",
+      "tags": ["标签1"],
+      "content": "包含关键词的笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -501,9 +694,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/users/demo?skip=0&limit=20'
   "data": [
     {
       "id": "uuid",
-      "content": "公开笔记内容",
       "title": "笔记标题",
-      "state": "public"
+      "type": "Rote",
+      "tags": ["标签1"],
+      "content": "公开笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -541,9 +749,24 @@ curl -X GET 'https://your-domain.com/v2/api/notes/public?skip=0&limit=20'
   "data": [
     {
       "id": "uuid",
-      "content": "公开笔记内容",
       "title": "笔记标题",
-      "state": "public"
+      "type": "Rote",
+      "tags": ["标签1"],
+      "content": "公开笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
