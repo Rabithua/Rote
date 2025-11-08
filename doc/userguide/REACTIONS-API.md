@@ -179,8 +179,23 @@ curl -X DELETE 'https://your-domain.com/v2/api/reactions/<NOTE_ID>/%E2%9D%A4%EF%
   "message": "success",
   "data": {
     "id": "note-uuid",
-    "content": "笔记内容",
     "title": "笔记标题",
+    "type": "Rote",
+    "tags": ["标签1"],
+    "content": "笔记内容",
+    "state": "public",
+    "archived": false,
+    "authorid": "user-uuid",
+    "pin": false,
+    "editor": "normal",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "author": {
+      "username": "demo",
+      "nickname": "演示用户",
+      "avatar": "https://example.com/avatar.jpg"
+    },
+    "attachments": [],
     "reactions": [
       {
         "id": "reaction-uuid-1",
@@ -188,7 +203,10 @@ curl -X DELETE 'https://your-domain.com/v2/api/reactions/<NOTE_ID>/%E2%9D%A4%EF%
         "roteid": "note-uuid",
         "userid": "user-uuid-1",
         "visitorId": null,
-        "createdAt": "2024-01-01T12:00:00.000Z"
+        "visitorInfo": null,
+        "metadata": null,
+        "createdAt": "2024-01-01T12:00:00.000Z",
+        "updatedAt": "2024-01-01T12:00:00.000Z"
       },
       {
         "id": "reaction-uuid-2",
@@ -196,7 +214,15 @@ curl -X DELETE 'https://your-domain.com/v2/api/reactions/<NOTE_ID>/%E2%9D%A4%EF%
         "roteid": "note-uuid",
         "userid": null,
         "visitorId": "fp_1234567890abcdef",
-        "createdAt": "2024-01-01T12:01:00.000Z"
+        "visitorInfo": {
+          "browser": "Chrome",
+          "os": "macOS"
+        },
+        "metadata": {
+          "source": "web"
+        },
+        "createdAt": "2024-01-01T12:01:00.000Z",
+        "updatedAt": "2024-01-01T12:01:00.000Z"
       }
     ]
   }

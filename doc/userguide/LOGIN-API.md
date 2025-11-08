@@ -42,7 +42,12 @@ curl -X POST 'https://your-domain.com/v2/api/auth/login' \
       "username": "demo",
       "email": "demo@example.com",
       "nickname": "Demo",
-      "role": "USER"
+      "description": "用户简介",
+      "avatar": "https://example.com/avatar.jpg",
+      "cover": "https://example.com/cover.jpg",
+      "role": "user",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
     },
     "accessToken": "<ACCESS_TOKEN>",
     "refreshToken": "<REFRESH_TOKEN>"
