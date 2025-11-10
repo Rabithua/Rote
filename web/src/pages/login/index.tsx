@@ -79,8 +79,9 @@ function Login() {
 
   function authorizeIosLogin() {
     const accessToken = authService.getAccessToken();
-    if (accessToken) {
-      const callbackUrl = `rote://callback?token=${accessToken}`;
+    const refreshToken = authService.getRefreshToken();
+    if (accessToken && refreshToken) {
+      const callbackUrl = `rote://callback?token=${accessToken}&refreshToken=${refreshToken}`;
       window.location.href = callbackUrl;
     } else {
       // 如果 token 丢失，提示用户重新登录
@@ -111,7 +112,7 @@ function Login() {
 
         // 检查是否为 iOS web 登录流程
         if (searchParams.get('type') === 'ioslogin') {
-          const callbackUrl = `rote://callback?token=${accessToken}`;
+          const callbackUrl = `rote://callback?token=${accessToken}&refreshToken=${refreshToken}`;
           window.location.href = callbackUrl;
           return;
         }
