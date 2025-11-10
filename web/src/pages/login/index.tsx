@@ -19,7 +19,7 @@ import { useAPIGet } from '@/utils/fetcher';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 const { safeRoutes } = mainJson;
@@ -40,6 +40,7 @@ function Login() {
 
   const [disbled, setDisbled] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
+  const [searchParams] = useSearchParams();
 
   const [loginData, setLoginData] = useState({
     username: '',
@@ -96,6 +97,14 @@ function Login() {
         setDisbled(false);
         // 登录成功后刷新全局 profile
         loadProfile();
+
+        // 检查是否为 iOS web 登录流程
+        if (searchParams.get('type') === 'ioslogin') {
+          const callbackUrl = `rote://callback?token=${accessToken}`;
+          window.location.href = callbackUrl;
+          return;
+        }
+
         navigate('/home');
       })
       .catch((err: any) => {
