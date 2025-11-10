@@ -106,7 +106,10 @@ attachmentsRouter.delete(
       throw new Error('No attachments to delete');
     }
 
-    const data = await deleteAttachments(ids, user.id);
+    const data = await deleteAttachments(
+      ids.map((id: string) => ({ id })),
+      user.id
+    );
     res.status(200).json(createResponse(data));
   })
 );
