@@ -12,11 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import mainJson from '@/json/main.json';
-import { loadProfileAtom, profileAtom } from '@/state/profile';
 import { get, post } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
-import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -33,8 +31,10 @@ function Login() {
     get('/site/status').then((res) => res.data)
   );
 
-  const profile = useAtomValue(profileAtom);
-  const loadProfile = useSetAtom(loadProfileAtom);
+  const { data: profile, mutate: mutateProfile } = useAPIGet(
+    authService.hasValidAccessToken() ? '/users/me/profile' : null,
+    () => get('/users/me/profile').then((res) => res.data)
+  );
 
   const navigate = useNavigate();
 
@@ -77,6 +77,17 @@ function Login() {
     nickname: z.string().min(1, t('nicknameRequired')).max(20, t('nicknameMaxLength')),
   });
 
+  function authorizeIosLogin() {
+    const accessToken = authService.getAccessToken();
+    if (accessToken) {
+      const callbackUrl = `rote://callback?token=${accessToken}`;
+      window.location.href = callbackUrl;
+    } else {
+      // 如果 token 丢失，提示用户重新登录
+      toast.error(t('messages.tokenNotFound'));
+    }
+  }
+
   function login() {
     try {
       LoginDataZod.parse(loginData);
@@ -96,7 +107,7 @@ function Login() {
         toast.success(t('messages.loginSuccess'));
         setDisbled(false);
         // 登录成功后刷新全局 profile
-        loadProfile();
+        mutateProfile();
 
         // 检查是否为 iOS web 登录流程
         if (searchParams.get('type') === 'ioslogin') {
@@ -177,17 +188,38 @@ function Login() {
   }
 
   useEffect(() => {
-    if (profile) {
-      navigate('/home');
+    // 如果用户已有 token，则主动加载 profile
+    // 这可以确保在用户已登录的情况下，直接访问登录页也能正确显示授权 UI
+    if (authService.hasValidAccessToken()) {
+      mutateProfile();
     }
-  }, [profile, navigate]);
+  }, [mutateProfile]);
 
   return (
-    <div className="bg-pattern relative flex h-dvh w-full items-center justify-center">
+    <div className="relative flex h-dvh w-full items-center justify-center">
       <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
         {isCheckingStatus ? (
           <LoadingPlaceholder className="py-8" size={6} />
+        ) : profile && searchParams.get('type') === 'ioslogin' ? (
+          // 已登录且是 iOS 登录流程，显示授权UI
+          <>
+            <div className="mb-4">
+              <Logo className="w-32" color="#07C160" />
+            </div>
+            <div className="bg-muted/50 w-full rounded-lg p-6">
+              <h2 className="mb-4 text-lg"> {t('authorize.title')}</h2>
+              <p className="mb-6 text-sm font-light">
+                {t('authorize.message', {
+                  username: profile.nickname || profile.username,
+                })}
+              </p>
+              <Button onClick={authorizeIosLogin} className="w-full">
+                {t('authorize.button')}
+              </Button>
+            </div>
+          </>
         ) : (
+          // 未登录或普通 web 访问，显示标准登录/注册UI
           <>
             <div className="mb-4">
               <Logo className="w-32" color="#07C160" />

@@ -81,12 +81,17 @@
         "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
         "usernameConflict": "此用户名与系统路由冲突",
         "passwordRequired": "请输入密码",
-        "passwordMaxLength": "密码不能超过30个字符",
+        "passwordMaxLength": "密码最长30位",
         "emailRequired": "请输入邮箱",
-        "emailMaxLength": "邮箱不能超过30个字符",
-        "emailFormat": "邮箱格式不正确",
+        "emailMaxLength": "邮箱最长30位",
+        "emailFormat": "请输入正确的邮箱格式",
         "nicknameRequired": "请输入昵称",
-        "nicknameMaxLength": "昵称不能超过20个字符"
+        "nicknameMaxLength": "昵称最长20位"
+      },
+      "authorize": {
+        "title": "授权登录",
+        "message": "你将授权 Rote Web App 以 {{username}} 的身份登录 Rote iOS App",
+        "button": "授权登录"
       },
       "messages": {
         "loggingIn": "登录中...",

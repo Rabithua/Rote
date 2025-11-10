@@ -84,6 +84,11 @@
         "nicknameRequired": "Nickname is required",
         "nicknameMaxLength": "Nickname cannot exceed 20 characters"
       },
+      "authorize": {
+        "title": "Authorize Login",
+        "message": "You are about to authorize Rote Web App to sign in to Rote iOS App as {{username}}",
+        "button": "Authorize Login"
+      },
       "messages": {
         "loggingIn": "Logging in...",
         "loginSuccess": "Login successful",

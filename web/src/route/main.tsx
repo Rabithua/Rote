@@ -17,6 +17,8 @@ import SetupPage from '@/pages/setup';
 import UserPage from '@/pages/user/:username';
 
 export default function GlobalRouterProvider() {
+  const isIosLogin = new URLSearchParams(window.location.search).get('type') === 'ioslogin';
+
   const router = createBrowserRouter([
     {
       path: 'landing',
@@ -25,7 +27,7 @@ export default function GlobalRouterProvider() {
     },
     {
       path: 'login',
-      element: isTokenValid() ? <Navigate to="/home" /> : <Login />,
+      element: isTokenValid() && !isIosLogin ? <Navigate to="/home" /> : <Login />,
       errorElement: <ErrorPage />,
     },
     {
