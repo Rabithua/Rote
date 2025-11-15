@@ -23,7 +23,7 @@ RUN rm -rf node_modules && bun install --force
 COPY . .
 
 # 构建前端静态文件
-# 使用 ARG 接收构建参数，然后设置为环境变量供构建时使用
+# VITE_API_BASE 在构建时通过 ARG 传入并注入到代码中
 ARG VITE_API_BASE=http://localhost:3000
 ENV VITE_API_BASE=${VITE_API_BASE}
 RUN bun run build
@@ -47,6 +47,11 @@ COPY --from=builder /app/vite.config.ts ./
 # 安装所有依赖（vite preview 需要 vite，它在 devDependencies 中）
 RUN bun install
 
-# 直接用 Vite 预览模式启动（适合开发/预览环境）
+# 从构建上下文复制启动脚本并设置执行权限
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# 使用启动脚本作为入口点，在启动时注入环境变量
 EXPOSE 3001
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["bun", "run", "preview"]

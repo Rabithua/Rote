@@ -6,34 +6,41 @@ const API_PATH = '/v2/api';
 
 /**
  * 获取 API 基础 URL
- * 处理构建时可能为 undefined 的情况，确保始终返回有效的 URL
+ * 优先级：运行时配置 > 构建时配置 > 默认值
+ * 支持通过 window.__ROTE_CONFIG__ 在运行时注入配置
  */
 const getApiPoint = (): string => {
-  // Vite 使用 import.meta.env 访问环境变量（以 VITE_ 开头的变量会自动暴露）
-  const apiBase = import.meta.env.VITE_API_BASE;
   const defaultValue = 'http://localhost:3000';
 
-  // 如果 VITE_API_BASE 未设置或无效，使用默认值
-  if (!apiBase) {
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.warn('[api.ts] VITE_API_BASE is not set, using default:', defaultValue);
+  // 优先读取运行时配置（从 window 对象，由容器启动脚本注入）
+  const runtimeConfig = (window as any).__ROTE_CONFIG__;
+  if (runtimeConfig?.VITE_API_BASE) {
+    const runtimeApiBase = String(runtimeConfig.VITE_API_BASE).trim();
+    if (
+      runtimeApiBase &&
+      runtimeApiBase !== 'undefined' &&
+      runtimeApiBase !== 'null' &&
+      runtimeApiBase !== ''
+    ) {
+      return runtimeApiBase;
     }
-    return defaultValue;
   }
 
-  // 确保 apiBase 是字符串类型并验证有效性
-  const apiBaseStr = String(apiBase).trim();
-
-  if (apiBaseStr === 'undefined' || apiBaseStr === 'null' || apiBaseStr === '') {
-    if (import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.warn('[api.ts] VITE_API_BASE is invalid, using default:', defaultValue);
+  // 其次读取构建时配置（Vite 环境变量）
+  const apiBase = import.meta.env.VITE_API_BASE;
+  if (apiBase) {
+    const apiBaseStr = String(apiBase).trim();
+    if (apiBaseStr !== 'undefined' && apiBaseStr !== 'null' && apiBaseStr !== '') {
+      return apiBaseStr;
     }
-    return defaultValue;
   }
 
-  return apiBaseStr;
+  // 如果都未设置或无效，使用默认值
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn('[api.ts] VITE_API_BASE is not set, using default:', defaultValue);
+  }
+  return defaultValue;
 };
 
 export const API_POINT = getApiPoint();

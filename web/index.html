@@ -33,6 +33,12 @@
     <script>
       iosPWASplash('logo.png', '#ffffff');
     </script>
+    <!-- 运行时配置注入：容器启动脚本会替换此处的占位符 -->
+    <script>
+      window.__ROTE_CONFIG__ = window.__ROTE_CONFIG__ || {
+        VITE_API_BASE: '__VITE_API_BASE_PLACEHOLDER__',
+      };
+    </script>
     <!-- Umami -->
     <script
       defer

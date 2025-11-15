@@ -56,8 +56,6 @@ jobs:
           context: ./web
           file: ./web/Dockerfile
           push: true
-          build-args: |
-            VITE_API_BASE=${{ secrets.VITE_API_BASE || 'http://localhost:3000' }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:latest
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:${{ github.event.release.tag_name || github.ref_name || 'main' }}
