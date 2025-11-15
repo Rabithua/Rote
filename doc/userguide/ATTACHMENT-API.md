@@ -132,8 +132,12 @@ curl -X POST 'https://your-domain.com/v2/api/attachments/?noteId=note-uuid' \
 - **Body**:
   - `files`: 文件信息数组，每个文件包含：
     - `filename` (可选): 文件名
-    - `contentType` (可选): MIME 类型（如 `"image/jpeg"`）
-    - `size` (可选): 文件大小（字节）
+    - `contentType` (必填): MIME 类型（如 `"image/jpeg"`），必须是允许的图片类型
+    - `size` (必填): 文件大小（字节），必须大于 0 且不超过 20MB
+- **限制**:
+  - 单次最多请求 9 个文件
+  - 单个文件最大 20MB
+  - 支持图片格式：JPEG、PNG、WebP、GIF、HEIC、HEIF、AVIF、SVG
 
 请求示例（cURL）:
 
@@ -263,6 +267,12 @@ await fetch("/v2/api/attachments/finalize", {
 可能的错误：
 
 - 400 文件列表为空
+- 400 文件数量超过限制（最多 9 个文件）
+- 400 缺少内容类型 (contentType)
+- 400 不允许的内容类型（contentType 不在允许列表中）
+- 400 缺少文件大小 (size)
+- 400 文件大小必须大于 0
+- 400 文件大小超过限制（超过 20MB）
 - 401 未认证
 - 500 对象存储未配置
 
