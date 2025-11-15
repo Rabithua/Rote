@@ -16,7 +16,7 @@ GET /v2/api/notes/search
 
 **查询参数**:
 
-- `keyword` (必需): 搜索关键词
+- `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记 (true/false)
@@ -70,7 +70,7 @@ GET /v2/api/notes/search/public
 
 **查询参数**:
 
-- `keyword` (必需): 搜索关键词
+- `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `tag` (可选): 按标签过滤
@@ -109,7 +109,7 @@ GET /v2/api/openkey/notes/search
 
 **查询参数**:
 
-- `keyword` (必需): 搜索关键词
+- `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
@@ -170,6 +170,16 @@ GET /v2/api/notes/search/users/john?keyword=API
 {
   "code": 400,
   "message": "Keyword is required",
+  "data": null
+}
+```
+
+或
+
+```json
+{
+  "code": 400,
+  "message": "搜索关键词不能超过 200 个字符",
   "data": null
 }
 ```

@@ -389,7 +389,7 @@ attachmentsRouter.delete(
 
 ---
 
-### 2.4 缺少 CSRF 保护
+### 2.4 缺少 CSRF 保护 （暂时忽略）
 
 **问题描述**:
 虽然使用了 JWT 认证，但没有实现 CSRF 保护机制。对于使用 cookie 的会话管理，CSRF 保护是必需的。
@@ -402,7 +402,7 @@ attachmentsRouter.delete(
 
 ---
 
-### 2.5 日志中可能泄露敏感信息
+### 2.5 日志中可能泄露敏感信息（可以忽略）
 
 **位置**: 多个文件中的 `console.log` 和 `console.error`
 
@@ -424,7 +424,7 @@ attachmentsRouter.delete(
 
 ## 3. 低危漏洞
 
-### 3.1 用户名验证可能不够严格
+### 3.1 用户名验证可能不够严格（可以忽略）
 
 **位置**: `server/utils/zod.ts:5-16`
 
@@ -458,7 +458,7 @@ username: z
 
 ---
 
-### 3.2 缺少输入长度限制
+### 3.2 缺少输入长度限制 ✅ 已修复
 
 **位置**: 多个路由处理函数
 
@@ -469,12 +469,39 @@ username: z
 - 性能问题
 - 拒绝服务攻击
 
-**修复建议**:
-为所有用户输入添加合理的长度限制。
+**修复状态**: ✅ 已修复
+
+**修复内容**:
+已在 `server/utils/zod.ts` 中添加了以下验证 schema，并在相应路由中应用：
+
+1. **笔记相关验证** (`NoteCreateZod`, `NoteUpdateZod`):
+
+   - `title`: 最大 200 个字符
+   - `content`: 最大 1,000,000 个字符（约 1MB 文本）
+   - `tags`: 每个标签最大 50 个字符，最多 20 个标签
+
+2. **搜索关键词验证** (`SearchKeywordZod`):
+
+   - `keyword`: 最大 200 个字符
+
+3. **反应相关验证** (`ReactionCreateZod`):
+
+   - `type`: 最大 50 个字符
+   - `visitorId`: 最大 200 个字符
+
+4. **附件相关验证** (`AttachmentPresignZod`):
+   - `filename`: 最大 255 个字符
+
+**修复文件**:
+
+- `server/utils/zod.ts`: 添加验证 schema
+- `server/route/v2/note.ts`: 应用笔记和搜索验证
+- `server/route/v2/reaction.ts`: 应用反应验证
+- `server/route/v2/attachment.ts`: 应用附件验证
 
 ---
 
-### 3.3 缺少速率限制的差异化策略
+### 3.3 缺少速率限制的差异化策略（可以忽略）
 
 **位置**: `server/middleware/limiter.ts`
 

@@ -56,12 +56,12 @@
   - `Authorization: Bearer <accessToken>`（必填）
   - `Content-Type: application/json`
 - **Body**:
-  - `content`: string（必填）
-  - `title`: string（可选）
+  - `content`: string（必填，最大 1,000,000 个字符）
+  - `title`: string（可选，最大 200 个字符）
   - `type`: string（可选，默认 `"Rote"`）
   - `state`: string（可选，默认 `"private"`）
   - `editor`: string（可选）
-  - `tags`: string[]（可选）
+  - `tags`: string[]（可选，每个标签最大 50 个字符，最多 20 个标签）
   - `pin`: boolean（可选）
   - `archived`: boolean（可选）
   - `attachmentIds`: string[]（可选）
@@ -115,6 +115,9 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
 
 - 401 未认证（需要登录）
 - 400 内容为空或字段格式错误
+- 400 标题超过 200 个字符
+- 400 内容超过 1,000,000 个字符
+- 400 标签超过长度限制（单个标签最大 50 个字符，最多 20 个标签）
 
 ---
 
@@ -359,7 +362,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
   - `Content-Type: application/json`
 - **路径参数**:
   - `id`: string（笔记 ID，UUID 格式）
-- **Body**: 需要更新的字段（与创建接口字段相同）
+- **Body**: 需要更新的字段（与创建接口字段相同，长度限制也相同）
 
 请求示例（cURL）:
 
@@ -409,6 +412,9 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
 - 401 未认证（需要登录）
 - 403 无权限（只能更新自己的笔记）
 - 404 笔记不存在
+- 400 标题超过 200 个字符
+- 400 内容超过 1,000,000 个字符
+- 400 标签超过长度限制（单个标签最大 50 个字符，最多 20 个标签）
 
 ---
 
@@ -496,7 +502,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
 - **URL**: `/v2/api/notes/search`
 - **Headers**: `Authorization: Bearer <accessToken>`（必填）
 - **Query 参数**:
-  - `keyword`: string（必填，搜索关键词）
+  - `keyword`: string（必填，搜索关键词，最大 200 个字符）
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选，是否只搜索归档笔记）
@@ -546,6 +552,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
 
 - 401 未认证（需要登录）
 - 400 关键词参数缺失
+- 400 搜索关键词超过 200 个字符
 
 ---
 
@@ -555,7 +562,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
 - **URL**: `/v2/api/notes/search/public`
 - **Headers**: 无需认证
 - **Query 参数**:
-  - `keyword`: string（必填，搜索关键词）
+  - `keyword`: string（必填，搜索关键词，最大 200 个字符）
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `tag`: string | string[]（可选，按标签过滤）
@@ -602,6 +609,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
 可能的错误：
 
 - 400 关键词参数缺失
+- 400 搜索关键词超过 200 个字符
 
 ---
 
@@ -613,7 +621,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
 - **路径参数**:
   - `username`: string（用户名）
 - **Query 参数**:
-  - `keyword`: string（必填，搜索关键词）
+  - `keyword`: string（必填，搜索关键词，最大 200 个字符）
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选）
@@ -661,6 +669,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
 可能的错误：
 
 - 400 关键词参数缺失
+- 400 搜索关键词超过 200 个字符
+- 400 搜索关键词超过 200 个字符
 - 404 用户不存在
 
 ---

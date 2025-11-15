@@ -18,6 +18,7 @@ import { validateContentType, validateFile } from '../../utils/fileValidation';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { presignPutUrl, r2uploadhandler } from '../../utils/r2';
+import { AttachmentPresignZod } from '../../utils/zod';
 
 // 附件相关路由
 const attachmentsRouter = express.Router();
@@ -195,11 +196,10 @@ attachmentsRouter.post(
       files: Array<{ filename?: string; contentType?: string; size?: number }>;
     };
 
-    if (!files || !Array.isArray(files) || files.length === 0) {
-      throw new Error('No files to presign');
-    }
+    // 验证输入长度和格式
+    AttachmentPresignZod.parse(req.body);
 
-    // 验证文件数量限制
+    // 验证文件数量限制（zod 已经验证，但保留作为双重检查）
     if (files.length > MAX_FILES) {
       throw new Error(`最多允许 ${MAX_FILES} 个文件`);
     }

@@ -21,6 +21,7 @@ import {
 } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
+import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
 
 // 笔记相关路由
 const notesRouter = express.Router();
@@ -31,6 +32,9 @@ notesRouter.post(
   authenticateJWT,
   bodyTypeCheck,
   asyncHandler(async (req, res) => {
+    // 验证输入长度
+    NoteCreateZod.parse(req.body);
+
     const { title, content, type, tags, state, archived, pin, editor, attachmentIds } =
       req.body as {
         title?: string;
@@ -98,7 +102,10 @@ notesRouter.get(
     const { keyword, skip, limit, archived, tag, ...otherParams } = req.query;
     const user = req.user as User;
 
-    if (!keyword || typeof keyword !== 'string') {
+    // 验证搜索关键词长度
+    if (keyword && typeof keyword === 'string') {
+      SearchKeywordZod.parse({ keyword });
+    } else {
       throw new Error('Keyword is required');
     }
 
@@ -142,7 +149,10 @@ notesRouter.get(
   asyncHandler(async (req, res) => {
     const { keyword, skip, limit, tag, ...otherParams } = req.query;
 
-    if (!keyword || typeof keyword !== 'string') {
+    // 验证搜索关键词长度
+    if (keyword && typeof keyword === 'string') {
+      SearchKeywordZod.parse({ keyword });
+    } else {
       throw new Error('Keyword is required');
     }
 
@@ -184,7 +194,10 @@ notesRouter.get(
       throw new Error('Username is required');
     }
 
-    if (!keyword || typeof keyword !== 'string') {
+    // 验证搜索关键词长度
+    if (keyword && typeof keyword === 'string') {
+      SearchKeywordZod.parse({ keyword });
+    } else {
       throw new Error('Keyword is required');
     }
 
@@ -453,6 +466,9 @@ notesRouter.put(
     if (!id || !isValidUUID(id)) {
       throw new Error('Invalid or missing ID');
     }
+
+    // 验证输入长度
+    NoteUpdateZod.parse(req.body);
 
     // 确保使用路由参数中的 id，而不是 body 中的 id（防止不一致）
     const data = await editRote({ ...rote, id, authorid: user.id });

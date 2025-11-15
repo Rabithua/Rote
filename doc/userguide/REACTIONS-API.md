@@ -25,9 +25,9 @@
   - `Content-Type: application/json`
   - `Authorization: Bearer <accessToken>`（可选，已登录用户）
 - **Body**:
-  - `type`: string（必填，反应类型，emoji 字符）
+  - `type`: string（必填，反应类型，emoji 字符，最大 50 个字符）
   - `roteid`: string（必填，笔记 ID，UUID 格式）
-  - `visitorId`: string（可选，访客设备指纹 ID，匿名用户必需）
+  - `visitorId`: string（可选，访客设备指纹 ID，匿名用户必需，最大 200 个字符）
   - `visitorInfo`: object（可选，访客信息，如浏览器、操作系统等）
   - `metadata`: object（可选，附加元数据，如来源标识等）
 
@@ -99,6 +99,8 @@ curl -X POST 'https://your-domain.com/v2/api/reactions/' \
 - 400 缺少必需参数（`type` 或 `roteid`）
 - 400 笔记 ID 格式错误（不是有效的 UUID）
 - 400 匿名用户缺少 `visitorId`
+- 400 反应类型超过 50 个字符
+- 400 访客 ID 超过 200 个字符
 - 404 笔记不存在
 
 ---

@@ -131,7 +131,7 @@ curl -X POST 'https://your-domain.com/v2/api/attachments/?noteId=note-uuid' \
   - `Content-Type: application/json`
 - **Body**:
   - `files`: 文件信息数组，每个文件包含：
-    - `filename` (可选): 文件名
+    - `filename` (可选): 文件名（最大 255 个字符）
     - `contentType` (必填): MIME 类型（如 `"image/jpeg"`），必须是允许的图片类型
     - `size` (必填): 文件大小（字节），必须大于 0 且不超过 20MB
 - **限制**:
@@ -273,6 +273,7 @@ await fetch("/v2/api/attachments/finalize", {
 - 400 缺少文件大小 (size)
 - 400 文件大小必须大于 0
 - 400 文件大小超过限制（超过 20MB）
+- 400 文件名超过 255 个字符
 - 401 未认证
 - 500 对象存储未配置
 

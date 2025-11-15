@@ -1,9 +1,10 @@
+import { User } from '@prisma/client';
 import express from 'express';
-import { User } from "@prisma/client";
-import { optionalJWT } from "../../middleware/jwtAuth";
-import { findRoteById, addReaction, removeReaction } from "../../utils/dbMethods";
-import { asyncHandler } from "../../utils/handlers";
-import { isValidUUID, createResponse } from "../../utils/main";
+import { optionalJWT } from '../../middleware/jwtAuth';
+import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
+import { asyncHandler } from '../../utils/handlers';
+import { createResponse, isValidUUID } from '../../utils/main';
+import { ReactionCreateZod } from '../../utils/zod';
 
 // 反应相关路由
 const reactionsRouter = express.Router();
@@ -18,11 +19,15 @@ reactionsRouter.post(
     const user = req.user as User;
     const { type, roteid, visitorId, visitorInfo, metadata } = req.body;
 
-    if (!type || !roteid) {
-      throw new Error('Type and rote ID are required');
+    // 如果用户未登录，visitorId 是必需的
+    if (!user && !visitorId) {
+      throw new Error('Visitor ID is required for unauthenticated users');
     }
 
-    // 验证 roteid 格式
+    // 验证输入长度和格式
+    ReactionCreateZod.parse(req.body);
+
+    // 验证 roteid 格式（zod 已经验证了 UUID 格式，但保留双重检查）
     if (!isValidUUID(roteid)) {
       throw new Error('Invalid rote ID format');
     }
@@ -44,10 +49,7 @@ reactionsRouter.post(
       // 已登录用户
       reactionData.userid = user.id;
     } else {
-      // 访客用户
-      if (!visitorId) {
-        throw new Error('Visitor ID is required for unauthenticated users');
-      }
+      // 访客用户（visitorId 已在前面验证）
       reactionData.visitorId = visitorId;
       reactionData.visitorInfo = visitorInfo;
     }
