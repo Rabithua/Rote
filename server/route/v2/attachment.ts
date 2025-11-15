@@ -14,6 +14,7 @@ import {
   updateAttachmentsSortOrder,
   upsertAttachmentsByOriginalKey,
 } from '../../utils/dbMethods';
+import { validateContentType, validateFile } from '../../utils/fileValidation';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { presignPutUrl, r2uploadhandler } from '../../utils/r2';
@@ -46,6 +47,11 @@ attachmentsRouter.post(
     }
 
     const imageFiles = Array.isArray(files.images) ? files.images : [files.images];
+
+    // 验证每个文件的类型和内容
+    for (const file of imageFiles) {
+      await validateFile(file);
+    }
 
     // 并发控制，避免单次请求时间过长导致中断
     const CONCURRENCY = 3; // 保留并发配置，因为这是性能调优必需的
@@ -145,7 +151,6 @@ attachmentsRouter.put(
   })
 );
 
-export default attachmentsRouter;
 // 预签名直传（前端直接 PUT 到 R2）
 attachmentsRouter.post(
   '/presign',
@@ -159,6 +164,22 @@ attachmentsRouter.post(
 
     if (!files || !Array.isArray(files) || files.length === 0) {
       throw new Error('No files to presign');
+    }
+
+    // 验证文件数量和大小
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    const MAX_FILES = 9;
+
+    if (files.length > MAX_FILES) {
+      throw new Error(`最多允许 ${MAX_FILES} 个文件`);
+    }
+
+    // 验证每个文件的内容类型和大小
+    for (const f of files) {
+      validateContentType(f.contentType);
+      if (f.size && f.size > MAX_FILE_SIZE) {
+        throw new Error(`文件大小超过限制: ${MAX_FILE_SIZE} 字节`);
+      }
     }
 
     const getExt = (filename?: string, contentType?: string) => {
@@ -243,6 +264,13 @@ attachmentsRouter.post(
       throw new Error('Invalid object key');
     }
 
+    // 验证 mimetype（如果提供）
+    for (const a of attachments) {
+      if (a.mimetype) {
+        validateContentType(a.mimetype);
+      }
+    }
+
     const uploads: UploadResult[] = attachments.map((a) => {
       const storageConfig = getGlobalConfig<StorageConfig>('storage');
       const urlPrefix = storageConfig?.urlPrefix;
@@ -273,3 +301,5 @@ attachmentsRouter.post(
     res.status(201).json(createResponse(data));
   })
 );
+
+export default attachmentsRouter;
