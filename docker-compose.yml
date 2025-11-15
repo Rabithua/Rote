@@ -1,11 +1,11 @@
-version: "3.8"
 services:
   rote-backend:
     build:
       context: ./server
     environment:
       # 基础配置 - 必需
-      - DATABASE_URL=postgresql://prisma:${POSTGRES_PASSWORD}@postgres:5432/rote
+      - DATABASE_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@postgres:5432/rote
+      - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@postgres:5432/rote
     ports:
       - "3000:3000"
     depends_on:
@@ -19,7 +19,7 @@ services:
       - "3001:3001"
     environment:
       # 设置 API 基础 URL ，如果后端启用了反向代理，可以设置为反向代理的URL
-      - VITE_API_BASE=${VITE_API_BASE:-http://<你的服务器IP>:3000}
+      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
     depends_on:
       - rote-backend
     restart: unless-stopped
@@ -32,7 +32,7 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: prisma
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
       POSTGRES_DB: rote
     volumes:
       - rote-postgres-data:/var/lib/postgresql/data
