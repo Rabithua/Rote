@@ -35,6 +35,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/rote-backend:release
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-backend:${{ github.event.release.tag_name || github.ref_name || 'main' }}
 
   build-frontend:
@@ -64,4 +65,5 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:release
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:${{ github.event.release.tag_name || github.ref_name || 'main' }}

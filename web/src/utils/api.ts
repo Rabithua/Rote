@@ -16,11 +16,13 @@ const getApiPoint = (): string => {
   const runtimeConfig = (window as any).__ROTE_CONFIG__;
   if (runtimeConfig?.VITE_API_BASE) {
     const runtimeApiBase = String(runtimeConfig.VITE_API_BASE).trim();
+    // 检查是否是占位符（配置注入失败的情况）
     if (
       runtimeApiBase &&
       runtimeApiBase !== 'undefined' &&
       runtimeApiBase !== 'null' &&
-      runtimeApiBase !== ''
+      runtimeApiBase !== '' &&
+      runtimeApiBase !== '__VITE_API_BASE_PLACEHOLDER__'
     ) {
       return runtimeApiBase;
     }

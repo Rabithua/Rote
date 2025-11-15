@@ -5,9 +5,10 @@
 # IMAGE_TAG=v1.0.0 docker-compose up -d
 #
 # Available tags:
-# - latest: Latest stable release
+# - latest: Latest stable release (supports multi-platform: amd64, arm64)
+# - release: Latest stable release (same as latest)
+# - develop: Latest from develop branch (supports multi-platform: amd64, arm64)
 # - main: Latest from main branch
-# - develop: Latest from develop branch
 # - v1.0.0: Specific version (if released)
 
 services:
