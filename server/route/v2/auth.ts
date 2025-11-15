@@ -84,7 +84,7 @@ authRouter.put(
 
     const zodData = passwordChangeZod.safeParse(req.body);
     if (zodData.success === false) {
-      throw new Error(zodData.error.errors[0].message);
+      throw new Error(zodData.error.issues[0].message);
     }
 
     const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);

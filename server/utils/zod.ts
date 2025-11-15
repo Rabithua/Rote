@@ -82,10 +82,10 @@ export const SearchKeywordZod = z.object({
 // 反应相关验证
 export const ReactionCreateZod = z.object({
   type: z.string().min(1, '反应类型不能为空').max(50, '反应类型不能超过 50 个字符'), // emoji 通常很短，但留一些余量
-  roteid: z.string().uuid('无效的笔记 ID'),
+  roteid: z.uuid('无效的笔记 ID'),
   visitorId: z.string().max(200, '访客 ID 不能超过 200 个字符').optional(),
-  visitorInfo: z.record(z.any()).optional(),
-  metadata: z.record(z.any()).optional(),
+  visitorInfo: z.record(z.string(), z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 // 附件文件名验证

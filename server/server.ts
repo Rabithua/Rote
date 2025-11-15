@@ -32,7 +32,7 @@ app.use(injectDynamicUrls);
 app.use(rateLimiterMiddleware);
 
 // Initialize Passport
-app.use(passport.initialize());
+app.use(passport.initialize() as unknown as express.RequestHandler);
 
 // body parser
 app.use(
@@ -115,7 +115,8 @@ app.use('/v2/api', routerV2); // RESTful API
 // Global error handler (must be after all routes)
 app.use(errorHandler);
 
-app.get('*', (req, res) => {
+// 404 handler - Express 5.x requires explicit path pattern
+app.use((req, res) => {
   res.status(404).send({
     code: 1,
     message: 'Api not found!',
