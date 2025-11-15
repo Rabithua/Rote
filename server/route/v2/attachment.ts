@@ -22,6 +22,28 @@ import { presignPutUrl, r2uploadhandler } from '../../utils/r2';
 // 附件相关路由
 const attachmentsRouter = express.Router();
 
+// 文件上传限制常量
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILES = 9;
+const MAX_TOTAL_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
+/**
+ * 验证文件大小（用于 presign 接口）
+ * @param size 文件大小（字节）
+ * @throws Error 如果文件大小无效
+ */
+function validateFileSize(size: number | undefined | null): void {
+  if (size === undefined || size === null) {
+    throw new Error('缺少文件大小 (size)');
+  }
+  if (size <= 0) {
+    throw new Error('文件大小必须大于 0');
+  }
+  if (size > MAX_FILE_SIZE) {
+    throw new Error(`文件大小超过限制: ${MAX_FILE_SIZE} 字节`);
+  }
+}
+
 // 上传附件
 attachmentsRouter.post(
   '/',
@@ -33,9 +55,9 @@ attachmentsRouter.post(
 
     const form = formidable({
       multiples: true,
-      maxFileSize: 20 * 1024 * 1024, // 20MB limit
-      maxFiles: 9,
-      maxTotalFileSize: 100 * 1024 * 1024, // 100MB limit
+      maxFileSize: MAX_FILE_SIZE,
+      maxFiles: MAX_FILES,
+      maxTotalFileSize: MAX_TOTAL_FILE_SIZE,
       filename: () => {
         return `${randomUUID()}`;
       },
@@ -166,20 +188,19 @@ attachmentsRouter.post(
       throw new Error('No files to presign');
     }
 
-    // 验证文件数量和大小
-    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
-    const MAX_FILES = 9;
-
+    // 验证文件数量限制
     if (files.length > MAX_FILES) {
       throw new Error(`最多允许 ${MAX_FILES} 个文件`);
     }
 
-    // 验证每个文件的内容类型和大小
+    // 严格验证每个文件的内容类型和大小
     for (const f of files) {
+      // 验证 contentType 必须提供且符合允许的类型
+      // validateContentType 内部会检查 contentType 是否存在
       validateContentType(f.contentType);
-      if (f.size && f.size > MAX_FILE_SIZE) {
-        throw new Error(`文件大小超过限制: ${MAX_FILE_SIZE} 字节`);
-      }
+
+      // 验证文件大小必须提供且不能超过限制
+      validateFileSize(f.size);
     }
 
     const getExt = (filename?: string, contentType?: string) => {
