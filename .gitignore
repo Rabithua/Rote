@@ -19,6 +19,7 @@ bun.lockb
 bun.lock
 .idea
 .vscode
+.cursor
 .cache
 coverage
 logs
