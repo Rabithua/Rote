@@ -280,7 +280,7 @@ password: z
 
 ## 2. 中危漏洞
 
-### 2.1 限流器使用内存存储
+### 2.1 限流器使用内存存储 （可以忽略）
 
 **位置**: `server/middleware/limiter.ts:4-4`
 
@@ -308,7 +308,7 @@ const limiter = new RateLimiterMemory({
 
 ---
 
-### 2.2 缺少请求大小限制
+### 2.2 缺少请求大小限制 （已完成修复）
 
 **位置**: `server/server.ts:38-39`
 

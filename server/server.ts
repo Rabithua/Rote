@@ -35,8 +35,17 @@ app.use(rateLimiterMiddleware);
 app.use(passport.initialize());
 
 // body parser
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: false,
+    limit: '10mb', // 设置合理的限制，防止内存耗尽攻击
+  })
+);
+app.use(
+  bodyParser.json({
+    limit: '10mb', // 设置合理的限制，防止内存耗尽攻击
+  })
+);
 
 // CORS 配置 - 从数据库或环境变量读取 allowedOrigins
 // 当 credentials: true 时，不能使用 origin: '*'，必须明确指定允许的 origin
