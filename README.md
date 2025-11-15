@@ -1,37 +1,46 @@
+[English](README.md) | [中文](README.zh.md)
+
 ![Group 1](https://github.com/Rabithua/Rote/assets/34543831/a06d5a5b-0580-4138-9282-449a725cd287)
 
 > A personal note repository that looks different🤔
 
 - Open API, more than one way to record🤩
 - Take control of your own data, come and go freely, no data hostage🙅🏻
-- Using docker for one-click deployment, data backup and migration are as easy as drinking water👌
+- Using Docker for one-click deployment, data backup and migration are as easy as drinking water👌
 
 ## Deploy
 
-### 快速开始
+### Quick Start
 
-#### 方式一：使用 Docker Hub 镜像（推荐）
+#### Method 1: Using Docker Hub Image (Recommended)
+
+> Copy `docker-compose.yml` to your server with Docker and Docker Compose installed
+> Note: If you use a reverse proxy, VITE_API_BASE should be your backend address after the reverse proxy
 
 ```bash
-# 使用最新版本（默认配置文件）
-docker-compose up -d
+# Use latest version (default config file)
+VITE_API_BASE=http://<your-ip-address>:3000 docker-compose up -d
 
-# 使用特定版本
+# Use specific version
 IMAGE_TAG=v1.0.0 docker-compose up -d
 ```
 
-#### 方式二：本地构建
+#### Method 2: Local Build
 
 ```bash
-# 从源码构建并启动
-# VITE_API_BASE 在构建时注入到前端代码中（可选，默认 http://localhost:3000）
+# Clone the repository
+git clone https://github.com/Rabithua/Rote.git
+cd Rote
+
+# Build and start from source
+# VITE_API_BASE is injected into frontend code at build time (optional, default http://localhost:3000)
 VITE_API_BASE=http://localhost:3000 docker-compose -f docker-compose.build.yml up -d --build
 ```
 
-### 详细说明
+### Detailed Instructions
 
-更多部署选项和配置说明，请查看 [Docker Compose 使用指南](doc/userguide/DOCKER-COMPOSE-GUIDE.md)。
+For more deployment options and configuration instructions, please check the documentation in the `doc/` directory.
 
-## Technology stack
+## Technology Stack
 
 ![Frame 1](https://github.com/Rabithua/Rote/assets/34543831/fc00f797-82bc-47fe-8c75-36ea0b1f6f76)
