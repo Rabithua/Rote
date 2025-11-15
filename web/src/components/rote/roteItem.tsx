@@ -9,7 +9,6 @@ import {
   LinkIcon,
   PinIcon,
   SmilePlus,
-  User,
 } from 'lucide-react';
 import moment from 'moment';
 import { memo, useCallback, useState } from 'react';
@@ -19,11 +18,11 @@ import { toast } from 'sonner';
 
 import RoteEditor from '@/components/editor/RoteEditor';
 import { SoftBottom } from '@/components/others/SoftBottom';
+import UserAvatar from '@/components/others/UserAvatar';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -73,15 +72,7 @@ function RoteItem({
     >
       {showAvatar && (
         <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author.username}`}>
-          <Avatar className="size-[40px] bg-[#00000010]">
-            {rote.author.avatar ? (
-              <AvatarImage src={rote.author.avatar} />
-            ) : (
-              <AvatarFallback>
-                <User className="size-4 text-[#00000030]" />
-              </AvatarFallback>
-            )}
-          </Avatar>
+          <UserAvatar avatar={rote.author.avatar} className="size-[40px] bg-[#00000010]" />
         </Link>
       )}
 
