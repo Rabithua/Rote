@@ -322,6 +322,9 @@ export default function SetupWizard() {
                 placeholder={t('pages.setupWizard.placeholders.siteUrl')}
                 className={errors.siteUrl ? 'border-destructive' : ''}
               />
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                {t('pages.setupWizard.descriptions.siteUrl')}
+              </p>
               {errors.siteUrl && (
                 <p className="text-destructive text-sm">
                   {errors.siteUrl === 'required'

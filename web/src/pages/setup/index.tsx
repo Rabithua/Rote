@@ -1,6 +1,8 @@
 import SetupWizard from '@/components/setup/SetupWizard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
-import { Loader } from 'lucide-react';
+import { AlertCircle, Loader, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Navigate } from 'react-router-dom';
 
@@ -22,8 +24,43 @@ export default function SetupPage() {
     return <Navigate to="/" replace />;
   }
 
-  // 状态检查失败则不渲染任何内容（可根据需要改为提示）
-  if (error) return null;
+  // 处理错误情况，显示错误提示
+  if (error) {
+    // 判断是否是网络连接错误
+    const networkErrorKeywords = [
+      'not responding',
+      'ECONNREFUSED',
+      'ERR_NETWORK',
+      'Network Error',
+      'timeout',
+    ];
+    const isNetworkError = networkErrorKeywords.some((keyword) => error.includes(keyword));
+
+    return (
+      <div className="bg-pattern min-h-screen">
+        <div className="font-zhengwen container mx-auto max-w-2xl px-4 py-8">
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="size-4" />
+            <AlertTitle>{t('error.title')}</AlertTitle>
+            <AlertDescription>
+              <p className="mb-2">{t('error.description')}</p>
+              <p className="font-mono text-sm opacity-80">{error}</p>
+              {isNetworkError && <p className="mt-2 text-sm">{t('error.backendHint')}</p>}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="mr-2 size-4" />
+                {t('error.retry')}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-pattern min-h-screen">

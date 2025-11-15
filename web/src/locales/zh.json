@@ -48,6 +48,10 @@
         "title": "探索更多",
         "subtitle": "这里有几个按钮以供玩耍",
         "tagline": "EXPlORE MORE"
+      },
+      "redirectingToSetup": {
+        "error": "检测到后端错误，正在跳转到设置页面",
+        "notInitialized": "系统未初始化，正在跳转到设置页面"
       }
     },
     "mine": {
@@ -264,7 +268,13 @@
       "statistics": "统计 / Static"
     },
     "setupPage": {
-      "statusChecking": "检查系统状态中..."
+      "statusChecking": "检查系统状态中...",
+      "error": {
+        "title": "系统状态检查失败",
+        "description": "无法连接到后端服务，请检查后端服务是否正常运行。",
+        "backendHint": "如果使用 Docker 部署，后端容器可能需要几分钟构建，请稍后刷新页面。",
+        "retry": "重试"
+      }
     },
     "setupWizard": {
       "title": "Rote 初始化向导",
@@ -301,6 +311,9 @@
         "adminEmail": "请输入管理员邮箱",
         "adminPassword": "请输入管理员密码",
         "adminNickname": "请输入管理员昵称"
+      },
+      "descriptions": {
+        "siteUrl": "网站URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。"
       },
       "validation": {
         "siteNameRequired": "网站名称不能为空",

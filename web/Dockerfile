@@ -23,6 +23,9 @@ RUN rm -rf node_modules && bun install --force
 COPY . .
 
 # 构建前端静态文件
+# 使用 ARG 接收构建参数，然后设置为环境变量供构建时使用
+ARG VITE_API_BASE=http://localhost:3000
+ENV VITE_API_BASE=${VITE_API_BASE}
 RUN bun run build
 
 # 生产阶段：使用轻量级镜像运行预览服务器
