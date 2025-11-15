@@ -26,6 +26,7 @@ const attachmentsRouter = express.Router();
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_FILES = 9;
 const MAX_TOTAL_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_BATCH_SIZE = 100; // 批量操作最大数量限制
 
 /**
  * 验证文件大小（用于 presign 接口）
@@ -134,6 +135,11 @@ attachmentsRouter.delete(
       throw new Error('No attachments to delete');
     }
 
+    // 限制批量删除的数量，防止滥用
+    if (ids.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次删除 ${MAX_BATCH_SIZE} 个附件`);
+    }
+
     const data = await deleteAttachments(
       ids.map((id: string) => ({ id })),
       user.id
@@ -159,6 +165,11 @@ attachmentsRouter.put(
 
     if (!attachmentIds || !Array.isArray(attachmentIds) || attachmentIds.length === 0) {
       throw new Error('Invalid attachment IDs');
+    }
+
+    // 限制批量更新的数量，防止滥用
+    if (attachmentIds.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次更新 ${MAX_BATCH_SIZE} 个附件的排序`);
     }
 
     // 验证所有附件ID格式
@@ -276,6 +287,11 @@ attachmentsRouter.post(
 
     if (!attachments || !Array.isArray(attachments) || attachments.length === 0) {
       throw new Error('No attachments to finalize');
+    }
+
+    // 限制批量完成的数量，防止滥用
+    if (attachments.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次完成 ${MAX_BATCH_SIZE} 个附件的入库`);
     }
 
     // 简单的所有权校验：Key 必须在当前用户前缀下

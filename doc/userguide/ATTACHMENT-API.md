@@ -296,6 +296,8 @@ await fetch("/v2/api/attachments/finalize", {
     - `mimetype` (可选): MIME 类型
     - `hash` (可选): 文件哈希值
   - `noteId` (可选): 笔记 ID（UUID 格式），如果提供，附件将绑定到该笔记
+- **限制**:
+  - 单次最多处理 100 个附件
 
 **特性**：
 
@@ -354,6 +356,7 @@ curl -X POST 'https://your-domain.com/v2/api/attachments/finalize' \
 可能的错误：
 
 - 400 附件列表为空
+- 400 附件数量超过限制（最多 100 个附件）
 - 400 无效的对象 Key（Key 必须属于当前用户）
 - 401 未认证
 - 500 对象存储未配置
@@ -415,6 +418,8 @@ curl -X DELETE 'https://your-domain.com/v2/api/attachments/attachment-uuid' \
   - `Content-Type: application/json`
 - **Body**:
   - `ids`: 附件 ID 数组（UUID 格式数组，字符串数组）
+- **限制**:
+  - 单次最多删除 100 个附件
 
 **特性**：
 
@@ -448,6 +453,7 @@ curl -X DELETE 'https://your-domain.com/v2/api/attachments/' \
 可能的错误：
 
 - 400 附件列表为空
+- 400 附件数量超过限制（最多 100 个附件）
 - 400 部分附件不存在或无权访问
 - 401 未认证
 
@@ -465,6 +471,8 @@ curl -X DELETE 'https://your-domain.com/v2/api/attachments/' \
 - **Body**:
   - `roteId`: 笔记 ID（UUID 格式）
   - `attachmentIds`: 附件 ID 数组（UUID 格式数组），按期望的排序顺序排列
+- **限制**:
+  - 单次最多更新 100 个附件的排序
 
 **特性**：
 
@@ -514,6 +522,7 @@ curl -X PUT 'https://your-domain.com/v2/api/attachments/sort' \
 
 - 400 无效的笔记 ID
 - 400 无效的附件 ID 列表
+- 400 附件数量超过限制（最多 100 个附件）
 - 400 部分附件不存在、不属于用户或未绑定到指定笔记
 - 401 未认证
 

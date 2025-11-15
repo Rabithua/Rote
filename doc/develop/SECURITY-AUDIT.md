@@ -343,16 +343,24 @@ app.use(
 
 ---
 
-### 2.3 批量操作缺少数量限制
+### 2.3 批量操作缺少数量限制 （已完成修复）
 
-**位置**: `server/route/v2/note.ts:356-408`
+**位置**: `server/route/v2/attachment.ts`
 
 **问题描述**:
-虽然批量获取笔记接口有 100 条的限制，但其他批量操作（如批量删除附件）可能缺少限制。
+虽然批量获取笔记接口有 100 条的限制，但其他批量操作（如批量删除附件、更新附件排序、完成回调）缺少限制。
 
-**代码片段**:
+**修复内容**:
 
-```98:115:server/route/v2/attachment.ts
+已在 `server/route/v2/attachment.ts` 中添加 `MAX_BATCH_SIZE = 100` 常量，并在以下接口中添加了数量限制：
+
+1. **批量删除附件** (`DELETE /`): 限制最多 100 个附件
+2. **更新附件排序** (`PUT /sort`): 限制最多 100 个附件
+3. **完成回调接口** (`POST /finalize`): 限制最多 100 个附件
+
+**修复后的代码片段**:
+
+```126:149:server/route/v2/attachment.ts
 // 批量删除附件
 attachmentsRouter.delete(
   '/',
@@ -365,6 +373,11 @@ attachmentsRouter.delete(
       throw new Error('No attachments to delete');
     }
 
+    // 限制批量删除的数量，防止滥用
+    if (ids.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次删除 ${MAX_BATCH_SIZE} 个附件`);
+    }
+
     const data = await deleteAttachments(
       ids.map((id: string) => ({ id })),
       user.id
@@ -372,17 +385,6 @@ attachmentsRouter.delete(
     res.status(200).json(createResponse(data));
   })
 );
-```
-
-**修复建议**:
-
-```typescript
-const MAX_BATCH_SIZE = 100;
-if (ids.length > MAX_BATCH_SIZE) {
-  throw new Error(
-    `Maximum ${MAX_BATCH_SIZE} attachments can be deleted at once`
-  );
-}
 ```
 
 ---
