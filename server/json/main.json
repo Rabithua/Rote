@@ -1,30 +1,18 @@
 {
-    "stateType": [
-        "public",
-        "private",
-        "archived"
-    ],
-    "roteType": [
-        "Rote"
-    ],
-    "editorType": [
-        "normal",
-        "noval"
-    ],
-    "safeRoutes": [
-        "home",
-        "landing",
-        "login",
-        "filter",
-        "profile",
-        "404",
-        "explore",
-        "archived",
-        "experiment"
-    ],
-    "openkeyPermissions": [
-        "SENDROTE",
-        "GETROTE",
-        "EDITROTE"
-    ]
+  "stateType": ["public", "private", "archived"],
+  "roteType": ["Rote"],
+  "editorType": ["normal", "noval"],
+  "safeRoutes": [
+    "home",
+    "landing",
+    "login",
+    "filter",
+    "profile",
+    "404",
+    "explore",
+    "archived",
+    "experiment",
+    "unknown"
+  ],
+  "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE"]
 }

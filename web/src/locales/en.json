@@ -48,6 +48,10 @@
         "title": "Explore More",
         "subtitle": "Here are a few buttons to play with",
         "tagline": "EXPlORE MORE"
+      },
+      "redirectingToSetup": {
+        "error": "Backend error detected, redirecting to setup page",
+        "notInitialized": "System not initialized, redirecting to setup page"
       }
     },
     "mine": {
@@ -83,6 +87,11 @@
         "emailFormat": "Invalid email format",
         "nicknameRequired": "Nickname is required",
         "nicknameMaxLength": "Nickname cannot exceed 20 characters"
+      },
+      "authorize": {
+        "title": "Authorize Login",
+        "message": "You are about to authorize Rote Web App to sign in to Rote iOS App as {{username}}",
+        "button": "Authorize Login"
       },
       "messages": {
         "loggingIn": "Logging in...",
@@ -255,7 +264,13 @@
       "statistics": "Statistics"
     },
     "setupPage": {
-      "statusChecking": "Checking system status..."
+      "statusChecking": "Checking system status...",
+      "error": {
+        "title": "System Status Check Failed",
+        "description": "Unable to connect to the backend service. Please check if the backend service is running properly.",
+        "backendHint": "If using Docker deployment, the backend container may take a few minutes to build. Please refresh the page later.",
+        "retry": "Retry"
+      }
     },
     "setupWizard": {
       "title": "Rote Setup Wizard",
@@ -292,6 +307,9 @@
         "adminEmail": "Enter admin email",
         "adminPassword": "Enter admin password",
         "adminNickname": "Enter admin nickname"
+      },
+      "descriptions": {
+        "siteUrl": "Site URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com)."
       },
       "validation": {
         "siteNameRequired": "Site name is required",

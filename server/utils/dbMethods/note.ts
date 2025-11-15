@@ -65,6 +65,38 @@ export async function findRoteById(id: string): Promise<any> {
   }
 }
 
+export async function findRotesByIds(ids: string[]): Promise<any[]> {
+  try {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+
+    const rotes = await prisma.rote.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+      include: {
+        author: {
+          select: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+        attachments: {
+          orderBy: [{ sortIndex: 'asc' } as any, { createdAt: 'asc' }],
+        },
+        reactions: true,
+      },
+    });
+    return rotes;
+  } catch (error) {
+    throw new DatabaseError(`Failed to find rotes by ids: ${ids.join(',')}`, error);
+  }
+}
+
 export async function editRote(data: any): Promise<any> {
   try {
     const { id, authorid, reactions, author, attachments, ...cleanData } = data;

@@ -1,8 +1,8 @@
 import defaultCover from '@/assets/img/defaultCover.png';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import UserAvatar from '@/components/others/UserAvatar';
 import RoteList from '@/components/rote/roteList';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
@@ -10,7 +10,7 @@ import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { Helmet } from '@dr.pogodin/react-helmet';
 import Linkify from 'linkify-react';
-import { Globe2, RefreshCw, Rss, Stars, User } from 'lucide-react';
+import { Globe2, RefreshCw, Rss, Stars } from 'lucide-react';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -110,15 +110,10 @@ function UserPage() {
         <NavBar
           title={
             <>
-              <Avatar className="bg-background size-6 shrink-0 border sm:block">
-                {userInfo?.avatar ? (
-                  <AvatarImage src={userInfo.avatar} />
-                ) : (
-                  <AvatarFallback>
-                    <User className="size-4 text-[#00000010]" />
-                  </AvatarFallback>
-                )}
-              </Avatar>
+              <UserAvatar
+                avatar={userInfo?.avatar}
+                className="bg-background size-6 shrink-0 border sm:block"
+              />
               <span>{userInfo?.nickname || userInfo?.username}</span>
             </>
           }
@@ -139,15 +134,11 @@ function UserPage() {
           </div>
           <div className="mx-4 flex h-16">
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}
-            <Avatar className="bg-background size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block">
-              {userInfo?.avatar ? (
-                <AvatarImage src={userInfo.avatar} />
-              ) : (
-                <AvatarFallback className="bg-muted/80">
-                  <User className="text-foreground/10 size-12" />
-                </AvatarFallback>
-              )}
-            </Avatar>
+            <UserAvatar
+              avatar={userInfo?.avatar}
+              className="bg-background size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block"
+              fallbackClassName="bg-muted/80"
+            />
           </div>
           <div className="mx-4 flex flex-col gap-1">
             <div className="text-2xl font-semibold">{userInfo?.nickname}</div>

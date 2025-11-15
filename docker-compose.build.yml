@@ -1,0 +1,43 @@
+services:
+  rote-backend:
+    build:
+      context: ./server
+    environment:
+      # 基础配置 - 必需
+      - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@postgres:5432/rote
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  rote-frontend:
+    build:
+      context: ./web
+      args:
+        # 构建时传递 VITE_API_BASE，会在构建时注入到前端代码中
+        # 如果未设置，将使用默认值 http://localhost:3000
+        - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - rote-backend
+    environment:
+      # 运行时环境变量，用于启动脚本注入配置
+      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
+    restart: unless-stopped
+  postgres:
+    image: postgres:17
+    container_name: rote-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
+      POSTGRES_DB: rote
+    volumes:
+      - rote-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  rote-postgres-data:

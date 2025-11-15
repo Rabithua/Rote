@@ -23,6 +23,30 @@ export async function oneUser(id: string) {
   }
 }
 
+// 获取安全的用户对象（排除敏感信息），用于注入到 req.user
+export async function getSafeUser(id: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        nickname: true,
+        description: true,
+        avatar: true,
+        cover: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+    return user;
+  } catch (error) {
+    throw new DatabaseError(`Failed to get safe user by id: ${id}`, error);
+  }
+}
+
 export async function createUser(data: {
   username: string;
   email: string;
@@ -58,6 +82,18 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
         description: data.description || undefined,
         cover: data.cover || undefined,
       },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        nickname: true,
+        description: true,
+        avatar: true,
+        cover: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
     return user;
   } catch (error) {
@@ -90,6 +126,37 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
       throw error;
     }
     throw new DatabaseError(`Failed to get user info: ${username}`, error);
+  }
+}
+
+export async function getMyProfile(userId: string): Promise<any> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        nickname: true,
+        description: true,
+        avatar: true,
+        cover: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new DatabaseError('User not found');
+    }
+
+    return user;
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError(`Failed to get user profile: ${userId}`, error);
   }
 }
 

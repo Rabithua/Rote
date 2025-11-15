@@ -34,10 +34,12 @@ export default defineConfig({
     },
   },
   define: {
-    'process.env': process.env, // 注入 process.env
+    // 只暴露必要的环境变量，避免安全风险
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },
   preview: {
     host: true,
+    port: 3001,
     allowedHosts: true,
   },
 });

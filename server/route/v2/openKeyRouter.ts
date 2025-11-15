@@ -7,6 +7,7 @@ import express from 'express';
 import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
 import { asyncHandler } from '../../utils/handlers';
 import { isOpenKeyOk, queryTypeCheck } from '../../utils/main';
+import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -45,23 +46,43 @@ router.get(
   asyncHandler(async (req, res) => {
     const { content, state, type, tag, pin } = req.query;
 
-    if (!content) {
-      throw new Error('Content is required');
+    // 确保 content 是字符串类型
+    if (!content || typeof content !== 'string') {
+      throw new Error('Content is required and must be a string');
+    }
+
+    // 验证输入长度（适配 query 参数）
+    if (content.length > 1000000) {
+      throw new Error('内容不能超过 1,000,000 个字符');
     }
 
     if (!req.openKey?.permissions.includes('SENDROTE')) {
       throw new Error('API key permission does not match');
     }
 
-    // 处理标签，过滤空白标签
+    // 处理标签，过滤空白标签并验证长度
     const processTags = (tags: any): string[] => {
       if (Array.isArray(tags)) {
-        return tags
+        const processed = tags
           .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
           .map((t) => t.trim());
+        // 验证标签长度和数量
+        if (processed.length > 20) {
+          throw new Error('最多只能添加 20 个标签');
+        }
+        for (const tag of processed) {
+          if (tag.length > 50) {
+            throw new Error('单个标签不能超过 50 个字符');
+          }
+        }
+        return processed;
       }
       if (tags && typeof tags === 'string' && tags.trim().length > 0) {
-        return [tags.trim()];
+        const trimmed = tags.trim();
+        if (trimmed.length > 50) {
+          throw new Error('单个标签不能超过 50 个字符');
+        }
+        return [trimmed];
       }
       return [];
     };
@@ -93,6 +114,9 @@ router.post(
     if (!content) {
       throw new Error('Content is required');
     }
+
+    // 验证输入长度（验证整个 body，确保所有字段都被验证）
+    NoteCreateZod.parse(req.body);
 
     if (!req.openKey?.permissions.includes('SENDROTE')) {
       throw new Error('API key permission does not match');
@@ -198,6 +222,9 @@ router.get(
     if (!keyword || typeof keyword !== 'string') {
       throw new Error('Keyword is required');
     }
+
+    // 验证搜索关键词长度
+    SearchKeywordZod.parse({ keyword });
 
     // 构建过滤器对象
     const filter: any = {};

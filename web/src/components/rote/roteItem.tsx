@@ -9,7 +9,6 @@ import {
   LinkIcon,
   PinIcon,
   SmilePlus,
-  User,
 } from 'lucide-react';
 import moment from 'moment';
 import { memo, useCallback, useState } from 'react';
@@ -19,11 +18,11 @@ import { toast } from 'sonner';
 
 import RoteEditor from '@/components/editor/RoteEditor';
 import { SoftBottom } from '@/components/others/SoftBottom';
+import UserAvatar from '@/components/others/UserAvatar';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -73,15 +72,7 @@ function RoteItem({
     >
       {showAvatar && (
         <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author.username}`}>
-          <Avatar className="size-[40px] bg-[#00000010]">
-            {rote.author.avatar ? (
-              <AvatarImage src={rote.author.avatar} />
-            ) : (
-              <AvatarFallback>
-                <User className="size-4 text-[#00000030]" />
-              </AvatarFallback>
-            )}
-          </Avatar>
+          <UserAvatar avatar={rote.author.avatar} className="size-[40px] bg-[#00000010]" />
         </Link>
       )}
 
@@ -119,7 +110,7 @@ function RoteItem({
             {rote.pin && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <PinIcon className="size-4 cursor-pointer rounded-md" />
+                  <PinIcon className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>已置顶</TooltipContent>
               </Tooltip>
@@ -128,7 +119,7 @@ function RoteItem({
             {rote.state === 'public' && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Globe2Icon className="size-4 cursor-pointer rounded-md" />
+                  <Globe2Icon className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>公开</TooltipContent>
               </Tooltip>
@@ -137,7 +128,7 @@ function RoteItem({
             {rote.archived && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Archive className="size-4 cursor-pointer rounded-md" />
+                  <Archive className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>已归档</TooltipContent>
               </Tooltip>
@@ -146,7 +137,7 @@ function RoteItem({
             {rote.updatedAt !== rote.createdAt && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Edit className="size-4 cursor-pointer rounded-md" />
+                  <Edit className="size-4 cursor-pointer" />
                 </TooltipTrigger>
                 <TooltipContent sideOffset={4}>
                   {moment(rote.updatedAt).local().format('YYYY/MM/DD HH:mm:ss')}
@@ -158,7 +149,7 @@ function RoteItem({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <LinkIcon
-                    className="size-4 cursor-pointer rounded-md"
+                    className="size-4 cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/rote/${rote.id}`);
                       toast.success('已复制链接');

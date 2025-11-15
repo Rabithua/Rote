@@ -84,14 +84,15 @@ changeRouter.get(
 
 // 解析时间戳，支持多种格式
 function parseTimestamp(timestamp: string): Date {
-  // 尝试解析为 Unix 时间戳（秒）
-  const unixSeconds = parseInt(timestamp, 10);
-  if (!isNaN(unixSeconds) && unixSeconds > 0) {
+  // 尝试解析为 Unix 时间戳（支持带小数点的秒或毫秒）
+  // 使用 parseFloat 保留小数部分，确保精度
+  const unixTimestamp = parseFloat(timestamp);
+  if (!isNaN(unixTimestamp) && unixTimestamp > 0) {
     // 判断是秒还是毫秒（大于 10^12 认为是毫秒）
-    if (unixSeconds > 1000000000000) {
-      return new Date(unixSeconds); // 毫秒
+    if (unixTimestamp > 1000000000000) {
+      return new Date(unixTimestamp); // 毫秒（支持小数点）
     } else {
-      return new Date(unixSeconds * 1000); // 秒
+      return new Date(unixTimestamp * 1000); // 秒（支持小数点，转换为毫秒）
     }
   }
 

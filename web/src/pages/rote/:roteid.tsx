@@ -1,13 +1,13 @@
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import UserAvatar from '@/components/others/UserAvatar';
 import RoteItem from '@/components/rote/roteItem';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 
 import type { Rote } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
-import { Navigation, RefreshCw, Rss, User } from 'lucide-react';
+import { Navigation, RefreshCw, Rss } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -51,15 +51,10 @@ function SingleRotePage() {
           <div className="border-b p-4">
             <Link to={`/${rote.author.username}`} className="block">
               <div className="flex items-center gap-3">
-                <Avatar className="bg-foreground/5 text-primary size-12">
-                  {rote.author.avatar ? (
-                    <AvatarImage src={rote.author.avatar} />
-                  ) : (
-                    <AvatarFallback>
-                      <User className="text-info size-6" />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
+                <UserAvatar
+                  avatar={rote.author.avatar}
+                  className="bg-foreground/5 text-primary size-12"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="text-primary truncate font-semibold">{rote.author.nickname}</div>
                   <div className="text-info truncate text-sm">@{rote.author.username}</div>

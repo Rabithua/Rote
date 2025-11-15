@@ -2,7 +2,7 @@ import defaultCover from '@/assets/img/defaultCover.png';
 import NavBar from '@/components/layout/navBar';
 import OpenKeyItem from '@/components/openKey/openKey';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -15,16 +15,7 @@ import { API_URL, get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Linkify from 'linkify-react';
-import {
-  Edit,
-  KeyRoundIcon,
-  Loader,
-  LoaderPinwheel,
-  Rss,
-  Stars,
-  User,
-  UserCircle2,
-} from 'lucide-react';
+import { Edit, KeyRoundIcon, Loader, LoaderPinwheel, Rss, Stars, UserCircle2 } from 'lucide-react';
 import moment from 'moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
@@ -299,21 +290,15 @@ function ProfilePage() {
             </div>
           </div>
           <div className="mx-4 flex h-16 items-center">
-            <Avatar
+            <UserAvatar
+              avatar={profile?.avatar}
               className="text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
+              fallbackClassName="bg-muted/80"
               onClick={() => {
                 if (!canUpload) return;
                 (inputAvatarRef.current as HTMLInputElement | null)?.click();
               }}
-            >
-              {profile?.avatar ? (
-                <AvatarImage src={profile.avatar} />
-              ) : (
-                <AvatarFallback className="bg-muted/80">
-                  <User className="text-foreground/10 size-12" />
-                </AvatarFallback>
-              )}
-            </Avatar>
+            />
             <Button
               className="ml-auto"
               onClick={() => {
@@ -387,21 +372,15 @@ function ProfilePage() {
                   title="Upload avatar image"
                 />
                 {/* 编辑弹窗内头像同理 */}
-                <Avatar
+                <UserAvatar
+                  avatar={editProfile?.avatar}
                   className="text-primary mx-auto my-2 block size-20 shrink-0 cursor-pointer bg-[#00000010]"
+                  fallbackClassName="bg-muted/80"
                   onClick={() => {
                     if (!canUpload) return;
                     (inputAvatarRef.current as HTMLInputElement | null)?.click();
                   }}
-                >
-                  {editProfile?.avatar ? (
-                    <AvatarImage src={editProfile.avatar} />
-                  ) : (
-                    <AvatarFallback className="bg-muted/80">
-                      <User className="text-foreground/10 size-12" />
-                    </AvatarFallback>
-                  )}
-                </Avatar>
+                />
                 <div className="mt-2 text-base font-semibold">{t('email')}</div>
                 <Input
                   disabled

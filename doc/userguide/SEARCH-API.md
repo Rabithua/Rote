@@ -1,24 +1,24 @@
-# 搜索API文档
+# 搜索 API 文档
 
 ## 概述
 
-新增的关键词搜索API允许在用户的笔记中进行全文搜索，支持搜索标题、内容和标签。
+新增的关键词搜索 API 允许在用户的笔记中进行全文搜索，支持搜索标题、内容和标签。
 
-## API端点
+## API 端点
 
 ### 1. 搜索当前用户的笔记
 
 ```
-GET /api/v2/notes/search
+GET /v2/api/notes/search
 ```
 
 **认证要求**: 需要登录
 
 **查询参数**:
 
-- `keyword` (必需): 搜索关键词
+- `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
-- `limit` (可选): 返回的笔记数量限制，默认20
+- `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记 (true/false)
 - `tag` (可选): 按标签过滤 (支持多个标签)
 
@@ -36,14 +36,25 @@ GET /api/v2/notes/search
   "message": "success",
   "data": [
     {
-      "id": "...",
-      "title": "...",
-      "content": "...",
-      "tags": ["..."],
-      "author": {...},
-      "attachments": [...],
-      "createdAt": "...",
-      "updatedAt": "..."
+      "id": "uuid",
+      "title": "笔记标题",
+      "type": "Rote",
+      "tags": ["标签1"],
+      "content": "笔记内容",
+      "state": "public",
+      "archived": false,
+      "authorid": "user-uuid",
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z",
+      "author": {
+        "username": "demo",
+        "nickname": "演示用户",
+        "avatar": "https://example.com/avatar.jpg"
+      },
+      "attachments": [],
+      "reactions": []
     }
   ]
 }
@@ -52,16 +63,16 @@ GET /api/v2/notes/search
 ### 2. 搜索公开笔记
 
 ```
-GET /api/v2/notes/search/public
+GET /v2/api/notes/search/public
 ```
 
 **认证要求**: 无
 
 **查询参数**:
 
-- `keyword` (必需): 搜索关键词
+- `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
-- `limit` (可选): 返回的笔记数量限制，默认20
+- `limit` (可选): 返回的笔记数量限制，默认 20
 - `tag` (可选): 按标签过滤
 
 **搜索范围**: 所有公开状态的笔记
@@ -69,7 +80,7 @@ GET /api/v2/notes/search/public
 ### 3. 搜索指定用户的公开笔记
 
 ```
-GET /api/v2/notes/search/users/:username
+GET /v2/api/notes/search/users/:username
 ```
 
 **认证要求**: 无
@@ -82,29 +93,29 @@ GET /api/v2/notes/search/users/:username
 
 - `keyword` (必需): 搜索关键词
 - `skip` (可选): 跳过的笔记数量，用于分页
-- `limit` (可选): 返回的笔记数量限制，默认20
+- `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
 - `tag` (可选): 按标签过滤
 
 **搜索范围**: 指定用户的公开笔记
 
-### 4. API密钥搜索
+### 4. API 密钥搜索
 
 ```
-GET /api/v2/openkey/notes/search
+GET /v2/api/openkey/notes/search
 ```
 
-**认证要求**: API密钥
+**认证要求**: API 密钥
 
 **查询参数**:
 
-- `keyword` (必需): 搜索关键词
+- `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
-- `limit` (可选): 返回的笔记数量限制，默认20
+- `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
 - `tag` (可选): 按标签过滤
 
-**搜索范围**: API密钥拥有者的所有笔记
+**搜索范围**: API 密钥拥有者的所有笔记
 
 ## 搜索特性
 
@@ -116,7 +127,7 @@ GET /api/v2/openkey/notes/search
 
 ### 2. 逻辑组合
 
-搜索使用OR逻辑，即关键词在标题、内容或标签中任一匹配即返回该笔记。
+搜索使用 OR 逻辑，即关键词在标题、内容或标签中任一匹配即返回该笔记。
 
 ### 3. 过滤组合
 
@@ -136,19 +147,19 @@ GET /api/v2/openkey/notes/search
 ### 搜索包含"React"的个人笔记
 
 ```bash
-GET /api/v2/notes/search?keyword=React&limit=10
+GET /v2/api/notes/search?keyword=React&limit=10
 ```
 
 ### 搜索公开笔记中包含"JavaScript"且带有"教程"标签的笔记
 
 ```bash
-GET /api/v2/notes/search/public?keyword=JavaScript&tag=教程
+GET /v2/api/notes/search/public?keyword=JavaScript&tag=教程
 ```
 
 ### 搜索用户"john"的公开笔记中包含"API"的内容
 
 ```bash
-GET /api/v2/notes/search/users/john?keyword=API
+GET /v2/api/notes/search/users/john?keyword=API
 ```
 
 ## 错误响应
@@ -159,6 +170,16 @@ GET /api/v2/notes/search/users/john?keyword=API
 {
   "code": 400,
   "message": "Keyword is required",
+  "data": null
+}
+```
+
+或
+
+```json
+{
+  "code": 400,
+  "message": "搜索关键词不能超过 200 个字符",
   "data": null
 }
 ```
@@ -197,7 +218,7 @@ GET /api/v2/notes/search/users/john?keyword=API
 // 防抖搜索
 const debounceSearch = debounce(async (keyword) => {
   if (keyword.length >= 2) {
-    const results = await get('/notes/search', { keyword });
+    const results = await get("/notes/search", { keyword });
     setSearchResults(results.data);
   }
 }, 300);

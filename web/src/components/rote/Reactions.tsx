@@ -34,14 +34,16 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useAtom(visitorIdAtom);
   const [isLoading, setIsLoading] = useState(false);
+  const [isVisitorIdLoading, setIsVisitorIdLoading] = useState(false);
 
   const isAuthenticated = !!profile?.id;
 
   React.useEffect(() => {
     if (!isAuthenticated && !visitorId) {
-      import('@/utils/deviceFingerprint').then(({ generateVisitorId }) =>
-        generateVisitorId().then(setVisitorId)
-      );
+      setIsVisitorIdLoading(true);
+      import('@/utils/deviceFingerprint')
+        .then(({ generateVisitorId }) => generateVisitorId().then(setVisitorId))
+        .finally(() => setIsVisitorIdLoading(false));
     }
   }, [isAuthenticated, visitorId, setVisitorId]);
 
@@ -145,7 +147,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger>
-          {isLoading ? (
+          {isLoading || (!isAuthenticated && isVisitorIdLoading) ? (
             <Loader className="bg-foreground/5 size-6 animate-spin cursor-pointer rounded-2xl p-1 duration-300" />
           ) : (
             <SmilePlus className="bg-foreground/5 size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />

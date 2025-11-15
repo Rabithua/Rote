@@ -1,27 +1,56 @@
-version: "3.8"
+# Docker Compose configuration using pre-built images from Docker Hub
+# Usage: docker-compose up -d
+#
+# To use a specific version, set IMAGE_TAG environment variable:
+# IMAGE_TAG=v1.0.0 docker-compose up -d
+#
+# Available tags:
+# - latest: Latest stable release (supports multi-platform: amd64, arm64)
+# - release: Latest stable release (same as latest)
+# - develop: Latest from develop branch (supports multi-platform: amd64, arm64)
+# - main: Latest from main branch
+# - v1.0.0: Specific version (if released)
+
 services:
   rote-backend:
-    build:
-      context: ./server
+    image: rabithua/rote-backend:${IMAGE_TAG:-latest}
+    container_name: rote-backend
     environment:
       # 基础配置 - 必需
-      - DATABASE_URL=postgresql://prisma:${POSTGRES_PASSWORD}@postgres:5432/rote
+      - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@postgres:5432/rote
     ports:
       - "3000:3000"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "require(''http'').get(''http://localhost:3000/v2/api/health'', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on(''error'', () => process.exit(1))" || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
 
   rote-frontend:
-    build:
-      context: ./web
+    image: rabithua/rote-frontend:${IMAGE_TAG:-latest}
+    container_name: rote-frontend
     ports:
       - "3001:3001"
-    environment:
-      # 设置 API 基础 URL ，如果后端启用了反向代理，可以设置为反向代理的URL
-      - VITE_API_BASE=${VITE_API_BASE:-http://<你的服务器IP>:3000}
     depends_on:
-      - rote-backend
+      rote-backend:
+        condition: service_healthy
+    environment:
+      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     restart: unless-stopped
 
   postgres:
@@ -32,10 +61,16 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_USER: prisma
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
       POSTGRES_DB: rote
     volumes:
       - rote-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prisma -d rote"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   rote-postgres-data:

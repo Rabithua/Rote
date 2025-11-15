@@ -14,12 +14,37 @@ import {
   updateAttachmentsSortOrder,
   upsertAttachmentsByOriginalKey,
 } from '../../utils/dbMethods';
+import { validateContentType, validateFile } from '../../utils/fileValidation';
 import { asyncHandler } from '../../utils/handlers';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { presignPutUrl, r2uploadhandler } from '../../utils/r2';
+import { AttachmentPresignZod } from '../../utils/zod';
 
 // 附件相关路由
 const attachmentsRouter = express.Router();
+
+// 文件上传限制常量
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+const MAX_FILES = 9;
+const MAX_TOTAL_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_BATCH_SIZE = 100; // 批量操作最大数量限制
+
+/**
+ * 验证文件大小（用于 presign 接口）
+ * @param size 文件大小（字节）
+ * @throws Error 如果文件大小无效
+ */
+function validateFileSize(size: number | undefined | null): void {
+  if (size === undefined || size === null) {
+    throw new Error('缺少文件大小 (size)');
+  }
+  if (size <= 0) {
+    throw new Error('文件大小必须大于 0');
+  }
+  if (size > MAX_FILE_SIZE) {
+    throw new Error(`文件大小超过限制: ${MAX_FILE_SIZE} 字节`);
+  }
+}
 
 // 上传附件
 attachmentsRouter.post(
@@ -32,9 +57,9 @@ attachmentsRouter.post(
 
     const form = formidable({
       multiples: true,
-      maxFileSize: 20 * 1024 * 1024, // 20MB limit
-      maxFiles: 9,
-      maxTotalFileSize: 100 * 1024 * 1024, // 100MB limit
+      maxFileSize: MAX_FILE_SIZE,
+      maxFiles: MAX_FILES,
+      maxTotalFileSize: MAX_TOTAL_FILE_SIZE,
       filename: () => {
         return `${randomUUID()}`;
       },
@@ -46,6 +71,11 @@ attachmentsRouter.post(
     }
 
     const imageFiles = Array.isArray(files.images) ? files.images : [files.images];
+
+    // 验证每个文件的类型和内容
+    for (const file of imageFiles) {
+      await validateFile(file);
+    }
 
     // 并发控制，避免单次请求时间过长导致中断
     const CONCURRENCY = 3; // 保留并发配置，因为这是性能调优必需的
@@ -106,7 +136,15 @@ attachmentsRouter.delete(
       throw new Error('No attachments to delete');
     }
 
-    const data = await deleteAttachments(ids, user.id);
+    // 限制批量删除的数量，防止滥用
+    if (ids.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次删除 ${MAX_BATCH_SIZE} 个附件`);
+    }
+
+    const data = await deleteAttachments(
+      ids.map((id: string) => ({ id })),
+      user.id
+    );
     res.status(200).json(createResponse(data));
   })
 );
@@ -130,6 +168,11 @@ attachmentsRouter.put(
       throw new Error('Invalid attachment IDs');
     }
 
+    // 限制批量更新的数量，防止滥用
+    if (attachmentIds.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次更新 ${MAX_BATCH_SIZE} 个附件的排序`);
+    }
+
     // 验证所有附件ID格式
     for (const id of attachmentIds) {
       if (!isValidUUID(id)) {
@@ -142,7 +185,6 @@ attachmentsRouter.put(
   })
 );
 
-export default attachmentsRouter;
 // 预签名直传（前端直接 PUT 到 R2）
 attachmentsRouter.post(
   '/presign',
@@ -154,8 +196,22 @@ attachmentsRouter.post(
       files: Array<{ filename?: string; contentType?: string; size?: number }>;
     };
 
-    if (!files || !Array.isArray(files) || files.length === 0) {
-      throw new Error('No files to presign');
+    // 验证输入长度和格式
+    AttachmentPresignZod.parse(req.body);
+
+    // 验证文件数量限制（zod 已经验证，但保留作为双重检查）
+    if (files.length > MAX_FILES) {
+      throw new Error(`最多允许 ${MAX_FILES} 个文件`);
+    }
+
+    // 严格验证每个文件的内容类型和大小
+    for (const f of files) {
+      // 验证 contentType 必须提供且符合允许的类型
+      // validateContentType 内部会检查 contentType 是否存在
+      validateContentType(f.contentType);
+
+      // 验证文件大小必须提供且不能超过限制
+      validateFileSize(f.size);
     }
 
     const getExt = (filename?: string, contentType?: string) => {
@@ -233,11 +289,23 @@ attachmentsRouter.post(
       throw new Error('No attachments to finalize');
     }
 
+    // 限制批量完成的数量，防止滥用
+    if (attachments.length > MAX_BATCH_SIZE) {
+      throw new Error(`最多允许一次完成 ${MAX_BATCH_SIZE} 个附件的入库`);
+    }
+
     // 简单的所有权校验：Key 必须在当前用户前缀下
     const prefix = `users/${user.id}/`;
     const invalid = attachments.find((a) => !a.originalKey?.startsWith(prefix));
     if (invalid) {
       throw new Error('Invalid object key');
+    }
+
+    // 验证 mimetype（如果提供）
+    for (const a of attachments) {
+      if (a.mimetype) {
+        validateContentType(a.mimetype);
+      }
     }
 
     const uploads: UploadResult[] = attachments.map((a) => {
@@ -270,3 +338,5 @@ attachmentsRouter.post(
     res.status(201).json(createResponse(data));
   })
 );
+
+export default attachmentsRouter;

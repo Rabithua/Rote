@@ -1,6 +1,6 @@
 import { Divider } from '@/components/ui/divider';
 import { Switch } from '@/components/ui/switch';
-import { del, post } from '@/utils/api';
+import { API_POINT, del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell, Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -158,7 +158,7 @@ export default function ServiceWorker() {
         <div className="mt-2 flex flex-col gap-2">
           <div className="font-semibold">{t('example')}</div>
           <div className="bg-foreground/3 overflow-x-scroll rounded-xl p-3 font-mono whitespace-pre text-red-700 dark:text-red-400">
-            {`curl --location --request POST '${process.env.VITE_API_BASE}/v2/apisubscriptions/${noticeId}/notify'
+            {`curl --location --request POST '${API_POINT}/v2/api/subscriptions/${noticeId}/notify'
 --header 'Content-Type: application/json'
 --data '{
   "title": "自在废物",

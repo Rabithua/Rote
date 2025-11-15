@@ -154,9 +154,17 @@ export async function findRoteChangesAfterTimestamp(
   action?: 'CREATE' | 'UPDATE' | 'DELETE'
 ): Promise<any> {
   try {
+    // 确保时间戳是 Date 对象
+    const timestampDate = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
+    
+    // 验证时间戳是否有效
+    if (isNaN(timestampDate.getTime())) {
+      throw new Error('Invalid timestamp');
+    }
+
     const where: any = {
       createdAt: {
-        gt: typeof timestamp === 'string' ? new Date(timestamp) : timestamp,
+        gt: timestampDate, // 使用 gt (greater than) 确保返回大于指定时间戳的记录
       },
     };
 

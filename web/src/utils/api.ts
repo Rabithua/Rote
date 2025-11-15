@@ -4,9 +4,48 @@ import { authService } from './auth';
 // API版本路径
 const API_PATH = '/v2/api';
 
-export const API_POINT =
-  process.env.NODE_ENV === 'production' ? process.env.VITE_API_BASE : 'http://localhost:3000';
+/**
+ * 获取 API 基础 URL
+ * 优先级：运行时配置 > 构建时配置 > 默认值
+ * 支持通过 window.__ROTE_CONFIG__ 在运行时注入配置
+ */
+const getApiPoint = (): string => {
+  const defaultValue = 'http://localhost:3000';
 
+  // 优先读取运行时配置（从 window 对象，由容器启动脚本注入）
+  const runtimeConfig = (window as any).__ROTE_CONFIG__;
+  if (runtimeConfig?.VITE_API_BASE) {
+    const runtimeApiBase = String(runtimeConfig.VITE_API_BASE).trim();
+    // 检查是否是占位符（配置注入失败的情况）
+    if (
+      runtimeApiBase &&
+      runtimeApiBase !== 'undefined' &&
+      runtimeApiBase !== 'null' &&
+      runtimeApiBase !== '' &&
+      runtimeApiBase !== '__VITE_API_BASE_PLACEHOLDER__'
+    ) {
+      return runtimeApiBase;
+    }
+  }
+
+  // 其次读取构建时配置（Vite 环境变量）
+  const apiBase = import.meta.env.VITE_API_BASE;
+  if (apiBase) {
+    const apiBaseStr = String(apiBase).trim();
+    if (apiBaseStr !== 'undefined' && apiBaseStr !== 'null' && apiBaseStr !== '') {
+      return apiBaseStr;
+    }
+  }
+
+  // 如果都未设置或无效，使用默认值
+  if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.warn('[api.ts] VITE_API_BASE is not set, using default:', defaultValue);
+  }
+  return defaultValue;
+};
+
+export const API_POINT = getApiPoint();
 export const API_URL = `${API_POINT}${API_PATH}`;
 
 // 创建axios实例
@@ -32,9 +71,28 @@ api.interceptors.request.use(
 
 // 响应拦截器
 api.interceptors.response.use(
-  (response) =>
-    // 统一处理响应数据，直接返回data字段
-    response.data,
+  (response) => {
+    // 统一处理响应数据
+    const responseData = response.data;
+
+    // 检查后端返回的业务状态码，如果 code !== 0 表示业务错误
+    if (responseData && typeof responseData === 'object' && 'code' in responseData) {
+      if (responseData.code !== 0) {
+        // 业务错误，抛出异常
+        const error = new Error(responseData.message || 'Request failed');
+        (error as any).response = {
+          ...response,
+          data: responseData,
+        };
+        (error as any).code = responseData.code;
+        return Promise.reject(error);
+      }
+    }
+
+    // 返回整个响应对象（包含 code, message, data）
+    // 注意：调用方需要访问 response.data 来获取实际数据
+    return responseData;
+  },
   async (error) => {
     const originalRequest = error.config;
 

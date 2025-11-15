@@ -36,11 +36,11 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 ```json
 {
-  "content": "Note content (required)",
-  "title": "Optional title",
+  "content": "Note content (required, max 1,000,000 characters)",
+  "title": "Optional title (max 200 characters)",
   "state": "private|public",
   "type": "rote|article|other",
-  "tags": ["tag1", "tag2"],
+  "tags": ["tag1", "tag2"], // Each tag max 50 characters, max 20 tags
   "pin": false
 }
 ```
@@ -78,10 +78,10 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Query Parameters**:
 
-- `content`: Note content (required)
+- `content`: Note content (required, max 1,000,000 characters)
 - `state`: Note state (private or public, defaults to private)
 - `type`: Note type (defaults to "rote")
-- `tag`: Tags (can be multiple, e.g., `tag=tag1&tag=tag2`)
+- `tag`: Tags (can be multiple, e.g., `tag=tag1&tag=tag2`, each tag max 50 characters, max 20 tags)
 - `pin`: Whether to pin the note (true/false)
 
 **Response**: Same as POST method
@@ -170,6 +170,7 @@ Common error codes:
 - 401: Invalid or expired API key
 - 403: Insufficient permissions
 - 400: Missing required parameters or invalid request
+- 400: Input length exceeds limit (title > 200 chars, content > 1,000,000 chars, tag > 50 chars, or > 20 tags)
 
 ## Code Examples
 
@@ -178,17 +179,17 @@ Common error codes:
 ```javascript
 // Create note example
 async function createNote() {
-  const response = await fetch('https://your-api-url/api/v2/open-key/notes', {
-    method: 'POST',
+  const response = await fetch("https://your-api-url/api/v2/open-key/notes", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer YOUR_API_KEY',
+      "Content-Type": "application/json",
+      Authorization: "Bearer YOUR_API_KEY",
     },
     body: JSON.stringify({
-      content: 'This is a test note created via API',
-      title: 'API Test',
-      state: 'private',
-      tags: ['api', 'test'],
+      content: "This is a test note created via API",
+      title: "API Test",
+      state: "private",
+      tags: ["api", "test"],
     }),
   });
 
@@ -198,13 +199,16 @@ async function createNote() {
 
 // Get notes example
 async function getNotes() {
-  const response = await fetch('https://your-api-url/api/v2/open-key/notes?limit=10&skip=0', {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer YOUR_API_KEY',
-    },
-  });
+  const response = await fetch(
+    "https://your-api-url/api/v2/open-key/notes?limit=10&skip=0",
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer YOUR_API_KEY",
+      },
+    }
+  );
 
   const data = await response.json();
   console.log(data);

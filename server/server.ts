@@ -32,11 +32,20 @@ app.use(injectDynamicUrls);
 app.use(rateLimiterMiddleware);
 
 // Initialize Passport
-app.use(passport.initialize());
+app.use(passport.initialize() as unknown as express.RequestHandler);
 
 // body parser
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(
+  bodyParser.urlencoded({
+    extended: false,
+    limit: '10mb', // 设置合理的限制，防止内存耗尽攻击
+  })
+);
+app.use(
+  bodyParser.json({
+    limit: '10mb', // 设置合理的限制，防止内存耗尽攻击
+  })
+);
 
 // CORS 配置 - 从数据库或环境变量读取 allowedOrigins
 // 当 credentials: true 时，不能使用 origin: '*'，必须明确指定允许的 origin
@@ -106,7 +115,8 @@ app.use('/v2/api', routerV2); // RESTful API
 // Global error handler (must be after all routes)
 app.use(errorHandler);
 
-app.get('*', (req, res) => {
+// 404 handler - Express 5.x requires explicit path pattern
+app.use((req, res) => {
   res.status(404).send({
     code: 1,
     message: 'Api not found!',

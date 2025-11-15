@@ -19,18 +19,33 @@ import {
   Sparkles,
   Star,
 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import useSWR from 'swr';
 
 function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.landing' });
   const { isInitialized, isLoading, error } = useSystemStatus();
+  const toastShownRef = useRef(false);
 
   const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
     'https://api.github.com/repos/rabithua/rote',
     (url: string) => fetch(url).then((res) => res.json())
   );
+
+  // 当需要跳转到 setup 页面时，显示 toast 提示
+  useEffect(() => {
+    if (!isLoading && (!isInitialized || error) && !toastShownRef.current) {
+      toastShownRef.current = true;
+      if (error) {
+        toast.error(t('redirectingToSetup.error'));
+      } else {
+        toast.info(t('redirectingToSetup.notInitialized'));
+      }
+    }
+  }, [isLoading, isInitialized, error, t]);
 
   // 根据最后推送时间获取颜色类
   const getTimeColor = (pushedAt: string) => {
@@ -115,7 +130,8 @@ function Landing() {
     },
   ];
 
-  if (!isLoading && !error && !isInitialized) {
+  // 如果未初始化或出现错误，都跳转到 setup 页面
+  if (!isLoading && (!isInitialized || error)) {
     return <Navigate to="/setup" replace />;
   }
 

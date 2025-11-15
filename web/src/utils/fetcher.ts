@@ -47,7 +47,7 @@ interface APIGetProps {
 }
 
 export function useAPIGet<TData>(
-  props: APIGetProps | string,
+  props: APIGetProps | string | null,
   fetcher: () => Promise<TData>,
   options?: SWRConfiguration<TData>
 ) {

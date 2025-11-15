@@ -33,6 +33,21 @@
     <script>
       iosPWASplash('logo.png', '#ffffff');
     </script>
+    <!-- 运行时配置注入：容器启动脚本会替换此处的占位符 -->
+    <!-- 注意：此脚本必须在 React 代码加载前执行，确保配置可用 -->
+    <!-- 使用立即执行函数确保同步执行，避免时序问题 -->
+    <script>
+      (function () {
+        // 初始化配置对象（如果不存在）
+        if (!window.__ROTE_CONFIG__) {
+          window.__ROTE_CONFIG__ = {};
+        }
+        // 如果占位符未被替换（配置注入失败），删除该属性让代码回退到构建时配置
+        if (window.__ROTE_CONFIG__.VITE_API_BASE === '__VITE_API_BASE_PLACEHOLDER__') {
+          delete window.__ROTE_CONFIG__.VITE_API_BASE;
+        }
+      })();
+    </script>
     <!-- Umami -->
     <script
       defer
