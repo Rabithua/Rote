@@ -2,7 +2,7 @@ import '@/styles/index.css';
 import ReactDOM from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import AppWrapper from './App';
-import { API_URL } from './utils/api';
+import { getApiUrl } from './utils/api';
 import './utils/i18n';
 
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
@@ -21,10 +21,11 @@ registerSW({
   },
   onRegistered(registration) {
     // Service Worker 注册成功后，发送 API URL 配置
+    // 使用 getApiUrl() 确保获取最新的运行时配置
     if (registration?.active) {
       registration.active.postMessage({
         method: 'setApiUrl',
-        apiUrl: API_URL,
+        apiUrl: getApiUrl(),
       });
     }
   },
@@ -41,11 +42,12 @@ if ('serviceWorker' in navigator) {
   });
 
   // 当 Service Worker 就绪时，发送 API URL
+  // 使用 getApiUrl() 确保获取最新的运行时配置
   navigator.serviceWorker.ready.then((registration) => {
     if (registration?.active) {
       registration.active.postMessage({
         method: 'setApiUrl',
-        apiUrl: API_URL,
+        apiUrl: getApiUrl(),
       });
     }
   });

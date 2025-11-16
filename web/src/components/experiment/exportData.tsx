@@ -1,6 +1,6 @@
 import { Divider } from '@/components/ui/divider';
 import type { Statistics } from '@/types/main';
-import { API_POINT, get } from '@/utils/api';
+import { get, getApiUrl } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
 import { DownloadCloud } from 'lucide-react';
@@ -30,7 +30,8 @@ export default function ExportData() {
         throw new Error('认证token无效或已过期');
       }
 
-      const response = await fetch(`${API_POINT}/v2/api/users/me/export`, {
+      // 使用 getApiUrl() 确保获取最新的运行时配置
+      const response = await fetch(`${getApiUrl()}/users/me/export`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

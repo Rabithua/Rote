@@ -8,8 +8,9 @@ const API_PATH = '/v2/api';
  * 获取 API 基础 URL
  * 优先级：运行时配置 > 构建时配置 > 默认值
  * 支持通过 window.__ROTE_CONFIG__ 在运行时注入配置
+ * 注意：此函数每次调用时都会重新读取配置，确保使用最新的运行时配置
  */
-const getApiPoint = (): string => {
+export const getApiPoint = (): string => {
   const defaultValue = 'http://localhost:3000';
 
   // 优先读取运行时配置（从 window 对象，由容器启动脚本注入）
@@ -45,19 +46,31 @@ const getApiPoint = (): string => {
   return defaultValue;
 };
 
-export const API_POINT = getApiPoint();
-export const API_URL = `${API_POINT}${API_PATH}`;
+/**
+ * 获取完整的 API URL（函数形式，确保每次调用都获取最新配置）
+ */
+export const getApiUrl = (): string => `${getApiPoint()}${API_PATH}`;
 
-// 创建axios实例
+// 为了向后兼容，保留导出的常量（但会在首次访问时计算，可能不是最新值）
+// 建议新代码使用 getApiPoint() 和 getApiUrl() 函数
+export const API_POINT = getApiPoint();
+export const API_URL = getApiUrl();
+
+// 创建axios实例（不设置固定的 baseURL，在请求拦截器中动态设置）
 const api = axios.create({
   timeout: 60000,
-  baseURL: API_URL,
   withCredentials: true,
 });
 
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
+    // 动态设置 baseURL，确保每次请求都使用最新的配置
+    // 这样可以避免在配置注入前就使用旧的 baseURL
+    if (!config.baseURL) {
+      config.baseURL = getApiUrl();
+    }
+
     // 添加 JWT token
     const token = authService.getAccessToken();
     if (token && !authService.isTokenExpired(token)) {
@@ -174,7 +187,8 @@ const refreshTokenRequest = async (): Promise<string> => {
     throw new Error('No refresh token available');
   }
 
-  const response = await axios.post(`${API_URL}/auth/refresh`, {
+  // 使用动态获取的 API URL，确保使用最新配置
+  const response = await axios.post(`${getApiUrl()}/auth/refresh`, {
     refreshToken: refreshTokenValue,
   });
 
