@@ -38,61 +38,58 @@ export default defineConfig({
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },
   build: {
-    // 优化构建配置，避免 chunk 过大警告
-    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        // 手动分割代码块，优化加载性能
-        // 注意：检查顺序很重要，先检查具体的库，再检查通用的
         manualChunks: (id) => {
-          // 国际化库（先检查，避免被 react 匹配）
-          if (id.includes('i18next') || id.includes('react-i18next')) {
-            return 'i18n-vendor';
-          }
-          // 数据获取库
-          if (id.includes('swr')) {
-            return 'data-vendor';
-          }
-          // 工具库
-          if (id.includes('lodash')) {
-            return 'utils-vendor';
-          }
-          // 日期处理库（moment 较大，单独分割）
-          if (id.includes('moment')) {
-            return 'date-vendor';
-          }
-          // 动画库
-          if (id.includes('motion') || id.includes('framer-motion')) {
-            return 'animation-vendor';
-          }
-          // 图标库
-          if (id.includes('lucide-react')) {
-            return 'icons-vendor';
-          }
-          // 拖拽库
-          if (id.includes('@dnd-kit')) {
-            return 'dnd-vendor';
-          }
-          // Radix UI 组件库
-          if (id.includes('@radix-ui')) {
-            return 'ui-vendor';
-          }
-          // React 核心库（放在后面，避免匹配到其他 react-* 包）
-          // 匹配 react、react-dom 和 react-router 系列
+          // 确保所有 React 相关的库（包括依赖 React 的库）都在同一个 chunk
+          // 这样可以避免加载顺序问题
           if (
-            (id.includes('node_modules/react/') && !id.includes('react-')) ||
-            id.includes('node_modules/react-dom/') ||
-            id.includes('node_modules/react-router')
+            id.includes('node_modules') &&
+            (id.includes('react') ||
+              id.includes('react-dom') ||
+              id.includes('react-router') ||
+              id.includes('@radix-ui') ||
+              id.includes('react-photo-view') ||
+              id.includes('react-easy-crop') ||
+              id.includes('react-i18next') ||
+              id.includes('@dnd-kit') ||
+              id.includes('swr') ||
+              id.includes('jotai') ||
+              id.includes('sonner') ||
+              id.includes('linkify-react') ||
+              id.includes('motion') ||
+              id.includes('framer-motion'))
           ) {
             return 'react-vendor';
           }
-          // node_modules 中的其他依赖
-          if (id.includes('node_modules')) {
-            return 'vendor';
+          // 纯工具库（不依赖 React）
+          if (
+            id.includes('node_modules') &&
+            (id.includes('lodash') ||
+              id.includes('moment') ||
+              id.includes('axios') ||
+              id.includes('jwt-decode') ||
+              id.includes('linkifyjs') ||
+              id.includes('browser-image-compression'))
+          ) {
+            return 'utils-vendor';
+          }
+          // 国际化核心库（不依赖 React 的部分）
+          if (
+            id.includes('node_modules') &&
+            id.includes('i18next') &&
+            !id.includes('react-i18next')
+          ) {
+            return 'i18n-vendor';
+          }
+          // D3 相关（如果使用）
+          if (id.includes('node_modules') && id.includes('d3')) {
+            return 'd3-vendor';
           }
         },
       },
     },
+    chunkSizeWarningLimit: 1000, // 提高警告阈值到 1000KB，因为我们已经做了代码分割
   },
   preview: {
     host: true,
