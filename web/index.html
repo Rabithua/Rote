@@ -43,9 +43,16 @@
           window.__ROTE_CONFIG__ = {};
         }
         // 容器启动脚本会替换此占位符为实际的 API 基础 URL
-        // 如果占位符未被替换（配置注入失败），删除该属性让代码回退到构建时配置
+        // 注意：sed 全局替换会替换所有占位符，包括条件判断中的
+        // 因此使用 URL 格式检测来判断是否被替换（有效的 API URL 以 http:// 或 https:// 开头）
         var apiBase = '__VITE_API_BASE_PLACEHOLDER__';
-        if (apiBase !== '__VITE_API_BASE_PLACEHOLDER__') {
+        // 检查是否是有效的 URL（以 http:// 或 https:// 开头）
+        // 这样可以避免因为全局替换导致条件判断失效的问题
+        if (
+          apiBase &&
+          typeof apiBase === 'string' &&
+          (apiBase.indexOf('http://') === 0 || apiBase.indexOf('https://') === 0)
+        ) {
           window.__ROTE_CONFIG__.VITE_API_BASE = apiBase;
         }
       })();
