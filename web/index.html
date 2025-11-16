@@ -42,9 +42,11 @@
         if (!window.__ROTE_CONFIG__) {
           window.__ROTE_CONFIG__ = {};
         }
+        // 容器启动脚本会替换此占位符为实际的 API 基础 URL
         // 如果占位符未被替换（配置注入失败），删除该属性让代码回退到构建时配置
-        if (window.__ROTE_CONFIG__.VITE_API_BASE === '__VITE_API_BASE_PLACEHOLDER__') {
-          delete window.__ROTE_CONFIG__.VITE_API_BASE;
+        var apiBase = '__VITE_API_BASE_PLACEHOLDER__';
+        if (apiBase !== '__VITE_API_BASE_PLACEHOLDER__') {
+          window.__ROTE_CONFIG__.VITE_API_BASE = apiBase;
         }
       })();
     </script>
