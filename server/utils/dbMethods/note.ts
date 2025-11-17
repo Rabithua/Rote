@@ -99,7 +99,14 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
 
 export async function editRote(data: any): Promise<any> {
   try {
-    const { id, authorid, reactions, author, attachments, ...cleanData } = data;
+    const {
+      id: _id,
+      authorid: _authorid,
+      reactions: _reactions,
+      author: _author,
+      attachments: _attachments,
+      ...cleanData
+    } = data;
     const rote = await prisma.rote.update({
       where: {
         id: data.id,

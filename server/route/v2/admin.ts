@@ -5,13 +5,13 @@ import {
   requireAdmin,
   requireSuperAdmin,
 } from '../../middleware/jwtAuth';
-import {
+import type {
   ConfigTestResult,
   InitializationStatus,
   SetupRequest,
   SetupResponse,
 } from '../../types/config';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { UserRole } from '../../types/main';
 import {
   generateSecurityKeys,
@@ -37,7 +37,7 @@ import {
 } from '../../utils/dbMethods';
 import { createResponse, getApiUrl } from '../../utils/main';
 
-const adminRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const adminRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 获取系统初始化状态
 adminRouter.get('/status', async (c: HonoContext) => {

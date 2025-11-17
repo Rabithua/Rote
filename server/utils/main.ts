@@ -122,10 +122,12 @@ export async function injectDynamicUrls(c: HonoContext, next: () => Promise<void
  * @param code Status code
  * @returns Standardized response object
  */
-export const createResponse = (data: any = null, message: string = 'success', code: number = 0) => {
-  return {
-    code,
-    message,
-    data,
-  };
-};
+export const createResponse = (
+  data: any = null,
+  message: string = 'success',
+  code: number = 0
+) => ({
+  code,
+  message,
+  data,
+});

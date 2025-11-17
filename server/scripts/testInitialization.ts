@@ -91,13 +91,13 @@ class InitializationTester {
       try {
         await this.makeRequest('POST', '/admin/refresh-cache');
         this.recordResult('Cache Refresh', true, 'Configuration cache refreshed');
-      } catch (error) {
+      } catch (_error) {
         this.recordResult(
           'Cache Refresh',
           false,
           'Failed to refresh configuration cache',
           null,
-          error
+          _error
         );
       }
     } catch (error) {
@@ -528,10 +528,10 @@ class InitializationTester {
     await this.cleanupDatabase();
 
     // 2. 测试系统状态
-    const status = await this.testSystemStatus();
+    const _status = await this.testSystemStatus();
 
     // 3. 测试系统初始化
-    const initResult = await this.testSystemInitialization();
+    const _initResult = await this.testSystemInitialization();
 
     // 4. 测试配置中间件（获取认证令牌）
     const token = await this.testConfigMiddleware();

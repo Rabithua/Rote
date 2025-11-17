@@ -16,8 +16,8 @@ prisma.$on('info', (e) => {
   console.log('Prisma Info:', e);
 });
 
-prisma.$on('error', (e) => {
-  // console.log("Prisma Error:", e);
+prisma.$on('error', (_e) => {
+  // console.log("Prisma Error:", _e);
 });
 
 /**

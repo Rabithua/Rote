@@ -1,7 +1,7 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { Hono } from 'hono';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
   findRoteChangesAfterTimestamp,
   findRoteChangesByOriginId,
@@ -11,7 +11,7 @@ import {
 import { createResponse, isValidUUID } from '../../utils/main';
 
 // 变更记录相关路由
-const changeRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const changeRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 解析时间戳，支持多种格式
 function parseTimestamp(timestamp: string): Date {
@@ -116,7 +116,7 @@ changeRouter.get('/after', authenticateJWT, async (c: HonoContext) => {
   let timestampDate: Date;
   try {
     timestampDate = parseTimestamp(decodedTimestamp);
-  } catch (error) {
+  } catch (_error) {
     throw new Error(
       'Invalid timestamp format. Support: ISO 8601, Unix timestamp (seconds or milliseconds)'
     );

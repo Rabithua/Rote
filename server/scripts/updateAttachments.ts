@@ -2,32 +2,32 @@
  * Update attachments with compressUrl
  */
 
-import axios from "axios";
-import prisma from "../utils/prisma";
+import axios from 'axios';
+import prisma from '../utils/prisma';
 
 async function isUrlAccessible(url: string): Promise<boolean> {
   try {
     const response = await axios.head(url);
     return response.status === 200;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
 
 function generateCompressUrl(originalUrl: string): string {
   const parsedUrl = new URL(originalUrl);
-  const pathParts = parsedUrl.pathname.split("/");
+  const pathParts = parsedUrl.pathname.split('/');
 
-  const compressedIndex = pathParts.indexOf("uploads");
+  const compressedIndex = pathParts.indexOf('uploads');
   if (compressedIndex !== -1) {
-    pathParts[compressedIndex] = "compressed";
+    pathParts[compressedIndex] = 'compressed';
   }
 
   const filename = pathParts[pathParts.length - 1];
-  const nameWithoutExt = filename.split(".").slice(0, -1).join(".");
+  const nameWithoutExt = filename.split('.').slice(0, -1).join('.');
   pathParts[pathParts.length - 1] = `${nameWithoutExt}.webp`;
 
-  parsedUrl.pathname = pathParts.join("/");
+  parsedUrl.pathname = pathParts.join('/');
   return parsedUrl.toString();
 }
 
@@ -41,7 +41,7 @@ async function updateAttachments() {
       },
     });
 
-    let totalAttachments = attachments.length;
+    const totalAttachments = attachments.length;
     let processedAttachments = 0;
     let skippedAttachments = 0;
     let updatedAttachments = 0;
@@ -54,9 +54,7 @@ async function updateAttachments() {
       }
 
       if (attachment.compressUrl) {
-        console.log(
-          `Skipping attachment with existing compressUrl: ${attachment.id}`
-        );
+        console.log(`Skipping attachment with existing compressUrl: ${attachment.id}`);
         processedAttachments++;
         continue;
       }
@@ -68,31 +66,26 @@ async function updateAttachments() {
           where: { id: attachment.id },
           data: { compressUrl },
         });
-        console.log(
-          `Updated attachment ${attachment.id} with compressUrl: ${compressUrl}`
-        );
+        console.log(`Updated attachment ${attachment.id} with compressUrl: ${compressUrl}`);
         updatedAttachments++;
       } else {
-        console.log(
-          `CompressUrl not accessible for attachment ${attachment.id}: ${compressUrl}`
-        );
+        console.log(`CompressUrl not accessible for attachment ${attachment.id}: ${compressUrl}`);
         skippedAttachments++;
       }
 
       processedAttachments++;
     }
 
-    const coverageRate =
-      ((processedAttachments - skippedAttachments) / totalAttachments) * 100;
+    const coverageRate = ((processedAttachments - skippedAttachments) / totalAttachments) * 100;
 
-    console.log("All attachments processed");
+    console.log('All attachments processed');
     console.log(`Total attachments: ${totalAttachments}`);
     console.log(`Processed attachments: ${processedAttachments}`);
     console.log(`Updated attachments: ${updatedAttachments}`);
     console.log(`Skipped attachments: ${skippedAttachments}`);
     console.log(`CompressUrl coverage rate: ${coverageRate.toFixed(2)}%`);
   } catch (error) {
-    console.error("Error updating attachments:", error);
+    console.error('Error updating attachments:', error);
   } finally {
     await prisma.$disconnect();
   }

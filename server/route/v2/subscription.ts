@@ -1,7 +1,7 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { Hono } from 'hono';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
   addSubScriptionToUser,
   deleteSubScription,
@@ -14,7 +14,7 @@ import { createResponse } from '../../utils/main';
 import webpush from '../../utils/webpush';
 
 // 订阅相关路由
-const subscriptionsRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const subscriptionsRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 添加订阅
 subscriptionsRouter.post('/', authenticateJWT, async (c: HonoContext) => {
@@ -181,7 +181,7 @@ subscriptionsRouter.post('/:id/notify', async (c: HonoContext) => {
   }
 
   try {
-    let result = await webpush.sendNotification(
+    const result = await webpush.sendNotification(
       {
         endpoint: subscription.endpoint,
         keys: subscription.keys,

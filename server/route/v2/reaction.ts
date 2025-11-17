@@ -1,13 +1,13 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { Hono } from 'hono';
 import { optionalJWT } from '../../middleware/jwtAuth';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { ReactionCreateZod } from '../../utils/zod';
 
 // 反应相关路由
-const reactionsRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const reactionsRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 为 reactions 路由添加可选JWT认证
 reactionsRouter.use('*', optionalJWT);

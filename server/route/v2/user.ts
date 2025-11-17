@@ -1,8 +1,8 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { Hono } from 'hono';
 import moment from 'moment';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
   editMyProfile,
   exportData,
@@ -15,7 +15,7 @@ import {
 import { createResponse } from '../../utils/main';
 
 // 用户相关路由
-const usersRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const usersRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 获取用户信息
 usersRouter.get('/:username', async (c: HonoContext) => {

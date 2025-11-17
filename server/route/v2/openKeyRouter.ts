@@ -4,12 +4,12 @@
  */
 
 import { Hono } from 'hono';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
 import { createResponse, isOpenKeyOk, queryTypeCheck } from '../../utils/main';
 import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
-const router = new Hono<{ Variables: HonoContext['Variables'] }>();
+const router = new Hono<{ Variables: HonoVariables }>();
 
 // Create note using API key - GET method (kept for backward compatibility)
 router.get('/notes/create', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) => {

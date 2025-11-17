@@ -156,7 +156,7 @@ export async function findRoteChangesAfterTimestamp(
   try {
     // 确保时间戳是 Date 对象
     const timestampDate = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-    
+
     // 验证时间戳是否有效
     if (isNaN(timestampDate.getTime())) {
       throw new Error('Invalid timestamp');

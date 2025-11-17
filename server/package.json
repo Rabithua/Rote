@@ -11,7 +11,9 @@
     "docker:start": "prisma generate && bun run server.ts",
     "test:init": "bun run scripts/testInitialization.ts",
     "test:quick": "bun run scripts/quickTest.ts",
-    "test:all": "bun run test:quick && bun run test:init"
+    "test:all": "bun run test:quick && bun run test:init",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "node",
@@ -38,13 +40,20 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^6.2.0",
+    "@eslint/js": "^9.39.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.5.0",
     "nodemon": "^3.1.11",
     "prettier": "^3.6.2",
     "prisma": "^6.19.0",
     "sharp": "^0.34.5",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4"
   }
 }

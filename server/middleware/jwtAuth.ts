@@ -21,7 +21,7 @@ export async function authenticateJWT(c: HonoContext, next: () => Promise<void>)
 
     c.set('user', user);
     await next();
-  } catch (error) {
+  } catch (_error) {
     return c.json({ code: 401, message: 'Invalid token' }, 401);
   }
 }
@@ -48,7 +48,7 @@ export async function optionalJWT(c: HonoContext, next: () => Promise<void>) {
     }
 
     await next();
-  } catch (error) {
+  } catch (_error) {
     // Token无效时，仍然允许继续（作为访客）
     c.set('user', undefined);
     await next();

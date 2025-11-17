@@ -1,16 +1,16 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import crypto from 'crypto';
 import { Hono } from 'hono';
 import { requireSecurityConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { changeUserPassword, createUser, passportCheckUser } from '../../utils/dbMethods';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
 import { passwordChangeZod, RegisterDataZod } from '../../utils/zod';
 
 // 认证相关路由
-const authRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const authRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 注册
 authRouter.post('/register', async (c: HonoContext) => {
@@ -49,7 +49,7 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
   }
 
   // 验证密码
-  return new Promise((resolve, reject) => {
+  return new Promise<Response>((resolve, reject) => {
     crypto.pbkdf2(
       password,
       user.salt,
@@ -87,8 +87,8 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
             ),
             200
           );
-          return resolve(response);
-        } catch (error) {
+          resolve(response);
+        } catch (_error) {
           return reject(new Error('Token generation failed'));
         }
       }
@@ -141,7 +141,7 @@ authRouter.post('/refresh', requireSecurityConfig, async (c: HonoContext) => {
       ),
       200
     );
-  } catch (error) {
+  } catch (_error) {
     return c.json(createResponse(null, 'Invalid refresh token', 401), 401);
   }
 });

@@ -177,7 +177,7 @@ export async function bindAttachmentsToRote(
           where: { id: roteid },
           data: { updatedAt: new Date() },
         });
-      } catch (error) {
+      } catch (_error) {
         // rote 可能不存在，忽略错误
       }
 
@@ -240,15 +240,15 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
           where: { id: roteid },
           data: { updatedAt: new Date() },
         });
-      } catch (error) {
+      } catch (_error) {
         // 忽略更新错误
       }
     }
 
     attachments.forEach(({ details }) => {
-      // @ts-ignore
+      // @ts-expect-error - details 可能包含动态属性
       const key = details?.key;
-      // @ts-ignore
+      // @ts-expect-error - details 可能包含动态属性
       const compressKey = details?.compressKey;
       if (key) {
         r2deletehandler(key).catch((err) => {
@@ -319,7 +319,7 @@ export async function updateAttachmentsSortOrder(
           where: { id: roteId },
           data: { updatedAt: new Date() },
         });
-      } catch (error) {
+      } catch (_error) {
         // rote 可能不存在，忽略错误
       }
 
@@ -422,9 +422,9 @@ export async function deleteAttachments(
 
     // 优先使用 DB 中的 details 删除，以涵盖压缩文件；兼容传入 key 的旧行为
     dbAttachments.forEach(({ details }) => {
-      // @ts-ignore
+      // @ts-expect-error - details 可能包含动态属性
       const key = details?.key;
-      // @ts-ignore
+      // @ts-expect-error - details 可能包含动态属性
       const compressKey = details?.compressKey;
       if (key) {
         r2deletehandler(key).catch((err) => {
@@ -502,9 +502,9 @@ export async function deleteAttachment(id: string, userid: string): Promise<any>
     }
 
     if (record?.details) {
-      // @ts-ignore
+      // @ts-expect-error - details 可能包含动态属性
       const key = record.details?.key;
-      // @ts-ignore
+      // @ts-expect-error - details 可能包含动态属性
       const compressKey = record.details?.compressKey;
       if (key) {
         r2deletehandler(key).catch((err) => {

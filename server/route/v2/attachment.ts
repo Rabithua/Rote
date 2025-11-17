@@ -1,11 +1,11 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { Hono } from 'hono';
 import { requireStorageConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { StorageConfig } from '../../types/config';
-import { HonoContext } from '../../types/hono';
-import { UploadResult } from '../../types/main';
+import type { StorageConfig } from '../../types/config';
+import type { HonoContext, HonoVariables } from '../../types/hono';
+import type { UploadResult } from '../../types/main';
 import { getGlobalConfig } from '../../utils/config';
 import {
   deleteAttachment,
@@ -19,7 +19,7 @@ import { presignPutUrl } from '../../utils/r2';
 import { AttachmentPresignZod } from '../../utils/zod';
 
 // 附件相关路由
-const attachmentsRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const attachmentsRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 文件上传限制常量
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB

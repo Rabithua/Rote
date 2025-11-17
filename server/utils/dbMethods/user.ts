@@ -54,8 +54,8 @@ export async function createUser(data: {
   nickname?: string;
 }) {
   try {
-    let salt = crypto.randomBytes(16);
-    let passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
+    const salt = crypto.randomBytes(16);
+    const passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
 
     const user = await prisma.user.create({
       data: {

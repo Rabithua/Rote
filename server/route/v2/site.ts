@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
-import { NotificationConfig, StorageConfig } from '../../types/config';
-import { HonoContext } from '../../types/hono';
+import type { NotificationConfig, StorageConfig } from '../../types/config';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getConfig, isInitialized } from '../../utils/config';
 import { checkDatabaseConnection, getSiteMapData } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
 
 // 站点数据相关路由
-const siteRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const siteRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 获取站点地图数据
 siteRouter.get('/sitemap', async (c: HonoContext) => {
@@ -31,8 +31,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
 
     // 计算 R2 存储是否可用
     const r2Configured = Boolean(
-      storageConfig &&
-        storageConfig.endpoint &&
+      storageConfig?.endpoint &&
         storageConfig.bucket &&
         storageConfig.accessKeyId &&
         storageConfig.secretAccessKey
@@ -74,7 +73,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
     };
 
     return c.json(createResponse(status), 200);
-  } catch (error) {
+  } catch (_error) {
     // 如果获取状态失败，返回基本错误信息
     return c.json(createResponse(null, 'Failed to get site status'), 500);
   }
@@ -116,7 +115,7 @@ siteRouter.get('/config-status', async (c: HonoContext) => {
         200
       );
     }
-  } catch (error) {
+  } catch (_error) {
     return c.json(createResponse(null, 'Failed to get configuration status'), 500);
   }
 });

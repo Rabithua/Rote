@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getAllPublicRssData, getRssData } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
-import { generateRssFeed, RssFeedOptions } from '../../utils/rss';
+import { generateRssFeed, type RssFeedOptions } from '../../utils/rss';
 import adminRouter from './admin';
 import apiKeysRouter from './apikey';
 import attachmentsRouter from './attachment';
@@ -16,12 +16,10 @@ import siteRouter from './site';
 import subscriptionsRouter from './subscription';
 import usersRouter from './user';
 
-const router = new Hono<{ Variables: HonoContext['Variables'] }>();
+const router = new Hono<{ Variables: HonoVariables }>();
 
 // 健康检查
-router.get('/health', (c: HonoContext) => {
-  return c.json(createResponse(), 200);
-});
+router.get('/health', (c: HonoContext) => c.json(createResponse(), 200));
 
 // 获取所有公开笔记的RSS
 router.get('/rss/public', async (c: HonoContext) => {

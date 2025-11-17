@@ -1,7 +1,7 @@
-import { User } from '@prisma/client';
+import type { User } from '@prisma/client';
 import { Hono } from 'hono';
 import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
-import { HonoContext } from '../../types/hono';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
   bindAttachmentsToRote,
   createRote,
@@ -24,7 +24,7 @@ import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
 import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
 
 // 笔记相关路由
-const notesRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
+const notesRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 创建笔记
 notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => {
@@ -74,7 +74,7 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
 // 获取随机笔记 - 移到前面避免被当作ID匹配
 notesRouter.get('/random', optionalJWT, async (c: HonoContext) => {
   const user = c.get('user') as User | undefined;
-  let rote;
+  let rote: any;
 
   if (user) {
     rote = await findMyRandomRote(user.id);

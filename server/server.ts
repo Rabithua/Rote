@@ -83,16 +83,16 @@ app.use(
 app.route('/v2/api', routerV2);
 
 // 404 handler
-app.notFound((c) => {
-  return c.json(
+app.notFound((c) =>
+  c.json(
     {
       code: 1,
       message: 'Api not found!',
       data: null,
     },
     404
-  );
-});
+  )
+);
 
 // Global error handler (must be after all routes)
 app.onError(errorHandler);
