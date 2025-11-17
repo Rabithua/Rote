@@ -1,5 +1,6 @@
 import moment from 'moment';
-import { HonoContext } from '../types/hono';
+import type { HonoContext } from '../types/hono';
+import { getClientIp } from '../utils/main';
 
 // Request middleware, record IP and time
 export const recorderIpAndTime = async (c: HonoContext, next: () => Promise<void>) => {
@@ -12,7 +13,7 @@ export const recorderIpAndTime = async (c: HonoContext, next: () => Promise<void
     return;
   }
 
-  const ipAddress = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+  const ipAddress = getClientIp(c);
 
   const logMessage = `[${moment().format(
     'YYYY/MM/DD HH:mm:ss'

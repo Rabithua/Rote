@@ -14,6 +14,46 @@ export function getApiUrl(c: HonoContext): string {
   return `${protocol}://${host}`;
 }
 
+/**
+ * 获取客户端 IP 地址
+ * 按优先级尝试从多个来源获取：x-forwarded-for -> x-real-ip -> 原始连接
+ * @param c Hono 上下文对象
+ * @returns 客户端 IP 地址，如果无法获取则返回 'local'
+ */
+export function getClientIp(c: HonoContext): string {
+  // 1. 尝试从 x-forwarded-for 获取（可能包含多个 IP，取第一个）
+  const forwardedFor = c.req.header('x-forwarded-for');
+  if (forwardedFor) {
+    // x-forwarded-for 可能包含多个 IP，用逗号分隔，取第一个
+    const firstIp = forwardedFor.split(',')[0].trim();
+    if (firstIp) {
+      return firstIp;
+    }
+  }
+
+  // 2. 尝试从 x-real-ip 获取
+  const realIp = c.req.header('x-real-ip');
+  if (realIp) {
+    return realIp.trim();
+  }
+
+  // 3. 尝试从原始请求对象获取（Bun 运行时）
+  try {
+    const raw = c.req.raw;
+    if (raw && 'remoteAddress' in raw) {
+      const remoteAddress = (raw as any).remoteAddress;
+      if (remoteAddress) {
+        return remoteAddress;
+      }
+    }
+  } catch {
+    // 忽略错误，继续尝试其他方式
+  }
+
+  // 4. 如果都获取不到，返回 'local' 作为标识（比 'unknown' 更友好）
+  return 'local';
+}
+
 // UUID 格式验证函数
 export function isValidUUID(id: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

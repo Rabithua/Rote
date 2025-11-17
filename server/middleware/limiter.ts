@@ -1,5 +1,6 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible';
-import { HonoContext } from '../types/hono';
+import type { HonoContext } from '../types/hono';
+import { getClientIp } from '../utils/main';
 
 // Configure the rate limiter
 const limiter = new RateLimiterMemory({
@@ -10,9 +11,7 @@ const limiter = new RateLimiterMemory({
 // Create rate limiting middleware function with enhanced features
 export const rateLimiterMiddleware = async (c: HonoContext, next: () => Promise<void>) => {
   const user = c.get('user');
-  const key = user
-    ? user.id
-    : c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+  const key = user ? user.id : getClientIp(c);
 
   try {
     await limiter.consume(key);
