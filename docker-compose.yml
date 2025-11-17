@@ -13,7 +13,7 @@
 
 services:
   rote-backend:
-    image: rabithua/rote-backend:${IMAGE_TAG:-latest}
+    image: rabithua/rote-backend:${IMAGE_TAG:-develop}
     container_name: rote-backend
     environment:
       # 基础配置 - 必需
@@ -26,9 +26,8 @@ services:
     restart: unless-stopped
     command: ["sh", "-c", "sleep 15 && npx prisma db push && npm start"]
 
-
   rote-frontend:
-    image: rabithua/rote-frontend:${IMAGE_TAG:-latest}
+    image: rabithua/rote-frontend:${IMAGE_TAG:-develop}
     container_name: rote-frontend
     ports:
       - "3001"

@@ -1,22 +1,22 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient({
   log: [
-    { level: "warn", emit: "event" },
-    { level: "info", emit: "event" },
-    { level: "error", emit: "event" },
-  },
+    { level: 'warn', emit: 'event' },
+    { level: 'info', emit: 'event' },
+    { level: 'error', emit: 'event' },
+  ],
 });
 
-prisma.$on("warn", (e) => {
-  console.log("Prisma Warn:", e);
+prisma.$on('warn', (e) => {
+  console.log('Prisma Warn:', e);
 });
 
-prisma.$on("info", (e) => {
-  console.log("Prisma Info:", e);
+prisma.$on('info', (e) => {
+  console.log('Prisma Info:', e);
 });
 
-prisma.$on("error", (e) => {
+prisma.$on('error', (e) => {
   // console.log("Prisma Error:", e);
 });
 
@@ -32,20 +32,20 @@ export async function waitForDatabase(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`🔄 Attempting to connect to database (${attempt}/${maxRetries})...`);
-      
+
       // 如果之前有连接尝试，先断开
       try {
         await prisma.$disconnect();
       } catch {
         // 忽略断开连接的错误
       }
-      
+
       // 尝试连接
       await prisma.$connect();
-      
+
       // 尝试执行一个简单的查询来验证连接
       await prisma.$queryRaw`SELECT 1`;
-      console.log("✅ Prisma connected successfully!");
+      console.log('✅ Prisma connected successfully!');
       return;
     } catch (error: any) {
       // 确保在错误时断开连接
@@ -54,9 +54,9 @@ export async function waitForDatabase(
       } catch {
         // 忽略断开连接的错误
       }
-      
+
       if (attempt === maxRetries) {
-        console.error("❌ Failed to connect to database after all retries:", error);
+        console.error('❌ Failed to connect to database after all retries:', error);
         throw new Error(
           `Database connection failed after ${maxRetries} attempts. Please check your database configuration. Error: ${error?.message || error}`
         );

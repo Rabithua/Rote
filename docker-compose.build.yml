@@ -8,24 +8,28 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - rote-postgres
+      rote-postgres:
+        condition: service_healthy
     restart: unless-stopped
+    volumes:
+      # 缓存 node_modules，避免每次启动都重新安装依赖（可选，用于加速启动）
+      - rote-backend-node-modules:/usr/src/app/node_modules
 
   rote-frontend:
     build:
       context: ./web
       args:
-        # 构建时传递 VITE_API_BASE，会在构建时注入到前端代码中
-        # 如果未设置，将使用默认值 http://localhost:3000
+        # 构建时传递 VITE_API_BASE（构建时注入到代码中）
         - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
     ports:
-      - "3001:3001"
+      - "3001:80"
     depends_on:
       - rote-backend
     environment:
-      # 运行时环境变量，用于启动脚本注入配置
+      # 运行时环境变量，用于启动脚本注入配置（如果需要覆盖构建时配置）
       - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
     restart: unless-stopped
+
   rote-postgres:
     image: postgres:17
     container_name: rote-postgres
@@ -38,6 +42,13 @@ services:
       POSTGRES_DB: rote
     volumes:
       - rote-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prisma -d rote"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
 volumes:
   rote-postgres-data:
+  rote-backend-node-modules:
