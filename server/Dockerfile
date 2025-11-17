@@ -1,70 +1,104 @@
-FROM node:lts-alpine
+# ----------------------------------------------------
+# 阶段 1: 依赖安装和 Prisma 客户端生成 (deps)
+# ----------------------------------------------------
+FROM oven/bun:1-alpine AS deps
 
-ENV NODE_ENV=production
+WORKDIR /app
 
-# 安装运行时必需的包和工具（合并 RUN 减少层数）
-RUN apk add --no-cache openssl su-exec && \
-    addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+# 复制依赖文件（利用 Docker 缓存层）
+COPY package.json bun.lock* ./
 
-WORKDIR /usr/src/app
+# 🚨 关键：只安装生产环境依赖！
+RUN bun install --production --frozen-lockfile
 
-# 复制依赖文件和源代码
-COPY package.json package-lock.json* ./
+# 复制 schema 并生成 Prisma 客户端
+COPY prisma ./prisma
+RUN bunx prisma generate
+
+# ----------------------------------------------------
+# 阶段 2: 代码编译 (builder)
+# ----------------------------------------------------
+FROM oven/bun:1-alpine AS builder
+
+WORKDIR /app
+
+# 安装所有依赖（包括 devDependencies，编译时需要 TypeScript）
+COPY package.json bun.lock* ./
+RUN bun install --frozen-lockfile
+
+# 从 deps 阶段复制 Prisma Client（避免重新生成）
+COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
+
+# 复制源代码
 COPY . .
 
-# 创建启动脚本和入口脚本（合并 RUN 减少层数）
-RUN cat > /usr/src/app/docker-start.sh << 'EOFSCRIPT' && chmod +x /usr/src/app/docker-start.sh && \
-    cat > /usr/src/app/docker-entrypoint.sh << 'EOFENTRY' && chmod +x /usr/src/app/docker-entrypoint.sh
-#!/bin/sh
-set -e
+# 编译所有 TypeScript 代码到 dist 目录
+RUN bun run build
 
-# 检查 node_modules 是否存在且 package.json 未变更
-if [ ! -d "node_modules" ] || [ ! -f "node_modules/.package-lock.json" ] || [ package.json -nt node_modules/.package-lock.json ]; then
-  echo "📦 Installing production dependencies..."
-  if [ -f "package-lock.json" ]; then
-    npm ci --omit=dev || npm install --omit=dev
-  else
-    npm install --omit=dev
-  fi
-  echo "📦 Installing build tools..."
-  npm install --save-dev ts-node prisma typescript @types/node || true
-  npm cache clean --force
-  touch node_modules/.package-lock.json
-else
-  echo "✅ Using cached dependencies"
-  if [ ! -d "node_modules/ts-node" ]; then
-    echo "📦 Installing build tools..."
-    npm install --save-dev ts-node prisma typescript @types/node || true
-  fi
-fi
+# ----------------------------------------------------
+# 阶段 3: 运行时镜像 (runner) - 极致瘦身！
+# ----------------------------------------------------
+FROM oven/bun:1-alpine AS runner
 
-echo "🔧 Generating Prisma Client..."
-npx prisma generate
+WORKDIR /app
 
-echo "🔧 Pushing database schema..."
-npx prisma db push || true
+# 创建非 root 用户（安全最佳实践）
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 bunuser
 
-echo "🚀 Starting server..."
-exec npm start
-EOFSCRIPT
-#!/bin/sh
-set -e
+# 复制 package.json 和 lockfile（用于重新安装生产依赖）
+COPY --from=builder --chown=bunuser:nodejs /app/package.json ./
+COPY --from=builder --chown=bunuser:nodejs /app/bun.lock* ./
 
-# 如果 node_modules 目录存在（volume 挂载），修复权限
-if [ -d "node_modules" ]; then
-  echo "🔧 Fixing node_modules permissions..."
-  chown -R nodejs:nodejs node_modules 2>/dev/null || true
-fi
+# 🚨 关键优化：在 runner 阶段重新安装生产依赖
+# 这样可以确保完全没有 devDependencies，并且只安装运行时需要的包
+RUN bun install --production --frozen-lockfile
 
-# 切换到 nodejs 用户并执行启动脚本
-exec su-exec nodejs /usr/src/app/docker-start.sh
-EOFENTRY
+# 从 deps 阶段复制 Prisma Client 和 schema（Prisma 是生产依赖）
+# 注意：先复制 node_modules，再复制 .prisma，确保目录结构正确
+COPY --from=deps --chown=bunuser:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=deps --chown=bunuser:nodejs /app/prisma ./prisma
 
-# 设置文件权限（以 root 身份）
-RUN chown -R nodejs:nodejs /usr/src/app
+# 确保 Prisma Client 目录权限正确
+RUN chown -R bunuser:nodejs /app/node_modules/.prisma || true
 
-# 保持 root 用户，在 entrypoint 中切换
+# 从 builder 阶段复制编译后的代码
+COPY --from=builder --chown=bunuser:nodejs /app/dist ./dist
+
+# 🔥 终极清理：删除所有不必要的文件
+RUN rm -rf /app/node_modules/.cache && \
+    rm -rf /tmp/* && \
+    rm -rf /var/cache/apk/* && \
+    # 🚨 强制删除 TypeScript 及其相关包（Prisma 的可选 peer dependency，生产环境不需要）
+    rm -rf /app/node_modules/typescript && \
+    rm -rf /app/node_modules/@typescript-eslint && \
+    rm -rf /app/node_modules/typescript-eslint && \
+    # 🚨 Prisma 优化：删除不需要的数据库引擎文件（只保留 PostgreSQL）
+    find /app/node_modules/prisma/build -name '*cockroachdb*' -delete 2>/dev/null || true && \
+    find /app/node_modules/prisma/build -name '*mysql*' -delete 2>/dev/null || true && \
+    find /app/node_modules/prisma/build -name '*sqlite*' -delete 2>/dev/null || true && \
+    find /app/node_modules/prisma/build -name '*sqlserver*' -delete 2>/dev/null || true && \
+    # 删除测试相关目录
+    find /app/node_modules -type d \( -name "test" -o -name "tests" -o -name "__tests__" -o -name "*.test.*" -o -name "*.spec.*" -o -name "docs" -o -name "doc" -o -name "examples" -o -name "example" -o -name "benchmark" -o -name "benchmarks" \) -exec rm -rf {} + 2>/dev/null || true && \
+    # 删除文档和配置文件
+    find /app/node_modules -type f \( -name "*.md" -o -name "*.map" -o -name "CHANGELOG*" -o -name "LICENSE*" -o -name "README*" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" ! -name "package.json" \) ! -path "*/node_modules/.prisma/*" ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
+    # 删除类型定义文件（运行时不需要）
+    find /app/node_modules -type f -name "*.d.ts" ! -path "*/node_modules/.prisma/*" ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
+    # 删除源码文件（只保留编译后的代码）
+    find /app/node_modules -type f \( -name "*.js" ! -name "*.min.js" \) -path "*/src/*" -delete 2>/dev/null || true
+
+# 设置环境变量，提升性能
+ENV NODE_ENV=production
+
+# 切换到非 root 用户
+USER bunuser
+
+# 暴露端口
 EXPOSE 3000
 
-ENTRYPOINT ["/usr/src/app/docker-entrypoint.sh"]
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD bun -e "fetch('http://localhost:3000/v2/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" || exit 1
+
+# 启动命令：指向编译后的入口文件
+CMD ["bun", "run", "dist/server.js"]
