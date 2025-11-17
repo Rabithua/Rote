@@ -17,48 +17,33 @@ services:
     container_name: rote-backend
     environment:
       # 基础配置 - 必需
-      - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@postgres:5432/rote
+      - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@rote-postgres:5432/rote
     ports:
-      - "3000:3000"
+      - "3000"
     depends_on:
-      postgres:
+      rote-postgres:
         condition: service_healthy
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          'node -e "require(''http'').get(''http://localhost:3000/v2/api/health'', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)}).on(''error'', () => process.exit(1))" || exit 1',
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
+    command: ["sh", "-c", "sleep 15 && npx prisma db push && npm start"]
+
 
   rote-frontend:
     image: rabithua/rote-frontend:${IMAGE_TAG:-latest}
     container_name: rote-frontend
     ports:
-      - "3001:3001"
+      - "3001"
     depends_on:
-      rote-backend:
-        condition: service_healthy
+      - rote-backend
     environment:
       - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3001 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     restart: unless-stopped
 
-  postgres:
+  rote-postgres:
     image: postgres:17
     container_name: rote-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5432"
     environment:
       POSTGRES_USER: prisma
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
@@ -67,10 +52,15 @@ services:
       - rote-postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prisma -d rote"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
 
 volumes:
   rote-postgres-data:
+
+networks:
+  default:
+    name: rote-network
+    driver: bridge

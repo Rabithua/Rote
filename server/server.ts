@@ -13,6 +13,7 @@ import {
 } from './utils/config';
 import { errorHandler } from './utils/handlers';
 import { injectDynamicUrls } from './utils/main';
+import { waitForDatabase } from './utils/prisma';
 import { recorderIpAndTime } from './utils/recoder';
 import { StartupMigration } from './utils/startupMigration';
 
@@ -124,23 +125,35 @@ app.use((req, res) => {
   });
 });
 
-app.listen(port, async () => {
-  console.log(`Rote Node backend server listening on port ${port}!`);
-
+// 启动服务器前等待数据库就绪
+(async () => {
   try {
-    // 初始化配置管理器
-    await initializeConfig();
+    // 等待数据库连接就绪
+    await waitForDatabase();
 
-    // 配置管理器初始化后，重新初始化 CORS 配置（从数据库读取）
-    initializeCorsConfig();
+    // 启动服务器
+    app.listen(port, async () => {
+      console.log(`Rote Node backend server listening on port ${port}!`);
 
-    // 验证关键配置是否正确加载
-    validateSystemConfiguration();
+      try {
+        // 初始化配置管理器
+        await initializeConfig();
 
-    // 启动时检查系统状态
-    await StartupMigration.checkStartupStatus();
-    await StartupMigration.showConfigStatus();
+        // 配置管理器初始化后，重新初始化 CORS 配置（从数据库读取）
+        initializeCorsConfig();
+
+        // 验证关键配置是否正确加载
+        validateSystemConfiguration();
+
+        // 启动时检查系统状态
+        await StartupMigration.checkStartupStatus();
+        await StartupMigration.showConfigStatus();
+      } catch (error) {
+        console.error('❌ Failed to initialize system:', error);
+      }
+    });
   } catch (error) {
-    console.error('❌ Failed to initialize system:', error);
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-});
+})();
