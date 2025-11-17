@@ -1,32 +1,29 @@
 import { User } from '@prisma/client';
 import { randomUUID } from 'crypto';
-import express from 'express';
-import formidable from 'formidable';
+import { Hono } from 'hono';
 import { requireStorageConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import { StorageConfig } from '../../types/config';
+import { HonoContext } from '../../types/hono';
 import { UploadResult } from '../../types/main';
 import { getGlobalConfig } from '../../utils/config';
 import {
-  createAttachments,
   deleteAttachment,
   deleteAttachments,
   updateAttachmentsSortOrder,
   upsertAttachmentsByOriginalKey,
 } from '../../utils/dbMethods';
-import { validateContentType, validateFile } from '../../utils/fileValidation';
-import { asyncHandler } from '../../utils/handlers';
+import { validateContentType } from '../../utils/fileValidation';
 import { createResponse, isValidUUID } from '../../utils/main';
-import { presignPutUrl, r2uploadhandler } from '../../utils/r2';
+import { presignPutUrl } from '../../utils/r2';
 import { AttachmentPresignZod } from '../../utils/zod';
 
 // 附件相关路由
-const attachmentsRouter = express.Router();
+const attachmentsRouter = new Hono<{ Variables: HonoContext['Variables'] }>();
 
 // 文件上传限制常量
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 const MAX_FILES = 9;
-const MAX_TOTAL_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_BATCH_SIZE = 100; // 批量操作最大数量限制
 
 /**
@@ -46,158 +43,88 @@ function validateFileSize(size: number | undefined | null): void {
   }
 }
 
-// 上传附件
-attachmentsRouter.post(
-  '/',
-  authenticateJWT,
-  requireStorageConfig,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { noteId } = req.query;
-
-    const form = formidable({
-      multiples: true,
-      maxFileSize: MAX_FILE_SIZE,
-      maxFiles: MAX_FILES,
-      maxTotalFileSize: MAX_TOTAL_FILE_SIZE,
-      filename: () => {
-        return `${randomUUID()}`;
-      },
-    });
-
-    const [fields, files] = await form.parse(req);
-    if (!files.images) {
-      throw new Error('No images uploaded');
-    }
-
-    const imageFiles = Array.isArray(files.images) ? files.images : [files.images];
-
-    // 验证每个文件的类型和内容
-    for (const file of imageFiles) {
-      await validateFile(file);
-    }
-
-    // 并发控制，避免单次请求时间过长导致中断
-    const CONCURRENCY = 3; // 保留并发配置，因为这是性能调优必需的
-    const queue: Promise<void>[] = [];
-    const uploadResults: UploadResult[] = [];
-
-    let idx = 0;
-    const worker = async () => {
-      while (idx < imageFiles.length) {
-        const current = imageFiles[idx++];
-        try {
-          const result = await r2uploadhandler(current);
-          if (result) uploadResults.push(result);
-        } catch (e) {
-          // 单个文件失败不影响整体
-          console.error('Upload one file failed:', e);
-        }
-      }
-    };
-
-    for (let i = 0; i < Math.min(CONCURRENCY, imageFiles.length); i++) {
-      queue.push(worker());
-    }
-    await Promise.all(queue);
-
-    const data = await createAttachments(user.id, noteId as string | undefined, uploadResults);
-
-    res.status(201).json(createResponse(data));
-  })
-);
-
 // 删除单个附件
-attachmentsRouter.delete(
-  '/:id',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { id } = req.params;
+attachmentsRouter.delete('/:id', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const id = c.req.param('id');
 
-    if (!id || !isValidUUID(id)) {
-      throw new Error('Invalid attachment ID');
-    }
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid attachment ID');
+  }
 
-    const data = await deleteAttachment(id, user.id);
-    res.status(200).json(createResponse(data));
-  })
-);
+  const data = await deleteAttachment(id, user.id);
+  return c.json(createResponse(data), 200);
+});
 
 // 批量删除附件
-attachmentsRouter.delete(
-  '/',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { ids } = req.body;
+attachmentsRouter.delete('/', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+  const { ids } = body;
 
-    if (!ids || ids.length === 0) {
-      throw new Error('No attachments to delete');
-    }
+  if (!ids || ids.length === 0) {
+    throw new Error('No attachments to delete');
+  }
 
-    // 限制批量删除的数量，防止滥用
-    if (ids.length > MAX_BATCH_SIZE) {
-      throw new Error(`最多允许一次删除 ${MAX_BATCH_SIZE} 个附件`);
-    }
+  // 限制批量删除的数量，防止滥用
+  if (ids.length > MAX_BATCH_SIZE) {
+    throw new Error(`最多允许一次删除 ${MAX_BATCH_SIZE} 个附件`);
+  }
 
-    const data = await deleteAttachments(
-      ids.map((id: string) => ({ id })),
-      user.id
-    );
-    res.status(200).json(createResponse(data));
-  })
-);
+  const data = await deleteAttachments(
+    ids.map((id: string) => ({ id })),
+    user.id
+  );
+  return c.json(createResponse(data), 200);
+});
 
 // 更新附件排序
-attachmentsRouter.put(
-  '/sort',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { roteId, attachmentIds } = req.body as {
-      roteId: string;
-      attachmentIds: string[];
-    };
+attachmentsRouter.put('/sort', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+  const { roteId, attachmentIds } = body as {
+    roteId: string;
+    attachmentIds: string[];
+  };
 
-    if (!roteId || !isValidUUID(roteId)) {
-      throw new Error('Invalid rote ID');
+  if (!roteId || !isValidUUID(roteId)) {
+    throw new Error('Invalid rote ID');
+  }
+
+  if (!attachmentIds || !Array.isArray(attachmentIds) || attachmentIds.length === 0) {
+    throw new Error('Invalid attachment IDs');
+  }
+
+  // 限制批量更新的数量，防止滥用
+  if (attachmentIds.length > MAX_BATCH_SIZE) {
+    throw new Error(`最多允许一次更新 ${MAX_BATCH_SIZE} 个附件的排序`);
+  }
+
+  // 验证所有附件ID格式
+  for (const id of attachmentIds) {
+    if (!isValidUUID(id)) {
+      throw new Error(`Invalid attachment ID: ${id}`);
     }
+  }
 
-    if (!attachmentIds || !Array.isArray(attachmentIds) || attachmentIds.length === 0) {
-      throw new Error('Invalid attachment IDs');
-    }
-
-    // 限制批量更新的数量，防止滥用
-    if (attachmentIds.length > MAX_BATCH_SIZE) {
-      throw new Error(`最多允许一次更新 ${MAX_BATCH_SIZE} 个附件的排序`);
-    }
-
-    // 验证所有附件ID格式
-    for (const id of attachmentIds) {
-      if (!isValidUUID(id)) {
-        throw new Error(`Invalid attachment ID: ${id}`);
-      }
-    }
-
-    const data = await updateAttachmentsSortOrder(user.id, roteId, attachmentIds);
-    res.status(200).json(createResponse(data));
-  })
-);
+  const data = await updateAttachmentsSortOrder(user.id, roteId, attachmentIds);
+  return c.json(createResponse(data), 200);
+});
 
 // 预签名直传（前端直接 PUT 到 R2）
 attachmentsRouter.post(
   '/presign',
   authenticateJWT,
   requireStorageConfig,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { files } = req.body as {
+  async (c: HonoContext) => {
+    const user = c.get('user') as User;
+    const body = await c.req.json();
+    const { files } = body as {
       files: Array<{ filename?: string; contentType?: string; size?: number }>;
     };
 
     // 验证输入长度和格式
-    AttachmentPresignZod.parse(req.body);
+    AttachmentPresignZod.parse(body);
 
     // 验证文件数量限制（zod 已经验证，但保留作为双重检查）
     if (files.length > MAX_FILES) {
@@ -261,8 +188,8 @@ attachmentsRouter.post(
       })
     );
 
-    res.status(200).json(createResponse({ items: results }));
-  })
+    return c.json(createResponse({ items: results }), 200);
+  }
 );
 
 // 完成回调：将已上传对象入库（可选绑定 noteId）
@@ -270,9 +197,10 @@ attachmentsRouter.post(
   '/finalize',
   authenticateJWT,
   requireStorageConfig,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { attachments, noteId } = req.body as {
+  async (c: HonoContext) => {
+    const user = c.get('user') as User;
+    const body = await c.req.json();
+    const { attachments, noteId } = body as {
       attachments: Array<{
         uuid: string;
         originalKey: string;
@@ -335,8 +263,8 @@ attachmentsRouter.post(
       uploads
     );
 
-    res.status(201).json(createResponse(data));
-  })
+    return c.json(createResponse(data), 201);
+  }
 );
 
 export default attachmentsRouter;

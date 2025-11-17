@@ -1,7 +1,6 @@
-import express from 'express';
+import { Hono } from 'hono';
+import { HonoContext } from '../../types/hono';
 import { getAllPublicRssData, getRssData } from '../../utils/dbMethods';
-
-import { asyncHandler, errorHandler } from '../../utils/handlers';
 import { createResponse } from '../../utils/main';
 import { generateRssFeed, RssFeedOptions } from '../../utils/rss';
 import adminRouter from './admin';
@@ -17,113 +16,105 @@ import siteRouter from './site';
 import subscriptionsRouter from './subscription';
 import usersRouter from './user';
 
-const router = express.Router();
+const router = new Hono<{ Variables: HonoContext['Variables'] }>();
 
 // 健康检查
-router.get('/health', (req, res) => {
-  res.status(200).json(createResponse());
+router.get('/health', (c: HonoContext) => {
+  return c.json(createResponse(), 200);
 });
 
 // 获取所有公开笔记的RSS
-router.get(
-  '/rss/public',
-  asyncHandler(async (req, res) => {
-    // Get all public RSS data
-    const { notes } = await getAllPublicRssData();
+router.get('/rss/public', async (c: HonoContext) => {
+  // Get all public RSS data
+  const { notes } = await getAllPublicRssData();
 
-    // Set RSS feed options for public notes
-    const feedOptions: RssFeedOptions = {
-      title: 'Rote - 所有公开笔记',
-      description: '这里是所有用户的公开笔记RSS订阅',
-      id: 'public-notes',
-      link: `${req.dynamicApiUrl}/api/v2/rss/public`,
-      copyright: `© ${new Date().getFullYear()} Rote`,
-      author: {
-        name: 'Rote',
-        email: 'hello@rote.ink',
-      },
-    };
+  const dynamicApiUrl = c.get('dynamicApiUrl') || '';
+  const dynamicFrontendUrl = c.get('dynamicFrontendUrl') || 'http://localhost:3001';
 
-    // Create a virtual user object for the feed generation
-    const virtualUser = {
-      id: 'public',
-      username: 'public',
-      nickname: 'Rote',
+  // Set RSS feed options for public notes
+  const feedOptions: RssFeedOptions = {
+    title: 'Rote - 所有公开笔记',
+    description: '这里是所有用户的公开笔记RSS订阅',
+    id: 'public-notes',
+    link: `${dynamicApiUrl}/api/v2/rss/public`,
+    copyright: `© ${new Date().getFullYear()} Rote`,
+    author: {
+      name: 'Rote',
       email: 'hello@rote.ink',
-      avatar: null,
-      description: 'All public notes from Rote users',
-    };
+    },
+  };
 
-    // Generate RSS feed
-    const feed = await generateRssFeed(
-      notes,
-      virtualUser as any,
-      feedOptions,
-      req.dynamicFrontendUrl
-    );
+  // Create a virtual user object for the feed generation
+  const virtualUser = {
+    id: 'public',
+    username: 'public',
+    nickname: 'Rote',
+    email: 'hello@rote.ink',
+    avatar: null,
+    description: 'All public notes from Rote users',
+  };
 
-    // Set proper Content-Type
-    res.setHeader('Content-Type', 'application/xml');
-    res.send(feed);
-  })
-);
+  // Generate RSS feed
+  const feed = await generateRssFeed(notes, virtualUser as any, feedOptions, dynamicFrontendUrl);
+
+  // Set proper Content-Type
+  c.header('Content-Type', 'application/xml');
+  return c.text(feed);
+});
 
 // RSS相关路由
-router.get(
-  '/rss/:username',
-  asyncHandler(async (req, res) => {
-    const { username } = req.params;
+router.get('/rss/:username', async (c: HonoContext) => {
+  const username = c.req.param('username');
 
-    if (!username) {
-      throw new Error('Username is required');
-    }
+  if (!username) {
+    throw new Error('Username is required');
+  }
 
-    // Get RSS data
-    const { user, notes } = await getRssData(username);
+  // Get RSS data
+  const { user, notes } = await getRssData(username);
 
-    // Set RSS feed options
-    const feedOptions: RssFeedOptions = {
-      title: `${user.nickname || user.username}`,
-      description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
-      id: `${user.username}`,
-      link: `${req.dynamicApiUrl}/api/v2/rss/${user.username}`,
-      favicon: user.avatar,
-      copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
-      author: {
-        name: user.nickname || user.username,
-        email: user.email,
-      },
-    };
+  const dynamicApiUrl = c.get('dynamicApiUrl') || '';
+  const dynamicFrontendUrl = c.get('dynamicFrontendUrl') || 'http://localhost:3001';
 
-    // If user has an avatar, add it to the feed
-    if (user.avatar) {
-      feedOptions.image = user.avatar;
-    }
+  // Set RSS feed options
+  const feedOptions: RssFeedOptions = {
+    title: `${user.nickname || user.username}`,
+    description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
+    id: `${user.username}`,
+    link: `${dynamicApiUrl}/api/v2/rss/${user.username}`,
+    favicon: user.avatar,
+    copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
+    author: {
+      name: user.nickname || user.username,
+      email: user.email,
+    },
+  };
 
-    // Generate RSS feed
-    const feed = await generateRssFeed(notes, user, feedOptions, req.dynamicFrontendUrl);
+  // If user has an avatar, add it to the feed
+  if (user.avatar) {
+    feedOptions.image = user.avatar;
+  }
 
-    // Set proper Content-Type
-    res.setHeader('Content-Type', 'application/xml');
-    res.send(feed);
-  })
-);
+  // Generate RSS feed
+  const feed = await generateRssFeed(notes, user, feedOptions, dynamicFrontendUrl);
+
+  // Set proper Content-Type
+  c.header('Content-Type', 'application/xml');
+  return c.text(feed);
+});
 
 // 注册子路由
-router.use('/auth', authRouter);
-router.use('/users', usersRouter);
-router.use('/notes', notesRouter);
-router.use('/reactions', reactionsRouter);
-router.use('/notifications', notificationsRouter);
-router.use('/subscriptions', subscriptionsRouter);
-router.use('/api-keys', apiKeysRouter);
-router.use('/attachments', attachmentsRouter);
-router.use('/site', siteRouter);
-router.use('/openkey', openKeyRouter);
-router.use('/admin', adminRouter);
-router.use('/changes', changeRouter);
-
-// 全局错误处理
-router.use(errorHandler);
+router.route('/auth', authRouter);
+router.route('/users', usersRouter);
+router.route('/notes', notesRouter);
+router.route('/reactions', reactionsRouter);
+router.route('/notifications', notificationsRouter);
+router.route('/subscriptions', subscriptionsRouter);
+router.route('/api-keys', apiKeysRouter);
+router.route('/attachments', attachmentsRouter);
+router.route('/site', siteRouter);
+router.route('/openkey', openKeyRouter);
+router.route('/admin', adminRouter);
+router.route('/changes', changeRouter);
 
 export default router;

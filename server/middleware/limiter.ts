@@ -1,4 +1,5 @@
-import { RateLimiterMemory } from "rate-limiter-flexible";
+import { RateLimiterMemory } from 'rate-limiter-flexible';
+import { HonoContext } from '../types/hono';
 
 // Configure the rate limiter
 const limiter = new RateLimiterMemory({
@@ -7,21 +8,20 @@ const limiter = new RateLimiterMemory({
 });
 
 // Create rate limiting middleware function with enhanced features
-export const rateLimiterMiddleware = (req: any, res: any, next: any) => {
-  const key = req.user ? req.user.id : req.ip; // Use user ID if available, otherwise use IP address
+export const rateLimiterMiddleware = async (c: HonoContext, next: () => Promise<void>) => {
+  const user = c.get('user');
+  const key = user
+    ? user.id
+    : c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
 
-  limiter
-    .consume(key)
-    .then(() => {
-      console.log(`Request allowed for key: ${key}`); // Log successful requests
-      next();
-    })
-    .catch((rejRes) => {
-      const retrySecs = Math.round(rejRes.msBeforeNext / 1000) || 1;
-      res.set("Retry-After", String(retrySecs)); // Set Retry-After header
-      console.log("Too Many Requests", rejRes);
-      res
-        .status(429)
-        .send(`Too Many Requests. Please try again in ${retrySecs} seconds.`); // Custom error message
-    });
+  try {
+    await limiter.consume(key);
+    console.log(`Request allowed for key: ${key}`);
+    await next();
+  } catch (rejRes: any) {
+    const retrySecs = Math.round(rejRes.msBeforeNext / 1000) || 1;
+    c.header('Retry-After', String(retrySecs));
+    console.log('Too Many Requests', rejRes);
+    return c.text(`Too Many Requests. Please try again in ${retrySecs} seconds.`, 429);
+  }
 };
