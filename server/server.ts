@@ -1,51 +1,33 @@
-import express = require('express');
-import bodyParser from 'body-parser';
-import cors from 'cors';
-import passport from './utils/passport';
-
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { rateLimiterMiddleware } from './middleware/limiter';
+import { recorderIpAndTime } from './middleware/recorder';
+import routerV2 from './route/v2'; // RESTful API routes
 import type { SiteConfig } from './types/config';
+import { HonoVariables } from './types/hono';
 import {
   getGlobalConfig,
   initializeConfig,
   subscribeConfigChange,
   validateSystemConfiguration,
 } from './utils/config';
+import { waitForDatabase } from './utils/drizzle';
 import { errorHandler } from './utils/handlers';
 import { injectDynamicUrls } from './utils/main';
-import { recorderIpAndTime } from './utils/recoder';
 import { StartupMigration } from './utils/startupMigration';
 
-import routerV2 from './route/v2'; // RESTful API routes
+const app = new Hono<{ Variables: HonoVariables }>();
 
-const app: express.Application = express();
-
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 
 // record ip and time
-app.use(recorderIpAndTime);
+app.use('*', recorderIpAndTime);
 
 // inject dynamic URLs
-app.use(injectDynamicUrls);
+app.use('*', injectDynamicUrls);
 
 // rate limiter
-app.use(rateLimiterMiddleware);
-
-// Initialize Passport
-app.use(passport.initialize() as unknown as express.RequestHandler);
-
-// body parser
-app.use(
-  bodyParser.urlencoded({
-    extended: false,
-    limit: '10mb', // 设置合理的限制，防止内存耗尽攻击
-  })
-);
-app.use(
-  bodyParser.json({
-    limit: '10mb', // 设置合理的限制，防止内存耗尽攻击
-  })
-);
+app.use('*', rateLimiterMiddleware);
 
 // CORS 配置 - 从数据库或环境变量读取 allowedOrigins
 // 当 credentials: true 时，不能使用 origin: '*'，必须明确指定允许的 origin
@@ -72,31 +54,51 @@ const initializeCorsConfig = () => {
 // 初始化 CORS 配置
 initializeCorsConfig();
 
+// CORS 中间件
+// 当 credentials: true 时，不能使用 origin: '*'，必须明确指定允许的 origin
 app.use(
+  '*',
   cors({
-    origin: (origin, callback) => {
-      // 允许没有 origin 的请求（如移动应用、Postman 等）
-      if (!origin) {
-        return callback(null, true);
-      }
-      // 如果没有设置 allowedOrigins，允许所有跨域请求
-      if (!allowedOrigins) {
-        return callback(null, true);
+    origin: (origin) => {
+      // 如果没有设置 allowedOrigins，允许所有 origin（返回请求的 origin）
+      if (!allowedOrigins || allowedOrigins.length === 0) {
+        // 如果有 origin，返回该 origin（而不是 '*'）
+        // 如果没有 origin（如移动应用、Postman 等），返回 null 表示允许
+        return origin || null;
       }
       // 如果设置了 allowedOrigins，检查 origin 是否在允许列表中
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+      if (origin && allowedOrigins.includes(origin)) {
+        return origin;
       }
-      // 拒绝不在允许列表中的 origin
-      return callback(new Error('Not allowed by CORS'));
+      // 如果 origin 不在允许列表中，返回 null 拒绝
+      return null;
     },
     credentials: true,
-    optionsSuccessStatus: 200,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
   })
 );
 
+// RESTful API routes
+app.route('/v2/api', routerV2);
+
+// 404 handler
+app.notFound((c) =>
+  c.json(
+    {
+      code: 1,
+      message: 'Api not found!',
+      data: null,
+    },
+    404
+  )
+);
+
+// Global error handler (must be after all routes)
+app.onError(errorHandler);
+
 // 监听 site 配置变更，动态更新 CORS 设置
-subscribeConfigChange('site', (group, newConfig, oldConfig) => {
+subscribeConfigChange('site', (_group, newConfig) => {
   const siteConfig = newConfig as SiteConfig;
   // 如果环境变量未设置，则从数据库配置更新
   if (!process.env.ALLOWED_ORIGINS) {
@@ -110,24 +112,16 @@ subscribeConfigChange('site', (group, newConfig, oldConfig) => {
   }
 });
 
-app.use('/v2/api', routerV2); // RESTful API
-
-// Global error handler (must be after all routes)
-app.use(errorHandler);
-
-// 404 handler - Express 5.x requires explicit path pattern
-app.use((req, res) => {
-  res.status(404).send({
-    code: 1,
-    message: 'Api not found!',
-    data: null,
-  });
-});
-
-app.listen(port, async () => {
-  console.log(`Rote Node backend server listening on port ${port}!`);
-
+// 启动服务器前等待数据库就绪
+(async () => {
   try {
+    // 等待数据库连接就绪
+    await waitForDatabase();
+
+    // 运行数据库迁移
+    const { runMigrations } = await import('./utils/drizzle');
+    await runMigrations();
+
     // 初始化配置管理器
     await initializeConfig();
 
@@ -140,7 +134,22 @@ app.listen(port, async () => {
     // 启动时检查系统状态
     await StartupMigration.checkStartupStatus();
     await StartupMigration.showConfigStatus();
+
+    // 启动服务器（使用 Bun 原生服务器）
+    // @ts-expect-error - Bun 全局类型在运行时可用
+    const bun = globalThis.Bun;
+    if (bun?.serve) {
+      bun.serve({
+        fetch: app.fetch,
+        port,
+      });
+    } else {
+      throw new Error('Bun runtime is required');
+    }
+
+    console.log(`Rote Node backend server listening on port ${port}!`);
   } catch (error) {
-    console.error('❌ Failed to initialize system:', error);
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-});
+})();

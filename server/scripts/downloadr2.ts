@@ -3,17 +3,20 @@
  */
 
 import { GetObjectCommand, ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
-import { PrismaClient } from '@prisma/client';
+import { eq } from 'drizzle-orm';
 import { createWriteStream, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
+import { settings } from '../drizzle/schema';
+import db, { closeDatabase } from '../utils/drizzle';
 
 // 从数据库获取配置
 async function getStorageConfig() {
-  const prisma = new PrismaClient();
   try {
-    const setting = await prisma.setting.findUnique({
-      where: { group: 'storage' },
-    });
+    const [setting] = await db
+      .select({ config: settings.config })
+      .from(settings)
+      .where(eq(settings.group, 'storage'))
+      .limit(1);
 
     if (!setting) {
       throw new Error('Storage configuration not found. Please run the initialization first.');
@@ -21,7 +24,7 @@ async function getStorageConfig() {
 
     return setting.config as any;
   } finally {
-    await prisma.$disconnect();
+    await closeDatabase();
   }
 }
 

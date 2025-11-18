@@ -1,8 +1,8 @@
-import { PrismaClient } from '@prisma/client';
-import { ConfigData, ConfigGroup, ConfigUpdateOptions, SystemConfig } from '../types/config';
+import { and, eq, sql } from 'drizzle-orm';
+import { settings } from '../drizzle/schema';
+import type { ConfigData, ConfigGroup, ConfigUpdateOptions, SystemConfig } from '../types/config';
+import db from './drizzle';
 import { KeyGenerator } from './keyGenerator';
-
-const prisma = new PrismaClient();
 
 // 配置变更监听器类型
 type ConfigChangeListener = (group: ConfigGroup, newConfig: any, oldConfig: any) => void;
@@ -192,10 +192,11 @@ export class ConfigManager {
     }
 
     try {
-      const setting = await prisma.setting.findUnique({
-        where: { group },
-        select: { config: true },
-      });
+      const [setting] = await db
+        .select({ config: settings.config })
+        .from(settings)
+        .where(eq(settings.group, group))
+        .limit(1);
 
       if (!setting) {
         return null;
@@ -226,23 +227,36 @@ export class ConfigManager {
       // 获取旧配置用于通知
       const oldConfig = this.globalConfig[group];
 
-      await prisma.setting.upsert({
-        where: { group },
-        update: {
-          config: config as unknown as any,
-          isRequired: options?.isRequired ?? false,
-          isSystem: options?.isSystem ?? false,
-          isInitialized: options?.isInitialized ?? true,
-          updatedAt: new Date(),
-        },
-        create: {
+      // 先尝试查找现有配置
+      const [existing] = await db.select().from(settings).where(eq(settings.group, group)).limit(1);
+
+      if (existing) {
+        // 更新现有配置
+        await db
+          .update(settings)
+          .set({
+            config: config as unknown as any,
+            isRequired: options?.isRequired ?? false,
+            isSystem: options?.isSystem ?? false,
+            isInitialized: options?.isInitialized ?? true,
+            updatedAt: new Date(),
+          })
+          .where(eq(settings.group, group));
+      } else {
+        // 创建新配置
+        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
+        const insertData: any = {
           group,
           config: config as unknown as any,
           isRequired: options?.isRequired ?? false,
           isSystem: options?.isSystem ?? false,
           isInitialized: options?.isInitialized ?? true,
-        },
-      });
+          createdAt: sql`now()`,
+          updatedAt: sql`now()`,
+        };
+        await db.insert(settings).values(insertData);
+      }
 
       // 更新全局配置
       this.globalConfig[group] = config;
@@ -265,12 +279,12 @@ export class ConfigManager {
    */
   public async getAllConfigs(): Promise<Record<ConfigGroup, any>> {
     try {
-      const settings = await prisma.setting.findMany({
-        select: { group: true, config: true },
-      });
+      const settingsList = await db
+        .select({ group: settings.group, config: settings.config })
+        .from(settings);
 
       const result: Record<string, any> = {};
-      settings.forEach((setting) => {
+      settingsList.forEach((setting) => {
         result[setting.group] = setting.config;
       });
 
@@ -294,13 +308,10 @@ export class ConfigManager {
    */
   public async getMissingRequiredConfigs(): Promise<ConfigGroup[]> {
     try {
-      const requiredSettings = await prisma.setting.findMany({
-        where: {
-          isRequired: true,
-          isInitialized: false,
-        },
-        select: { group: true },
-      });
+      const requiredSettings = await db
+        .select({ group: settings.group })
+        .from(settings)
+        .where(and(eq(settings.isRequired, true), eq(settings.isInitialized, false)));
 
       return requiredSettings.map((s) => s.group as ConfigGroup);
     } catch (error) {

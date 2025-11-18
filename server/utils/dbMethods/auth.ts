@@ -1,17 +1,33 @@
-import prisma from '../prisma';
+import { eq } from 'drizzle-orm';
+import { users } from '../../drizzle/schema';
+import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // 认证相关方法
 export async function passportCheckUser(data: { username: string }) {
   try {
-    const user = await prisma.user.findFirst({
-      where: {
-        username: data.username,
-      },
-    });
+    const [user] = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        passwordhash: users.passwordhash,
+        salt: users.salt,
+        nickname: users.nickname,
+        description: users.description,
+        cover: users.cover,
+        avatar: users.avatar,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.username, data.username))
+      .limit(1);
+
     return {
       err: null,
-      user: user,
+      user: user || null,
     };
   } catch (error) {
     throw new DatabaseError('Failed to authenticate user', error);

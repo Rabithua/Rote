@@ -1,5 +1,5 @@
-import { User } from '@prisma/client';
 import { Feed } from 'feed';
+import type { User } from '../drizzle/schema';
 
 export interface RssFeedOptions {
   title: string;
@@ -35,6 +35,7 @@ export async function generateRssFeed(
     title: options.title,
     description: options.description,
     id: options.id,
+    link: options.link,
     image: options.image,
     favicon: options.favicon,
     copyright: options.copyright,
@@ -111,7 +112,9 @@ export async function generateRssFeed(
     notes.forEach((note) => {
       if (note.tags) {
         const noteTags = Array.isArray(note.tags) ? note.tags : [];
-        noteTags.forEach((tag: any) => tags.add(tag));
+        noteTags.forEach((tag: any) => {
+          tags.add(tag);
+        });
       }
     });
 

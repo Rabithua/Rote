@@ -1,12 +1,12 @@
-import { NextFunction, Request, Response } from 'express';
-import { NotificationConfig, SecurityConfig, StorageConfig } from '../types/config';
+import type { NotificationConfig, SecurityConfig, StorageConfig } from '../types/config';
+import type { HonoContext } from '../types/hono';
 import { getGlobalConfig } from '../utils/config';
 import { createResponse } from '../utils/main';
 
 /**
  * 检查存储配置是否可用
  */
-export function requireStorageConfig(req: Request, res: Response, next: NextFunction) {
+export async function requireStorageConfig(c: HonoContext, next: () => Promise<void>) {
   const storageConfig = getGlobalConfig<StorageConfig>('storage');
 
   if (
@@ -16,43 +16,41 @@ export function requireStorageConfig(req: Request, res: Response, next: NextFunc
     !storageConfig.secretAccessKey ||
     !storageConfig.bucket
   ) {
-    return res
-      .status(503)
-      .json(
-        createResponse(
-          null,
-          'Storage service is not configured. Please complete the storage configuration first.'
-        )
-      );
+    return c.json(
+      createResponse(
+        null,
+        'Storage service is not configured. Please complete the storage configuration first.'
+      ),
+      503
+    );
   }
 
-  next();
+  await next();
 }
 
 /**
  * 检查安全配置是否可用
  */
-export function requireSecurityConfig(req: Request, res: Response, next: NextFunction) {
+export async function requireSecurityConfig(c: HonoContext, next: () => Promise<void>) {
   const securityConfig = getGlobalConfig<SecurityConfig>('security');
 
   if (!securityConfig || !securityConfig.jwtSecret || !securityConfig.jwtRefreshSecret) {
-    return res
-      .status(503)
-      .json(
-        createResponse(
-          null,
-          'Security service is not configured. Please complete the security configuration first.'
-        )
-      );
+    return c.json(
+      createResponse(
+        null,
+        'Security service is not configured. Please complete the security configuration first.'
+      ),
+      503
+    );
   }
 
-  next();
+  await next();
 }
 
 /**
  * 检查通知配置是否可用
  */
-export function requireNotificationConfig(req: Request, res: Response, next: NextFunction) {
+export async function requireNotificationConfig(c: HonoContext, next: () => Promise<void>) {
   const notificationConfig = getGlobalConfig<NotificationConfig>('notification');
 
   if (
@@ -60,24 +58,23 @@ export function requireNotificationConfig(req: Request, res: Response, next: Nex
     !notificationConfig.vapidPublicKey ||
     !notificationConfig.vapidPrivateKey
   ) {
-    return res
-      .status(503)
-      .json(
-        createResponse(
-          null,
-          'Notification service is not configured. Please complete the notification configuration first.'
-        )
-      );
+    return c.json(
+      createResponse(
+        null,
+        'Notification service is not configured. Please complete the notification configuration first.'
+      ),
+      503
+    );
   }
 
-  next();
+  await next();
 }
 
 /**
  * 组合中间件：检查多个配置
  */
 export function requireConfigs(...configTypes: ('storage' | 'security' | 'notification')[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return async (c: HonoContext, next: () => Promise<void>) => {
     const errors: string[] = [];
 
     if (configTypes.includes('storage')) {
@@ -112,16 +109,15 @@ export function requireConfigs(...configTypes: ('storage' | 'security' | 'notifi
     }
 
     if (errors.length > 0) {
-      return res
-        .status(503)
-        .json(
-          createResponse(
-            null,
-            `Required services are not configured: ${errors.join(', ')}. Please complete the configuration first.`
-          )
-        );
+      return c.json(
+        createResponse(
+          null,
+          `Required services are not configured: ${errors.join(', ')}. Please complete the configuration first.`
+        ),
+        503
+      );
     }
 
-    next();
+    await next();
   };
 }

@@ -1,0 +1,52 @@
+# 依赖和构建产物
+node_modules
+dist
+build
+.cache
+.vite
+
+# 测试文件
+tests
+*.test.ts
+*.test.tsx
+*.test.js
+*.test.jsx
+*.spec.ts
+*.spec.tsx
+*.spec.js
+*.spec.jsx
+__tests__
+coverage
+
+# 开发工具
+.git
+.gitignore
+.eslintcache
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE 配置
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# 文档
+README.md
+*.md
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 其他
+.DS_Store
+*.pem
+*.key
+
+# 开发时使用的文件
+docker-entrypoint.sh

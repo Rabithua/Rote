@@ -12,7 +12,9 @@ import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadProfileAtom, patchProfileAtom, profileAtom } from '@/state/profile';
 import type { OpenKeys } from '@/types/main';
 import { API_URL, get, post } from '@/utils/api';
+import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
 import { useAPIGet } from '@/utils/fetcher';
+import { maybeCompressToWebp } from '@/utils/uploadHelpers';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Linkify from 'linkify-react';
 import { Edit, KeyRoundIcon, Loader, LoaderPinwheel, Rss, Stars, UserCircle2 } from 'lucide-react';
@@ -152,26 +154,63 @@ function ProfilePage() {
       setAvatarUploading(true);
       const croppedImage = await createCroppedImage(editProfile.avatar_file, croppedAreaPixels);
 
-      const formData = new FormData();
-      formData.append(
-        'images',
-        new File([croppedImage], 'cropped_image.png', {
-          type: 'image/png',
-        })
-      );
-
-      const res = await post('/attachments', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      // 将 Blob 转换为 File
+      const croppedFile = new File([croppedImage], 'cropped_image.png', {
+        type: 'image/png',
       });
 
-      setEditProfile({
-        ...editProfile,
-        avatar: res.data[0].compressUrl || res.data[0].url,
+      // 获取预签名 URL
+      const signItems = await presign([
+        {
+          filename: croppedFile.name,
+          contentType: croppedFile.type,
+          size: croppedFile.size,
+        },
+      ]);
+
+      const item = signItems[0];
+      if (!item) {
+        throw new Error('Failed to get presign URL');
+      }
+
+      // 压缩图片（用于压缩图）
+      const compressedBlob = await maybeCompressToWebp(croppedFile, {
+        maxWidthOrHeight: 512,
+        initialQuality: 0.8,
       });
-      setAvatarUploading(false);
-      setIsAvatarModalOpen(false);
-      toast.success(t('uploadSuccess'));
-    } catch {
+
+      // 上传原图
+      await uploadToSignedUrl(item.original.putUrl, croppedFile);
+
+      // 上传压缩图（如果压缩成功）
+      if (compressedBlob) {
+        await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+      }
+
+      // 完成上传
+      const finalized = await finalize([
+        {
+          uuid: item.uuid,
+          originalKey: item.original.key,
+          compressedKey: compressedBlob ? item.compressed.key : undefined,
+          size: croppedFile.size,
+          mimetype: croppedFile.type,
+        },
+      ]);
+
+      if (finalized && finalized.length > 0) {
+        const attachment = finalized[0];
+        setEditProfile({
+          ...editProfile,
+          avatar: attachment.compressUrl || attachment.url,
+        });
+        setAvatarUploading(false);
+        setIsAvatarModalOpen(false);
+        toast.success(t('uploadSuccess'));
+      } else {
+        throw new Error('Failed to finalize upload');
+      }
+    } catch (error: any) {
       toast.error(t('uploadFailed'));
       setAvatarUploading(false);
     }
@@ -192,37 +231,67 @@ function ProfilePage() {
       });
   }
 
-  function changeCover(event: any) {
+  async function changeCover(event: any) {
     if (!canUpload) return;
     setCoverChangeing(true);
     const selectedFile = event.target.files[0];
 
     if (selectedFile) {
-      const formData = new FormData();
-      formData.append('images', selectedFile);
+      try {
+        // 获取预签名 URL
+        const signItems = await presign([
+          {
+            filename: selectedFile.name,
+            contentType: selectedFile.type || 'image/jpeg',
+            size: selectedFile.size,
+          },
+        ]);
 
-      post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-        .then((res) => {
-          const first = Array.isArray(res.data) ? res.data[0] : undefined;
-          if (!first) {
-            throw new Error('Empty upload result');
-          }
-          const url = first.compressUrl || first.url;
+        const item = signItems[0];
+        if (!item) {
+          throw new Error('Failed to get presign URL');
+        }
 
-          patchProfile({
-            cover: url,
-          })
-            .then(() => {
-              setCoverChangeing(false);
-            })
-            .catch(() => {
-              setCoverChangeing(false);
-            });
-        })
-        .catch(() => {
-          setCoverChangeing(false);
-          toast.error(t('uploadFailed'));
+        // 压缩图片（用于压缩图）
+        const compressedBlob = await maybeCompressToWebp(selectedFile, {
+          maxWidthOrHeight: 2560,
+          initialQuality: 0.8,
         });
+
+        // 上传原图
+        await uploadToSignedUrl(item.original.putUrl, selectedFile);
+
+        // 上传压缩图（如果压缩成功）
+        if (compressedBlob) {
+          await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+        }
+
+        // 完成上传
+        const finalized = await finalize([
+          {
+            uuid: item.uuid,
+            originalKey: item.original.key,
+            compressedKey: compressedBlob ? item.compressed.key : undefined,
+            size: selectedFile.size,
+            mimetype: selectedFile.type || 'image/jpeg',
+          },
+        ]);
+
+        if (finalized && finalized.length > 0) {
+          const attachment = finalized[0];
+          const url = attachment.compressUrl || attachment.url;
+
+          await patchProfile({
+            cover: url,
+          });
+          setCoverChangeing(false);
+        } else {
+          throw new Error('Failed to finalize upload');
+        }
+      } catch (error: any) {
+        setCoverChangeing(false);
+        toast.error(t('uploadFailed'));
+      }
     }
   }
 
@@ -267,10 +336,12 @@ function ProfilePage() {
               src={profile?.cover || defaultCover}
               alt=""
             />
-            <div
+            <button
+              type="button"
               className={`absolute right-3 bottom-1 rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl ${
                 canUpload ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
               }`}
+              disabled={!canUpload}
               onClick={() => {
                 if (!canUpload) return;
                 inputCoverRef.current?.click();
@@ -287,7 +358,7 @@ function ProfilePage() {
                 title="Upload cover image"
               />
               <LoaderPinwheel className={`size-4 ${coverChangeing && 'animate-spin'}`} />
-            </div>
+            </button>
           </div>
           <div className="mx-4 flex h-16 items-center">
             <UserAvatar

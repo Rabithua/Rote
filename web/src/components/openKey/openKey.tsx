@@ -1,16 +1,14 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useState } from 'react';
-
 import type { OpenKey } from '@/types/main';
 import { API_URL, del } from '@/utils/api';
 import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Terminal, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
@@ -112,15 +110,20 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
       <div className="text-primary/30">
         {t('example')}：
         <span className="font-mono break-all">
-          ${API_URL}/openkey/notes/create?openkey=
-          {hidekey
-            ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
-            : openKey.id}
-          &content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private
+          {`${API_URL}/openkey/notes/create?openkey=${
+            hidekey
+              ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
+              : openKey.id
+          }&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`}
         </span>
-        <span onClick={copyToClipboard}>
-          <Copy className="ml-auto size-8 rounded-lg p-2 hover:bg-[#00000010]" />
-        </span>
+        <button
+          type="button"
+          onClick={copyToClipboard}
+          aria-label={t('copy')}
+          className="ml-auto size-6 rounded-sm p-1 hover:bg-[#00000010]"
+        >
+          <Copy className="size-4" />
+        </button>
       </div>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
@@ -132,7 +135,11 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
               The OpenKey edit feature is still under development. Maybe not work well.
             </AlertDescription>
           </Alert>
-          <OpenKeyEditModel close={onModelCancel} openKey={openKey}></OpenKeyEditModel>
+          <OpenKeyEditModel
+            close={onModelCancel}
+            openKey={openKey}
+            mutate={mutate}
+          ></OpenKeyEditModel>
         </DialogContent>
       </Dialog>
     </div>

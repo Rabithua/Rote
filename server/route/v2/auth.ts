@@ -1,132 +1,157 @@
-import { User } from '@prisma/client';
-import express from 'express';
-import passport from 'passport';
+import crypto from 'crypto';
+import { Hono } from 'hono';
+import type { User } from '../../drizzle/schema';
 import { requireSecurityConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { changeUserPassword, createUser } from '../../utils/dbMethods';
-import { asyncHandler } from '../../utils/handlers';
+import type { HonoContext, HonoVariables } from '../../types/hono';
+import { changeUserPassword, createUser, passportCheckUser } from '../../utils/dbMethods';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
-import { RegisterDataZod, passwordChangeZod } from '../../utils/zod';
+import { passwordChangeZod, RegisterDataZod } from '../../utils/zod';
 
 // 认证相关路由
-const authRouter = express.Router();
+const authRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 注册
-authRouter.post(
-  '/register',
-  asyncHandler(async (req, res) => {
-    const { username, password, email, nickname } = req.body;
+authRouter.post('/register', async (c: HonoContext) => {
+  const body = await c.req.json();
+  const { username, password, email, nickname } = body;
 
-    RegisterDataZod.parse(req.body);
+  RegisterDataZod.parse(body);
 
-    const user = await createUser({
-      username,
+  const user = await createUser({
+    username,
+    password,
+    email,
+    nickname,
+  });
+
+  if (!user.id) {
+    throw new Error('Registration failed, username or email already exists');
+  }
+
+  return c.json(createResponse(user), 201);
+});
+
+// 登录 (手动实现，不再使用 Passport)
+authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
+  const body = await c.req.json();
+  const { username, password } = body;
+
+  if (!username || !password) {
+    throw new Error('Username and password are required');
+  }
+
+  // 查找用户
+  const { user, err } = await passportCheckUser({ username });
+  if (err || !user) {
+    throw new Error('User not found.');
+  }
+
+  // 验证密码
+  return new Promise<Response>((resolve, reject) => {
+    // 确保 salt 和 passwordhash 是 Buffer 类型
+    const saltBuffer = Buffer.isBuffer(user.salt) ? user.salt : Buffer.from(user.salt);
+    const passwordhashBuffer = Buffer.isBuffer(user.passwordhash)
+      ? user.passwordhash
+      : Buffer.from(user.passwordhash);
+
+    crypto.pbkdf2(
       password,
-      email,
-      nickname,
-    });
+      saltBuffer,
+      310000,
+      32,
+      'sha256',
+      async (err: any, hashedPassword: any) => {
+        if (err || !user) {
+          return reject(new Error('Authentication failed'));
+        }
 
-    if (!user.id) {
-      throw new Error('Registration failed, username or email already exists');
-    }
+        try {
+          const isEqual = crypto.timingSafeEqual(passwordhashBuffer, hashedPassword);
 
-    res.status(201).json(createResponse(user));
-  })
-);
+          if (!isEqual) {
+            return reject(new Error('Incorrect username or password.'));
+          }
 
-// 登录 (使用JWT认证)
-authRouter.post(
-  '/login',
-  requireSecurityConfig,
-  asyncHandler(async (req, res, next) => {
-    passport.authenticate('local', async (err: any, user: User, data: any) => {
-      if (err || !user) {
-        next(new Error(data.message || 'Authentication failed'));
-        return;
+          // 生成 JWT tokens (完全无状态，不存储到数据库)
+          const accessToken = await generateAccessToken({
+            userId: user.id,
+            username: user.username,
+          });
+          const refreshToken = await generateRefreshToken({
+            userId: user.id,
+            username: user.username,
+          });
+
+          const response = c.json(
+            createResponse(
+              {
+                user: sanitizeUserData(user),
+                accessToken,
+                refreshToken,
+              },
+              'Login successful'
+            ),
+            200
+          );
+          resolve(response);
+        } catch (_tokenError) {
+          return reject(new Error('Token generation failed'));
+        }
       }
-
-      try {
-        // 生成 JWT tokens (完全无状态，不存储到数据库)
-        const accessToken = await generateAccessToken({
-          userId: user.id,
-          username: user.username,
-        });
-        const refreshToken = await generateRefreshToken({
-          userId: user.id,
-          username: user.username,
-        });
-
-        res.status(200).json(
-          createResponse(
-            {
-              user: sanitizeUserData(user),
-              accessToken,
-              refreshToken,
-            },
-            'Login successful'
-          )
-        );
-      } catch (error) {
-        next(new Error('Token generation failed'));
-      }
-    })(req, res, next);
-  })
-);
+    );
+  });
+});
 
 // 修改密码
-authRouter.put(
-  '/password',
-  authenticateJWT,
-  asyncHandler(async (req, res) => {
-    const user = req.user as User;
-    const { newpassword, oldpassword } = req.body;
+authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+  const { newpassword, oldpassword } = body;
 
-    const zodData = passwordChangeZod.safeParse(req.body);
-    if (zodData.success === false) {
-      throw new Error(zodData.error.issues[0].message);
-    }
+  const zodData = passwordChangeZod.safeParse(body);
+  if (zodData.success === false) {
+    throw new Error(zodData.error.issues[0].message);
+  }
 
-    const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);
-    res.status(200).json(createResponse(updatedUser));
-  })
-);
+  const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);
+  return c.json(createResponse(updatedUser), 200);
+});
 
 // Token 刷新端点
-authRouter.post(
-  '/refresh',
-  requireSecurityConfig,
-  asyncHandler(async (req, res) => {
-    const { refreshToken } = req.body;
+authRouter.post('/refresh', requireSecurityConfig, async (c: HonoContext) => {
+  const body = await c.req.json();
+  const { refreshToken } = body;
 
-    if (!refreshToken) {
-      return res.status(401).json(createResponse(null, 'Refresh token required', 401));
-    }
+  if (!refreshToken) {
+    return c.json(createResponse(null, 'Refresh token required', 401), 401);
+  }
 
-    try {
-      const payload = await verifyRefreshToken(refreshToken);
-      const newAccessToken = await generateAccessToken({
-        userId: payload.userId,
-        username: payload.username,
-      });
-      const newRefreshToken = await generateRefreshToken({
-        userId: payload.userId,
-        username: payload.username,
-      });
+  try {
+    const payload = await verifyRefreshToken(refreshToken);
+    const newAccessToken = await generateAccessToken({
+      userId: payload.userId,
+      username: payload.username,
+    });
+    const newRefreshToken = await generateRefreshToken({
+      userId: payload.userId,
+      username: payload.username,
+    });
 
-      res.status(200).json(
-        createResponse(
-          {
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-          },
-          'Token refreshed successfully'
-        )
-      );
-    } catch (error) {
-      res.status(401).json(createResponse(null, 'Invalid refresh token', 401));
-    }
-  })
-);
+    return c.json(
+      createResponse(
+        {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+        },
+        'Token refreshed successfully'
+      ),
+      200
+    );
+  } catch (_error) {
+    return c.json(createResponse(null, 'Invalid refresh token', 401), 401);
+  }
+});
 
 export default authRouter;

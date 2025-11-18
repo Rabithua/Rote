@@ -1,4 +1,6 @@
-import prisma from '../prisma';
+import { sql } from 'drizzle-orm';
+import { roteChanges } from '../../drizzle/schema';
+import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // RoteChange 相关方法
@@ -9,14 +11,19 @@ export async function createRoteChange(data: {
   userid: string;
 }): Promise<any> {
   try {
-    const roteChange = await prisma.roteChange.create({
-      data: {
+    const [roteChange] = await db
+      .insert(roteChanges)
+      .values({
+        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地计算时间戳
+        // 注意：roteChanges 表只有 createdAt，没有 updatedAt
         originid: data.originid,
         roteid: data.roteid || data.originid,
         action: data.action,
         userid: data.userid,
-      },
-    });
+        createdAt: sql`now()`,
+      })
+      .returning();
     return roteChange;
   } catch (error) {
     throw new DatabaseError('Failed to create rote change', error);
@@ -30,19 +37,20 @@ export async function findRoteChangesByOriginId(
   limit?: number
 ): Promise<any> {
   try {
-    const where: any = { originid };
-    if (userid) {
-      where.userid = userid;
-    }
-
-    const roteChanges = await prisma.roteChange.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: skip,
-      take: limit,
-      include: {
+    const changes = await db.query.roteChanges.findMany({
+      where: (roteChanges, { eq, and }) => {
+        const conditions = [eq(roteChanges.originid, originid)];
+        if (userid) {
+          conditions.push(eq(roteChanges.userid, userid));
+        }
+        return and(...conditions);
+      },
+      orderBy: (roteChanges, { desc }) => [desc(roteChanges.createdAt)],
+      offset: skip,
+      limit: limit,
+      with: {
         rote: {
-          select: {
+          columns: {
             id: true,
             title: true,
             content: true,
@@ -58,7 +66,7 @@ export async function findRoteChangesByOriginId(
         },
       },
     });
-    return roteChanges;
+    return changes;
   } catch (error) {
     throw new DatabaseError(`Failed to find rote changes by originid: ${originid}`, error);
   }
@@ -71,19 +79,20 @@ export async function findRoteChangesByRoteId(
   limit?: number
 ): Promise<any> {
   try {
-    const where: any = { roteid };
-    if (userid) {
-      where.userid = userid;
-    }
-
-    const roteChanges = await prisma.roteChange.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: skip,
-      take: limit,
-      include: {
+    const changes = await db.query.roteChanges.findMany({
+      where: (roteChanges, { eq, and }) => {
+        const conditions = [eq(roteChanges.roteid, roteid)];
+        if (userid) {
+          conditions.push(eq(roteChanges.userid, userid));
+        }
+        return and(...conditions);
+      },
+      orderBy: (roteChanges, { desc }) => [desc(roteChanges.createdAt)],
+      offset: skip,
+      limit: limit,
+      with: {
         rote: {
-          select: {
+          columns: {
             id: true,
             title: true,
             content: true,
@@ -99,7 +108,7 @@ export async function findRoteChangesByRoteId(
         },
       },
     });
-    return roteChanges;
+    return changes;
   } catch (error) {
     throw new DatabaseError(`Failed to find rote changes by roteid: ${roteid}`, error);
   }
@@ -112,19 +121,20 @@ export async function findRoteChangesByUserId(
   action?: 'CREATE' | 'UPDATE' | 'DELETE'
 ): Promise<any> {
   try {
-    const where: any = { userid };
-    if (action) {
-      where.action = action;
-    }
-
-    const roteChanges = await prisma.roteChange.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: skip,
-      take: limit,
-      include: {
+    const changes = await db.query.roteChanges.findMany({
+      where: (roteChanges, { eq, and }) => {
+        const conditions = [eq(roteChanges.userid, userid)];
+        if (action) {
+          conditions.push(eq(roteChanges.action, action));
+        }
+        return and(...conditions);
+      },
+      orderBy: (roteChanges, { desc }) => [desc(roteChanges.createdAt)],
+      offset: skip,
+      limit: limit,
+      with: {
         rote: {
-          select: {
+          columns: {
             id: true,
             title: true,
             content: true,
@@ -140,7 +150,7 @@ export async function findRoteChangesByUserId(
         },
       },
     });
-    return roteChanges;
+    return changes;
   } catch (error) {
     throw new DatabaseError(`Failed to find rote changes by userid: ${userid}`, error);
   }
@@ -156,34 +166,29 @@ export async function findRoteChangesAfterTimestamp(
   try {
     // 确保时间戳是 Date 对象
     const timestampDate = typeof timestamp === 'string' ? new Date(timestamp) : timestamp;
-    
+
     // 验证时间戳是否有效
     if (isNaN(timestampDate.getTime())) {
       throw new Error('Invalid timestamp');
     }
 
-    const where: any = {
-      createdAt: {
-        gt: timestampDate, // 使用 gt (greater than) 确保返回大于指定时间戳的记录
+    const changes = await db.query.roteChanges.findMany({
+      where: (roteChanges, { eq, and, gt }) => {
+        const conditions = [gt(roteChanges.createdAt, timestampDate)];
+        if (userid) {
+          conditions.push(eq(roteChanges.userid, userid));
+        }
+        if (action) {
+          conditions.push(eq(roteChanges.action, action));
+        }
+        return and(...conditions);
       },
-    };
-
-    if (userid) {
-      where.userid = userid;
-    }
-
-    if (action) {
-      where.action = action;
-    }
-
-    const roteChanges = await prisma.roteChange.findMany({
-      where,
-      orderBy: { createdAt: 'asc' }, // 按时间升序，方便客户端按顺序处理
-      skip: skip,
-      take: limit,
-      include: {
+      orderBy: (roteChanges, { asc }) => [asc(roteChanges.createdAt)], // 按时间升序，方便客户端按顺序处理
+      offset: skip,
+      limit: limit,
+      with: {
         rote: {
-          select: {
+          columns: {
             id: true,
             title: true,
             content: true,
@@ -199,7 +204,7 @@ export async function findRoteChangesAfterTimestamp(
         },
       },
     });
-    return roteChanges;
+    return changes;
   } catch (error) {
     throw new DatabaseError(`Failed to find rote changes after timestamp: ${timestamp}`, error);
   }

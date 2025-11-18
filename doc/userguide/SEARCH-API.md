@@ -20,7 +20,7 @@ GET /v2/api/notes/search
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记 (true/false)
-- `tag` (可选): 按标签过滤 (支持多个标签)
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑），支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
 
 **搜索范围**:
 
@@ -73,7 +73,7 @@ GET /v2/api/notes/search/public
 - `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
-- `tag` (可选): 按标签过滤
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
 
 **搜索范围**: 所有公开状态的笔记
 
@@ -95,7 +95,7 @@ GET /v2/api/notes/search/users/:username
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
-- `tag` (可选): 按标签过滤
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
 
 **搜索范围**: 指定用户的公开笔记
 
@@ -113,7 +113,7 @@ GET /v2/api/openkey/notes/search
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
-- `tag` (可选): 按标签过滤
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
 
 **搜索范围**: API 密钥拥有者的所有笔记
 
@@ -133,7 +133,7 @@ GET /v2/api/openkey/notes/search
 
 搜索结果可以与其他过滤条件组合：
 
-- 标签过滤：`tag=技术&tag=前端`
+- 标签过滤：支持 `tag=技术` 或 `tag[]=技术&tag[]=前端` 两种格式，多个标签时使用 `hasEvery` 逻辑（笔记需包含所有指定标签）
 - 归档状态：`archived=true`
 - 其他自定义过滤参数
 
@@ -153,7 +153,11 @@ GET /v2/api/notes/search?keyword=React&limit=10
 ### 搜索公开笔记中包含"JavaScript"且带有"教程"标签的笔记
 
 ```bash
+# 使用 tag 参数
 GET /v2/api/notes/search/public?keyword=JavaScript&tag=教程
+
+# 或使用 tag[] 参数（推荐用于多个标签）
+GET /v2/api/notes/search/public?keyword=JavaScript&tag[]=教程&tag[]=前端
 ```
 
 ### 搜索用户"john"的公开笔记中包含"API"的内容

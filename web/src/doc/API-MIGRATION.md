@@ -74,12 +74,53 @@ const result = await post('/notes', { content: 'New note' });
 
 ### 附件相关
 
-| 旧方法                      | 新方法                                                                                   |
+| 旧方法                      | 新方法（使用预签名接口）                                                                 |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
-| `apiUploadFiles(formData)`  | `post('/attachments', formData, { headers: { 'Content-Type': 'multipart/form-data' } })` |
+| `apiUploadFiles(formData)`  | 使用 `presign()`, `uploadToSignedUrl()`, `finalize()` 从 `@/utils/directUpload`         |
 | `apiDeleteAttachment(id)`   | `del('/attachments/' + id)`                                                              |
 | `apiDeleteAttachments(ids)` | `del('/attachments', { data: { ids } })`                                                 |
 | 无旧方法                    | `put('/attachments/sort', { roteId, attachmentIds })`                                    |
+
+**附件上传新方法示例**：
+
+```typescript
+import { presign, uploadToSignedUrl, finalize } from '@/utils/directUpload';
+import { maybeCompressToWebp } from '@/utils/uploadHelpers';
+
+// 1. 获取预签名 URL
+const signItems = await presign([
+  {
+    filename: file.name,
+    contentType: file.type,
+    size: file.size,
+  },
+]);
+
+const item = signItems[0];
+
+// 2. 压缩图片（可选）
+const compressedBlob = await maybeCompressToWebp(file, {
+  maxWidthOrHeight: 2560,
+  initialQuality: 0.8,
+});
+
+// 3. 上传原图和压缩图
+await uploadToSignedUrl(item.original.putUrl, file);
+if (compressedBlob) {
+  await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+}
+
+// 4. 完成上传
+const finalized = await finalize([
+  {
+    uuid: item.uuid,
+    originalKey: item.original.key,
+    compressedKey: compressedBlob ? item.compressed.key : undefined,
+    size: file.size,
+    mimetype: file.type,
+  },
+]);
+```
 
 ## 迁移步骤
 

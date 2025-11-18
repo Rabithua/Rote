@@ -7,7 +7,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 ## Technology Stack
 
 - **运行时环境**: Bun (替代 Node.js，提供更快的性能)
-- **后端技术**: Bun + TypeScript + Express + Prisma + PostgreSQL
+- **后端技术**: Bun + TypeScript + Express + Drizzle ORM + PostgreSQL
 - **前端技术**: React + TypeScript + Vite + Tailwind CSS + Radix UI
 - **数据存储**: PostgreSQL (数据库) + AWS S3/R2 (文件存储)
 - **部署方式**: Docker 容器化部署
@@ -32,7 +32,7 @@ Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，
 ### 后端开发规范 (Bun + Express)
 
 - 运行时环境：使用 Bun 作为 JavaScript 运行时，享受更快的执行性能
-- 数据库操作：使用 Prisma 作为 ORM，统一操作 PostgreSQL 数据库
+- 数据库操作：使用 Drizzle ORM 作为 ORM，统一操作 PostgreSQL 数据库
 - 路由组织：API 路由分为 v1 和 v2 版本，统一放置在 `route/` 目录
 - 中间件管理：所有中间件文件放置在 `middleware/` 目录
 - 工具函数：通用工具函数放置在 `utils/` 目录
@@ -72,7 +72,7 @@ server/
 ├── middleware/        # 中间件
 ├── utils/            # 工具函数
 ├── types/            # 类型定义
-├── prisma/           # 数据库 schema
+├── drizzle/          # 数据库 schema 和迁移文件
 ├── scripts/          # 脚本文件
 └── schedule/         # 定时任务
 ```

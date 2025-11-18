@@ -1,76 +1,132 @@
-import express from 'express';
+import { HonoContext } from '../types/hono';
 
-export const errorHandler: express.ErrorRequestHandler = (err, _req, res, _next) => {
+export const errorHandler = async (err: Error, c: HonoContext) => {
   console.error('API Error:', err.message);
   // 只在开发环境下打印完整的错误堆栈
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);
+    // 如果是 DatabaseError，打印原始错误
+    if ((err as any).originalError) {
+      console.error('Original error:', (err as any).originalError);
+    }
   }
 
-  // Prisma unique constraint violation (check both direct error and nested error)
-  if (err.code === 'P2002' || err.originalError?.code === 'P2002') {
-    return res.status(409).json({
-      code: 1,
-      message: 'Username or email already exists',
-      data: null,
-    });
+  // PostgreSQL unique constraint violation (23505 = unique_violation)
+  // Check for both direct error code and nested error
+  const errorCode = (err as any).code || (err as any).originalError?.code;
+  const errorMessage = err.message || (err as any).originalError?.message || '';
+
+  if (
+    errorCode === '23505' ||
+    errorMessage.includes('unique constraint') ||
+    errorMessage.includes('duplicate key')
+  ) {
+    // 根据约束名称或字段信息判断具体的唯一约束错误
+    let message = 'Resource already exists';
+
+    // 检查是否是订阅 endpoint 的唯一约束
+    // PostgreSQL 错误消息可能包含: user_sw_subscriptions_endpoint_unique 或 user_sw_subscriptions.endpoint
+    if (errorMessage.includes('user_sw_subscriptions') && errorMessage.includes('endpoint')) {
+      message = 'Subscription endpoint already exists';
+    }
+    // 检查是否是用户名的唯一约束
+    else if (
+      errorMessage.includes('users') &&
+      errorMessage.includes('username') &&
+      !errorMessage.includes('email')
+    ) {
+      message = 'Username already exists';
+    }
+    // 检查是否是邮箱的唯一约束
+    else if (
+      errorMessage.includes('users') &&
+      errorMessage.includes('email') &&
+      !errorMessage.includes('username')
+    ) {
+      message = 'Email already exists';
+    }
+    // 检查是否是用户名或邮箱（通用用户注册错误）
+    else if (errorMessage.includes('username') || errorMessage.includes('email')) {
+      message = 'Username or email already exists';
+    }
+
+    return c.json(
+      {
+        code: 1,
+        message,
+        data: null,
+      },
+      409
+    );
   }
 
   // Validation errors
   if (err.name === 'ValidationError' || err.name === 'ZodError') {
-    return res.status(400).json({
-      code: 1,
-      message: err.message,
-      data: null,
-    });
+    return c.json(
+      {
+        code: 1,
+        message: err.message,
+        data: null,
+      },
+      400
+    );
   }
 
   // Authentication errors
   if (err.name === 'AuthenticationError' || err.message.includes('Authentication')) {
-    return res.status(401).json({
-      code: 1,
-      message: err.message,
-      data: null,
-    });
+    return c.json(
+      {
+        code: 1,
+        message: err.message,
+        data: null,
+      },
+      401
+    );
   }
 
   // Authorization errors
   if (err.name === 'AuthorizationError' || err.message.includes('Access denied')) {
-    return res.status(403).json({
-      code: 1,
-      message: err.message,
-      data: null,
-    });
+    return c.json(
+      {
+        code: 1,
+        message: err.message,
+        data: null,
+      },
+      403
+    );
   }
 
   // Not found errors
   if (err.message.includes('not found') || err.message.includes('Not found')) {
-    return res.status(404).json({
-      code: 1,
-      message: err.message,
-      data: null,
-    });
+    return c.json(
+      {
+        code: 1,
+        message: err.message,
+        data: null,
+      },
+      404
+    );
   }
 
   // Bad request errors (includes "required" errors)
   if (err.message.includes('required') || err.message.includes('Invalid')) {
-    return res.status(400).json({
-      code: 1,
-      message: err.message,
-      data: null,
-    });
+    return c.json(
+      {
+        code: 1,
+        message: err.message,
+        data: null,
+      },
+      400
+    );
   }
 
   // Default server error
-  res.status(500).json({
-    code: 1,
-    message: err.message || 'Internal server error',
-    data: null,
-  });
-};
-
-export const asyncHandler = (fn: express.RequestHandler): express.RequestHandler => {
-  return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
+  return c.json(
+    {
+      code: 1,
+      message: err.message || 'Internal server error',
+      data: null,
+    },
+    500
+  );
 };

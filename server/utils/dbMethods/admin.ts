@@ -1,11 +1,13 @@
 import crypto from 'crypto';
-import prisma from '../prisma';
+import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { attachments, rotes, userOpenKeys, users } from '../../drizzle/schema';
+import db from '../drizzle';
 
 // Admin 相关数据库方法
 
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await db.execute(sql`SELECT 1`);
     return true;
   } catch (_error) {
     return false;
@@ -13,15 +15,17 @@ export async function checkDatabaseConnection(): Promise<boolean> {
 }
 
 export async function hasAdminUser(): Promise<boolean> {
-  const adminCount = await prisma.user.count({ where: { role: { in: ['admin', 'super_admin'] } } });
-  return adminCount > 0;
+  const [result] = await db
+    .select({ count: count() })
+    .from(users)
+    .where(inArray(users.role, ['admin', 'super_admin']));
+  return (result?.count || 0) > 0;
 }
 
 export async function getLatestMigrationVersion(): Promise<string> {
   try {
-    const result =
-      (await prisma.$queryRaw`SELECT migration_name FROM _prisma_migrations ORDER BY finished_at DESC LIMIT 1`) as any[];
-    return result[0]?.migration_name || 'unknown';
+    // Drizzle 不维护迁移表，返回 unknown
+    return 'unknown';
   } catch {
     return 'unknown';
   }
@@ -36,17 +40,26 @@ export async function createAdminUser(data: {
   const salt = crypto.randomBytes(16);
   const passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
 
-  return prisma.user.create({
-    data: {
-      username: data.username,
-      email: data.email,
-      passwordhash,
-      salt,
-      nickname: data.nickname || data.username,
-      role: 'super_admin',
-    },
-    select: { id: true, username: true, email: true, role: true },
+  // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+  // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
+  const insertData: any = {
+    username: data.username,
+    email: data.email,
+    passwordhash,
+    salt,
+    nickname: data.nickname || data.username,
+    role: 'super_admin',
+    createdAt: sql`now()`,
+    updatedAt: sql`now()`,
+  };
+
+  const [user] = await db.insert(users).values(insertData).returning({
+    id: users.id,
+    username: users.username,
+    email: users.email,
+    role: users.role,
   });
+  return user;
 }
 
 export async function listUsers(params: {
@@ -56,76 +69,114 @@ export async function listUsers(params: {
   search?: string;
 }) {
   const page = Number(params.page || 1);
-  const limit = Number(params.limit || 10);
-  const skip = (page - 1) * limit;
+  const limitNum = Number(params.limit || 10);
+  const skip = (page - 1) * limitNum;
 
-  const where: any = {};
-  if (params.role) where.role = params.role;
+  const whereConditions = [];
+  if (params.role) {
+    whereConditions.push(eq(users.role, params.role));
+  }
   if (params.search) {
-    where.OR = [
-      { username: { contains: params.search } },
-      { email: { contains: params.search } },
-      { nickname: { contains: params.search } },
-    ];
+    whereConditions.push(
+      or(
+        ilike(users.username, `%${params.search}%`),
+        ilike(users.email, `%${params.search}%`),
+        ilike(users.nickname, `%${params.search}%`)
+      )!
+    );
   }
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip,
-      take: limit,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        nickname: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.user.count({ where }),
+  const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+  const [usersList, totalResult] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        nickname: users.nickname,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(whereClause)
+      .offset(skip)
+      .limit(limitNum)
+      .orderBy(desc(users.createdAt)),
+    db.select({ count: count() }).from(users).where(whereClause),
   ]);
 
-  return { users, total, page, limit };
+  return { users: usersList, total: totalResult[0]?.count || 0, page, limit: limitNum };
 }
 
 export async function getUserByIdForAdmin(userId: string) {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      id: true,
-      username: true,
-      email: true,
-      nickname: true,
-      description: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true,
-      _count: { select: { rotes: true, attachments: true, openkey: true } },
+  const [user] = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      nickname: users.nickname,
+      description: users.description,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) return null;
+
+  // 获取关联数据计数
+  const [rotesCount, attachmentsCount, openkeyCount] = await Promise.all([
+    db.select({ count: count() }).from(rotes).where(eq(rotes.authorid, userId)),
+    db.select({ count: count() }).from(attachments).where(eq(attachments.userid, userId)),
+    db.select({ count: count() }).from(userOpenKeys).where(eq(userOpenKeys.userid, userId)),
+  ]);
+
+  return {
+    ...user,
+    _count: {
+      rotes: rotesCount[0]?.count || 0,
+      attachments: attachmentsCount[0]?.count || 0,
+      openkey: openkeyCount[0]?.count || 0,
     },
-  });
+  };
 }
 
 export async function updateUserRole(userId: string, role: string) {
-  return prisma.user.update({
-    where: { id: userId },
-    data: { role },
-    select: { id: true, username: true, email: true, role: true, updatedAt: true },
-  });
+  const [user] = await db
+    .update(users)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      role: users.role,
+      updatedAt: users.updatedAt,
+    });
+  return user;
 }
 
 export async function deleteUserById(userId: string) {
-  await prisma.user.delete({ where: { id: userId } });
+  await db.delete(users).where(eq(users.id, userId));
   return true;
 }
 
 export async function getRoleStats() {
-  const roleStats = await prisma.user.groupBy({ by: ['role'], _count: { role: true } });
+  const roleStats = await db
+    .select({
+      role: users.role,
+      count: count(),
+    })
+    .from(users)
+    .groupBy(users.role);
+
   return roleStats.reduce(
     (acc: Record<string, number>, stat: any) => {
-      acc[stat.role] = stat._count.role;
+      acc[stat.role] = stat.count;
       return acc;
     },
     {} as Record<string, number>
@@ -134,10 +185,10 @@ export async function getRoleStats() {
 
 // 按用户名或邮箱查找用户（用于初始化时校验是否已存在）
 export async function findUserByUsernameOrEmail(params: { username: string; email: string }) {
-  return prisma.user.findFirst({
-    where: {
-      OR: [{ username: params.username }, { email: params.email }],
-    },
-    select: { id: true },
-  });
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(or(eq(users.username, params.username), eq(users.email, params.email))!)
+    .limit(1);
+  return user || null;
 }

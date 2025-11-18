@@ -1,4 +1,6 @@
 {
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "dist", "tests", "**/*.test.ts", "**/*.spec.ts"],
   "compilerOptions": {
     "resolveJsonModule": true,
     /* Visit https://aka.ms/tsconfig to read more about this file */

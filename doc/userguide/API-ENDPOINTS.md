@@ -235,6 +235,15 @@
 { "enabled?": true, "label?": "我的订阅" }
 ```
 
+**订阅说明**：
+
+- 一个用户可以有多个订阅（不同设备/浏览器）
+- 每个 `endpoint` 只能有一个订阅（唯一约束）
+- 当 `endpoint` 已存在时，会自动更新现有订阅而不是创建新订阅
+- 错误响应：
+  - `409`: `"Subscription endpoint already exists"` - endpoint 已存在
+  - `409`: `"Username or email already exists"` - 用户相关唯一约束错误
+
 ### API Keys
 
 ```json

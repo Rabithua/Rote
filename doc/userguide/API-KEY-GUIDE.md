@@ -102,6 +102,7 @@ When generating or updating an API Key, you can specify which permissions it sho
 - `skip`: Number of items to skip (pagination)
 - `limit`: Maximum number of items to return (pagination)
 - `archived`: Whether to include archived notes (true/false)
+- `tag`: Tag filter, supports `tag` or `tag[]` format (multiple tags use `hasEvery` logic - notes must contain all specified tags)
 
 **Request Body** (optional filter):
 

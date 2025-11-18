@@ -1,21 +1,23 @@
-import express from 'express';
+import { Hono } from 'hono';
 import { requireNotificationConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import { asyncHandler } from '../../utils/handlers';
+import type { HonoContext, HonoVariables } from '../../types/hono';
 import { createResponse } from '../../utils/main';
+
 // 定时任务功能已移除，占位常量与空实现
 const JobNames = { NoteOnceNoticeJob: 'NoteOnceNoticeJob' } as const;
 
 // 通知相关路由
-const notificationsRouter = express.Router();
+const notificationsRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 创建通知
 notificationsRouter.post(
   '/',
   authenticateJWT,
   requireNotificationConfig,
-  asyncHandler(async (req, res) => {
-    const { type } = req.body;
+  async (c: HonoContext) => {
+    const body = await c.req.json();
+    const { type } = body;
 
     switch (type) {
       case JobNames.NoteOnceNoticeJob:
@@ -26,8 +28,8 @@ notificationsRouter.post(
         throw new Error('Invalid notification type');
     }
 
-    res.status(201).json(createResponse());
-  })
+    return c.json(createResponse(), 201);
+  }
 );
 
 export default notificationsRouter;
