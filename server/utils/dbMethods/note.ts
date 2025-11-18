@@ -13,6 +13,8 @@ export async function createRote(data: any): Promise<any> {
       attachments: _attachments,
       reactions: _reactions,
       changes: _changes,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
       ...cleanData
     } = data;
 
@@ -182,9 +184,12 @@ export async function editRote(data: any): Promise<any> {
       reactions: _reactions,
       author: _author,
       attachments: _attachments,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
       ...cleanData
     } = data;
 
+    // 确保 updatedAt 是 Date 对象，且由服务器端控制
     cleanData.updatedAt = new Date();
 
     const [rote] = await db
