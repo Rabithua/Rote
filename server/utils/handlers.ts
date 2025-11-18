@@ -11,8 +11,14 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
     }
   }
 
-  // Prisma unique constraint violation (check both direct error and nested error)
-  if ((err as any).code === 'P2002' || (err as any).originalError?.code === 'P2002') {
+  // PostgreSQL unique constraint violation (23505 = unique_violation)
+  // Check for both direct error code and nested error
+  const errorCode = (err as any).code || (err as any).originalError?.code;
+  if (
+    errorCode === '23505' ||
+    err.message?.includes('unique constraint') ||
+    err.message?.includes('duplicate key')
+  ) {
     return c.json(
       {
         code: 1,

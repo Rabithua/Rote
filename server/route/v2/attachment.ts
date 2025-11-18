@@ -1,6 +1,6 @@
-import type { User } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { Hono } from 'hono';
+import type { User } from '../../drizzle/schema';
 import { requireStorageConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { StorageConfig } from '../../types/config';

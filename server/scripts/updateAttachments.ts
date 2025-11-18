@@ -2,13 +2,14 @@
  * Update attachments with compressUrl
  */
 
-import axios from 'axios';
-import prisma from '../utils/prisma';
+import { eq } from 'drizzle-orm';
+import { attachments } from '../drizzle/schema';
+import db, { closeDatabase } from '../utils/drizzle';
 
 async function isUrlAccessible(url: string): Promise<boolean> {
   try {
-    const response = await axios.head(url);
-    return response.status === 200;
+    const response = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    return response.ok;
   } catch (_error) {
     return false;
   }
@@ -33,61 +34,96 @@ function generateCompressUrl(originalUrl: string): string {
 
 async function updateAttachments() {
   try {
-    const attachments = await prisma.attachment.findMany({
-      select: {
-        id: true,
-        url: true,
-        compressUrl: true,
-      },
-    });
+    console.log('🚀 开始更新附件 compressUrl...\n');
 
-    const totalAttachments = attachments.length;
+    const allAttachments = await db
+      .select({
+        id: attachments.id,
+        url: attachments.url,
+        compressUrl: attachments.compressUrl,
+      })
+      .from(attachments);
+
+    const totalAttachments = allAttachments.length;
     let processedAttachments = 0;
     let skippedAttachments = 0;
     let updatedAttachments = 0;
+    let errorCount = 0;
 
-    for (const attachment of attachments) {
+    console.log(`📊 找到 ${totalAttachments} 个附件需要处理\n`);
+
+    for (const attachment of allAttachments) {
       if (!attachment.url) {
-        console.log(`Skipping attachment without URL: ${attachment.id}`);
+        console.log(`⚠️  跳过没有 URL 的附件: ${attachment.id}`);
         skippedAttachments++;
-        continue;
-      }
-
-      if (attachment.compressUrl) {
-        console.log(`Skipping attachment with existing compressUrl: ${attachment.id}`);
         processedAttachments++;
         continue;
       }
 
-      const compressUrl = generateCompressUrl(attachment.url);
+      if (attachment.compressUrl) {
+        // 静默跳过已有 compressUrl 的附件
+        processedAttachments++;
+        continue;
+      }
 
-      if (await isUrlAccessible(compressUrl)) {
-        await prisma.attachment.update({
-          where: { id: attachment.id },
-          data: { compressUrl },
-        });
-        console.log(`Updated attachment ${attachment.id} with compressUrl: ${compressUrl}`);
-        updatedAttachments++;
-      } else {
-        console.log(`CompressUrl not accessible for attachment ${attachment.id}: ${compressUrl}`);
+      try {
+        const compressUrl = generateCompressUrl(attachment.url);
+
+        if (await isUrlAccessible(compressUrl)) {
+          await db
+            .update(attachments)
+            .set({ compressUrl })
+            .where(eq(attachments.id, attachment.id));
+          updatedAttachments++;
+          if (updatedAttachments % 10 === 0) {
+            console.log(`✅ 已更新 ${updatedAttachments} 个附件...`);
+          }
+        } else {
+          skippedAttachments++;
+        }
+      } catch (error) {
+        errorCount++;
+        console.error(
+          `❌ 处理附件 ${attachment.id} 时出错:`,
+          error instanceof Error ? error.message : String(error)
+        );
         skippedAttachments++;
       }
 
       processedAttachments++;
+
+      // 每处理 100 个附件显示一次进度
+      if (processedAttachments % 100 === 0) {
+        const progress = ((processedAttachments / totalAttachments) * 100).toFixed(1);
+        console.log(`📈 进度: ${processedAttachments}/${totalAttachments} (${progress}%)`);
+      }
     }
 
-    const coverageRate = ((processedAttachments - skippedAttachments) / totalAttachments) * 100;
+    const coverageRate =
+      totalAttachments > 0
+        ? ((processedAttachments - skippedAttachments) / totalAttachments) * 100
+        : 0;
 
-    console.log('All attachments processed');
-    console.log(`Total attachments: ${totalAttachments}`);
-    console.log(`Processed attachments: ${processedAttachments}`);
-    console.log(`Updated attachments: ${updatedAttachments}`);
-    console.log(`Skipped attachments: ${skippedAttachments}`);
-    console.log(`CompressUrl coverage rate: ${coverageRate.toFixed(2)}%`);
+    console.log('\n' + '='.repeat(80));
+    console.log('📊 处理完成统计:');
+    console.log(`  总附件数: ${totalAttachments}`);
+    console.log(`  已处理: ${processedAttachments}`);
+    console.log(`  已更新: ${updatedAttachments}`);
+    console.log(`  已跳过: ${skippedAttachments}`);
+    console.log(`  错误数: ${errorCount}`);
+    console.log(`  CompressUrl 覆盖率: ${coverageRate.toFixed(2)}%`);
+    console.log('='.repeat(80));
+
+    if (errorCount > 0) {
+      console.log(`\n⚠️  处理过程中遇到 ${errorCount} 个错误，请检查上述错误信息`);
+    } else {
+      console.log('\n✅ 所有附件处理完成！');
+    }
   } catch (error) {
-    console.error('Error updating attachments:', error);
+    console.error('❌ 更新附件时发生严重错误:', error);
+    process.exit(1);
   } finally {
-    await prisma.$disconnect();
+    await closeDatabase();
   }
 }
 

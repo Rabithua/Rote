@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRESQL_URL")
+}
+
+model User {
+  id                 String               @id @default(uuid()) @db.Uuid
+  email              String               @unique @db.VarChar(255)
+  username           String               @unique @db.VarChar(100)
+  passwordhash       Bytes
+  salt               Bytes
+  nickname           String?              @db.VarChar(255)
+  description        String?
+  cover              String?
+  avatar             String?
+  createdAt          DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime             @updatedAt @db.Timestamptz(6)
+  role               String               @default("user") @db.VarChar(50)
+  attachments        Attachment[]
+  userreaction       Reaction[]
+  rotes              Rote[]
+  openkey            UserOpenKey[]
+  usersetting        Usersetting?
+  userswsubscription UserSwSubScription[]
+
+  @@map("users")
+}
+
+model UserSwSubScription {
+  id             String   @id @default(uuid()) @db.Uuid
+  userid         String   @db.Uuid
+  endpoint       String   @unique
+  note           String?  @default("")
+  status         String   @default("active") @db.VarChar(50)
+  expirationTime String?
+  keys           Json
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(6)
+  user           User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+
+  @@map("user_sw_subscriptions")
+}
+
+model Usersetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  userid    String   @unique @db.Uuid
+  darkmode  Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  user      User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model UserOpenKey {
+  id          String   @id @default(uuid()) @db.Uuid
+  userid      String   @db.Uuid
+  permissions String[] @default(["SENDROTE"])
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  user        User     @relation(fields: [userid], references: [id], onDelete: Cascade)
+
+  @@map("user_open_keys")
+}
+
+model Rote {
+  id          String       @id @default(uuid()) @db.Uuid
+  title       String?      @default("")
+  type        String?      @default("Rote") @db.VarChar(100)
+  tags        String[]     @default([])
+  content     String
+  state       String       @default("private") @db.VarChar(50)
+  archived    Boolean?     @default(false)
+  authorid    String       @db.Uuid
+  pin         Boolean      @default(false)
+  editor      String?      @default("normal") @db.VarChar(100)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(6)
+  attachments Attachment[]
+  reactions   Reaction[]
+  changes     RoteChange[]
+  author      User         @relation(fields: [authorid], references: [id], onDelete: Cascade)
+
+  @@index([authorid, state])
+  @@index([authorid, archived])
+  @@index([authorid, createdAt])
+  @@index([tags], type: Gin)
+  @@map("rotes")
+}
+
+model Attachment {
+  id          String   @id @default(uuid()) @db.Uuid
+  url         String
+  compressUrl String?  @default("")
+  userid      String?  @db.Uuid
+  roteid      String?  @db.Uuid
+  storage     String   @db.VarChar(100)
+  details     Json
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  sortIndex   Int?     @default(0)
+  rote        Rote?    @relation(fields: [roteid], references: [id])
+  user        User?    @relation(fields: [userid], references: [id])
+
+  @@index([userid])
+  @@index([roteid])
+  @@index([roteid, sortIndex])
+  @@map("attachments")
+}
+
+model Reaction {
+  id          String   @id @default(uuid()) @db.Uuid
+  type        String   @db.VarChar(100)
+  userid      String?  @db.Uuid
+  visitorId   String?  @db.VarChar(255)
+  visitorInfo Json?
+  roteid      String   @db.Uuid
+  metadata    Json?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  rote        Rote     @relation(fields: [roteid], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userid], references: [id])
+
+  @@unique([userid, visitorId, roteid, type], name: "unique_reaction")
+  @@index([roteid, type])
+  @@index([userid])
+  @@index([visitorId])
+  @@map("reactions")
+}
+
+model Setting {
+  id            String   @id @default(uuid()) @db.Uuid
+  group         String   @unique @db.VarChar(100) // site, storage, security, notification, ui, system
+  config        Json // 存储该分组的完整配置对象
+  isRequired    Boolean  @default(false) // 是否为必需分组
+  isInitialized Boolean  @default(false) // 是否已初始化
+  isSystem      Boolean  @default(false) // 是否为系统内部配置
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+
+  @@index([isRequired])
+  @@index([isInitialized])
+  @@index([isSystem])
+  @@map("settings")
+}
+
+model RoteChange {
+  id        String   @id @default(uuid()) @db.Uuid
+  originid  String   @db.Uuid // 保留原始笔记ID用于iOS客户端同步，即使笔记被删除也保留
+  roteid    String?  @db.Uuid // 外键关联到Rote表，删除笔记时设置为null，不影响originid
+  action    String   @db.VarChar(50) @default("CREATE") // CREATE, UPDATE, DELETE
+  userid    String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  rote      Rote?    @relation(fields: [roteid], references: [id], onDelete: SetNull)
+
+  @@index([originid, createdAt])
+  @@index([originid, action])
+  @@index([roteid, createdAt])
+  @@index([userid])
+  @@index([roteid, action])
+  @@map("rote_changes")
+}

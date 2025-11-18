@@ -3,7 +3,9 @@
  * 测试从系统未初始化到完全配置好的整个流程
  */
 
-import { PrismaClient } from '@prisma/client';
+import { eq, or } from 'drizzle-orm';
+import { settings, users } from '../drizzle/schema';
+import db, { closeDatabase } from '../utils/drizzle';
 import testConfig from './testConfig.json';
 
 const BASE_URL = process.env.TEST_BASE_URL || testConfig.testSettings.baseUrl;
@@ -19,11 +21,8 @@ interface TestResult {
 
 class InitializationTester {
   private results: TestResult[] = [];
-  private prisma: PrismaClient;
 
-  constructor() {
-    this.prisma = new PrismaClient();
-  }
+  constructor() {}
 
   /**
    * 记录测试结果
@@ -73,18 +72,18 @@ class InitializationTester {
    */
   async cleanupDatabase() {
     try {
-      await this.prisma.setting.deleteMany();
+      await db.delete(settings);
       // 只删除测试用户
-      await this.prisma.user.deleteMany({
-        where: {
-          OR: [
-            { username: 'admin' },
-            { username: testConfig.testData.admin.username },
-            { email: 'admin@test.com' },
-            { email: testConfig.testData.admin.email },
-          ],
-        },
-      });
+      await db
+        .delete(users)
+        .where(
+          or(
+            eq(users.username, 'admin'),
+            eq(users.username, testConfig.testData.admin.username),
+            eq(users.email, 'admin@test.com'),
+            eq(users.email, testConfig.testData.admin.email)
+          )
+        );
       this.recordResult('Cleanup', true, 'Database configuration and test users cleaned up');
 
       // 刷新配置缓存
@@ -590,7 +589,7 @@ class InitializationTester {
    * 清理资源
    */
   async cleanup() {
-    await this.prisma.$disconnect();
+    await closeDatabase();
   }
 }
 
