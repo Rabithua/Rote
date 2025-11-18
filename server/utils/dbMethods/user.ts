@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { and, count, eq, gte, lte } from 'drizzle-orm';
+import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
 import { attachments, rotes, users } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -59,12 +59,15 @@ export async function createUser(data: {
     const passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
 
     // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+    // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
     const insertData: any = {
       username: data.username,
       email: data.email,
       nickname: data.nickname,
       passwordhash,
       salt,
+      createdAt: sql`now()`,
+      updatedAt: sql`now()`,
     };
 
     const [user] = await db.insert(users).values(insertData).returning();

@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { userSwSubscriptions } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -35,6 +35,7 @@ export async function addSubScriptionToUser(userId: string, subScription: any): 
         .insert(userSwSubscriptions)
         .values({
           // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+          // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
           userid: userId,
           endpoint: subScription.endpoint,
           expirationTime: subScription.expirationTime || null,
@@ -42,6 +43,8 @@ export async function addSubScriptionToUser(userId: string, subScription: any): 
             auth: subScription.keys.auth,
             p256dh: subScription.keys.p256dh,
           },
+          createdAt: sql`now()`,
+          updatedAt: sql`now()`,
         })
         .returning({ id: userSwSubscriptions.id });
       return created;

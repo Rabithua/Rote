@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { roteChanges } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -14,10 +15,13 @@ export async function createRoteChange(data: {
       .insert(roteChanges)
       .values({
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地计算时间戳
+        // 注意：roteChanges 表只有 createdAt，没有 updatedAt
         originid: data.originid,
         roteid: data.roteid || data.originid,
         action: data.action,
         userid: data.userid,
+        createdAt: sql`now()`,
       })
       .returning();
     return roteChange;

@@ -1,6 +1,10 @@
 /**
  * 数据迁移脚本：修复 null 值问题，为 Drizzle schema 约束变更做准备
  *
+ * 注意：此脚本只修复数据中的 null 值，不修复表结构。
+ * 如果遇到 "null value in column id violates not-null constraint" 错误，
+ * 请先运行 fixAllUuidDefaults.ts 修复表结构。
+ *
  * 此脚本会检查并修复以下字段的 null 值：
  * - user_sw_subscriptions.keys: 设置为 {}
  * - attachments.url: 记录错误或删除无效记录

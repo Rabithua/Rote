@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { settings } from '../drizzle/schema';
 import type { ConfigData, ConfigGroup, ConfigUpdateOptions, SystemConfig } from '../types/config';
 import db from './drizzle';
@@ -245,12 +245,15 @@ export class ConfigManager {
       } else {
         // 创建新配置
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
         const insertData: any = {
           group,
           config: config as unknown as any,
           isRequired: options?.isRequired ?? false,
           isSystem: options?.isSystem ?? false,
           isInitialized: options?.isInitialized ?? true,
+          createdAt: sql`now()`,
+          updatedAt: sql`now()`,
         };
         await db.insert(settings).values(insertData);
       }

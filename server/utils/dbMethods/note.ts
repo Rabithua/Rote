@@ -1,4 +1,4 @@
-import { and, count, eq } from 'drizzle-orm';
+import { and, count, eq, sql } from 'drizzle-orm';
 import { rotes, users } from '../../drizzle/schema';
 import db from '../drizzle';
 import { createRoteChange } from './change';
@@ -56,9 +56,17 @@ export async function createRote(data: any): Promise<any> {
     });
 
     // 不传递 id 字段，让数据库使用 schema 中定义的 defaultRandom() 自动生成
-    // 根据 Drizzle 文档，这是推荐的做法
+    // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
+    // 这确保 createdAt 和 updatedAt 完全一致
     console.log('Inserting rote with data:', JSON.stringify(cleanData, null, 2));
-    const [rote] = await db.insert(rotes).values(cleanData).returning();
+    const [rote] = await db
+      .insert(rotes)
+      .values({
+        ...cleanData,
+        createdAt: sql`now()`,
+        updatedAt: sql`now()`,
+      })
+      .returning();
     console.log('Inserted rote:', rote?.id);
 
     if (!rote) {

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { reactions, rotes } from '../../drizzle/schema';
 import db from '../drizzle';
 import { createRoteChange } from './change';
@@ -18,12 +18,15 @@ export async function addReaction(data: {
       .insert(reactions)
       .values({
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
         type: data.type,
         roteid: data.roteid,
         userid: data.userid || null,
         visitorId: data.visitorId || null,
         visitorInfo: data.visitorInfo || null,
         metadata: data.metadata || null,
+        createdAt: sql`now()`,
+        updatedAt: sql`now()`,
       })
       .returning();
 

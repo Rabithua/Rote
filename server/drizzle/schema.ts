@@ -122,7 +122,7 @@ export const rotes = pgTable(
     tags: text('tags').array().notNull().default([]),
     content: text('content').notNull(),
     state: varchar('state', { length: 50 }).notNull().default('private'),
-    archived: boolean('archived').default(false),
+    archived: boolean('archived').notNull().default(false),
     authorid: uuid('authorid').notNull(),
     pin: boolean('pin').notNull().default(false),
     editor: varchar('editor', { length: 100 }).default('normal'),

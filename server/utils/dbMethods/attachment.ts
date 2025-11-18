@@ -27,6 +27,7 @@ export async function createAttachments(
 
     const attachmentsData = data.map((e: UploadResult, index: number) => ({
       // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+      // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
       userid,
       roteid: roteid || null,
       url: e.url,
@@ -34,6 +35,8 @@ export async function createAttachments(
       details: e.details,
       storage: 'R2',
       sortIndex: roteid ? startSortIndex + index : 0,
+      createdAt: sql`now()`,
+      updatedAt: sql`now()`,
     }));
 
     // 使用事务批量插入
@@ -73,12 +76,15 @@ export async function upsertAttachmentsByOriginalKey(
             .insert(attachments)
             .values({
               // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+              // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
               userid,
               roteid: roteid || null,
               url: e.url as string,
               compressUrl: e.compressUrl || '',
               details: e.details,
               storage: 'R2',
+              createdAt: sql`now()`,
+              updatedAt: sql`now()`,
             })
             .returning();
           out.push(created);
@@ -124,12 +130,15 @@ export async function upsertAttachmentsByOriginalKey(
             .insert(attachments)
             .values({
               // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+              // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
               userid,
               roteid: roteid || null,
               url: e.url as string,
               compressUrl: e.compressUrl || '',
               details: e.details,
               storage: 'R2',
+              createdAt: sql`now()`,
+              updatedAt: sql`now()`,
             })
             .returning();
           out.push(created);

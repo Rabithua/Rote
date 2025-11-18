@@ -41,6 +41,7 @@ export async function createAdminUser(data: {
   const passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
 
   // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+  // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
   const insertData: any = {
     username: data.username,
     email: data.email,
@@ -48,6 +49,8 @@ export async function createAdminUser(data: {
     salt,
     nickname: data.nickname || data.username,
     role: 'super_admin',
+    createdAt: sql`now()`,
+    updatedAt: sql`now()`,
   };
 
   const [user] = await db.insert(users).values(insertData).returning({
