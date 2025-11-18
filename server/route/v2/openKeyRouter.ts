@@ -131,7 +131,6 @@ router.get('/notes', isOpenKeyOk, async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
-  const tag = c.req.query('tag');
 
   const openKey = c.get('openKey');
   if (!openKey?.permissions.includes('GETROTE')) {
@@ -142,7 +141,8 @@ router.get('/notes', isOpenKeyOk, async (c: HonoContext) => {
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤，过滤空白标签
+  // 处理标签过滤，过滤空白标签（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     let tags: string[] = [];
     if (Array.isArray(tag)) {
@@ -158,9 +158,10 @@ router.get('/notes', isOpenKeyOk, async (c: HonoContext) => {
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'archived', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'archived', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });
@@ -185,7 +186,6 @@ router.get('/notes/search', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) 
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
-  const tag = c.req.query('tag');
 
   const openKey = c.get('openKey');
   if (!openKey) {
@@ -203,7 +203,8 @@ router.get('/notes/search', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) 
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     let tags: string[] = [];
     if (Array.isArray(tag)) {
@@ -219,9 +220,10 @@ router.get('/notes/search', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) 
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'archived', 'keyword', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'archived', 'keyword', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });

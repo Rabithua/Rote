@@ -58,7 +58,6 @@ export async function createRote(data: any): Promise<any> {
     // 不传递 id 字段，让数据库使用 schema 中定义的 defaultRandom() 自动生成
     // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
     // 这确保 createdAt 和 updatedAt 完全一致
-    console.log('Inserting rote with data:', JSON.stringify(cleanData, null, 2));
     const [rote] = await db
       .insert(rotes)
       .values({
@@ -67,7 +66,6 @@ export async function createRote(data: any): Promise<any> {
         updatedAt: sql`now()`,
       })
       .returning();
-    console.log('Inserted rote:', rote?.id);
 
     if (!rote) {
       throw new Error('Failed to insert rote: no data returned');
@@ -95,9 +93,8 @@ export async function createRote(data: any): Promise<any> {
           reactions: true,
         },
       });
-    } catch (queryError) {
+    } catch (_queryError) {
       // 如果关联查询失败，至少返回插入的数据
-      console.error('Failed to fetch rote with relations:', queryError);
       roteWithRelations = rote;
     }
 
@@ -109,19 +106,12 @@ export async function createRote(data: any): Promise<any> {
         action: 'CREATE',
         userid: rote.authorid,
       });
-    } catch (error) {
-      // 记录变更失败不影响创建操作，只记录错误
-      console.error('Failed to record rote change for create:', error);
+    } catch (_error) {
+      // 记录变更失败不影响创建操作，静默处理
     }
 
     return roteWithRelations;
   } catch (error: any) {
-    // 始终打印详细错误信息以便调试
-    console.error('Failed to create note - original error:', error);
-    console.error('Error message:', error?.message);
-    console.error('Error code:', error?.code);
-    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-    console.error('Data passed to createRote:', JSON.stringify(data, null, 2));
     throw new DatabaseError('Failed to create note', error);
   }
 }
@@ -235,14 +225,12 @@ export async function editRote(data: any): Promise<any> {
         action: 'UPDATE',
         userid: rote.authorid,
       });
-    } catch (error) {
-      // 记录变更失败不影响更新操作，只记录错误
-      console.error('Failed to record rote change for update:', error);
+    } catch (_error) {
+      // 记录变更失败不影响更新操作，静默处理
     }
 
     return roteWithRelations;
   } catch (error) {
-    console.error(`Error updating rote: ${data.id}`, error);
     throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
   }
 }
@@ -257,9 +245,8 @@ export async function deleteRote(data: any): Promise<any> {
         action: 'DELETE',
         userid: data.authorid,
       });
-    } catch (error) {
-      // 记录变更失败不影响删除操作，只记录错误
-      console.error('Failed to record rote change for delete:', error);
+    } catch (_error) {
+      // 记录变更失败不影响删除操作，静默处理
     }
 
     const [rote] = await db
@@ -279,14 +266,17 @@ function buildWhereConditions(
   state: string | undefined,
   filter: any
 ) {
-  return (rotes: any, { eq, and }: any) => {
+  return (rotes: any, { eq, and, sql }: any) => {
     const conditions = [];
+
     if (authorid) {
       conditions.push(eq(rotes.authorid, authorid));
     }
+
     if (archived !== undefined) {
       conditions.push(eq(rotes.archived, archived));
     }
+
     if (state) {
       conditions.push(eq(rotes.state, state));
     }
@@ -295,10 +285,25 @@ function buildWhereConditions(
     if (filter && typeof filter === 'object') {
       Object.keys(filter).forEach((key) => {
         if (filter[key] !== undefined && filter[key] !== null) {
-          // 跳过 Prisma 特定的过滤格式（如 hasEvery），这些在 Drizzle 中需要特殊处理
+          // 处理 tags 的 hasEvery 过滤（检查数组是否包含所有指定的标签）
           if (key === 'tags' && filter[key]?.hasEvery) {
+            const tags = filter[key].hasEvery;
+            if (Array.isArray(tags) && tags.length > 0) {
+              // 使用 PostgreSQL 的 @> 操作符检查数组是否包含所有指定的标签
+              // 转义标签中的单引号以避免 SQL 注入
+              const escapedTags = tags.map((tag: string) => `'${String(tag).replace(/'/g, "''")}'`);
+              const tagsCondition = sql`${rotes.tags} @> ARRAY[${sql.raw(escapedTags.join(','))}]::text[]`;
+              conditions.push(tagsCondition);
+            }
             return;
           }
+
+          // 跳过不存在的字段名（如 tag[]），只处理实际存在的数据库字段
+          // 检查字段是否存在于 rotes schema 中
+          if (!(key in rotes)) {
+            return;
+          }
+
           conditions.push(eq(rotes[key], filter[key]));
         }
       });
@@ -323,11 +328,11 @@ export async function findMyRote(
   try {
     const whereCondition = buildWhereConditions(authorid, archived, undefined, filter);
 
-    const rotesList = await db.query.rotes.findMany({
+    const queryParams: any = {
       where: whereCondition,
       offset: skip || 0,
       limit: limit || 20,
-      orderBy: (rotes, { desc }) => [desc(rotes.pin), desc(rotes.createdAt)],
+      orderBy: (rotes: any, { desc }: any) => [desc(rotes.pin), desc(rotes.createdAt)],
       with: {
         author: {
           columns: {
@@ -339,7 +344,9 @@ export async function findMyRote(
         attachments: true,
         reactions: true,
       },
-    });
+    };
+
+    const rotesList = await db.query.rotes.findMany(queryParams);
     return rotesList;
   } catch (error: any) {
     throw new DatabaseError('Failed to find user rotes', error);

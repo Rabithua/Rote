@@ -93,7 +93,6 @@ notesRouter.get('/search', authenticateJWT, async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
-  const tag = c.req.query('tag');
   const user = c.get('user') as User;
 
   // 验证搜索关键词长度
@@ -107,7 +106,8 @@ notesRouter.get('/search', authenticateJWT, async (c: HonoContext) => {
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     const tags = Array.isArray(tag) ? tag : [tag];
     if (tags.length > 0) {
@@ -115,9 +115,10 @@ notesRouter.get('/search', authenticateJWT, async (c: HonoContext) => {
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'archived', 'keyword', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'archived', 'keyword', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });
@@ -142,7 +143,6 @@ notesRouter.get('/search/public', async (c: HonoContext) => {
   const keyword = c.req.query('keyword');
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
-  const tag = c.req.query('tag');
 
   // 验证搜索关键词长度
   if (keyword && typeof keyword === 'string') {
@@ -155,7 +155,8 @@ notesRouter.get('/search/public', async (c: HonoContext) => {
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     const tags = Array.isArray(tag) ? tag : [tag];
     if (tags.length > 0) {
@@ -163,9 +164,10 @@ notesRouter.get('/search/public', async (c: HonoContext) => {
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'keyword', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'keyword', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });
@@ -202,7 +204,7 @@ notesRouter.get('/search/users/:username', async (c: HonoContext) => {
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
   if (tag) {
     const tags = Array.isArray(tag) ? tag : [tag];
     if (tags.length > 0) {
@@ -243,14 +245,14 @@ notesRouter.get('/', authenticateJWT, async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
-  const tag = c.req.query('tag');
   const user = c.get('user') as User;
 
   // 构建过滤器对象
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     const tags = Array.isArray(tag) ? tag : [tag];
     if (tags.length > 0) {
@@ -258,9 +260,10 @@ notesRouter.get('/', authenticateJWT, async (c: HonoContext) => {
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'archived', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'archived', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });
@@ -285,13 +288,13 @@ notesRouter.get('/users/:username', async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
-  const tag = c.req.query('tag');
 
   // 构建过滤器对象
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     const tags = Array.isArray(tag) ? tag : [tag];
     if (tags.length > 0) {
@@ -299,9 +302,10 @@ notesRouter.get('/users/:username', async (c: HonoContext) => {
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'archived', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'archived', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });
@@ -334,13 +338,13 @@ notesRouter.get('/users/:username', async (c: HonoContext) => {
 notesRouter.get('/public', async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
-  const tag = c.req.query('tag');
 
   // 构建过滤器对象
   const filter: any = {};
   const query = c.req.query();
 
-  // 处理标签过滤
+  // 处理标签过滤（支持 tag 和 tag[] 两种格式）
+  const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
     const tags = Array.isArray(tag) ? tag : [tag];
     if (tags.length > 0) {
@@ -348,9 +352,10 @@ notesRouter.get('/public', async (c: HonoContext) => {
     }
   }
 
-  // 处理其他过滤参数
+  // 处理其他过滤参数（排除已知的查询参数和数组格式的 tag）
+  const excludedKeys = ['skip', 'limit', 'tag', 'tag[]'];
   Object.entries(query).forEach(([key, value]) => {
-    if (!['skip', 'limit', 'tag'].includes(key) && value !== undefined) {
+    if (!excludedKeys.includes(key) && value !== undefined) {
       filter[key] = value;
     }
   });

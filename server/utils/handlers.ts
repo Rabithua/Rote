@@ -14,15 +14,46 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   // PostgreSQL unique constraint violation (23505 = unique_violation)
   // Check for both direct error code and nested error
   const errorCode = (err as any).code || (err as any).originalError?.code;
+  const errorMessage = err.message || (err as any).originalError?.message || '';
+
   if (
     errorCode === '23505' ||
-    err.message?.includes('unique constraint') ||
-    err.message?.includes('duplicate key')
+    errorMessage.includes('unique constraint') ||
+    errorMessage.includes('duplicate key')
   ) {
+    // 根据约束名称或字段信息判断具体的唯一约束错误
+    let message = 'Resource already exists';
+
+    // 检查是否是订阅 endpoint 的唯一约束
+    // PostgreSQL 错误消息可能包含: user_sw_subscriptions_endpoint_unique 或 user_sw_subscriptions.endpoint
+    if (errorMessage.includes('user_sw_subscriptions') && errorMessage.includes('endpoint')) {
+      message = 'Subscription endpoint already exists';
+    }
+    // 检查是否是用户名的唯一约束
+    else if (
+      errorMessage.includes('users') &&
+      errorMessage.includes('username') &&
+      !errorMessage.includes('email')
+    ) {
+      message = 'Username already exists';
+    }
+    // 检查是否是邮箱的唯一约束
+    else if (
+      errorMessage.includes('users') &&
+      errorMessage.includes('email') &&
+      !errorMessage.includes('username')
+    ) {
+      message = 'Email already exists';
+    }
+    // 检查是否是用户名或邮箱（通用用户注册错误）
+    else if (errorMessage.includes('username') || errorMessage.includes('email')) {
+      message = 'Username or email already exists';
+    }
+
     return c.json(
       {
         code: 1,
-        message: 'Username or email already exists',
+        message,
         data: null,
       },
       409
