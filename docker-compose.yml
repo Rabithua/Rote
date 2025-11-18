@@ -17,7 +17,7 @@ services:
     container_name: rote-backend
     environment:
       # 基础配置 - 必需
-      - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@rote-postgres:5432/rote
+      - POSTGRESQL_URL=postgresql://rote:${POSTGRES_PASSWORD:-rote_password_123}@rote-postgres:5432/rote
     ports:
       - "3000"
     depends_on:
@@ -45,13 +45,13 @@ services:
     ports:
       - "5432"
     environment:
-      POSTGRES_USER: prisma
+      POSTGRES_USER: rote
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
       POSTGRES_DB: rote
     volumes:
       - rote-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U prisma -d rote"]
+      test: ["CMD-SHELL", "pg_isready -U rote -d rote"]
       interval: 5s
       timeout: 3s
       retries: 10

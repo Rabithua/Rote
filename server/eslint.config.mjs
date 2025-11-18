@@ -1,11 +1,11 @@
 import js from '@eslint/js';
-import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
+import prettier from 'eslint-plugin-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'prisma/migrations', '**/*.js'] },
+  { ignores: ['dist', 'node_modules', '**/*.js'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettierConfig,
@@ -47,4 +47,3 @@ export default tseslint.config(
     },
   }
 );
-

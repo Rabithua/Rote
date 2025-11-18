@@ -270,4 +270,4 @@ These tests can be integrated into CI/CD pipelines:
 - [Configuration Management](../utils/config.ts)
 - [Admin API Routes](../route/v2/admin.ts)
 - [Configuration Middleware](../middleware/configCheck.ts)
-- [Database Schema](../prisma/schema.prisma)
+- [Database Schema](../drizzle/schema.ts)

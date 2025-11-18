@@ -15,7 +15,7 @@
 
 2. **数据迁移**：
    - 为现有附件按创建时间顺序分配 `sortIndex` 值
-   - 提供了迁移脚本 `/server/prisma/sql/update_sort_index.sql`
+   - 提供了迁移脚本用于更新 sortIndex
 
 ### 后端 API 更新
 
