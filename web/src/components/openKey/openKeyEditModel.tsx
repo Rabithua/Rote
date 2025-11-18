@@ -1,23 +1,21 @@
 import mainJson from '@/json/main.json';
 import { useOpenKeys } from '@/state/openKeys';
+import type { OpenKey } from '@/types/main';
 import { put } from '@/utils/api';
 import { Save } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 import { useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import type { KeyedMutator } from 'swr';
 import { Checkbox } from '../ui/checkbox';
-
-interface OpenKey {
-  id: string;
-  permissions: string[];
-}
 
 interface OpenKeyEditModelProps {
   openKey: OpenKey;
   close: () => void;
+  mutate?: KeyedMutator<OpenKey[]>;
 }
 
-function OpenKeyEditModel({ openKey, close }: OpenKeyEditModelProps) {
+function OpenKeyEditModel({ openKey, close, mutate }: OpenKeyEditModelProps) {
   const { t, i18n } = useTranslation('translation', {
     keyPrefix: 'components.openKeyEditModel',
   });
@@ -61,7 +59,12 @@ function OpenKeyEditModel({ openKey, close }: OpenKeyEditModelProps) {
         toast.success(t('saveSuccess'), {
           id: toastId,
         });
+        // 更新 Jotai 状态（用于兼容旧代码）
         setOpenKeys(openKeys.map((key) => (key.id === res.data.data.id ? res.data.data : key)));
+        // 刷新 SWR 数据（用于 profile 页面）
+        if (mutate) {
+          mutate();
+        }
       })
       .catch(() => {
         toast.error(t('saveFailed'), {
@@ -73,19 +76,24 @@ function OpenKeyEditModel({ openKey, close }: OpenKeyEditModelProps) {
   return (
     <div>
       <div className="flex flex-wrap gap-3">
-        {processedOptions.map((option) => (
-          <label
-            key={option.value}
-            className="bg-muted/60 flex w-fit cursor-pointer items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200 select-none"
-          >
-            <Checkbox
-              checked={checkedList.includes(option.value)}
-              onCheckedChange={() => onChange(option.value)}
-              className="accent-primary scale-110"
-            />
-            <span className="text-foreground text-base font-medium">{option.label}</span>
-          </label>
-        ))}
+        {processedOptions.map((option) => {
+          const checkboxId = `checkbox-${option.value}`;
+          return (
+            <label
+              key={option.value}
+              htmlFor={checkboxId}
+              className="bg-muted/60 flex w-fit cursor-pointer items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200 select-none"
+            >
+              <Checkbox
+                id={checkboxId}
+                checked={checkedList.includes(option.value)}
+                onCheckedChange={() => onChange(option.value)}
+                className="accent-primary scale-110"
+              />
+              <span className="text-foreground text-base font-medium">{option.label}</span>
+            </label>
+          );
+        })}
       </div>
       <div className="mt-8 flex items-center gap-4 border-t pt-8">
         <Checkbox

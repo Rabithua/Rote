@@ -135,7 +135,11 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
               The OpenKey edit feature is still under development. Maybe not work well.
             </AlertDescription>
           </Alert>
-          <OpenKeyEditModel close={onModelCancel} openKey={openKey}></OpenKeyEditModel>
+          <OpenKeyEditModel
+            close={onModelCancel}
+            openKey={openKey}
+            mutate={mutate}
+          ></OpenKeyEditModel>
         </DialogContent>
       </Dialog>
     </div>

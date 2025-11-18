@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { userOpenKeys } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -10,8 +10,11 @@ export async function generateOpenKey(userid: string): Promise<any> {
       .insert(userOpenKeys)
       .values({
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
         permissions: ['SENDROTE'],
         userid,
+        createdAt: sql`now()`,
+        updatedAt: sql`now()`,
       })
       .returning();
     return openKey;
