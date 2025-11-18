@@ -118,6 +118,10 @@ subscribeConfigChange('site', (_group, newConfig) => {
     // 等待数据库连接就绪
     await waitForDatabase();
 
+    // 运行数据库迁移
+    const { runMigrations } = await import('./utils/drizzle');
+    await runMigrations();
+
     // 初始化配置管理器
     await initializeConfig();
 

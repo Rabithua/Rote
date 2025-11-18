@@ -13,8 +13,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     # 启动命令：等待数据库就绪后执行数据库迁移并启动服务
-    command:
-      ["sh", "-c", "sleep 15 && bun run db:migrate && bun run dist/server.js"]
+    command: ["sh", "-c", "sleep 15 && bun run dist/server.js"]
 
   rote-frontend:
     build:

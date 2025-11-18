@@ -55,6 +55,21 @@ export async function waitForDatabase(
 }
 
 /**
+ * 运行数据库迁移
+ */
+export async function runMigrations(): Promise<void> {
+  try {
+    console.log('🔄 Running database migrations...');
+    const { migrate } = await import('drizzle-orm/postgres-js/migrator');
+    await migrate(db, { migrationsFolder: './drizzle/migrations' });
+    console.log('✅ Database migrations completed successfully!');
+  } catch (error: any) {
+    console.error('❌ Migration failed:', error);
+    throw error;
+  }
+}
+
+/**
  * 关闭数据库连接
  */
 export async function closeDatabase(): Promise<void> {

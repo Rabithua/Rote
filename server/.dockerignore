@@ -66,6 +66,7 @@ LICENSE*
 jest.config.*
 vitest.config.*
 
-# 脚本文件（运行时不需要）
-scripts
+# 脚本文件（运行时不需要，但保留迁移脚本）
+scripts/*
+!scripts/runMigrations.ts
 *.sh

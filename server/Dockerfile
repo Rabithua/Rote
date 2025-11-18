@@ -43,29 +43,46 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder --chown=bunuser:nodejs /app/package.json ./
 COPY --from=builder --chown=bunuser:nodejs /app/bun.lock* ./
 
-# 🚨 关键优化：在 runner 阶段重新安装生产依赖
-# 这样可以确保完全没有 devDependencies，并且只安装运行时需要的包
+# 🚨 关键优化：只安装生产依赖（已改用程序化迁移，不需要 drizzle-kit）
 RUN bun install --production --frozen-lockfile
 
-# 从 builder 阶段复制编译后的代码
+# 从 builder 阶段复制编译后的代码和迁移文件
 COPY --from=builder --chown=bunuser:nodejs /app/dist ./dist
+COPY --from=builder --chown=bunuser:nodejs /app/drizzle ./drizzle
 
-# 🔥 终极清理：删除所有不必要的文件
-RUN rm -rf /app/node_modules/.cache && \
-    rm -rf /tmp/* && \
-    rm -rf /var/cache/apk/* && \
-    # 🚨 强制删除 TypeScript 及其相关包（生产环境不需要）
-    rm -rf /app/node_modules/typescript && \
-    rm -rf /app/node_modules/@typescript-eslint && \
-    rm -rf /app/node_modules/typescript-eslint && \
-    # 删除测试相关目录
-    find /app/node_modules -type d \( -name "test" -o -name "tests" -o -name "__tests__" -o -name "*.test.*" -o -name "*.spec.*" -o -name "docs" -o -name "doc" -o -name "examples" -o -name "example" -o -name "benchmark" -o -name "benchmarks" \) -exec rm -rf {} + 2>/dev/null || true && \
-    # 删除文档和配置文件
-    find /app/node_modules -type f \( -name "*.md" -o -name "*.map" -o -name "CHANGELOG*" -o -name "LICENSE*" -o -name "README*" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" ! -name "package.json" \) ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
-    # 删除类型定义文件（运行时不需要）
-    find /app/node_modules -type f -name "*.d.ts" ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
-    # 删除源码文件（只保留编译后的代码）
-    find /app/node_modules -type f \( -name "*.js" ! -name "*.min.js" \) -path "*/src/*" -delete 2>/dev/null || true
+# 🔥 终极清理：删除所有不必要的文件以减小镜像大小
+# 注意：避免删除关键依赖包（如 postgres）的必要文件
+RUN rm -rf /app/node_modules/.cache /tmp/* /var/cache/apk/* && \
+    # 删除测试、文档、示例等目录（排除关键依赖包）
+    find /app/node_modules -type d \( \
+        -name "test" -o -name "tests" -o -name "__tests__" -o \
+        -name "*.test.*" -o -name "*.spec.*" -o \
+        -name "docs" -o -name "doc" -o \
+        -name "examples" -o -name "example" -o \
+        -name "benchmark" -o -name "benchmarks" \
+    \) ! -path "*/node_modules/postgres/*" \
+      ! -path "*/node_modules/drizzle-orm/*" \
+      -exec rm -rf {} + 2>/dev/null || true && \
+    # 删除文档、源码映射等（排除关键依赖包）
+    find /app/node_modules -type f \( \
+        -name "*.md" -o -name "*.map" -o \
+        -name "CHANGELOG*" -o -name "LICENSE*" -o -name "README*" \
+    \) ! -path "*/node_modules/postgres/*" \
+      ! -path "*/node_modules/drizzle-orm/*" \
+      -delete 2>/dev/null || true && \
+    # 删除 TypeScript 源文件（但保留 .d.ts 类型定义文件，某些包可能需要）
+    find /app/node_modules -type f \( \
+        -name "*.ts" -o -name "*.tsx" \
+    \) ! -name "*.d.ts" \
+      ! -path "*/node_modules/@types/*" \
+      ! -path "*/node_modules/postgres/*" \
+      ! -path "*/node_modules/drizzle-orm/*" \
+      -delete 2>/dev/null || true && \
+    # 删除 package.json 以外的 JSON 配置文件（排除关键依赖包）
+    find /app/node_modules -type f -name "*.json" ! -name "package.json" ! -path "*/node_modules/@types/*" \
+      ! -path "*/node_modules/postgres/*" \
+      ! -path "*/node_modules/drizzle-orm/*" \
+      -delete 2>/dev/null || true
 
 # 设置环境变量，提升性能
 ENV NODE_ENV=production
