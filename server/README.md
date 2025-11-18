@@ -5,10 +5,17 @@ npm v9.5.1
 
 ## Other Operations
 
-### Steps after updating schema.prisma
+### Steps after updating schema
 
-```
-npm run dbSchemaUpdate
+```bash
+# 生成迁移文件
+bun run db:generate
+
+# 应用迁移（开发环境）
+bun run db:push
+
+# 或应用迁移文件（生产环境）
+bun run db:migrate
 ```
 
 ### Building Images
@@ -19,7 +26,7 @@ npm run dbSchemaUpdate
 docker build -t rotebackend:latest .
 ```
 
-> Multi-platform image build (Prisma doesn't support arm/v7), build and push to docker, remember to replace username
+> Multi-platform image build (supports amd64 and arm64), build and push to docker, remember to replace username
 
 ```
 docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .

@@ -1,15 +1,19 @@
-import prisma from '../prisma';
+import { eq } from 'drizzle-orm';
+import { userOpenKeys } from '../../drizzle/schema';
+import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // API密钥相关方法
 export async function generateOpenKey(userid: string): Promise<any> {
   try {
-    const openKey = await prisma.userOpenKey.create({
-      data: {
+    const [openKey] = await db
+      .insert(userOpenKeys)
+      .values({
+        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
         permissions: ['SENDROTE'],
         userid,
-      },
-    });
+      })
+      .returning();
     return openKey;
   } catch (error) {
     throw new DatabaseError('Failed to generate open key', error);
@@ -18,9 +22,7 @@ export async function generateOpenKey(userid: string): Promise<any> {
 
 export async function getMyOpenKey(userid: string): Promise<any> {
   try {
-    const openKeys = await prisma.userOpenKey.findMany({
-      where: { userid },
-    });
+    const openKeys = await db.select().from(userOpenKeys).where(eq(userOpenKeys.userid, userid));
     return openKeys;
   } catch (error) {
     throw new DatabaseError('Failed to get user open keys', error);
@@ -29,9 +31,7 @@ export async function getMyOpenKey(userid: string): Promise<any> {
 
 export async function deleteMyOneOpenKey(userid: string, id: string): Promise<any> {
   try {
-    const openKey = await prisma.userOpenKey.findUnique({
-      where: { id },
-    });
+    const [openKey] = await db.select().from(userOpenKeys).where(eq(userOpenKeys.id, id)).limit(1);
 
     if (!openKey) {
       throw new DatabaseError('Open key not found');
@@ -41,9 +41,7 @@ export async function deleteMyOneOpenKey(userid: string, id: string): Promise<an
       throw new DatabaseError('Unauthorized to delete this open key');
     }
 
-    const result = await prisma.userOpenKey.delete({
-      where: { id },
-    });
+    const [result] = await db.delete(userOpenKeys).where(eq(userOpenKeys.id, id)).returning();
     return result;
   } catch (error) {
     if (error instanceof DatabaseError) {
@@ -59,9 +57,7 @@ export async function editMyOneOpenKey(
   permissions: string[]
 ): Promise<any> {
   try {
-    const openKey = await prisma.userOpenKey.findUnique({
-      where: { id },
-    });
+    const [openKey] = await db.select().from(userOpenKeys).where(eq(userOpenKeys.id, id)).limit(1);
 
     if (!openKey) {
       throw new DatabaseError('Open key not found');
@@ -71,10 +67,11 @@ export async function editMyOneOpenKey(
       throw new DatabaseError('Unauthorized to edit this open key');
     }
 
-    const result = await prisma.userOpenKey.update({
-      where: { id },
-      data: { permissions },
-    });
+    const [result] = await db
+      .update(userOpenKeys)
+      .set({ permissions, updatedAt: new Date() })
+      .where(eq(userOpenKeys.id, id))
+      .returning();
     return result;
   } catch (error) {
     if (error instanceof DatabaseError) {
@@ -86,9 +83,7 @@ export async function editMyOneOpenKey(
 
 export async function getOneOpenKey(id: string): Promise<any> {
   try {
-    const openKey = await prisma.userOpenKey.findUnique({
-      where: { id },
-    });
+    const [openKey] = await db.select().from(userOpenKeys).where(eq(userOpenKeys.id, id)).limit(1);
 
     if (!openKey) {
       throw new DatabaseError('Open key not found');

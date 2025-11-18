@@ -4,6 +4,8 @@
 
 本文档详细说明 Rote 项目中数据库结构变更的标准操作流程，包括开发环境、生产环境的迁移管理，以及常见问题的解决方案。
 
+**注意**：项目已从 Prisma ORM 迁移到 Drizzle ORM，所有迁移操作现在使用 Drizzle Kit。
+
 ## 数据库迁移操作流程
 
 ### 1. 开发环境操作
@@ -12,38 +14,42 @@
 
 ```bash
 # 1. 编辑 schema 文件
-vim prisma/schema.prisma
+vim server/drizzle/schema.ts
 
-# 2. 创建迁移文件并应用
-bunx prisma migrate dev --name "描述变更内容"
+# 2. 生成迁移文件
+bun run db:generate
 
-# 示例：
-bunx prisma migrate dev --name "add_user_avatar_field"
-bunx prisma migrate dev --name "add_note_tags_index"
-bunx prisma migrate dev --name "update_user_table_constraints"
+# 3. 应用迁移到开发数据库
+bun run db:push
+
+# 或者使用迁移模式（推荐用于生产环境）
+bun run db:migrate
 ```
 
 #### 1.2 验证迁移
 
 ```bash
-# 检查迁移状态
-bunx prisma migrate status
-
-# 验证数据库结构
-bunx prisma db pull --print
+# 检查迁移文件
+ls -la server/drizzle/migrations/
 
 # 测试应用功能
 bun run dev
+
+# 使用 Drizzle Studio 查看数据库
+bun run db:studio
 ```
 
 #### 1.3 重置开发数据库（如需要）
 
 ```bash
-# 重置数据库并重新应用所有迁移
-bunx prisma migrate reset
+# 手动删除并重建数据库
+# 注意：Drizzle 不提供自动重置命令，需要手动操作
 
-# 重新生成 Prisma Client
-bunx prisma generate
+# 1. 连接到数据库并删除表
+psql $POSTGRESQL_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# 2. 重新应用所有迁移
+bun run db:push
 ```
 
 ### 2. 生产环境操作
@@ -51,48 +57,40 @@ bunx prisma generate
 #### 2.1 部署迁移
 
 ```bash
-# 生产环境只应用迁移，不生成新文件
-bunx prisma migrate deploy
+# 生产环境应用迁移
+bun run db:migrate
 
-# 生成 Prisma Client
-bunx prisma generate
+# 或者使用 push 模式（直接同步 schema，不生成迁移文件）
+bun run db:push
 ```
 
 #### 2.2 验证部署
 
 ```bash
-# 检查迁移状态
-bunx prisma migrate status
+# 检查数据库结构
+bun run db:studio
 
 # 测试关键功能
-bun run scripts/testAdmin.ts
+bun run test:quick
 ```
 
 ### 3. Docker 部署流程
 
-#### 3.1 修改 Dockerfile（推荐）
+#### 3.1 Dockerfile 配置
 
 ```dockerfile
-FROM node:lts-alpine
-ENV NODE_ENV=production
-RUN apk add --no-cache openssl
-WORKDIR /usr/src/app
+FROM oven/bun:latest
+WORKDIR /app
 
-# 安装 Bun
-RUN npm install -g bun
-
-COPY ["package.json", "bun.lockb", "./"]
+COPY package.json bun.lockb ./
 RUN bun install --production --frozen-lockfile
 
 COPY . .
 
-# 生成 Prisma Client 并应用迁移
-RUN bunx prisma generate
-RUN bunx prisma migrate deploy
+# 应用数据库迁移
+RUN bun run db:migrate
 
 EXPOSE 3000
-RUN chown -R node /usr/src/app
-USER node
 CMD ["bun", "run", "start"]
 ```
 
@@ -105,12 +103,12 @@ services:
     build:
       context: ./server
     environment:
-      - DATABASE_URL=postgresql://username:password@host:port/database
+      - POSTGRESQL_URL=postgresql://username:password@host:port/database
     ports:
       - "3000:3000"
     restart: unless-stopped
     # 确保数据库迁移在服务启动前完成
-    command: ["sh", "-c", "bunx prisma migrate deploy && bun run start"]
+    command: ["sh", "-c", "bun run db:migrate && bun run start"]
 ```
 
 ## 常用命令参考
@@ -118,55 +116,46 @@ services:
 ### 开发环境命令
 
 ```bash
-# 创建迁移
-bunx prisma migrate dev --name "变更描述"
+# 生成迁移文件（基于 schema 变更）
+bun run db:generate
 
-# 重置开发数据库
-bunx prisma migrate reset
+# 直接推送 schema 到数据库（开发用，不生成迁移文件）
+bun run db:push
 
-# 直接推送 schema（仅开发用）
-bunx prisma db push
+# 应用迁移文件到数据库
+bun run db:migrate
 
-# 查看迁移状态
-bunx prisma migrate status
-
-# 生成 Prisma Client
-bunx prisma generate
+# 打开 Drizzle Studio（数据库可视化工具）
+bun run db:studio
 ```
 
 ### 生产环境命令
 
 ```bash
-# 部署迁移
-bunx prisma migrate deploy
+# 应用迁移文件
+bun run db:migrate
 
-# 检查迁移状态
-bunx prisma migrate status
-
-# 解决迁移冲突
-bunx prisma migrate resolve --applied "迁移名称"
+# 检查数据库结构（使用 Studio）
+bun run db:studio
 ```
 
 ### 问题排查命令
 
 ```bash
-# 查看数据库结构
-bunx prisma db pull --print
+# 查看迁移文件
+cat server/drizzle/migrations/*.sql
 
-# 验证 schema
-bunx prisma validate
-
-# 查看迁移历史
-bunx prisma migrate status --verbose
+# 使用 Drizzle Studio 查看数据库结构
+bun run db:studio
 ```
 
 ## 最佳实践
 
 ### 1. 迁移命名规范
 
-- 使用描述性名称：`add_user_email_index`
-- 使用动词开头：`add_`, `update_`, `remove_`, `create_`
-- 避免使用：`fix_`, `temp_`, `test_`
+- Drizzle Kit 会自动生成迁移文件名
+- 迁移文件包含时间戳和描述性名称
+- 格式：`YYYYMMDDHHMMSS_description.sql`
 
 ### 2. 迁移大小控制
 
@@ -182,49 +171,65 @@ bunx prisma migrate status --verbose
 
 ### 4. 安全注意事项
 
-- **不要**在生产环境使用 `prisma migrate dev`
-- **不要**在生产环境使用 `prisma db push`
+- **不要**在生产环境使用 `db:push`（会直接修改数据库结构）
 - **总是**先在开发环境测试迁移
-- **总是**检查迁移状态后再部署
+- **总是**检查迁移文件后再部署
+- **总是**在生产环境使用 `db:migrate` 应用迁移
+
+## Schema 定义
+
+### 文件位置
+
+- Schema 定义：`server/drizzle/schema.ts`
+- 迁移文件：`server/drizzle/migrations/`
+- 配置文件：`server/drizzle.config.ts`
+
+### Schema 修改示例
+
+```typescript
+// server/drizzle/schema.ts
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  // 添加新字段
+  avatar: text("avatar"),
+  // ...
+});
+```
+
+修改后运行：
+
+```bash
+bun run db:generate  # 生成迁移文件
+bun run db:push      # 开发环境直接应用
+```
 
 ## 常见问题解决
 
-### 1. 迁移漂移（Drift）问题
+### 1. 迁移冲突
 
 ```bash
-# 问题：数据库结构与迁移历史不匹配
-# 解决方案：
-bunx prisma migrate reset --force
-bunx prisma migrate dev --name init
+# 问题：迁移文件与数据库状态不匹配
+# 解决方案：检查迁移文件，手动调整或重新生成
+bun run db:generate
 ```
 
-### 2. 迁移冲突
+### 2. Schema 与数据库不一致
 
 ```bash
-# 问题：迁移文件缺失但数据库已应用
-# 解决方案：
-bunx prisma migrate resolve --applied "迁移名称"
+# 问题：schema.ts 与数据库结构不匹配
+# 解决方案：使用 db:push 同步（仅开发环境）
+bun run db:push
 ```
 
-### 3. 生产数据库不为空
+### 3. 回滚迁移
 
 ```bash
-# 问题：P3005 错误
-# 解决方案：
-bunx prisma migrate resolve --applied "迁移名称"
-bunx prisma migrate deploy
-```
-
-### 4. 基线化现有数据库
-
-```bash
-# 为现有生产数据库创建迁移基线
-bunx prisma migrate diff \
-  --from-empty \
-  --to-schema-datamodel prisma/schema.prisma \
-  --script > prisma/migrations/$(date +%Y%m%d%H%M%S)_baseline/migration.sql
-
-bunx prisma migrate resolve --applied "baseline"
+# 注意：Drizzle 不直接支持回滚，需要手动处理
+# 1. 创建新的迁移文件，包含回滚 SQL
+# 2. 手动编写回滚 SQL
+# 3. 应用回滚迁移
+bun run db:migrate
 ```
 
 ## 监控和维护
@@ -232,18 +237,18 @@ bunx prisma migrate resolve --applied "baseline"
 ### 1. 迁移状态监控
 
 ```bash
-# 定期检查迁移状态
-bunx prisma migrate status
+# 查看迁移文件
+ls -la server/drizzle/migrations/
 
-# 查看迁移历史
-bunx prisma migrate status --verbose
+# 使用 Drizzle Studio 查看数据库
+bun run db:studio
 ```
 
 ### 2. 数据库结构验证
 
 ```bash
-# 验证 schema 与数据库同步
-bunx prisma db pull --print | diff prisma/schema.prisma -
+# 使用 Drizzle Studio 对比 schema 和数据库
+bun run db:studio
 ```
 
 ### 3. 性能监控
@@ -260,13 +265,11 @@ ORDER BY idx_scan DESC;
 ### 1. 回滚迁移
 
 ```bash
-# 注意：Prisma 不直接支持回滚，需要手动处理
-# 1. 创建回滚迁移
-bunx prisma migrate dev --name "rollback_previous_change"
-
+# 注意：Drizzle 不直接支持回滚，需要手动处理
+# 1. 创建新的迁移文件，包含回滚 SQL
 # 2. 手动编写回滚 SQL
 # 3. 应用回滚迁移
-bunx prisma migrate deploy
+bun run db:migrate
 ```
 
 ### 2. 数据恢复
@@ -275,17 +278,26 @@ bunx prisma migrate deploy
 # 从备份恢复数据
 # 1. 停止服务
 # 2. 恢复数据库备份
-# 3. 重新部署迁移
-bunx prisma migrate deploy
+# 3. 重新应用迁移
+bun run db:migrate
 ```
+
+## 从 Prisma 迁移到 Drizzle
+
+项目已完成从 Prisma 到 Drizzle ORM 的迁移：
+
+- **Schema 文件**：从 `prisma/schema.prisma` 迁移到 `server/drizzle/schema.ts`
+- **迁移文件**：从 `prisma/migrations/` 迁移到 `server/drizzle/migrations/`
+- **数据库连接**：从 `utils/prisma.ts` 迁移到 `utils/drizzle.ts`
+- **查询 API**：从 Prisma Client 迁移到 Drizzle ORM
 
 ## 总结
 
 数据库迁移是项目维护的重要环节，需要严格按照规范操作：
 
-1. **开发环境**：使用 `migrate dev` 创建和测试迁移
-2. **生产环境**：使用 `migrate deploy` 安全部署迁移
+1. **开发环境**：使用 `db:generate` 生成迁移文件，使用 `db:push` 快速测试
+2. **生产环境**：使用 `db:migrate` 安全部署迁移
 3. **Docker 部署**：确保迁移在服务启动前完成
-4. **监控维护**：定期检查迁移状态和数据库结构
+4. **监控维护**：定期检查迁移文件和数据库结构
 
 遵循这些规范可以确保数据库变更的安全性和可追溯性。

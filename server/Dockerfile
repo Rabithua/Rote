@@ -1,5 +1,5 @@
 # ----------------------------------------------------
-# 阶段 1: 依赖安装和 Prisma 客户端生成 (deps)
+# 阶段 1: 依赖安装 (deps)
 # ----------------------------------------------------
 FROM oven/bun:1-alpine AS deps
 
@@ -11,10 +11,6 @@ COPY package.json bun.lock* ./
 # 🚨 关键：只安装生产环境依赖！
 RUN bun install --production --frozen-lockfile
 
-# 复制 schema 并生成 Prisma 客户端
-COPY prisma ./prisma
-RUN bunx prisma generate
-
 # ----------------------------------------------------
 # 阶段 2: 代码编译 (builder)
 # ----------------------------------------------------
@@ -25,9 +21,6 @@ WORKDIR /app
 # 安装所有依赖（包括 devDependencies，编译时需要 TypeScript）
 COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
-
-# 从 deps 阶段复制 Prisma Client（避免重新生成）
-COPY --from=deps /app/node_modules/.prisma ./node_modules/.prisma
 
 # 复制源代码
 COPY . .
@@ -54,14 +47,6 @@ COPY --from=builder --chown=bunuser:nodejs /app/bun.lock* ./
 # 这样可以确保完全没有 devDependencies，并且只安装运行时需要的包
 RUN bun install --production --frozen-lockfile
 
-# 从 deps 阶段复制 Prisma Client 和 schema（Prisma 是生产依赖）
-# 注意：先复制 node_modules，再复制 .prisma，确保目录结构正确
-COPY --from=deps --chown=bunuser:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=deps --chown=bunuser:nodejs /app/prisma ./prisma
-
-# 确保 Prisma Client 目录权限正确
-RUN chown -R bunuser:nodejs /app/node_modules/.prisma || true
-
 # 从 builder 阶段复制编译后的代码
 COPY --from=builder --chown=bunuser:nodejs /app/dist ./dist
 
@@ -69,21 +54,16 @@ COPY --from=builder --chown=bunuser:nodejs /app/dist ./dist
 RUN rm -rf /app/node_modules/.cache && \
     rm -rf /tmp/* && \
     rm -rf /var/cache/apk/* && \
-    # 🚨 强制删除 TypeScript 及其相关包（Prisma 的可选 peer dependency，生产环境不需要）
+    # 🚨 强制删除 TypeScript 及其相关包（生产环境不需要）
     rm -rf /app/node_modules/typescript && \
     rm -rf /app/node_modules/@typescript-eslint && \
     rm -rf /app/node_modules/typescript-eslint && \
-    # 🚨 Prisma 优化：删除不需要的数据库引擎文件（只保留 PostgreSQL）
-    find /app/node_modules/prisma/build -name '*cockroachdb*' -delete 2>/dev/null || true && \
-    find /app/node_modules/prisma/build -name '*mysql*' -delete 2>/dev/null || true && \
-    find /app/node_modules/prisma/build -name '*sqlite*' -delete 2>/dev/null || true && \
-    find /app/node_modules/prisma/build -name '*sqlserver*' -delete 2>/dev/null || true && \
     # 删除测试相关目录
     find /app/node_modules -type d \( -name "test" -o -name "tests" -o -name "__tests__" -o -name "*.test.*" -o -name "*.spec.*" -o -name "docs" -o -name "doc" -o -name "examples" -o -name "example" -o -name "benchmark" -o -name "benchmarks" \) -exec rm -rf {} + 2>/dev/null || true && \
     # 删除文档和配置文件
-    find /app/node_modules -type f \( -name "*.md" -o -name "*.map" -o -name "CHANGELOG*" -o -name "LICENSE*" -o -name "README*" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" ! -name "package.json" \) ! -path "*/node_modules/.prisma/*" ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
+    find /app/node_modules -type f \( -name "*.md" -o -name "*.map" -o -name "CHANGELOG*" -o -name "LICENSE*" -o -name "README*" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" ! -name "package.json" \) ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
     # 删除类型定义文件（运行时不需要）
-    find /app/node_modules -type f -name "*.d.ts" ! -path "*/node_modules/.prisma/*" ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
+    find /app/node_modules -type f -name "*.d.ts" ! -path "*/node_modules/@types/*" -delete 2>/dev/null || true && \
     # 删除源码文件（只保留编译后的代码）
     find /app/node_modules -type f \( -name "*.js" ! -name "*.min.js" \) -path "*/src/*" -delete 2>/dev/null || true
 

@@ -1,35 +1,46 @@
-# 阶段 1: 构建阶段 (Builder)
-FROM node:22.12-alpine AS builder
-
-# 安装 Bun（用于快速安装依赖和构建）
-RUN apk add --no-cache curl bash && \
-    curl -fsSL https://bun.sh/install | bash
-ENV PATH="/root/.bun/bin:$PATH"
+# 阶段 1: 依赖安装阶段
+FROM oven/bun:1-alpine AS deps
 
 WORKDIR /app
 
-# 设置 bun 配置（禁用缓存以减小镜像）
-ENV BUN_INSTALL_CACHE=0
-ENV BUN_CONFIG_REGISTRY=https://registry.npmjs.org
-
-# 复制依赖文件并安装（利用 Docker 缓存层）
+# 复制依赖文件（利用 Docker 缓存层）
 COPY package.json bun.lock* ./
-RUN bun install --force
+# 安装依赖（不使用 --force，使用 --frozen-lockfile 确保一致性）
+RUN bun install --frozen-lockfile
 
-# 复制源代码并构建
+# 阶段 2: 构建阶段
+FROM oven/bun:1-alpine AS builder
+
+WORKDIR /app
+
+# 从 deps 阶段复制 node_modules
+COPY --from=deps /app/node_modules ./node_modules
+
+# 复制源代码
 COPY . .
 
 # 构建前端（VITE_API_BASE 通过 ARG 传入，构建时注入）
 ARG VITE_API_BASE=http://localhost:3000
 ENV VITE_API_BASE=${VITE_API_BASE}
+
+# 构建项目
 RUN bun run build
 
-# 阶段 2: 最终镜像 (Final)
+# 清理构建缓存和不必要的文件
+RUN rm -rf node_modules && \
+    rm -rf .vite && \
+    find dist -type f -name "*.map" -delete || true
+
+# 阶段 3: 最终镜像 (Final)
 # 使用 Nginx Alpine，极度精简的 Web Server，基础镜像 ~20MB
 FROM nginx:alpine
 
 # 从构建阶段复制 Vite 的 /dist 目录产物到 Nginx 的服务目录
 COPY --from=builder /app/dist /usr/share/nginx/html
+
+# 清理 Nginx 默认文件以减小镜像
+RUN rm -rf /usr/share/nginx/html/*.md && \
+    rm -rf /etc/nginx/conf.d/default.conf.bak || true
 
 # 创建启动脚本（用于运行时注入 VITE_API_BASE 和配置 Nginx）
 RUN cat > /docker-entrypoint.sh << 'EOFSCRIPT' && chmod +x /docker-entrypoint.sh
@@ -59,22 +70,34 @@ server {
     root /usr/share/nginx/html;
     index index.html;
     
+    # 隐藏 Nginx 版本信息（安全）
+    server_tokens off;
+    
     # SPA 路由支持
     location / {
         try_files $uri $uri/ /index.html;
     }
     
-    # 静态资源缓存
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    # 静态资源缓存（长期缓存）
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        access_log off;
     }
     
-    # Gzip 压缩
+    # HTML 文件不缓存
+    location ~* \.html$ {
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate";
+    }
+    
+    # Gzip 压缩（优化传输大小）
     gzip on;
     gzip_vary on;
     gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/javascript application/json;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml+rss;
+    gzip_disable "msie6";
 }
 NGINX_EOF
 

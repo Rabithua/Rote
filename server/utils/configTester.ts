@@ -1,5 +1,5 @@
 import { HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
-import { ConfigTestResult, StorageConfig } from '../types/config';
+import type { ConfigTestResult, StorageConfig } from '../types/config';
 
 /**
  * 配置测试工具类
@@ -52,12 +52,12 @@ export class ConfigTester {
    */
   public static async testDatabase(): Promise<ConfigTestResult> {
     try {
-      const { PrismaClient } = await import('@prisma/client');
-      const prisma = new PrismaClient();
+      const { db, closeDatabase } = await import('./drizzle');
+      const { sql } = await import('drizzle-orm');
 
       // 执行简单查询测试连接
-      await prisma.$queryRaw`SELECT 1`;
-      await prisma.$disconnect();
+      await db.execute(sql`SELECT 1`);
+      await closeDatabase();
 
       return {
         success: true,

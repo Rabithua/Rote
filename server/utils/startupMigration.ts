@@ -1,5 +1,6 @@
+import { sql } from 'drizzle-orm';
 import { configManager } from './config';
-import prisma from './prisma';
+import db from './drizzle';
 
 /**
  * 启动时配置检查工具
@@ -41,7 +42,7 @@ export class StartupMigration {
    */
   private static async checkDatabaseConnection(): Promise<boolean> {
     try {
-      await prisma.$queryRaw`SELECT 1`;
+      await db.execute(sql`SELECT 1`);
       return true;
     } catch (error) {
       console.error('Database connection error:', error);

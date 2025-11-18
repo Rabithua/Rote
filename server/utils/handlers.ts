@@ -3,8 +3,12 @@ import { HonoContext } from '../types/hono';
 export const errorHandler = async (err: Error, c: HonoContext) => {
   console.error('API Error:', err.message);
   // 只在开发环境下打印完整的错误堆栈
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);
+    // 如果是 DatabaseError，打印原始错误
+    if ((err as any).originalError) {
+      console.error('Original error:', (err as any).originalError);
+    }
   }
 
   // Prisma unique constraint violation (check both direct error and nested error)

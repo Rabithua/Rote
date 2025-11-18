@@ -1,34 +1,51 @@
-import prisma from '../prisma';
+import { eq } from 'drizzle-orm';
+import { userSwSubscriptions } from '../../drizzle/schema';
+import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // 订阅相关方法
 export async function addSubScriptionToUser(userId: string, subScription: any): Promise<any> {
   try {
-    // 使用 upsert 来处理重复的 endpoint
-    const subScriptionRespon = await prisma.userSwSubScription.upsert({
-      where: {
-        endpoint: subScription.endpoint,
-      },
-      update: {
-        userid: userId,
-        expirationTime: subScription.expirationTime,
-        keys: {
-          auth: subScription.keys.auth,
-          p256dh: subScription.keys.p256dh,
-        },
-      },
-      create: {
-        userid: userId,
-        endpoint: subScription.endpoint,
-        expirationTime: subScription.expirationTime,
-        keys: {
-          auth: subScription.keys.auth,
-          p256dh: subScription.keys.p256dh,
-        },
-      },
-      select: { id: true },
-    });
-    return subScriptionRespon;
+    // 先尝试查找现有订阅
+    const [existing] = await db
+      .select()
+      .from(userSwSubscriptions)
+      .where(eq(userSwSubscriptions.endpoint, subScription.endpoint))
+      .limit(1);
+
+    if (existing) {
+      // 更新现有订阅
+      const [updated] = await db
+        .update(userSwSubscriptions)
+        .set({
+          userid: userId,
+          expirationTime: subScription.expirationTime || null,
+          keys: {
+            auth: subScription.keys.auth,
+            p256dh: subScription.keys.p256dh,
+          },
+          updatedAt: new Date(),
+        })
+        .where(eq(userSwSubscriptions.endpoint, subScription.endpoint))
+        .returning({ id: userSwSubscriptions.id });
+      return updated;
+    } else {
+      // 创建新订阅
+      const [created] = await db
+        .insert(userSwSubscriptions)
+        .values({
+          // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+          userid: userId,
+          endpoint: subScription.endpoint,
+          expirationTime: subScription.expirationTime || null,
+          keys: {
+            auth: subScription.keys.auth,
+            p256dh: subScription.keys.p256dh,
+          },
+        })
+        .returning({ id: userSwSubscriptions.id });
+      return created;
+    }
   } catch (error) {
     throw new DatabaseError('Failed to add subscription', error);
   }
@@ -36,9 +53,11 @@ export async function addSubScriptionToUser(userId: string, subScription: any): 
 
 export async function findSubScriptionToUser(subId: string): Promise<any> {
   try {
-    const subscription = await prisma.userSwSubScription.findUnique({
-      where: { id: subId },
-    });
+    const [subscription] = await db
+      .select()
+      .from(userSwSubscriptions)
+      .where(eq(userSwSubscriptions.id, subId))
+      .limit(1);
 
     if (!subscription) {
       throw new DatabaseError('Subscription not found');
@@ -55,11 +74,12 @@ export async function findSubScriptionToUser(subId: string): Promise<any> {
 
 export async function findSubScriptionToUserByUserId(userId: string): Promise<any> {
   try {
-    const subscriptions = await prisma.userSwSubScription.findMany({
-      where: { userid: userId },
-    });
+    const subscriptions = await db
+      .select()
+      .from(userSwSubscriptions)
+      .where(eq(userSwSubscriptions.userid, userId));
 
-    if (!subscriptions) {
+    if (!subscriptions || subscriptions.length === 0) {
       throw new DatabaseError('Subscriptions not found');
     }
 
@@ -75,13 +95,11 @@ export async function findSubScriptionToUserByUserId(userId: string): Promise<an
 // 获取所有活跃的订阅 - 用于公开笔记通知
 export async function findAllActiveSubscriptions(): Promise<any> {
   try {
-    const subscriptions = await prisma.userSwSubScription.findMany({
-      where: {
-        status: 'active',
-      },
-      include: {
+    const subscriptions = await db.query.userSwSubscriptions.findMany({
+      where: (userSwSubscriptions, { eq }) => eq(userSwSubscriptions.status, 'active'),
+      with: {
         user: {
-          select: {
+          columns: {
             id: true,
             username: true,
             nickname: true,
@@ -98,11 +116,12 @@ export async function findAllActiveSubscriptions(): Promise<any> {
 
 export async function findSubScriptionToUserByendpoint(endpoint: string): Promise<any> {
   try {
-    const subscription = await prisma.userSwSubScription.findUnique({
-      where: { endpoint },
-      select: { id: true },
-    });
-    return subscription;
+    const [subscription] = await db
+      .select({ id: userSwSubscriptions.id })
+      .from(userSwSubscriptions)
+      .where(eq(userSwSubscriptions.endpoint, endpoint))
+      .limit(1);
+    return subscription || null;
   } catch (error) {
     throw new DatabaseError('Failed to find subscription by endpoint', error);
   }
@@ -110,9 +129,10 @@ export async function findSubScriptionToUserByendpoint(endpoint: string): Promis
 
 export async function deleteSubScription(subId: string): Promise<any> {
   try {
-    const result = await prisma.userSwSubScription.delete({
-      where: { id: subId },
-    });
+    const [result] = await db
+      .delete(userSwSubscriptions)
+      .where(eq(userSwSubscriptions.id, subId))
+      .returning();
     return result;
   } catch (error) {
     throw new DatabaseError(`Failed to delete subscription: ${subId}`, error);
@@ -126,9 +146,11 @@ export async function updateSubScription(
 ): Promise<any> {
   try {
     // 首先验证订阅是否存在且属于当前用户
-    const existingSubscription = await prisma.userSwSubScription.findUnique({
-      where: { id: subId },
-    });
+    const [existingSubscription] = await db
+      .select()
+      .from(userSwSubscriptions)
+      .where(eq(userSwSubscriptions.id, subId))
+      .limit(1);
 
     if (!existingSubscription) {
       throw new DatabaseError('Subscription not found');
@@ -139,7 +161,7 @@ export async function updateSubScription(
     }
 
     // 准备更新数据
-    const updateFields: any = {};
+    const updateFields: any = { updatedAt: new Date() };
 
     if (updateData.endpoint) {
       updateFields.endpoint = updateData.endpoint;
@@ -164,10 +186,11 @@ export async function updateSubScription(
       };
     }
 
-    const result = await prisma.userSwSubScription.update({
-      where: { id: subId },
-      data: updateFields,
-    });
+    const [result] = await db
+      .update(userSwSubscriptions)
+      .set(updateFields)
+      .where(eq(userSwSubscriptions.id, subId))
+      .returning();
 
     return result;
   } catch (error) {

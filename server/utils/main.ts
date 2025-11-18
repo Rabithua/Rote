@@ -1,8 +1,8 @@
-import { User } from '@prisma/client';
+import type { User } from '../drizzle/schema';
 
 import mainJson from '../json/main.json';
-import { SiteConfig } from '../types/config';
-import { HonoContext } from '../types/hono';
+import type { SiteConfig } from '../types/config';
+import type { HonoContext } from '../types/hono';
 import { getGlobalConfig } from './config';
 import { getOneOpenKey } from './dbMethods';
 

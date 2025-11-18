@@ -1,6 +1,6 @@
-import type { User } from '@prisma/client';
 import crypto from 'crypto';
 import { Hono } from 'hono';
+import type { User } from '../../drizzle/schema';
 import { requireSecurityConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
@@ -50,9 +50,15 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
 
   // 验证密码
   return new Promise<Response>((resolve, reject) => {
+    // 确保 salt 和 passwordhash 是 Buffer 类型
+    const saltBuffer = Buffer.isBuffer(user.salt) ? user.salt : Buffer.from(user.salt);
+    const passwordhashBuffer = Buffer.isBuffer(user.passwordhash)
+      ? user.passwordhash
+      : Buffer.from(user.passwordhash);
+
     crypto.pbkdf2(
       password,
-      user.salt,
+      saltBuffer,
       310000,
       32,
       'sha256',
@@ -61,11 +67,13 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
           return reject(new Error('Authentication failed'));
         }
 
-        if (!crypto.timingSafeEqual(Buffer.from(user?.passwordhash), hashedPassword)) {
-          return reject(new Error('Incorrect username or password.'));
-        }
-
         try {
+          const isEqual = crypto.timingSafeEqual(passwordhashBuffer, hashedPassword);
+
+          if (!isEqual) {
+            return reject(new Error('Incorrect username or password.'));
+          }
+
           // 生成 JWT tokens (完全无状态，不存储到数据库)
           const accessToken = await generateAccessToken({
             userId: user.id,
@@ -88,7 +96,7 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
             200
           );
           resolve(response);
-        } catch (_error) {
+        } catch (_tokenError) {
           return reject(new Error('Token generation failed'));
         }
       }

@@ -1,4 +1,6 @@
-import prisma from '../prisma';
+import { and, eq } from 'drizzle-orm';
+import { reactions, rotes } from '../../drizzle/schema';
+import db from '../drizzle';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 
@@ -12,23 +14,26 @@ export async function addReaction(data: {
   metadata?: any;
 }): Promise<any> {
   try {
-    const reaction = await prisma.reaction.create({
-      data: {
+    const [reaction] = await db
+      .insert(reactions)
+      .values({
+        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
         type: data.type,
         roteid: data.roteid,
-        userid: data.userid,
-        visitorId: data.visitorId,
-        visitorInfo: data.visitorInfo,
-        metadata: data.metadata,
-      },
-    });
+        userid: data.userid || null,
+        visitorId: data.visitorId || null,
+        visitorInfo: data.visitorInfo || null,
+        metadata: data.metadata || null,
+      })
+      .returning();
 
     // 记录变更历史（reactions 变化视为笔记更新）
     try {
-      const rote = await prisma.rote.findUnique({
-        where: { id: data.roteid },
-        select: { id: true, authorid: true },
-      });
+      const [rote] = await db
+        .select({ id: rotes.id, authorid: rotes.authorid })
+        .from(rotes)
+        .where(eq(rotes.id, data.roteid))
+        .limit(1);
       if (rote) {
         await createRoteChange({
           originid: rote.id,
@@ -55,29 +60,28 @@ export async function removeReaction(data: {
   visitorId?: string;
 }): Promise<any> {
   try {
-    const whereClause: any = {
-      type: data.type,
-      roteid: data.roteid,
-    };
+    const whereConditions = [eq(reactions.type, data.type), eq(reactions.roteid, data.roteid)];
 
     if (data.userid) {
-      whereClause.userid = data.userid;
+      whereConditions.push(eq(reactions.userid, data.userid));
     } else if (data.visitorId) {
-      whereClause.visitorId = data.visitorId;
+      whereConditions.push(eq(reactions.visitorId, data.visitorId));
     }
 
-    const reaction = await prisma.reaction.deleteMany({
-      where: whereClause,
-    });
+    const result = await db
+      .delete(reactions)
+      .where(and(...whereConditions))
+      .returning();
 
     // 记录变更历史（reactions 变化视为笔记更新）
     // 只有在成功删除反应时才记录（count > 0）
-    if (reaction.count > 0) {
+    if (result.length > 0) {
       try {
-        const rote = await prisma.rote.findUnique({
-          where: { id: data.roteid },
-          select: { id: true, authorid: true },
-        });
+        const [rote] = await db
+          .select({ id: rotes.id, authorid: rotes.authorid })
+          .from(rotes)
+          .where(eq(rotes.id, data.roteid))
+          .limit(1);
         if (rote) {
           await createRoteChange({
             originid: rote.id,
@@ -92,7 +96,7 @@ export async function removeReaction(data: {
       }
     }
 
-    return reaction;
+    return { count: result.length };
   } catch (error) {
     throw new DatabaseError('Failed to remove reaction', error);
   }

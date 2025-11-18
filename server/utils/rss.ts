@@ -1,5 +1,5 @@
-import { User } from '@prisma/client';
 import { Feed } from 'feed';
+import type { User } from '../drizzle/schema';
 
 export interface RssFeedOptions {
   title: string;

@@ -1,5 +1,5 @@
-import type { User } from '@prisma/client';
 import { Hono } from 'hono';
+import type { User } from '../../drizzle/schema';
 import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
@@ -66,8 +66,10 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
     await bindAttachmentsToRote(user.id, rote.id, attachmentIds);
   }
 
-  // 重新读取，返回包含附件、作者、反应详情的完整对象
-  const fullRote = await findRoteById(rote.id);
+  // createRote 已经返回了包含关联数据的完整对象，不需要重新查询
+  // 但如果传入了附件ID，需要重新查询以获取最新的附件信息
+  const fullRote =
+    Array.isArray(attachmentIds) && attachmentIds.length > 0 ? await findRoteById(rote.id) : rote;
   return c.json(createResponse(fullRote), 201);
 });
 

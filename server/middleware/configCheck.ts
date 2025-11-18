@@ -1,5 +1,5 @@
-import { NotificationConfig, SecurityConfig, StorageConfig } from '../types/config';
-import { HonoContext } from '../types/hono';
+import type { NotificationConfig, SecurityConfig, StorageConfig } from '../types/config';
+import type { HonoContext } from '../types/hono';
 import { getGlobalConfig } from '../utils/config';
 import { createResponse } from '../utils/main';
 

@@ -11,9 +11,9 @@ import {
   subscribeConfigChange,
   validateSystemConfiguration,
 } from './utils/config';
+import { waitForDatabase } from './utils/drizzle';
 import { errorHandler } from './utils/handlers';
 import { injectDynamicUrls } from './utils/main';
-import { waitForDatabase } from './utils/prisma';
 import { StartupMigration } from './utils/startupMigration';
 
 const app = new Hono<{ Variables: HonoVariables }>();

@@ -1,6 +1,6 @@
-import type { User } from '@prisma/client';
 import { Hono } from 'hono';
 import moment from 'moment';
+import type { User } from '../../drizzle/schema';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {

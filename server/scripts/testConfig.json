@@ -26,9 +26,9 @@
       "allowUploadFile": true
     },
     "admin": {
-      "username": "testadmin",
+      "username": "admin",
       "email": "admin@test.com",
-      "password": "TestPassword123!",
+      "password": "password",
       "nickname": "Test Administrator"
     }
   },

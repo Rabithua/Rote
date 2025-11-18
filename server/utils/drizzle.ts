@@ -1,24 +1,26 @@
-import { PrismaClient } from '@prisma/client';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
+import * as schema from '../drizzle/schema';
 
-const prisma = new PrismaClient({
-  log: [
-    { level: 'warn', emit: 'event' },
-    { level: 'info', emit: 'event' },
-    { level: 'error', emit: 'event' },
-  ],
+// 创建 postgres 连接
+const connectionString = process.env.POSTGRESQL_URL || '';
+
+if (!connectionString) {
+  throw new Error('POSTGRESQL_URL environment variable is not set');
+}
+
+// 创建 postgres 客户端（用于查询）
+const queryClient = postgres(connectionString, {
+  max: 10, // 连接池大小
+  idle_timeout: 20,
+  connect_timeout: 10,
 });
 
-prisma.$on('warn', (e) => {
-  console.log('Prisma Warn:', e);
-});
+// 创建 Drizzle 实例（同时支持 SQL-like API 和 Relational Query API）
+export const db = drizzle(queryClient, { schema });
 
-prisma.$on('info', (e) => {
-  console.log('Prisma Info:', e);
-});
-
-prisma.$on('error', (_e) => {
-  // console.log("Prisma Error:", _e);
-});
+// 为了兼容性，默认导出
+export default db;
 
 /**
  * 等待数据库连接就绪，带重试机制
@@ -33,28 +35,11 @@ export async function waitForDatabase(
     try {
       console.log(`🔄 Attempting to connect to database (${attempt}/${maxRetries})...`);
 
-      // 如果之前有连接尝试，先断开
-      try {
-        await prisma.$disconnect();
-      } catch {
-        // 忽略断开连接的错误
-      }
-
-      // 尝试连接
-      await prisma.$connect();
-
       // 尝试执行一个简单的查询来验证连接
-      await prisma.$queryRaw`SELECT 1`;
-      console.log('✅ Prisma connected successfully!');
+      await queryClient`SELECT 1`;
+      console.log('✅ Drizzle connected successfully!');
       return;
     } catch (error: any) {
-      // 确保在错误时断开连接
-      try {
-        await prisma.$disconnect();
-      } catch {
-        // 忽略断开连接的错误
-      }
-
       if (attempt === maxRetries) {
         console.error('❌ Failed to connect to database after all retries:', error);
         throw new Error(
@@ -69,4 +54,9 @@ export async function waitForDatabase(
   }
 }
 
-export default prisma;
+/**
+ * 关闭数据库连接
+ */
+export async function closeDatabase(): Promise<void> {
+  await queryClient.end();
+}

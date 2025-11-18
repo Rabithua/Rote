@@ -2,6 +2,7 @@ services:
   rote-backend:
     build:
       context: ./server
+      dockerfile: Dockerfile
     environment:
       # 基础配置 - 必需
       - POSTGRESQL_URL=postgresql://prisma:${POSTGRES_PASSWORD:-rote_password_123}@rote-postgres:5432/rote
@@ -11,13 +12,14 @@ services:
       rote-postgres:
         condition: service_healthy
     restart: unless-stopped
-    volumes:
-      # 缓存 node_modules，避免每次启动都重新安装依赖（可选，用于加速启动）
-      - rote-backend-node-modules:/usr/src/app/node_modules
+    # 启动命令：等待数据库就绪后执行数据库迁移并启动服务
+    command:
+      ["sh", "-c", "sleep 15 && bunx prisma db push && bun run dist/server.js"]
 
   rote-frontend:
     build:
       context: ./web
+      dockerfile: Dockerfile
       args:
         # 构建时传递 VITE_API_BASE（构建时注入到代码中）
         - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
@@ -51,4 +53,3 @@ services:
 
 volumes:
   rote-postgres-data:
-  rote-backend-node-modules:

@@ -1,12 +1,14 @@
 import crypto from 'crypto';
-import prisma from '../prisma';
+import { and, count, eq, gte, lte } from 'drizzle-orm';
+import { attachments, rotes, users } from '../../drizzle/schema';
+import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // 用户相关方法
 export async function allUser() {
   try {
-    const users = await prisma.user.findMany();
-    return users;
+    const allUsers = await db.select().from(users);
+    return allUsers;
   } catch (error: any) {
     throw new DatabaseError('Failed to get all users', error);
   }
@@ -14,10 +16,8 @@ export async function allUser() {
 
 export async function oneUser(id: string) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id },
-    });
-    return user;
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return user || null;
   } catch (error) {
     throw new DatabaseError(`Failed to find user by id: ${id}`, error);
   }
@@ -26,22 +26,23 @@ export async function oneUser(id: string) {
 // 获取安全的用户对象（排除敏感信息），用于注入到 req.user
 export async function getSafeUser(id: string) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        nickname: true,
-        description: true,
-        avatar: true,
-        cover: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-    return user;
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        nickname: users.nickname,
+        description: users.description,
+        avatar: users.avatar,
+        cover: users.cover,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
+    return user || null;
   } catch (error) {
     throw new DatabaseError(`Failed to get safe user by id: ${id}`, error);
   }
@@ -57,15 +58,16 @@ export async function createUser(data: {
     const salt = crypto.randomBytes(16);
     const passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
 
-    const user = await prisma.user.create({
-      data: {
-        username: data.username,
-        email: data.email,
-        nickname: data.nickname,
-        passwordhash,
-        salt,
-      },
-    });
+    // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+    const insertData: any = {
+      username: data.username,
+      email: data.email,
+      nickname: data.nickname,
+      passwordhash,
+      salt,
+    };
+
+    const [user] = await db.insert(users).values(insertData).returning();
     return user;
   } catch (error: any) {
     throw new DatabaseError('Failed to create user', error);
@@ -74,26 +76,24 @@ export async function createUser(data: {
 
 export async function editMyProfile(userid: any, data: any): Promise<any> {
   try {
-    const user = await prisma.user.update({
-      where: { id: userid },
-      data: {
-        avatar: data.avatar || undefined,
-        nickname: data.nickname || undefined,
-        description: data.description || undefined,
-        cover: data.cover || undefined,
-      },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        nickname: true,
-        description: true,
-        avatar: true,
-        cover: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+    const updateData: any = {};
+    if (data.avatar !== undefined) updateData.avatar = data.avatar || null;
+    if (data.nickname !== undefined) updateData.nickname = data.nickname || null;
+    if (data.description !== undefined) updateData.description = data.description || null;
+    if (data.cover !== undefined) updateData.cover = data.cover || null;
+    updateData.updatedAt = new Date();
+
+    const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning({
+      id: users.id,
+      email: users.email,
+      username: users.username,
+      nickname: users.nickname,
+      description: users.description,
+      avatar: users.avatar,
+      cover: users.cover,
+      role: users.role,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
     });
     return user;
   } catch (error) {
@@ -103,18 +103,19 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
 
 export async function getUserInfoByUsername(username: string): Promise<any> {
   try {
-    const user = await prisma.user.findUnique({
-      where: { username },
-      select: {
-        id: true,
-        avatar: true,
-        cover: true,
-        nickname: true,
-        username: true,
-        createdAt: true,
-        description: true,
-      },
-    });
+    const [user] = await db
+      .select({
+        id: users.id,
+        avatar: users.avatar,
+        cover: users.cover,
+        nickname: users.nickname,
+        username: users.username,
+        createdAt: users.createdAt,
+        description: users.description,
+      })
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
 
     if (!user) {
       throw new DatabaseError('User not found');
@@ -131,21 +132,22 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
 
 export async function getMyProfile(userId: string): Promise<any> {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        nickname: true,
-        description: true,
-        avatar: true,
-        cover: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    const [user] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        username: users.username,
+        nickname: users.nickname,
+        description: users.description,
+        avatar: users.avatar,
+        cover: users.cover,
+        role: users.role,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
 
     if (!user) {
       throw new DatabaseError('User not found');
@@ -166,11 +168,7 @@ export async function changeUserPassword(
   id: string
 ): Promise<any> {
   try {
-    const user = await prisma.user.findFirst({
-      where: {
-        id: id,
-      },
-    });
+    const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
     if (!user) {
       throw new DatabaseError('User not found');
@@ -190,15 +188,15 @@ export async function changeUserPassword(
     const newSalt = crypto.randomBytes(16);
     const newpasswordhash = crypto.pbkdf2Sync(newpassword, newSalt, 310000, 32, 'sha256');
 
-    const userUpdate = await prisma.user.update({
-      where: {
-        id: user.id,
-      },
-      data: {
+    const [userUpdate] = await db
+      .update(users)
+      .set({
         passwordhash: newpasswordhash,
         salt: newSalt,
-      },
-    });
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id))
+      .returning();
 
     return userUpdate;
   } catch (error) {
@@ -211,14 +209,14 @@ export async function changeUserPassword(
 
 export async function statistics(authorid: string): Promise<any> {
   try {
-    const [noteCount, attachments] = await Promise.all([
-      prisma.rote.count({ where: { authorid } }),
-      prisma.attachment.findMany({ where: { userid: authorid } }),
+    const [noteCountResult, attachmentsList] = await Promise.all([
+      db.select({ count: count() }).from(rotes).where(eq(rotes.authorid, authorid)),
+      db.select().from(attachments).where(eq(attachments.userid, authorid)),
     ]);
 
     return {
-      noteCount,
-      attachmentsCount: attachments.length,
+      noteCount: noteCountResult[0]?.count || 0,
+      attachmentsCount: attachmentsList.length,
     };
   } catch (error) {
     throw new DatabaseError('Failed to get user statistics', error);
@@ -227,11 +225,12 @@ export async function statistics(authorid: string): Promise<any> {
 
 export async function exportData(authorid: string): Promise<any> {
   try {
-    const notes = await prisma.rote.findMany({
-      where: { authorid },
-      include: {
+    // 使用 relational query API 获取关联数据
+    const notes = await db.query.rotes.findMany({
+      where: (rotes, { eq }) => eq(rotes.authorid, authorid),
+      with: {
         author: {
-          select: {
+          columns: {
             username: true,
             nickname: true,
             avatar: true,
@@ -249,21 +248,22 @@ export async function exportData(authorid: string): Promise<any> {
 
 export async function getHeatMap(userId: string, startDate: string, endDate: string): Promise<any> {
   try {
-    const rotes = await prisma.rote.findMany({
-      where: {
-        authorid: userId,
-        createdAt: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      },
-    });
+    const rotesList = await db
+      .select()
+      .from(rotes)
+      .where(
+        and(
+          eq(rotes.authorid, userId),
+          gte(rotes.createdAt, new Date(startDate)),
+          lte(rotes.createdAt, new Date(endDate))
+        )
+      );
 
-    if (rotes.length === 0) {
+    if (rotesList.length === 0) {
       return {};
     }
 
-    return rotes.reduce((acc: any, item: any) => {
+    return rotesList.reduce((acc: any, item: any) => {
       const date = item.createdAt.toISOString().split('T')[0];
       acc[date] = (acc[date] || 0) + 1;
       return acc;
@@ -275,11 +275,11 @@ export async function getHeatMap(userId: string, startDate: string, endDate: str
 
 export async function getMyTags(userid: string): Promise<any> {
   try {
-    const rotes = await prisma.rote.findMany({
-      where: { authorid: userid },
-      select: { tags: true },
-    });
-    const allTags = Array.from(new Set(rotes.flatMap((item) => item.tags)));
+    const rotesList = await db
+      .select({ tags: rotes.tags })
+      .from(rotes)
+      .where(eq(rotes.authorid, userid));
+    const allTags = Array.from(new Set(rotesList.flatMap((item) => item.tags || [])));
     return allTags;
   } catch (error) {
     throw new DatabaseError('Failed to get user tags', error);
