@@ -336,10 +336,12 @@ function ProfilePage() {
               src={profile?.cover || defaultCover}
               alt=""
             />
-            <div
+            <button
+              type="button"
               className={`absolute right-3 bottom-1 rounded-md bg-[#00000030] px-2 py-1 text-white backdrop-blur-xl ${
                 canUpload ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
               }`}
+              disabled={!canUpload}
               onClick={() => {
                 if (!canUpload) return;
                 inputCoverRef.current?.click();
@@ -356,7 +358,7 @@ function ProfilePage() {
                 title="Upload cover image"
               />
               <LoaderPinwheel className={`size-4 ${coverChangeing && 'animate-spin'}`} />
-            </div>
+            </button>
           </div>
           <div className="mx-4 flex h-16 items-center">
             <UserAvatar
