@@ -41,8 +41,6 @@ services:
     image: postgres:17
     container_name: rote-postgres
     restart: unless-stopped
-    ports:
-      - "18002:5432"
     environment:
       POSTGRES_USER: rote
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
