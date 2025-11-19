@@ -3,7 +3,7 @@ import { Switch } from '@/components/ui/switch';
 import { API_POINT, del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
 import { Bell, Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { SoftBottom } from '../others/SoftBottom';
@@ -18,8 +18,15 @@ export default function ServiceWorker() {
   const [, setSwLoading] = useState(true);
   const [noticeId, setNoticeId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  // 使用 useRef 保存事件监听器函数的引用，以便正确移除
+  const messageHandlerRef = useRef<((event: MessageEvent) => Promise<void>) | null>(null);
 
   const initializeServiceWorker = async () => {
+    if (!navigator.serviceWorker) {
+      setSwLoading(false);
+      return;
+    }
+
     const registration = await navigator.serviceWorker.getRegistration();
 
     try {
@@ -38,17 +45,31 @@ export default function ServiceWorker() {
   };
 
   function listenSw() {
-    navigator.serviceWorker.removeEventListener('message', async () => {});
-    navigator.serviceWorker.addEventListener('message', async (event) => {
-      switch (event.data.method) {
+    if (!navigator.serviceWorker) {
+      return;
+    }
+
+    // 先移除旧的监听器（如果存在）
+    if (messageHandlerRef.current) {
+      navigator.serviceWorker.removeEventListener('message', messageHandlerRef.current);
+    }
+
+    // 创建新的事件处理函数
+    const messageHandler = async (event: MessageEvent) => {
+      switch (event.data?.method) {
         case 'subNoticeResponse':
           {
-            const response = await post('/subscriptions', JSON.parse(event.data.payload));
+            try {
+              const response = await post('/subscriptions', JSON.parse(event.data.payload));
 
-            if (response.data.id) {
-              setSwLoading(false);
-              setSwReady(true);
-              setNoticeId(response.data.id);
+              if (response.data?.id) {
+                setSwLoading(false);
+                setSwReady(true);
+                setNoticeId(response.data.id);
+              }
+            } catch (error) {
+              // 静默处理错误，避免影响用户体验
+              console.error('Failed to handle subscription response:', error);
             }
           }
           break;
@@ -57,7 +78,11 @@ export default function ServiceWorker() {
           // Unknown message from Service Worker
           break;
       }
-    });
+    };
+
+    // 保存引用并添加监听器
+    messageHandlerRef.current = messageHandler;
+    navigator.serviceWorker.addEventListener('message', messageHandler);
   }
 
   async function sub() {
@@ -99,7 +124,16 @@ export default function ServiceWorker() {
     }
 
     return () => {
-      navigator.serviceWorker.removeEventListener('message', listenSw);
+      // 清理事件监听器
+      if (navigator.serviceWorker && messageHandlerRef.current) {
+        try {
+          navigator.serviceWorker.removeEventListener('message', messageHandlerRef.current);
+        } catch (error) {
+          // 静默处理清理错误，避免影响组件卸载
+          console.error('Failed to remove service worker message listener:', error);
+        }
+        messageHandlerRef.current = null;
+      }
     };
   }, []);
 

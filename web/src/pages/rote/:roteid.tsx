@@ -23,7 +23,22 @@ function SingleRotePage() {
     error,
     mutate,
     isValidating,
-  } = useAPIGet<Rote>(roteid || '', () => get('/notes/' + roteid).then((res) => res.data));
+  } = useAPIGet<Rote>(roteid || '', () => get('/notes/' + roteid).then((res) => res.data), {
+    onError: (err: any) => {
+      // 捕获所有错误情况，包括：
+      // 1. 网络错误（后端挂掉、连接超时等）- 没有 response
+      // 2. HTTP 错误状态码（404, 500, 502, 503 等）
+      // 3. 业务错误（返回的数据格式不正确）
+      const hasResponse = err?.response !== undefined;
+      const status = err?.response?.status;
+
+      // 如果是网络错误（没有 response）或任何错误状态码（>= 400），都跳转404
+      // 这包括：后端挂掉、连接超时、404、500、502、503 等所有错误情况
+      if (!hasResponse || (status && status >= 400)) {
+        navigate('/404');
+      }
+    },
+  });
 
   const refreshData = () => {
     if (isLoading || isValidating) {
@@ -37,6 +52,27 @@ function SingleRotePage() {
       navigate('/404');
     }
   }, [roteid, navigate]);
+
+  // 验证返回的数据是否有效
+  // 如果数据加载完成但没有有效的笔记信息，也跳转404
+  useEffect(() => {
+    // 只有在加载完成且没有错误时才验证数据
+    // 如果 error 存在，onError 已经处理了跳转，这里不需要再处理
+    if (!isLoading && !error) {
+      // 验证笔记信息是否有效：至少需要有 id、content 和 author
+      // 如果返回的数据不是预期的笔记信息格式，也跳转404
+      if (
+        !rote ||
+        typeof rote !== 'object' ||
+        !rote.id ||
+        !rote.content ||
+        !rote.author ||
+        !rote.author.username
+      ) {
+        navigate('/404');
+      }
+    }
+  }, [isLoading, error, rote, navigate]);
 
   if (!roteid) {
     return null;
@@ -104,9 +140,7 @@ function SingleRotePage() {
       </NavBar>
       <RoteItem showAvatar={false} rote={rote} mutateSingle={mutate} />
     </ContainerWithSideBar>
-  ) : (
-    <div className="flex h-full w-full items-center justify-center">{error}</div>
-  );
+  ) : null;
 }
 
 export default SingleRotePage;

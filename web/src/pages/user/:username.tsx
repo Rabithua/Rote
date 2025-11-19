@@ -12,6 +12,7 @@ import { Helmet } from '@dr.pogodin/react-helmet';
 import Linkify from 'linkify-react';
 import { Globe2, RefreshCw, Rss, Stars } from 'lucide-react';
 import moment from 'moment';
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -19,17 +20,40 @@ function UserPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.user' });
   const navigate = useNavigate();
   const { username }: any = useParams();
-  const { data: userInfo, isLoading } = useAPIGet<Profile>(
-    username,
-    () => get('/users/' + username).then((res) => res.data),
-    {
-      onError: (err) => {
-        if (err.response?.status === 404 || err.response?.status === 500) {
-          navigate('/404');
-        }
-      },
+  const {
+    data: userInfo,
+    isLoading,
+    error,
+  } = useAPIGet<Profile>(username, () => get('/users/' + username).then((res) => res.data), {
+    onError: (err: any) => {
+      // 捕获所有错误情况，包括：
+      // 1. 网络错误（后端挂掉、连接超时等）- 没有 response
+      // 2. HTTP 错误状态码（404, 500, 502, 503 等）
+      // 3. 业务错误（返回的数据格式不正确）
+      const hasResponse = err?.response !== undefined;
+      const status = err?.response?.status;
+
+      // 如果是网络错误（没有 response）或任何错误状态码（>= 400），都跳转404
+      // 这包括：后端挂掉、连接超时、404、500、502、503 等所有错误情况
+      if (!hasResponse || (status && status >= 400)) {
+        navigate('/404');
+      }
+    },
+  });
+
+  // 验证返回的数据是否有效
+  // 如果数据加载完成但没有有效的用户信息，也跳转404
+  useEffect(() => {
+    // 只有在加载完成且没有错误时才验证数据
+    // 如果 error 存在，onError 已经处理了跳转，这里不需要再处理
+    if (!isLoading && !error) {
+      // 验证用户信息是否有效：至少需要有 id 和 username
+      // 如果返回的数据不是预期的用户信息格式，也跳转404
+      if (!userInfo || typeof userInfo !== 'object' || !userInfo.id || !userInfo.username) {
+        navigate('/404');
+      }
     }
-  );
+  }, [isLoading, error, userInfo, navigate]);
 
   const getPropsUserPublic = (
     pageIndex: number,
@@ -80,6 +104,11 @@ function UserPage() {
       </div>
     </div>
   );
+
+  // 如果数据无效，不渲染内容（useEffect 会处理跳转）
+  if (!isLoading && (!userInfo || !userInfo.id || !userInfo.username)) {
+    return null;
+  }
 
   return isLoading ? (
     <LoadingPlaceholder className="h-dvh w-full" size={6} />

@@ -82,11 +82,9 @@ export async function findSubScriptionToUserByUserId(userId: string): Promise<an
       .from(userSwSubscriptions)
       .where(eq(userSwSubscriptions.userid, userId));
 
-    if (!subscriptions || subscriptions.length === 0) {
-      throw new DatabaseError('Subscriptions not found');
-    }
-
-    return subscriptions;
+    // 如果没有订阅，返回空数组而不是抛出错误
+    // 这是正常的业务状态，不是错误
+    return subscriptions || [];
   } catch (error) {
     if (error instanceof DatabaseError) {
       throw error;
