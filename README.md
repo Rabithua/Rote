@@ -19,7 +19,7 @@
 
 ```bash
 # Use latest version (default config file)
-VITE_API_BASE=http://<your-ip-address>:3000 docker-compose up -d
+VITE_API_BASE=http://<your-ip-address>:18000 docker-compose up -d
 
 # Use specific version
 IMAGE_TAG=v1.0.0 docker-compose up -d
@@ -33,8 +33,8 @@ git clone https://github.com/Rabithua/Rote.git
 cd Rote
 
 # Build and start from source
-# VITE_API_BASE is injected into frontend code at build time (optional, default http://localhost:3000)
-VITE_API_BASE=http://localhost:3000 docker-compose -f docker-compose.build.yml up -d --build
+# VITE_API_BASE is injected into frontend code at build time (optional, default http://localhost:18000)
+VITE_API_BASE=http://localhost:18000 docker-compose -f docker-compose.build.yml up -d --build
 ```
 
 ### Detailed Instructions

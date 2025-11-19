@@ -19,7 +19,7 @@
 
 ```bash
 # 使用最新版本（默认配置文件）
-VITE_API_BASE=http://<your-ip-address>:3000 docker-compose up -d
+VITE_API_BASE=http://<your-ip-address>:18000 docker-compose up -d
 
 # 使用特定版本
 IMAGE_TAG=v1.0.0 docker-compose up -d
@@ -33,8 +33,8 @@ git clone https://github.com/Rabithua/Rote.git
 cd Rote
 
 # 从源码构建并启动
-# VITE_API_BASE 在构建时注入到前端代码中（可选，默认 http://localhost:3000）
-VITE_API_BASE=http://localhost:3000 docker-compose -f docker-compose.build.yml up -d --build
+# VITE_API_BASE 在构建时注入到前端代码中（可选，默认 http://localhost:18000）
+VITE_API_BASE=http://localhost:18000 docker-compose -f docker-compose.build.yml up -d --build
 ```
 
 ### 详细说明

@@ -10,40 +10,51 @@
 # - develop: Latest from develop branch (supports multi-platform: amd64, arm64)
 # - main: Latest from main branch
 # - v1.0.0: Specific version (if released)
+#
+# ⚠️ IMPORTANT ⚠️
+# Don't forget to set VITE_API_BASE
+# Example: VITE_API_BASE=http://<your-ip-address>:18000 or VITE_API_BASE=http://<your-domain>
+# Note: If you use a reverse proxy, VITE_API_BASE should be your backend address after the reverse proxy
 
 services:
   rote-backend:
     image: rabithua/rote-backend:${IMAGE_TAG:-develop}
+    pull_policy: always
     container_name: rote-backend
     environment:
       # 基础配置 - 必需
       - POSTGRESQL_URL=postgresql://rote:${POSTGRES_PASSWORD:-rote_password_123}@rote-postgres:5432/rote
     ports:
-      - "3000"
+      - "18000:3000"
     depends_on:
       rote-postgres:
         condition: service_healthy
     restart: unless-stopped
-    # 启动命令：等待数据库就绪后执行数据库迁移并启动服务
-    command: ["sh", "-c", "sleep 15 && bun run db:migrate && bun run server.ts"]
+    # Startup command: wait for the database to be ready, then run migrations and start the backend service
+    # Uses programmatic migrations (does not rely on drizzle-kit CLI, suitable for production)
+    command:
+      [
+        "sh",
+        "-c",
+        "sleep 15 && bun run dist/scripts/runMigrations.js && bun run dist/server.js",
+      ]
 
   rote-frontend:
     image: rabithua/rote-frontend:${IMAGE_TAG:-develop}
+    pull_policy: always
     container_name: rote-frontend
     ports:
-      - "3001"
+      - "18001:80"
     depends_on:
       - rote-backend
     environment:
-      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
+      - VITE_API_BASE=${VITE_API_BASE:-http://<your-ip-address>:18000}
     restart: unless-stopped
 
   rote-postgres:
     image: postgres:17
     container_name: rote-postgres
     restart: unless-stopped
-    ports:
-      - "5432"
     environment:
       POSTGRES_USER: rote
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
