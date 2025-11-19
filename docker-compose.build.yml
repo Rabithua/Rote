@@ -7,13 +7,19 @@ services:
       # 基础配置 - 必需
       - POSTGRESQL_URL=postgresql://rote:${POSTGRES_PASSWORD:-rote_password_123}@rote-postgres:5432/rote
     ports:
-      - "3000:3000"
+      - "18000:3000"
     depends_on:
       rote-postgres:
         condition: service_healthy
     restart: unless-stopped
     # 启动命令：等待数据库就绪后执行数据库迁移并启动服务
-    command: ["sh", "-c", "sleep 15 && bun run dist/server.js"]
+    # 使用程序化迁移（不依赖 drizzle-kit CLI，适用于生产环境）
+    command:
+      [
+        "sh",
+        "-c",
+        "sleep 15 && bun run dist/scripts/runMigrations.js && bun run dist/server.js",
+      ]
 
   rote-frontend:
     build:
@@ -21,14 +27,14 @@ services:
       dockerfile: Dockerfile
       args:
         # 构建时传递 VITE_API_BASE（构建时注入到代码中）
-        - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
+        - VITE_API_BASE=${VITE_API_BASE:-http://localhost:18000}
     ports:
-      - "3001:80"
+      - "18001:80"
     depends_on:
       - rote-backend
     environment:
       # 运行时环境变量，用于启动脚本注入配置（如果需要覆盖构建时配置）
-      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:3000}
+      - VITE_API_BASE=${VITE_API_BASE:-http://localhost:18000}
     restart: unless-stopped
 
   rote-postgres:
@@ -36,7 +42,7 @@ services:
     container_name: rote-postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "18002:5432"
     environment:
       POSTGRES_USER: rote
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rote_password_123}
