@@ -69,6 +69,7 @@ export default function ServiceWorker() {
               }
             } catch (error) {
               // 静默处理错误，避免影响用户体验
+              // eslint-disable-next-line no-console
               console.error('Failed to handle subscription response:', error);
             }
           }
@@ -130,6 +131,7 @@ export default function ServiceWorker() {
           navigator.serviceWorker.removeEventListener('message', messageHandlerRef.current);
         } catch (error) {
           // 静默处理清理错误，避免影响组件卸载
+          // eslint-disable-next-line no-console
           console.error('Failed to remove service worker message listener:', error);
         }
         messageHandlerRef.current = null;

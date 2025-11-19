@@ -211,7 +211,7 @@ function ProfilePage() {
       } else {
         throw new Error('Failed to finalize upload');
       }
-    } catch (error: any) {
+    } catch (_error: any) {
       toast.error(t('uploadFailed'));
       setAvatarUploading(false);
     }
@@ -289,7 +289,7 @@ function ProfilePage() {
         } else {
           throw new Error('Failed to finalize upload');
         }
-      } catch (error: any) {
+      } catch (_error: any) {
         setCoverChangeing(false);
         toast.error(t('uploadFailed'));
       }

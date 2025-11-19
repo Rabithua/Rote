@@ -309,7 +309,7 @@ class TestRunner {
         '测试',
         '笔记',
       ]);
-      const note2 = await this.noteSuite.testCreateNote('这是第二条测试笔记', '测试标题2', [
+      const _note2 = await this.noteSuite.testCreateNote('这是第二条测试笔记', '测试标题2', [
         '测试',
       ]);
 
@@ -339,7 +339,7 @@ class TestRunner {
       console.log('='.repeat(80));
 
       const apiKey1 = await this.apiKeySuite.testGenerateApiKey();
-      const apiKey2 = await this.apiKeySuite.testGenerateApiKey();
+      const _apiKey2 = await this.apiKeySuite.testGenerateApiKey();
 
       await this.apiKeySuite.testGetApiKeys();
 
@@ -427,7 +427,7 @@ class TestRunner {
       if (this.attachmentSuite) {
         // 测试预签名上传（需要有效的存储配置）
         try {
-          const presignResult = await this.attachmentSuite.testPresignUpload([
+          const _presignResult = await this.attachmentSuite.testPresignUpload([
             {
               filename: 'test.jpg',
               contentType: 'image/jpeg',

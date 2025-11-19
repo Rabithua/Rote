@@ -30,11 +30,13 @@ export function ThemeProvider({
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
   );
 
+  // 应用主题到 DOM
   useEffect(() => {
     const root = window.document.documentElement;
 
     root.classList.remove('light', 'dark');
 
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (theme === 'system') {
       const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'

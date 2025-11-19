@@ -45,5 +45,19 @@ export default tseslint.config(
       // Prettier 规则
       'prettier/prettier': ['error', {}, { usePrettierrc: true }], // 使用 .prettierrc 文件中的配置
     },
+  },
+  // scripts 和 tests 目录允许使用 console（脚本和测试文件通常需要 console 输出）
+  {
+    files: ['scripts/**/*.{ts,tsx}', 'tests/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': 'off', // 脚本和测试文件中允许使用 console
+    },
+  },
+  // 服务器端代码允许使用 console（用于日志记录）
+  {
+    files: ['middleware/**/*.{ts,tsx}', 'route/**/*.{ts,tsx}', 'server.ts', 'utils/**/*.{ts,tsx}'],
+    rules: {
+      'no-console': 'off', // 服务器端代码中允许使用 console 进行日志记录
+    },
   }
 );

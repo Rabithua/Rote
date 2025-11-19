@@ -63,7 +63,10 @@ export default tseslint.config(
       'prettier/prettier': ['error', {}, { usePrettierrc: true }], // 使用 .prettierrc 文件中的配置
 
       // 用来处理 ai 的抽象 useEffect 用法
-      'react-you-might-not-need-an-effect/you-might-not-need-an-effect': 'warn',
+      'react-you-might-not-need-an-effect/no-empty-effect': 'warn',
+      'react-you-might-not-need-an-effect/no-adjust-state-on-prop-change': 'warn',
+      'react-you-might-not-need-an-effect/no-reset-all-state-on-prop-change': 'warn',
+      'react-you-might-not-need-an-effect/no-event-handler': 'warn',
     },
   },
   // Service Worker 特殊配置

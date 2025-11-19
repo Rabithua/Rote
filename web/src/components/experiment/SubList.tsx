@@ -52,6 +52,7 @@ export default function SubList() {
           return [];
         }
         // 其他错误也返回空数组，避免影响页面
+        // eslint-disable-next-line no-console
         console.error('Failed to fetch subscriptions:', err);
         return [];
       }

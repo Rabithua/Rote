@@ -129,7 +129,8 @@ export default function SetupWizard() {
         }
         break;
 
-      case 1: // S3 存储配置（可选）
+      case 1: {
+        // S3 存储配置（可选）
         // 如果填写了部分字段，验证所有字段都必须填写
         const hasAnyS3Field =
           config.s3Config.accountId.trim() ||
@@ -160,6 +161,7 @@ export default function SetupWizard() {
         }
         // 如果没有填写任何字段，允许跳过（不验证）
         break;
+      }
 
       case 2: // 管理员账户
         if (!config.admin.username.trim()) {
