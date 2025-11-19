@@ -115,7 +115,7 @@ adminRouter.post('/setup', async (c: HonoContext) => {
     // 验证请求数据
     const body = await c.req.json();
     const setupData: SetupRequest = body;
-    if (!setupData.site || !setupData.storage || !setupData.ui || !setupData.admin) {
+    if (!setupData.site || !setupData.ui || !setupData.admin) {
       return c.json(createResponse(null, 'Missing required configuration data'), 400);
     }
 
@@ -124,26 +124,29 @@ adminRouter.post('/setup', async (c: HonoContext) => {
       return c.json(createResponse(null, 'Site name and URL are required'), 400);
     }
 
-    if (
-      !setupData.storage.endpoint ||
-      !setupData.storage.bucket ||
-      !setupData.storage.accessKeyId ||
-      !setupData.storage.secretAccessKey
-    ) {
-      return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+    // 存储配置是可选的，但如果提供了，则必须完整
+    if (setupData.storage) {
+      if (
+        !setupData.storage.endpoint ||
+        !setupData.storage.bucket ||
+        !setupData.storage.accessKeyId ||
+        !setupData.storage.secretAccessKey
+      ) {
+        return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+      }
+
+      // 测试存储配置
+      const storageTest = await ConfigTester.testStorage(setupData.storage);
+      if (!storageTest.success) {
+        return c.json(
+          createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
+          400
+        );
+      }
     }
 
     if (!setupData.admin.username || !setupData.admin.email || !setupData.admin.password) {
       return c.json(createResponse(null, 'Admin user information is incomplete'), 400);
-    }
-
-    // 测试存储配置
-    const storageTest = await ConfigTester.testStorage(setupData.storage);
-    if (!storageTest.success) {
-      return c.json(
-        createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
-        400
-      );
     }
 
     // 检查管理员用户是否已存在
@@ -171,8 +174,10 @@ adminRouter.post('/setup', async (c: HonoContext) => {
       { isRequired: true, isInitialized: true }
     );
 
-    // 2. 保存存储配置
-    await setConfig('storage', setupData.storage, { isRequired: true, isInitialized: true });
+    // 2. 保存存储配置（可选）
+    if (setupData.storage) {
+      await setConfig('storage', setupData.storage, { isRequired: false, isInitialized: true });
+    }
 
     // 3. 保存界面配置
     await setConfig('ui', setupData.ui, { isRequired: false, isInitialized: true });

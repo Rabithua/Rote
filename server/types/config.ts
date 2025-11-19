@@ -84,7 +84,7 @@ export interface SetupRequest {
     description?: string;
     defaultLanguage?: string;
   };
-  storage: {
+  storage?: {
     endpoint: string;
     bucket: string;
     accessKeyId: string;

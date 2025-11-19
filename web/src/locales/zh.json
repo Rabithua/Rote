@@ -281,14 +281,14 @@
       "subtitle": "欢迎使用 Rote！请按照以下步骤完成系统配置",
       "steps": {
         "basic": { "title": "基础配置", "description": "设置网站基本信息" },
-        "storage": { "title": "存储配置", "description": "配置 R2 云存储" },
+        "storage": { "title": "存储配置", "description": "配置 S3 云存储（可选）" },
         "admin": { "title": "管理员账户", "description": "创建管理员账户" }
       },
       "labels": {
         "siteName": "网站名称",
         "siteDescription": "网站描述",
         "siteUrl": "网站URL",
-        "accountId": "R2 Account ID",
+        "accountId": "S3 Account ID",
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "存储桶名称",
@@ -303,8 +303,8 @@
         "siteDescription": "请输入网站描述",
         "siteUrl": "https://your-domain.com",
         "accountId": "your-account-id",
-        "accessKey": "请输入 R2 Access Key",
-        "secretKey": "请输入 R2 Secret Key",
+        "accessKey": "请输入 S3 Access Key",
+        "secretKey": "请输入 S3 Secret Key",
         "bucket": "请输入存储桶名称",
         "urlPrefix": "https://bucket.your-domain.com",
         "adminUsername": "请输入管理员用户名",
@@ -313,13 +313,14 @@
         "adminNickname": "请输入管理员昵称"
       },
       "descriptions": {
-        "siteUrl": "网站URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。"
+        "siteUrl": "网站URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。",
+        "s3Optional": "S3 存储配置是可选的。您可以跳过此步骤，稍后在系统设置中配置。如果跳过，系统将无法上传附件，但其他功能可以正常使用。"
       },
       "validation": {
         "siteNameRequired": "网站名称不能为空",
         "siteUrlRequired": "网站URL不能为空",
         "siteUrlInvalid": "请输入有效的URL（以http://或https://开头）",
-        "accountIdRequired": "R2 Account ID不能为空",
+        "accountIdRequired": "S3 Account ID不能为空",
         "accessKeyRequired": "Access Key不能为空",
         "secretKeyRequired": "Secret Key不能为空",
         "bucketRequired": "存储桶名称不能为空",
@@ -336,16 +337,18 @@
         "next": "下一步",
         "finish": "完成配置",
         "saving": "保存中...",
-        "testConnection": "测试 R2 连接",
+        "testConnection": "测试 S3 连接",
+        "skipS3": "跳过 S3 配置",
+        "enableS3": "启用 S3 配置",
         "testing": "测试连接中..."
       },
       "toasts": {
         "systemInitialized": "系统已经初始化，将跳转到系统设置页面",
         "initSuccess": "系统初始化成功！",
         "initFailed": "系统初始化失败，请检查配置",
-        "testSuccess": "R2 连接测试成功！",
+        "testSuccess": "S3 连接测试成功！",
         "testFailed": "连接测试失败: {{error}}",
-        "pleaseFillR2": "请先填写完整的 R2 配置信息"
+        "pleaseFillS3": "请先填写完整的 S3 配置信息"
       },
       "ui": {
         "statistics": "统计 / Static"

@@ -277,14 +277,14 @@
       "subtitle": "Welcome to Rote! Follow the steps to complete the setup",
       "steps": {
         "basic": { "title": "Basic Settings", "description": "Set site basics" },
-        "storage": { "title": "Storage Settings", "description": "Configure R2 storage" },
+        "storage": { "title": "Storage Settings", "description": "Configure S3 storage (optional)" },
         "admin": { "title": "Admin Account", "description": "Create admin account" }
       },
       "labels": {
         "siteName": "Site Name",
         "siteDescription": "Site Description",
         "siteUrl": "Site URL",
-        "accountId": "R2 Account ID",
+        "accountId": "S3 Account ID",
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "Bucket Name",
@@ -299,8 +299,8 @@
         "siteDescription": "Enter site description",
         "siteUrl": "https://your-domain.com",
         "accountId": "your-account-id",
-        "accessKey": "Enter R2 Access Key",
-        "secretKey": "Enter R2 Secret Key",
+        "accessKey": "Enter S3 Access Key",
+        "secretKey": "Enter S3 Secret Key",
         "bucket": "Enter bucket name",
         "urlPrefix": "https://bucket.your-domain.com",
         "adminUsername": "Enter admin username",
@@ -309,13 +309,14 @@
         "adminNickname": "Enter admin nickname"
       },
       "descriptions": {
-        "siteUrl": "Site URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com)."
+        "siteUrl": "Site URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com).",
+        "s3Optional": "S3 storage configuration is optional. You can skip this step and configure it later in system settings. If skipped, the system will not be able to upload attachments, but other features will work normally."
       },
       "validation": {
         "siteNameRequired": "Site name is required",
         "siteUrlRequired": "Site URL is required",
         "siteUrlInvalid": "Please enter a valid URL (starts with http:// or https://)",
-        "accountIdRequired": "R2 Account ID is required",
+        "accountIdRequired": "S3 Account ID is required",
         "accessKeyRequired": "Access Key is required",
         "secretKeyRequired": "Secret Key is required",
         "bucketRequired": "Bucket name is required",
@@ -332,16 +333,18 @@
         "next": "Next",
         "finish": "Finish Setup",
         "saving": "Saving...",
-        "testConnection": "Test R2 Connection",
+        "testConnection": "Test S3 Connection",
+        "skipS3": "Skip S3 Configuration",
+        "enableS3": "Enable S3 Configuration",
         "testing": "Testing connection..."
       },
       "toasts": {
         "systemInitialized": "System has been initialized, redirecting to settings page",
         "initSuccess": "System initialized successfully!",
         "initFailed": "System initialization failed, please check your configuration",
-        "testSuccess": "R2 connection test succeeded!",
+        "testSuccess": "S3 connection test succeeded!",
         "testFailed": "Connection test failed: {{error}}",
-        "pleaseFillR2": "Please fill in all R2 configuration fields first"
+        "pleaseFillS3": "Please fill in all S3 configuration fields first"
       },
       "ui": {
         "statistics": "Statistics"
