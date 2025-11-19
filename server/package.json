@@ -21,7 +21,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:migrate:programmatic": "bun run scripts/runMigrations.ts",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:start": "docker ps -a | grep -q rote-postgres-local && docker start rote-postgres-local || docker run -d --name rote-postgres-local -e POSTGRES_USER=rote -e POSTGRES_PASSWORD=rote_password_123 -e POSTGRES_DB=rote -p 5433:5432 postgres:17",
+    "db:reset": "VOLUME_NAME=$(docker inspect rote-postgres-local 2>/dev/null | grep '\"Name\"' | head -1 | sed 's/.*\"Name\": \"\\([^\"]*\\)\".*/\\1/'); docker stop rote-postgres-local 2>/dev/null || true; docker rm rote-postgres-local 2>/dev/null || true; if [ ! -z \"$VOLUME_NAME\" ] && [ \"$VOLUME_NAME\" != \"rote-postgres-local\" ]; then docker volume rm \"$VOLUME_NAME\" 2>/dev/null || true; fi; docker run -d --name rote-postgres-local -e POSTGRES_USER=rote -e POSTGRES_PASSWORD=rote_password_123 -e POSTGRES_DB=rote -p 5433:5432 postgres:17"
   },
   "keywords": [
     "node",

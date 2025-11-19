@@ -137,15 +137,11 @@ export async function isOpenKeyOk(c: HonoContext, next: () => Promise<void>) {
 }
 
 export async function injectDynamicUrls(c: HonoContext, next: () => Promise<void>) {
-  // 优先从数据库配置获取，如果没有则动态生成
+  // API URL 始终自动检测，不再从配置读取
+  c.set('dynamicApiUrl', getApiUrl(c));
+
+  // 前端 URL 从配置读取，如果没有则使用默认值
   const siteConfig = getGlobalConfig<SiteConfig>('site');
-
-  if (siteConfig?.apiUrl) {
-    c.set('dynamicApiUrl', siteConfig.apiUrl);
-  } else {
-    c.set('dynamicApiUrl', getApiUrl(c));
-  }
-
   if (siteConfig?.frontendUrl) {
     c.set('dynamicFrontendUrl', siteConfig.frontendUrl);
   } else {

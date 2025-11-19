@@ -3,10 +3,10 @@ import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { requireStorageConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import type { StorageConfig } from '../../types/config';
+import type { StorageConfig, UiConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import type { UploadResult } from '../../types/main';
-import { getGlobalConfig } from '../../utils/config';
+import { getConfig, getGlobalConfig } from '../../utils/config';
 import {
   deleteAttachment,
   deleteAttachments,
@@ -117,6 +117,12 @@ attachmentsRouter.post(
   authenticateJWT,
   requireStorageConfig,
   async (c: HonoContext) => {
+    // 检查是否允许上传文件
+    const uiConfig = await getConfig<UiConfig>('ui');
+    if (uiConfig && uiConfig.allowUploadFile === false) {
+      return c.json(createResponse(null, 'File upload is currently disabled'), 403);
+    }
+
     const user = c.get('user') as User;
     const body = await c.req.json();
     const { files } = body as {

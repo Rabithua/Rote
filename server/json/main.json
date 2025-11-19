@@ -12,6 +12,7 @@
     "explore",
     "archived",
     "experiment",
+    "admin",
     "unknown"
   ],
   "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE"]

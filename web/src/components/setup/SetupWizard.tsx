@@ -3,14 +3,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import mainJson from '@/json/main.json';
 import { cn } from '@/utils/cn';
-import { getConfigStatus, setupSystem, testConfig } from '@/utils/setupApi';
+import { getConfigStatus, setupSystem, testStorageConnection } from '@/utils/setupApi';
 import { CheckCircle, Circle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import Divider from '../ui/divider';
+
+const { safeRoutes } = mainJson;
 
 // 向导步骤类型定义
 interface WizardStep {
@@ -24,7 +27,7 @@ interface SetupConfig {
   // 基础配置
   siteName: string;
   siteDescription: string;
-  siteUrl: string;
+  frontendUrl: string;
 
   // S3 存储配置（可选）
   s3Config: {
@@ -70,7 +73,7 @@ export default function SetupWizard() {
   const [config, setConfig] = useState<SetupConfig>({
     siteName: '',
     siteDescription: '',
-    siteUrl: '',
+    frontendUrl: '',
     s3Config: {
       accountId: '',
       accessKey: '',
@@ -80,7 +83,7 @@ export default function SetupWizard() {
       urlPrefix: '',
     },
     admin: {
-      username: 'admin',
+      username: 'administrator',
       email: '',
       password: '',
       nickname: 'Administrator',
@@ -119,10 +122,10 @@ export default function SetupWizard() {
         if (!config.siteName.trim()) {
           newErrors.siteName = 'required';
         }
-        if (!config.siteUrl.trim()) {
-          newErrors.siteUrl = 'required';
-        } else if (!/^https?:\/\/.+/.test(config.siteUrl)) {
-          newErrors.siteUrl = 'invalid';
+        if (!config.frontendUrl.trim()) {
+          newErrors.frontendUrl = 'required';
+        } else if (!/^https?:\/\/.+/.test(config.frontendUrl)) {
+          newErrors.frontendUrl = 'invalid';
         }
         break;
 
@@ -161,6 +164,8 @@ export default function SetupWizard() {
       case 2: // 管理员账户
         if (!config.admin.username.trim()) {
           newErrors.username = 'required';
+        } else if (safeRoutes.includes(config.admin.username.trim().toLowerCase())) {
+          newErrors.username = 'reserved';
         }
         if (!config.admin.email.trim()) {
           newErrors.email = 'required';
@@ -202,12 +207,14 @@ export default function SetupWizard() {
         site: {
           name: config.siteName,
           description: config.siteDescription,
-          url: config.siteUrl,
+          frontendUrl: config.frontendUrl,
           defaultLanguage: 'zh-CN',
         },
         ui: {
-          theme: 'system',
-          language: 'zh-CN',
+          allowRegistration: true,
+          defaultUserRole: 'user',
+          apiRateLimit: 100,
+          allowUploadFile: true,
         },
         admin: {
           username: config.admin.username,
@@ -266,7 +273,6 @@ export default function SetupWizard() {
     setIsTesting(true);
     try {
       const testData = {
-        type: 's3',
         endpoint: `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`,
         bucket: config.s3Config.bucket,
         accessKeyId: config.s3Config.accessKey,
@@ -275,20 +281,20 @@ export default function SetupWizard() {
         urlPrefix: config.s3Config.urlPrefix,
       };
 
-      const response = await testConfig('storage', testData);
+      const result = await testStorageConnection(testData);
 
-      if (response.data?.success) {
+      if (result.success) {
         toast.success(t('pages.setupWizard.toasts.testSuccess'));
       } else {
         toast.error(
           t('pages.setupWizard.toasts.testFailed', {
-            error: response.data?.message || 'Unknown error',
+            error: result.message || 'Unknown error',
           })
         );
       }
-    } catch (_error: any) {
+    } catch (error: any) {
       toast.error(
-        t('pages.setupWizard.toasts.testFailed', { error: _error.message || 'Unknown error' })
+        t('pages.setupWizard.toasts.testFailed', { error: error.message || 'Unknown error' })
       );
     } finally {
       setIsTesting(false);
@@ -331,22 +337,22 @@ export default function SetupWizard() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="siteUrl">{t('pages.setupWizard.labels.siteUrl')}</Label>
+              <Label htmlFor="frontendUrl">{t('pages.setupWizard.labels.frontendUrl')}</Label>
               <Input
-                id="siteUrl"
-                value={config.siteUrl}
-                onChange={(e) => updateConfig({ siteUrl: e.target.value })}
-                placeholder={t('pages.setupWizard.placeholders.siteUrl')}
-                className={errors.siteUrl ? 'border-destructive' : ''}
+                id="frontendUrl"
+                value={config.frontendUrl}
+                onChange={(e) => updateConfig({ frontendUrl: e.target.value })}
+                placeholder={t('pages.setupWizard.placeholders.frontendUrl')}
+                className={errors.frontendUrl ? 'border-destructive' : ''}
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                {t('pages.setupWizard.descriptions.siteUrl')}
+                {t('pages.setupWizard.descriptions.frontendUrl')}
               </p>
-              {errors.siteUrl && (
+              {errors.frontendUrl && (
                 <p className="text-destructive text-sm">
-                  {errors.siteUrl === 'required'
-                    ? t('pages.setupWizard.validation.siteUrlRequired')
-                    : t('pages.setupWizard.validation.siteUrlInvalid')}
+                  {errors.frontendUrl === 'required'
+                    ? t('pages.setupWizard.validation.frontendUrlRequired')
+                    : t('pages.setupWizard.validation.frontendUrlInvalid')}
                 </p>
               )}
             </div>
@@ -501,7 +507,9 @@ export default function SetupWizard() {
               />
               {errors.username && (
                 <p className="text-destructive text-sm">
-                  {t('pages.setupWizard.validation.usernameRequired')}
+                  {errors.username === 'required'
+                    ? t('pages.setupWizard.validation.usernameRequired')
+                    : t('pages.setupWizard.validation.usernameReserved')}
                 </p>
               )}
             </div>

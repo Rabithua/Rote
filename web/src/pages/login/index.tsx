@@ -27,9 +27,13 @@ function Login() {
     keyPrefix: 'pages.login',
   });
 
-  const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet('checkStatus', () =>
-    get('/site/status').then((res) => res.data)
-  );
+  const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet<{
+    isInitialized: boolean;
+    ui?: {
+      allowRegistration?: boolean;
+      allowUploadFile?: boolean;
+    };
+  }>('checkStatus', () => get('/site/status').then((res) => res.data));
 
   const { data: profile, mutate: mutateProfile } = useAPIGet(
     authService.hasValidAccessToken() ? '/users/me/profile' : null,
@@ -41,6 +45,17 @@ function Login() {
   const [disbled, setDisbled] = useState(false);
   const [activeTab, setActiveTab] = useState('login');
   const [searchParams] = useSearchParams();
+
+  // 如果注册被禁用，确保 activeTab 是 'login'
+  useEffect(() => {
+    if (
+      backendStatusOk &&
+      backendStatusOk.ui?.allowRegistration === false &&
+      activeTab === 'register'
+    ) {
+      setActiveTab('login');
+    }
+  }, [backendStatusOk, activeTab]);
 
   const [loginData, setLoginData] = useState({
     username: '',
@@ -232,9 +247,13 @@ function Login() {
                 onValueChange={setActiveTab}
                 className="bg-muted w-full rounded-lg"
               >
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList
+                  className={`grid w-full ${backendStatusOk.ui?.allowRegistration !== false ? 'grid-cols-2' : 'grid-cols-1'}`}
+                >
                   <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
-                  <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
+                  {backendStatusOk.ui?.allowRegistration !== false && (
+                    <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContents className="bg-background mx-1 -mt-2 mb-1 h-full rounded-sm">
@@ -271,59 +290,61 @@ function Login() {
                       </Button>
                     </TabsContent>
 
-                    <TabsContent value="register" className="space-y-4 py-4">
-                      <div className="space-y-5">
-                        <div className="space-y-2">
-                          <Label htmlFor="register-username">{t('fields.username')}</Label>
-                          <Input
-                            id="register-username"
-                            placeholder="username"
-                            className="text-md rounded-md font-mono"
-                            maxLength={20}
-                            value={registerData.username}
-                            onInput={(e) => handleInputChange(e, 'username', 'register')}
-                          />
+                    {backendStatusOk.ui?.allowRegistration !== false && (
+                      <TabsContent value="register" className="space-y-4 py-4">
+                        <div className="space-y-5">
+                          <div className="space-y-2">
+                            <Label htmlFor="register-username">{t('fields.username')}</Label>
+                            <Input
+                              id="register-username"
+                              placeholder="username"
+                              className="text-md rounded-md font-mono"
+                              maxLength={20}
+                              value={registerData.username}
+                              onInput={(e) => handleInputChange(e, 'username', 'register')}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="register-email">{t('fields.email')}</Label>
+                            <Input
+                              id="register-email"
+                              placeholder="someone@mail.com"
+                              className="text-md rounded-md font-mono"
+                              maxLength={30}
+                              value={registerData.email}
+                              onInput={(e) => handleInputChange(e, 'email', 'register')}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="register-nickname">{t('fields.nickname')}</Label>
+                            <Input
+                              id="register-nickname"
+                              placeholder="nickname"
+                              className="text-md rounded-md font-mono"
+                              maxLength={20}
+                              value={registerData.nickname}
+                              onInput={(e) => handleInputChange(e, 'nickname', 'register')}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="register-password">{t('fields.password')}</Label>
+                            <Input
+                              id="register-password"
+                              placeholder="password"
+                              type="password"
+                              className="text-md rounded-md font-mono"
+                              maxLength={30}
+                              value={registerData.password}
+                              onInput={(e) => handleInputChange(e, 'password', 'register')}
+                              onKeyDown={handleRegisterKeyDown}
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="register-email">{t('fields.email')}</Label>
-                          <Input
-                            id="register-email"
-                            placeholder="someone@mail.com"
-                            className="text-md rounded-md font-mono"
-                            maxLength={30}
-                            value={registerData.email}
-                            onInput={(e) => handleInputChange(e, 'email', 'register')}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="register-nickname">{t('fields.nickname')}</Label>
-                          <Input
-                            id="register-nickname"
-                            placeholder="nickname"
-                            className="text-md rounded-md font-mono"
-                            maxLength={20}
-                            value={registerData.nickname}
-                            onInput={(e) => handleInputChange(e, 'nickname', 'register')}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="register-password">{t('fields.password')}</Label>
-                          <Input
-                            id="register-password"
-                            placeholder="password"
-                            type="password"
-                            className="text-md rounded-md font-mono"
-                            maxLength={30}
-                            value={registerData.password}
-                            onInput={(e) => handleInputChange(e, 'password', 'register')}
-                            onKeyDown={handleRegisterKeyDown}
-                          />
-                        </div>
-                      </div>
-                      <Button disabled={disbled} onClick={register} className="w-full">
-                        {disbled ? t('messages.registering') : t('buttons.register')}
-                      </Button>
-                    </TabsContent>
+                        <Button disabled={disbled} onClick={register} className="w-full">
+                          {disbled ? t('messages.registering') : t('buttons.register')}
+                        </Button>
+                      </TabsContent>
+                    )}
 
                     <div className="my-4 flex cursor-pointer items-center justify-center gap-1 text-sm duration-300 active:scale-95">
                       <Link to="/explore">

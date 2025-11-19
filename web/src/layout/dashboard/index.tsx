@@ -3,10 +3,10 @@ import { loadProfileAtom, profileAtom } from '@/state/profile';
 import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
 import { isTokenValid } from '@/utils/main';
-import { useSetAtom } from 'jotai';
-import { Archive, Globe2, Home, LogIn, LogOut, Snail, User } from 'lucide-react';
+import { useAtomValue, useSetAtom } from 'jotai';
+import { Archive, Globe2, Home, LogIn, LogOut, Shield, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,35 +18,47 @@ interface IconType {
   callback?: () => void;
 }
 
+// 基础 tabs（所有登录用户）
+const baseTabs: IconType[] = [
+  {
+    svg: <Home className="size-4" />,
+    link: '/home',
+    name: 'home',
+  },
+  {
+    svg: <Globe2 className="size-4" />,
+    link: '/explore',
+    name: 'explore',
+  },
+  {
+    svg: <Archive className="size-4" />,
+    link: '/archived',
+    name: 'archived',
+  },
+  {
+    svg: <User className="size-4" />,
+    link: '/profile',
+    name: 'profile',
+  },
+  {
+    svg: <Snail className="size-4" />,
+    link: '/experiment',
+    name: 'experiment',
+  },
+];
+
+// 管理员 tabs（仅管理员可见）
+const adminTabs: IconType[] = [
+  {
+    svg: <Shield className="size-4" />,
+    link: '/admin',
+    name: 'admin',
+  },
+];
+
 export const tabsData: IconType[][] = [
   [
-    {
-      svg: <Home className="size-4" />,
-      link: '/home',
-      name: 'home',
-    },
-    {
-      svg: <Globe2 className="size-4" />,
-      link: '/explore',
-      name: 'explore',
-    },
-
-    {
-      svg: <Archive className="size-4" />,
-      link: '/archived',
-      name: 'archived',
-    },
-    {
-      svg: <User className="size-4" />,
-      link: '/profile',
-
-      name: 'profile',
-    },
-    {
-      svg: <Snail className="size-4" />,
-      link: '/experiment',
-      name: 'experiment',
-    },
+    ...baseTabs,
     {
       svg: <LogOut className="size-4" />,
       name: 'logout',
@@ -67,6 +79,7 @@ function LayoutDashboard() {
   const loadProfile = useSetAtom(loadProfileAtom);
   const setProfile = useSetAtom(profileAtom);
   const setTags = useSetAtom(tagsAtom);
+  const profile = useAtomValue(profileAtom);
 
   useEffect(() => {
     if (isTokenValid()) {
@@ -75,6 +88,20 @@ function LayoutDashboard() {
   }, [loadProfile]);
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
+
+  // 根据用户角色动态生成 tabs
+  const userTabs = useMemo(() => {
+    const tabs = [...baseTabs];
+    // 如果是管理员或超级管理员，添加管理员 tab
+    if (profile && (profile.role === 'admin' || profile.role === 'super_admin')) {
+      tabs.splice(tabs.length - 1, 0, ...adminTabs);
+    }
+    tabs.push({
+      svg: <LogOut className="size-4" />,
+      name: 'logout',
+    });
+    return tabs;
+  }, [profile]);
 
   async function logOutFn() {
     const toastId = toast.loading(t('messages.loggingOut'));
@@ -138,7 +165,7 @@ function LayoutDashboard() {
       <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
         <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
           {isTokenValid()
-            ? tabsData[0].map((icon) => IconRenderItem(icon))
+            ? userTabs.map((icon) => IconRenderItem(icon))
             : tabsData[1].map((icon) => IconRenderItem(icon))}
         </div>
 

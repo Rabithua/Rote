@@ -61,6 +61,7 @@
         "archived": "Archive",
         "profile": "Profile",
         "experiment": "Experiment",
+        "admin": "Admin",
         "fold": "Collapse",
         "login": "Login",
         "logout": "Logout"
@@ -277,13 +278,16 @@
       "subtitle": "Welcome to Rote! Follow the steps to complete the setup",
       "steps": {
         "basic": { "title": "Basic Settings", "description": "Set site basics" },
-        "storage": { "title": "Storage Settings", "description": "Configure S3 storage (optional)" },
+        "storage": {
+          "title": "Storage Settings",
+          "description": "Configure S3 storage (optional)"
+        },
         "admin": { "title": "Admin Account", "description": "Create admin account" }
       },
       "labels": {
         "siteName": "Site Name",
         "siteDescription": "Site Description",
-        "siteUrl": "Site URL",
+        "frontendUrl": "Frontend URL",
         "accountId": "S3 Account ID",
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
@@ -297,7 +301,7 @@
       "placeholders": {
         "siteName": "Enter site name",
         "siteDescription": "Enter site description",
-        "siteUrl": "https://your-domain.com",
+        "frontendUrl": "https://your-domain.com",
         "accountId": "your-account-id",
         "accessKey": "Enter S3 Access Key",
         "secretKey": "Enter S3 Secret Key",
@@ -309,13 +313,13 @@
         "adminNickname": "Enter admin nickname"
       },
       "descriptions": {
-        "siteUrl": "Site URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com).",
+        "frontendUrl": "Frontend URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com).",
         "s3Optional": "S3 storage configuration is optional. You can skip this step and configure it later in system settings. If skipped, the system will not be able to upload attachments, but other features will work normally."
       },
       "validation": {
         "siteNameRequired": "Site name is required",
-        "siteUrlRequired": "Site URL is required",
-        "siteUrlInvalid": "Please enter a valid URL (starts with http:// or https://)",
+        "frontendUrlRequired": "Frontend URL is required",
+        "frontendUrlInvalid": "Please enter a valid URL (starts with http:// or https://)",
         "accountIdRequired": "S3 Account ID is required",
         "accessKeyRequired": "Access Key is required",
         "secretKeyRequired": "Secret Key is required",
@@ -323,6 +327,7 @@
         "urlPrefixRequired": "URL prefix is required",
         "urlPrefixInvalid": "Please enter a valid URL prefix (starts with http:// or https://)",
         "usernameRequired": "Username is required",
+        "usernameReserved": "This username is reserved and cannot be used. Please choose another username.",
         "emailRequired": "Email is required",
         "emailInvalid": "Please enter a valid email address",
         "passwordRequired": "Password is required",
@@ -349,6 +354,61 @@
       "ui": {
         "statistics": "Statistics"
       }
+    },
+    "admin": {
+      "title": "Admin Dashboard",
+      "accessDenied": "Access Denied",
+      "adminOnly": "This page is only accessible to administrators",
+      "tabs": {
+        "site": "Site Settings",
+        "storage": "Storage Settings",
+        "ui": "UI Settings"
+      },
+      "site": {
+        "title": "Site Configuration",
+        "description": "Configure basic site information",
+        "name": "Site Name",
+        "descriptionLabel": "Site Description",
+        "frontendUrl": "Frontend URL",
+        "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds"
+      },
+      "storage": {
+        "title": "Storage Configuration",
+        "description": "Configure S3 cloud storage settings",
+        "endpoint": "Endpoint",
+        "bucket": "Bucket",
+        "accessKeyId": "Access Key ID",
+        "secretAccessKey": "Secret Access Key",
+        "urlPrefix": "URL Prefix",
+        "urlPrefixDescription": "Public URL prefix for accessing uploaded files (optional)",
+        "notConfigured": "Storage configuration not set",
+        "configureLater": "You can configure it later in system settings",
+        "testConnection": "Test Connection",
+        "testing": "Testing...",
+        "testSuccess": "Storage connection test successful!",
+        "testFailed": "Connection test failed: {{error}}"
+      },
+      "ui": {
+        "title": "UI Configuration",
+        "description": "Configure user interface settings",
+        "allowRegistration": "Allow Registration",
+        "allowRegistrationDesc": "Whether to allow new user registration",
+        "allowUploadFile": "Allow File Upload",
+        "allowUploadFileDesc": "Whether to allow users to upload attachments",
+        "defaultUserRole": "Default User Role",
+        "defaultUserRolePlaceholder": "Select default role",
+        "defaultUserRoleDescription": "Default role for newly registered users. Only user or moderator can be selected. Admin roles must be assigned manually.",
+        "roles": {
+          "user": "User",
+          "moderator": "Moderator"
+        },
+        "apiRateLimit": "API Rate Limit",
+        "apiRateLimitDescription": "Maximum number of requests per second allowed per user or IP address. Used to prevent API abuse. Minimum is 10, default is 100 requests/second."
+      },
+      "save": "Save",
+      "saving": "Saving...",
+      "saveSuccess": "Saved successfully",
+      "saveFailed": "Save failed: {{error}}"
     }
   },
   "error": {

@@ -4,6 +4,7 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom'
 import { ProtectedRoute } from './protectedRoute';
 
 import ErrorPage from '@/pages/404';
+import AdminDashboard from '@/pages/admin';
 import ArchivedPage from '@/pages/archived';
 import ExperimentPage from '@/pages/experiment';
 import ExplorePage from '@/pages/explore';
@@ -82,9 +83,13 @@ export default function GlobalRouterProvider() {
           errorElement: <ErrorPage />,
         },
         {
-          path: ':username',
-          element: <UserPage />,
+          path: 'admin',
           errorElement: <ErrorPage />,
+          element: (
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          ),
         },
         {
           path: 'rote',
@@ -113,6 +118,11 @@ export default function GlobalRouterProvider() {
               <ExperimentPage />
             </ProtectedRoute>
           ),
+        },
+        {
+          path: ':username',
+          element: <UserPage />,
+          errorElement: <ErrorPage />,
         },
       ],
     },

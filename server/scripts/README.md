@@ -112,7 +112,7 @@ Test data is defined in `testConfig.json`:
   "testData": {
     "site": {
       "name": "Rote Test Site",
-      "url": "https://test.rote.ink",
+      "frontendUrl": "https://test.rote.ink",
       "description": "Test site for Rote initialization testing",
       "defaultLanguage": "en"
     },
