@@ -27,6 +27,10 @@ interface SiteStatusData {
     r2Configured: boolean;
     urlPrefix: string;
   };
+  ui: {
+    allowRegistration: boolean;
+    allowUploadFile: boolean;
+  };
   timestamp: string;
 }
 

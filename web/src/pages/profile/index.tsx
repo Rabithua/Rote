@@ -28,7 +28,8 @@ import { toast } from 'sonner';
 
 function ProfilePage() {
   const { data: siteStatus } = useSiteStatus();
-  const canUpload = !!siteStatus?.storage?.r2Configured;
+  const canUpload =
+    !!siteStatus?.storage?.r2Configured && siteStatus?.ui?.allowUploadFile !== false;
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const inputAvatarRef = useRef<HTMLInputElement>(null);
   const inputCoverRef = useRef<HTMLInputElement>(null);

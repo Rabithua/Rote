@@ -21,7 +21,7 @@ import { Database, Globe, Settings, Shield } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 
 interface SystemConfig {
   site?: {
@@ -51,6 +51,7 @@ interface SystemConfig {
 export default function AdminDashboard() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const profile = useProfile();
+  const { mutate: globalMutate } = useSWRConfig();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui'>('site');
@@ -124,6 +125,8 @@ export default function AdminDashboard() {
       });
       toast.success(t('saveSuccess'));
       mutate();
+      // 更新所有使用 site-status 的组件
+      globalMutate('site-status');
     } catch (error: any) {
       // 优先使用后端返回的错误消息
       const errorMessage =
@@ -184,6 +187,8 @@ export default function AdminDashboard() {
       });
       toast.success(t('saveSuccess'));
       mutate();
+      // 更新所有使用 site-status 的组件，确保存储配置实时生效
+      globalMutate('site-status');
     } catch (error: any) {
       // 优先使用后端返回的错误消息
       const errorMessage =
@@ -226,6 +231,8 @@ export default function AdminDashboard() {
       });
       toast.success(t('saveSuccess'));
       mutate();
+      // 更新所有使用 site-status 的组件，确保 allowUploadFile 等配置实时生效
+      globalMutate('site-status');
     } catch (error: any) {
       // 优先使用后端返回的错误消息
       const errorMessage =

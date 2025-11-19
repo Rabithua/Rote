@@ -33,7 +33,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [rote, setRote] = useAtom(roteAtom);
   const { data: siteStatus } = useSiteStatus();
-  const canUpload = !!siteStatus?.storage?.r2Configured;
+  const canUpload =
+    !!siteStatus?.storage?.r2Configured && siteStatus?.ui?.allowUploadFile !== false;
 
   const [localContent, setLocalContent] = useState(rote.content);
 
