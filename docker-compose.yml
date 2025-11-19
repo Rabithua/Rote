@@ -37,7 +37,7 @@ services:
     image: rabithua/rote-frontend:${IMAGE_TAG:-develop}
     container_name: rote-frontend
     ports:
-      - "18001:3001"
+      - "18001:80"
     depends_on:
       - rote-backend
     environment:
