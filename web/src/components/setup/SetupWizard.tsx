@@ -3,13 +3,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import mainJson from '@/json/main.json';
 import { cn } from '@/utils/cn';
-import { getConfigStatus, setupSystem, testConfig } from '@/utils/setupApi';
+import { getConfigStatus, setupSystem, testStorageConnection } from '@/utils/setupApi';
 import { CheckCircle, Circle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import Divider from '../ui/divider';
+
+const { safeRoutes } = mainJson;
 
 // 向导步骤类型定义
 interface WizardStep {
@@ -23,10 +27,10 @@ interface SetupConfig {
   // 基础配置
   siteName: string;
   siteDescription: string;
-  siteUrl: string;
+  frontendUrl: string;
 
-  // R2 存储配置
-  r2Config: {
+  // S3 存储配置（可选）
+  s3Config: {
     accountId: string;
     accessKey: string;
     secretKey: string;
@@ -69,8 +73,8 @@ export default function SetupWizard() {
   const [config, setConfig] = useState<SetupConfig>({
     siteName: '',
     siteDescription: '',
-    siteUrl: '',
-    r2Config: {
+    frontendUrl: '',
+    s3Config: {
       accountId: '',
       accessKey: '',
       secretKey: '',
@@ -79,7 +83,7 @@ export default function SetupWizard() {
       urlPrefix: '',
     },
     admin: {
-      username: 'admin',
+      username: 'administrator',
       email: '',
       password: '',
       nickname: 'Administrator',
@@ -118,36 +122,50 @@ export default function SetupWizard() {
         if (!config.siteName.trim()) {
           newErrors.siteName = 'required';
         }
-        if (!config.siteUrl.trim()) {
-          newErrors.siteUrl = 'required';
-        } else if (!/^https?:\/\/.+/.test(config.siteUrl)) {
-          newErrors.siteUrl = 'invalid';
+        if (!config.frontendUrl.trim()) {
+          newErrors.frontendUrl = 'required';
+        } else if (!/^https?:\/\/.+/.test(config.frontendUrl)) {
+          newErrors.frontendUrl = 'invalid';
         }
         break;
 
-      case 1: // R2 存储配置
-        if (!config.r2Config.accountId.trim()) {
-          newErrors.accountId = 'required';
+      case 1: // S3 存储配置（可选）
+        // 如果填写了部分字段，验证所有字段都必须填写
+        const hasAnyS3Field =
+          config.s3Config.accountId.trim() ||
+          config.s3Config.accessKey.trim() ||
+          config.s3Config.secretKey.trim() ||
+          config.s3Config.bucket.trim() ||
+          config.s3Config.urlPrefix.trim();
+
+        if (hasAnyS3Field) {
+          // 如果填写了任何字段，则所有字段都必须填写
+          if (!config.s3Config.accountId.trim()) {
+            newErrors.accountId = 'required';
+          }
+          if (!config.s3Config.accessKey.trim()) {
+            newErrors.accessKey = 'required';
+          }
+          if (!config.s3Config.secretKey.trim()) {
+            newErrors.secretKey = 'required';
+          }
+          if (!config.s3Config.bucket.trim()) {
+            newErrors.bucket = 'required';
+          }
+          if (!config.s3Config.urlPrefix.trim()) {
+            newErrors.urlPrefix = 'required';
+          } else if (!/^https?:\/\/.+/.test(config.s3Config.urlPrefix)) {
+            newErrors.urlPrefix = 'invalid';
+          }
         }
-        if (!config.r2Config.accessKey.trim()) {
-          newErrors.accessKey = 'required';
-        }
-        if (!config.r2Config.secretKey.trim()) {
-          newErrors.secretKey = 'required';
-        }
-        if (!config.r2Config.bucket.trim()) {
-          newErrors.bucket = 'required';
-        }
-        if (!config.r2Config.urlPrefix.trim()) {
-          newErrors.urlPrefix = 'required';
-        } else if (!/^https?:\/\/.+/.test(config.r2Config.urlPrefix)) {
-          newErrors.urlPrefix = 'invalid';
-        }
+        // 如果没有填写任何字段，允许跳过（不验证）
         break;
 
       case 2: // 管理员账户
         if (!config.admin.username.trim()) {
           newErrors.username = 'required';
+        } else if (safeRoutes.includes(config.admin.username.trim().toLowerCase())) {
+          newErrors.username = 'reserved';
         }
         if (!config.admin.email.trim()) {
           newErrors.email = 'required';
@@ -185,25 +203,18 @@ export default function SetupWizard() {
     setIsLoading(true);
     try {
       // 构建初始化数据
-      const setupData = {
+      const setupData: any = {
         site: {
           name: config.siteName,
           description: config.siteDescription,
-          url: config.siteUrl,
+          frontendUrl: config.frontendUrl,
           defaultLanguage: 'zh-CN',
         },
-        storage: {
-          type: 'r2',
-          endpoint: `https://${config.r2Config.accountId}.r2.cloudflarestorage.com`,
-          bucket: config.r2Config.bucket,
-          accessKeyId: config.r2Config.accessKey,
-          secretAccessKey: config.r2Config.secretKey,
-          region: config.r2Config.region,
-          urlPrefix: config.r2Config.urlPrefix,
-        },
         ui: {
-          theme: 'system',
-          language: 'zh-CN',
+          allowRegistration: true,
+          defaultUserRole: 'user',
+          apiRateLimit: 100,
+          allowUploadFile: true,
         },
         admin: {
           username: config.admin.username,
@@ -212,6 +223,19 @@ export default function SetupWizard() {
           nickname: config.admin.nickname,
         },
       };
+
+      // 如果填写了 S3 配置，则添加存储配置
+      if (config.s3Config.accountId && config.s3Config.bucket) {
+        setupData.storage = {
+          type: 's3',
+          endpoint: `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`,
+          bucket: config.s3Config.bucket,
+          accessKeyId: config.s3Config.accessKey,
+          secretAccessKey: config.s3Config.secretKey,
+          region: config.s3Config.region,
+          urlPrefix: config.s3Config.urlPrefix,
+        };
+      }
 
       // 调用初始化 API
       const response = await setupSystem(setupData);
@@ -234,44 +258,43 @@ export default function SetupWizard() {
     setConfig((prev) => ({ ...prev, ...updates }));
   };
 
-  // 测试 R2 连接
+  // 测试 S3 连接
   const handleTestConnection = async () => {
     if (
-      !config.r2Config.accountId ||
-      !config.r2Config.accessKey ||
-      !config.r2Config.secretKey ||
-      !config.r2Config.bucket
+      !config.s3Config.accountId ||
+      !config.s3Config.accessKey ||
+      !config.s3Config.secretKey ||
+      !config.s3Config.bucket
     ) {
-      toast.error(t('pages.setupWizard.toasts.pleaseFillR2'));
+      toast.error(t('pages.setupWizard.toasts.pleaseFillS3'));
       return;
     }
 
     setIsTesting(true);
     try {
       const testData = {
-        type: 'r2',
-        endpoint: `https://${config.r2Config.accountId}.r2.cloudflarestorage.com`,
-        bucket: config.r2Config.bucket,
-        accessKeyId: config.r2Config.accessKey,
-        secretAccessKey: config.r2Config.secretKey,
-        region: config.r2Config.region,
-        urlPrefix: config.r2Config.urlPrefix,
+        endpoint: `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`,
+        bucket: config.s3Config.bucket,
+        accessKeyId: config.s3Config.accessKey,
+        secretAccessKey: config.s3Config.secretKey,
+        region: config.s3Config.region,
+        urlPrefix: config.s3Config.urlPrefix,
       };
 
-      const response = await testConfig('storage', testData);
+      const result = await testStorageConnection(testData);
 
-      if (response.data?.success) {
+      if (result.success) {
         toast.success(t('pages.setupWizard.toasts.testSuccess'));
       } else {
         toast.error(
           t('pages.setupWizard.toasts.testFailed', {
-            error: response.data?.message || 'Unknown error',
+            error: result.message || 'Unknown error',
           })
         );
       }
-    } catch (_error: any) {
+    } catch (error: any) {
       toast.error(
-        t('pages.setupWizard.toasts.testFailed', { error: _error.message || 'Unknown error' })
+        t('pages.setupWizard.toasts.testFailed', { error: error.message || 'Unknown error' })
       );
     } finally {
       setIsTesting(false);
@@ -314,39 +337,48 @@ export default function SetupWizard() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="siteUrl">{t('pages.setupWizard.labels.siteUrl')}</Label>
+              <Label htmlFor="frontendUrl">{t('pages.setupWizard.labels.frontendUrl')}</Label>
               <Input
-                id="siteUrl"
-                value={config.siteUrl}
-                onChange={(e) => updateConfig({ siteUrl: e.target.value })}
-                placeholder={t('pages.setupWizard.placeholders.siteUrl')}
-                className={errors.siteUrl ? 'border-destructive' : ''}
+                id="frontendUrl"
+                value={config.frontendUrl}
+                onChange={(e) => updateConfig({ frontendUrl: e.target.value })}
+                placeholder={t('pages.setupWizard.placeholders.frontendUrl')}
+                className={errors.frontendUrl ? 'border-destructive' : ''}
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                {t('pages.setupWizard.descriptions.siteUrl')}
+                {t('pages.setupWizard.descriptions.frontendUrl')}
               </p>
-              {errors.siteUrl && (
+              {errors.frontendUrl && (
                 <p className="text-destructive text-sm">
-                  {errors.siteUrl === 'required'
-                    ? t('pages.setupWizard.validation.siteUrlRequired')
-                    : t('pages.setupWizard.validation.siteUrlInvalid')}
+                  {errors.frontendUrl === 'required'
+                    ? t('pages.setupWizard.validation.frontendUrlRequired')
+                    : t('pages.setupWizard.validation.frontendUrlInvalid')}
                 </p>
               )}
             </div>
           </div>
         );
 
-      case 1: // R2 存储配置
+      case 1: // S3 存储配置（可选）
         return (
           <div className="space-y-6">
+            <p className="text-muted-foreground mb-4 text-sm">
+              {t('pages.setupWizard.descriptions.s3Optional')}
+            </p>
+            <Button type="button" variant="outline" onClick={handleNext} className="w-full">
+              {t('pages.setupWizard.buttons.skipS3')}
+            </Button>
+
+            <Divider />
+
             <div className="space-y-2">
               <Label htmlFor="accountId">{t('pages.setupWizard.labels.accountId')}</Label>
               <Input
                 id="accountId"
-                value={config.r2Config.accountId}
+                value={config.s3Config.accountId}
                 onChange={(e) =>
                   updateConfig({
-                    r2Config: { ...config.r2Config, accountId: e.target.value },
+                    s3Config: { ...config.s3Config, accountId: e.target.value },
                   })
                 }
                 placeholder={t('pages.setupWizard.placeholders.accountId')}
@@ -363,10 +395,10 @@ export default function SetupWizard() {
               <Label htmlFor="accessKey">{t('pages.setupWizard.labels.accessKey')}</Label>
               <Input
                 id="accessKey"
-                value={config.r2Config.accessKey}
+                value={config.s3Config.accessKey}
                 onChange={(e) =>
                   updateConfig({
-                    r2Config: { ...config.r2Config, accessKey: e.target.value },
+                    s3Config: { ...config.s3Config, accessKey: e.target.value },
                   })
                 }
                 placeholder={t('pages.setupWizard.placeholders.accessKey')}
@@ -383,10 +415,10 @@ export default function SetupWizard() {
               <Label htmlFor="secretKey">{t('pages.setupWizard.labels.secretKey')}</Label>
               <Input
                 id="secretKey"
-                value={config.r2Config.secretKey}
+                value={config.s3Config.secretKey}
                 onChange={(e) =>
                   updateConfig({
-                    r2Config: { ...config.r2Config, secretKey: e.target.value },
+                    s3Config: { ...config.s3Config, secretKey: e.target.value },
                   })
                 }
                 placeholder={t('pages.setupWizard.placeholders.secretKey')}
@@ -403,10 +435,10 @@ export default function SetupWizard() {
               <Label htmlFor="bucket">{t('pages.setupWizard.labels.bucket')}</Label>
               <Input
                 id="bucket"
-                value={config.r2Config.bucket}
+                value={config.s3Config.bucket}
                 onChange={(e) =>
                   updateConfig({
-                    r2Config: { ...config.r2Config, bucket: e.target.value },
+                    s3Config: { ...config.s3Config, bucket: e.target.value },
                   })
                 }
                 placeholder={t('pages.setupWizard.placeholders.bucket')}
@@ -423,10 +455,10 @@ export default function SetupWizard() {
               <Label htmlFor="urlPrefix">{t('pages.setupWizard.labels.urlPrefix')}</Label>
               <Input
                 id="urlPrefix"
-                value={config.r2Config.urlPrefix}
+                value={config.s3Config.urlPrefix}
                 onChange={(e) =>
                   updateConfig({
-                    r2Config: { ...config.r2Config, urlPrefix: e.target.value },
+                    s3Config: { ...config.s3Config, urlPrefix: e.target.value },
                   })
                 }
                 placeholder={t('pages.setupWizard.placeholders.urlPrefix')}
@@ -475,7 +507,9 @@ export default function SetupWizard() {
               />
               {errors.username && (
                 <p className="text-destructive text-sm">
-                  {t('pages.setupWizard.validation.usernameRequired')}
+                  {errors.username === 'required'
+                    ? t('pages.setupWizard.validation.usernameRequired')
+                    : t('pages.setupWizard.validation.usernameReserved')}
                 </p>
               )}
             </div>

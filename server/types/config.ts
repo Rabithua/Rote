@@ -4,11 +4,9 @@ export type ConfigGroup = 'site' | 'storage' | 'security' | 'notification' | 'ui
 // 配置项类型定义
 export interface SiteConfig {
   name: string;
-  url: string;
+  frontendUrl: string; // 前端 URL，用于生成 RSS Feed 链接等
   description?: string;
   defaultLanguage?: string;
-  apiUrl?: string; // 动态 API URL
-  frontendUrl?: string; // 动态前端 URL
   allowedOrigins?: string[]; // CORS 允许的 origin 列表，为空或不设置则允许所有
 }
 
@@ -80,11 +78,11 @@ export interface ConfigTestResult {
 export interface SetupRequest {
   site: {
     name: string;
-    url: string;
+    frontendUrl: string;
     description?: string;
     defaultLanguage?: string;
   };
-  storage: {
+  storage?: {
     endpoint: string;
     bucket: string;
     accessKeyId: string;

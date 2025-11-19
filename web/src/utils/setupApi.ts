@@ -23,6 +23,56 @@ export const updateSettings = (group: string, config: any) =>
 export const testConfig = (type: string, config: any) =>
   post('/admin/settings/test', { type, config });
 
+// 存储配置类型
+export interface StorageConfigForTest {
+  endpoint: string;
+  bucket: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+  urlPrefix?: string;
+  region?: string;
+}
+
+// 测试存储配置的通用函数
+export async function testStorageConnection(
+  config: StorageConfigForTest | null | undefined
+): Promise<{ success: boolean; message?: string }> {
+  // 验证必填字段
+  if (
+    !config ||
+    !config.endpoint?.trim() ||
+    !config.bucket?.trim() ||
+    !config.accessKeyId?.trim() ||
+    !config.secretAccessKey?.trim()
+  ) {
+    return {
+      success: false,
+      message: 'Please fill in all required fields',
+    };
+  }
+
+  try {
+    const response = await testConfig('storage', config);
+
+    if (response.data?.success) {
+      return {
+        success: true,
+        message: response.data?.message || 'Storage connection test successful',
+      };
+    } else {
+      return {
+        success: false,
+        message: response.data?.message || 'Unknown error',
+      };
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error.message || 'Unknown error',
+    };
+  }
+}
+
 // 重新生成安全密钥（超级管理员）
 export const regenerateKeys = () => post('/admin/settings/regenerate-keys');
 
@@ -30,8 +80,8 @@ export const regenerateKeys = () => post('/admin/settings/regenerate-keys');
 export const detectUrls = () => get('/admin/settings/detect-urls');
 
 // 更新 URL 配置（管理员）
-export const updateUrls = (apiUrl?: string, frontendUrl?: string) =>
-  post('/admin/settings/update-urls', { apiUrl, frontendUrl });
+export const updateUrls = (frontendUrl?: string) =>
+  post('/admin/settings/update-urls', { frontendUrl });
 
 // 系统初始化向导
 export const setupSystem = (setupData: any) => post('/admin/setup', setupData);

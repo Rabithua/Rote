@@ -98,6 +98,7 @@ export type Profile =
       description: string;
       cover: string;
       avatar: string;
+      role?: 'user' | 'admin' | 'moderator' | 'super_admin';
       createdAt: string;
       updatedAt: string;
     }

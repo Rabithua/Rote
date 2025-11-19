@@ -53,6 +53,7 @@ export async function createUser(data: {
   email: string;
   password: string;
   nickname?: string;
+  role?: string;
 }) {
   try {
     const salt = crypto.randomBytes(16);
@@ -66,6 +67,7 @@ export async function createUser(data: {
       nickname: data.nickname,
       passwordhash,
       salt,
+      role: data.role || 'user', // 使用传入的 role 或默认 'user'
       createdAt: sql`now()`,
       updatedAt: sql`now()`,
     };

@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import mainJson from '../../json/main.json';
 import {
   authenticateJWT,
   optionalJWT,
@@ -88,7 +89,7 @@ adminRouter.get('/status', async (c: HonoContext) => {
             databaseConnected,
             hasAdmin,
             siteName: (siteConfig as any)?.name || 'Not set',
-            siteUrl: (siteConfig as any)?.url || 'Not set',
+            frontendUrl: (siteConfig as any)?.frontendUrl || 'Not set',
             initializationVersion: (systemConfig as any)?.initializationVersion || '1.0.0',
           },
         }),
@@ -115,33 +116,69 @@ adminRouter.post('/setup', async (c: HonoContext) => {
     // 验证请求数据
     const body = await c.req.json();
     const setupData: SetupRequest = body;
-    if (!setupData.site || !setupData.storage || !setupData.ui || !setupData.admin) {
+    if (!setupData.site || !setupData.ui || !setupData.admin) {
       return c.json(createResponse(null, 'Missing required configuration data'), 400);
     }
 
     // 验证必需字段
-    if (!setupData.site.name || !setupData.site.url) {
-      return c.json(createResponse(null, 'Site name and URL are required'), 400);
+    if (!setupData.site.name || !setupData.site.frontendUrl) {
+      return c.json(createResponse(null, 'Site name and frontend URL are required'), 400);
     }
 
+    // 存储配置是可选的，但如果提供了，则必须完整
+    if (setupData.storage) {
+      if (
+        !setupData.storage.endpoint ||
+        !setupData.storage.bucket ||
+        !setupData.storage.accessKeyId ||
+        !setupData.storage.secretAccessKey
+      ) {
+        return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+      }
+
+      // 测试存储配置
+      const storageTest = await ConfigTester.testStorage(setupData.storage);
+      if (!storageTest.success) {
+        return c.json(
+          createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
+          400
+        );
+      }
+    }
+
+    // 验证 UI 配置
     if (
-      !setupData.storage.endpoint ||
-      !setupData.storage.bucket ||
-      !setupData.storage.accessKeyId ||
-      !setupData.storage.secretAccessKey
+      setupData.ui.allowRegistration === undefined ||
+      setupData.ui.allowUploadFile === undefined ||
+      !setupData.ui.defaultUserRole ||
+      setupData.ui.apiRateLimit === undefined
     ) {
-      return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+      return c.json(createResponse(null, 'UI configuration is incomplete'), 400);
+    }
+    // 验证 apiRateLimit 必须 >= 10
+    if (typeof setupData.ui.apiRateLimit !== 'number' || setupData.ui.apiRateLimit < 10) {
+      return c.json(createResponse(null, 'API rate limit must be a number and at least 10'), 400);
+    }
+    // 验证 defaultUserRole 必须是有效角色
+    if (!['user', 'moderator'].includes(setupData.ui.defaultUserRole)) {
+      return c.json(
+        createResponse(null, 'Default user role must be either "user" or "moderator"'),
+        400
+      );
     }
 
     if (!setupData.admin.username || !setupData.admin.email || !setupData.admin.password) {
       return c.json(createResponse(null, 'Admin user information is incomplete'), 400);
     }
 
-    // 测试存储配置
-    const storageTest = await ConfigTester.testStorage(setupData.storage);
-    if (!storageTest.success) {
+    // 验证管理员用户名不能是受保护的路由名称（不区分大小写）
+    const { safeRoutes } = mainJson;
+    if (safeRoutes.includes(setupData.admin.username.toLowerCase())) {
       return c.json(
-        createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
+        createResponse(
+          null,
+          'This username is reserved and cannot be used. Please choose another username.'
+        ),
         400
       );
     }
@@ -162,17 +199,17 @@ adminRouter.post('/setup', async (c: HonoContext) => {
       'site',
       {
         name: setupData.site.name,
-        url: setupData.site.url,
+        frontendUrl: setupData.site.frontendUrl,
         description: setupData.site.description || '',
         defaultLanguage: setupData.site.defaultLanguage || 'zh-CN',
-        apiUrl: '', // 留空，让系统自动检测
-        frontendUrl: setupData.site.url, // 使用站点 URL 作为前端 URL
       },
       { isRequired: true, isInitialized: true }
     );
 
-    // 2. 保存存储配置
-    await setConfig('storage', setupData.storage, { isRequired: true, isInitialized: true });
+    // 2. 保存存储配置（可选）
+    if (setupData.storage) {
+      await setConfig('storage', setupData.storage, { isRequired: false, isInitialized: true });
+    }
 
     // 3. 保存界面配置
     await setConfig('ui', setupData.ui, { isRequired: false, isInitialized: true });
@@ -283,6 +320,40 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       return c.json(createResponse(null, 'Only super admin can modify system configuration'), 403);
     }
 
+    // 如果是存储配置，需要先验证配置是否可用
+    if (group === 'storage') {
+      // 验证存储配置字段是否完整
+      if (!config.endpoint || !config.bucket || !config.accessKeyId || !config.secretAccessKey) {
+        return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+      }
+
+      // 测试存储配置是否可用
+      const storageTest = await ConfigTester.testStorage(config);
+      if (!storageTest.success) {
+        return c.json(
+          createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
+          400
+        );
+      }
+    }
+
+    // 如果是 UI 配置，验证 apiRateLimit
+    if (group === 'ui') {
+      if (
+        config.apiRateLimit !== undefined &&
+        (typeof config.apiRateLimit !== 'number' || config.apiRateLimit < 10)
+      ) {
+        return c.json(createResponse(null, 'API rate limit must be a number and at least 10'), 400);
+      }
+      // 验证 defaultUserRole 必须是有效角色
+      if (config.defaultUserRole && !['user', 'moderator'].includes(config.defaultUserRole)) {
+        return c.json(
+          createResponse(null, 'Default user role must be either "user" or "moderator"'),
+          400
+        );
+      }
+    }
+
     // 更新配置
     const success = await setConfig(group as any, config, {
       isRequired: ['site', 'storage', 'security'].includes(group),
@@ -390,13 +461,12 @@ adminRouter.post(
 // 自动检测当前 URL（管理员）
 adminRouter.get('/settings/detect-urls', authenticateJWT, requireAdmin, async (c: HonoContext) => {
   try {
-    // 动态检测当前 API URL
+    // 动态检测当前 API URL（始终自动检测）
     const detectedApiUrl = getApiUrl(c);
 
     // 获取当前站点配置
     const currentSiteConfig = (await getConfig('site')) as any;
-    const currentFrontendUrl =
-      currentSiteConfig?.frontendUrl || currentSiteConfig?.url || 'http://localhost:3001';
+    const currentFrontendUrl = currentSiteConfig?.frontendUrl || 'http://localhost:3001';
 
     return c.json(
       createResponse({
@@ -405,7 +475,6 @@ adminRouter.get('/settings/detect-urls', authenticateJWT, requireAdmin, async (c
           frontendUrl: currentFrontendUrl,
         },
         current: {
-          apiUrl: currentSiteConfig?.apiUrl || '',
           frontendUrl: currentSiteConfig?.frontendUrl || '',
         },
       }),
@@ -421,7 +490,7 @@ adminRouter.get('/settings/detect-urls', authenticateJWT, requireAdmin, async (c
 adminRouter.post('/settings/update-urls', authenticateJWT, requireAdmin, async (c: HonoContext) => {
   try {
     const body = await c.req.json();
-    const { apiUrl, frontendUrl } = body as { apiUrl?: string; frontendUrl?: string };
+    const { frontendUrl } = body as { frontendUrl?: string };
 
     // 获取当前站点配置
     const currentSiteConfig = (await getConfig('site')) as any;
@@ -429,11 +498,10 @@ adminRouter.post('/settings/update-urls', authenticateJWT, requireAdmin, async (
       return c.json(createResponse(null, 'Site configuration not found'), 404);
     }
 
-    // 更新 URL 配置
+    // 更新前端 URL 配置（API URL 始终自动检测，不需要更新）
     const updatedConfig = {
       ...currentSiteConfig,
-      apiUrl: apiUrl || '',
-      frontendUrl: frontendUrl || currentSiteConfig.url,
+      frontendUrl: frontendUrl || currentSiteConfig.frontendUrl,
     };
 
     const success = await setConfig('site', updatedConfig, {
@@ -450,7 +518,6 @@ adminRouter.post('/settings/update-urls', authenticateJWT, requireAdmin, async (
         {
           message: 'URL configuration updated successfully',
           urls: {
-            apiUrl: updatedConfig.apiUrl,
             frontendUrl: updatedConfig.frontendUrl,
           },
         },

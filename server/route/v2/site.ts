@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import type { NotificationConfig, StorageConfig } from '../../types/config';
+import type { NotificationConfig, StorageConfig, UiConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getConfig, isInitialized } from '../../utils/config';
 import { checkDatabaseConnection, getSiteMapData } from '../../utils/dbMethods';
@@ -25,6 +25,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
     const systemConfig = await getConfig('system');
     const notificationConfig = await getConfig<NotificationConfig>('notification');
     const storageConfig = (await getConfig('storage')) as Partial<StorageConfig> | null;
+    const uiConfig = await getConfig<UiConfig>('ui');
 
     // 检查数据库连接状态
     const databaseConnected = await checkDatabaseConnection();
@@ -47,7 +48,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
       site: {
         name: (siteConfig as any)?.name || 'Rote',
         description: (siteConfig as any)?.description || '',
-        url: (siteConfig as any)?.url || '',
+        frontendUrl: (siteConfig as any)?.frontendUrl || '',
         defaultLanguage: (siteConfig as any)?.defaultLanguage || 'zh-CN',
       },
 
@@ -66,6 +67,12 @@ siteRouter.get('/status', async (c: HonoContext) => {
       storage: {
         r2Configured,
         urlPrefix: r2Configured ? storageConfig?.urlPrefix || '' : '',
+      },
+
+      // UI 配置（用于前端判断是否允许注册等）
+      ui: {
+        allowRegistration: uiConfig?.allowRegistration ?? true,
+        allowUploadFile: uiConfig?.allowUploadFile ?? true,
       },
 
       // 时间戳
@@ -96,7 +103,7 @@ siteRouter.get('/config-status', async (c: HonoContext) => {
           site: {
             name: (siteConfig as any)?.name || 'Rote',
             description: (siteConfig as any)?.description || '',
-            url: (siteConfig as any)?.url || '',
+            frontendUrl: (siteConfig as any)?.frontendUrl || '',
           },
           system: {
             version: (systemConfig as any)?.initializationVersion || '1.0.0',

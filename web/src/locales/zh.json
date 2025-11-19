@@ -61,6 +61,7 @@
         "archived": "归档",
         "profile": "我的",
         "experiment": "实验",
+        "admin": "管理",
         "fold": "收起",
         "login": "登录",
         "logout": "登出"
@@ -281,14 +282,14 @@
       "subtitle": "欢迎使用 Rote！请按照以下步骤完成系统配置",
       "steps": {
         "basic": { "title": "基础配置", "description": "设置网站基本信息" },
-        "storage": { "title": "存储配置", "description": "配置 R2 云存储" },
+        "storage": { "title": "存储配置", "description": "配置 S3 云存储（可选）" },
         "admin": { "title": "管理员账户", "description": "创建管理员账户" }
       },
       "labels": {
         "siteName": "网站名称",
         "siteDescription": "网站描述",
-        "siteUrl": "网站URL",
-        "accountId": "R2 Account ID",
+        "frontendUrl": "前端 URL",
+        "accountId": "S3 Account ID",
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "存储桶名称",
@@ -301,10 +302,10 @@
       "placeholders": {
         "siteName": "请输入网站名称",
         "siteDescription": "请输入网站描述",
-        "siteUrl": "https://your-domain.com",
+        "frontendUrl": "https://your-domain.com",
         "accountId": "your-account-id",
-        "accessKey": "请输入 R2 Access Key",
-        "secretKey": "请输入 R2 Secret Key",
+        "accessKey": "请输入 S3 Access Key",
+        "secretKey": "请输入 S3 Secret Key",
         "bucket": "请输入存储桶名称",
         "urlPrefix": "https://bucket.your-domain.com",
         "adminUsername": "请输入管理员用户名",
@@ -313,19 +314,21 @@
         "adminNickname": "请输入管理员昵称"
       },
       "descriptions": {
-        "siteUrl": "网站URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。"
+        "frontendUrl": "前端URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。",
+        "s3Optional": "S3 存储配置是可选的。您可以跳过此步骤，稍后在系统设置中配置。如果跳过，系统将无法上传附件，但其他功能可以正常使用。"
       },
       "validation": {
         "siteNameRequired": "网站名称不能为空",
-        "siteUrlRequired": "网站URL不能为空",
-        "siteUrlInvalid": "请输入有效的URL（以http://或https://开头）",
-        "accountIdRequired": "R2 Account ID不能为空",
+        "frontendUrlRequired": "前端URL不能为空",
+        "frontendUrlInvalid": "请输入有效的URL（以http://或https://开头）",
+        "accountIdRequired": "S3 Account ID不能为空",
         "accessKeyRequired": "Access Key不能为空",
         "secretKeyRequired": "Secret Key不能为空",
         "bucketRequired": "存储桶名称不能为空",
         "urlPrefixRequired": "URL 前缀不能为空",
         "urlPrefixInvalid": "请输入有效的URL前缀（以http://或https://开头）",
         "usernameRequired": "用户名不能为空",
+        "usernameReserved": "该用户名已被保留，不能使用。请选择其他用户名。",
         "emailRequired": "邮箱不能为空",
         "emailInvalid": "请输入有效的邮箱地址",
         "passwordRequired": "密码不能为空",
@@ -336,20 +339,77 @@
         "next": "下一步",
         "finish": "完成配置",
         "saving": "保存中...",
-        "testConnection": "测试 R2 连接",
+        "testConnection": "测试 S3 连接",
+        "skipS3": "跳过 S3 配置",
+        "enableS3": "启用 S3 配置",
         "testing": "测试连接中..."
       },
       "toasts": {
         "systemInitialized": "系统已经初始化，将跳转到系统设置页面",
         "initSuccess": "系统初始化成功！",
         "initFailed": "系统初始化失败，请检查配置",
-        "testSuccess": "R2 连接测试成功！",
+        "testSuccess": "S3 连接测试成功！",
         "testFailed": "连接测试失败: {{error}}",
-        "pleaseFillR2": "请先填写完整的 R2 配置信息"
+        "pleaseFillS3": "请先填写完整的 S3 配置信息"
       },
       "ui": {
         "statistics": "统计 / Static"
       }
+    },
+    "admin": {
+      "title": "管理员仪表盘",
+      "accessDenied": "访问被拒绝",
+      "adminOnly": "此页面仅限管理员访问",
+      "tabs": {
+        "site": "站点设置",
+        "storage": "存储设置",
+        "ui": "界面设置"
+      },
+      "site": {
+        "title": "站点配置",
+        "description": "配置网站的基本信息",
+        "name": "网站名称",
+        "descriptionLabel": "网站描述",
+        "frontendUrl": "前端 URL",
+        "frontendUrlDescription": "前端访问地址，用于生成 RSS Feed 中的笔记链接"
+      },
+      "storage": {
+        "title": "存储配置",
+        "description": "配置 S3 云存储设置",
+        "endpoint": "端点",
+        "bucket": "存储桶",
+        "accessKeyId": "Access Key ID",
+        "secretAccessKey": "Secret Access Key",
+        "urlPrefix": "URL 前缀",
+        "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（可选）",
+        "notConfigured": "存储配置未设置",
+        "configureLater": "可以在系统设置中稍后配置",
+        "testConnection": "测试连接",
+        "testing": "测试中...",
+        "testSuccess": "存储连接测试成功！",
+        "testFailed": "连接测试失败: {{error}}"
+      },
+      "ui": {
+        "title": "界面配置",
+        "description": "配置用户界面相关设置",
+        "allowRegistration": "允许注册",
+        "allowRegistrationDesc": "是否允许新用户注册",
+        "allowUploadFile": "允许上传文件",
+        "allowUploadFileDesc": "是否允许用户上传附件",
+        "defaultUserRole": "默认用户角色",
+        "defaultUserRolePlaceholder": "选择默认角色",
+        "defaultUserRoleDescription": "新注册用户的默认角色。只能选择普通用户或版主，管理员角色需要手动分配。",
+        "roles": {
+          "user": "普通用户",
+          "moderator": "版主"
+        },
+        "apiRateLimit": "API 速率限制",
+        "apiRateLimitDescription": "每个用户或 IP 地址每秒允许的最大请求数。用于防止 API 滥用。最小值为 10，默认值为 100 请求/秒。"
+      },
+      "save": "保存",
+      "saving": "保存中...",
+      "saveSuccess": "保存成功",
+      "saveFailed": "保存失败: {{error}}"
     }
   },
   "components": {

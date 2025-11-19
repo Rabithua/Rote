@@ -3,7 +3,9 @@ import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { requireSecurityConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
+import type { UiConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
+import { getConfig } from '../../utils/config';
 import { changeUserPassword, createUser, passportCheckUser } from '../../utils/dbMethods';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
@@ -14,16 +16,26 @@ const authRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 注册
 authRouter.post('/register', async (c: HonoContext) => {
+  // 检查是否允许注册
+  const uiConfig = await getConfig<UiConfig>('ui');
+  if (uiConfig && uiConfig.allowRegistration === false) {
+    return c.json(createResponse(null, 'Registration is currently disabled'), 403);
+  }
+
   const body = await c.req.json();
   const { username, password, email, nickname } = body;
 
   RegisterDataZod.parse(body);
+
+  // 使用配置中的默认用户角色，如果没有配置则使用 'user'
+  const defaultRole = uiConfig?.defaultUserRole || 'user';
 
   const user = await createUser({
     username,
     password,
     email,
     nickname,
+    role: defaultRole,
   });
 
   if (!user.id) {
