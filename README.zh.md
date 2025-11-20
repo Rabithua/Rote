@@ -43,4 +43,4 @@ VITE_API_BASE=http://localhost:18000 docker-compose -f docker-compose.build.yml 
 
 ## 技术栈
 
-![Frame 1](https://github.com/Rabithua/Rote/assets/34543831/fc00f797-82bc-47fe-8c75-36ea0b1f6f76)
+<img width="866" height="526" alt="technology" src="https://github.com/user-attachments/assets/2be3a73b-467e-4d4b-8d9f-2a129aba4825" />
