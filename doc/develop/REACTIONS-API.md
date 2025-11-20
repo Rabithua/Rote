@@ -53,8 +53,10 @@ interface AddReactionRequest {
     "roteid": "a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d",
     "userid": "60f1a2b3c4d5e6f7g8h9i0j1",
     "visitorId": null,
+    "visitorInfo": null,
+    "metadata": null,
     "createdAt": "2025-06-08T10:30:00.000Z",
-    "isActive": true
+    "updatedAt": "2025-06-08T10:30:00.000Z"
   }
 }
 ```
@@ -108,7 +110,7 @@ curl -X POST '/api/v2/reactions' \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "❤️",
-    "roteid": "507f1f77bcf86cd799439011",
+    "roteid": "a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d",
     "visitorId": "fp_1234567890abcdef",
     "visitorInfo": {
       "browser": "Chrome",
@@ -145,7 +147,6 @@ interface Reaction {
   visitorId?: string; // 访客设备指纹ID（匿名用户）
   visitorInfo?: object; // 访客信息
   metadata?: object; // 附加元数据
-  isActive: boolean; // 是否活跃（软删除）
   createdAt: Date; // 创建时间
   updatedAt: Date; // 更新时间
 }
@@ -161,7 +162,7 @@ interface RoteWithReactions {
   title: string;
   content: string;
   // ... 其他笔记字段
-  reactions: Reaction[]; // 所有活跃的反应
+  reactions: Reaction[]; // 所有反应（删除操作是硬删除，已删除的反应不会出现在列表中）
 }
 ```
 
@@ -197,14 +198,14 @@ function generateDeviceFingerprint(): string {
 ### 反应去重
 
 - 同一用户（已登录或匿名）对同一笔记的同一反应类型只能存在一个
-- 添加已存在的反应会返回现有反应
+- 数据库通过唯一约束 `(userid, visitorId, roteid, type)` 保证去重
+- 如果尝试添加已存在的反应，数据库会抛出唯一约束冲突错误
 - 支持同一用户添加多种不同类型的反应
 
 ### 权限控制
 
-- 公开笔记：任何人都可以添加反应
-- 私有笔记：只有笔记作者可以添加反应
-- 删除反应：只能删除自己添加的反应
+- 删除反应：只能删除自己添加的反应（通过 `userid` 或 `visitorId` 匹配）
+- 笔记可见性：当前实现不检查笔记的 `state` 字段，任何知道笔记 ID 的用户都可以添加反应
 
 ### 数据统计
 
@@ -214,18 +215,22 @@ function generateDeviceFingerprint(): string {
 {
   "reactions": [
     {
-      "id": "64f1a2b3c4d5e6f7g8h9i0j1",
+      "id": "64f1a2b3-c4d5-e6f7-g8h9-i0j1k2l3m4n5",
       "type": "👍",
-      "roteid": "507f1f77bcf86cd799439011",
-      "userid": "60f1a2b3c4d5e6f7g8h9i0j1",
-      "createdAt": "2025-06-08T10:30:00.000Z"
+      "roteid": "a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d",
+      "userid": "60f1a2b3-c4d5-e6f7-g8h9-i0j1k2l3m4n5",
+      "visitorId": null,
+      "createdAt": "2025-06-08T10:30:00.000Z",
+      "updatedAt": "2025-06-08T10:30:00.000Z"
     },
     {
-      "id": "64f1a2b3c4d5e6f7g8h9i0j2",
+      "id": "64f1a2b3-c4d5-e6f7-g8h9-i0j1k2l3m4n6",
       "type": "❤️",
-      "roteid": "507f1f77bcf86cd799439011",
+      "roteid": "a2d1b6b3-1c4b-4a57-9d1e-2c3f4b5a6c7d",
+      "userid": null,
       "visitorId": "fp_1234567890abcdef",
-      "createdAt": "2025-06-08T10:31:00.000Z"
+      "createdAt": "2025-06-08T10:31:00.000Z",
+      "updatedAt": "2025-06-08T10:31:00.000Z"
     }
   ]
 }
@@ -235,12 +240,13 @@ function generateDeviceFingerprint(): string {
 
 ### 常见错误
 
-| 错误码 | 描述                   | 解决方案                |
-| ------ | ---------------------- | ----------------------- |
-| 400    | 缺少必需参数           | 检查请求参数            |
-| 400    | 无效的笔记 ID 格式     | 确保 roteid 为有效 UUID |
-| 404    | 笔记不存在             | 检查笔记 ID 是否正确    |
-| 400    | 匿名用户缺少 visitorId | 提供设备指纹 ID         |
+| 错误码  | 描述                     | 解决方案                             |
+| ------- | ------------------------ | ------------------------------------ |
+| 400     | 缺少必需参数             | 检查请求参数                         |
+| 400     | 无效的笔记 ID 格式       | 确保 roteid 为有效 UUID              |
+| 404     | 笔记不存在               | 检查笔记 ID 是否正确                 |
+| 400     | 匿名用户缺少 visitorId   | 提供设备指纹 ID                      |
+| 400/500 | 重复反应（唯一约束冲突） | 该用户已对该笔记添加过相同类型的反应 |
 
 ### 错误响应示例
 
@@ -256,12 +262,12 @@ function generateDeviceFingerprint(): string {
 
 ### 索引优化
 
-```sql
--- 反应查询优化索引
-CREATE INDEX idx_reaction_rote_user ON reactions(roteid, userid);
-CREATE INDEX idx_reaction_rote_visitor ON reactions(roteid, visitorId);
-CREATE INDEX idx_reaction_active ON reactions(isActive);
-```
+系统已自动创建以下索引以优化查询性能：
+
+- `reactions_roteid_type_idx`: 基于 `(roteid, type)` 的复合索引
+- `reactions_userid_idx`: 基于 `userid` 的索引
+- `reactions_visitorId_idx`: 基于 `visitorId` 的索引
+- `unique_reaction`: 唯一约束索引，基于 `(userid, visitorId, roteid, type)`
 
 ### 缓存策略
 
@@ -273,9 +279,9 @@ CREATE INDEX idx_reaction_active ON reactions(isActive);
 
 ### 防止滥用
 
-- 实施速率限制：每个用户/访客每分钟最多 10 个反应操作
-- 设备指纹验证：防止恶意生成假指纹
-- 反垃圾邮件：监控异常反应模式
+- 设备指纹验证：建议前端实现设备指纹生成逻辑，防止恶意生成假指纹
+- 反垃圾邮件：建议监控异常反应模式
+- 速率限制：当前版本未实现速率限制，建议在生产环境中添加中间件进行限流
 
 ### 数据隐私
 
@@ -285,5 +291,5 @@ CREATE INDEX idx_reaction_active ON reactions(isActive);
 
 ---
 
-_文档版本: v1.0.0_  
-_最后更新: 2025-06-08_
+_文档版本: v1.1.0_  
+_最后更新: 2025-01-XX_

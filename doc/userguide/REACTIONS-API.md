@@ -12,7 +12,7 @@
 
 - 反应类型可以是任意 Unicode emoji 字符（如：👍、❤️、😊、🎉 等）
 - 同一用户（已登录或匿名）可以对同一笔记添加多种不同的反应
-- 同一用户对同一笔记的同一反应类型只能存在一个（重复添加会返回现有反应）
+- 同一用户对同一笔记的同一反应类型只能存在一个（重复添加会触发唯一约束冲突错误）
 - 反应数据会自动包含在笔记详情中
 
 ---
@@ -20,7 +20,7 @@
 ### 1) 添加反应
 
 - **方法**: POST
-- **URL**: `/v2/api/reactions/`
+- **URL**: `/v2/api/reactions`
 - **Headers**:
   - `Content-Type: application/json`
   - `Authorization: Bearer <accessToken>`（可选，已登录用户）
@@ -34,7 +34,7 @@
 **已登录用户请求示例（cURL）**:
 
 ```bash
-curl -X POST 'https://your-domain.com/v2/api/reactions/' \
+curl -X POST 'https://your-domain.com/v2/api/reactions' \
   -H 'Authorization: Bearer <ACCESS_TOKEN>' \
   -H 'Content-Type: application/json' \
   -d '{
@@ -49,7 +49,7 @@ curl -X POST 'https://your-domain.com/v2/api/reactions/' \
 **匿名访客请求示例（cURL）**:
 
 ```bash
-curl -X POST 'https://your-domain.com/v2/api/reactions/' \
+curl -X POST 'https://your-domain.com/v2/api/reactions' \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "❤️",
@@ -92,7 +92,7 @@ curl -X POST 'https://your-domain.com/v2/api/reactions/' \
 
 - 已登录用户：`userid` 字段有值，`visitorId` 为 `null`
 - 匿名访客：`visitorId` 字段有值，`userid` 为 `null`
-- 如果该用户已对该笔记添加过相同类型的反应，会返回现有反应
+- 如果该用户已对该笔记添加过相同类型的反应，会触发唯一约束冲突错误
 
 可能的错误：
 
@@ -102,6 +102,7 @@ curl -X POST 'https://your-domain.com/v2/api/reactions/' \
 - 400 反应类型超过 50 个字符
 - 400 访客 ID 超过 200 个字符
 - 404 笔记不存在
+- 400/500 重复反应（唯一约束冲突）：该用户已对该笔记添加过相同类型的反应
 
 ---
 
@@ -163,11 +164,9 @@ curl -X DELETE 'https://your-domain.com/v2/api/reactions/<NOTE_ID>/%E2%9D%A4%EF%
 - **设备指纹生成**: 匿名访客需要生成唯一的设备指纹 ID（`visitorId`），建议使用设备特征（如浏览器指纹、设备 ID 等）生成，确保同一设备使用相同的指纹 ID
 - **URL 编码**: 删除反应时，emoji 字符在 URL 路径中需要进行 URL 编码，建议使用标准库进行编码
 - **反应类型**: 支持任意 Unicode emoji 字符，建议在客户端提供常用的 emoji 选择器
-- **权限控制**:
-  - 公开笔记：任何人都可以添加反应
-  - 私有笔记：只有笔记作者可以添加反应
+- **权限控制**: 当前实现不检查笔记的可见性状态（`state` 字段），任何知道笔记 ID 的用户都可以添加反应。删除反应时只能删除自己添加的反应（通过 `userid` 或 `visitorId` 匹配）
 - **数据同步**: 反应数据会自动包含在笔记详情中，获取笔记详情时会返回该笔记的所有反应
-- **重复添加**: 如果用户已对笔记添加过相同类型的反应，再次添加会返回现有反应，不会创建新的反应记录
+- **重复添加**: 如果用户已对笔记添加过相同类型的反应，再次添加会触发唯一约束冲突错误。建议在客户端先检查是否已存在该反应，避免重复请求
 
 ---
 
