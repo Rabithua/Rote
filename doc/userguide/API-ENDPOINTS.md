@@ -149,7 +149,7 @@
 
 | 路径                  | 方法 | 认证 | 描述                 |
 | --------------------- | ---- | ---- | -------------------- |
-| `/site/sitemap`       | GET  | 无   | 站点地图数据         |
+| `/site/sitemap`       | GET  | 无   | 标准 XML Sitemap     |
 | `/site/status`        | GET  | 无   | 站点状态             |
 | `/site/config-status` | GET  | 无   | 系统配置状态（引导） |
 

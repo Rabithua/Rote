@@ -26,12 +26,15 @@ export class SiteTestSuite {
       TestAssertions.assertStatus(response.status, 200, 'Get Sitemap');
       TestAssertions.assertSuccess(response.data, 'Get Sitemap');
 
-      const sitemap = response.data.data;
-      TestAssertions.assertNotNull(sitemap, 'Sitemap data should be retrieved');
+      const sitemapXml = response.data.data as string;
+      TestAssertions.assertNotNull(sitemapXml, 'Sitemap data should be retrieved');
+      TestAssertions.assertContains(sitemapXml, '<urlset', 'Sitemap XML should contain <urlset>');
+      TestAssertions.assertContains(sitemapXml, '<url>', 'Sitemap XML should contain <url>');
+      TestAssertions.assertContains(sitemapXml, '<loc>', 'Sitemap XML should contain <loc>');
 
       const duration = Date.now() - startTime;
       this.resultManager.recordResult('Get Sitemap', true, 'Sitemap data retrieved', duration);
-      return sitemap;
+      return sitemapXml;
     } catch (error: any) {
       const duration = Date.now() - startTime;
       this.resultManager.recordResult(

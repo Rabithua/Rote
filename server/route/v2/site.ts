@@ -4,14 +4,65 @@ import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getConfig, isInitialized } from '../../utils/config';
 import { checkDatabaseConnection, getSiteMapData } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
+import { generateSitemapXML } from '../../utils/sitemap';
 
 // 站点数据相关路由
 const siteRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 获取站点地图数据
 siteRouter.get('/sitemap', async (c: HonoContext) => {
-  const data = await getSiteMapData();
-  return c.json(createResponse(data), 200);
+  try {
+    const siteConfig = await getConfig('site');
+    const dynamicFrontendUrl = c.get('dynamicFrontendUrl') as string | undefined;
+    const baseFrontendUrl =
+      dynamicFrontendUrl || (siteConfig as any)?.frontendUrl || 'http://localhost:3001';
+
+    const buildFullUrl = (path: string) => {
+      const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+      const normalizedBase = baseFrontendUrl.endsWith('/')
+        ? baseFrontendUrl
+        : `${baseFrontendUrl}/`;
+      return new URL(normalizedPath, normalizedBase).toString();
+    };
+
+    const sitemapData = await getSiteMapData();
+
+    const staticRoutes = [
+      { path: '/', changefreq: 'daily' as const, priority: 1 },
+      { path: '/landing', changefreq: 'weekly' as const, priority: 0.8 },
+      { path: '/login', changefreq: 'monthly' as const, priority: 0.4 },
+      { path: '/explore', changefreq: 'daily' as const, priority: 0.7 },
+      { path: '/archived', changefreq: 'weekly' as const, priority: 0.6 },
+    ];
+
+    const urls = [
+      ...staticRoutes.map((route) => ({
+        loc: buildFullUrl(route.path),
+        changefreq: route.changefreq,
+        priority: route.priority,
+      })),
+      ...sitemapData.users
+        .filter((user) => Boolean(user.username))
+        .map((user) => ({
+          loc: buildFullUrl(`/${user.username}`),
+          lastmod: user.updatedAt ? new Date(user.updatedAt).toISOString() : undefined,
+          changefreq: 'weekly' as const,
+          priority: 0.8,
+        })),
+      ...sitemapData.notes.map((note) => ({
+        loc: buildFullUrl(`/rote/${note.id}`),
+        lastmod: note.updatedAt ? new Date(note.updatedAt).toISOString() : undefined,
+        changefreq: 'daily' as const,
+        priority: 0.6,
+      })),
+    ];
+
+    const sitemapXml = generateSitemapXML(urls);
+    c.header('Content-Type', 'application/xml; charset=utf-8');
+    return c.body(sitemapXml, 200);
+  } catch (_error) {
+    return c.json(createResponse(null, 'Failed to generate sitemap'), 500);
+  }
 });
 
 // 获取站点状态和基本信息
