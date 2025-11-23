@@ -137,11 +137,11 @@ function PrivacyPolicyPage() {
           <p>{t('sections.contact.description')}</p>
           <ul>
             <li>
-              {t('sections.contact.email')}
+              {t('sections.contact.email')}&nbsp;
               <a href="mailto:rabithua@gmail.com">rabithua@gmail.com</a>
             </li>
             <li>
-              {t('sections.contact.githubIssues')}{' '}
+              {t('sections.contact.githubIssues')}&nbsp;
               <a
                 href="https://github.com/rabithua/rote/issues"
                 target="_blank"
