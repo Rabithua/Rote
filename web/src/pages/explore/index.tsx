@@ -52,74 +52,7 @@ function ExplorePage() {
     mutate();
   };
 
-  const SideBar = () => {
-    const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
-      'https://api.github.com/repos/rabithua/rote',
-      fetcher
-    );
 
-    const dataRender = [
-      {
-        key: 'stargazers_count',
-        icon: <Star className="size-4" />,
-        title: t('star'),
-      },
-      {
-        key: 'forks_count',
-        icon: <GitFork className="size-4" />,
-        title: t('fork'),
-      },
-      {
-        key: 'open_issues_count',
-        icon: <MessageCircleQuestionIcon className="size-4" />,
-        title: t('issues'),
-      },
-      {
-        key: 'watchers_count',
-        icon: <Eye className="size-4" />,
-        title: t('watch'),
-      },
-    ];
-
-    return (
-      <div className="flex w-full flex-col divide-y-1">
-        {isRoteGithubDataLoading ? (
-          <LoadingPlaceholder className="py-8" size={6} />
-        ) : (
-          <Link target="_blank" to={roteGithubData.html_url} className="flex flex-col gap-2 p-4">
-            <div className="text-sm font-thin">{t('githubOpenSource')}</div>
-            <div className="grid w-4/5 grid-cols-2 justify-between gap-2">
-              {dataRender.map((item) => (
-                <div key={item.key} className="flex items-center gap-2">
-                  {item.icon}
-                  <div className="flex items-center gap-1 text-sm">
-                    <SlidingNumber number={roteGithubData[item.key]} /> {item.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="text-info text-xs">
-              {t('lastPushTime')}
-              {formatTimeAgo(roteGithubData.pushed_at)}
-            </div>
-          </Link>
-        )}
-
-        <div className="flex flex-col">
-          <div className="p-4 pb-0 font-semibold">
-            EveDayOneCat <br />
-            <div className="text-info text-sm font-normal">
-              <Link to={'http://motions.cat/index.html'} target="_blank">
-                From: http://motions.cat/index.html
-              </Link>
-            </div>
-          </div>
-          <RandomCat />
-          <div className="mx-4">Click img to random one cat.</div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <ContainerWithSideBar
@@ -143,5 +76,76 @@ function ExplorePage() {
     </ContainerWithSideBar>
   );
 }
+
+
+const SideBar = () => {
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });
+  const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
+    'https://api.github.com/repos/rabithua/rote',
+    fetcher
+  );
+
+  const dataRender = [
+    {
+      key: 'stargazers_count',
+      icon: <Star className="size-4" />,
+      title: t('star'),
+    },
+    {
+      key: 'forks_count',
+      icon: <GitFork className="size-4" />,
+      title: t('fork'),
+    },
+    {
+      key: 'open_issues_count',
+      icon: <MessageCircleQuestionIcon className="size-4" />,
+      title: t('issues'),
+    },
+    {
+      key: 'watchers_count',
+      icon: <Eye className="size-4" />,
+      title: t('watch'),
+    },
+  ];
+
+  return (
+    <div className="flex w-full flex-col divide-y-1">
+      {isRoteGithubDataLoading ? (
+        <LoadingPlaceholder className="py-8" size={6} />
+      ) : (
+        <Link target="_blank" to={roteGithubData.html_url} className="flex flex-col gap-2 p-4">
+          <div className="text-sm font-thin">{t('githubOpenSource')}</div>
+          <div className="grid w-4/5 grid-cols-2 justify-between gap-2">
+            {dataRender.map((item) => (
+              <div key={item.key} className="flex items-center gap-2">
+                {item.icon}
+                <div className="flex items-center gap-1 text-sm">
+                  <SlidingNumber number={roteGithubData[item.key]} /> {item.title}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="text-info text-xs">
+            {t('lastPushTime')}
+            {formatTimeAgo(roteGithubData.pushed_at)}
+          </div>
+        </Link>
+      )}
+
+      <div className="flex flex-col">
+        <div className="p-4 pb-0 font-semibold">
+          EveDayOneCat <br />
+          <div className="text-info text-sm font-normal">
+            <Link to={'http://motions.cat/index.html'} target="_blank">
+              From: http://motions.cat/index.html
+            </Link>
+          </div>
+        </div>
+        <RandomCat />
+        <div className="mx-4">Click img to random one cat.</div>
+      </div>
+    </div>
+  );
+};
 
 export default ExplorePage;

@@ -368,7 +368,16 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
   - `Content-Type: application/json`
 - **路径参数**:
   - `id`: string（笔记 ID，UUID 格式）
-- **Body**: 需要更新的字段（与创建接口字段相同，长度限制也相同）
+- **Body**: 需要更新的字段（所有字段均为可选，长度限制与创建接口相同）
+  - `content`: string（可选，最大 1,000,000 个字符）
+  - `title`: string（可选，最大 200 个字符）
+  - `type`: string（可选）
+  - `state`: string（可选）
+  - `editor`: string（可选）
+  - `tags`: string[]（可选，每个标签最大 50 个字符，最多 20 个标签）
+  - `pin`: boolean（可选）
+  - `archived`: boolean（可选）
+  - `attachmentIds`: string[]（可选）
 
 请求示例（cURL）:
 
@@ -379,7 +388,9 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
   -d '{
     "content": "更新后的笔记内容",
     "title": "更新后的标题",
-    "state": "public"
+    "state": "public",
+    "tags": ["新标签1", "新标签2"],
+    "attachmentIds": ["attachment-uuid-1", "attachment-uuid-2"]
   }'
 ```
 
@@ -421,6 +432,7 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
 - 400 标题超过 200 个字符
 - 400 内容超过 1,000,000 个字符
 - 400 标签超过长度限制（单个标签最大 50 个字符，最多 20 个标签）
+- 400 附件 ID 格式错误（必须是有效的 UUID）
 
 ---
 
@@ -641,18 +653,18 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选）
-  - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
+  - `tag`: string | string[]（可选，按标签过滤）
   - 其他过滤参数
 
 **标签过滤说明**：
 
-- 支持 `tag` 和 `tag[]` 两种查询参数格式
+- 支持单个标签或多个标签（数组格式）
 - 多个标签时使用 `hasEvery` 逻辑（笔记需包含所有指定标签）
 
 请求示例（cURL）:
 
 ```bash
-curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关键词&skip=0&limit=20'
+curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关键词&skip=0&limit=20&tag=技术'
 ```
 
 成功响应示例（200）：
@@ -690,7 +702,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
 可能的错误：
 
 - 400 关键词参数缺失
-- 400 搜索关键词超过 200 个字符
 - 400 搜索关键词超过 200 个字符
 - 404 用户不存在
 
