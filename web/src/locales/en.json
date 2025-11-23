@@ -409,6 +409,112 @@
       "saving": "Saving...",
       "saveSuccess": "Saved successfully",
       "saveFailed": "Save failed: {{error}}"
+    },
+    "privacy": {
+      "title": "Privacy Policy",
+      "effectiveDate": "Effective Date: November 23, 2025",
+      "welcome": "Welcome to Rote (hereinafter referred to as \"this application\"). We take your privacy protection very seriously. This privacy policy is designed to explain how we collect, use, store, and share your personal information, as well as your related rights. Please read this policy carefully before using this application.",
+      "sections": {
+        "informationCollection": {
+          "title": "1. Information We Collect",
+          "description": "To provide you with services, we may collect the following types of information:",
+          "providedInfo": {
+            "title": "1.1 Information You Provide",
+            "accountInfo": {
+              "label": "Account Information",
+              "content": "When you register an account, you may need to provide information such as username, email address, password, etc."
+            },
+            "userContent": {
+              "label": "User Content",
+              "content": "Data such as notes, images, tags, etc. that you create, upload, or store while using this application."
+            },
+            "profile": {
+              "label": "Profile Information",
+              "content": "Information such as nickname, bio, avatar, etc. that you fill in on your profile page."
+            }
+          },
+          "autoCollected": {
+            "title": "1.2 Automatically Collected Information",
+            "deviceInfo": {
+              "label": "Device Information",
+              "content": "We may collect information such as your device model, operating system version, unique device identifier, etc., for anonymous behavior identification."
+            }
+          }
+        },
+        "informationUsage": {
+          "title": "2. How We Use Information",
+          "description": "We use the collected information for the following purposes:",
+          "provideService": {
+            "label": "Service Provision",
+            "content": "To provide you with core features such as note recording, storage, synchronization, and social sharing."
+          },
+          "security": {
+            "label": "Security",
+            "content": "To monitor abnormal behavior, prevent fraud and abuse, and protect your account security."
+          },
+          "communication": {
+            "label": "Communication",
+            "content": "To send you service notifications, update reminders, or respond to your inquiries."
+          }
+        },
+        "informationSharing": {
+          "title": "3. Information Sharing and Disclosure",
+          "description": "We promise not to sell your personal information to third parties. We may only share your information in the following circumstances:",
+          "consent": {
+            "label": "With Your Consent",
+            "content": "Sharing with your explicit consent."
+          },
+          "legal": {
+            "label": "Legal Requirements",
+            "content": "Disclosure in accordance with laws, regulations, court orders, or government agency requirements."
+          },
+          "serviceProvider": {
+            "label": "Service Providers",
+            "content": "Sharing necessary information with third-party partners (such as cloud storage providers) who assist us in operating our services, and requiring them to comply with this privacy policy."
+          }
+        },
+        "dataStorage": {
+          "title": "4. Data Storage and Security",
+          "storage": {
+            "label": "Data Storage",
+            "content": "Your information will be stored on secure servers."
+          },
+          "security": {
+            "label": "Security Measures",
+            "content": "We adopt reasonable security measures such as encryption technology and access control to protect your data from unauthorized access, disclosure, or tampering."
+          },
+          "retention": {
+            "label": "Data Retention",
+            "content": "We only retain your personal information for the period necessary to provide services, unless otherwise required by law."
+          }
+        },
+        "yourRights": {
+          "title": "5. Your Rights",
+          "description": "You have the following rights regarding your personal information:",
+          "access": {
+            "label": "Access and Correction",
+            "content": "You can log in to your account at any time to view and modify your profile and content."
+          },
+          "delete": {
+            "label": "Deletion",
+            "content": "You can request deletion of your account and related data."
+          },
+          "withdraw": {
+            "label": "Withdraw Consent",
+            "content": "You can withdraw your consent to our collection and use of your information at any time (though this may affect your use of some features)."
+          }
+        },
+        "policyRevision": {
+          "title": "6. Privacy Policy Revisions",
+          "description": "We may update this privacy policy from time to time. Updated policies will be published within this application, and continued use of this application indicates your agreement to be bound by the updated policy."
+        },
+        "contact": {
+          "title": "7. Contact Us",
+          "description": "If you have any questions or suggestions about this privacy policy, please contact us through the following methods:",
+          "email": "Email:",
+          "githubIssues": "GitHub Issues:"
+        }
+      }
     }
   },
   "error": {

@@ -13,6 +13,7 @@
     "archived",
     "experiment",
     "admin",
+    "app",
     "unknown"
   ],
   "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE"]
