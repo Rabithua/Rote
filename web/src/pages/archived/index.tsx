@@ -57,13 +57,7 @@ function MainPage() {
 function ArchivedPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.archived' });
 
-  const SideBar = () => (
-    <>
-      <Heatmap />
-      <TagMap />
-      <RandomRote />
-    </>
-  );
+
 
   return (
     <ContainerWithSideBar
@@ -81,5 +75,14 @@ function ArchivedPage() {
     </ContainerWithSideBar>
   );
 }
+
+
+const SideBar = () => (
+  <>
+    <Heatmap />
+    <TagMap />
+    <RandomRote />
+  </>
+);
 
 export default ArchivedPage;
