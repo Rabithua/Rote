@@ -121,7 +121,7 @@ export default function GlobalRouterProvider() {
           ),
         },
         {
-          path: 'privacy',
+          path: 'app/privacy',
           errorElement: <ErrorPage />,
           element: <PrivacyPolicyPage />,
         },
