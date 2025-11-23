@@ -93,26 +93,7 @@ function MainPage() {
 function HomePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
 
-  const SideBar = () => {
-    const navigate = useNavigate();
 
-    return (
-      <>
-        <SearchBar
-          onSearch={(keyword) => {
-            navigate('/filter', {
-              state: {
-                initialKeyword: keyword.trim(),
-              },
-            });
-          }}
-        />
-        <Heatmap />
-        <TagMap />
-        <RandomRote />
-      </>
-    );
-  };
 
   return (
     <ContainerWithSideBar
@@ -130,5 +111,27 @@ function HomePage() {
     </ContainerWithSideBar>
   );
 }
+
+
+const SideBar = () => {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <SearchBar
+        onSearch={(keyword) => {
+          navigate('/filter', {
+            state: {
+              initialKeyword: keyword.trim(),
+            },
+          });
+        }}
+      />
+      <Heatmap />
+      <TagMap />
+      <RandomRote />
+    </>
+  );
+};
 
 export default HomePage;
