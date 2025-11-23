@@ -12,6 +12,7 @@ import MineFilter from '@/pages/filter';
 import HomePage from '@/pages/home';
 import Landing from '@/pages/landing';
 import Login from '@/pages/login';
+import PrivacyPolicyPage from '@/pages/privacy';
 import ProfilePage from '@/pages/profile';
 import SingleRotePage from '@/pages/rote/:roteid';
 import SetupPage from '@/pages/setup';
@@ -119,6 +120,12 @@ export default function GlobalRouterProvider() {
             </ProtectedRoute>
           ),
         },
+        {
+          path: 'privacy',
+          errorElement: <ErrorPage />,
+          element: <PrivacyPolicyPage />,
+        },
+
         {
           path: ':username',
           element: <UserPage />,
