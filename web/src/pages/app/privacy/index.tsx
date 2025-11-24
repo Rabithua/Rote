@@ -22,7 +22,7 @@ function PrivacyPolicyPage() {
 
       {/* Content */}
       <div className="container mx-auto max-w-3xl px-6 py-16 sm:py-24">
-        <article className="prose prose-neutral dark:prose-invert prose-lg prose-headings:font-bold prose-h1:text-4xl prose-h1:tracking-tight prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-xl prose-strong:text-foreground prose-li:marker:text-primary/50 mx-auto">
+        <article className="prose prose-neutral dark:prose-invert prose-li:break-all w-full overflow-hidden">
           <div className="mb-12">
             <h1 className="mb-4">{t('title')}</h1>
             <p className="text-muted-foreground text-lg">{t('effectiveDate')}</p>
