@@ -94,7 +94,7 @@ html {
   --sidebar-ring: oklch(0.708 0 0);
 
   --pattern-fg:
-    color-mix(in oklab, var(--color-black) 5%, transparent);
+    color-mix(in oklab, var(--color-foreground) 5%, transparent);
 }
 
 .dark {
