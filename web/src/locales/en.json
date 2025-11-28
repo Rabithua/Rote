@@ -52,7 +52,8 @@
       "redirectingToSetup": {
         "error": "Backend error detected, redirecting to setup page",
         "notInitialized": "System not initialized, redirecting to setup page"
-      }
+      },
+      "iosAppAlmostReady": "IOS App is almost ready!"
     },
     "mine": {
       "leftNavBar": {

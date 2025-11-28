@@ -52,7 +52,8 @@
       "redirectingToSetup": {
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
-      }
+      },
+      "iosAppAlmostReady": "IOS App 即将上线！"
     },
     "mine": {
       "leftNavBar": {
