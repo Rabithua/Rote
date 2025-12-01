@@ -60,12 +60,35 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
     );
   }
 
-  // Validation errors
+  // Validation errors（包含 Zod 校验错误）
   if (err.name === 'ValidationError' || err.name === 'ZodError') {
+    // 默认使用原始错误信息
+    let message = err.message;
+
+    const anyErr = err as any;
+
+    // 优先从 Zod 的 issues 中提取更友好的 message
+    if (Array.isArray(anyErr.issues) && anyErr.issues.length > 0) {
+      const firstIssue = anyErr.issues[0];
+      if (firstIssue?.message && typeof firstIssue.message === 'string') {
+        message = firstIssue.message;
+      }
+    } else {
+      // 兼容部分场景：message 里直接是 JSON 字符串（如 [ { origin, code, message } ]）
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.message) {
+          message = parsed[0].message;
+        }
+      } catch {
+        // 解析失败则保留原始 message
+      }
+    }
+
     return c.json(
       {
         code: 1,
-        message: err.message,
+        message,
         data: null,
       },
       400
