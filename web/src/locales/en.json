@@ -415,105 +415,110 @@
     },
     "privacy": {
       "title": "Privacy Policy",
-      "effectiveDate": "Effective Date: November 23, 2025",
-      "welcome": "Welcome to Rote (hereinafter referred to as \"this application\"). We take your privacy protection very seriously. This privacy policy is designed to explain how we collect, use, store, and share your personal information, as well as your related rights. Please read this policy carefully before using this application.",
+      "effectiveDate": "Effective Date: December 2, 2025",
+      "welcome": "Welcome to Rote (hereinafter referred to as \"the App\"). We take your privacy very seriously. This privacy policy explains how we collect, use, store, and share your personal information, as well as the rights you have. Please read this policy carefully before using the App.",
       "sections": {
         "informationCollection": {
-          "title": "1. Information We Collect",
-          "description": "To provide you with services, we may collect the following types of information:",
+          "title": "1. Information We Collect and Purposes",
+          "description": "To provide you with our services, we may collect the following types of information, and will only use them for the clear and specific purposes described:",
           "providedInfo": {
             "title": "1.1 Information You Provide",
             "accountInfo": {
               "label": "Account Information",
-              "content": "When you register an account, you may need to provide information such as username, email address, password, etc."
+              "content": "Username, securely encrypted password, and email address you provide during registration, used for creating your account, login verification, password recovery, and sending important service-related notices."
             },
             "userContent": {
               "label": "User Content",
-              "content": "Data such as notes, images, tags, etc. that you create, upload, or store while using this application."
+              "content": "Notes, images, tags, comments, and other content you create, upload, or store while using the App, used only to provide you with note-taking, storage, synchronization, and (when you choose to make content public) sharing features."
             },
             "profile": {
               "label": "Profile Information",
-              "content": "Information such as nickname, bio, avatar, etc. that you fill in on your profile page."
+              "content": "Nickname, bio, avatar, and similar information you fill in on your profile page, used for in-app identity display and basic social interaction."
             }
           },
           "autoCollected": {
-            "title": "1.2 Automatically Collected Information",
+            "title": "1.2 Automatically Collected Information (Anonymized)",
             "deviceInfo": {
-              "label": "Device Information",
-              "content": "We may collect information such as your device model, operating system version, unique device identifier, etc., for anonymous behavior identification."
+              "label": "Device and Log Information",
+              "content": "We may collect anonymized or de-identified data such as device model, operating system version, IP address, browser information, and crash logs, used only for security protection (e.g., detecting abnormal behavior, preventing abuse) and app performance analysis, not for identifying your real-world identity."
             }
           }
         },
         "informationUsage": {
           "title": "2. How We Use Information",
-          "description": "We use the collected information for the following purposes:",
+          "description": "We use the collected information for the following purposes and will not go beyond the scope described in this policy:",
           "provideService": {
-            "label": "Service Provision",
-            "content": "To provide you with core features such as note recording, storage, synchronization, and social sharing."
+            "label": "Provide Core Services",
+            "content": "To provide you with core features such as note creation, storage, synchronization, and sharing (when you choose to make content public)."
           },
           "security": {
-            "label": "Security",
-            "content": "To monitor abnormal behavior, prevent fraud and abuse, and protect your account security."
+            "label": "Security and Maintenance",
+            "content": "To monitor abnormal behavior, prevent fraud and abuse, protect the security of your account and data, and analyze crash reports and error logs to improve and optimize the App."
           },
           "communication": {
             "label": "Communication",
-            "content": "To send you service notifications, update reminders, or respond to your inquiries."
+            "content": "To send you important service-related notifications (such as security alerts and feature updates) and to respond to your inquiries."
           }
         },
         "informationSharing": {
           "title": "3. Information Sharing and Disclosure",
-          "description": "We promise not to sell your personal information to third parties. We may only share your information in the following circumstances:",
+          "description": "We will not sell your personal information to any third party. We may share your information only under the following limited circumstances:",
           "consent": {
-            "label": "With Your Consent",
-            "content": "Sharing with your explicit consent."
+            "label": "With Your Explicit Consent",
+            "content": "We will share your information with third parties only after obtaining your explicit, informed consent."
           },
           "legal": {
-            "label": "Legal Requirements",
-            "content": "Disclosure in accordance with laws, regulations, court orders, or government agency requirements."
+            "label": "Legal and Regulatory Requirements",
+            "content": "We may disclose your information in accordance with applicable laws, regulations, court orders, or compulsory requirements of competent authorities, under the principles of legality, necessity, and minimal disclosure."
           },
           "serviceProvider": {
             "label": "Service Providers",
-            "content": "Sharing necessary information with third-party partners (such as cloud storage providers) who assist us in operating our services, and requiring them to comply with this privacy policy."
+            "content": "We may use third-party service providers such as cloud service providers or email delivery services to help us operate the App. These providers may access only the minimum necessary information to perform their services and are contractually required to protect your data and not use it for any unrelated purposes."
           }
         },
+        "tracking": {
+          "title": "4. Tracking Technologies and User Consent",
+          "description": "Rote does not currently use third-party ad networks, does not conduct cross-app or cross-website behavioral tracking, and does not use advertising identifiers (such as IDFA) for personalized advertising or user profiling.",
+          "att": "If we ever need to use Apple's App Tracking Transparency (ATT) framework in the future for cross-app/website tracking, we will clearly explain the purposes in advance and will only proceed after obtaining your explicit authorization through the system prompt. If you refuse or later revoke permission, we will not perform such tracking or display personalized ads."
+        },
         "dataStorage": {
-          "title": "4. Data Storage and Security",
+          "title": "5. Data Storage, Security, and Retention",
           "storage": {
-            "label": "Data Storage",
-            "content": "Your information will be stored on secure servers."
+            "label": "Data Storage Location",
+            "content": "Rote is an open-source project and the backend is typically deployed by you or your service provider. Your data will be stored on servers in the region you (or your provider) choose, such as self-hosted servers or trusted cloud providers' data centers. We recommend choosing server locations that comply with the data protection laws applicable to you."
           },
           "security": {
             "label": "Security Measures",
-            "content": "We adopt reasonable security measures such as encryption technology and access control to protect your data from unauthorized access, disclosure, or tampering."
+            "content": "We design the backend with reasonable security measures such as TLS/SSL encrypted transmission, access control, and encrypted password storage to help prevent unauthorized access, disclosure, or tampering. If you self-host the backend, you are also responsible for configuring appropriate security protections for your servers, such as firewalls and access control policies."
           },
           "retention": {
             "label": "Data Retention",
-            "content": "We only retain your personal information for the period necessary to provide services, unless otherwise required by law."
+            "content": "We retain your personal information only for as long as necessary to provide the services (i.e., for as long as your account remains active). When you delete data or request account deletion, we will delete or anonymize your related data within a reasonable period, unless a longer retention period is required by applicable law."
           }
         },
         "yourRights": {
-          "title": "5. Your Rights",
-          "description": "You have the following rights regarding your personal information:",
+          "title": "6. Your Rights",
+          "description": "You have the following rights with respect to your personal information, and we will respect and support the exercise of these rights in accordance with applicable laws:",
           "access": {
             "label": "Access and Correction",
-            "content": "You can log in to your account at any time to view and modify your profile and content."
+            "content": "You can log in to your account at any time to view and edit your profile and stored content. If you self-host the backend, you may also access and export data directly through database management or backups."
           },
           "delete": {
-            "label": "Deletion",
-            "content": "You can request deletion of your account and related data."
+            "label": "Deletion and Account Closure",
+            "content": "You can delete individual notes or attachments in the App, or request deletion of your account and related data. If you self-host the backend, you can also delete all stored data by destroying servers, storage volumes, or backups under your control."
           },
           "withdraw": {
             "label": "Withdraw Consent",
-            "content": "You can withdraw your consent to our collection and use of your information at any time (though this may affect your use of some features)."
+            "content": "For processing activities based on your consent, you may withdraw your consent at any time. Withdrawal of consent will not affect the lawfulness of processing carried out based on consent before its withdrawal, but may result in some features no longer being available."
           }
         },
         "policyRevision": {
-          "title": "6. Privacy Policy Revisions",
-          "description": "We may update this privacy policy from time to time. Updated policies will be published within this application, and continued use of this application indicates your agreement to be bound by the updated policy."
+          "title": "7. Privacy Policy Revisions",
+          "description": "We may update this privacy policy from time to time due to changes in laws, regulations, or our services. Updated versions will be published within the App or on related pages. Your continued use of the App after the updated policy takes effect will be deemed as your acceptance of the updated policy. For material changes, we will provide more prominent notice or in-app messages where appropriate."
         },
         "contact": {
-          "title": "7. Contact Us",
-          "description": "If you have any questions or suggestions about this privacy policy, please contact us through the following methods:",
+          "title": "8. Contact Us",
+          "description": "If you have any questions, comments, or suggestions regarding this privacy policy or our handling of your personal information, please contact us via:",
           "email": "Email:",
           "githubIssues": "GitHub Issues:"
         }
