@@ -403,9 +403,65 @@ Content-Disposition: attachment; filename=demo-2024-01-01-12-00-00.json
 
 ---
 
+### 9) 删除用户账户
+
+- **方法**: DELETE
+- **URL**: `/v2/api/users/me`
+- **Headers**:
+  - `Authorization: Bearer <accessToken>`（必填）
+  - `Content-Type: application/json`
+- **Body**:
+  - `password`: string（必填，用户密码，用于确认删除操作）
+
+请求示例（cURL）:
+
+```bash
+curl -X DELETE 'https://your-domain.com/v2/api/users/me' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "password": "your-password"
+  }'
+```
+
+成功响应示例（200）：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "success": true
+  }
+}
+```
+
+说明：
+
+- 此操作会**永久删除**用户账户及其所有相关数据，**无法恢复**
+- 删除范围包括：
+  - 用户账户信息（用户名、邮箱、个人资料等）
+  - 用户设置（探索页可见性等）
+  - 用户的所有笔记（rotes）
+  - 用户的所有附件文件（包括 R2/S3 存储中的文件）
+  - 用户的 API 密钥（open keys）
+  - 用户的推送订阅（service worker subscriptions）
+  - 用户对其他笔记的反应记录会被保留，但 `userid` 会被设为 `null`
+- 删除操作需要密码确认，确保是用户本人操作
+- 建议在执行删除操作前，先使用导出接口备份数据
+
+可能的错误：
+
+- 400 密码参数缺失
+- 401 未认证（需要登录）
+- 400 密码错误
+
+---
+
 ### 客户端使用建议
 
 - **权限控制**: 获取和更新个人资料、标签、统计数据等接口需要认证，且只能操作当前登录用户的数据
 - **用户信息查询**: 通过用户名查询用户信息无需认证，但返回的信息有限（不包含邮箱等敏感信息）
 - **热力图数据**: 日期格式必须为 `YYYY-MM-DD`，建议在客户端进行格式验证
 - **数据导出**: 导出接口返回文件下载，注意处理响应头中的 `Content-Disposition` 字段以获取正确的文件名
+- **账户删除**: 删除账户是不可逆操作，建议在删除前提示用户确认，并建议用户先导出数据备份

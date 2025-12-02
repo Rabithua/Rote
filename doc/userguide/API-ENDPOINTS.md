@@ -33,15 +33,16 @@
 
 ### 3) 用户
 
-| 路径                   | 方法 | 认证 | 描述         |
-| ---------------------- | ---- | ---- | ------------ |
-| `/users/:username`     | GET  | 无   | 获取用户信息 |
-| `/users/me/profile`    | GET  | 登录 | 获取我的资料 |
-| `/users/me/profile`    | PUT  | 登录 | 更新我的资料 |
-| `/users/me/tags`       | GET  | 登录 | 获取我的标签 |
-| `/users/me/heatmap`    | GET  | 登录 | 活跃热力图   |
-| `/users/me/statistics` | GET  | 登录 | 统计信息     |
-| `/users/me/export`     | GET  | 登录 | 导出数据     |
+| 路径                   | 方法   | 认证 | 描述         |
+| ---------------------- | ------ | ---- | ------------ |
+| `/users/:username`     | GET    | 无   | 获取用户信息 |
+| `/users/me/profile`    | GET    | 登录 | 获取我的资料 |
+| `/users/me/profile`    | PUT    | 登录 | 更新我的资料 |
+| `/users/me/tags`       | GET    | 登录 | 获取我的标签 |
+| `/users/me/heatmap`    | GET    | 登录 | 活跃热力图   |
+| `/users/me/statistics` | GET    | 登录 | 统计信息     |
+| `/users/me/export`     | GET    | 登录 | 导出数据     |
+| `/users/me`            | DELETE | 登录 | 删除账户     |
 
 ### 4) RSS
 

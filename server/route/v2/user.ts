@@ -4,6 +4,7 @@ import type { User } from '../../drizzle/schema';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
+  deleteUserAccount,
   editMyProfile,
   exportData,
   getHeatMap,
@@ -109,6 +110,20 @@ usersRouter.get('/me/export', authenticateJWT, async (c: HonoContext) => {
   );
 
   return c.text(jsonData);
+});
+
+// 删除当前用户账户
+usersRouter.delete('/me', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+  const { password } = body;
+
+  if (!password) {
+    throw new Error('Password is required');
+  }
+
+  const data = await deleteUserAccount(user.id, password);
+  return c.json(createResponse(data), 200);
 });
 
 export default usersRouter;

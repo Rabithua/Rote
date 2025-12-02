@@ -171,7 +171,22 @@
         "save": "Save Settings",
         "saving": "Saving…",
         "saveSuccess": "Settings saved",
-        "saveFailed": "Failed to save: {{error}}"
+        "saveFailed": "Failed to save: {{error}}",
+        "deleteAccount": {
+          "title": "Delete Account",
+          "description": "Deleting your account will permanently delete all your data, including notes, attachments, etc. This action cannot be undone.",
+          "button": "Delete Account",
+          "confirmTitle": "Confirm Account Deletion",
+          "warning": "This action will permanently delete your account and all related data, including all notes, attachments, etc. This action cannot be undone. Please proceed with caution.",
+          "passwordLabel": "Please enter your password to confirm deletion",
+          "passwordPlaceholder": "Password",
+          "passwordRequired": "Password is required",
+          "cancel": "Cancel",
+          "confirm": "Confirm Deletion",
+          "deleting": "Deleting…",
+          "success": "Account deleted successfully",
+          "failed": "Failed to delete account: {{error}}"
+        }
       }
     },
     "rote": {

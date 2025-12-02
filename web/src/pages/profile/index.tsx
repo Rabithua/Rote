@@ -18,7 +18,8 @@ import {
   userSettingsAtom,
 } from '@/state/profile';
 import type { OpenKeys } from '@/types/main';
-import { API_URL, get, post, put } from '@/utils/api';
+import { API_URL, del, get, post, put } from '@/utils/api';
+import { authService } from '@/utils/auth';
 import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
 import { useAPIGet } from '@/utils/fetcher';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
@@ -56,6 +57,9 @@ function ProfilePage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState<boolean>(false);
+  const [deletePassword, setDeletePassword] = useState<string>('');
+  const [isDeletingAccount, setIsDeletingAccount] = useState<boolean>(false);
   const [coverChangeing, setCoverChangeing] = useState(false);
 
   // 使用 Jotai 托管 profile 与 user settings，避免全量订阅引发的重渲染
@@ -279,6 +283,36 @@ function ProfilePage() {
       toast.error(t('settings.saveFailed', { error: errorMessage }));
     } finally {
       setSettingsSaving(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!deletePassword) {
+      toast.error(t('settings.deleteAccount.passwordRequired'));
+      return;
+    }
+
+    try {
+      setIsDeletingAccount(true);
+      // 使用 axios 的 delete 方法，通过 config.data 传递 body
+      await del('/users/me', {
+        data: { password: deletePassword },
+      });
+      toast.success(t('settings.deleteAccount.success'));
+      // 删除成功后登出并跳转
+      setTimeout(() => {
+        authService.logout(true);
+      }, 1000);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        error?.response?.data?.error ||
+        'Unknown error';
+      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+    } finally {
+      setIsDeletingAccount(false);
+      setDeletePassword('');
     }
   }
 
@@ -579,6 +613,79 @@ function ProfilePage() {
                 {settingsSaving && <Loader className="mr-2 size-4 animate-spin" />}
                 {settingsSaving ? t('settings.saving') : t('settings.save')}
               </Button>
+
+              <div className="border-t pt-4">
+                <div className="space-y-2">
+                  <div className="text-destructive text-base font-semibold">
+                    {t('settings.deleteAccount.title')}
+                  </div>
+                  <p className="text-muted-foreground text-sm">
+                    {t('settings.deleteAccount.description')}
+                  </p>
+                  <Button
+                    variant="destructive"
+                    className="mt-2 w-full"
+                    onClick={() => {
+                      setIsSettingsModalOpen(false);
+                      setIsDeleteAccountModalOpen(true);
+                    }}
+                  >
+                    {t('settings.deleteAccount.button')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* 删除账户确认对话框 */}
+        <Dialog open={isDeleteAccountModalOpen} onOpenChange={setIsDeleteAccountModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('settings.deleteAccount.confirmTitle')}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-sm">{t('settings.deleteAccount.warning')}</p>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">
+                  {t('settings.deleteAccount.passwordLabel')}
+                </label>
+                <Input
+                  type="password"
+                  placeholder={t('settings.deleteAccount.passwordPlaceholder')}
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  disabled={isDeletingAccount}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !isDeletingAccount && deletePassword) {
+                      handleDeleteAccount();
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setIsDeleteAccountModalOpen(false);
+                    setDeletePassword('');
+                  }}
+                  disabled={isDeletingAccount}
+                >
+                  {t('settings.deleteAccount.cancel')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount || !deletePassword}
+                >
+                  {isDeletingAccount && <Loader className="mr-2 size-4 animate-spin" />}
+                  {isDeletingAccount
+                    ? t('settings.deleteAccount.deleting')
+                    : t('settings.deleteAccount.confirm')}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

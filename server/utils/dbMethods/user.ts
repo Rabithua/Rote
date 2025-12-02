@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
 import { attachments, rotes, userSettings, users } from '../../drizzle/schema';
 import db from '../drizzle';
+import { r2deletehandler } from '../r2';
 import { DatabaseError } from './common';
 
 // 用户相关方法
@@ -360,5 +361,63 @@ export async function getMyTags(userid: string): Promise<any> {
     return allTags;
   } catch (error) {
     throw new DatabaseError('Failed to get user tags', error);
+  }
+}
+
+// 删除用户账户
+export async function deleteUserAccount(userid: string, password: string): Promise<any> {
+  try {
+    // 1. 验证用户存在并验证密码
+    const [user] = await db.select().from(users).where(eq(users.id, userid)).limit(1);
+
+    if (!user) {
+      throw new DatabaseError('User not found');
+    }
+
+    const passwordhash = user.passwordhash;
+    const salt = user.salt;
+
+    const passwordhashToVerify = crypto.pbkdf2Sync(password, salt, 310000, 32, 'sha256');
+
+    if (
+      Buffer.from(passwordhashToVerify).toString('hex') !== Buffer.from(passwordhash).toString('hex')
+    ) {
+      throw new Error('Incorrect password');
+    }
+
+    // 2. 查询用户的所有附件（包括已绑定和未绑定的）
+    const attachmentsList = await db
+      .select({ details: attachments.details })
+      .from(attachments)
+      .where(eq(attachments.userid, userid));
+
+    // 3. 删除所有附件文件（从 R2/S3）
+    attachmentsList.forEach(({ details }) => {
+      // @ts-expect-error - details 可能包含动态属性
+      const key = details?.key;
+      // @ts-expect-error - details 可能包含动态属性
+      const compressKey = details?.compressKey;
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+      if (compressKey) {
+        r2deletehandler(compressKey).catch((err) => {
+          console.error(`Failed to delete compressed attachment from R2: ${compressKey}`, err);
+        });
+      }
+    });
+
+    // 4. 删除用户记录（数据库会自动级联删除 userSettings, userOpenKeys, userSwSubscriptions, rotes 等）
+    // 附件和反应记录的外键设置为 set null，删除用户后会自动设为 null
+    await db.delete(users).where(eq(users.id, userid));
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError('Failed to delete user account', error);
   }
 }
