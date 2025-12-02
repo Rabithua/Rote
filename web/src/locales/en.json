@@ -485,7 +485,7 @@
           "title": "5. Data Storage, Security, and Retention",
           "storage": {
             "label": "Data Storage Location",
-            "content": "Rote is an open-source project and the backend is typically deployed by you or your service provider. Your data will be stored on servers in the region you (or your provider) choose, such as self-hosted servers or trusted cloud providers' data centers. We recommend choosing server locations that comply with the data protection laws applicable to you."
+            "content": "By default, your data is stored on servers operated by us and hosted in trusted cloud providers' data centers. If you run a self-hosted deployment, your data will be stored on the servers or cloud environment you configure. In either case, we recommend choosing data center locations that comply with the data protection laws applicable to you."
           },
           "security": {
             "label": "Security Measures",
