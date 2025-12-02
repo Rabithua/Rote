@@ -8,9 +8,11 @@ import {
   exportData,
   getHeatMap,
   getMyProfile,
+  getMySettings,
   getMyTags,
   getUserInfoByUsername,
   statistics,
+  updateMySettings,
 } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
 
@@ -40,6 +42,22 @@ usersRouter.put('/me/profile', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const body = await c.req.json();
   const data = await editMyProfile(user.id, body);
+
+  return c.json(createResponse(data), 200);
+});
+
+// 获取当前用户设置（例如探索页展示）
+usersRouter.get('/me/settings', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const data = await getMySettings(user.id);
+  return c.json(createResponse(data), 200);
+});
+
+// 更新当前用户设置（例如探索页展示）
+usersRouter.put('/me/settings', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+  const data = await updateMySettings(user.id, body);
 
   return c.json(createResponse(data), 200);
 });

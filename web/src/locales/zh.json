@@ -167,7 +167,16 @@
       "uploadFailed": "上传失败",
       "editSuccess": "修改成功",
       "editFailed": "修改失败",
-      "sideBarTitle": "除了这些...还有"
+      "sideBarTitle": "除了这些...还有",
+      "settings": {
+        "title": "额外设置",
+        "allowExploreLabel": "允许我的公开笔记出现在探索页",
+        "allowExploreDescription": "关闭后，你的公开笔记仍然可以通过链接访问，但不会在「探索」页面中被推荐展示。",
+        "save": "保存设置",
+        "saving": "保存中…",
+        "saveSuccess": "设置已保存",
+        "saveFailed": "保存失败：{{error}}"
+      }
     },
     "rote": {
       "loading": "加载中...",
@@ -366,7 +375,8 @@
       "tabs": {
         "site": "站点设置",
         "storage": "存储设置",
-        "ui": "界面设置"
+        "ui": "界面设置",
+        "security": "其他设置"
       },
       "site": {
         "title": "站点配置",
@@ -408,6 +418,12 @@
         },
         "apiRateLimit": "API 速率限制",
         "apiRateLimitDescription": "每个用户或 IP 地址每秒允许的最大请求数。用于防止 API 滥用。最小值为 10，默认值为 100 请求/秒。"
+      },
+      "security": {
+        "title": "安全配置",
+        "description": "配置与安全相关的策略，例如邮箱验证要求等。",
+        "requireVerifiedEmailForExplore": "仅允许已验证邮箱的用户出现在探索页",
+        "requireVerifiedEmailForExploreDesc": "开启后，只有邮箱已验证的用户，其公开笔记才会被推荐到「探索」页面；已公开的笔记仍可通过链接访问。"
       },
       "save": "保存",
       "saving": "保存中...",

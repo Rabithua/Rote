@@ -28,6 +28,8 @@ export const users = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     email: varchar('email', { length: 255 }).notNull().unique(),
     username: varchar('username', { length: 100 }).notNull().unique(),
+    // 邮箱是否已验证
+    emailVerified: boolean('emailVerified').notNull().default(false),
     passwordhash: bytea('passwordhash').notNull(),
     salt: bytea('salt').notNull(),
     nickname: varchar('nickname', { length: 255 }),
@@ -51,6 +53,8 @@ export const userSettings = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     userid: uuid('userid').notNull().unique(),
     darkmode: boolean('darkmode').notNull().default(false),
+    // 是否允许公开笔记出现在探索页
+    allowExplore: boolean('allowExplore').notNull().default(true),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },

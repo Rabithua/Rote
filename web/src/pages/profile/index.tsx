@@ -6,18 +6,34 @@ import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import { loadProfileAtom, patchProfileAtom, profileAtom } from '@/state/profile';
+import {
+  loadProfileAtom,
+  loadUserSettingsAtom,
+  patchProfileAtom,
+  profileAtom,
+  userSettingsAtom,
+} from '@/state/profile';
 import type { OpenKeys } from '@/types/main';
-import { API_URL, get, post } from '@/utils/api';
+import { API_URL, get, post, put } from '@/utils/api';
 import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
 import { useAPIGet } from '@/utils/fetcher';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
 import { useAtomValue, useSetAtom } from 'jotai';
 import Linkify from 'linkify-react';
-import { Edit, KeyRoundIcon, Loader, LoaderPinwheel, Rss, Stars, UserCircle2 } from 'lucide-react';
+import {
+  Edit,
+  KeyRoundIcon,
+  Loader,
+  LoaderPinwheel,
+  Rss,
+  Settings2,
+  Stars,
+  UserCircle2,
+} from 'lucide-react';
 import moment from 'moment';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
@@ -39,15 +55,21 @@ function ProfilePage() {
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
   const [coverChangeing, setCoverChangeing] = useState(false);
 
-  // 使用 Jotai 托管 profile，避免全量订阅引发的重渲染
+  // 使用 Jotai 托管 profile 与 user settings，避免全量订阅引发的重渲染
   const profile = useAtomValue(profileAtom);
+  const userSettings = useAtomValue(userSettingsAtom);
   const loadProfile = useSetAtom(loadProfileAtom);
+  const loadUserSettings = useSetAtom(loadUserSettingsAtom);
   const patchProfile = useSetAtom(patchProfileAtom);
   useEffect(() => {
-    if (!profile) loadProfile();
-  }, [profile, loadProfile]);
+    if (!profile) {
+      loadProfile();
+    }
+    loadUserSettings();
+  }, [profile, loadProfile, loadUserSettings]);
 
   const {
     data: openKeys,
@@ -56,14 +78,22 @@ function ProfilePage() {
   } = useAPIGet<OpenKeys>('openKeys', () => get('/api-keys').then((res) => res.data));
 
   const [editProfile, setEditProfile] = useState<any>(profile ?? {});
+  const [allowExplore, setAllowExplore] = useState<boolean>(true);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
-  // profile 加载后，同步到可编辑状态，避免初次渲染访问 undefined 属性
+  // profile 加载后，同步到可编辑状态；settings 单独从 userSettings 同步
   useEffect(() => {
-    if (profile) setEditProfile(profile);
+    if (profile) {
+      setEditProfile(profile);
+    }
   }, [profile]);
+
+  useEffect(() => {
+    setAllowExplore(userSettings?.allowExplore ?? true);
+  }, [userSettings]);
 
   function generateOpenKeyFun() {
     const toastId = toast.loading(t('creating'));
@@ -232,6 +262,26 @@ function ProfilePage() {
       });
   }
 
+  async function saveSettings() {
+    try {
+      setSettingsSaving(true);
+      await put('/users/me/settings', {
+        allowExplore,
+      });
+      toast.success(t('settings.saveSuccess'));
+      setIsSettingsModalOpen(false);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        error?.response?.data?.error ||
+        'Unknown error';
+      toast.error(t('settings.saveFailed', { error: errorMessage }));
+    } finally {
+      setSettingsSaving(false);
+    }
+  }
+
   async function changeCover(event: any) {
     if (!canUpload) return;
     setCoverChangeing(true);
@@ -296,8 +346,6 @@ function ProfilePage() {
     }
   }
 
-
-
   return (
     <ContainerWithSideBar
       sidebar={<SideBar />}
@@ -310,7 +358,7 @@ function ProfilePage() {
         </div>
       }
     >
-      <div className="flex flex-col divide-y-1 pb-20">
+      <div className="flex flex-col divide-y pb-20">
         <NavBar title={t('title')} icon={<UserCircle2 className="size-8 p-0.5" />} />
         <div className="pb-4">
           <div className="relative aspect-[3] w-full overflow-hidden">
@@ -346,22 +394,31 @@ function ProfilePage() {
           <div className="mx-4 flex h-16 items-center">
             <UserAvatar
               avatar={profile?.avatar}
-              className="text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-[4px] sm:block"
+              className="text-primary size-20 shrink-0 translate-y-[-50%] cursor-pointer border-4 sm:block"
               fallbackClassName="bg-muted/80"
               onClick={() => {
                 if (!canUpload) return;
                 (inputAvatarRef.current as HTMLInputElement | null)?.click();
               }}
             />
-            <Button
-              className="ml-auto"
-              onClick={() => {
-                setIsModalOpen(true);
-              }}
-            >
-              <Edit className="size-4" />
-              {t('editProfile')}
-            </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setIsSettingsModalOpen(true)}
+              >
+                <Settings2 className="size-4" />
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsModalOpen(true);
+                }}
+              >
+                <Edit className="size-4" />
+                {t('editProfile')}
+              </Button>
+            </div>
           </div>
           <div className="mx-4 flex flex-col gap-1">
             <Link className="w-fit" to={`/${profile?.username}`}>
@@ -369,7 +426,7 @@ function ProfilePage() {
               <h2 className="text-info w-fit text-base hover:underline">@{profile?.username}</h2>
             </Link>
             <div className="text-base">
-              <div className="aTagStyle break-words whitespace-pre-line">
+              <div className="aTagStyle wrap-break-word whitespace-pre-line">
                 <Linkify>{(profile?.description as any) || t('noDescription')}</Linkify>
               </div>
             </div>
@@ -380,12 +437,12 @@ function ProfilePage() {
           </div>
         </div>
 
-        <div className="flex flex-col divide-y-1">
+        <div className="flex flex-col divide-y">
           <div className="p-4 text-2xl font-semibold">
             OpenKey <br />
             <div className="text-info mt-2 text-sm font-normal">{t('openKeyDescription')}</div>
           </div>
-          <div className="flex flex-col divide-y-1">
+          <div className="flex flex-col divide-y">
             {openKeyLoading ? (
               <LoadingPlaceholder className="py-8" size={6} />
             ) : (
@@ -413,7 +470,7 @@ function ProfilePage() {
             <DialogHeader>
               <DialogTitle>{t('editProfile')}</DialogTitle>
             </DialogHeader>
-            <div className="flex w-full cursor-default gap-5">
+            <div className="flex max-h-[70dvh] w-full cursor-default gap-5 overflow-y-scroll">
               <div className="flex w-full flex-col gap-1">
                 <input
                   type="file"
@@ -438,21 +495,21 @@ function ProfilePage() {
                 <div className="mt-2 text-base font-semibold">{t('email')}</div>
                 <Input
                   disabled
-                  className="w-full rounded-md font-mono text-lg"
+                  className="w-full rounded-md font-mono"
                   maxLength={20}
                   value={editProfile?.email || ''}
                 />
                 <div className="mt-2 text-base font-semibold">{t('username')}</div>
                 <Input
                   disabled
-                  className="w-full rounded-md font-mono text-lg"
+                  className="w-full rounded-md font-mono"
                   maxLength={20}
                   value={editProfile?.username || ''}
                 />
                 <div className="mt-2 text-base font-semibold">{t('nickname')}</div>
                 <Input
                   placeholder={t('enterNickname')}
-                  className="w-full rounded-md font-mono text-lg"
+                  className="w-full rounded-md font-mono"
                   maxLength={20}
                   value={editProfile?.nickname || ''}
                   onInput={(e: React.FormEvent<HTMLInputElement>) => {
@@ -465,7 +522,7 @@ function ProfilePage() {
                 <div className="mt-2 text-base font-semibold">{t('description')}</div>
                 <Textarea
                   placeholder={t('enterDescription')}
-                  className="w-full rounded-md text-lg"
+                  className="w-full rounded-md"
                   maxLength={300}
                   value={editProfile?.description || ''}
                   style={{ height: 120, resize: 'none' }}
@@ -488,6 +545,40 @@ function ProfilePage() {
                   {profileEditing ? t('editing') : t('save')}
                 </Button>
               </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* 额外设置：探索页展示等 */}
+        <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('settings.title')}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="text-base font-semibold">{t('settings.allowExploreLabel')}</div>
+                  <p className="text-muted-foreground text-sm">
+                    {t('settings.allowExploreDescription')}
+                  </p>
+                </div>
+                <Switch
+                  checked={allowExplore}
+                  onCheckedChange={(checked) => setAllowExplore(!!checked)}
+                />
+              </div>
+
+              <Button
+                className="mt-2 w-full"
+                onClick={() => {
+                  if (!settingsSaving) {
+                    saveSettings();
+                  }
+                }}
+              >
+                {settingsSaving && <Loader className="mr-2 size-4 animate-spin" />}
+                {settingsSaving ? t('settings.saving') : t('settings.save')}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -525,11 +616,10 @@ function ProfilePage() {
   );
 }
 
-
 const SideBar = () => {
   const profile = useAtomValue(profileAtom);
   return (
-    <div className="grid grid-cols-3 divide-x-1 border-b">
+    <div className="grid grid-cols-3 divide-x border-b">
       <a
         href={`${API_URL}/rss/${profile?.username}`}
         target="_blank"

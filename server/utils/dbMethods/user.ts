@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
-import { attachments, rotes, users } from '../../drizzle/schema';
+import { attachments, rotes, userSettings, users } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 
@@ -29,6 +29,7 @@ export async function getSafeUser(id: string) {
     const [user] = await db
       .select({
         id: users.id,
+        emailVerified: users.emailVerified,
         email: users.email,
         username: users.username,
         nickname: users.nickname,
@@ -65,6 +66,7 @@ export async function createUser(data: {
       username: data.username,
       email: data.email,
       nickname: data.nickname,
+      emailVerified: false,
       passwordhash,
       salt,
       role: data.role || 'user', // 使用传入的 role 或默认 'user'
@@ -88,21 +90,83 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
     if (data.cover !== undefined) updateData.cover = data.cover || null;
     updateData.updatedAt = new Date();
 
-    const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning({
-      id: users.id,
-      email: users.email,
-      username: users.username,
-      nickname: users.nickname,
-      description: users.description,
-      avatar: users.avatar,
-      cover: users.cover,
-      role: users.role,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-    });
-    return user;
+    const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning();
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      nickname: user.nickname,
+      description: user.description,
+      avatar: user.avatar,
+      cover: user.cover,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   } catch (error) {
     throw new DatabaseError('Failed to update user profile', error);
+  }
+}
+
+// 获取当前用户设置（例如 allowExplore）
+export async function getMySettings(userId: string): Promise<any> {
+  try {
+    const [setting] = await db
+      .select({
+        allowExplore: userSettings.allowExplore,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userid, userId))
+      .limit(1);
+
+    return {
+      allowExplore: setting?.allowExplore ?? true,
+    };
+  } catch (error) {
+    throw new DatabaseError('Failed to get user settings', error);
+  }
+}
+
+// 更新当前用户设置（例如 allowExplore）
+export async function updateMySettings(userId: string, data: any): Promise<any> {
+  try {
+    const updates: Partial<{ allowExplore: boolean }> = {};
+    if (data.allowExplore !== undefined) {
+      updates.allowExplore = Boolean(data.allowExplore);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      // 没有任何可更新的字段，直接返回当前设置
+      return getMySettings(userId);
+    }
+
+    const [existing] = await db
+      .select({ id: userSettings.id })
+      .from(userSettings)
+      .where(eq(userSettings.userid, userId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(userSettings)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(userSettings.id, existing.id));
+    } else {
+      await db.insert(userSettings).values({
+        userid: userId,
+        allowExplore: updates.allowExplore ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    return getMySettings(userId);
+  } catch (error) {
+    throw new DatabaseError('Failed to update user settings', error);
   }
 }
 
@@ -137,28 +201,36 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
 
 export async function getMyProfile(userId: string): Promise<any> {
   try {
-    const [user] = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        username: users.username,
-        nickname: users.nickname,
-        description: users.description,
-        avatar: users.avatar,
-        cover: users.cover,
-        role: users.role,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!user) {
       throw new DatabaseError('User not found');
     }
 
-    return user;
+    // 读取或构建用户设置（目前仅包含 allowExplore）
+    const [setting] = await db
+      .select({
+        allowExplore: userSettings.allowExplore,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userid, userId))
+      .limit(1);
+
+    const allowExplore = setting?.allowExplore ?? true;
+
+    return {
+      id: user.id,
+      emailVerified: user.emailVerified,
+      email: user.email,
+      username: user.username,
+      nickname: user.nickname,
+      description: user.description,
+      avatar: user.avatar,
+      cover: user.cover,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      allowExplore,
+    };
   } catch (error) {
     if (error instanceof DatabaseError) {
       throw error;

@@ -48,6 +48,8 @@ export async function createAdminUser(data: {
     passwordhash,
     salt,
     nickname: data.nickname || data.username,
+    // 管理员账号默认视为邮箱已验证
+    emailVerified: true,
     role: 'super_admin',
     createdAt: sql`now()`,
     updatedAt: sql`now()`,

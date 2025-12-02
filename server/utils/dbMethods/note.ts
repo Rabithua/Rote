@@ -1,5 +1,7 @@
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { rotes, users } from '../../drizzle/schema';
+import type { SecurityConfig } from '../../types/config';
+import { getGlobalConfig } from '../config';
 import db from '../drizzle';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
@@ -290,9 +292,11 @@ function buildWhereConditions(
             const tags = filter[key].hasEvery;
             if (Array.isArray(tags) && tags.length > 0) {
               // 使用 PostgreSQL 的 @> 操作符检查数组是否包含所有指定的标签
-              // 转义标签中的单引号以避免 SQL 注入
+              // 这里手动构造 ARRAY[...] 字面量，并对单引号进行转义，避免 SQL 注入
               const escapedTags = tags.map((tag: string) => `'${String(tag).replace(/'/g, "''")}'`);
-              const tagsCondition = sql`${rotes.tags} @> ARRAY[${sql.raw(escapedTags.join(','))}]::text[]`;
+              const tagsCondition = sql`${rotes.tags} @> ARRAY[${sql.raw(
+                escapedTags.join(',')
+              )}]::text[]`;
               conditions.push(tagsCondition);
             }
             return;
@@ -392,26 +396,85 @@ export async function findPublicRote(
   filter: any
 ): Promise<any> {
   try {
-    const whereCondition = buildWhereConditions(undefined, false, 'public', filter);
+    const securityConfig = getGlobalConfig<SecurityConfig>('security');
+    const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
 
-    const rotesList = await db.query.rotes.findMany({
-      where: whereCondition,
-      offset: skip || 0,
-      limit: limit || 20,
-      orderBy: (rotes, { desc }) => [desc(rotes.createdAt)],
-      with: {
-        author: {
-          columns: {
-            username: true,
-            nickname: true,
-            avatar: true,
-          },
-        },
-        attachments: true,
-        reactions: true,
-      },
-    });
-    return rotesList;
+    const conditions: any[] = [];
+
+    // 仅公开且未归档的笔记
+    conditions.push(eq(rotes.state, 'public'));
+    conditions.push(eq(rotes.archived, false));
+
+    // 处理额外的过滤条件（与 buildWhereConditions 中逻辑保持一致）
+    if (filter && typeof filter === 'object') {
+      Object.keys(filter).forEach((key) => {
+        if (filter[key] !== undefined && filter[key] !== null) {
+          // 处理 tags 的 hasEvery 过滤（检查数组是否包含所有指定的标签）
+          if (key === 'tags' && filter[key]?.hasEvery) {
+            const tags = filter[key].hasEvery;
+            if (Array.isArray(tags) && tags.length > 0) {
+              const escapedTags = tags.map((tag: string) => `'${String(tag).replace(/'/g, "''")}'`);
+              const tagsCondition = sql`${rotes.tags} @> ARRAY[${sql.raw(
+                escapedTags.join(',')
+              )}]::text[]`;
+              conditions.push(tagsCondition);
+            }
+            return;
+          }
+
+          // 跳过不存在的字段名（如 tag[]），只处理实际存在的数据库字段
+          if (!(key in rotes)) {
+            return;
+          }
+
+          conditions.push(eq((rotes as any)[key], filter[key]));
+        }
+      });
+    }
+
+    // 探索页策略：用户设置 + 邮箱验证
+    // 1. 如果用户在 user_settings 中将 allowExplore 设为 false，则不展示；
+    // 2. 如果配置要求邮箱验证，则只展示 emailVerified = true 的用户；
+    conditions.push(
+      // 允许：不存在设置行，或 allowExplore != false
+      sql`NOT EXISTS (
+        SELECT 1 FROM "user_settings" us
+        WHERE us."userid" = ${rotes.authorid} AND us."allowExplore" = false
+      )`
+    );
+
+    if (requireVerifiedEmailForExplore) {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM "users" u
+          WHERE u."id" = ${rotes.authorid} AND u."emailVerified" = true
+        )`
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // 先在数据库中应用所有过滤条件并分页，只取出 ID 列表
+    const rows = await db
+      .select({
+        id: rotes.id,
+      })
+      .from(rotes)
+      .where(whereClause)
+      .offset(skip || 0)
+      .limit(limit || 20)
+      .orderBy(desc(rotes.createdAt));
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const ids = rows.map((row) => row.id);
+    const rotesList = await findRotesByIds(ids);
+
+    // 按照查询到的 ID 顺序返回结果，保持与分页顺序一致
+    const roteMap = new Map<string, any>(rotesList.map((rote) => [rote.id, rote]));
+    return ids.map((id) => roteMap.get(id)).filter((rote) => rote !== undefined);
   } catch (error) {
     throw new DatabaseError('Failed to find public rotes', error);
   }
@@ -457,35 +520,54 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
 
 export async function findRandomPublicRote(): Promise<any> {
   try {
-    const [countResult] = await db
-      .select({ count: count() })
-      .from(rotes)
-      .where(eq(rotes.state, 'public'));
+    const securityConfig = getGlobalConfig<SecurityConfig>('security');
+    const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
 
-    const allCount = countResult?.count || 0;
-    if (allCount === 0) {
+    const conditions: any[] = [];
+
+    // 仅公开且未归档的笔记
+    conditions.push(eq(rotes.state, 'public'));
+    conditions.push(eq(rotes.archived, false));
+
+    // 探索页策略：用户设置 + 邮箱验证（与 findPublicRote 保持一致）
+    conditions.push(
+      sql`NOT EXISTS (
+        SELECT 1 FROM "user_settings" us
+        WHERE us."userid" = ${rotes.authorid} AND us."allowExplore" = false
+      )`
+    );
+
+    if (requireVerifiedEmailForExplore) {
+      conditions.push(
+        sql`EXISTS (
+          SELECT 1 FROM "users" u
+          WHERE u."id" = ${rotes.authorid} AND u."emailVerified" = true
+        )`
+      );
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // 从满足探索页策略的公开笔记中随机选取一条
+    const [row] = await db
+      .select({
+        id: rotes.id,
+      })
+      .from(rotes)
+      .where(whereClause)
+      .orderBy(sql`random()`)
+      .limit(1);
+
+    if (!row) {
       throw new DatabaseError('No public rotes found');
     }
 
-    const random = Math.floor(Math.random() * allCount);
-    const rotesList = await db.query.rotes.findMany({
-      where: (rotes, { eq }) => eq(rotes.state, 'public'),
-      offset: random,
-      limit: 1,
-      with: {
-        author: {
-          columns: {
-            username: true,
-            nickname: true,
-            avatar: true,
-          },
-        },
-        attachments: true,
-        reactions: true,
-      },
-    });
+    const [rote] = await findRotesByIds([row.id]);
+    if (!rote) {
+      throw new DatabaseError('No public rotes found');
+    }
 
-    return rotesList[0] || null;
+    return rote;
   } catch (error) {
     if (error instanceof DatabaseError) {
       throw error;

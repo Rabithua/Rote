@@ -163,7 +163,16 @@
       "uploadFailed": "Upload failed",
       "editSuccess": "Edit successful",
       "editFailed": "Edit failed",
-      "sideBarTitle": "Besides... there are also"
+      "sideBarTitle": "Besides... there are also",
+      "settings": {
+        "title": "Additional Settings",
+        "allowExploreLabel": "Allow my public notes to appear in Explore",
+        "allowExploreDescription": "When turned off, your public notes are still accessible via direct links, but will not be recommended in the Explore page.",
+        "save": "Save Settings",
+        "saving": "Saving…",
+        "saveSuccess": "Settings saved",
+        "saveFailed": "Failed to save: {{error}}"
+      }
     },
     "rote": {
       "loading": "Loading...",
@@ -365,7 +374,8 @@
       "tabs": {
         "site": "Site Settings",
         "storage": "Storage Settings",
-        "ui": "UI Settings"
+        "ui": "UI Settings",
+        "security": "Other Settings"
       },
       "site": {
         "title": "Site Configuration",
@@ -407,6 +417,12 @@
         },
         "apiRateLimit": "API Rate Limit",
         "apiRateLimitDescription": "Maximum number of requests per second allowed per user or IP address. Used to prevent API abuse. Minimum is 10, default is 100 requests/second."
+      },
+      "security": {
+        "title": "Security Configuration",
+        "description": "Configure security-related policies, such as email verification requirements.",
+        "requireVerifiedEmailForExplore": "Only allow users with verified email to appear in Explore",
+        "requireVerifiedEmailForExploreDesc": "When enabled, only users with verified email will have their public notes recommended in the Explore page; existing public notes remain accessible via direct links."
       },
       "save": "Save",
       "saving": "Saving...",
