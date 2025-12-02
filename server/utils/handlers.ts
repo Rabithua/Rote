@@ -3,29 +3,6 @@ import { HonoContext } from '../types/hono';
 export const errorHandler = async (err: Error, c: HonoContext) => {
   console.error('API Error:', err.message);
   
-  // 如果是 DatabaseError，始终记录原始错误信息（生产环境也需要诊断）
-  if (err.name === 'DatabaseError' && (err as any).originalError) {
-    const originalError = (err as any).originalError;
-    console.error('Database Error Details:', {
-      message: originalError?.message || 'Unknown database error',
-      code: originalError?.code,
-      detail: originalError?.detail,
-      hint: originalError?.hint,
-      position: originalError?.position,
-      internalPosition: originalError?.internalPosition,
-      internalQuery: originalError?.internalQuery,
-      where: originalError?.where,
-      schema: originalError?.schema,
-      table: originalError?.table,
-      column: originalError?.column,
-      dataType: originalError?.dataType,
-      constraint: originalError?.constraint,
-      file: originalError?.file,
-      line: originalError?.line,
-      routine: originalError?.routine,
-    });
-  }
-  
   // 只在开发环境下打印完整的错误堆栈
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);

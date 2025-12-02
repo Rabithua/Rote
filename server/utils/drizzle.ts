@@ -68,19 +68,12 @@ export async function runMigrations(): Promise<void> {
     const cwd = process.cwd();
     const migrationsFolder = join(cwd, 'drizzle', 'migrations');
 
-    // 记录迁移文件夹路径（用于调试）
-    console.log(`📁 Current working directory: ${cwd}`);
-    console.log(`📁 Migrations folder (absolute): ${migrationsFolder}`);
-
     // 检查迁移文件夹是否存在
     if (!existsSync(migrationsFolder)) {
       const errorMsg = `❌ Migration folder does not exist: ${migrationsFolder}`;
       console.error(errorMsg);
       console.error(
         '💡 This usually means migrations were not copied correctly during Docker build.'
-      );
-      console.error(
-        '💡 Please verify that the Dockerfile includes: COPY --from=builder /app/drizzle ./drizzle'
       );
       throw new Error(errorMsg);
     }

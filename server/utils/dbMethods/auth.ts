@@ -30,20 +30,7 @@ export async function passportCheckUser(data: { username: string }) {
       err: null,
       user: user || null,
     };
-  } catch (error: any) {
-    // 记录详细的错误信息以便诊断
-    const errorMessage = error?.message || 'Unknown database error';
-    const errorCode = error?.code;
-    
-    // 检查是否是表不存在或列不存在的错误
-    if (errorCode === '42P01' || errorMessage.includes('does not exist')) {
-      console.error('❌ Database schema error in passportCheckUser:', {
-        errorCode,
-        errorMessage,
-        hint: 'The users table or required columns may not exist. Please verify that database migrations were applied correctly.',
-      });
-    }
-    
+  } catch (error) {
     throw new DatabaseError('Failed to authenticate user', error);
   }
 }
