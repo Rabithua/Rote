@@ -11,6 +11,7 @@ export async function passportCheckUser(data: { username: string }) {
         id: users.id,
         username: users.username,
         email: users.email,
+        emailVerified: users.emailVerified,
         passwordhash: users.passwordhash,
         salt: users.salt,
         nickname: users.nickname,
