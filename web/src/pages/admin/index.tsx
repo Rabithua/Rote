@@ -3,7 +3,7 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/state/profile';
 import { get } from '@/utils/api';
-import { Database, Globe, Lock, Settings, Shield } from 'lucide-react';
+import { Database, Globe, Lock, Settings, Shield, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
@@ -11,6 +11,7 @@ import SecurityConfigTab from './components/SecurityConfigTab';
 import SiteConfigTab from './components/SiteConfigTab';
 import StorageConfigTab from './components/StorageConfigTab';
 import UIConfigTab from './components/UIConfigTab';
+import UsersTab from './components/UsersTab';
 import type { SystemConfig } from './types';
 
 export default function AdminDashboard() {
@@ -18,7 +19,9 @@ export default function AdminDashboard() {
   const profile = useProfile();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui' | 'security'>('site');
+  const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui' | 'security' | 'users'>(
+    'site'
+  );
 
   const {
     data: configs,
@@ -127,6 +130,14 @@ export default function AdminDashboard() {
             <Lock className="size-4" />
             {t('tabs.security')}
           </Button>
+          <Button
+            variant={activeTab === 'users' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('users')}
+            className="flex items-center gap-2 rounded-none"
+          >
+            <Users className="size-4" />
+            {t('tabs.users')}
+          </Button>
         </div>
 
         {/* 站点配置 */}
@@ -174,6 +185,9 @@ export default function AdminDashboard() {
             onMutate={mutate}
           />
         )}
+
+        {/* 用户管理 */}
+        {activeTab === 'users' && <UsersTab />}
       </div>
     </div>
   );

@@ -156,22 +156,23 @@
 
 ### 15) 管理端（Admin）
 
-| 路径                              | 方法   | 认证             | 描述                       |
-| --------------------------------- | ------ | ---------------- | -------------------------- |
-| `/admin/status`                   | GET    | 无               | 初始化状态与检查项         |
-| `/admin/setup`                    | POST   | 无               | 初始化（安装向导）         |
-| `/admin/settings`                 | GET    | 管理员           | 获取配置（可分组）         |
-| `/admin/settings`                 | PUT    | 管理员           | 更新配置（系统配置需超管） |
-| `/admin/settings/test`            | POST   | 初始化后需管理员 | 测试配置连接               |
-| `/admin/settings/regenerate-keys` | POST   | 超级管理员       | 重生成安全密钥             |
-| `/admin/settings/detect-urls`     | GET    | 管理员           | 自动检测 API/前端 URL      |
-| `/admin/settings/update-urls`     | POST   | 管理员           | 更新站点 URL 配置          |
-| `/admin/refresh-cache`            | POST   | 无               | 刷新配置缓存（测试）       |
-| `/admin/users`                    | GET    | 管理员           | 用户列表（分页/筛选/搜索） |
-| `/admin/users/:userId`            | GET    | 管理员           | 用户详情                   |
-| `/admin/users/:userId/role`       | PUT    | 超级管理员       | 更新用户角色               |
-| `/admin/users/:userId`            | DELETE | 超级管理员       | 删除用户                   |
-| `/admin/roles/stats`              | GET    | 管理员           | 角色统计                   |
+| 路径                                | 方法   | 认证             | 描述                       |
+| ----------------------------------- | ------ | ---------------- | -------------------------- |
+| `/admin/status`                     | GET    | 无               | 初始化状态与检查项         |
+| `/admin/setup`                      | POST   | 无               | 初始化（安装向导）         |
+| `/admin/settings`                   | GET    | 管理员           | 获取配置（可分组）         |
+| `/admin/settings`                   | PUT    | 管理员           | 更新配置（系统配置需超管） |
+| `/admin/settings/test`              | POST   | 初始化后需管理员 | 测试配置连接               |
+| `/admin/settings/regenerate-keys`   | POST   | 超级管理员       | 重生成安全密钥             |
+| `/admin/settings/detect-urls`       | GET    | 管理员           | 自动检测 API/前端 URL      |
+| `/admin/settings/update-urls`       | POST   | 管理员           | 更新站点 URL 配置          |
+| `/admin/refresh-cache`              | POST   | 无               | 刷新配置缓存（测试）       |
+| `/admin/users`                      | GET    | 管理员           | 用户列表（分页/筛选/搜索） |
+| `/admin/users/:userId`              | GET    | 管理员           | 用户详情                   |
+| `/admin/users/:userId/role`         | PUT    | 超级管理员       | 更新用户角色               |
+| `/admin/users/:userId/verify-email` | PUT    | 管理员           | 验证用户邮箱               |
+| `/admin/users/:userId`              | DELETE | 超级管理员       | 删除用户                   |
+| `/admin/roles/stats`                | GET    | 管理员           | 角色统计                   |
 
 > 通过 `Authorization: Bearer <accessToken>` 鉴权，并基于 `role` 判定权限。
 

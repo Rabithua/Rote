@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { and, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { attachments, rotes, userOpenKeys, users } from '../../drizzle/schema';
 import db from '../drizzle';
 
@@ -69,6 +69,8 @@ export async function listUsers(params: {
   limit?: number | string;
   role?: string;
   search?: string;
+  sortField?: string;
+  sortOrder?: 'asc' | 'desc';
 }) {
   const page = Number(params.page || 1);
   const limitNum = Number(params.limit || 10);
@@ -90,6 +92,20 @@ export async function listUsers(params: {
 
   const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
+  // 构建排序
+  const sortField = params.sortField || 'createdAt';
+  const sortOrder = params.sortOrder || 'desc';
+  let orderByClause;
+
+  if (sortField === 'username') {
+    orderByClause = sortOrder === 'asc' ? asc(users.username) : desc(users.username);
+  } else if (sortField === 'email') {
+    orderByClause = sortOrder === 'asc' ? asc(users.email) : desc(users.email);
+  } else {
+    // 默认按创建时间排序
+    orderByClause = sortOrder === 'asc' ? asc(users.createdAt) : desc(users.createdAt);
+  }
+
   const [usersList, totalResult] = await Promise.all([
     db
       .select({
@@ -98,6 +114,7 @@ export async function listUsers(params: {
         email: users.email,
         nickname: users.nickname,
         role: users.role,
+        emailVerified: users.emailVerified,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
       })
@@ -105,7 +122,7 @@ export async function listUsers(params: {
       .where(whereClause)
       .offset(skip)
       .limit(limitNum)
-      .orderBy(desc(users.createdAt)),
+      .orderBy(orderByClause),
     db.select({ count: count() }).from(users).where(whereClause),
   ]);
 
@@ -163,8 +180,39 @@ export async function updateUserRole(userId: string, role: string) {
 }
 
 export async function deleteUserById(userId: string) {
+  // 检查用户是否存在以及是否是 super_admin
+  const [user] = await db
+    .select({ id: users.id, role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // 防止删除 super_admin 用户
+  if (user.role === 'super_admin') {
+    throw new Error('Cannot delete super admin user');
+  }
+
   await db.delete(users).where(eq(users.id, userId));
   return true;
+}
+
+export async function verifyUserEmail(userId: string) {
+  const [user] = await db
+    .update(users)
+    .set({ emailVerified: true, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      emailVerified: users.emailVerified,
+      updatedAt: users.updatedAt,
+    });
+  return user;
 }
 
 export async function getRoleStats() {

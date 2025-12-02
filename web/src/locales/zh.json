@@ -391,7 +391,8 @@
         "site": "站点设置",
         "storage": "存储设置",
         "ui": "界面设置",
-        "security": "其他设置"
+        "security": "其他设置",
+        "users": "用户管理"
       },
       "site": {
         "title": "站点配置",
@@ -439,6 +440,42 @@
         "description": "配置与安全相关的策略，例如邮箱验证要求等。",
         "requireVerifiedEmailForExplore": "仅允许已验证邮箱的用户出现在探索页",
         "requireVerifiedEmailForExploreDesc": "开启后，只有邮箱已验证的用户，其公开笔记才会被推荐到「探索」页面；已公开的笔记仍可通过链接访问。"
+      },
+      "users": {
+        "title": "用户管理",
+        "description": "管理系统中的所有用户",
+        "searchPlaceholder": "搜索用户名、邮箱或昵称",
+        "noUsers": "暂无用户",
+        "noUsersFound": "未找到匹配的用户",
+        "verifyEmailSuccess": "邮箱验证成功",
+        "verifyEmailFailed": "邮箱验证失败: {{error}}",
+        "deleteSuccess": "用户删除成功",
+        "deleteFailed": "用户删除失败: {{error}}",
+        "table": {
+          "username": "用户名",
+          "email": "邮箱",
+          "nickname": "昵称",
+          "role": "角色",
+          "emailVerified": "邮箱验证",
+          "createdAt": "创建时间",
+          "actions": "操作",
+          "verified": "已验证",
+          "unverified": "未验证",
+          "verifyEmail": "验证邮箱",
+          "delete": "删除"
+        },
+        "pagination": {
+          "showing": "显示第 {{start}} - {{end}} 条，共 {{total}} 条",
+          "previous": "上一页",
+          "next": "下一页"
+        },
+        "deleteConfirm": {
+          "title": "确认删除用户",
+          "description": "此操作无法撤销，将永久删除该用户及其所有数据。",
+          "cancel": "取消",
+          "confirm": "确认删除",
+          "deleting": "删除中..."
+        }
       },
       "save": "保存",
       "saving": "保存中...",

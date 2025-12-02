@@ -380,7 +380,8 @@ export async function deleteUserAccount(userid: string, password: string): Promi
     const passwordhashToVerify = crypto.pbkdf2Sync(password, salt, 310000, 32, 'sha256');
 
     if (
-      Buffer.from(passwordhashToVerify).toString('hex') !== Buffer.from(passwordhash).toString('hex')
+      Buffer.from(passwordhashToVerify).toString('hex') !==
+      Buffer.from(passwordhash).toString('hex')
     ) {
       throw new Error('Incorrect password');
     }

@@ -35,6 +35,7 @@ import {
   hasAdminUser,
   listUsers,
   updateUserRole,
+  verifyUserEmail,
 } from '../../utils/dbMethods';
 import { createResponse, getApiUrl } from '../../utils/main';
 
@@ -556,7 +557,9 @@ adminRouter.get('/users', authenticateJWT, requireAdmin, async (c: HonoContext) 
   const limit = c.req.query('limit') || '10';
   const role = c.req.query('role');
   const search = c.req.query('search');
-  const { users, total } = await listUsers({ page, limit, role, search });
+  const sortField = c.req.query('sortField');
+  const sortOrder = c.req.query('sortOrder') as 'asc' | 'desc' | undefined;
+  const { users, total } = await listUsers({ page, limit, role, search, sortField, sortOrder });
 
   return c.json(
     createResponse({
@@ -613,6 +616,24 @@ adminRouter.delete('/users/:userId', authenticateJWT, requireSuperAdmin, async (
 
   return c.json(createResponse(null, 'User deleted successfully'), 200);
 });
+
+// 验证用户邮箱（管理员）
+adminRouter.put(
+  '/users/:userId/verify-email',
+  authenticateJWT,
+  requireAdmin,
+  async (c: HonoContext) => {
+    const userId = c.req.param('userId');
+
+    const user = await verifyUserEmail(userId);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return c.json(createResponse(user, 'User email verified successfully'), 200);
+  }
+);
 
 // 获取角色统计信息（管理员）
 adminRouter.get('/roles/stats', authenticateJWT, requireAdmin, async (c: HonoContext) => {
