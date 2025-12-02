@@ -523,6 +523,114 @@
           "githubIssues": "GitHub Issues:"
         }
       }
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "effectiveDate": "Effective Date: December 2, 2025",
+      "welcome": "Welcome to Rote (hereinafter referred to as \"the App\"). This Terms of Service (\"Agreement\") is a legally binding agreement between you and the developer(s) of Rote (\"we\" or \"us\") regarding your use of the App. Please read this Agreement carefully, especially the sections on limitation of liability and dispute resolution. By using the App, you acknowledge that you have read, understood, and agree to be bound by all of its terms.",
+      "sections": {
+        "account": {
+          "title": "1. Account and Use",
+          "items": {
+            "accountCreation": {
+              "label": "1.1 Account Creation:",
+              "content": "You represent that you have full legal capacity to enter into this Agreement and agree to provide true, accurate, and complete registration information. You are responsible for keeping your account credentials secure and for all activities that occur under your account."
+            },
+            "personalUse": {
+              "label": "1.2 Personal Use:",
+              "content": "The App is provided for your personal, non-commercial use only. Unless permitted by law or with our prior written consent, you may not rent, lend, transfer, sell, or otherwise make your account available to any third party."
+            },
+            "fees": {
+              "label": "1.3 Fees:",
+              "content": "The App is currently offered primarily as a free service. If we introduce paid features in the future, we will provide prior notice and clearly explain the pricing, and we will only charge you after you have been fully informed and have agreed."
+            }
+          }
+        },
+        "content": {
+          "title": "2. User Content and Intellectual Property",
+          "items": {
+            "ugcOwnership": {
+              "label": "2.1 User-Generated Content (UGC):",
+              "content": "Any content you create, upload, store, or publish in the App (including but not limited to notes, images, and comments, collectively \"User Content\") remains owned by you or the original rights holder."
+            },
+            "license": {
+              "label": "2.2 License Grant:",
+              "content": "To the extent permitted by law, you grant us a worldwide, non-exclusive, royalty-free, sublicensable license to store, back up, display, process, and technically reproduce your User Content solely for the purpose of providing, maintaining, and improving the App. We will not use your content for any purposes beyond those described in this Agreement without your additional consent."
+            },
+            "responsibility": {
+              "label": "2.3 Responsibility for Content:",
+              "content": "You are solely responsible for your User Content and you represent and warrant that you have all rights necessary to upload, store, and share such content via the App. You agree that your content will not infringe any third party's rights, including but not limited to intellectual property rights, privacy rights, reputation rights, or portrait rights."
+            }
+          }
+        },
+        "conduct": {
+          "title": "3. Code of Conduct",
+          "intro": "When using the App, you must not engage in any unlawful, infringing, or inappropriate behavior, including but not limited to:",
+          "items": {
+            "illegal": {
+              "label": "3.1 Illegal Content:",
+              "content": "Publishing, transmitting, or storing any content that violates the laws and regulations of the People's Republic of China or other applicable jurisdictions."
+            },
+            "infringement": {
+              "label": "3.2 Infringement:",
+              "content": "Infringing any third party's intellectual property or other legal rights (such as copyright, trademark rights, patent rights, privacy rights, or personality rights)."
+            },
+            "inappropriate": {
+              "label": "3.3 Inappropriate Content:",
+              "content": "Posting defamatory, insulting, threatening, pornographic, violent, hateful, discriminatory, or otherwise offensive content, or content that encourages illegal activities."
+            },
+            "abuse": {
+              "label": "3.4 Abuse of Service:",
+              "content": "Interfering with or disrupting the normal operation of the App, including but not limited to spreading viruses or malicious code, attacking servers, conducting unauthorized crawling, scanning, testing, or attempting to bypass security measures."
+            },
+            "harassment": {
+              "label": "3.5 Harassment:",
+              "content": "Harassing, intimidating, stalking, or otherwise bullying other users in any form."
+            }
+          },
+          "violationHandling": "If we discover, or are notified of, any behavior or User Content that appears to violate this Agreement or applicable laws, we may, within a reasonable scope, take measures such as removing or blocking the relevant content, restricting certain features, or suspending or terminating your access to the App, and we reserve the right to pursue legal remedies where permitted by law."
+        },
+        "disclaimer": {
+          "title": "4. Disclaimers and Limitation of Liability",
+          "items": {
+            "asIs": {
+              "label": "4.1 \"As Is\" Basis:",
+              "content": "The App is provided on an \"as is\" and \"as available\" basis. We make no express or implied warranties regarding the suitability, reliability, availability, or fitness of the App for any particular purpose, nor any warranties of non-infringement."
+            },
+            "interruption": {
+              "label": "4.2 Service Interruptions:",
+              "content": "Due to the nature of internet services, you understand and agree that we may temporarily suspend or discontinue part or all of the services for reasons such as system maintenance, upgrades, network failures, equipment failures, or force majeure events, and we shall not be liable for such interruptions within the scope permitted by law."
+            },
+            "liabilityLimit": {
+              "label": "4.3 Limitation of Liability:",
+              "content": "To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, special, punitive, or consequential damages (including but not limited to data loss, business interruption, or loss of profits) arising out of or in connection with your use of, or inability to use, the App. For any direct losses that are foreseeable and attributable to us, our aggregate liability shall be limited to the fees (if any) actually paid by you to us for the relevant services during the period in dispute."
+            }
+          }
+        },
+        "modification": {
+          "title": "5. Modification and Termination",
+          "items": {
+            "modification": {
+              "label": "5.1 Modifications:",
+              "content": "We may modify this Agreement from time to time due to operational needs or changes in laws and regulations. Updated versions will be published within the App or on related pages. Your continued use of the App after the updated Agreement takes effect will be deemed as your acceptance of the updated terms."
+            },
+            "termination": {
+              "label": "5.2 Termination of Service:",
+              "content": "Subject to applicable law, we may at any time suspend or terminate part or all of the services provided to you under reasonable circumstances, and will notify you in advance where feasible. You may also terminate this Agreement at any time by ceasing to use the App and, where available, deleting your account."
+            }
+          }
+        },
+        "dispute": {
+          "title": "6. Dispute Resolution",
+          "content": "This Agreement, including its formation, validity, interpretation, performance, and dispute resolution, shall be governed by the laws of the People's Republic of China (excluding its conflict of law rules). Any dispute arising out of or in connection with your use of the App shall first be resolved through friendly negotiations. If no resolution is reached, either party may bring a lawsuit before a people's court with jurisdiction in the location where the App's developer is based."
+        },
+        "contact": {
+          "title": "7. Contact Us",
+          "description": "If you have any questions, comments, or suggestions regarding this Agreement, please contact us via:",
+          "email": "Email:",
+          "githubIssues": "GitHub Issues:"
+        }
+      }
     }
   },
   "error": {
