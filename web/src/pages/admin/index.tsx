@@ -123,20 +123,21 @@ export default function AdminDashboard() {
             {t('tabs.ui')}
           </Button>
           <Button
-            variant={activeTab === 'security' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('security')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Lock className="size-4" />
-            {t('tabs.security')}
-          </Button>
-          <Button
             variant={activeTab === 'users' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('users')}
             className="flex items-center gap-2 rounded-none"
           >
             <Users className="size-4" />
             {t('tabs.users')}
+          </Button>
+
+          <Button
+            variant={activeTab === 'security' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('security')}
+            className="flex items-center gap-2 rounded-none"
+          >
+            <Lock className="size-4" />
+            {t('tabs.security')}
           </Button>
         </div>
 
