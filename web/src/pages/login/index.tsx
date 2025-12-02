@@ -92,6 +92,37 @@ function Login() {
     nickname: z.string().min(1, t('nicknameRequired')).max(20, t('nicknameMaxLength')),
   });
 
+  // 提取 Zod 验证错误消息的辅助函数
+  function getZodErrorMessage(err: any): string {
+    // 优先从 issues 数组提取（标准 Zod 错误格式）
+    if (Array.isArray(err.issues) && err.issues.length > 0) {
+      const firstIssue = err.issues[0];
+      if (firstIssue?.message && typeof firstIssue.message === 'string') {
+        return firstIssue.message;
+      }
+    }
+
+    // 降级：尝试从 message 中解析 JSON（兼容某些场景）
+    if (err.message && typeof err.message === 'string') {
+      try {
+        const parsed = JSON.parse(err.message);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.message) {
+          return parsed[0].message;
+        }
+      } catch {
+        // 解析失败，继续尝试其他方式
+      }
+
+      // 如果 message 本身就是一个字符串，直接返回
+      if (err.message.length > 0) {
+        return err.message;
+      }
+    }
+
+    // 最后的降级方案
+    return '验证失败，请检查输入';
+  }
+
   function authorizeIosLogin() {
     const accessToken = authService.getAccessToken();
     const refreshToken = authService.getRefreshToken();
@@ -108,7 +139,7 @@ function Login() {
     try {
       LoginDataZod.parse(loginData);
     } catch (err: any) {
-      toast.error(JSON.parse(err.message)[0].message);
+      toast.error(getZodErrorMessage(err));
       return;
     }
 
@@ -149,7 +180,7 @@ function Login() {
     try {
       RegisterDataZod.parse(registerData);
     } catch (err: any) {
-      toast.error(JSON.parse(err.message)[0].message);
+      toast.error(getZodErrorMessage(err));
       return;
     }
 

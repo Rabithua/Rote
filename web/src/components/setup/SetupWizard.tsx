@@ -295,9 +295,9 @@ export default function SetupWizard() {
         );
       }
     } catch (error: any) {
-      toast.error(
-        t('pages.setupWizard.toasts.testFailed', { error: error.message || 'Unknown error' })
-      );
+      const errorMessage =
+        error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('pages.setupWizard.toasts.testFailed', { error: errorMessage }));
     } finally {
       setIsTesting(false);
     }

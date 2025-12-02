@@ -62,23 +62,38 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
 
   // Validation errors（包含 Zod 校验错误）
   if (err.name === 'ValidationError' || err.name === 'ZodError') {
-    // 默认使用原始错误信息
+    const anyErr = err as any;
     let message = err.message;
 
-    const anyErr = err as any;
-
-    // 优先从 Zod 的 issues 中提取更友好的 message
+    // 优先从 Zod 的 issues 中提取错误消息（标准 Zod 错误格式）
     if (Array.isArray(anyErr.issues) && anyErr.issues.length > 0) {
-      const firstIssue = anyErr.issues[0];
-      if (firstIssue?.message && typeof firstIssue.message === 'string') {
-        message = firstIssue.message;
+      // 提取所有错误消息，合并显示（最多显示前 3 个，避免消息过长）
+      const errorMessages = anyErr.issues
+        .slice(0, 3)
+        .map((issue: any) => issue?.message)
+        .filter((msg: any): msg is string => typeof msg === 'string' && msg.length > 0);
+
+      if (errorMessages.length > 0) {
+        // 如果有多个错误，用分号分隔；如果只有一个，直接使用
+        message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('；');
       }
     } else {
       // 兼容部分场景：message 里直接是 JSON 字符串（如 [ { origin, code, message } ]）
       try {
         const parsed = JSON.parse(message);
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.message) {
-          message = parsed[0].message;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // 提取所有错误消息
+          const errorMessages = parsed
+            .slice(0, 3)
+            .map((item: any) => item?.message)
+            .filter((msg: any): msg is string => typeof msg === 'string' && msg.length > 0);
+
+          if (errorMessages.length > 0) {
+            message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('；');
+          } else if (parsed[0]?.message) {
+            // 降级：如果提取失败，至少尝试第一个
+            message = parsed[0].message;
+          }
         }
       } catch {
         // 解析失败则保留原始 message

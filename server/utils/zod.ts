@@ -13,11 +13,8 @@ export const RegisterDataZod = z.object({
     }),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password cannot exceed 128 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .min(6, '密码长度至少为 6 个字符')
+    .max(128, '密码长度不能超过 128 个字符'),
   email: z
     .string()
     .min(1, 'Email cannot be empty')
@@ -32,11 +29,8 @@ export const RegisterDataZod = z.object({
 export const passwordChangeZod = z.object({
   newpassword: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password cannot exceed 128 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .min(6, '密码长度至少为 6 个字符')
+    .max(128, '密码长度不能超过 128 个字符'),
   oldpassword: z
     .string()
     .min(1, 'Password cannot be empty')

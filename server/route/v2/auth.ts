@@ -124,7 +124,19 @@ authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
 
   const zodData = passwordChangeZod.safeParse(body);
   if (zodData.success === false) {
-    throw new Error(zodData.error.issues[0].message);
+    // 提取所有错误消息，合并显示（最多显示前 3 个）
+    const errorMessages = zodData.error.issues
+      .slice(0, 3)
+      .map((issue) => issue.message)
+      .filter((msg): msg is string => typeof msg === 'string' && msg.length > 0);
+
+    if (errorMessages.length > 0) {
+      const message =
+        errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('；');
+      throw new Error(message);
+    } else {
+      throw new Error('Password validation failed');
+    }
   }
 
   const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);
