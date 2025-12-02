@@ -151,5 +151,3 @@ function TermsOfServicePage() {
 }
 
 export default TermsOfServicePage;
-
-
