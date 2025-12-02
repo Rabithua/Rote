@@ -1,4 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import postgres from 'postgres';
 import * as schema from '../drizzle/schema';
 
@@ -61,10 +63,85 @@ export async function runMigrations(): Promise<void> {
   try {
     console.log('🔄 Running database migrations...');
     const { migrate } = await import('drizzle-orm/postgres-js/migrator');
-    await migrate(db, { migrationsFolder: './drizzle/migrations' });
+
+    // 使用绝对路径，基于当前工作目录
+    const cwd = process.cwd();
+    const migrationsFolder = join(cwd, 'drizzle', 'migrations');
+
+    // 记录迁移文件夹路径（用于调试）
+    console.log(`📁 Current working directory: ${cwd}`);
+    console.log(`📁 Migrations folder (absolute): ${migrationsFolder}`);
+
+    // 检查迁移文件夹是否存在
+    if (!existsSync(migrationsFolder)) {
+      const errorMsg = `❌ Migration folder does not exist: ${migrationsFolder}`;
+      console.error(errorMsg);
+      console.error(
+        '💡 This usually means migrations were not copied correctly during Docker build.'
+      );
+      console.error(
+        '💡 Please verify that the Dockerfile includes: COPY --from=builder /app/drizzle ./drizzle'
+      );
+      throw new Error(errorMsg);
+    }
+
+    // 检查迁移文件是否存在
+    const metaFile = join(migrationsFolder, 'meta', '_journal.json');
+    if (!existsSync(metaFile)) {
+      const errorMsg = `❌ Migration metadata file not found: ${metaFile}`;
+      console.error(errorMsg);
+      console.error(
+        '💡 This usually means migrations were not copied correctly during Docker build.'
+      );
+      throw new Error(errorMsg);
+    }
+
+    console.log('✅ Migration files found, proceeding with migration...');
+
+    await migrate(db, { migrationsFolder });
     console.log('✅ Database migrations completed successfully!');
   } catch (error: any) {
     console.error('❌ Migration failed:', error);
+
+    // 提供详细的错误信息
+    const errorMessage = error?.message || 'Unknown migration error';
+    const errorCode = error?.code;
+
+    // 检查是否是文件路径问题
+    if (
+      errorMessage.includes('ENOENT') ||
+      errorMessage.includes('no such file') ||
+      errorMessage.includes('does not exist')
+    ) {
+      console.error(
+        '❌ Migration folder not found. Please verify that drizzle/migrations directory exists.'
+      );
+      throw new Error(
+        `Migration folder not found. This may indicate that migrations were not copied correctly during build. Error: ${errorMessage}`
+      );
+    }
+
+    // 检查是否是数据库连接问题
+    if (
+      errorCode === '28P01' ||
+      errorCode === '08006' ||
+      errorMessage.includes('password') ||
+      errorMessage.includes('connection')
+    ) {
+      console.error('❌ Database connection error during migration.');
+      throw new Error(
+        `Database connection failed during migration. Please check database credentials. Error: ${errorMessage}`
+      );
+    }
+
+    // 检查是否是 SQL 语法错误
+    if (errorCode === '42601' || errorMessage.includes('syntax error')) {
+      console.error('❌ SQL syntax error in migration file.');
+      throw new Error(
+        `SQL syntax error in migration file. Please check migration files. Error: ${errorMessage}`
+      );
+    }
+
     throw error;
   }
 }

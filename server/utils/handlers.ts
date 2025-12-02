@@ -2,6 +2,30 @@ import { HonoContext } from '../types/hono';
 
 export const errorHandler = async (err: Error, c: HonoContext) => {
   console.error('API Error:', err.message);
+  
+  // 如果是 DatabaseError，始终记录原始错误信息（生产环境也需要诊断）
+  if (err.name === 'DatabaseError' && (err as any).originalError) {
+    const originalError = (err as any).originalError;
+    console.error('Database Error Details:', {
+      message: originalError?.message || 'Unknown database error',
+      code: originalError?.code,
+      detail: originalError?.detail,
+      hint: originalError?.hint,
+      position: originalError?.position,
+      internalPosition: originalError?.internalPosition,
+      internalQuery: originalError?.internalQuery,
+      where: originalError?.where,
+      schema: originalError?.schema,
+      table: originalError?.table,
+      column: originalError?.column,
+      dataType: originalError?.dataType,
+      constraint: originalError?.constraint,
+      file: originalError?.file,
+      line: originalError?.line,
+      routine: originalError?.routine,
+    });
+  }
+  
   // 只在开发环境下打印完整的错误堆栈
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);
@@ -155,6 +179,53 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
         data: null,
       },
       400
+    );
+  }
+
+  // Database errors - 特殊处理数据库错误
+  if (err.name === 'DatabaseError') {
+    const originalError = (err as any).originalError;
+    const errorCode = originalError?.code;
+    const errorMessage = originalError?.message || err.message;
+    
+    // PostgreSQL 错误代码处理
+    // 42P01 = undefined_table (表不存在)
+    // 42703 = undefined_column (列不存在)
+    // 28P01 = invalid_password (密码认证失败)
+    // 3D000 = invalid_catalog_name (数据库不存在)
+    // 08006 = connection_failure (连接失败)
+    if (errorCode === '42P01' || errorMessage.includes('does not exist')) {
+      console.error('❌ Database table or column does not exist. Please check if migrations were applied correctly.');
+      return c.json(
+        {
+          code: 1,
+          message: 'Database schema error. Please contact administrator.',
+          data: null,
+        },
+        500
+      );
+    }
+    
+    if (errorCode === '28P01' || errorCode === '08006' || errorMessage.includes('password') || errorMessage.includes('connection')) {
+      console.error('❌ Database connection error. Please check database credentials.');
+      return c.json(
+        {
+          code: 1,
+          message: 'Database connection error. Please contact administrator.',
+          data: null,
+        },
+        500
+      );
+    }
+    
+    // 其他数据库错误
+    return c.json(
+      {
+        code: 1,
+        message: 'Database error occurred. Please contact administrator.',
+        data: null,
+      },
+      500
     );
   }
 

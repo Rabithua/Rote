@@ -50,6 +50,19 @@ RUN bun install --production --frozen-lockfile
 COPY --from=builder --chown=bunuser:nodejs /app/dist ./dist
 COPY --from=builder --chown=bunuser:nodejs /app/drizzle ./drizzle
 
+# 验证迁移文件是否存在（构建时检查）
+RUN if [ ! -d "./drizzle/migrations" ]; then \
+      echo "❌ ERROR: drizzle/migrations directory not found!" && \
+      echo "💡 This indicates migrations were not copied correctly during build." && \
+      exit 1; \
+    fi && \
+    if [ ! -f "./drizzle/migrations/meta/_journal.json" ]; then \
+      echo "❌ ERROR: Migration metadata file not found!" && \
+      echo "💡 This indicates migrations were not copied correctly during build." && \
+      exit 1; \
+    fi && \
+    echo "✅ Migration files verified successfully"
+
 # 🔥 终极清理：删除所有不必要的文件以减小镜像大小
 # 注意：避免删除关键依赖包（如 postgres）的必要文件
 RUN rm -rf /app/node_modules/.cache /tmp/* /var/cache/apk/* && \
