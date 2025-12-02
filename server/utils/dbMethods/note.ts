@@ -648,7 +648,7 @@ export async function getRssData(
       .limit(1);
 
     if (!user) {
-      throw new Error('用户不存在');
+      throw new Error('User not found');
     }
 
     // 查找该用户的公开笔记

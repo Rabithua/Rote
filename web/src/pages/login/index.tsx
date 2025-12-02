@@ -71,7 +71,11 @@ function Login() {
 
   const LoginDataZod = z.object({
     username: z.string().min(1, t('usernameRequired')).max(20, t('usernameMaxLength')),
-    password: z.string().min(1, t('passwordRequired')).max(30, t('passwordMaxLength')),
+    password: z
+      .string()
+      .refine((val) => val.length > 0, { message: t('passwordRequired') })
+      .refine((val) => val.length >= 6, { message: t('passwordMin') })
+      .max(128, t('passwordMaxLength')),
   });
 
   const RegisterDataZod = z.object({
@@ -83,7 +87,11 @@ function Login() {
       .refine((value) => !safeRoutes.includes(value), {
         message: t('usernameConflict'),
       }),
-    password: z.string().min(1, t('passwordRequired')).max(30, t('passwordMaxLength')),
+    password: z
+      .string()
+      .refine((val) => val.length > 0, { message: t('passwordRequired') })
+      .refine((val) => val.length >= 6, { message: t('passwordMin') })
+      .max(128, t('passwordMaxLength')),
     email: z
       .string()
       .min(1, t('emailRequired'))
@@ -120,7 +128,7 @@ function Login() {
     }
 
     // 最后的降级方案
-    return '验证失败，请检查输入';
+    return t('passwordRequired') || 'Validation failed';
   }
 
   function authorizeIosLogin() {

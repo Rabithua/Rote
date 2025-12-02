@@ -173,16 +173,10 @@ adminRouter.post('/setup', async (c: HonoContext) => {
 
     // 验证管理员密码长度（至少6个字符）
     if (setupData.admin.password.length < 6) {
-      return c.json(
-        createResponse(null, '密码长度至少为 6 个字符'),
-        400
-      );
+      return c.json(createResponse(null, 'Password must be at least 6 characters'), 400);
     }
     if (setupData.admin.password.length > 128) {
-      return c.json(
-        createResponse(null, '密码长度不能超过 128 个字符'),
-        400
-      );
+      return c.json(createResponse(null, 'Password cannot exceed 128 characters'), 400);
     }
 
     // 验证管理员用户名不能是受保护的路由名称（不区分大小写）

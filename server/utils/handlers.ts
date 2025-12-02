@@ -75,7 +75,7 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
 
       if (errorMessages.length > 0) {
         // 如果有多个错误，用分号分隔；如果只有一个，直接使用
-        message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('；');
+        message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
       }
     } else {
       // 兼容部分场景：message 里直接是 JSON 字符串（如 [ { origin, code, message } ]）
@@ -89,7 +89,7 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
             .filter((msg: any): msg is string => typeof msg === 'string' && msg.length > 0);
 
           if (errorMessages.length > 0) {
-            message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('；');
+            message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
           } else if (parsed[0]?.message) {
             // 降级：如果提取失败，至少尝试第一个
             message = parsed[0].message;

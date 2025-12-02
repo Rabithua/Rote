@@ -33,13 +33,13 @@ const MAX_BATCH_SIZE = 100; // 批量操作最大数量限制
  */
 function validateFileSize(size: number | undefined | null): void {
   if (size === undefined || size === null) {
-    throw new Error('缺少文件大小 (size)');
+    throw new Error('File size (size) is required');
   }
   if (size <= 0) {
-    throw new Error('文件大小必须大于 0');
+    throw new Error('File size must be greater than 0');
   }
   if (size > MAX_FILE_SIZE) {
-    throw new Error(`文件大小超过限制: ${MAX_FILE_SIZE} 字节`);
+    throw new Error(`File size exceeds limit: ${MAX_FILE_SIZE} bytes`);
   }
 }
 
@@ -68,7 +68,7 @@ attachmentsRouter.delete('/', authenticateJWT, async (c: HonoContext) => {
 
   // 限制批量删除的数量，防止滥用
   if (ids.length > MAX_BATCH_SIZE) {
-    throw new Error(`最多允许一次删除 ${MAX_BATCH_SIZE} 个附件`);
+    throw new Error(`Maximum ${MAX_BATCH_SIZE} attachments can be deleted at once`);
   }
 
   const data = await deleteAttachments(
@@ -97,7 +97,7 @@ attachmentsRouter.put('/sort', authenticateJWT, async (c: HonoContext) => {
 
   // 限制批量更新的数量，防止滥用
   if (attachmentIds.length > MAX_BATCH_SIZE) {
-    throw new Error(`最多允许一次更新 ${MAX_BATCH_SIZE} 个附件的排序`);
+    throw new Error(`Maximum ${MAX_BATCH_SIZE} attachments can be sorted at once`);
   }
 
   // 验证所有附件ID格式
@@ -134,7 +134,7 @@ attachmentsRouter.post(
 
     // 验证文件数量限制（zod 已经验证，但保留作为双重检查）
     if (files.length > MAX_FILES) {
-      throw new Error(`最多允许 ${MAX_FILES} 个文件`);
+      throw new Error(`Maximum ${MAX_FILES} files allowed`);
     }
 
     // 严格验证每个文件的内容类型和大小
@@ -225,7 +225,7 @@ attachmentsRouter.post(
 
     // 限制批量完成的数量，防止滥用
     if (attachments.length > MAX_BATCH_SIZE) {
-      throw new Error(`最多允许一次完成 ${MAX_BATCH_SIZE} 个附件的入库`);
+      throw new Error(`Maximum ${MAX_BATCH_SIZE} attachments can be finalized at once`);
     }
 
     // 简单的所有权校验：Key 必须在当前用户前缀下

@@ -132,7 +132,7 @@ authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
 
     if (errorMessages.length > 0) {
       const message =
-        errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('；');
+        errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
       throw new Error(message);
     } else {
       throw new Error('Password validation failed');

@@ -26,7 +26,7 @@ router.get('/notes/create', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) 
 
   // 验证输入长度（适配 query 参数）
   if (content.length > 1000000) {
-    throw new Error('内容不能超过 1,000,000 个字符');
+    throw new Error('Content cannot exceed 1,000,000 characters');
   }
 
   const openKey = c.get('openKey');
@@ -42,11 +42,11 @@ router.get('/notes/create', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) 
         .map((t) => t.trim());
       // 验证标签长度和数量
       if (processed.length > 20) {
-        throw new Error('最多只能添加 20 个标签');
+        throw new Error('Maximum 20 tags allowed');
       }
       for (const tag of processed) {
         if (tag.length > 50) {
-          throw new Error('单个标签不能超过 50 个字符');
+          throw new Error('Single tag cannot exceed 50 characters');
         }
       }
       return processed;
@@ -54,7 +54,7 @@ router.get('/notes/create', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) 
     if (tags && typeof tags === 'string' && tags.trim().length > 0) {
       const trimmed = tags.trim();
       if (trimmed.length > 50) {
-        throw new Error('单个标签不能超过 50 个字符');
+        throw new Error('Single tag cannot exceed 50 characters');
       }
       return [trimmed];
     }

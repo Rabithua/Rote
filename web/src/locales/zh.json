@@ -87,7 +87,8 @@
         "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
         "usernameConflict": "此用户名与系统路由冲突",
         "passwordRequired": "请输入密码",
-        "passwordMaxLength": "密码最长30位",
+        "passwordMin": "密码长度至少6位",
+        "passwordMaxLength": "密码最长128位",
         "emailRequired": "请输入邮箱",
         "emailMaxLength": "邮箱最长30位",
         "emailFormat": "请输入正确的邮箱格式",
@@ -333,7 +334,8 @@
         "emailRequired": "邮箱不能为空",
         "emailInvalid": "请输入有效的邮箱地址",
         "passwordRequired": "密码不能为空",
-        "passwordMin": "密码长度至少6位"
+        "passwordMin": "密码长度至少6位",
+        "passwordMax": "密码长度不能超过128位"
       },
       "buttons": {
         "prev": "上一步",

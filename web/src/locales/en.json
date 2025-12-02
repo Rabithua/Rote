@@ -83,7 +83,8 @@
         "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
         "usernameConflict": "This username conflicts with system routes",
         "passwordRequired": "Password is required",
-        "passwordMaxLength": "Password cannot exceed 30 characters",
+        "passwordMin": "Password must be at least 6 characters",
+        "passwordMaxLength": "Password cannot exceed 128 characters",
         "emailRequired": "Email is required",
         "emailMaxLength": "Email cannot exceed 30 characters",
         "emailFormat": "Invalid email format",
@@ -332,7 +333,8 @@
         "emailRequired": "Email is required",
         "emailInvalid": "Please enter a valid email address",
         "passwordRequired": "Password is required",
-        "passwordMin": "Password length must be at least 6"
+        "passwordMin": "Password length must be at least 6",
+        "passwordMax": "Password cannot exceed 128 characters"
       },
       "buttons": {
         "prev": "Previous",
