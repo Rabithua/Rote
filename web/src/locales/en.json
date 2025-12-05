@@ -654,6 +654,10 @@
             "harassment": {
               "label": "3.5 Harassment:",
               "content": "Harassing, intimidating, stalking, or otherwise bullying other users in any form."
+            },
+            "zeroTolerance": {
+              "label": "3.6 Zero Tolerance Policy:",
+              "content": "We maintain a Zero Tolerance policy for Objectionable Content and Abusive Users. Any posting, transmission, or storage of objectionable content, including but not limited to pornography, violence, hate speech, discrimination, harassment, threats, defamation, insults, or other inappropriate content, as well as any form of abusive behavior, will result in immediate and severe action upon discovery or report. Such actions may include, but are not limited to, immediate removal of content, permanent account suspension, service termination, and we reserve the right to pursue legal remedies. We do not provide warnings or grace periods for violations of this policy."
             }
           },
           "violationHandling": "If we discover, or are notified of, any behavior or User Content that appears to violate this Agreement or applicable laws, we may, within a reasonable scope, take measures such as removing or blocking the relevant content, restricting certain features, or suspending or terminating your access to the App, and we reserve the right to pursue legal remedies where permitted by law."

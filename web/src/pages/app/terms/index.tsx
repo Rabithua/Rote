@@ -88,6 +88,10 @@ function TermsOfServicePage() {
               <strong>{t('sections.conduct.items.harassment.label')} </strong>
               {t('sections.conduct.items.harassment.content')}
             </li>
+            <li>
+              <strong>{t('sections.conduct.items.zeroTolerance.label')} </strong>
+              {t('sections.conduct.items.zeroTolerance.content')}
+            </li>
           </ul>
           <p>{t('sections.conduct.violationHandling')}</p>
 
