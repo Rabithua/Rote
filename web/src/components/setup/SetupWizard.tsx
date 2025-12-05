@@ -178,6 +178,8 @@ export default function SetupWizard() {
           newErrors.password = 'required';
         } else if (config.admin.password.length < 6) {
           newErrors.password = 'min';
+        } else if (config.admin.password.length > 128) {
+          newErrors.password = 'max';
         }
         break;
     }
@@ -295,9 +297,8 @@ export default function SetupWizard() {
         );
       }
     } catch (error: any) {
-      toast.error(
-        t('pages.setupWizard.toasts.testFailed', { error: error.message || 'Unknown error' })
-      );
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('pages.setupWizard.toasts.testFailed', { error: errorMessage }));
     } finally {
       setIsTesting(false);
     }
@@ -556,7 +557,9 @@ export default function SetupWizard() {
                 <p className="text-destructive text-sm">
                   {errors.password === 'required'
                     ? t('pages.setupWizard.validation.passwordRequired')
-                    : t('pages.setupWizard.validation.passwordMin')}
+                    : errors.password === 'min'
+                      ? t('pages.setupWizard.validation.passwordMin')
+                      : t('pages.setupWizard.validation.passwordMax')}
                 </p>
               )}
             </div>

@@ -13,6 +13,9 @@ export interface SystemConfig {
     secretAccessKey: string;
     urlPrefix: string;
   };
+  security?: {
+    requireVerifiedEmailForExplore?: boolean;
+  };
   ui?: {
     theme?: string;
     language?: string;

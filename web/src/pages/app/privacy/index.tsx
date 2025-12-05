@@ -97,6 +97,10 @@ function PrivacyPolicyPage() {
             </li>
           </ul>
 
+          <h2>{t('sections.tracking.title')}</h2>
+          <p>{t('sections.tracking.description')}</p>
+          <p>{t('sections.tracking.att')}</p>
+
           <h2>{t('sections.dataStorage.title')}</h2>
           <ul>
             <li>

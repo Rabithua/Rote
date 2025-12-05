@@ -246,35 +246,34 @@ export const errorHandler: express.ErrorRequestHandler = (err, _req, res, _next)
 
 ### 1.5 密码长度限制过短 （已完成修复）
 
-**位置**: `server/utils/zod.ts:17-20, 32-40`
+**位置**: `server/utils/zod.ts:14-17, 30-33`
 
 **问题描述**:
 密码最大长度限制为 30 个字符，这可能不够安全。现代密码策略建议：
 
-- 最小长度至少 8-12 个字符
+- 最小长度至少 6 个字符（已放宽要求，提升用户体验）
 - 最大长度应该更长（如 128 个字符）
-- 包含大小写字母、数字和特殊字符
+- 不再强制要求大小写字母和数字的组合（已放宽要求）
 
 **代码片段**:
 
-```17:20:server/utils/zod.ts
+```14:17:server/utils/zod.ts
 password: z
   .string()
-  .min(1, "Password cannot be empty")
-  .max(30, "Password cannot exceed 30 characters"),
+  .min(6, '密码长度至少为 6 个字符')
+  .max(128, '密码长度不能超过 128 个字符'),
 ```
 
-**修复建议**:
+**当前实现**:
 
 ```typescript
 password: z
   .string()
-  .min(8, "Password must be at least 8 characters")
-  .max(128, "Password cannot exceed 128 characters")
-  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-  .regex(/[0-9]/, "Password must contain at least one number"),
+  .min(6, '密码长度至少为 6 个字符')
+  .max(128, '密码长度不能超过 128 个字符'),
 ```
+
+**说明**: 为了提升用户体验，密码策略已放宽为仅要求最小长度 6 个字符，不再强制要求大小写字母和数字的组合。
 
 ---
 

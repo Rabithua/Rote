@@ -35,6 +35,7 @@ import {
   hasAdminUser,
   listUsers,
   updateUserRole,
+  verifyUserEmail,
 } from '../../utils/dbMethods';
 import { createResponse, getApiUrl } from '../../utils/main';
 
@@ -169,6 +170,14 @@ adminRouter.post('/setup', async (c: HonoContext) => {
 
     if (!setupData.admin.username || !setupData.admin.email || !setupData.admin.password) {
       return c.json(createResponse(null, 'Admin user information is incomplete'), 400);
+    }
+
+    // 验证管理员密码长度（至少6个字符）
+    if (setupData.admin.password.length < 6) {
+      return c.json(createResponse(null, 'Password must be at least 6 characters'), 400);
+    }
+    if (setupData.admin.password.length > 128) {
+      return c.json(createResponse(null, 'Password cannot exceed 128 characters'), 400);
     }
 
     // 验证管理员用户名不能是受保护的路由名称（不区分大小写）
@@ -548,7 +557,9 @@ adminRouter.get('/users', authenticateJWT, requireAdmin, async (c: HonoContext) 
   const limit = c.req.query('limit') || '10';
   const role = c.req.query('role');
   const search = c.req.query('search');
-  const { users, total } = await listUsers({ page, limit, role, search });
+  const sortField = c.req.query('sortField');
+  const sortOrder = c.req.query('sortOrder') as 'asc' | 'desc' | undefined;
+  const { users, total } = await listUsers({ page, limit, role, search, sortField, sortOrder });
 
   return c.json(
     createResponse({
@@ -605,6 +616,24 @@ adminRouter.delete('/users/:userId', authenticateJWT, requireSuperAdmin, async (
 
   return c.json(createResponse(null, 'User deleted successfully'), 200);
 });
+
+// 验证用户邮箱（管理员）
+adminRouter.put(
+  '/users/:userId/verify-email',
+  authenticateJWT,
+  requireAdmin,
+  async (c: HonoContext) => {
+    const userId = c.req.param('userId');
+
+    const user = await verifyUserEmail(userId);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return c.json(createResponse(user, 'User email verified successfully'), 200);
+  }
+);
 
 // 获取角色统计信息（管理员）
 adminRouter.get('/roles/stats', authenticateJWT, requireAdmin, async (c: HonoContext) => {

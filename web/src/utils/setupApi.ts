@@ -68,7 +68,8 @@ export async function testStorageConnection(
   } catch (error: any) {
     return {
       success: false,
-      message: error.message || 'Unknown error',
+      message:
+        error?.response?.data?.message || error?.message || 'Unknown error',
     };
   }
 }

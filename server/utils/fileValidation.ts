@@ -31,10 +31,10 @@ export const ALLOWED_EXTENSIONS = [
  */
 export function validateContentType(contentType?: string): void {
   if (!contentType) {
-    throw new Error('缺少内容类型');
+    throw new Error('Content type is required');
   }
 
   if (!ALLOWED_MIME_TYPES.includes(contentType)) {
-    throw new Error(`不允许的内容类型: ${contentType}`);
+    throw new Error(`Content type not allowed: ${contentType}`);
   }
 }

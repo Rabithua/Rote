@@ -3,6 +3,7 @@ import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { formatTimeAgo, isTokenValid } from '@/utils/main';
 import {
@@ -156,7 +157,7 @@ function Landing() {
       </div>
 
       {/* Hero Section */}
-      <div className="bg-background relative space-y-6 divide-y-[0.5px] border-r border-l py-20 sm:mx-4">
+      <div className="bg-background relative space-y-6 divide-y-[0.5px] overflow-hidden border-r border-l py-20 sm:mx-4">
         {/* Main heading - 更克制的设计 */}
         <div className="space-y-2 divide-y-[0.5px] px-2">
           <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
@@ -182,7 +183,7 @@ function Landing() {
         </div> */}
 
         {/* CTA Buttons - 更优雅的按钮设计 */}
-        <div className="flex flex-row gap-3 px-2">
+        <div className="flex flex-row gap-3 px-2 pb-4">
           <Button asChild size="lg">
             <Link
               className="text-background hover:text-background"
@@ -205,10 +206,34 @@ function Landing() {
             </Link>
           </Button>
         </div>
+
+        <div className="group absolute right-10 bottom-0 flex flex-col items-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="relative h-10 translate-y-3 rotate-5 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110">
+                {/* 亮色模式图片 */}
+                <img
+                  src="/ios_icon_compressed.png"
+                  alt="hero"
+                  className="z-1 h-10 drop-shadow-2xl drop-shadow-black/10 dark:hidden"
+                />
+                {/* 暗色模式图片 */}
+                <img
+                  src="/ios_icon_dark_compressed.png"
+                  alt="hero"
+                  className="z-1 hidden h-10 drop-shadow-2xl drop-shadow-black/10 dark:block"
+                />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="left" sideOffset={8}>
+              {t('iosAppAlmostReady')}
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
       {/* Features Section */}
-      <div className="bg-background divide-y border-x-1 sm:mx-4">
+      <div className="bg-background divide-y border-x sm:mx-4">
         <div className="space-y-2 divide-y-[0.5px] p-2">
           <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
             {t('coreFeatures.tagline')}
@@ -237,7 +262,7 @@ function Landing() {
         </div>
       </div>
 
-      <div className="bg-background divide-y border-x-1 sm:mx-4">
+      <div className="bg-background divide-y border-x sm:mx-4">
         <div className="space-y-2 divide-y-[0.5px] p-2">
           <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
             {t('construction.tagline')}

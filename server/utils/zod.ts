@@ -13,11 +13,9 @@ export const RegisterDataZod = z.object({
     }),
   password: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password cannot exceed 128 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .refine((val) => val.length > 0, { message: 'Password cannot be empty' })
+    .refine((val) => val.length >= 6, { message: 'Password must be at least 6 characters' })
+    .max(128, 'Password cannot exceed 128 characters'),
   email: z
     .string()
     .min(1, 'Email cannot be empty')
@@ -32,11 +30,9 @@ export const RegisterDataZod = z.object({
 export const passwordChangeZod = z.object({
   newpassword: z
     .string()
-    .min(8, 'Password must be at least 8 characters')
-    .max(128, 'Password cannot exceed 128 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
+    .refine((val) => val.length > 0, { message: 'Password cannot be empty' })
+    .refine((val) => val.length >= 6, { message: 'Password must be at least 6 characters' })
+    .max(128, 'Password cannot exceed 128 characters'),
   oldpassword: z
     .string()
     .min(1, 'Password cannot be empty')
@@ -45,45 +41,58 @@ export const passwordChangeZod = z.object({
 
 // 笔记相关验证
 export const NoteCreateZod = z.object({
-  title: z.string().max(200, '标题不能超过 200 个字符').optional(),
-  content: z.string().min(1, '内容不能为空').max(1000000, '内容不能超过 1,000,000 个字符'), // 约 1MB 文本
+  title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),
+  content: z
+    .string()
+    .min(1, 'Content cannot be empty')
+    .max(1000000, 'Content cannot exceed 1,000,000 characters'), // 约 1MB 文本
   type: z.string().optional(),
   tags: z
-    .array(z.string().min(1, '标签不能为空').max(50, '单个标签不能超过 50 个字符'))
-    .max(20, '最多只能添加 20 个标签')
+    .array(
+      z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
+    )
+    .max(20, 'Maximum 20 tags allowed')
     .optional(),
   state: z.string().optional(),
   archived: z.boolean().optional(),
   pin: z.boolean().optional(),
   editor: z.string().optional(),
-  attachmentIds: z.array(z.string().uuid('无效的附件 ID')).optional(),
+  attachmentIds: z.array(z.string().uuid('Invalid attachment ID')).optional(),
 });
 
 export const NoteUpdateZod = z.object({
-  title: z.string().max(200, '标题不能超过 200 个字符').optional(),
-  content: z.string().max(1000000, '内容不能超过 1,000,000 个字符').optional(),
+  title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),
+  content: z.string().max(1000000, 'Content cannot exceed 1,000,000 characters').optional(),
   type: z.string().optional(),
   tags: z
-    .array(z.string().min(1, '标签不能为空').max(50, '单个标签不能超过 50 个字符'))
-    .max(20, '最多只能添加 20 个标签')
+    .array(
+      z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
+    )
+    .max(20, 'Maximum 20 tags allowed')
     .optional(),
   state: z.string().optional(),
   archived: z.boolean().optional(),
   pin: z.boolean().optional(),
   editor: z.string().optional(),
-  attachmentIds: z.array(z.string().uuid('无效的附件 ID')).optional(),
+  attachmentIds: z.array(z.string().uuid('Invalid attachment ID')).optional(),
 });
 
 // 搜索关键词验证
 export const SearchKeywordZod = z.object({
-  keyword: z.string().min(1, '搜索关键词不能为空').max(200, '搜索关键词不能超过 200 个字符'),
+  keyword: z
+    .string()
+    .min(1, 'Search keyword cannot be empty')
+    .max(200, 'Search keyword cannot exceed 200 characters'),
 });
 
 // 反应相关验证
 export const ReactionCreateZod = z.object({
-  type: z.string().min(1, '反应类型不能为空').max(50, '反应类型不能超过 50 个字符'), // emoji 通常很短，但留一些余量
-  roteid: z.uuid('无效的笔记 ID'),
-  visitorId: z.string().max(200, '访客 ID 不能超过 200 个字符').optional(),
+  type: z
+    .string()
+    .min(1, 'Reaction type cannot be empty')
+    .max(50, 'Reaction type cannot exceed 50 characters'), // emoji 通常很短，但留一些余量
+  roteid: z.uuid('Invalid note ID'),
+  visitorId: z.string().max(200, 'Visitor ID cannot exceed 200 characters').optional(),
   visitorInfo: z.record(z.string(), z.any()).optional(),
   metadata: z.record(z.string(), z.any()).optional(),
 });
@@ -93,11 +102,11 @@ export const AttachmentPresignZod = z.object({
   files: z
     .array(
       z.object({
-        filename: z.string().max(255, '文件名不能超过 255 个字符').optional(),
-        contentType: z.string().min(1, '内容类型不能为空'),
-        size: z.number().int().positive('文件大小必须大于 0'),
+        filename: z.string().max(255, 'Filename cannot exceed 255 characters').optional(),
+        contentType: z.string().min(1, 'Content type cannot be empty'),
+        size: z.number().int().positive('File size must be greater than 0'),
       })
     )
-    .min(1, '至少需要一个文件')
-    .max(9, '最多只能上传 9 个文件'),
+    .min(1, 'At least one file is required')
+    .max(9, 'Maximum 9 files allowed'),
 });

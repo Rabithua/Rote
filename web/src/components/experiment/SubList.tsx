@@ -90,7 +90,9 @@ export default function SubList() {
       // 刷新订阅列表以显示更新后的状态
       mutate();
     } catch (error: any) {
-      toast.error(t('messages.testFailed', { error: error.message || 'Unknown error' }), {
+      const errorMessage =
+        error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('messages.testFailed', { error: errorMessage }), {
         id: loadingToast,
       });
     } finally {
@@ -112,7 +114,9 @@ export default function SubList() {
       // 刷新订阅列表
       mutate();
     } catch (error: any) {
-      toast.error(t('messages.deleteFailed', { error: error.message || 'Unknown error' }), {
+      const errorMessage =
+        error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('messages.deleteFailed', { error: errorMessage }), {
         id: loadingToast,
       });
     }
@@ -126,7 +130,10 @@ export default function SubList() {
         <div className="py-4 text-center text-gray-500">
           {error.response?.status === 404 || error.response?.status === 401
             ? t('noSubscriptions')
-            : t('messages.loadFailed', { error: error.message || 'Unknown error' })}
+            : t('messages.loadFailed', {
+                error:
+                  error?.response?.data?.message || error?.message || 'Unknown error',
+              })}
         </div>
       ) : (
         <div className="space-y-4">

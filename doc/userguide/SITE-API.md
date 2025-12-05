@@ -126,7 +126,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
 - `storage`: object - 存储配置
   - `r2Configured`: boolean - R2 存储是否已配置
   - `urlPrefix`: string - 存储 URL 前缀（如果 R2 已配置）
-- `ui`: object - UI 配置
+- `ui`: object - UI 配置（仅包含与前端行为相关的开关）
   - `allowRegistration`: boolean - 是否允许注册
   - `allowUploadFile`: boolean - 是否允许上传文件
 - `timestamp`: string - 响应时间戳（ISO 8601 格式）
@@ -223,3 +223,24 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
 - **功能开关**: 根据 `/status` 接口返回的 `ui` 配置，在前端控制注册、文件上传等功能的显示和可用性
 - **存储配置**: 通过 `storage.r2Configured` 判断附件上传功能是否可用，通过 `storage.urlPrefix` 获取附件访问地址前缀
 - **Web Push**: 使用 `notification.vapidPublicKey` 实现 Web Push 通知功能
+
+---
+
+### 探索页可见性与邮箱验证策略说明
+
+探索页中公开笔记的展示，除了依赖笔记本身为 `public` 状态外，还受到以下两个配置的共同影响：
+
+- **用户级配置**（通过用户设置接口维护，见 `USER-API.md`）
+
+  - `allowExplore`: boolean
+    - 当为 `false` 时，用户的公开笔记不会出现在「探索」页推荐中，但仍可以通过直接链接访问。
+
+- **系统级安全配置**（仅管理员可在管理后台 / Admin API 中配置）
+  - `security.requireVerifiedEmailForExplore`: boolean
+    - 当为 `true` 时，只有**邮箱已验证** (`emailVerified = true`) 且 `allowExplore !== false` 的用户，其公开笔记才会被纳入探索页候选集合。
+    - 当为 `false` 时，只要 `allowExplore !== false`，公开笔记即可参与探索页展示。
+
+实现层面，探索页相关接口在数据库查询阶段就会同时考虑上述两个条件进行过滤，从而保证：
+
+- 分页结果中不会因为后置过滤出现「每页条数不稳定」或「空洞」的问题；
+- 前端无需额外在客户端进行二次过滤，只需按 API 返回结果渲染即可。
