@@ -136,47 +136,84 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           compressedKey?: string;
           size: number;
           mimetype: string;
-          index: number; // 添加索引来保持顺序
         }> = [];
 
-        await runConcurrency(
+        // 使用改进后的 runConcurrency，获取每个任务的成功/失败状态
+        const results = await runConcurrency(
           pairs,
           async ({ item, file }, index) => {
+            // 防御：空文件不上传
+            if (!file || (file as File).size === 0) {
+              throw new Error('Empty file');
+            }
+
+            // 先压缩图片（如果支持）
             const compressedBlob = await maybeCompressToWebp(file, {
               maxWidthOrHeight: 2560,
               initialQuality: qualityForSize(file.size),
             });
 
-            // 防御：空文件不上传
-            if (!file || (file as File).size === 0) {
-              throw new Error('empty file');
-            }
-
-            // 原图上传
+            // 原图上传（必须成功）
             await uploadToSignedUrl(item.original.putUrl, file);
 
-            // 压缩图上传（可选）
+            // 压缩图上传（可选，失败不影响原图）
+            let compressedKey: string | undefined;
             if (compressedBlob) {
-              await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+              try {
+                await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+                // 只有上传成功才记录 compressedKey
+                compressedKey = item.compressed.key;
+              } catch (error) {
+                // 压缩图上传失败，但不影响原图，只记录错误
+                console.warn(`Compressed image upload failed for ${item.uuid}:`, error);
+                // 不设置 compressedKey，表示压缩图未成功上传
+              }
             }
 
-            toFinalize.push({
+            // 只有原图上传成功（且压缩图上传成功或不需要压缩）才添加到 toFinalize
+            // 注意：这里不直接 push，而是通过返回值处理
+            return {
               uuid: item.uuid,
               originalKey: item.original.key,
-              compressedKey: compressedBlob ? item.compressed.key : undefined,
+              compressedKey,
               size: file.size,
               mimetype: file.type,
-              index, // 保存原始索引
-            });
+            };
           },
           CONCURRENCY
         );
 
-        // 按索引排序，确保顺序一致
-        toFinalize.sort((a, b) => a.index - b.index);
+        // 只处理成功上传的文件
+        for (const result of results) {
+          if (result.success && result.result) {
+            // result.result 是 worker 函数返回的数据
+            toFinalize.push(result.result);
+          } else {
+            // 记录失败的文件
+            console.error(
+              `File upload failed for index ${result.index}:`,
+              result.error?.message || 'Unknown error'
+            );
+          }
+        }
 
-        // 移除索引字段
-        const finalizeData = toFinalize.map(({ index: _index, ...rest }) => rest);
+        // 如果没有成功上传的文件，抛出错误
+        if (toFinalize.length === 0) {
+          const failedCount = results.filter((r) => !r.success).length;
+          throw new Error(
+            `All ${failedCount} file(s) failed to upload. Please check your network connection and try again.`
+          );
+        }
+
+        // 如果有部分文件失败，提示用户
+        const failedCount = results.filter((r) => !r.success).length;
+        if (failedCount > 0) {
+          toast.warning(
+            `${failedCount} file(s) failed to upload, ${toFinalize.length} file(s) uploaded successfully.`
+          );
+        }
+
+        const finalizeData = toFinalize;
         // 批量 finalize，减少请求数
         const finalized = finalizeData.length
           ? await finalizeUpload(finalizeData, rote.id || undefined)

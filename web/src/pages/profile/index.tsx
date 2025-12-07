@@ -214,12 +214,21 @@ function ProfilePage() {
         initialQuality: 0.8,
       });
 
-      // 上传原图
+      // 上传原图（必须成功）
       await uploadToSignedUrl(item.original.putUrl, croppedFile);
 
-      // 上传压缩图（如果压缩成功）
+      // 上传压缩图（可选，失败不影响原图）
+      let compressedKey: string | undefined;
       if (compressedBlob) {
-        await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+        try {
+          await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+          // 只有上传成功才记录 compressedKey
+          compressedKey = item.compressed.key;
+        } catch (error) {
+          // 压缩图上传失败，但不影响原图，只记录警告
+          console.warn(`Compressed avatar upload failed for ${item.uuid}:`, error);
+          // 不设置 compressedKey，表示压缩图未成功上传
+        }
       }
 
       // 完成上传
@@ -227,7 +236,7 @@ function ProfilePage() {
         {
           uuid: item.uuid,
           originalKey: item.original.key,
-          compressedKey: compressedBlob ? item.compressed.key : undefined,
+          compressedKey,
           size: croppedFile.size,
           mimetype: croppedFile.type,
         },
@@ -343,12 +352,21 @@ function ProfilePage() {
           initialQuality: 0.8,
         });
 
-        // 上传原图
+        // 上传原图（必须成功）
         await uploadToSignedUrl(item.original.putUrl, selectedFile);
 
-        // 上传压缩图（如果压缩成功）
+        // 上传压缩图（可选，失败不影响原图）
+        let compressedKey: string | undefined;
         if (compressedBlob) {
-          await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+          try {
+            await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+            // 只有上传成功才记录 compressedKey
+            compressedKey = item.compressed.key;
+          } catch (error) {
+            // 压缩图上传失败，但不影响原图，只记录警告
+            console.warn(`Compressed cover upload failed for ${item.uuid}:`, error);
+            // 不设置 compressedKey，表示压缩图未成功上传
+          }
         }
 
         // 完成上传
@@ -356,7 +374,7 @@ function ProfilePage() {
           {
             uuid: item.uuid,
             originalKey: item.original.key,
-            compressedKey: compressedBlob ? item.compressed.key : undefined,
+            compressedKey,
             size: selectedFile.size,
             mimetype: selectedFile.type || 'image/jpeg',
           },

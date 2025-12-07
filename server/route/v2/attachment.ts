@@ -15,7 +15,7 @@ import {
 } from '../../utils/dbMethods';
 import { validateContentType } from '../../utils/fileValidation';
 import { createResponse, isValidUUID } from '../../utils/main';
-import { presignPutUrl } from '../../utils/r2';
+import { checkObjectExists, presignPutUrl } from '../../utils/r2';
 import { AttachmentPresignZod } from '../../utils/zod';
 
 // 附件相关路由
@@ -242,7 +242,95 @@ attachmentsRouter.post(
       }
     }
 
-    const uploads: UploadResult[] = attachments.map((a) => {
+    // 验证文件存在性和 UUID 一致性
+    const validationErrors: string[] = [];
+    const validAttachments: typeof attachments = [];
+
+    for (const a of attachments) {
+      // 1. 验证原图文件是否存在
+      const originalExists = await checkObjectExists(a.originalKey);
+      if (!originalExists) {
+        validationErrors.push(`Original file not found: ${a.originalKey} (uuid: ${a.uuid})`);
+        continue;
+      }
+
+      // 2. 如果提供了 compressedKey，验证压缩图是否存在
+      if (a.compressedKey) {
+        const compressedExists = await checkObjectExists(a.compressedKey);
+        if (!compressedExists) {
+          validationErrors.push(`Compressed file not found: ${a.compressedKey} (uuid: ${a.uuid})`);
+          // 压缩图不存在，但不阻止原图入库，只是不传递 compressedKey
+          validAttachments.push({
+            ...a,
+            compressedKey: undefined,
+          });
+          continue;
+        }
+
+        // 3. 验证 UUID 一致性：确保 compressedKey 中的 uuid 与 originalKey 中的 uuid 一致
+        // originalKey 格式: users/{userId}/uploads/{uuid}{ext}
+        // compressedKey 格式: users/{userId}/compressed/{uuid}.webp
+        // 使用更精确的正则表达式：([^/.]+) 匹配 UUID（不包含 / 和 .），然后匹配可选的扩展名
+        const originalUuidMatch = a.originalKey.match(/\/uploads\/([^/.]+)(\.[^.]+)?$/);
+        const compressedUuidMatch = a.compressedKey.match(/\/compressed\/([^/.]+)\.webp$/);
+
+        if (!originalUuidMatch || !compressedUuidMatch) {
+          validationErrors.push(
+            `Invalid key format for uuid validation: originalKey=${a.originalKey}, compressedKey=${a.compressedKey}`
+          );
+          continue;
+        }
+
+        const originalUuid = originalUuidMatch[1];
+        const compressedUuid = compressedUuidMatch[1];
+
+        if (originalUuid !== compressedUuid) {
+          validationErrors.push(
+            `UUID mismatch: originalKey contains uuid '${originalUuid}', but compressedKey contains uuid '${compressedUuid}'`
+          );
+          // UUID 不匹配，不传递 compressedKey
+          validAttachments.push({
+            ...a,
+            compressedKey: undefined,
+          });
+          continue;
+        }
+
+        // 4. 验证 compressedKey 中的 uuid 是否与请求中的 uuid 一致
+        if (originalUuid !== a.uuid) {
+          validationErrors.push(
+            `UUID mismatch: request uuid '${a.uuid}' does not match originalKey uuid '${originalUuid}'`
+          );
+          continue;
+        }
+      }
+
+      // 所有验证通过
+      validAttachments.push(a);
+    }
+
+    // 如果没有有效的附件，返回错误
+    if (validAttachments.length === 0) {
+      // 如果有验证错误，返回详细错误信息
+      if (validationErrors.length > 0) {
+        const errorMessage =
+          validationErrors.length === 1
+            ? validationErrors[0]
+            : `${validationErrors.length} validation error(s): ${validationErrors.join('; ')}`;
+        throw new Error(errorMessage);
+      }
+      throw new Error('No valid attachments to finalize after validation');
+    }
+
+    // 如果有验证错误但仍有有效附件，记录警告（部分成功）
+    if (validationErrors.length > 0) {
+      console.warn(
+        `Some attachments failed validation (${validationErrors.length} error(s)), but ${validAttachments.length} attachment(s) will be finalized:`,
+        validationErrors
+      );
+    }
+
+    const uploads: UploadResult[] = validAttachments.map((a) => {
       const storageConfig = getGlobalConfig<StorageConfig>('storage');
       const urlPrefix = storageConfig?.urlPrefix;
       const oUrl = `${urlPrefix}/${a.originalKey}`;

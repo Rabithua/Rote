@@ -1,4 +1,9 @@
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  DeleteObjectCommand,
+  HeadObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageConfig } from '../types/config';
 import { getGlobalConfig } from './config';
@@ -85,4 +90,34 @@ export async function presignPutUrl(
   });
   const url = `${urlPrefix}/${key}`;
   return { putUrl, url };
+}
+
+// 检查 R2 中的对象是否存在
+export async function checkObjectExists(key: string): Promise<boolean> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const { s3, bucketName } = r2Config;
+
+  const command = new HeadObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+
+  try {
+    await s3.send(command);
+    return true;
+  } catch (error: any) {
+    // 404 表示文件不存在
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      return false;
+    }
+    // 其他错误（如权限问题）也视为不存在，避免误判
+    console.warn(`Error checking object existence for ${key}:`, error.message || error);
+    return false;
+  }
 }
