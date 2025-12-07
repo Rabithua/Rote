@@ -24,6 +24,8 @@ export interface SecurityConfig {
   jwtAccessExpiry: string;
   jwtRefreshExpiry: string;
   sessionSecret: string;
+  // 是否要求邮箱已验证的用户才允许出现在探索页
+  requireVerifiedEmailForExplore?: boolean;
 }
 
 export interface NotificationConfig {

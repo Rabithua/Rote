@@ -57,8 +57,6 @@ function MainPage() {
 function ArchivedPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.archived' });
 
-
-
   return (
     <ContainerWithSideBar
       sidebar={<SideBar />}
@@ -75,7 +73,6 @@ function ArchivedPage() {
     </ContainerWithSideBar>
   );
 }
-
 
 const SideBar = () => (
   <>

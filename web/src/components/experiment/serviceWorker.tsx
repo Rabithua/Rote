@@ -100,7 +100,9 @@ export default function ServiceWorker() {
 
       initializeServiceWorker();
     } catch (error: unknown) {
-      toast.error(String(error));
+      const errorMessage =
+        (error as any)?.response?.data?.message || (error as any)?.message || String(error);
+      toast.error(errorMessage);
     }
   }
   async function unSub() {

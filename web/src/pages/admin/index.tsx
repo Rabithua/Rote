@@ -3,13 +3,15 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/state/profile';
 import { get } from '@/utils/api';
-import { Database, Globe, Settings, Shield } from 'lucide-react';
+import { Database, Globe, Lock, Settings, Shield, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
+import SecurityConfigTab from './components/SecurityConfigTab';
 import SiteConfigTab from './components/SiteConfigTab';
 import StorageConfigTab from './components/StorageConfigTab';
 import UIConfigTab from './components/UIConfigTab';
+import UsersTab from './components/UsersTab';
 import type { SystemConfig } from './types';
 
 export default function AdminDashboard() {
@@ -17,7 +19,9 @@ export default function AdminDashboard() {
   const profile = useProfile();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui'>('site');
+  const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui' | 'security' | 'users'>(
+    'site'
+  );
 
   const {
     data: configs,
@@ -37,6 +41,9 @@ export default function AdminDashboard() {
     undefined
   );
   const [uiConfig, setUiConfig] = useState<SystemConfig['ui'] | undefined>(undefined);
+  const [securityConfig, setSecurityConfig] = useState<SystemConfig['security'] | undefined>(
+    undefined
+  );
 
   useEffect(() => {
     if (configs) {
@@ -58,6 +65,11 @@ export default function AdminDashboard() {
           allowUploadFile: true,
           defaultUserRole: 'user',
           apiRateLimit: 100,
+        }
+      );
+      setSecurityConfig(
+        configs.security || {
+          requireVerifiedEmailForExplore: false,
         }
       );
     }
@@ -110,6 +122,23 @@ export default function AdminDashboard() {
             <Settings className="size-4" />
             {t('tabs.ui')}
           </Button>
+          <Button
+            variant={activeTab === 'users' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('users')}
+            className="flex items-center gap-2 rounded-none"
+          >
+            <Users className="size-4" />
+            {t('tabs.users')}
+          </Button>
+
+          <Button
+            variant={activeTab === 'security' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('security')}
+            className="flex items-center gap-2 rounded-none"
+          >
+            <Lock className="size-4" />
+            {t('tabs.security')}
+          </Button>
         </div>
 
         {/* 站点配置 */}
@@ -146,6 +175,20 @@ export default function AdminDashboard() {
             onMutate={mutate}
           />
         )}
+
+        {/* 安全配置 */}
+        {activeTab === 'security' && (
+          <SecurityConfigTab
+            securityConfig={securityConfig}
+            setSecurityConfig={setSecurityConfig}
+            isSaving={isSaving}
+            setIsSaving={setIsSaving}
+            onMutate={mutate}
+          />
+        )}
+
+        {/* 用户管理 */}
+        {activeTab === 'users' && <UsersTab />}
       </div>
     </div>
   );

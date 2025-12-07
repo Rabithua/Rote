@@ -52,8 +52,6 @@ function ExplorePage() {
     mutate();
   };
 
-
-
   return (
     <ContainerWithSideBar
       sidebar={<SideBar />}
@@ -76,7 +74,6 @@ function ExplorePage() {
     </ContainerWithSideBar>
   );
 }
-
 
 const SideBar = () => {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });
@@ -109,7 +106,7 @@ const SideBar = () => {
   ];
 
   return (
-    <div className="flex w-full flex-col divide-y-1">
+    <div className="flex w-full flex-col divide-y">
       {isRoteGithubDataLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
       ) : (

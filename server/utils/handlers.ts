@@ -2,6 +2,7 @@ import { HonoContext } from '../types/hono';
 
 export const errorHandler = async (err: Error, c: HonoContext) => {
   console.error('API Error:', err.message);
+  
   // 只在开发环境下打印完整的错误堆栈
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);
@@ -60,12 +61,50 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
     );
   }
 
-  // Validation errors
+  // Validation errors（包含 Zod 校验错误）
   if (err.name === 'ValidationError' || err.name === 'ZodError') {
+    const anyErr = err as any;
+    let message = err.message;
+
+    // 优先从 Zod 的 issues 中提取错误消息（标准 Zod 错误格式）
+    if (Array.isArray(anyErr.issues) && anyErr.issues.length > 0) {
+      // 提取所有错误消息，合并显示（最多显示前 3 个，避免消息过长）
+      const errorMessages = anyErr.issues
+        .slice(0, 3)
+        .map((issue: any) => issue?.message)
+        .filter((msg: any): msg is string => typeof msg === 'string' && msg.length > 0);
+
+      if (errorMessages.length > 0) {
+        // 如果有多个错误，用分号分隔；如果只有一个，直接使用
+        message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
+      }
+    } else {
+      // 兼容部分场景：message 里直接是 JSON 字符串（如 [ { origin, code, message } ]）
+      try {
+        const parsed = JSON.parse(message);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // 提取所有错误消息
+          const errorMessages = parsed
+            .slice(0, 3)
+            .map((item: any) => item?.message)
+            .filter((msg: any): msg is string => typeof msg === 'string' && msg.length > 0);
+
+          if (errorMessages.length > 0) {
+            message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
+          } else if (parsed[0]?.message) {
+            // 降级：如果提取失败，至少尝试第一个
+            message = parsed[0].message;
+          }
+        }
+      } catch {
+        // 解析失败则保留原始 message
+      }
+    }
+
     return c.json(
       {
         code: 1,
-        message: err.message,
+        message,
         data: null,
       },
       400
@@ -117,6 +156,53 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
         data: null,
       },
       400
+    );
+  }
+
+  // Database errors - 特殊处理数据库错误
+  if (err.name === 'DatabaseError') {
+    const originalError = (err as any).originalError;
+    const errorCode = originalError?.code;
+    const errorMessage = originalError?.message || err.message;
+    
+    // PostgreSQL 错误代码处理
+    // 42P01 = undefined_table (表不存在)
+    // 42703 = undefined_column (列不存在)
+    // 28P01 = invalid_password (密码认证失败)
+    // 3D000 = invalid_catalog_name (数据库不存在)
+    // 08006 = connection_failure (连接失败)
+    if (errorCode === '42P01' || errorMessage.includes('does not exist')) {
+      console.error('❌ Database table or column does not exist. Please check if migrations were applied correctly.');
+      return c.json(
+        {
+          code: 1,
+          message: 'Database schema error. Please contact administrator.',
+          data: null,
+        },
+        500
+      );
+    }
+    
+    if (errorCode === '28P01' || errorCode === '08006' || errorMessage.includes('password') || errorMessage.includes('connection')) {
+      console.error('❌ Database connection error. Please check database credentials.');
+      return c.json(
+        {
+          code: 1,
+          message: 'Database connection error. Please contact administrator.',
+          data: null,
+        },
+        500
+      );
+    }
+    
+    // 其他数据库错误
+    return c.json(
+      {
+        code: 1,
+        message: 'Database error occurred. Please contact administrator.',
+        data: null,
+      },
+      500
     );
   }
 

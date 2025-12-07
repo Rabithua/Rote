@@ -69,6 +69,7 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/profile' \
   "message": "success",
   "data": {
     "id": "uuid",
+    "emailVerified": true,
     "email": "demo@example.com",
     "username": "demo",
     "nickname": "Demo",
@@ -77,10 +78,16 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/profile' \
     "cover": "https://example.com/cover.jpg",
     "role": "user",
     "createdAt": "2024-01-01T00:00:00.000Z",
-    "updatedAt": "2024-01-01T00:00:00.000Z"
+    "updatedAt": "2024-01-01T00:00:00.000Z",
+    "allowExplore": true
   }
 }
 ```
+
+字段补充说明：
+
+- `emailVerified`: boolean - 当前用户邮箱是否已完成验证（供前端提示与安全策略使用）
+- `allowExplore`: boolean - 是否允许该用户的公开笔记出现在「探索」页（见下文用户设置接口）
 
 可能的错误：
 
@@ -144,7 +151,89 @@ curl -X PUT 'https://your-domain.com/v2/api/users/me/profile' \
 
 ---
 
-### 4) 获取用户标签
+### 3) 获取当前用户设置（探索页可见性等）
+
+- **方法**: GET
+- **URL**: `/v2/api/users/me/settings`
+- **Headers**: `Authorization: Bearer <accessToken>`（必填）
+
+请求示例（cURL）:
+
+```bash
+curl -X GET 'https://your-domain.com/v2/api/users/me/settings' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+成功响应示例（200）：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "allowExplore": true
+  }
+}
+```
+
+字段说明：
+
+- `allowExplore`: boolean
+  - 为 `true`（默认）时：用户的公开笔记可以被纳入「探索」页推荐列表。
+  - 为 `false` 时：用户的公开笔记**仍然可以通过直接链接访问**，但不会出现在探索页中。
+
+可能的错误：
+
+- 401 未认证（需要登录）
+
+---
+
+### 4) 更新当前用户设置（探索页可见性等）
+
+- **方法**: PUT
+- **URL**: `/v2/api/users/me/settings`
+- **Headers**:
+  - `Authorization: Bearer <accessToken>`（必填）
+  - `Content-Type: application/json`
+- **Body**:
+  - `allowExplore`: boolean（可选，是否允许公开笔记出现在探索页）
+
+请求示例（cURL）:
+
+```bash
+curl -X PUT 'https://your-domain.com/v2/api/users/me/settings' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "allowExplore": false
+  }'
+```
+
+成功响应示例（200）：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "allowExplore": false
+  }
+}
+```
+
+说明：
+
+- 此接口仅支持更新当前登录用户自己的设置；
+- 如果请求体中未包含任何可更新字段（如没有 `allowExplore`），将返回当前设置，不做修改。
+
+可能的错误：
+
+- 401 未认证（需要登录）
+- 400 请求体格式错误
+
+---
+
+### 5) 获取用户标签
 
 - **方法**: GET
 - **URL**: `/v2/api/users/me/tags`
@@ -173,7 +262,7 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/tags' \
 
 ---
 
-### 5) 获取用户热力图数据
+### 6) 获取用户热力图数据
 
 - **方法**: GET
 - **URL**: `/v2/api/users/me/heatmap`
@@ -213,7 +302,7 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/heatmap?startDate=2024-01-0
 
 ---
 
-### 6) 获取用户统计信息
+### 7) 获取用户统计信息
 
 - **方法**: GET
 - **URL**: `/v2/api/users/me/statistics`
@@ -250,7 +339,7 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/statistics' \
 
 ---
 
-### 7) 导出用户数据
+### 8) 导出用户数据
 
 - **方法**: GET
 - **URL**: `/v2/api/users/me/export`
@@ -314,9 +403,65 @@ Content-Disposition: attachment; filename=demo-2024-01-01-12-00-00.json
 
 ---
 
+### 9) 删除用户账户
+
+- **方法**: DELETE
+- **URL**: `/v2/api/users/me`
+- **Headers**:
+  - `Authorization: Bearer <accessToken>`（必填）
+  - `Content-Type: application/json`
+- **Body**:
+  - `password`: string（必填，用户密码，用于确认删除操作）
+
+请求示例（cURL）:
+
+```bash
+curl -X DELETE 'https://your-domain.com/v2/api/users/me' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "password": "your-password"
+  }'
+```
+
+成功响应示例（200）：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "success": true
+  }
+}
+```
+
+说明：
+
+- 此操作会**永久删除**用户账户及其所有相关数据，**无法恢复**
+- 删除范围包括：
+  - 用户账户信息（用户名、邮箱、个人资料等）
+  - 用户设置（探索页可见性等）
+  - 用户的所有笔记（rotes）
+  - 用户的所有附件文件（包括 R2/S3 存储中的文件）
+  - 用户的 API 密钥（open keys）
+  - 用户的推送订阅（service worker subscriptions）
+  - 用户对其他笔记的反应记录会被保留，但 `userid` 会被设为 `null`
+- 删除操作需要密码确认，确保是用户本人操作
+- 建议在执行删除操作前，先使用导出接口备份数据
+
+可能的错误：
+
+- 400 密码参数缺失
+- 401 未认证（需要登录）
+- 400 密码错误
+
+---
+
 ### 客户端使用建议
 
 - **权限控制**: 获取和更新个人资料、标签、统计数据等接口需要认证，且只能操作当前登录用户的数据
 - **用户信息查询**: 通过用户名查询用户信息无需认证，但返回的信息有限（不包含邮箱等敏感信息）
 - **热力图数据**: 日期格式必须为 `YYYY-MM-DD`，建议在客户端进行格式验证
 - **数据导出**: 导出接口返回文件下载，注意处理响应头中的 `Content-Disposition` 字段以获取正确的文件名
+- **账户删除**: 删除账户是不可逆操作，建议在删除前提示用户确认，并建议用户先导出数据备份

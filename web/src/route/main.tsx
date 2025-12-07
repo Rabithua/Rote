@@ -5,6 +5,8 @@ import { ProtectedRoute } from './protectedRoute';
 
 import ErrorPage from '@/pages/404';
 import AdminDashboard from '@/pages/admin';
+import PrivacyPolicyPage from '@/pages/app/privacy';
+import TermsOfServicePage from '@/pages/app/terms';
 import ArchivedPage from '@/pages/archived';
 import ExperimentPage from '@/pages/experiment';
 import ExplorePage from '@/pages/explore';
@@ -12,7 +14,6 @@ import MineFilter from '@/pages/filter';
 import HomePage from '@/pages/home';
 import Landing from '@/pages/landing';
 import Login from '@/pages/login';
-import PrivacyPolicyPage from '@/pages/app/privacy';
 import ProfilePage from '@/pages/profile';
 import SingleRotePage from '@/pages/rote/:roteid';
 import SetupPage from '@/pages/setup';
@@ -48,6 +49,10 @@ export default function GlobalRouterProvider() {
         {
           path: 'privacy',
           element: <PrivacyPolicyPage />,
+        },
+        {
+          path: 'terms',
+          element: <TermsOfServicePage />,
         },
       ],
     },

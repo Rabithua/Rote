@@ -1,7 +1,8 @@
 import crypto from 'crypto';
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
-import { attachments, rotes, users } from '../../drizzle/schema';
+import { attachments, rotes, userSettings, users } from '../../drizzle/schema';
 import db from '../drizzle';
+import { r2deletehandler } from '../r2';
 import { DatabaseError } from './common';
 
 // 用户相关方法
@@ -29,6 +30,7 @@ export async function getSafeUser(id: string) {
     const [user] = await db
       .select({
         id: users.id,
+        emailVerified: users.emailVerified,
         email: users.email,
         username: users.username,
         nickname: users.nickname,
@@ -65,6 +67,7 @@ export async function createUser(data: {
       username: data.username,
       email: data.email,
       nickname: data.nickname,
+      emailVerified: false,
       passwordhash,
       salt,
       role: data.role || 'user', // 使用传入的 role 或默认 'user'
@@ -88,21 +91,83 @@ export async function editMyProfile(userid: any, data: any): Promise<any> {
     if (data.cover !== undefined) updateData.cover = data.cover || null;
     updateData.updatedAt = new Date();
 
-    const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning({
-      id: users.id,
-      email: users.email,
-      username: users.username,
-      nickname: users.nickname,
-      description: users.description,
-      avatar: users.avatar,
-      cover: users.cover,
-      role: users.role,
-      createdAt: users.createdAt,
-      updatedAt: users.updatedAt,
-    });
-    return user;
+    const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning();
+
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      nickname: user.nickname,
+      description: user.description,
+      avatar: user.avatar,
+      cover: user.cover,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+    };
   } catch (error) {
     throw new DatabaseError('Failed to update user profile', error);
+  }
+}
+
+// 获取当前用户设置（例如 allowExplore）
+export async function getMySettings(userId: string): Promise<any> {
+  try {
+    const [setting] = await db
+      .select({
+        allowExplore: userSettings.allowExplore,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userid, userId))
+      .limit(1);
+
+    return {
+      allowExplore: setting?.allowExplore ?? true,
+    };
+  } catch (error) {
+    throw new DatabaseError('Failed to get user settings', error);
+  }
+}
+
+// 更新当前用户设置（例如 allowExplore）
+export async function updateMySettings(userId: string, data: any): Promise<any> {
+  try {
+    const updates: Partial<{ allowExplore: boolean }> = {};
+    if (data.allowExplore !== undefined) {
+      updates.allowExplore = Boolean(data.allowExplore);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      // 没有任何可更新的字段，直接返回当前设置
+      return getMySettings(userId);
+    }
+
+    const [existing] = await db
+      .select({ id: userSettings.id })
+      .from(userSettings)
+      .where(eq(userSettings.userid, userId))
+      .limit(1);
+
+    if (existing) {
+      await db
+        .update(userSettings)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(userSettings.id, existing.id));
+    } else {
+      await db.insert(userSettings).values({
+        userid: userId,
+        allowExplore: updates.allowExplore ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+    }
+
+    return getMySettings(userId);
+  } catch (error) {
+    throw new DatabaseError('Failed to update user settings', error);
   }
 }
 
@@ -137,28 +202,36 @@ export async function getUserInfoByUsername(username: string): Promise<any> {
 
 export async function getMyProfile(userId: string): Promise<any> {
   try {
-    const [user] = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        username: users.username,
-        nickname: users.nickname,
-        description: users.description,
-        avatar: users.avatar,
-        cover: users.cover,
-        role: users.role,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     if (!user) {
       throw new DatabaseError('User not found');
     }
 
-    return user;
+    // 读取或构建用户设置（目前仅包含 allowExplore）
+    const [setting] = await db
+      .select({
+        allowExplore: userSettings.allowExplore,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userid, userId))
+      .limit(1);
+
+    const allowExplore = setting?.allowExplore ?? true;
+
+    return {
+      id: user.id,
+      emailVerified: user.emailVerified,
+      email: user.email,
+      username: user.username,
+      nickname: user.nickname,
+      description: user.description,
+      avatar: user.avatar,
+      cover: user.cover,
+      role: user.role,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      allowExplore,
+    };
   } catch (error) {
     if (error instanceof DatabaseError) {
       throw error;
@@ -288,5 +361,64 @@ export async function getMyTags(userid: string): Promise<any> {
     return allTags;
   } catch (error) {
     throw new DatabaseError('Failed to get user tags', error);
+  }
+}
+
+// 删除用户账户
+export async function deleteUserAccount(userid: string, password: string): Promise<any> {
+  try {
+    // 1. 验证用户存在并验证密码
+    const [user] = await db.select().from(users).where(eq(users.id, userid)).limit(1);
+
+    if (!user) {
+      throw new DatabaseError('User not found');
+    }
+
+    const passwordhash = user.passwordhash;
+    const salt = user.salt;
+
+    const passwordhashToVerify = crypto.pbkdf2Sync(password, salt, 310000, 32, 'sha256');
+
+    if (
+      Buffer.from(passwordhashToVerify).toString('hex') !==
+      Buffer.from(passwordhash).toString('hex')
+    ) {
+      throw new Error('Incorrect password');
+    }
+
+    // 2. 查询用户的所有附件（包括已绑定和未绑定的）
+    const attachmentsList = await db
+      .select({ details: attachments.details })
+      .from(attachments)
+      .where(eq(attachments.userid, userid));
+
+    // 3. 删除所有附件文件（从 R2/S3）
+    attachmentsList.forEach(({ details }) => {
+      // @ts-expect-error - details 可能包含动态属性
+      const key = details?.key;
+      // @ts-expect-error - details 可能包含动态属性
+      const compressKey = details?.compressKey;
+      if (key) {
+        r2deletehandler(key).catch((err) => {
+          console.error(`Failed to delete attachment from R2: ${key}`, err);
+        });
+      }
+      if (compressKey) {
+        r2deletehandler(compressKey).catch((err) => {
+          console.error(`Failed to delete compressed attachment from R2: ${compressKey}`, err);
+        });
+      }
+    });
+
+    // 4. 删除用户记录（数据库会自动级联删除 userSettings, userOpenKeys, userSwSubscriptions, rotes 等）
+    // 附件和反应记录的外键设置为 set null，删除用户后会自动设为 null
+    await db.delete(users).where(eq(users.id, userid));
+
+    return { success: true };
+  } catch (error) {
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
+    throw new DatabaseError('Failed to delete user account', error);
   }
 }
