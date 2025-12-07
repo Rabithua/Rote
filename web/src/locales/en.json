@@ -73,7 +73,12 @@
       },
       "messages": {
         "loggingOut": "Logging out...",
-        "logoutSuccess": "Logout successful"
+        "logoutSuccess": "Logout successful",
+        "logoutFailed": "Logout failed",
+        "logoutConfirmTitle": "Confirm Logout",
+        "logoutConfirmDescription": "Are you sure you want to logout?",
+        "logoutConfirm": "Confirm Logout",
+        "cancel": "Cancel"
       }
     },
     "login": {
