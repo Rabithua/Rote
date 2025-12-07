@@ -73,7 +73,7 @@ export default function SetupWizard() {
   const [config, setConfig] = useState<SetupConfig>({
     siteName: '',
     siteDescription: '',
-    frontendUrl: '',
+    frontendUrl: typeof window !== 'undefined' ? window.location.origin : '',
     s3Config: {
       accountId: '',
       accessKey: '',
