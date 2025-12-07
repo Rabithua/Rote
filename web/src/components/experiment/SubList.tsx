@@ -90,8 +90,7 @@ export default function SubList() {
       // 刷新订阅列表以显示更新后的状态
       mutate();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message || error?.message || 'Unknown error';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
       toast.error(t('messages.testFailed', { error: errorMessage }), {
         id: loadingToast,
       });
@@ -114,8 +113,7 @@ export default function SubList() {
       // 刷新订阅列表
       mutate();
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message || error?.message || 'Unknown error';
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
       toast.error(t('messages.deleteFailed', { error: errorMessage }), {
         id: loadingToast,
       });
@@ -131,8 +129,7 @@ export default function SubList() {
           {error.response?.status === 404 || error.response?.status === 401
             ? t('noSubscriptions')
             : t('messages.loadFailed', {
-                error:
-                  error?.response?.data?.message || error?.message || 'Unknown error',
+                error: error?.response?.data?.message || error?.message || 'Unknown error',
               })}
         </div>
       ) : (

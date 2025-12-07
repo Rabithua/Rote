@@ -93,8 +93,6 @@ function MainPage() {
 function HomePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
 
-
-
   return (
     <ContainerWithSideBar
       sidebar={<SideBar />}
@@ -111,7 +109,6 @@ function HomePage() {
     </ContainerWithSideBar>
   );
 }
-
 
 const SideBar = () => {
   const navigate = useNavigate();

@@ -226,6 +226,7 @@ function ProfilePage() {
           compressedKey = item.compressed.key;
         } catch (error) {
           // 压缩图上传失败，但不影响原图，只记录警告
+          // eslint-disable-next-line no-console
           console.warn(`Compressed avatar upload failed for ${item.uuid}:`, error);
           // 不设置 compressedKey，表示压缩图未成功上传
         }
@@ -364,6 +365,7 @@ function ProfilePage() {
             compressedKey = item.compressed.key;
           } catch (error) {
             // 压缩图上传失败，但不影响原图，只记录警告
+            // eslint-disable-next-line no-console
             console.warn(`Compressed cover upload failed for ${item.uuid}:`, error);
             // 不设置 compressedKey，表示压缩图未成功上传
           }

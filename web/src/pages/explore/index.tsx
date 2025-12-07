@@ -52,8 +52,6 @@ function ExplorePage() {
     mutate();
   };
 
-
-
   return (
     <ContainerWithSideBar
       sidebar={<SideBar />}
@@ -76,7 +74,6 @@ function ExplorePage() {
     </ContainerWithSideBar>
   );
 }
-
 
 const SideBar = () => {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });

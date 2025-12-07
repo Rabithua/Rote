@@ -101,9 +101,7 @@ export default function ServiceWorker() {
       initializeServiceWorker();
     } catch (error: unknown) {
       const errorMessage =
-        (error as any)?.response?.data?.message ||
-        (error as any)?.message ||
-        String(error);
+        (error as any)?.response?.data?.message || (error as any)?.message || String(error);
       toast.error(errorMessage);
     }
   }

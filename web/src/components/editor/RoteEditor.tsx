@@ -141,7 +141,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         // 使用改进后的 runConcurrency，获取每个任务的成功/失败状态
         const results = await runConcurrency(
           pairs,
-          async ({ item, file }, index) => {
+          async ({ item, file }, _index) => {
             // 防御：空文件不上传
             if (!file || (file as File).size === 0) {
               throw new Error('Empty file');
@@ -165,6 +165,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
                 compressedKey = item.compressed.key;
               } catch (error) {
                 // 压缩图上传失败，但不影响原图，只记录错误
+                // eslint-disable-next-line no-console
                 console.warn(`Compressed image upload failed for ${item.uuid}:`, error);
                 // 不设置 compressedKey，表示压缩图未成功上传
               }
@@ -190,6 +191,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
             toFinalize.push(result.result);
           } else {
             // 记录失败的文件
+            // eslint-disable-next-line no-console
             console.error(
               `File upload failed for index ${result.index}:`,
               result.error?.message || 'Unknown error'
