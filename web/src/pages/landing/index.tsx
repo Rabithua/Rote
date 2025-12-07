@@ -8,6 +8,7 @@ import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { formatTimeAgo, isTokenValid } from '@/utils/main';
 import {
   ArrowRight,
+  ArrowUpRight,
   BookOpen,
   Code,
   Eye,
@@ -226,7 +227,18 @@ function Landing() {
               </div>
             </TooltipTrigger>
             <TooltipContent side="left" sideOffset={8}>
-              {t('iosAppAlmostReady')}
+              <div className="flex flex-col gap-1">
+                <span>{t('iosAppAlmostReady')}</span>
+                <Link
+                  to="https://testflight.apple.com/join/WC3ETKwp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-theme hover:text-theme/80 inline-flex items-center hover:underline"
+                >
+                  {t('iosAppEarlyAccess')}
+                  <ArrowUpRight className="size-3" />
+                </Link>
+              </div>
             </TooltipContent>
           </Tooltip>
         </div>

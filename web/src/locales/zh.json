@@ -53,7 +53,8 @@
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
       },
-      "iosAppAlmostReady": "IOS App 即将上线！"
+      "iosAppAlmostReady": "IOS App 即将上线！",
+      "iosAppEarlyAccess": "抢先测试"
     },
     "mine": {
       "leftNavBar": {
