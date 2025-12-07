@@ -106,7 +106,7 @@ const SideBar = () => {
   ];
 
   return (
-    <div className="flex w-full flex-col divide-y-1">
+    <div className="flex w-full flex-col divide-y">
       {isRoteGithubDataLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
       ) : (
