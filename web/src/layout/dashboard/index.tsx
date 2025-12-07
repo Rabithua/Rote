@@ -1,3 +1,12 @@
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
 import { loadProfileAtom, profileAtom } from '@/state/profile';
 import { tagsAtom } from '@/state/tags';
@@ -6,7 +15,7 @@ import { isTokenValid } from '@/utils/main';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { Archive, Globe2, Home, LogIn, LogOut, Shield, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -80,6 +89,7 @@ function LayoutDashboard() {
   const setProfile = useSetAtom(profileAtom);
   const setTags = useSetAtom(tagsAtom);
   const profile = useAtomValue(profileAtom);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
     if (isTokenValid()) {
@@ -104,6 +114,7 @@ function LayoutDashboard() {
   }, [profile]);
 
   async function logOutFn() {
+    setIsLogoutDialogOpen(false);
     const toastId = toast.loading(t('messages.loggingOut'));
 
     try {
@@ -150,7 +161,7 @@ function LayoutDashboard() {
             ? 'bg-foreground text-primary-foreground'
             : 'hover:bg-foreground/5'
         } ${icon.name === 'logout' ? 'hover:bg-red-600/10 hover:text-red-600' : ''} `}
-        onClick={logOutFn}
+        onClick={() => setIsLogoutDialogOpen(true)}
       >
         {icon.svg}
         <div className="hidden shrink-0 tracking-widest xl:block">
@@ -161,19 +172,38 @@ function LayoutDashboard() {
   }
 
   return (
-    <div className="bg-background text-primary mx-auto w-full max-w-6xl">
-      <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
-        <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
-          {isTokenValid()
-            ? userTabs.map((icon) => IconRenderItem(icon))
-            : tabsData[1].map((icon) => IconRenderItem(icon))}
+    <>
+      <div className="bg-background text-primary mx-auto w-full max-w-6xl">
+        <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x-1 xl:w-[90%]">
+          <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
+            {isTokenValid()
+              ? userTabs.map((icon) => IconRenderItem(icon))
+              : tabsData[1].map((icon) => IconRenderItem(icon))}
+          </div>
+
+          <div className="relative min-w-0 flex-1 overflow-visible">
+            <Outlet />
+          </div>
         </div>
 
-        <div className="relative min-w-0 flex-1 overflow-visible">
-          <Outlet />
-        </div>
+        <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('messages.logoutConfirmTitle')}</DialogTitle>
+              <DialogDescription>{t('messages.logoutConfirmDescription')}</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsLogoutDialogOpen(false)}>
+                {t('messages.cancel')}
+              </Button>
+              <Button variant="destructive" onClick={logOutFn}>
+                {t('messages.logoutConfirm')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
+    </>
   );
 }
 
