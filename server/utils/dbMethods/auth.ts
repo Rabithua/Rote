@@ -16,6 +16,7 @@ export async function passportCheckUser(data: { username: string }) {
         salt: users.salt,
         authProvider: users.authProvider,
         authProviderId: users.authProviderId,
+        authProviderUsername: users.authProviderUsername,
         nickname: users.nickname,
         description: users.description,
         cover: users.cover,

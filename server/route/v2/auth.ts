@@ -114,7 +114,7 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
           const response = c.json(
             createResponse(
               {
-                user: sanitizeUserData(user),
+                user: sanitizeUserData(user as User),
                 accessToken,
                 refreshToken,
               },
