@@ -166,7 +166,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
                           className="flex cursor-pointer items-center transition-transform hover:scale-110"
                           title={reaction.user.nickname || reaction.user.username}
                         >
-                          <Avatar className="border-background ring-foreground/10 size-5 border-2 ring-1">
+                          <Avatar className="size-5">
                             <AvatarImage src={reaction.user.avatar || undefined} />
                             <AvatarFallback className="text-[10px]">
                               {reaction.user.nickname?.[0] || reaction.user.username[0]}
