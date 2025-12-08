@@ -18,6 +18,11 @@ export interface Reaction {
   type: string; // 支持任意 Emoji 或反应类型字符串
   roteid: string;
   userid?: string;
+  user?: {
+    username: string;
+    nickname: string | null;
+    avatar: string | null;
+  };
   visitorId?: string;
   visitorInfo?: any; // 存储访客的额外信息（IP、User-Agent等）
   metadata?: any; // 可以存储额外的反应数据

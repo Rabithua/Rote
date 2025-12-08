@@ -33,7 +33,17 @@ export async function exportData(authorid: string): Promise<any> {
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return { notes };
