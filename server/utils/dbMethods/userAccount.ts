@@ -84,7 +84,11 @@ export async function deleteUserAccount(userid: string, password: string): Promi
 export async function mergeUserAccounts(
   sourceUserId: string,
   targetUserId: string
-): Promise<{ success: boolean; mergedData: any }> {
+): Promise<{
+  success: boolean;
+  mergedData: any;
+  migratedBindings: Array<{ provider: string; providerId: string }>;
+}> {
   // 使用事务确保操作的原子性
   return await db.transaction(async (tx) => {
     try {
@@ -257,6 +261,7 @@ export async function mergeUserAccounts(
         .where(eq(userOAuthBindings.userid, targetUserId));
 
       const targetProviderSet = new Set(targetBindings.map((b) => b.provider));
+      const migratedBindings: Array<{ provider: string; providerId: string }> = [];
 
       // 为每个源账户的绑定创建到目标账户的绑定记录
       for (const binding of sourceBindings) {
@@ -269,7 +274,9 @@ export async function mergeUserAccounts(
           continue;
         }
 
-        // 检查该 providerId 是否已被其他用户使用（理论上不应该发生，因为源账户还未删除）
+        // 检查该 providerId 是否已被其他用户使用
+        // 注意：由于 providerId 有唯一约束，如果 existingBinding 存在，它应该是源账户的绑定
+        // 但为了防御性编程，仍然检查 userid 是否匹配
         const [existingBinding] = await tx
           .select()
           .from(userOAuthBindings)
@@ -281,13 +288,20 @@ export async function mergeUserAccounts(
           )
           .limit(1);
 
+        // 如果 existingBinding 存在但 userid 不匹配，说明数据不一致（不应该发生）
+        // 为了安全，跳过迁移并记录警告
         if (existingBinding && existingBinding.userid !== sourceUserId) {
-          // 如果该 providerId 已被其他用户使用，跳过
-          console.log(
-            `Skipping OAuth binding migration for provider ${binding.provider}: providerId ${binding.providerId} is already bound to another user`
+          console.warn(
+            `Data inconsistency detected: OAuth binding ${binding.provider}:${binding.providerId} ` +
+              `belongs to user ${existingBinding.userid} but expected to belong to source user ${sourceUserId}. ` +
+              `Skipping migration to prevent data corruption.`
           );
           continue;
         }
+
+        // 如果 existingBinding 存在且 userid 匹配，或者不存在，都继续迁移
+        // 如果不存在，说明这是源账户的绑定，应该被迁移
+        // 如果存在且匹配，说明这是源账户的绑定，也应该被迁移（虽然理论上不应该重复）
 
         // 创建绑定记录到目标账户
         await tx.insert(userOAuthBindings).values({
@@ -297,6 +311,12 @@ export async function mergeUserAccounts(
           providerUsername: binding.providerUsername,
           createdAt: new Date(),
           updatedAt: new Date(),
+        });
+
+        // 记录已迁移的绑定
+        migratedBindings.push({
+          provider: binding.provider,
+          providerId: binding.providerId,
         });
 
         console.log(
@@ -336,6 +356,7 @@ export async function mergeUserAccounts(
       return {
         success: true,
         mergedData,
+        migratedBindings, // 返回已迁移的 OAuth 绑定信息
       };
     } catch (error) {
       if (error instanceof DatabaseError) {
