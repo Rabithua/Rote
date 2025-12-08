@@ -24,12 +24,14 @@
 
 ### 2) 认证
 
-| 路径             | 方法 | 认证 | 描述       |
-| ---------------- | ---- | ---- | ---------- |
-| `/auth/register` | POST | 无   | 用户注册   |
-| `/auth/login`    | POST | 无   | 用户登录   |
-| `/auth/password` | PUT  | 登录 | 修改密码   |
-| `/auth/refresh`  | POST | 无   | 刷新 Token |
+| 路径                          | 方法 | 认证 | 描述                   |
+| ----------------------------- | ---- | ---- | ---------------------- |
+| `/auth/register`              | POST | 无   | 用户注册               |
+| `/auth/login`                 | POST | 无   | 用户登录               |
+| `/auth/password`              | PUT  | 登录 | 修改密码（仅本地账户） |
+| `/auth/refresh`               | POST | 无   | 刷新 Token             |
+| `/auth/oauth/github`          | GET  | 无   | 发起 GitHub OAuth 授权 |
+| `/auth/oauth/github/callback` | GET  | 无   | GitHub OAuth 回调处理  |
 
 ### 3) 用户
 
@@ -187,11 +189,16 @@
 { "username": "john", "email": "john@example.com", "password": "P@ssw0rd" }
 
 // POST /v2/api/auth/login
-{ "usernameOrEmail": "john", "password": "P@ssw0rd" }
+{ "username": "john", "password": "P@ssw0rd" }
 
 // PUT /v2/api/auth/password
-{ "oldPassword": "old", "newPassword": "newStrongPass" }
+{ "oldpassword": "old", "newpassword": "newStrongPass" }
 ```
+
+**注意**：
+
+- OAuth 用户（通过 GitHub 登录）不能使用密码登录，也不能修改密码
+- OAuth 登录流程：访问 `/auth/oauth/github` 发起授权，完成后重定向到回调地址
 
 ### 笔记
 
@@ -307,4 +314,4 @@
 
 ---
 
-最后更新：2025-11-05
+最后更新：2025-12-02
