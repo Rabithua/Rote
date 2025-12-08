@@ -2,7 +2,7 @@ import { HonoContext } from '../types/hono';
 
 export const errorHandler = async (err: Error, c: HonoContext) => {
   console.error('API Error:', err.message);
-  
+
   // 只在开发环境下打印完整的错误堆栈
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);
@@ -164,7 +164,7 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
     const originalError = (err as any).originalError;
     const errorCode = originalError?.code;
     const errorMessage = originalError?.message || err.message;
-    
+
     // PostgreSQL 错误代码处理
     // 42P01 = undefined_table (表不存在)
     // 42703 = undefined_column (列不存在)
@@ -172,7 +172,9 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
     // 3D000 = invalid_catalog_name (数据库不存在)
     // 08006 = connection_failure (连接失败)
     if (errorCode === '42P01' || errorMessage.includes('does not exist')) {
-      console.error('❌ Database table or column does not exist. Please check if migrations were applied correctly.');
+      console.error(
+        '❌ Database table or column does not exist. Please check if migrations were applied correctly.'
+      );
       return c.json(
         {
           code: 1,
@@ -182,8 +184,13 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
         500
       );
     }
-    
-    if (errorCode === '28P01' || errorCode === '08006' || errorMessage.includes('password') || errorMessage.includes('connection')) {
+
+    if (
+      errorCode === '28P01' ||
+      errorCode === '08006' ||
+      errorMessage.includes('password') ||
+      errorMessage.includes('connection')
+    ) {
       console.error('❌ Database connection error. Please check database credentials.');
       return c.json(
         {
@@ -194,7 +201,7 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
         500
       );
     }
-    
+
     // 其他数据库错误
     return c.json(
       {

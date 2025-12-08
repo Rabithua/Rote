@@ -363,6 +363,35 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       }
     }
 
+    // 如果是 Security 配置，验证 OAuth 配置
+    if (group === 'security') {
+      const securityConfig = config as any;
+      if (securityConfig.oauth) {
+        const oauthConfig = securityConfig.oauth;
+        if (oauthConfig.enabled) {
+          const githubConfig = oauthConfig.providers?.github;
+          if (githubConfig?.enabled) {
+            // 验证必填字段
+            if (!githubConfig.clientId || !githubConfig.clientSecret) {
+              return c.json(
+                createResponse(null, 'GitHub OAuth clientId and clientSecret are required'),
+                400
+              );
+            }
+            // 验证 callbackUrl 格式
+            if (!githubConfig.callbackUrl) {
+              return c.json(createResponse(null, 'GitHub OAuth callbackUrl is required'), 400);
+            }
+            try {
+              new URL(githubConfig.callbackUrl);
+            } catch {
+              return c.json(createResponse(null, 'Invalid GitHub OAuth callbackUrl format'), 400);
+            }
+          }
+        }
+      }
+    }
+
     // 更新配置
     const success = await setConfig(group as any, config, {
       isRequired: ['site', 'storage', 'security'].includes(group),

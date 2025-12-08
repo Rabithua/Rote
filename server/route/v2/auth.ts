@@ -6,7 +6,7 @@ import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { UiConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getConfig } from '../../utils/config';
-import { changeUserPassword, createUser, passportCheckUser } from '../../utils/dbMethods';
+import { changeUserPassword, createUser, oneUser, passportCheckUser } from '../../utils/dbMethods';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
 import { passwordChangeZod, RegisterDataZod } from '../../utils/zod';
@@ -60,21 +60,35 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
     throw new Error('User not found.');
   }
 
-  // 验证密码
-  return new Promise<Response>((resolve, reject) => {
-    // 确保 salt 和 passwordhash 是 Buffer 类型
-    const saltBuffer = Buffer.isBuffer(user.salt) ? user.salt : Buffer.from(user.salt);
-    const passwordhashBuffer = Buffer.isBuffer(user.passwordhash)
-      ? user.passwordhash
-      : Buffer.from(user.passwordhash);
+  // 检查用户是否是 OAuth 用户（OAuth 用户不能使用密码登录）
+  if (!user.passwordhash || !user.salt) {
+    throw new Error('This account uses OAuth login. Please use GitHub to sign in.');
+  }
 
+  // 验证密码
+  // 此时 TypeScript 仍认为 passwordhash 和 salt 可能为 null，需要明确断言
+  const passwordhash = user.passwordhash;
+  const salt = user.salt;
+  if (!passwordhash || !salt) {
+    throw new Error('Password hash or salt is missing');
+  }
+
+  // TypeScript 类型守卫：确保类型正确
+  const saltBuffer: Buffer = Buffer.isBuffer(salt)
+    ? salt
+    : Buffer.from(salt as unknown as string | ArrayLike<number>);
+  const passwordhashBuffer: Buffer = Buffer.isBuffer(passwordhash)
+    ? passwordhash
+    : Buffer.from(passwordhash as unknown as string | ArrayLike<number>);
+
+  return new Promise<Response>((resolve, reject) => {
     crypto.pbkdf2(
       password,
       saltBuffer,
       310000,
       32,
       'sha256',
-      async (err: any, hashedPassword: any) => {
+      async (err: any, hashedPassword: Buffer) => {
         if (err || !user) {
           return reject(new Error('Authentication failed'));
         }
@@ -122,6 +136,15 @@ authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
   const body = await c.req.json();
   const { newpassword, oldpassword } = body;
 
+  // 检查用户是否是 OAuth 用户（OAuth 用户不能修改密码）
+  const fullUser = await oneUser(user.id);
+  if (!fullUser) {
+    throw new Error('User not found');
+  }
+  if (fullUser.authProvider !== 'local' || !fullUser.passwordhash || !fullUser.salt) {
+    throw new Error('OAuth users cannot change password. Please use OAuth login.');
+  }
+
   const zodData = passwordChangeZod.safeParse(body);
   if (zodData.success === false) {
     // 提取所有错误消息，合并显示（最多显示前 3 个）
@@ -131,8 +154,7 @@ authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
       .filter((msg): msg is string => typeof msg === 'string' && msg.length > 0);
 
     if (errorMessages.length > 0) {
-      const message =
-        errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
+      const message = errorMessages.length === 1 ? errorMessages[0] : errorMessages.join('; ');
       throw new Error(message);
     } else {
       throw new Error('Password validation failed');
