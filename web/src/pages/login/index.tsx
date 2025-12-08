@@ -15,7 +15,7 @@ import mainJson from '@/json/main.json';
 import { get, getApiUrl, post } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
-import { Github } from 'lucide-react';
+import { Apple, Github } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -436,7 +436,7 @@ function Login() {
                                 className="w-full"
                                 disabled={disbled}
                               >
-                                <span className="mr-2 text-lg">🍎</span>
+                                <Apple className="mr-2 size-4" />
                                 {t('buttons.loginWithApple')}
                               </Button>
                             )}

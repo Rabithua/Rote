@@ -345,6 +345,30 @@ export async function getMyProfile(userId: string): Promise<any> {
 
     const allowExplore = setting?.allowExplore ?? true;
 
+    // 确定绑定的 OAuth 提供商
+    // 如果 authProvider 是 'github' 或 'apple'，直接使用
+    // 如果 authProvider 是 'local' 但 authProviderId 存在，需要通过格式判断
+    // GitHub 用户 ID 通常是纯数字，Apple 用户 ID 通常是 UUID 格式（包含连字符）
+    let boundOAuthProvider: 'github' | 'apple' | null = null;
+    if (user.authProvider === 'github' || user.authProvider === 'apple') {
+      boundOAuthProvider = user.authProvider as 'github' | 'apple';
+    } else if (user.authProvider === 'local' && user.authProviderId) {
+      // 通过 authProviderId 的格式来判断
+      // GitHub 用户 ID 通常是纯数字，Apple 用户 ID 通常是 UUID 格式（包含连字符）
+      // UUID 格式：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        user.authProviderId
+      );
+      const isNumeric = /^\d+$/.test(user.authProviderId);
+
+      if (isUUID) {
+        boundOAuthProvider = 'apple';
+      } else if (isNumeric) {
+        boundOAuthProvider = 'github';
+      }
+      // 如果格式不符合预期，boundOAuthProvider 保持为 null
+    }
+
     return {
       id: user.id,
       emailVerified: user.emailVerified,
@@ -361,6 +385,7 @@ export async function getMyProfile(userId: string): Promise<any> {
       authProvider: user.authProvider,
       authProviderId: user.authProviderId,
       authProviderUsername: user.authProviderUsername,
+      boundOAuthProvider,
     };
   } catch (error) {
     if (error instanceof DatabaseError) {

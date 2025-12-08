@@ -106,6 +106,7 @@ export type Profile =
       authProvider?: string;
       authProviderId?: string | null;
       authProviderUsername?: string | null;
+      boundOAuthProvider?: 'github' | 'apple' | null;
     }
   | undefined;
 

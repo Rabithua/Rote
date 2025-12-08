@@ -285,7 +285,7 @@ export default function OAuthConfigTab({
                           },
                         })
                       }
-                      placeholder="Apple Service ID (Client ID)"
+                      placeholder={t('oauth.apple.clientIdPlaceholder')}
                     />
                   </div>
 
@@ -310,7 +310,7 @@ export default function OAuthConfigTab({
                           },
                         })
                       }
-                      placeholder="Apple Developer Team ID"
+                      placeholder={t('oauth.apple.teamIdPlaceholder')}
                     />
                   </div>
 
@@ -335,7 +335,7 @@ export default function OAuthConfigTab({
                           },
                         })
                       }
-                      placeholder="Apple Key ID"
+                      placeholder={t('oauth.apple.keyIdPlaceholder')}
                     />
                   </div>
 
@@ -359,7 +359,7 @@ export default function OAuthConfigTab({
                           },
                         })
                       }
-                      placeholder="Apple Private Key (PEM format)"
+                      placeholder={t('oauth.apple.privateKeyPlaceholder')}
                       rows={6}
                       className="font-mono text-xs"
                     />

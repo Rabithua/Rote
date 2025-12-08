@@ -218,6 +218,31 @@
               "confirm": "确认合并",
               "merging": "合并中…"
             }
+          },
+          "apple": {
+            "title": "Apple",
+            "bound": "已绑定",
+            "notBound": "未绑定",
+            "bind": "绑定 Apple",
+            "unbind": "解绑 Apple",
+            "binding": "绑定中…",
+            "unbinding": "解绑中…",
+            "bindSuccess": "Apple 账户绑定成功",
+            "bindFailed": "绑定失败：{{error}}",
+            "mergeSuccess": "Apple 账户绑定成功，账户数据已合并",
+            "mergeFailed": "账户合并失败：{{error}}",
+            "unbindSuccess": "Apple 账户已解绑",
+            "unbindFailed": "解绑失败：{{error}}",
+            "mergeDialog": {
+              "title": "合并账户确认",
+              "description": "检测到该 Apple 账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
+              "existingAccount": "已存在的账户",
+              "currentAccount": "当前账户",
+              "warning": "警告：此操作不可撤销，请确认这是您的账户。",
+              "cancel": "取消",
+              "confirm": "确认合并",
+              "merging": "合并中…"
+            }
           }
         },
         "deleteAccount": {
@@ -503,9 +528,13 @@
           "enabled": "启用 Apple OAuth",
           "enabledDesc": "允许用户通过 Apple 账户登录",
           "clientId": "Service ID (Client ID)",
+          "clientIdPlaceholder": "Apple Service ID (Client ID)",
           "teamId": "Team ID",
+          "teamIdPlaceholder": "Apple Developer Team ID",
           "keyId": "Key ID",
+          "keyIdPlaceholder": "Apple Key ID",
           "privateKey": "私钥",
+          "privateKeyPlaceholder": "Apple Private Key (PEM format)",
           "callbackUrl": "回调 URL",
           "callbackUrlDesc": "注意：此 URL 为后端 URL。Apple Developer 中配置的回调 URL，通常为：https://yourdomain.com/v2/api/auth/oauth/apple/callback。"
         }

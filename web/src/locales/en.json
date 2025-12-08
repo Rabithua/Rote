@@ -527,9 +527,13 @@
           "enabled": "Enable Apple OAuth",
           "enabledDesc": "Allow users to login with Apple account",
           "clientId": "Service ID (Client ID)",
+          "clientIdPlaceholder": "Apple Service ID (Client ID)",
           "teamId": "Team ID",
+          "teamIdPlaceholder": "Apple Developer Team ID",
           "keyId": "Key ID",
+          "keyIdPlaceholder": "Apple Key ID",
           "privateKey": "Private Key",
+          "privateKeyPlaceholder": "Apple Private Key (PEM format)",
           "callbackUrl": "Callback URL",
           "callbackUrlDesc": "Note: This URL is the backend URL. Callback URL configured in Apple Developer, typically: https://yourdomain.com/v2/api/auth/oauth/apple/callback."
         }

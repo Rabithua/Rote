@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import type { Profile } from '@/types/main';
-import { Github, Loader } from 'lucide-react';
+import { Apple, Github, Loader } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface SettingsDialogProps {
@@ -94,7 +94,7 @@ export default function SettingsDialog({
                           {t('settings.oauth.github.title')}
                         </div>
                         <div className="text-muted-foreground text-sm">
-                          {profile?.authProviderId && profile?.authProvider === 'github' ? (
+                          {profile?.boundOAuthProvider === 'github' ? (
                             <div className="flex items-center gap-2">
                               {profile.authProviderUsername
                                 ? `@${profile.authProviderUsername}`
@@ -106,7 +106,7 @@ export default function SettingsDialog({
                         </div>
                       </div>
                     </div>
-                    {profile?.authProviderId && profile?.authProvider === 'github' ? (
+                    {profile?.boundOAuthProvider === 'github' ? (
                       <Button
                         variant="outline"
                         onClick={onUnbindGitHub}
@@ -130,13 +130,13 @@ export default function SettingsDialog({
                 {isAppleOAuthEnabled && (
                   <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">🍎</span>
+                      <Apple className="size-5" />
                       <div className="shrink-0">
                         <div className="text-base font-semibold">
                           {t('settings.oauth.apple.title')}
                         </div>
                         <div className="text-muted-foreground text-sm">
-                          {profile?.authProviderId && profile?.authProvider === 'apple' ? (
+                          {profile?.boundOAuthProvider === 'apple' ? (
                             <div className="flex items-center gap-2">
                               {profile.authProviderUsername
                                 ? profile.authProviderUsername
@@ -148,7 +148,7 @@ export default function SettingsDialog({
                         </div>
                       </div>
                     </div>
-                    {profile?.authProviderId && profile?.authProvider === 'apple' ? (
+                    {profile?.boundOAuthProvider === 'apple' ? (
                       <Button variant="outline" onClick={onUnbindApple} disabled={isUnbindingApple}>
                         {isUnbindingApple && <Loader className="mr-2 size-4 animate-spin" />}
                         {isUnbindingApple
