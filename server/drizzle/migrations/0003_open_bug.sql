@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "authProviderUsername" varchar(255);

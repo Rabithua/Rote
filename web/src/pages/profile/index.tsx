@@ -27,6 +27,7 @@ import { useAtomValue, useSetAtom } from 'jotai';
 import Linkify from 'linkify-react';
 import {
   Edit,
+  Github,
   KeyRoundIcon,
   Loader,
   LoaderPinwheel,
@@ -40,7 +41,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import Cropper from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 function ProfilePage() {
@@ -87,6 +88,17 @@ function ProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  const [isBindingGitHub, setIsBindingGitHub] = useState(false);
+  const [isUnbindingGitHub, setIsUnbindingGitHub] = useState(false);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
+  const [mergeInfo, setMergeInfo] = useState<{
+    existingUserId: string;
+    existingUsername: string;
+    existingEmail: string;
+    githubUserId: string;
+  } | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // profile 加载后，同步到可编辑状态；settings 单独从 userSettings 同步
   useEffect(() => {
@@ -98,6 +110,125 @@ function ProfilePage() {
   useEffect(() => {
     setAllowExplore(userSettings?.allowExplore ?? true);
   }, [userSettings]);
+
+  // 处理 OAuth 绑定回调
+  useEffect(() => {
+    const oauthStatus = searchParams.get('oauth');
+    const bindStatus = searchParams.get('bind');
+    const errorMessage = searchParams.get('message');
+    const merged = searchParams.get('merged');
+    const existingUserId = searchParams.get('existingUserId');
+    const existingUsername = searchParams.get('existingUsername');
+    const existingEmail = searchParams.get('existingEmail');
+    const githubUserId = searchParams.get('githubUserId');
+
+    if (oauthStatus === 'bind') {
+      if (bindStatus === 'success') {
+        if (merged === 'true') {
+          toast.success(t('settings.oauth.github.mergeSuccess'));
+        } else {
+          toast.success(t('settings.oauth.github.bindSuccess'));
+        }
+        loadProfile(); // 刷新 profile 数据
+        // 清除 URL 参数
+        setSearchParams({}, { replace: true });
+      } else if (bindStatus === 'merge_required') {
+        // 需要合并账户，显示确认对话框
+        if (existingUserId && githubUserId) {
+          setMergeInfo({
+            existingUserId,
+            existingUsername: existingUsername || '',
+            existingEmail: existingEmail || '',
+            githubUserId,
+          });
+          setIsMergeDialogOpen(true);
+          // 清除 URL 参数
+          setSearchParams({}, { replace: true });
+        }
+      } else if (bindStatus === 'error' && errorMessage) {
+        toast.error(
+          t('settings.oauth.github.bindFailed', { error: decodeURIComponent(errorMessage) })
+        );
+        // 清除 URL 参数
+        setSearchParams({}, { replace: true });
+      }
+    }
+  }, [searchParams, t, loadProfile, setSearchParams]);
+
+  // 绑定 GitHub
+  const handleBindGitHub = async () => {
+    setIsBindingGitHub(true);
+    try {
+      const redirectUrl = '/profile';
+      const response = await get(
+        `/auth/oauth/github/bind?redirect=${encodeURIComponent(redirectUrl)}`
+      );
+      if (response.data?.redirectUrl) {
+        // 跳转到 GitHub 授权页面
+        window.location.href = response.data.redirectUrl;
+      } else {
+        throw new Error('Failed to get GitHub authorization URL');
+      }
+    } catch (err: any) {
+      setIsBindingGitHub(false);
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      toast.error(t('settings.oauth.github.bindFailed', { error: errorMessage }));
+    }
+  };
+
+  // 解绑 GitHub
+  const handleUnbindGitHub = async () => {
+    setIsUnbindingGitHub(true);
+    try {
+      await del('/auth/oauth/github/bind');
+      toast.success(t('settings.oauth.github.unbindSuccess'));
+      loadProfile(); // 刷新 profile 数据
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      toast.error(t('settings.oauth.github.unbindFailed', { error: errorMessage }));
+    } finally {
+      setIsUnbindingGitHub(false);
+    }
+  };
+
+  // 确认合并账户
+  const handleConfirmMerge = async () => {
+    if (!mergeInfo) return;
+
+    setIsMerging(true);
+    try {
+      const response = await post('/auth/oauth/github/bind/merge', {
+        existingUserId: mergeInfo.existingUserId,
+        githubUserId: mergeInfo.githubUserId,
+      });
+
+      if (response.data?.merged) {
+        // 设置 URL 参数以触发 useEffect 中的成功消息显示
+        setSearchParams(
+          {
+            oauth: 'bind',
+            bind: 'success',
+            merged: 'true',
+          },
+          { replace: true }
+        );
+        setIsMergeDialogOpen(false);
+        setMergeInfo(null);
+        loadProfile(); // 刷新 profile 数据
+      }
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      toast.error(t('settings.oauth.github.mergeFailed', { error: errorMessage }));
+    } finally {
+      setIsMerging(false);
+    }
+  };
+
+  // 取消合并
+  const handleCancelMerge = () => {
+    setIsMergeDialogOpen(false);
+    setMergeInfo(null);
+  };
 
   function generateOpenKeyFun() {
     const toastId = toast.loading(t('creating'));
@@ -604,7 +735,7 @@ function ProfilePage() {
         </Dialog>
         {/* 额外设置：探索页展示等 */}
         <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
-          <DialogContent>
+          <DialogContent className="max-h-[80dvh] overflow-y-scroll">
             <DialogHeader>
               <DialogTitle>{t('settings.title')}</DialogTitle>
             </DialogHeader>
@@ -634,6 +765,56 @@ function ProfilePage() {
                 {settingsSaving ? t('settings.saving') : t('settings.save')}
               </Button>
 
+              {/* OAuth 账户关联 */}
+              <div className="border-t pt-4">
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-base font-semibold">{t('settings.oauth.title')}</div>
+                    <p className="text-muted-foreground text-sm">
+                      {t('settings.oauth.description')}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                    <div className="flex items-center gap-3">
+                      <Github className="size-5 shadow-red-50" />
+                      <div className="shrink-0">
+                        <div className="text-base font-semibold">
+                          {t('settings.oauth.github.title')}
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          {profile?.authProviderId ? (
+                            <div className="flex items-center gap-2">
+                              ID: {profile.authProviderId}
+                            </div>
+                          ) : (
+                            t('settings.oauth.github.notBound')
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {profile?.authProviderId ? (
+                      <Button
+                        variant="outline"
+                        onClick={handleUnbindGitHub}
+                        disabled={isUnbindingGitHub}
+                      >
+                        {isUnbindingGitHub && <Loader className="mr-2 size-4 animate-spin" />}
+                        {isUnbindingGitHub
+                          ? t('settings.oauth.github.unbinding')
+                          : t('settings.oauth.github.unbind')}
+                      </Button>
+                    ) : (
+                      <Button onClick={handleBindGitHub} disabled={isBindingGitHub}>
+                        {isBindingGitHub && <Loader className="mr-2 size-4 animate-spin" />}
+                        {isBindingGitHub
+                          ? t('settings.oauth.github.binding')
+                          : t('settings.oauth.github.bind')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div className="border-t pt-4">
                 <div className="space-y-2">
                   <div className="text-destructive text-base font-semibold">
@@ -653,6 +834,66 @@ function ProfilePage() {
                     {t('settings.deleteAccount.button')}
                   </Button>
                 </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* 账户合并确认对话框 */}
+        <Dialog open={isMergeDialogOpen} onOpenChange={setIsMergeDialogOpen}>
+          <DialogContent className="max-h-[80dvh] overflow-y-scroll">
+            <DialogHeader>
+              <DialogTitle>{t('settings.oauth.github.mergeDialog.title')}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-muted-foreground text-sm">
+                {t('settings.oauth.github.mergeDialog.description')}
+              </p>
+              {mergeInfo && (
+                <div className="bg-muted space-y-2 rounded-lg p-4">
+                  <div className="text-sm">
+                    <span className="font-semibold">
+                      {t('settings.oauth.github.mergeDialog.existingAccount')}:
+                    </span>
+                    <div className="mt-1">
+                      <div>@{mergeInfo.existingUsername}</div>
+                      {mergeInfo.existingEmail && (
+                        <div className="text-muted-foreground text-xs">
+                          {mergeInfo.existingEmail}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold">
+                      {t('settings.oauth.github.mergeDialog.currentAccount')}:
+                    </span>
+                    <div className="mt-1">
+                      <div>@{profile?.username}</div>
+                      {profile?.email && (
+                        <div className="text-muted-foreground text-xs">{profile.email}</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <p className="text-destructive text-sm">
+                {t('settings.oauth.github.mergeDialog.warning')}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleCancelMerge}
+                  disabled={isMerging}
+                >
+                  {t('settings.oauth.github.mergeDialog.cancel')}
+                </Button>
+                <Button className="flex-1" onClick={handleConfirmMerge} disabled={isMerging}>
+                  {isMerging && <Loader className="mr-2 size-4 animate-spin" />}
+                  {isMerging
+                    ? t('settings.oauth.github.mergeDialog.merging')
+                    : t('settings.oauth.github.mergeDialog.confirm')}
+                </Button>
               </div>
             </div>
           </DialogContent>

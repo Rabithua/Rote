@@ -76,7 +76,8 @@ export async function getGitHubUserInfo(accessToken: string, retries = 3): Promi
     // 获取用户邮箱列表
     let email: string | null = null;
     try {
-      const { data: emails } = await octokit.rest.users.listEmailsForAuthenticated();
+      // 使用新的 API 方法名
+      const { data: emails } = await octokit.rest.users.listEmailsForAuthenticatedUser();
       // 优先返回主邮箱且已验证的邮箱
       const primaryEmail = emails.find((e) => e.primary && e.verified)?.email;
       const verifiedEmail = emails.find((e) => e.verified)?.email;

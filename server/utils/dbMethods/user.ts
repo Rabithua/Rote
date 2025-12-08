@@ -1,6 +1,15 @@
 import crypto from 'crypto';
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
-import { attachments, rotes, userSettings, users } from '../../drizzle/schema';
+import {
+  attachments,
+  reactions,
+  roteChanges,
+  rotes,
+  userOpenKeys,
+  userSettings,
+  userSwSubscriptions,
+  users,
+} from '../../drizzle/schema';
 import db from '../drizzle';
 import { r2deletehandler } from '../r2';
 import { DatabaseError } from './common';
@@ -102,11 +111,26 @@ export async function createUser(data: {
 }
 
 // 根据 OAuth 提供商和提供商 ID 查找用户
+// 注意：对于 GitHub，只要 authProviderId 匹配即可，不限制 authProvider
+// 因为合并账户后，authProvider 可能是 'local'（如果用户有密码）
 export async function findUserByOAuthId(
   authProvider: string,
   authProviderId: string
 ): Promise<any | null> {
   try {
+    // 对于 GitHub，只根据 authProviderId 查找（因为合并后 authProvider 可能是 'local'）
+    // 对于其他提供商，保持原有逻辑
+    if (authProvider === 'github') {
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.authProviderId, authProviderId))
+        .limit(1);
+
+      return user || null;
+    }
+
+    // 其他提供商：同时检查 authProvider 和 authProviderId
     const [user] = await db
       .select()
       .from(users)
@@ -332,6 +356,8 @@ export async function getMyProfile(userId: string): Promise<any> {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       allowExplore,
+      authProvider: user.authProvider,
+      authProviderId: user.authProviderId,
     };
   } catch (error) {
     if (error instanceof DatabaseError) {
@@ -533,4 +559,266 @@ export async function deleteUserAccount(userid: string, password: string): Promi
     }
     throw new DatabaseError('Failed to delete user account', error);
   }
+}
+
+// 合并账户：将源账户的数据合并到目标账户
+export async function mergeUserAccounts(
+  sourceUserId: string,
+  targetUserId: string,
+  options?: {
+    githubUserId?: string;
+    updateGitHubBinding?: boolean;
+  }
+): Promise<{ success: boolean; mergedData: any }> {
+  // 使用事务确保操作的原子性
+  return await db.transaction(async (tx) => {
+    try {
+      // 1. 验证两个用户都存在（在事务内验证，避免竞态条件）
+      const [sourceUser] = await tx.select().from(users).where(eq(users.id, sourceUserId)).limit(1);
+      const [targetUser] = await tx.select().from(users).where(eq(users.id, targetUserId)).limit(1);
+
+      if (!sourceUser || !targetUser) {
+        throw new DatabaseError('Source or target user not found');
+      }
+
+      if (sourceUserId === targetUserId) {
+        throw new DatabaseError('Cannot merge account with itself');
+      }
+
+      // 在事务内再次验证源用户确实绑定了指定的 GitHub ID（防止竞态条件）
+      if (options?.githubUserId && sourceUser.authProviderId !== options.githubUserId) {
+        throw new DatabaseError(
+          `Source user GitHub ID mismatch: expected ${options.githubUserId}, got ${sourceUser.authProviderId}`
+        );
+      }
+
+      // 验证目标用户未绑定 GitHub（如果指定了更新绑定）
+      if (options?.updateGitHubBinding && targetUser.authProviderId) {
+        throw new DatabaseError('Target user already has GitHub binding');
+      }
+
+      const mergedData: any = {
+        notes: 0,
+        attachments: 0,
+        reactions: 0,
+        openKeys: 0,
+        subscriptions: 0,
+        changes: 0,
+      };
+
+      // 2. 合并笔记（rotes）
+      const notesResult = await tx
+        .update(rotes)
+        .set({ authorid: targetUserId, updatedAt: new Date() })
+        .where(eq(rotes.authorid, sourceUserId))
+        .returning({ id: rotes.id });
+      mergedData.notes = notesResult.length;
+
+      // 3. 合并附件（attachments）
+      const attachmentsResult = await tx
+        .update(attachments)
+        .set({ userid: targetUserId, updatedAt: new Date() })
+        .where(eq(attachments.userid, sourceUserId))
+        .returning({ id: attachments.id });
+      mergedData.attachments = attachmentsResult.length;
+
+      // 4. 合并反应（reactions）
+      const reactionsResult = await tx
+        .update(reactions)
+        .set({ userid: targetUserId, updatedAt: new Date() })
+        .where(eq(reactions.userid, sourceUserId))
+        .returning({ id: reactions.id });
+      mergedData.reactions = reactionsResult.length;
+
+      // 5. 合并笔记变更历史（roteChanges）
+      const changesResult = await tx
+        .update(roteChanges)
+        .set({ userid: targetUserId })
+        .where(eq(roteChanges.userid, sourceUserId))
+        .returning({ id: roteChanges.id });
+      mergedData.changes = changesResult.length;
+
+      // 6. 合并 API 密钥（userOpenKeys）
+      const openKeysResult = await tx
+        .update(userOpenKeys)
+        .set({ userid: targetUserId, updatedAt: new Date() })
+        .where(eq(userOpenKeys.userid, sourceUserId))
+        .returning({ id: userOpenKeys.id });
+      mergedData.openKeys = openKeysResult.length;
+
+      // 7. 合并推送订阅（userSwSubscriptions）
+      // 注意：endpoint 是唯一的，如果目标用户已有相同的 endpoint，需要处理冲突
+      const sourceSubscriptions = await tx
+        .select()
+        .from(userSwSubscriptions)
+        .where(eq(userSwSubscriptions.userid, sourceUserId));
+
+      for (const sub of sourceSubscriptions) {
+        // 检查目标用户是否已有相同的 endpoint
+        const [existing] = await tx
+          .select()
+          .from(userSwSubscriptions)
+          .where(eq(userSwSubscriptions.endpoint, sub.endpoint))
+          .limit(1);
+
+        if (existing && existing.userid === targetUserId) {
+          // 目标用户已有相同 endpoint，删除源用户的订阅
+          await tx.delete(userSwSubscriptions).where(eq(userSwSubscriptions.id, sub.id));
+        } else {
+          // 迁移订阅到目标用户
+          await tx
+            .update(userSwSubscriptions)
+            .set({ userid: targetUserId, updatedAt: new Date() })
+            .where(eq(userSwSubscriptions.id, sub.id));
+          mergedData.subscriptions++;
+        }
+      }
+
+      // 8. 合并用户设置（userSettings）
+      // 策略：如果目标用户没有设置，使用源用户的设置；如果两者都有，保留目标用户的设置
+      const [targetSettings] = await tx
+        .select()
+        .from(userSettings)
+        .where(eq(userSettings.userid, targetUserId))
+        .limit(1);
+
+      const [sourceSettings] = await tx
+        .select()
+        .from(userSettings)
+        .where(eq(userSettings.userid, sourceUserId))
+        .limit(1);
+
+      if (sourceSettings && !targetSettings) {
+        // 目标用户没有设置，创建新设置（使用源用户的设置值）
+        await tx.insert(userSettings).values({
+          userid: targetUserId,
+          darkmode: sourceSettings.darkmode,
+          allowExplore: sourceSettings.allowExplore,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      } else if (sourceSettings && targetSettings) {
+        // 两者都有设置，优先保留目标用户的设置（不更新）
+        // 这样可以确保用户当前的偏好设置不被覆盖
+      }
+
+      // 9. 合并用户资料字段（补充策略：如果目标用户没有，使用源用户的）
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      // 头像：如果目标用户没有，使用源用户的
+      if (!targetUser.avatar && sourceUser.avatar) {
+        updateData.avatar = sourceUser.avatar;
+      }
+
+      // 昵称：如果目标用户没有，使用源用户的
+      if (!targetUser.nickname && sourceUser.nickname) {
+        updateData.nickname = sourceUser.nickname;
+      }
+
+      // 描述：如果目标用户没有，使用源用户的
+      if (!targetUser.description && sourceUser.description) {
+        updateData.description = sourceUser.description;
+      }
+
+      // 封面：如果目标用户没有，使用源用户的
+      if (!targetUser.cover && sourceUser.cover) {
+        updateData.cover = sourceUser.cover;
+      }
+
+      // 邮箱验证状态：如果目标用户未验证但源用户已验证，更新为已验证
+      // 注意：邮箱本身保留目标用户的（因为唯一性约束）
+      if (!targetUser.emailVerified && sourceUser.emailVerified) {
+        updateData.emailVerified = true;
+      }
+
+      // 角色：保留目标用户的角色（不覆盖），因为角色通常由管理员设置
+      // 如果源用户是管理员而目标用户不是，这可能是安全风险，所以保留目标用户的角色
+
+      if (Object.keys(updateData).length > 1) {
+        // 有需要更新的字段
+        await tx.update(users).set(updateData).where(eq(users.id, targetUserId));
+      }
+
+      // 10. 先删除源用户账户（级联删除会自动处理 userSettings）
+      // 注意：必须在更新目标用户的 GitHub 绑定之前删除源账户，避免唯一性约束冲突
+      // 因为唯一性约束是 (authProvider, authProviderId)，如果源账户是 ('github', '123')，
+      // 目标账户要更新为 ('github', '123') 或 ('local', '123')，必须先删除源账户
+      console.log(`Attempting to delete source user: ${sourceUserId}`);
+
+      // 在删除前再次验证源用户存在
+      const [sourceUserBeforeDelete] = await tx
+        .select()
+        .from(users)
+        .where(eq(users.id, sourceUserId))
+        .limit(1);
+
+      if (!sourceUserBeforeDelete) {
+        console.warn(`Source user ${sourceUserId} does not exist, skipping delete`);
+      } else {
+        const deleteResult = await tx.delete(users).where(eq(users.id, sourceUserId)).returning();
+
+        // 验证删除是否成功
+        if (deleteResult.length === 0) {
+          console.error(`Failed to delete source user: ${sourceUserId}`);
+          throw new DatabaseError('Failed to delete source user account');
+        }
+
+        console.log(
+          `Successfully deleted source user: ${sourceUserId} (${sourceUserBeforeDelete.username}), merged to: ${targetUserId} (${targetUser.username})`
+        );
+      }
+
+      // 11. 删除源账户后，更新目标用户的 GitHub 绑定
+      if (options?.updateGitHubBinding && options?.githubUserId) {
+        const updateData: any = {
+          authProviderId: options.githubUserId,
+          updatedAt: new Date(),
+        };
+
+        // 如果用户没有密码，更新 authProvider 为 github
+        // 如果用户有密码，保持 authProvider 为 'local'（不更新）
+        if (!targetUser.passwordhash || !targetUser.salt) {
+          updateData.authProvider = 'github';
+        }
+
+        await tx.update(users).set(updateData).where(eq(users.id, targetUserId));
+        console.log(
+          `Updated target user ${targetUserId} GitHub binding: ${options.githubUserId}, authProvider: ${updateData.authProvider || targetUser.authProvider}`
+        );
+
+        // 验证更新是否成功
+        const [updatedUser] = await tx
+          .select()
+          .from(users)
+          .where(eq(users.id, targetUserId))
+          .limit(1);
+
+        if (!updatedUser) {
+          throw new DatabaseError('Failed to verify target user update');
+        }
+
+        if (updatedUser.authProviderId !== options.githubUserId) {
+          throw new DatabaseError(
+            `GitHub binding update failed: expected ${options.githubUserId}, got ${updatedUser.authProviderId}`
+          );
+        }
+
+        console.log(
+          `Verified target user ${targetUserId} GitHub binding: ${updatedUser.authProviderId}, authProvider: ${updatedUser.authProvider}`
+        );
+      }
+
+      return {
+        success: true,
+        mergedData,
+      };
+    } catch (error) {
+      if (error instanceof DatabaseError) {
+        throw error;
+      }
+      throw new DatabaseError('Failed to merge user accounts', error);
+    }
+  });
 }

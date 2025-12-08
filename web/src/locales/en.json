@@ -184,6 +184,35 @@
         "saving": "Saving…",
         "saveSuccess": "Settings saved",
         "saveFailed": "Failed to save: {{error}}",
+        "oauth": {
+          "title": "Account Linking",
+          "description": "Link third-party accounts to enable multiple login methods",
+          "github": {
+            "title": "GitHub",
+            "bound": "Bound",
+            "notBound": "Not Bound",
+            "bind": "Bind GitHub",
+            "unbind": "Unbind GitHub",
+            "binding": "Binding…",
+            "unbinding": "Unbinding…",
+            "bindSuccess": "GitHub account bound successfully",
+            "bindFailed": "Binding failed: {{error}}",
+            "mergeSuccess": "GitHub account bound successfully, account data merged",
+            "mergeFailed": "Account merge failed: {{error}}",
+            "unbindSuccess": "GitHub account unbound",
+            "unbindFailed": "Unbinding failed: {{error}}",
+            "mergeDialog": {
+              "title": "Confirm Account Merge",
+              "description": "This GitHub account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
+              "existingAccount": "Existing Account",
+              "currentAccount": "Current Account",
+              "warning": "Warning: This operation cannot be undone. Please confirm this is your account.",
+              "cancel": "Cancel",
+              "confirm": "Confirm Merge",
+              "merging": "Merging…"
+            }
+          }
+        },
         "deleteAccount": {
           "title": "Delete Account",
           "description": "Deleting your account will permanently delete all your data, including notes, attachments, etc. This action cannot be undone.",

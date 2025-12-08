@@ -79,7 +79,9 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/profile' \
     "role": "user",
     "createdAt": "2024-01-01T00:00:00.000Z",
     "updatedAt": "2024-01-01T00:00:00.000Z",
-    "allowExplore": true
+    "allowExplore": true,
+    "authProvider": "local",
+    "authProviderId": null
   }
 }
 ```
@@ -88,6 +90,10 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/profile' \
 
 - `emailVerified`: boolean - 当前用户邮箱是否已完成验证（供前端提示与安全策略使用）
 - `allowExplore`: boolean - 是否允许该用户的公开笔记出现在「探索」页（见下文用户设置接口）
+- `authProvider`: string - 认证提供商，可能的值：
+  - `'local'`: 本地账户（通过用户名密码注册/登录）
+  - `'github'`: GitHub OAuth 账户（纯 OAuth 用户，无密码）
+- `authProviderId`: string | null - OAuth 提供商的用户 ID（例如 GitHub 用户 ID），如果未绑定则为 `null`
 
 可能的错误：
 

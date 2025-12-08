@@ -188,6 +188,35 @@
         "saving": "保存中…",
         "saveSuccess": "设置已保存",
         "saveFailed": "保存失败：{{error}}",
+        "oauth": {
+          "title": "账户关联",
+          "description": "关联第三方账户后，您可以使用多种方式登录",
+          "github": {
+            "title": "GitHub",
+            "bound": "已绑定",
+            "notBound": "未绑定",
+            "bind": "绑定 GitHub",
+            "unbind": "解绑 GitHub",
+            "binding": "绑定中…",
+            "unbinding": "解绑中…",
+            "bindSuccess": "GitHub 账户绑定成功",
+            "bindFailed": "绑定失败：{{error}}",
+            "mergeSuccess": "GitHub 账户绑定成功，账户数据已合并",
+            "mergeFailed": "账户合并失败：{{error}}",
+            "unbindSuccess": "GitHub 账户已解绑",
+            "unbindFailed": "解绑失败：{{error}}",
+            "mergeDialog": {
+              "title": "合并账户确认",
+              "description": "检测到该 GitHub 账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
+              "existingAccount": "已存在的账户",
+              "currentAccount": "当前账户",
+              "warning": "警告：此操作不可撤销，请确认这是您的账户。",
+              "cancel": "取消",
+              "confirm": "确认合并",
+              "merging": "合并中…"
+            }
+          }
+        },
         "deleteAccount": {
           "title": "删除账户",
           "description": "删除账户将永久删除您的所有数据，包括笔记、附件等，此操作不可恢复。",

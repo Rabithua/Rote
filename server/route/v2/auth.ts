@@ -60,7 +60,8 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
     throw new Error('User not found.');
   }
 
-  // 检查用户是否是 OAuth 用户（OAuth 用户不能使用密码登录）
+  // 检查用户是否有密码（只要有密码，无论 authProvider 是什么，都允许密码登录）
+  // 这样支持账号密码用户绑定 GitHub 后仍可用密码登录
   if (!user.passwordhash || !user.salt) {
     throw new Error('This account uses OAuth login. Please use GitHub to sign in.');
   }
