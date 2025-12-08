@@ -36,6 +36,8 @@ export const users = pgTable(
     authProvider: varchar('authProvider', { length: 50 }).notNull().default('local'),
     // OAuth 提供商的用户 ID
     authProviderId: varchar('authProviderId', { length: 255 }),
+    // OAuth 提供商的用户名（例如 GitHub 用户名）
+    authProviderUsername: varchar('authProviderUsername', { length: 255 }),
     nickname: varchar('nickname', { length: 255 }),
     description: text('description'),
     cover: text('cover'),

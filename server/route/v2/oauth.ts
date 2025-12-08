@@ -247,6 +247,7 @@ oauthRouter.get('/github/callback', async (c: HonoContext) => {
           bindUrl.searchParams.set('existingUsername', existingGitHubUser.username || '');
           bindUrl.searchParams.set('existingEmail', existingGitHubUser.email || '');
           bindUrl.searchParams.set('githubUserId', githubUser.id);
+          bindUrl.searchParams.set('githubUsername', githubUser.username);
           return c.redirect(bindUrl.toString());
         }
       }
@@ -256,6 +257,7 @@ oauthRouter.get('/github/callback', async (c: HonoContext) => {
       // 如果用户是纯 OAuth 用户（无密码），更新 authProvider 为 github
       const updateData: any = {
         authProviderId: githubUser.id,
+        authProviderUsername: githubUser.username,
         updatedAt: new Date(),
       };
 
@@ -321,6 +323,7 @@ oauthRouter.get('/github/callback', async (c: HonoContext) => {
           nickname: githubUser.name || githubUser.username,
           authProvider: 'github',
           authProviderId: githubUser.id,
+          authProviderUsername: githubUser.username,
           avatar: githubUser.avatar ?? undefined,
         });
       } catch (createError: any) {
@@ -432,7 +435,7 @@ oauthRouter.post('/github/bind/merge', authenticateJWT, async (c: HonoContext) =
   try {
     const user = c.get('user') as User;
     const body = await c.req.json();
-    const { existingUserId, githubUserId } = body;
+    const { existingUserId, githubUserId, githubUsername } = body;
 
     if (!existingUserId || !githubUserId) {
       return c.json(createResponse(null, 'Missing required parameters', 400), 400);
@@ -466,14 +469,16 @@ oauthRouter.post('/github/bind/merge', authenticateJWT, async (c: HonoContext) =
       throw new Error('Cannot merge account with itself');
     }
 
-    // 在删除前保存源用户的头像信息（mergeUserAccounts 会处理其他字段）
-    const sourceUserAvatar = existingUser.avatar;
-
     // 执行账户合并（在事务中同时更新 GitHub 绑定和删除源账户）
     // 这样可以确保操作的原子性，避免唯一性约束冲突
+    // mergeUserAccounts 会处理所有数据迁移，包括头像、昵称等字段的合并
+    // 如果没有传递 githubUsername，尝试从 existingUser 获取
+    const finalGithubUsername =
+      githubUsername || existingUser.authProviderUsername || existingUser.username;
     const mergeResult = await mergeUserAccounts(existingUserId, user.id, {
-      githubUserId,
-      updateGitHubBinding: true,
+      providerUserId: githubUserId,
+      providerUsername: finalGithubUsername,
+      updateProviderBinding: true,
     });
 
     // 验证源账户已被删除
@@ -483,14 +488,7 @@ oauthRouter.post('/github/bind/merge', authenticateJWT, async (c: HonoContext) =
       throw new Error('账户合并失败：源账户未被删除');
     }
 
-    // 更新头像（如果源用户有头像且目标用户没有）
-    // 注意：GitHub 绑定已经在 mergeUserAccounts 中更新了
-    if (sourceUserAvatar && !targetUser.avatar) {
-      await db
-        .update(users)
-        .set({ avatar: sourceUserAvatar, updatedAt: new Date() })
-        .where(eq(users.id, user.id));
-    }
+    // 注意：头像更新已经在 mergeUserAccounts 函数的事务中处理了，不需要再次更新
 
     return c.json(
       createResponse(
@@ -533,9 +531,10 @@ oauthRouter.delete('/github/bind', authenticateJWT, async (c: HonoContext) => {
       }
     }
 
-    // 解绑 GitHub：清除 authProviderId，如果 authProvider 是 github 则改为 local
+    // 解绑 GitHub：清除 authProviderId 和 authProviderUsername，如果 authProvider 是 github 则改为 local
     const updateData: any = {
       authProviderId: null,
+      authProviderUsername: null,
       updatedAt: new Date(),
     };
 

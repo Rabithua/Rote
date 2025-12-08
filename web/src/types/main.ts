@@ -105,6 +105,7 @@ export type Profile =
       allowExplore?: boolean;
       authProvider?: string;
       authProviderId?: string | null;
+      authProviderUsername?: string | null;
     }
   | undefined;
 

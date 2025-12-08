@@ -67,6 +67,7 @@ export async function createUser(data: {
   role?: string;
   authProvider?: string; // 'local' | 'github' | ...
   authProviderId?: string; // OAuth 提供商的用户 ID
+  authProviderUsername?: string; // OAuth 提供商的用户名（例如 GitHub 用户名）
   avatar?: string; // OAuth 用户可能有头像
 }) {
   try {
@@ -78,6 +79,7 @@ export async function createUser(data: {
       role: data.role || 'user',
       authProvider: data.authProvider || 'local',
       authProviderId: data.authProviderId || null,
+      authProviderUsername: data.authProviderUsername || null,
       avatar: data.avatar || null,
       createdAt: sql`now()`,
       updatedAt: sql`now()`,
@@ -358,6 +360,7 @@ export async function getMyProfile(userId: string): Promise<any> {
       allowExplore,
       authProvider: user.authProvider,
       authProviderId: user.authProviderId,
+      authProviderUsername: user.authProviderUsername,
     };
   } catch (error) {
     if (error instanceof DatabaseError) {
@@ -566,8 +569,9 @@ export async function mergeUserAccounts(
   sourceUserId: string,
   targetUserId: string,
   options?: {
-    githubUserId?: string;
-    updateGitHubBinding?: boolean;
+    providerUserId?: string; // OAuth 提供商的用户 ID（例如 GitHub ID）
+    providerUsername?: string; // OAuth 提供商的用户名（例如 GitHub 用户名）
+    updateProviderBinding?: boolean; // 是否更新 OAuth 绑定
   }
 ): Promise<{ success: boolean; mergedData: any }> {
   // 使用事务确保操作的原子性
@@ -585,16 +589,16 @@ export async function mergeUserAccounts(
         throw new DatabaseError('Cannot merge account with itself');
       }
 
-      // 在事务内再次验证源用户确实绑定了指定的 GitHub ID（防止竞态条件）
-      if (options?.githubUserId && sourceUser.authProviderId !== options.githubUserId) {
+      // 在事务内再次验证源用户确实绑定了指定的 OAuth 提供商 ID（防止竞态条件）
+      if (options?.providerUserId && sourceUser.authProviderId !== options.providerUserId) {
         throw new DatabaseError(
-          `Source user GitHub ID mismatch: expected ${options.githubUserId}, got ${sourceUser.authProviderId}`
+          `Source user OAuth provider ID mismatch: expected ${options.providerUserId}, got ${sourceUser.authProviderId}`
         );
       }
 
-      // 验证目标用户未绑定 GitHub（如果指定了更新绑定）
-      if (options?.updateGitHubBinding && targetUser.authProviderId) {
-        throw new DatabaseError('Target user already has GitHub binding');
+      // 验证目标用户未绑定 OAuth 提供商（如果指定了更新绑定）
+      if (options?.updateProviderBinding && targetUser.authProviderId) {
+        throw new DatabaseError('Target user already has OAuth provider binding');
       }
 
       const mergedData: any = {
@@ -770,22 +774,28 @@ export async function mergeUserAccounts(
         );
       }
 
-      // 11. 删除源账户后，更新目标用户的 GitHub 绑定
-      if (options?.updateGitHubBinding && options?.githubUserId) {
+      // 11. 删除源账户后，更新目标用户的 OAuth 提供商绑定
+      if (options?.updateProviderBinding && options?.providerUserId) {
         const updateData: any = {
-          authProviderId: options.githubUserId,
+          authProviderId: options.providerUserId,
           updatedAt: new Date(),
         };
 
-        // 如果用户没有密码，更新 authProvider 为 github
+        // 设置 OAuth 提供商用户名（如果提供）
+        if (options.providerUsername) {
+          updateData.authProviderUsername = options.providerUsername;
+        }
+
+        // 如果用户没有密码，需要根据源用户的 authProvider 来确定新的 authProvider
         // 如果用户有密码，保持 authProvider 为 'local'（不更新）
         if (!targetUser.passwordhash || !targetUser.salt) {
-          updateData.authProvider = 'github';
+          // 使用源用户的 authProvider（通常是 'github' 或其他 OAuth 提供商）
+          updateData.authProvider = sourceUser.authProvider || 'local';
         }
 
         await tx.update(users).set(updateData).where(eq(users.id, targetUserId));
         console.log(
-          `Updated target user ${targetUserId} GitHub binding: ${options.githubUserId}, authProvider: ${updateData.authProvider || targetUser.authProvider}`
+          `Updated target user ${targetUserId} OAuth provider binding: ${options.providerUserId}, authProvider: ${updateData.authProvider || targetUser.authProvider}`
         );
 
         // 验证更新是否成功
@@ -799,14 +809,14 @@ export async function mergeUserAccounts(
           throw new DatabaseError('Failed to verify target user update');
         }
 
-        if (updatedUser.authProviderId !== options.githubUserId) {
+        if (updatedUser.authProviderId !== options.providerUserId) {
           throw new DatabaseError(
-            `GitHub binding update failed: expected ${options.githubUserId}, got ${updatedUser.authProviderId}`
+            `OAuth provider binding update failed: expected ${options.providerUserId}, got ${updatedUser.authProviderId}`
           );
         }
 
         console.log(
-          `Verified target user ${targetUserId} GitHub binding: ${updatedUser.authProviderId}, authProvider: ${updatedUser.authProvider}`
+          `Verified target user ${targetUserId} OAuth provider binding: ${updatedUser.authProviderId}, authProvider: ${updatedUser.authProvider}`
         );
       }
 

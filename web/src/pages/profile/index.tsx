@@ -97,6 +97,7 @@ function ProfilePage() {
     existingUsername: string;
     existingEmail: string;
     githubUserId: string;
+    githubUsername: string;
   } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -121,6 +122,7 @@ function ProfilePage() {
     const existingUsername = searchParams.get('existingUsername');
     const existingEmail = searchParams.get('existingEmail');
     const githubUserId = searchParams.get('githubUserId');
+    const githubUsername = searchParams.get('githubUsername');
 
     if (oauthStatus === 'bind') {
       if (bindStatus === 'success') {
@@ -140,6 +142,7 @@ function ProfilePage() {
             existingUsername: existingUsername || '',
             existingEmail: existingEmail || '',
             githubUserId,
+            githubUsername: githubUsername || '',
           });
           setIsMergeDialogOpen(true);
           // 清除 URL 参数
@@ -200,6 +203,7 @@ function ProfilePage() {
       const response = await post('/auth/oauth/github/bind/merge', {
         existingUserId: mergeInfo.existingUserId,
         githubUserId: mergeInfo.githubUserId,
+        githubUsername: mergeInfo.githubUsername,
       });
 
       if (response.data?.merged) {
@@ -544,7 +548,7 @@ function ProfilePage() {
       }
     >
       <div className="flex flex-col divide-y pb-20">
-        <NavBar title={t('title')} icon={<UserCircle2 className="size-8 p-0.5" />} />
+        <NavBar title={t('title')} icon={<UserCircle2 className="size-7" />} />
         <div className="pb-4">
           <div className="relative aspect-[3] w-full overflow-hidden">
             <img
@@ -784,7 +788,9 @@ function ProfilePage() {
                         <div className="text-muted-foreground text-sm">
                           {profile?.authProviderId ? (
                             <div className="flex items-center gap-2">
-                              ID: {profile.authProviderId}
+                              {profile.authProviderUsername
+                                ? `@${profile.authProviderUsername}`
+                                : `ID: ${profile.authProviderId}`}
                             </div>
                           ) : (
                             t('settings.oauth.github.notBound')
