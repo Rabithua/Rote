@@ -161,7 +161,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
                     (reaction) =>
                       reaction.user && (
                         <Link
-                          to={`/user/${reaction.user.username}`}
+                          to={`/${reaction.user.username}`}
                           key={reaction.id}
                           className="flex cursor-pointer items-center transition-transform hover:scale-110"
                           title={reaction.user.nickname || reaction.user.username}
