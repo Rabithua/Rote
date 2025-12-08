@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import {
   attachments,
   reactions,
@@ -112,7 +112,7 @@ export async function mergeUserAccounts(
         changes: 0,
       };
 
-      // 2. 合并笔记（rotes）
+      // 2. 合并笔记
       const notesResult = await tx
         .update(rotes)
         .set({ authorid: targetUserId, updatedAt: new Date() })
@@ -120,7 +120,7 @@ export async function mergeUserAccounts(
         .returning({ id: rotes.id });
       mergedData.notes = notesResult.length;
 
-      // 3. 合并附件（attachments）
+      // 3. 合并附件
       const attachmentsResult = await tx
         .update(attachments)
         .set({ userid: targetUserId, updatedAt: new Date() })
@@ -128,7 +128,7 @@ export async function mergeUserAccounts(
         .returning({ id: attachments.id });
       mergedData.attachments = attachmentsResult.length;
 
-      // 4. 合并反应（reactions）
+      // 4. 合并反应
       const reactionsResult = await tx
         .update(reactions)
         .set({ userid: targetUserId, updatedAt: new Date() })
@@ -136,7 +136,7 @@ export async function mergeUserAccounts(
         .returning({ id: reactions.id });
       mergedData.reactions = reactionsResult.length;
 
-      // 5. 合并笔记变更历史（roteChanges）
+      // 5. 合并笔记变更历史
       const changesResult = await tx
         .update(roteChanges)
         .set({ userid: targetUserId })
@@ -144,7 +144,7 @@ export async function mergeUserAccounts(
         .returning({ id: roteChanges.id });
       mergedData.changes = changesResult.length;
 
-      // 6. 合并 API 密钥（userOpenKeys）
+      // 6. 合并 API 密钥
       const openKeysResult = await tx
         .update(userOpenKeys)
         .set({ userid: targetUserId, updatedAt: new Date() })
@@ -152,15 +152,13 @@ export async function mergeUserAccounts(
         .returning({ id: userOpenKeys.id });
       mergedData.openKeys = openKeysResult.length;
 
-      // 7. 合并推送订阅（userSwSubscriptions）
-      // 注意：endpoint 是唯一的，如果目标用户已有相同的 endpoint，需要处理冲突
+      // 7. 合并推送订阅（endpoint 唯一，需要处理冲突）
       const sourceSubscriptions = await tx
         .select()
         .from(userSwSubscriptions)
         .where(eq(userSwSubscriptions.userid, sourceUserId));
 
       for (const sub of sourceSubscriptions) {
-        // 检查目标用户是否已有相同的 endpoint
         const [existing] = await tx
           .select()
           .from(userSwSubscriptions)
@@ -168,10 +166,8 @@ export async function mergeUserAccounts(
           .limit(1);
 
         if (existing && existing.userid === targetUserId) {
-          // 目标用户已有相同 endpoint，删除源用户的订阅
           await tx.delete(userSwSubscriptions).where(eq(userSwSubscriptions.id, sub.id));
         } else {
-          // 迁移订阅到目标用户
           await tx
             .update(userSwSubscriptions)
             .set({ userid: targetUserId, updatedAt: new Date() })
@@ -180,8 +176,7 @@ export async function mergeUserAccounts(
         }
       }
 
-      // 8. 合并用户设置（userSettings）
-      // 策略：如果目标用户没有设置，使用源用户的设置；如果两者都有，保留目标用户的设置
+      // 8. 合并用户设置（目标用户没有时使用源用户的，否则保留目标用户的）
       const [targetSettings] = await tx
         .select()
         .from(userSettings)
@@ -195,7 +190,6 @@ export async function mergeUserAccounts(
         .limit(1);
 
       if (sourceSettings && !targetSettings) {
-        // 目标用户没有设置，创建新设置（使用源用户的设置值）
         await tx.insert(userSettings).values({
           userid: targetUserId,
           darkmode: sourceSettings.darkmode,
@@ -203,134 +197,115 @@ export async function mergeUserAccounts(
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-      } else if (sourceSettings && targetSettings) {
-        // 两者都有设置，优先保留目标用户的设置（不更新）
-        // 这样可以确保用户当前的偏好设置不被覆盖
       }
 
-      // 9. 合并用户资料字段（补充策略：如果目标用户没有，使用源用户的）
+      // 9. 合并用户资料字段（目标用户没有时使用源用户的）
       const updateData: any = {
         updatedAt: new Date(),
       };
 
-      // 头像：如果目标用户没有，使用源用户的
       if (!targetUser.avatar && sourceUser.avatar) {
         updateData.avatar = sourceUser.avatar;
       }
 
-      // 昵称：如果目标用户没有，使用源用户的
       if (!targetUser.nickname && sourceUser.nickname) {
         updateData.nickname = sourceUser.nickname;
       }
 
-      // 描述：如果目标用户没有，使用源用户的
       if (!targetUser.description && sourceUser.description) {
         updateData.description = sourceUser.description;
       }
 
-      // 封面：如果目标用户没有，使用源用户的
       if (!targetUser.cover && sourceUser.cover) {
         updateData.cover = sourceUser.cover;
       }
 
-      // 邮箱验证状态：如果目标用户未验证但源用户已验证，更新为已验证
-      // 注意：邮箱本身保留目标用户的（因为唯一性约束）
+      // 邮箱验证状态（邮箱本身因唯一约束保留目标用户的）
       if (!targetUser.emailVerified && sourceUser.emailVerified) {
         updateData.emailVerified = true;
       }
 
-      // 角色：保留目标用户的角色（不覆盖），因为角色通常由管理员设置
-      // 如果源用户是管理员而目标用户不是，这可能是安全风险，所以保留目标用户的角色
-
       if (Object.keys(updateData).length > 1) {
-        // 有需要更新的字段
         await tx.update(users).set(updateData).where(eq(users.id, targetUserId));
       }
 
-      // 10. 迁移源账户的所有 OAuth 绑定到目标账户
-      // 在删除源账户之前，获取源账户的所有 OAuth 绑定
+      // 10. 迁移 OAuth 绑定（使用 UPDATE 避免 unique_provider_id 约束冲突）
       const sourceBindings = await tx
         .select()
         .from(userOAuthBindings)
         .where(eq(userOAuthBindings.userid, sourceUserId));
 
-      // 获取目标账户的现有绑定，检查是否有冲突
       const targetBindings = await tx
         .select()
         .from(userOAuthBindings)
         .where(eq(userOAuthBindings.userid, targetUserId));
 
       const targetProviderSet = new Set(targetBindings.map((b) => b.provider));
+      const targetBindingSet = new Set(targetBindings.map((b) => `${b.provider}:${b.providerId}`));
       const migratedBindings: Array<{ provider: string; providerId: string }> = [];
 
-      // 为每个源账户的绑定创建到目标账户的绑定记录
       for (const binding of sourceBindings) {
-        // 检查目标账户是否已有该提供商的绑定
         if (targetProviderSet.has(binding.provider)) {
-          // 如果目标账户已有该提供商的绑定，跳过（保留目标账户的绑定）
           console.log(
-            `Skipping OAuth binding migration for provider ${binding.provider}: target user already has binding`
+            `Deleting OAuth binding for provider ${binding.provider} from source user: target user already has binding`
           );
+          await tx.delete(userOAuthBindings).where(eq(userOAuthBindings.id, binding.id));
           continue;
         }
 
-        // 检查该 providerId 是否已被其他用户使用
-        // 注意：由于 providerId 有唯一约束，如果 existingBinding 存在，它应该是源账户的绑定
-        // 但为了防御性编程，仍然检查 userid 是否匹配
-        const [existingBinding] = await tx
-          .select()
-          .from(userOAuthBindings)
-          .where(
-            and(
-              eq(userOAuthBindings.provider, binding.provider),
-              eq(userOAuthBindings.providerId, binding.providerId)
-            )
-          )
-          .limit(1);
-
-        // 如果 existingBinding 存在但 userid 不匹配，说明数据不一致（不应该发生）
-        // 为了安全，跳过迁移并记录警告
-        if (existingBinding && existingBinding.userid !== sourceUserId) {
-          console.warn(
-            `Data inconsistency detected: OAuth binding ${binding.provider}:${binding.providerId} ` +
-              `belongs to user ${existingBinding.userid} but expected to belong to source user ${sourceUserId}. ` +
-              `Skipping migration to prevent data corruption.`
+        const bindingKey = `${binding.provider}:${binding.providerId}`;
+        if (targetBindingSet.has(bindingKey)) {
+          console.log(
+            `Deleting OAuth binding for ${binding.provider}:${binding.providerId} from source user: target user already has this exact binding`
           );
+          await tx.delete(userOAuthBindings).where(eq(userOAuthBindings.id, binding.id));
           continue;
         }
 
-        // 如果 existingBinding 存在且 userid 匹配，或者不存在，都继续迁移
-        // 如果不存在，说明这是源账户的绑定，应该被迁移
-        // 如果存在且匹配，说明这是源账户的绑定，也应该被迁移（虽然理论上不应该重复）
+        try {
+          const updateResult = await tx
+            .update(userOAuthBindings)
+            .set({
+              userid: targetUserId,
+              updatedAt: new Date(),
+            })
+            .where(eq(userOAuthBindings.id, binding.id))
+            .returning();
 
-        // 创建绑定记录到目标账户
-        await tx.insert(userOAuthBindings).values({
-          userid: targetUserId,
-          provider: binding.provider,
-          providerId: binding.providerId,
-          providerUsername: binding.providerUsername,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+          if (updateResult.length > 0) {
+            migratedBindings.push({
+              provider: binding.provider,
+              providerId: binding.providerId,
+            });
 
-        // 记录已迁移的绑定
-        migratedBindings.push({
-          provider: binding.provider,
-          providerId: binding.providerId,
-        });
-
-        console.log(
-          `Migrated OAuth binding: ${binding.provider} (${binding.providerId}) from ${sourceUserId} to ${targetUserId}`
-        );
+            console.log(
+              `Migrated OAuth binding: ${binding.provider} (${binding.providerId}) from ${sourceUserId} to ${targetUserId}`
+            );
+          } else {
+            console.warn(
+              `Failed to update OAuth binding ${binding.provider}:${binding.providerId}: binding not found`
+            );
+          }
+        } catch (updateError: any) {
+          if (
+            updateError?.code === '23505' ||
+            updateError?.message?.includes('unique constraint') ||
+            updateError?.message?.includes('duplicate key')
+          ) {
+            console.warn(
+              `Unique constraint violation when updating OAuth binding ${binding.provider}:${binding.providerId}. ` +
+                `Deleting source binding to prevent data inconsistency.`
+            );
+            await tx.delete(userOAuthBindings).where(eq(userOAuthBindings.id, binding.id));
+            continue;
+          }
+          throw updateError;
+        }
       }
 
-      // 注意：不再需要更新 authProvider，因为现在使用绑定表来管理 OAuth 登录
-      // 主登录方式可以通过检查 passwordhash 和 user_oauth_bindings 表来推断
-
-      // 11. 删除源用户账户（级联删除会自动处理 userSettings 和 userOAuthBindings）
+      // 11. 删除源用户账户
       console.log(`Attempting to delete source user: ${sourceUserId}`);
 
-      // 在删除前再次验证源用户存在
       const [sourceUserBeforeDelete] = await tx
         .select()
         .from(users)
@@ -342,7 +317,6 @@ export async function mergeUserAccounts(
       } else {
         const deleteResult = await tx.delete(users).where(eq(users.id, sourceUserId)).returning();
 
-        // 验证删除是否成功
         if (deleteResult.length === 0) {
           console.error(`Failed to delete source user: ${sourceUserId}`);
           throw new DatabaseError('Failed to delete source user account');
@@ -356,7 +330,7 @@ export async function mergeUserAccounts(
       return {
         success: true,
         mergedData,
-        migratedBindings, // 返回已迁移的 OAuth 绑定信息
+        migratedBindings,
       };
     } catch (error) {
       if (error instanceof DatabaseError) {
