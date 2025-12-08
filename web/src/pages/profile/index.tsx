@@ -430,6 +430,10 @@ function ProfilePage() {
             setIsSettingsModalOpen(false);
             setIsDeleteAccountModalOpen(true);
           }}
+          isGitHubOAuthEnabled={
+            siteStatus?.oauth?.enabled === true &&
+            siteStatus?.oauth?.providers?.github?.enabled === true
+          }
         />
 
         <MergeAccountDialog

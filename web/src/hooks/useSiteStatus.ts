@@ -31,6 +31,14 @@ interface SiteStatusData {
     allowRegistration: boolean;
     allowUploadFile: boolean;
   };
+  oauth?: {
+    enabled: boolean;
+    providers?: {
+      github?: {
+        enabled: boolean;
+      };
+    };
+  };
   timestamp: string;
 }
 
