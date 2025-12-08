@@ -516,6 +516,10 @@
         "description": "配置第三方 OAuth 提供商登录设置，允许用户通过 GitHub 等平台登录。",
         "enabled": "启用 OAuth 登录",
         "enabledDesc": "允许用户通过第三方 OAuth 提供商（如 GitHub）登录",
+        "providers": {
+          "enabled": "启用 {{provider}} OAuth",
+          "enabledDesc": "允许用户通过 {{provider}} 账户登录"
+        },
         "github": {
           "enabled": "启用 GitHub OAuth",
           "enabledDesc": "允许用户通过 GitHub 账户登录",

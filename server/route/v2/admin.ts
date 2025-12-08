@@ -368,24 +368,32 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       const securityConfig = config as any;
       if (securityConfig.oauth) {
         const oauthConfig = securityConfig.oauth;
-        if (oauthConfig.enabled) {
-          const githubConfig = oauthConfig.providers?.github;
-          if (githubConfig?.enabled) {
-            // 验证必填字段
-            if (!githubConfig.clientId || !githubConfig.clientSecret) {
-              return c.json(
-                createResponse(null, 'GitHub OAuth clientId and clientSecret are required'),
-                400
-              );
-            }
-            // 验证 callbackUrl 格式
-            if (!githubConfig.callbackUrl) {
-              return c.json(createResponse(null, 'GitHub OAuth callbackUrl is required'), 400);
-            }
-            try {
-              new URL(githubConfig.callbackUrl);
-            } catch {
-              return c.json(createResponse(null, 'Invalid GitHub OAuth callbackUrl format'), 400);
+        if (oauthConfig.enabled && oauthConfig.providers) {
+          // 动态验证所有已配置的提供商
+          const { oauthProviderRegistry } = await import('../../utils/oauth/providers');
+
+          for (const [providerName, providerConfig] of Object.entries(oauthConfig.providers)) {
+            if ((providerConfig as any)?.enabled) {
+              try {
+                await oauthProviderRegistry.validateProviderConfig(providerName, providerConfig);
+
+                // 验证 callbackUrl 格式
+                if ((providerConfig as any)?.callbackUrl) {
+                  try {
+                    new URL((providerConfig as any).callbackUrl);
+                  } catch {
+                    return c.json(
+                      createResponse(null, `Invalid ${providerName} OAuth callbackUrl format`, 400),
+                      400
+                    );
+                  }
+                }
+              } catch (error: any) {
+                return c.json(
+                  createResponse(null, `${providerName} OAuth: ${error.message}`, 400),
+                  400
+                );
+              }
             }
           }
         }

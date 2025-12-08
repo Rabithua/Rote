@@ -515,6 +515,10 @@
         "description": "Configure third-party OAuth provider login settings, allowing users to login via platforms like GitHub.",
         "enabled": "Enable OAuth Login",
         "enabledDesc": "Allow users to login via third-party OAuth providers (e.g., GitHub)",
+        "providers": {
+          "enabled": "Enable {{provider}} OAuth",
+          "enabledDesc": "Allow users to login with {{provider}} account"
+        },
         "github": {
           "enabled": "Enable GitHub OAuth",
           "enabledDesc": "Allow users to login with GitHub account",

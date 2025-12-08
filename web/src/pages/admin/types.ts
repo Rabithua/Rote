@@ -17,24 +17,7 @@ export interface SystemConfig {
     requireVerifiedEmailForExplore?: boolean;
     oauth?: {
       enabled?: boolean;
-      providers?: {
-        github?: {
-          enabled?: boolean;
-          clientId?: string;
-          clientSecret?: string;
-          callbackUrl?: string;
-          scopes?: string[];
-        };
-        apple?: {
-          enabled?: boolean;
-          clientId?: string;
-          teamId?: string;
-          keyId?: string;
-          privateKey?: string;
-          callbackUrl?: string;
-          scopes?: string[];
-        };
-      };
+      providers?: Record<string, any>;
     };
   };
   ui?: {

@@ -29,6 +29,27 @@
       "when": 1765187191427,
       "tag": "0003_open_bug",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1765210662259,
+      "tag": "0004_cold_captain_cross",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1765212424685,
+      "tag": "0005_strong_bullseye",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1765212685452,
+      "tag": "0006_demonic_blockbuster",
+      "breakpoints": true
     }
   ]
 }

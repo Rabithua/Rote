@@ -24,17 +24,17 @@
 
 ### 2) 认证
 
-| 路径                            | 方法   | 认证 | 描述                       |
-| ------------------------------- | ------ | ---- | -------------------------- |
-| `/auth/register`                | POST   | 无   | 用户注册                   |
-| `/auth/login`                   | POST   | 无   | 用户登录                   |
-| `/auth/password`                | PUT    | 登录 | 修改密码（仅本地账户）     |
-| `/auth/refresh`                 | POST   | 无   | 刷新 Token                 |
-| `/auth/oauth/github`            | GET    | 无   | 发起 GitHub OAuth 授权     |
-| `/auth/oauth/github/callback`   | GET    | 无   | GitHub OAuth 回调处理      |
-| `/auth/oauth/github/bind`       | GET    | 登录 | 绑定 GitHub 账户到现有账户 |
-| `/auth/oauth/github/bind`       | DELETE | 登录 | 解绑 GitHub 账户           |
-| `/auth/oauth/github/bind/merge` | POST   | 登录 | 确认合并账户并绑定 GitHub  |
+| 路径                               | 方法     | 认证 | 描述                                         |
+| ---------------------------------- | -------- | ---- | -------------------------------------------- |
+| `/auth/register`                   | POST     | 无   | 用户注册                                     |
+| `/auth/login`                      | POST     | 无   | 用户登录                                     |
+| `/auth/password`                   | PUT      | 登录 | 修改密码（仅本地账户）                       |
+| `/auth/refresh`                    | POST     | 无   | 刷新 Token                                   |
+| `/auth/oauth/:provider`            | GET      | 无   | 发起 OAuth 授权（动态路由，支持多个提供商）  |
+| `/auth/oauth/:provider/callback`   | GET/POST | 无   | OAuth 回调处理（根据提供商决定 GET 或 POST） |
+| `/auth/oauth/:provider/bind`       | GET      | 登录 | 绑定 OAuth 账户到现有账户                    |
+| `/auth/oauth/:provider/bind`       | DELETE   | 登录 | 解绑 OAuth 账户                              |
+| `/auth/oauth/:provider/bind/merge` | POST     | 登录 | 确认合并账户并绑定 OAuth                     |
 
 ### 3) 用户
 
@@ -200,10 +200,11 @@
 
 **注意**：
 
-- OAuth 用户（通过 GitHub 登录）不能使用密码登录，也不能修改密码
-- OAuth 登录流程：访问 `/auth/oauth/github` 发起授权，完成后重定向到回调地址
-- 账户绑定：已登录的用户可以将 GitHub 账户绑定到现有账户，实现多种登录方式
-- 账户合并：如果 GitHub 账户已被其他用户使用，可以合并账户，将源账户的数据迁移到目标账户
+- OAuth 用户（通过第三方登录）不能使用密码登录，也不能修改密码
+- OAuth 登录流程：访问 `/auth/oauth/:provider` 发起授权（`:provider` 为提供商名称，如 `github`、`apple`），完成后重定向到回调地址
+- 支持的提供商：GitHub、Apple 等（可通过配置启用）
+- 账户绑定：已登录的用户可以将 OAuth 账户绑定到现有账户，实现多种登录方式
+- 账户合并：如果 OAuth 账户已被其他用户使用，可以合并账户，将源账户的数据迁移到目标账户
 - 解绑限制：如果用户没有设置密码且是纯 OAuth 用户，则不允许解绑，避免账户被锁定
 
 ### 笔记

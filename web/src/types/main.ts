@@ -103,10 +103,12 @@ export type Profile =
       updatedAt: string;
       emailVerified?: boolean;
       allowExplore?: boolean;
-      authProvider?: string;
-      authProviderId?: string | null;
-      authProviderUsername?: string | null;
-      boundOAuthProvider?: 'github' | 'apple' | null;
+      // 注意：authProvider 已移除，主登录方式可以通过 passwordhash 和 oauthBindings 推断
+      oauthBindings?: Array<{
+        provider: string;
+        providerId: string;
+        providerUsername?: string | null;
+      }>; // 新增：完整的绑定信息数组
     }
   | undefined;
 

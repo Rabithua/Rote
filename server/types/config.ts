@@ -35,10 +35,7 @@ export interface AppleOAuthProviderConfig extends Omit<OAuthProviderConfig, 'cli
 
 export interface OAuthConfig {
   enabled: boolean;
-  providers: {
-    github?: OAuthProviderConfig;
-    apple?: AppleOAuthProviderConfig;
-  };
+  providers: Record<string, OAuthProviderConfig | AppleOAuthProviderConfig>;
 }
 
 export interface SecurityConfig {

@@ -4,8 +4,11 @@ import { getGlobalConfig } from './config';
 
 // OAuth state token payload
 export interface OAuthStatePayload {
+  provider?: string; // OAuth 提供商名称（如 'github', 'apple'）
   redirectUrl?: string;
   iosLogin?: boolean;
+  bindMode?: boolean;
+  userId?: string;
   [key: string]: any;
 }
 

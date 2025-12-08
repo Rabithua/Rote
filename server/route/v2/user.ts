@@ -119,16 +119,16 @@ usersRouter.delete('/me', authenticateJWT, async (c: HonoContext) => {
   const body = await c.req.json();
   const { password } = body;
 
-  // 获取完整用户信息以检查 authProvider
+  // 获取完整用户信息以检查是否有密码
   const fullUser = await oneUser(user.id);
   if (!fullUser) {
     throw new Error('User not found');
   }
 
   // OAuth 用户不需要密码，但为了保持 API 一致性，仍然需要传递一个占位符
-  // 本地用户必须提供密码
-  if (fullUser.authProvider === 'local' && !password) {
-    throw new Error('Password is required for local users');
+  // 有密码的用户必须提供密码
+  if (fullUser.passwordhash && fullUser.salt && !password) {
+    throw new Error('Password is required for users with password');
   }
 
   // 对于 OAuth 用户，如果没有提供密码，使用占位符

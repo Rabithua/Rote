@@ -133,17 +133,30 @@ siteRouter.get('/status', async (c: HonoContext) => {
       },
 
       // OAuth 配置（用于前端判断是否显示 OAuth 登录按钮）
-      oauth: {
-        enabled: securityConfig?.oauth?.enabled ?? false,
-        providers: {
-          github: {
-            enabled: securityConfig?.oauth?.providers?.github?.enabled ?? false,
-          },
-          apple: {
-            enabled: securityConfig?.oauth?.providers?.apple?.enabled ?? false,
-          },
-        },
-      },
+      oauth: await (async () => {
+        const oauthEnabled = securityConfig?.oauth?.enabled ?? false;
+        const providers: Record<string, { enabled: boolean }> = {};
+
+        if (oauthEnabled && securityConfig?.oauth?.providers) {
+          // 动态获取所有已注册的提供商
+          const { oauthProviderRegistry } = await import('../../utils/oauth/providers');
+          const registeredProviders = oauthProviderRegistry.getAllProviders();
+
+          for (const provider of registeredProviders) {
+            const providerConfig = securityConfig.oauth.providers[provider.name];
+            if (providerConfig) {
+              providers[provider.name] = {
+                enabled: providerConfig.enabled ?? false,
+              };
+            }
+          }
+        }
+
+        return {
+          enabled: oauthEnabled,
+          providers,
+        };
+      })(),
 
       // 时间戳
       timestamp: new Date().toISOString(),
