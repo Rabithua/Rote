@@ -6,6 +6,7 @@ import {
   TabsTrigger,
 } from '@/components/animate-ui/radix/tabs';
 import { TypingText } from '@/components/animate-ui/text/typing';
+import { AppleIcon } from '@/components/icons/Apple';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
@@ -36,11 +37,7 @@ function Login() {
     };
     oauth?: {
       enabled?: boolean;
-      providers?: {
-        github?: {
-          enabled?: boolean;
-        };
-      };
+      providers?: Record<string, { enabled?: boolean }>;
     };
   }>('checkStatus', () => get('/site/status').then((res) => res.data));
 
@@ -269,7 +266,13 @@ function Login() {
     if (oauthStatus === 'success' && token && refreshToken) {
       // OAuth 登录成功
       authService.setTokens(token, refreshToken);
-      toast.success(t('messages.oauthLoginSuccess'));
+      const provider = searchParams.get('provider');
+      // 根据提供商显示不同的成功消息（如果有特定消息）
+      if (provider === 'apple') {
+        toast.success(t('messages.appleLoginSuccess'));
+      } else {
+        toast.success(t('messages.oauthLoginSuccess'));
+      }
       mutateProfile();
 
       // 检查是否为 iOS web 登录流程
@@ -288,20 +291,52 @@ function Login() {
       navigate('/login', { replace: true });
     } else if (oauthStatus === 'cancelled') {
       // 用户取消授权
-      toast.info(t('messages.oauthCancelled'));
+      const provider = searchParams.get('provider');
+      // 根据提供商显示不同的取消消息（如果有特定消息）
+      if (provider === 'apple') {
+        toast.info(t('messages.appleCancelled'));
+      } else {
+        toast.info(t('messages.oauthCancelled'));
+      }
       // 清除 URL 参数
       navigate('/login', { replace: true });
     }
   }, [searchParams, navigate, mutateProfile, t]);
 
-  // GitHub OAuth 登录
-  function handleGitHubLogin() {
+  // 通用 OAuth 登录处理函数
+  function handleOAuthLogin(provider: string) {
     const iosLogin = searchParams.get('type') === 'ioslogin';
     const redirectUrl = iosLogin ? '/login?type=ioslogin' : '/login';
     // 使用完整的 API URL
-    const oauthUrl = `${getApiUrl()}/auth/oauth/github?type=${iosLogin ? 'ioslogin' : 'web'}&redirect=${encodeURIComponent(redirectUrl)}`;
+    const oauthUrl = `${getApiUrl()}/auth/oauth/${provider}?type=${iosLogin ? 'ioslogin' : 'web'}&redirect=${encodeURIComponent(redirectUrl)}`;
     window.location.href = oauthUrl;
   }
+
+  // 获取 OAuth 提供商的显示信息
+  function getOAuthProviderInfo(provider: string) {
+    const providerInfo: Record<string, { icon: any; labelKey: string }> = {
+      github: {
+        icon: Github,
+        labelKey: 'buttons.loginWithGitHub',
+      },
+      apple: {
+        icon: AppleIcon,
+        labelKey: 'buttons.loginWithApple',
+      },
+    };
+    return (
+      providerInfo[provider] || {
+        icon: null,
+        labelKey: `buttons.loginWith${provider.charAt(0).toUpperCase() + provider.slice(1)}`,
+      }
+    );
+  }
+
+  // 检查是否有启用的 OAuth 提供商
+  const hasEnabledOAuthProviders =
+    backendStatusOk?.oauth?.enabled &&
+    backendStatusOk?.oauth?.providers &&
+    Object.values(backendStatusOk.oauth.providers).some((p: any) => p?.enabled);
 
   return (
     <div className="relative flex h-dvh w-full items-center justify-center">
@@ -380,31 +415,41 @@ function Login() {
                       <Button disabled={disbled} onClick={login} className="w-full">
                         {disbled ? t('messages.loggingIn') : t('buttons.login')}
                       </Button>
-                      {backendStatusOk?.oauth?.enabled &&
-                        backendStatusOk?.oauth?.providers?.github?.enabled && (
-                          <>
-                            <div className="relative my-4">
-                              <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                              </div>
-                              <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background text-muted-foreground px-2">
-                                  {t('oauth.or')}
-                                </span>
-                              </div>
+                      {hasEnabledOAuthProviders && (
+                        <>
+                          <div className="relative my-4">
+                            <div className="absolute inset-0 flex items-center">
+                              <span className="w-full border-t" />
                             </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={handleGitHubLogin}
-                              className="w-full"
-                              disabled={disbled}
-                            >
-                              <Github className="mr-2 size-4" />
-                              {t('buttons.loginWithGitHub')}
-                            </Button>
-                          </>
-                        )}
+                            <div className="relative flex justify-center text-xs uppercase">
+                              <span className="bg-background text-muted-foreground px-2">
+                                {t('oauth.or')}
+                              </span>
+                            </div>
+                          </div>
+                          {backendStatusOk?.oauth?.providers &&
+                            Object.entries(backendStatusOk.oauth.providers).map(
+                              ([provider, config]: [string, any]) => {
+                                if (!config?.enabled) return null;
+                                const providerInfo = getOAuthProviderInfo(provider);
+                                const IconComponent = providerInfo.icon;
+                                return (
+                                  <Button
+                                    key={provider}
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleOAuthLogin(provider)}
+                                    className="w-full"
+                                    disabled={disbled}
+                                  >
+                                    {IconComponent && <IconComponent className="mr-2 size-4" />}
+                                    {t(providerInfo.labelKey)}
+                                  </Button>
+                                );
+                              }
+                            )}
+                        </>
+                      )}
                     </TabsContent>
 
                     {backendStatusOk.ui?.allowRegistration !== false && (

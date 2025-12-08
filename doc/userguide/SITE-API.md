@@ -104,6 +104,17 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
       "allowRegistration": true,
       "allowUploadFile": true
     },
+    "oauth": {
+      "enabled": true,
+      "providers": {
+        "github": {
+          "enabled": true
+        },
+        "apple": {
+          "enabled": true
+        }
+      }
+    },
     "timestamp": "2024-01-01T00:00:00.000Z"
   }
 }
@@ -129,6 +140,11 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
 - `ui`: object - UI 配置（仅包含与前端行为相关的开关）
   - `allowRegistration`: boolean - 是否允许注册
   - `allowUploadFile`: boolean - 是否允许上传文件
+- `oauth`: object - OAuth 配置（用于前端判断是否显示 OAuth 登录按钮）
+  - `enabled`: boolean - OAuth 是否已启用
+  - `providers`: object - 已启用的 OAuth 提供商列表（动态返回，根据配置和已注册的提供商）
+    - `{providerName}`: object - 提供商配置
+      - `enabled`: boolean - 该提供商是否已启用
 - `timestamp`: string - 响应时间戳（ISO 8601 格式）
 
 说明：
@@ -136,6 +152,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
 - 此接口用于获取站点的完整状态信息，包括系统状态、配置信息等
 - 前端可以根据返回的信息判断功能是否可用（如附件上传、用户注册等）
 - `vapidPublicKey` 用于前端实现 Web Push 通知功能
+- `oauth.providers` 动态返回所有已注册且启用的 OAuth 提供商，前端可以根据此信息动态渲染 OAuth 登录按钮
 
 可能的错误：
 
@@ -223,6 +240,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
 - **功能开关**: 根据 `/status` 接口返回的 `ui` 配置，在前端控制注册、文件上传等功能的显示和可用性
 - **存储配置**: 通过 `storage.r2Configured` 判断附件上传功能是否可用，通过 `storage.urlPrefix` 获取附件访问地址前缀
 - **Web Push**: 使用 `notification.vapidPublicKey` 实现 Web Push 通知功能
+- **OAuth 登录**: 根据 `oauth.enabled` 和 `oauth.providers` 动态显示 OAuth 登录按钮，支持多个提供商（如 GitHub、Apple 等）
 
 ---
 

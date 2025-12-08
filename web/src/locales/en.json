@@ -113,7 +113,9 @@
         "registering": "Registering...",
         "registerSuccess": "Registration successful",
         "oauthLoginSuccess": "GitHub login successful",
-        "oauthCancelled": "GitHub authorization cancelled"
+        "oauthCancelled": "GitHub authorization cancelled",
+        "appleLoginSuccess": "Apple login successful",
+        "appleCancelled": "Apple authorization cancelled"
       },
       "oauth": {
         "or": "OR"
@@ -130,7 +132,8 @@
         "back": "Back",
         "toHome": "Go to Home",
         "logout": "Logout",
-        "loginWithGitHub": "Login with GitHub"
+        "loginWithGitHub": "Login with GitHub",
+        "loginWithApple": "Sign in with Apple"
       },
       "nav": {
         "explore": "Explore",
@@ -204,6 +207,31 @@
             "mergeDialog": {
               "title": "Confirm Account Merge",
               "description": "This GitHub account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
+              "existingAccount": "Existing Account",
+              "currentAccount": "Current Account",
+              "warning": "Warning: This operation cannot be undone. Please confirm this is your account.",
+              "cancel": "Cancel",
+              "confirm": "Confirm Merge",
+              "merging": "Merging…"
+            }
+          },
+          "apple": {
+            "title": "Apple",
+            "bound": "Bound",
+            "notBound": "Not Bound",
+            "bind": "Bind Apple",
+            "unbind": "Unbind Apple",
+            "binding": "Binding…",
+            "unbinding": "Unbinding…",
+            "bindSuccess": "Apple account bound successfully",
+            "bindFailed": "Binding failed: {{error}}",
+            "mergeSuccess": "Apple account bound successfully, account data merged",
+            "mergeFailed": "Account merge failed: {{error}}",
+            "unbindSuccess": "Apple account unbound",
+            "unbindFailed": "Unbinding failed: {{error}}",
+            "mergeDialog": {
+              "title": "Confirm Account Merge",
+              "description": "This Apple account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
               "existingAccount": "Existing Account",
               "currentAccount": "Current Account",
               "warning": "Warning: This operation cannot be undone. Please confirm this is your account.",
@@ -487,6 +515,10 @@
         "description": "Configure third-party OAuth provider login settings, allowing users to login via platforms like GitHub.",
         "enabled": "Enable OAuth Login",
         "enabledDesc": "Allow users to login via third-party OAuth providers (e.g., GitHub)",
+        "providers": {
+          "enabled": "Enable {{provider}} OAuth",
+          "enabledDesc": "Allow users to login with {{provider}} account"
+        },
         "github": {
           "enabled": "Enable GitHub OAuth",
           "enabledDesc": "Allow users to login with GitHub account",
@@ -494,6 +526,20 @@
           "clientSecret": "Client Secret",
           "callbackUrl": "Callback URL",
           "callbackUrlDesc": "Note: This URL is the backend URL. Callback URL configured in GitHub OAuth App, typically: https://yourdomain.com/v2/api/auth/oauth/github/callback. "
+        },
+        "apple": {
+          "enabled": "Enable Apple OAuth",
+          "enabledDesc": "Allow users to login with Apple account",
+          "clientId": "Service ID (Client ID)",
+          "clientIdPlaceholder": "Apple Service ID (Client ID)",
+          "teamId": "Team ID",
+          "teamIdPlaceholder": "Apple Developer Team ID",
+          "keyId": "Key ID",
+          "keyIdPlaceholder": "Apple Key ID",
+          "privateKey": "Private Key",
+          "privateKeyPlaceholder": "Apple Private Key (PEM format)",
+          "callbackUrl": "Callback URL",
+          "callbackUrlDesc": "Note: This URL is the backend URL. Callback URL configured in Apple Developer, typically: https://yourdomain.com/v2/api/auth/oauth/apple/callback."
         }
       },
       "users": {

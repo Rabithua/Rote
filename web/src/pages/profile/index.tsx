@@ -71,16 +71,17 @@ function ProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
-  const [isBindingGitHub, setIsBindingGitHub] = useState(false);
-  const [isUnbindingGitHub, setIsUnbindingGitHub] = useState(false);
+  const [bindingProviders, setBindingProviders] = useState<Record<string, boolean>>({});
+  const [unbindingProviders, setUnbindingProviders] = useState<Record<string, boolean>>({});
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [mergeInfo, setMergeInfo] = useState<{
     existingUserId: string;
     existingUsername: string;
     existingEmail: string;
-    githubUserId: string;
-    githubUsername: string;
+    provider: string;
+    providerUserId: string;
+    providerUsername: string;
   } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -101,39 +102,54 @@ function ProfilePage() {
     const bindStatus = searchParams.get('bind');
     const errorMessage = searchParams.get('message');
     const merged = searchParams.get('merged');
+    const provider = searchParams.get('provider') || 'github';
     const existingUserId = searchParams.get('existingUserId');
     const existingUsername = searchParams.get('existingUsername');
     const existingEmail = searchParams.get('existingEmail');
-    const githubUserId = searchParams.get('githubUserId');
-    const githubUsername = searchParams.get('githubUsername');
+    // 动态获取提供商特定的用户 ID 和用户名参数
+    const providerUserId = searchParams.get(`${provider}UserId`);
+    const providerUsername = searchParams.get(`${provider}Username`);
 
     if (oauthStatus === 'bind') {
       if (bindStatus === 'success') {
         if (merged === 'true') {
-          toast.success(t('settings.oauth.github.mergeSuccess'));
+          // 使用通用的成功消息（如果有特定消息则使用）
+          const successKey = `settings.oauth.${provider}.mergeSuccess`;
+          const fallbackKey = 'settings.oauth.mergeSuccess';
+          toast.success(t(successKey, { defaultValue: t(fallbackKey) }));
         } else {
-          toast.success(t('settings.oauth.github.bindSuccess'));
+          // 使用通用的成功消息（如果有特定消息则使用）
+          const successKey = `settings.oauth.${provider}.bindSuccess`;
+          const fallbackKey = 'settings.oauth.bindSuccess';
+          toast.success(t(successKey, { defaultValue: t(fallbackKey) }));
         }
         loadProfile(); // 刷新 profile 数据
         // 清除 URL 参数
         setSearchParams({}, { replace: true });
       } else if (bindStatus === 'merge_required') {
         // 需要合并账户，显示确认对话框
-        if (existingUserId && githubUserId) {
+        if (existingUserId && providerUserId) {
           setMergeInfo({
             existingUserId,
             existingUsername: existingUsername || '',
             existingEmail: existingEmail || '',
-            githubUserId,
-            githubUsername: githubUsername || '',
+            provider,
+            providerUserId,
+            providerUsername: providerUsername || '',
           });
           setIsMergeDialogOpen(true);
           // 清除 URL 参数
           setSearchParams({}, { replace: true });
         }
       } else if (bindStatus === 'error' && errorMessage) {
+        // 使用通用的错误消息（如果有特定消息则使用）
+        const errorKey = `settings.oauth.${provider}.bindFailed`;
+        const fallbackKey = 'settings.oauth.bindFailed';
         toast.error(
-          t('settings.oauth.github.bindFailed', { error: decodeURIComponent(errorMessage) })
+          t(errorKey, {
+            error: decodeURIComponent(errorMessage),
+            defaultValue: t(fallbackKey, { error: decodeURIComponent(errorMessage) }),
+          })
         );
         // 清除 URL 参数
         setSearchParams({}, { replace: true });
@@ -141,53 +157,23 @@ function ProfilePage() {
     }
   }, [searchParams, t, loadProfile, setSearchParams]);
 
-  // 绑定 GitHub
-  const handleBindGitHub = async () => {
-    setIsBindingGitHub(true);
-    try {
-      const redirectUrl = '/profile';
-      const response = await get(
-        `/auth/oauth/github/bind?redirect=${encodeURIComponent(redirectUrl)}`
-      );
-      if (response.data?.redirectUrl) {
-        // 跳转到 GitHub 授权页面
-        window.location.href = response.data.redirectUrl;
-      } else {
-        throw new Error('Failed to get GitHub authorization URL');
-      }
-    } catch (err: any) {
-      setIsBindingGitHub(false);
-      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
-      toast.error(t('settings.oauth.github.bindFailed', { error: errorMessage }));
-    }
-  };
-
-  // 解绑 GitHub
-  const handleUnbindGitHub = async () => {
-    setIsUnbindingGitHub(true);
-    try {
-      await del('/auth/oauth/github/bind');
-      toast.success(t('settings.oauth.github.unbindSuccess'));
-      loadProfile(); // 刷新 profile 数据
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
-      toast.error(t('settings.oauth.github.unbindFailed', { error: errorMessage }));
-    } finally {
-      setIsUnbindingGitHub(false);
-    }
-  };
-
   // 确认合并账户
   const handleConfirmMerge = async () => {
     if (!mergeInfo) return;
 
     setIsMerging(true);
     try {
-      const response = await post('/auth/oauth/github/bind/merge', {
+      const endpoint = `/auth/oauth/${mergeInfo.provider}/bind/merge`;
+      // 动态构建 payload，根据提供商名称构建参数名
+      const payload: any = {
         existingUserId: mergeInfo.existingUserId,
-        githubUserId: mergeInfo.githubUserId,
-        githubUsername: mergeInfo.githubUsername,
-      });
+        [`${mergeInfo.provider}UserId`]: mergeInfo.providerUserId,
+      };
+      if (mergeInfo.providerUsername) {
+        payload[`${mergeInfo.provider}Username`] = mergeInfo.providerUsername;
+      }
+
+      const response = await post(endpoint, payload);
 
       if (response.data?.merged) {
         // 设置 URL 参数以触发 useEffect 中的成功消息显示
@@ -196,6 +182,7 @@ function ProfilePage() {
             oauth: 'bind',
             bind: 'success',
             merged: 'true',
+            provider: mergeInfo.provider,
           },
           { replace: true }
         );
@@ -205,7 +192,11 @@ function ProfilePage() {
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
-      toast.error(t('settings.oauth.github.mergeFailed', { error: errorMessage }));
+      const errorKey = `settings.oauth.${mergeInfo.provider}.mergeFailed`;
+      const fallbackKey = 'settings.oauth.mergeFailed';
+      toast.error(
+        t(errorKey, { error: errorMessage, defaultValue: t(fallbackKey, { error: errorMessage }) })
+      );
     } finally {
       setIsMerging(false);
     }
@@ -215,6 +206,52 @@ function ProfilePage() {
   const handleCancelMerge = () => {
     setIsMergeDialogOpen(false);
     setMergeInfo(null);
+  };
+
+  // 通用 OAuth 绑定处理函数
+  const handleBindOAuth = async (provider: string) => {
+    setBindingProviders((prev) => ({ ...prev, [provider]: true }));
+    try {
+      const redirectUrl = '/profile';
+      const response = await get(
+        `/auth/oauth/${provider}/bind?redirect=${encodeURIComponent(redirectUrl)}`
+      );
+      if (response.data?.redirectUrl) {
+        // 跳转到 OAuth 授权页面
+        window.location.href = response.data.redirectUrl;
+      } else {
+        throw new Error(`Failed to get ${provider} authorization URL`);
+      }
+    } catch (err: any) {
+      setBindingProviders((prev) => ({ ...prev, [provider]: false }));
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      const errorKey = `settings.oauth.${provider}.bindFailed`;
+      const fallbackKey = 'settings.oauth.bindFailed';
+      toast.error(
+        t(errorKey, { error: errorMessage, defaultValue: t(fallbackKey, { error: errorMessage }) })
+      );
+    }
+  };
+
+  // 通用 OAuth 解绑处理函数
+  const handleUnbindOAuth = async (provider: string) => {
+    setUnbindingProviders((prev) => ({ ...prev, [provider]: true }));
+    try {
+      await del(`/auth/oauth/${provider}/bind`);
+      const successKey = `settings.oauth.${provider}.unbindSuccess`;
+      const fallbackKey = 'settings.oauth.unbindSuccess';
+      toast.success(t(successKey, { defaultValue: t(fallbackKey) }));
+      loadProfile(); // 刷新 profile 数据
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      const errorKey = `settings.oauth.${provider}.unbindFailed`;
+      const fallbackKey = 'settings.oauth.unbindFailed';
+      toast.error(
+        t(errorKey, { error: errorMessage, defaultValue: t(fallbackKey, { error: errorMessage }) })
+      );
+    } finally {
+      setUnbindingProviders((prev) => ({ ...prev, [provider]: false }));
+    }
   };
 
   function generateOpenKeyFun() {
@@ -422,18 +459,15 @@ function ProfilePage() {
           onSave={saveSettings}
           isSaving={settingsSaving}
           profile={profile}
-          isBindingGitHub={isBindingGitHub}
-          isUnbindingGitHub={isUnbindingGitHub}
-          onBindGitHub={handleBindGitHub}
-          onUnbindGitHub={handleUnbindGitHub}
           onDeleteAccount={() => {
             setIsSettingsModalOpen(false);
             setIsDeleteAccountModalOpen(true);
           }}
-          isGitHubOAuthEnabled={
-            siteStatus?.oauth?.enabled === true &&
-            siteStatus?.oauth?.providers?.github?.enabled === true
-          }
+          enabledOAuthProviders={siteStatus?.oauth?.providers || {}}
+          bindingProviders={bindingProviders}
+          unbindingProviders={unbindingProviders}
+          onBindOAuth={handleBindOAuth}
+          onUnbindOAuth={handleUnbindOAuth}
         />
 
         <MergeAccountDialog

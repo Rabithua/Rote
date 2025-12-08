@@ -37,6 +37,9 @@ interface SiteStatusData {
       github?: {
         enabled: boolean;
       };
+      apple?: {
+        enabled: boolean;
+      };
     };
   };
   timestamp: string;

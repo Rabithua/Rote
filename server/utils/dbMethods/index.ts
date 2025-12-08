@@ -10,3 +10,8 @@ export * from './reaction';
 export * from './site';
 export * from './subscription';
 export * from './user';
+export * from './userAccount';
+export * from './userData';
+export * from './userOAuth';
+export * from './userProfile';
+export * from './userSettings';

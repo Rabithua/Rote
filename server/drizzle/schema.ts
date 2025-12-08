@@ -32,12 +32,10 @@ export const users = pgTable(
     emailVerified: boolean('emailVerified').notNull().default(false),
     passwordhash: bytea('passwordhash'),
     salt: bytea('salt'),
-    // OAuth 认证提供商（'local' | 'github' | ...）
-    authProvider: varchar('authProvider', { length: 50 }).notNull().default('local'),
-    // OAuth 提供商的用户 ID
-    authProviderId: varchar('authProviderId', { length: 255 }),
-    // OAuth 提供商的用户名（例如 GitHub 用户名）
-    authProviderUsername: varchar('authProviderUsername', { length: 255 }),
+    // 注意：authProvider, authProviderId, authProviderUsername 已移除
+    // 主登录方式可以通过 passwordhash 和 user_oauth_bindings 表推断：
+    // - 如果有 passwordhash，主登录方式是 'local'
+    // - 如果没有 passwordhash 但有 oauthBindings，主登录方式是第一个绑定的提供商
     nickname: varchar('nickname', { length: 255 }),
     description: text('description'),
     cover: text('cover'),
@@ -49,11 +47,7 @@ export const users = pgTable(
   (table) => ({
     emailIdx: index('users_email_idx').on(table.email),
     usernameIdx: index('users_username_idx').on(table.username),
-    authProviderIdx: index('users_authProvider_idx').on(table.authProvider),
-    authProviderIdIdx: index('users_authProviderId_idx').on(table.authProviderId),
-    // 唯一约束：同一提供商下的 providerId 唯一（仅当 authProviderId 不为 null 时）
-    // 注意：Drizzle 不支持部分唯一索引，需要在应用层处理唯一性
-    uniqueAuthProvider: unique('unique_auth_provider').on(table.authProvider, table.authProviderId),
+    // 注意：authProvider 相关索引已移除，OAuth 绑定信息存储在 user_oauth_bindings 表中
   })
 );
 
@@ -297,6 +291,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [userSettings.userid],
   }),
   userswsubscription: many(userSwSubscriptions),
+  oauthBindings: many(userOAuthBindings),
 }));
 
 export const userSettingsRelations = relations(userSettings, ({ one }) => ({
@@ -377,4 +372,45 @@ export type NewReaction = typeof reactions.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
 export type RoteChange = typeof roteChanges.$inferSelect;
+// User OAuth Bindings 表 - 支持多个 OAuth 绑定
+export const userOAuthBindings = pgTable(
+  'user_oauth_bindings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userid: uuid('userid').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull(), // 'github', 'apple', etc.
+    providerId: varchar('providerId', { length: 255 }).notNull(), // OAuth 提供商的用户 ID
+    providerUsername: varchar('providerUsername', { length: 255 }), // OAuth 提供商的用户名
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    useridIdx: index('user_oauth_bindings_userid_idx').on(table.userid),
+    providerIdx: index('user_oauth_bindings_provider_idx').on(table.provider),
+    providerIdIdx: index('user_oauth_bindings_providerId_idx').on(table.providerId),
+    // 唯一约束：同一用户不能重复绑定同一个提供商
+    uniqueUserProvider: unique('unique_user_provider').on(table.userid, table.provider),
+    // 唯一约束：同一提供商下的 providerId 唯一（防止一个 OAuth 账户绑定到多个用户）
+    uniqueProviderId: unique('unique_provider_id').on(table.provider, table.providerId),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+  })
+);
+
 export type NewRoteChange = typeof roteChanges.$inferInsert;
+
+// Relations
+export const userOAuthBindingsRelations = relations(userOAuthBindings, ({ one }) => ({
+  user: one(users, {
+    fields: [userOAuthBindings.userid],
+    references: [users.id],
+  }),
+}));
+
+// Types
+export type UserOAuthBinding = typeof userOAuthBindings.$inferSelect;
+export type NewUserOAuthBinding = typeof userOAuthBindings.$inferInsert;

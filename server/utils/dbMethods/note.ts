@@ -92,7 +92,17 @@ export async function createRote(data: any): Promise<any> {
               asc(attachments.createdAt),
             ],
           },
-          reactions: true,
+          reactions: {
+            with: {
+              user: {
+                columns: {
+                  username: true,
+                  nickname: true,
+                  avatar: true,
+                },
+              },
+            },
+          },
         },
       });
     } catch (_queryError) {
@@ -136,7 +146,17 @@ export async function findRoteById(id: string): Promise<any> {
             asc(attachments.createdAt),
           ],
         },
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return rote || null;
@@ -167,7 +187,17 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
             asc(attachments.createdAt),
           ],
         },
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return rotesList;
@@ -215,7 +245,17 @@ export async function editRote(data: any): Promise<any> {
             asc(attachments.createdAt),
           ],
         },
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -346,7 +386,17 @@ export async function findMyRote(
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     };
 
@@ -381,7 +431,17 @@ export async function findUserPublicRote(
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return rotesList;
@@ -508,7 +568,17 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -635,7 +705,17 @@ export async function searchMyRotes(
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return rotesList;
@@ -667,7 +747,17 @@ export async function searchPublicRotes(
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return rotesList;
@@ -701,7 +791,17 @@ export async function searchUserPublicRotes(
           },
         },
         attachments: true,
-        reactions: true,
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
     return rotesList;

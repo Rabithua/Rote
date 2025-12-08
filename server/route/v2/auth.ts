@@ -137,12 +137,12 @@ authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
   const body = await c.req.json();
   const { newpassword, oldpassword } = body;
 
-  // 检查用户是否是 OAuth 用户（OAuth 用户不能修改密码）
+  // 检查用户是否有密码（只有有密码的用户才能修改密码）
   const fullUser = await oneUser(user.id);
   if (!fullUser) {
     throw new Error('User not found');
   }
-  if (fullUser.authProvider !== 'local' || !fullUser.passwordhash || !fullUser.salt) {
+  if (!fullUser.passwordhash || !fullUser.salt) {
     throw new Error('OAuth users cannot change password. Please use OAuth login.');
   }
 

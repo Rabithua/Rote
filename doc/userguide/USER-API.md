@@ -93,6 +93,8 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/profile' \
 - `authProvider`: string - 认证提供商，可能的值：
   - `'local'`: 本地账户（通过用户名密码注册/登录）
   - `'github'`: GitHub OAuth 账户（纯 OAuth 用户，无密码）
+  - `'apple'`: Apple OAuth 账户（纯 OAuth 用户，无密码）
+  - 其他 OAuth 提供商名称（根据配置动态支持）
 - `authProviderId`: string | null - OAuth 提供商的用户 ID（例如 GitHub 用户 ID），如果未绑定则为 `null`
 
 可能的错误：

@@ -14,9 +14,7 @@ export async function passportCheckUser(data: { username: string }) {
         emailVerified: users.emailVerified,
         passwordhash: users.passwordhash,
         salt: users.salt,
-        authProvider: users.authProvider,
-        authProviderId: users.authProviderId,
-        authProviderUsername: users.authProviderUsername,
+        // 注意：authProvider, authProviderId, authProviderUsername 已移除
         nickname: users.nickname,
         description: users.description,
         cover: users.cover,
