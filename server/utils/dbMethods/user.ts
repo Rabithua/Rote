@@ -113,16 +113,16 @@ export async function createUser(data: {
 }
 
 // 根据 OAuth 提供商和提供商 ID 查找用户
-// 注意：对于 GitHub，只要 authProviderId 匹配即可，不限制 authProvider
+// 注意：对于 GitHub 和 Apple，只要 authProviderId 匹配即可，不限制 authProvider
 // 因为合并账户后，authProvider 可能是 'local'（如果用户有密码）
 export async function findUserByOAuthId(
   authProvider: string,
   authProviderId: string
 ): Promise<any | null> {
   try {
-    // 对于 GitHub，只根据 authProviderId 查找（因为合并后 authProvider 可能是 'local'）
+    // 对于 GitHub 和 Apple，只根据 authProviderId 查找（因为合并后 authProvider 可能是 'local'）
     // 对于其他提供商，保持原有逻辑
-    if (authProvider === 'github') {
+    if (authProvider === 'github' || authProvider === 'apple') {
       const [user] = await db
         .select()
         .from(users)

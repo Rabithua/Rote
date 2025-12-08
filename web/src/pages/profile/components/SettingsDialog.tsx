@@ -17,8 +17,13 @@ interface SettingsDialogProps {
   isUnbindingGitHub: boolean;
   onBindGitHub: () => void;
   onUnbindGitHub: () => void;
+  isBindingApple: boolean;
+  isUnbindingApple: boolean;
+  onBindApple: () => void;
+  onUnbindApple: () => void;
   onDeleteAccount: () => void;
   isGitHubOAuthEnabled?: boolean;
+  isAppleOAuthEnabled?: boolean;
 }
 
 export default function SettingsDialog({
@@ -33,8 +38,13 @@ export default function SettingsDialog({
   isUnbindingGitHub,
   onBindGitHub,
   onUnbindGitHub,
+  isBindingApple,
+  isUnbindingApple,
+  onBindApple,
+  onUnbindApple,
   onDeleteAccount,
   isGitHubOAuthEnabled = false,
+  isAppleOAuthEnabled = false,
 }: SettingsDialogProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
 
@@ -67,50 +77,94 @@ export default function SettingsDialog({
             {isSaving ? t('settings.saving') : t('settings.save')}
           </Button>
 
-          {/* OAuth 账户关联 - 仅在系统启用 GitHub OAuth 时显示 */}
-          {isGitHubOAuthEnabled && (
+          {/* OAuth 账户关联 - 仅在系统启用 OAuth 时显示 */}
+          {(isGitHubOAuthEnabled || isAppleOAuthEnabled) && (
             <div className="border-t pt-4">
               <div className="space-y-4">
                 <div>
                   <div className="text-base font-semibold">{t('settings.oauth.title')}</div>
                   <p className="text-muted-foreground text-sm">{t('settings.oauth.description')}</p>
                 </div>
-                <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
-                  <div className="flex items-center gap-3">
-                    <Github className="size-5 shadow-red-50" />
-                    <div className="shrink-0">
-                      <div className="text-base font-semibold">
-                        {t('settings.oauth.github.title')}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        {profile?.authProviderId ? (
-                          <div className="flex items-center gap-2">
-                            {profile.authProviderUsername
-                              ? `@${profile.authProviderUsername}`
-                              : `ID: ${profile.authProviderId}`}
-                          </div>
-                        ) : (
-                          t('settings.oauth.github.notBound')
-                        )}
+                {isGitHubOAuthEnabled && (
+                  <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                    <div className="flex items-center gap-3">
+                      <Github className="size-5 shadow-red-50" />
+                      <div className="shrink-0">
+                        <div className="text-base font-semibold">
+                          {t('settings.oauth.github.title')}
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          {profile?.authProviderId && profile?.authProvider === 'github' ? (
+                            <div className="flex items-center gap-2">
+                              {profile.authProviderUsername
+                                ? `@${profile.authProviderUsername}`
+                                : `ID: ${profile.authProviderId}`}
+                            </div>
+                          ) : (
+                            t('settings.oauth.github.notBound')
+                          )}
+                        </div>
                       </div>
                     </div>
+                    {profile?.authProviderId && profile?.authProvider === 'github' ? (
+                      <Button
+                        variant="outline"
+                        onClick={onUnbindGitHub}
+                        disabled={isUnbindingGitHub}
+                      >
+                        {isUnbindingGitHub && <Loader className="mr-2 size-4 animate-spin" />}
+                        {isUnbindingGitHub
+                          ? t('settings.oauth.github.unbinding')
+                          : t('settings.oauth.github.unbind')}
+                      </Button>
+                    ) : (
+                      <Button onClick={onBindGitHub} disabled={isBindingGitHub}>
+                        {isBindingGitHub && <Loader className="mr-2 size-4 animate-spin" />}
+                        {isBindingGitHub
+                          ? t('settings.oauth.github.binding')
+                          : t('settings.oauth.github.bind')}
+                      </Button>
+                    )}
                   </div>
-                  {profile?.authProviderId ? (
-                    <Button variant="outline" onClick={onUnbindGitHub} disabled={isUnbindingGitHub}>
-                      {isUnbindingGitHub && <Loader className="mr-2 size-4 animate-spin" />}
-                      {isUnbindingGitHub
-                        ? t('settings.oauth.github.unbinding')
-                        : t('settings.oauth.github.unbind')}
-                    </Button>
-                  ) : (
-                    <Button onClick={onBindGitHub} disabled={isBindingGitHub}>
-                      {isBindingGitHub && <Loader className="mr-2 size-4 animate-spin" />}
-                      {isBindingGitHub
-                        ? t('settings.oauth.github.binding')
-                        : t('settings.oauth.github.bind')}
-                    </Button>
-                  )}
-                </div>
+                )}
+                {isAppleOAuthEnabled && (
+                  <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🍎</span>
+                      <div className="shrink-0">
+                        <div className="text-base font-semibold">
+                          {t('settings.oauth.apple.title')}
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                          {profile?.authProviderId && profile?.authProvider === 'apple' ? (
+                            <div className="flex items-center gap-2">
+                              {profile.authProviderUsername
+                                ? profile.authProviderUsername
+                                : `ID: ${profile.authProviderId}`}
+                            </div>
+                          ) : (
+                            t('settings.oauth.apple.notBound')
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    {profile?.authProviderId && profile?.authProvider === 'apple' ? (
+                      <Button variant="outline" onClick={onUnbindApple} disabled={isUnbindingApple}>
+                        {isUnbindingApple && <Loader className="mr-2 size-4 animate-spin" />}
+                        {isUnbindingApple
+                          ? t('settings.oauth.apple.unbinding')
+                          : t('settings.oauth.apple.unbind')}
+                      </Button>
+                    ) : (
+                      <Button onClick={onBindApple} disabled={isBindingApple}>
+                        {isBindingApple && <Loader className="mr-2 size-4 animate-spin" />}
+                        {isBindingApple
+                          ? t('settings.oauth.apple.binding')
+                          : t('settings.oauth.apple.bind')}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

@@ -117,7 +117,9 @@
         "registering": "注册中...",
         "registerSuccess": "注册成功",
         "oauthLoginSuccess": "GitHub 登录成功",
-        "oauthCancelled": "已取消 GitHub 授权"
+        "oauthCancelled": "已取消 GitHub 授权",
+        "appleLoginSuccess": "Apple 登录成功",
+        "appleCancelled": "已取消 Apple 授权"
       },
       "oauth": {
         "or": "或"
@@ -134,7 +136,8 @@
         "back": "返回",
         "toHome": "前往首页",
         "logout": "退出登录",
-        "loginWithGitHub": "使用 GitHub 登录"
+        "loginWithGitHub": "使用 GitHub 登录",
+        "loginWithApple": "使用 Apple 登录"
       },
       "nav": {
         "explore": "探索",
@@ -495,6 +498,16 @@
           "clientSecret": "Client Secret",
           "callbackUrl": "回调 URL",
           "callbackUrlDesc": "注意：此 URL 为后端 URL。 GitHub OAuth App 中配置的回调 URL，通常为：https://yourdomain.com/v2/api/auth/oauth/github/callback。"
+        },
+        "apple": {
+          "enabled": "启用 Apple OAuth",
+          "enabledDesc": "允许用户通过 Apple 账户登录",
+          "clientId": "Service ID (Client ID)",
+          "teamId": "Team ID",
+          "keyId": "Key ID",
+          "privateKey": "私钥",
+          "callbackUrl": "回调 URL",
+          "callbackUrlDesc": "注意：此 URL 为后端 URL。Apple Developer 中配置的回调 URL，通常为：https://yourdomain.com/v2/api/auth/oauth/apple/callback。"
         }
       },
       "users": {

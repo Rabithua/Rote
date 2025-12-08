@@ -139,6 +139,9 @@ siteRouter.get('/status', async (c: HonoContext) => {
           github: {
             enabled: securityConfig?.oauth?.providers?.github?.enabled ?? false,
           },
+          apple: {
+            enabled: securityConfig?.oauth?.providers?.apple?.enabled ?? false,
+          },
         },
       },
 

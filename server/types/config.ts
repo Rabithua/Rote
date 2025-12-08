@@ -26,11 +26,18 @@ export interface OAuthProviderConfig {
   scopes?: string[]; // 默认 ['user:email']
 }
 
+export interface AppleOAuthProviderConfig extends Omit<OAuthProviderConfig, 'clientSecret'> {
+  teamId: string; // Apple Developer Team ID
+  keyId: string; // Apple Service ID Key ID
+  privateKey: string; // Apple 私钥（用于生成 JWT client_secret）
+  scopes?: string[]; // 默认 ['name', 'email']
+}
+
 export interface OAuthConfig {
   enabled: boolean;
   providers: {
     github?: OAuthProviderConfig;
-    // 未来可扩展其他提供商
+    apple?: AppleOAuthProviderConfig;
   };
 }
 

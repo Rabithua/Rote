@@ -25,6 +25,15 @@ export interface SystemConfig {
           callbackUrl?: string;
           scopes?: string[];
         };
+        apple?: {
+          enabled?: boolean;
+          clientId?: string;
+          teamId?: string;
+          keyId?: string;
+          privateKey?: string;
+          callbackUrl?: string;
+          scopes?: string[];
+        };
       };
     };
   };

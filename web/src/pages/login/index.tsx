@@ -40,6 +40,9 @@ function Login() {
         github?: {
           enabled?: boolean;
         };
+        apple?: {
+          enabled?: boolean;
+        };
       };
     };
   }>('checkStatus', () => get('/site/status').then((res) => res.data));
@@ -269,7 +272,12 @@ function Login() {
     if (oauthStatus === 'success' && token && refreshToken) {
       // OAuth 登录成功
       authService.setTokens(token, refreshToken);
-      toast.success(t('messages.oauthLoginSuccess'));
+      const provider = searchParams.get('provider');
+      if (provider === 'apple') {
+        toast.success(t('messages.appleLoginSuccess'));
+      } else {
+        toast.success(t('messages.oauthLoginSuccess'));
+      }
       mutateProfile();
 
       // 检查是否为 iOS web 登录流程
@@ -287,8 +295,13 @@ function Login() {
       // 清除 URL 参数
       navigate('/login', { replace: true });
     } else if (oauthStatus === 'cancelled') {
-      // 用户取消授权
-      toast.info(t('messages.oauthCancelled'));
+      // 用户取消授权（可能是 GitHub 或 Apple）
+      const provider = searchParams.get('provider');
+      if (provider === 'apple') {
+        toast.info(t('messages.appleCancelled'));
+      } else {
+        toast.info(t('messages.oauthCancelled'));
+      }
       // 清除 URL 参数
       navigate('/login', { replace: true });
     }
@@ -300,6 +313,15 @@ function Login() {
     const redirectUrl = iosLogin ? '/login?type=ioslogin' : '/login';
     // 使用完整的 API URL
     const oauthUrl = `${getApiUrl()}/auth/oauth/github?type=${iosLogin ? 'ioslogin' : 'web'}&redirect=${encodeURIComponent(redirectUrl)}`;
+    window.location.href = oauthUrl;
+  }
+
+  // Apple OAuth 登录
+  function handleAppleLogin() {
+    const iosLogin = searchParams.get('type') === 'ioslogin';
+    const redirectUrl = iosLogin ? '/login?type=ioslogin' : '/login';
+    // 使用完整的 API URL
+    const oauthUrl = `${getApiUrl()}/auth/oauth/apple?type=${iosLogin ? 'ioslogin' : 'web'}&redirect=${encodeURIComponent(redirectUrl)}`;
     window.location.href = oauthUrl;
   }
 
@@ -381,7 +403,8 @@ function Login() {
                         {disbled ? t('messages.loggingIn') : t('buttons.login')}
                       </Button>
                       {backendStatusOk?.oauth?.enabled &&
-                        backendStatusOk?.oauth?.providers?.github?.enabled && (
+                        (backendStatusOk?.oauth?.providers?.github?.enabled ||
+                          backendStatusOk?.oauth?.providers?.apple?.enabled) && (
                           <>
                             <div className="relative my-4">
                               <div className="absolute inset-0 flex items-center">
@@ -393,16 +416,30 @@ function Login() {
                                 </span>
                               </div>
                             </div>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              onClick={handleGitHubLogin}
-                              className="w-full"
-                              disabled={disbled}
-                            >
-                              <Github className="mr-2 size-4" />
-                              {t('buttons.loginWithGitHub')}
-                            </Button>
+                            {backendStatusOk?.oauth?.providers?.github?.enabled && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleGitHubLogin}
+                                className="w-full"
+                                disabled={disbled}
+                              >
+                                <Github className="mr-2 size-4" />
+                                {t('buttons.loginWithGitHub')}
+                              </Button>
+                            )}
+                            {backendStatusOk?.oauth?.providers?.apple?.enabled && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleAppleLogin}
+                                className="w-full"
+                                disabled={disbled}
+                              >
+                                <span className="mr-2 text-lg">🍎</span>
+                                {t('buttons.loginWithApple')}
+                              </Button>
+                            )}
                           </>
                         )}
                     </TabsContent>

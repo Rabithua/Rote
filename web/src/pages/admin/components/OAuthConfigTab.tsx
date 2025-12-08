@@ -4,6 +4,7 @@ import Divider from '@/components/ui/divider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { getApiUrl, put } from '@/utils/api';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -105,6 +106,20 @@ export default function OAuthConfigTab({
                               'user:email',
                             ],
                           },
+                          apple: {
+                            enabled: securityConfig?.oauth?.providers?.apple?.enabled ?? false,
+                            clientId: securityConfig?.oauth?.providers?.apple?.clientId || '',
+                            teamId: securityConfig?.oauth?.providers?.apple?.teamId || '',
+                            keyId: securityConfig?.oauth?.providers?.apple?.keyId || '',
+                            privateKey: securityConfig?.oauth?.providers?.apple?.privateKey || '',
+                            callbackUrl:
+                              securityConfig?.oauth?.providers?.apple?.callbackUrl ||
+                              `${getApiUrl()}/auth/oauth/apple/callback`,
+                            scopes: securityConfig?.oauth?.providers?.apple?.scopes || [
+                              'name',
+                              'email',
+                            ],
+                          },
                         }
                       : undefined,
                   },
@@ -128,6 +143,7 @@ export default function OAuthConfigTab({
                       oauth: {
                         ...(securityConfig?.oauth || { enabled: true }),
                         providers: {
+                          ...(securityConfig?.oauth?.providers || {}),
                           github: {
                             ...(securityConfig?.oauth?.providers?.github || {}),
                             enabled: checked,
@@ -153,6 +169,7 @@ export default function OAuthConfigTab({
                           oauth: {
                             ...(securityConfig?.oauth || { enabled: true }),
                             providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
                               github: {
                                 ...(securityConfig?.oauth?.providers?.github || {}),
                                 clientId: e.target.value,
@@ -177,6 +194,7 @@ export default function OAuthConfigTab({
                           oauth: {
                             ...(securityConfig?.oauth || { enabled: true }),
                             providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
                               github: {
                                 ...(securityConfig?.oauth?.providers?.github || {}),
                                 clientSecret: e.target.value,
@@ -201,6 +219,7 @@ export default function OAuthConfigTab({
                           oauth: {
                             ...(securityConfig?.oauth || { enabled: true }),
                             providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
                               github: {
                                 ...(securityConfig?.oauth?.providers?.github || {}),
                                 callbackUrl: e.target.value,
@@ -213,6 +232,164 @@ export default function OAuthConfigTab({
                     />
                     <p className="text-muted-foreground text-xs">
                       {t('oauth.github.callbackUrlDesc')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>{t('oauth.apple.enabled')}</Label>
+                  <p className="text-muted-foreground text-sm">{t('oauth.apple.enabledDesc')}</p>
+                </div>
+                <Switch
+                  checked={securityConfig?.oauth?.providers?.apple?.enabled ?? false}
+                  onCheckedChange={(checked) =>
+                    setSecurityConfig({
+                      ...(securityConfig || {}),
+                      oauth: {
+                        ...(securityConfig?.oauth || { enabled: true }),
+                        providers: {
+                          ...(securityConfig?.oauth?.providers || {}),
+                          apple: {
+                            ...(securityConfig?.oauth?.providers?.apple || {}),
+                            enabled: checked,
+                          },
+                        },
+                      },
+                    })
+                  }
+                />
+              </div>
+
+              {securityConfig?.oauth?.providers?.apple?.enabled && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="apple-client-id">{t('oauth.apple.clientId')}</Label>
+                    <Input
+                      id="apple-client-id"
+                      type="text"
+                      value={securityConfig?.oauth?.providers?.apple?.clientId || ''}
+                      onChange={(e) =>
+                        setSecurityConfig({
+                          ...(securityConfig || {}),
+                          oauth: {
+                            ...(securityConfig?.oauth || { enabled: true }),
+                            providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
+                              apple: {
+                                ...(securityConfig?.oauth?.providers?.apple || {}),
+                                clientId: e.target.value,
+                              },
+                            },
+                          },
+                        })
+                      }
+                      placeholder="Apple Service ID (Client ID)"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="apple-team-id">{t('oauth.apple.teamId')}</Label>
+                    <Input
+                      id="apple-team-id"
+                      type="text"
+                      value={securityConfig?.oauth?.providers?.apple?.teamId || ''}
+                      onChange={(e) =>
+                        setSecurityConfig({
+                          ...(securityConfig || {}),
+                          oauth: {
+                            ...(securityConfig?.oauth || { enabled: true }),
+                            providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
+                              apple: {
+                                ...(securityConfig?.oauth?.providers?.apple || {}),
+                                teamId: e.target.value,
+                              },
+                            },
+                          },
+                        })
+                      }
+                      placeholder="Apple Developer Team ID"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="apple-key-id">{t('oauth.apple.keyId')}</Label>
+                    <Input
+                      id="apple-key-id"
+                      type="text"
+                      value={securityConfig?.oauth?.providers?.apple?.keyId || ''}
+                      onChange={(e) =>
+                        setSecurityConfig({
+                          ...(securityConfig || {}),
+                          oauth: {
+                            ...(securityConfig?.oauth || { enabled: true }),
+                            providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
+                              apple: {
+                                ...(securityConfig?.oauth?.providers?.apple || {}),
+                                keyId: e.target.value,
+                              },
+                            },
+                          },
+                        })
+                      }
+                      placeholder="Apple Key ID"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="apple-private-key">{t('oauth.apple.privateKey')}</Label>
+                    <Textarea
+                      id="apple-private-key"
+                      value={securityConfig?.oauth?.providers?.apple?.privateKey || ''}
+                      onChange={(e) =>
+                        setSecurityConfig({
+                          ...(securityConfig || {}),
+                          oauth: {
+                            ...(securityConfig?.oauth || { enabled: true }),
+                            providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
+                              apple: {
+                                ...(securityConfig?.oauth?.providers?.apple || {}),
+                                privateKey: e.target.value,
+                              },
+                            },
+                          },
+                        })
+                      }
+                      placeholder="Apple Private Key (PEM format)"
+                      rows={6}
+                      className="font-mono text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="apple-callback-url">{t('oauth.apple.callbackUrl')}</Label>
+                    <Input
+                      id="apple-callback-url"
+                      type="text"
+                      value={securityConfig?.oauth?.providers?.apple?.callbackUrl || ''}
+                      onChange={(e) =>
+                        setSecurityConfig({
+                          ...(securityConfig || {}),
+                          oauth: {
+                            ...(securityConfig?.oauth || { enabled: true }),
+                            providers: {
+                              ...(securityConfig?.oauth?.providers || {}),
+                              apple: {
+                                ...(securityConfig?.oauth?.providers?.apple || {}),
+                                callbackUrl: e.target.value,
+                              },
+                            },
+                          },
+                        })
+                      }
+                      placeholder={`${getApiUrl()}/auth/oauth/apple/callback`}
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      {t('oauth.apple.callbackUrlDesc')}
                     </p>
                   </div>
                 </div>

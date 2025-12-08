@@ -73,14 +73,17 @@ function ProfilePage() {
   const [settingsSaving, setSettingsSaving] = useState(false);
   const [isBindingGitHub, setIsBindingGitHub] = useState(false);
   const [isUnbindingGitHub, setIsUnbindingGitHub] = useState(false);
+  const [isBindingApple, setIsBindingApple] = useState(false);
+  const [isUnbindingApple, setIsUnbindingApple] = useState(false);
   const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
   const [mergeInfo, setMergeInfo] = useState<{
     existingUserId: string;
     existingUsername: string;
     existingEmail: string;
-    githubUserId: string;
-    githubUsername: string;
+    provider: 'github' | 'apple';
+    providerUserId: string;
+    providerUsername: string;
   } | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -101,40 +104,58 @@ function ProfilePage() {
     const bindStatus = searchParams.get('bind');
     const errorMessage = searchParams.get('message');
     const merged = searchParams.get('merged');
+    const provider = searchParams.get('provider') || 'github';
     const existingUserId = searchParams.get('existingUserId');
     const existingUsername = searchParams.get('existingUsername');
     const existingEmail = searchParams.get('existingEmail');
     const githubUserId = searchParams.get('githubUserId');
     const githubUsername = searchParams.get('githubUsername');
+    const appleUserId = searchParams.get('appleUserId');
+    const appleUserName = searchParams.get('appleUserName');
 
     if (oauthStatus === 'bind') {
       if (bindStatus === 'success') {
         if (merged === 'true') {
-          toast.success(t('settings.oauth.github.mergeSuccess'));
+          if (provider === 'apple') {
+            toast.success(t('settings.oauth.apple.mergeSuccess'));
+          } else {
+            toast.success(t('settings.oauth.github.mergeSuccess'));
+          }
         } else {
-          toast.success(t('settings.oauth.github.bindSuccess'));
+          if (provider === 'apple') {
+            toast.success(t('settings.oauth.apple.bindSuccess'));
+          } else {
+            toast.success(t('settings.oauth.github.bindSuccess'));
+          }
         }
         loadProfile(); // 刷新 profile 数据
         // 清除 URL 参数
         setSearchParams({}, { replace: true });
       } else if (bindStatus === 'merge_required') {
         // 需要合并账户，显示确认对话框
-        if (existingUserId && githubUserId) {
+        if (existingUserId && (githubUserId || appleUserId)) {
           setMergeInfo({
             existingUserId,
             existingUsername: existingUsername || '',
             existingEmail: existingEmail || '',
-            githubUserId,
-            githubUsername: githubUsername || '',
+            provider: provider === 'apple' ? 'apple' : 'github',
+            providerUserId: appleUserId || githubUserId || '',
+            providerUsername: appleUserName || githubUsername || '',
           });
           setIsMergeDialogOpen(true);
           // 清除 URL 参数
           setSearchParams({}, { replace: true });
         }
       } else if (bindStatus === 'error' && errorMessage) {
-        toast.error(
-          t('settings.oauth.github.bindFailed', { error: decodeURIComponent(errorMessage) })
-        );
+        if (provider === 'apple') {
+          toast.error(
+            t('settings.oauth.apple.bindFailed', { error: decodeURIComponent(errorMessage) })
+          );
+        } else {
+          toast.error(
+            t('settings.oauth.github.bindFailed', { error: decodeURIComponent(errorMessage) })
+          );
+        }
         // 清除 URL 参数
         setSearchParams({}, { replace: true });
       }
@@ -177,17 +198,66 @@ function ProfilePage() {
     }
   };
 
+  // 绑定 Apple
+  const handleBindApple = async () => {
+    setIsBindingApple(true);
+    try {
+      const redirectUrl = '/profile';
+      const response = await get(
+        `/auth/oauth/apple/bind?redirect=${encodeURIComponent(redirectUrl)}`
+      );
+      if (response.data?.redirectUrl) {
+        // 跳转到 Apple 授权页面
+        window.location.href = response.data.redirectUrl;
+      } else {
+        throw new Error('Failed to get Apple authorization URL');
+      }
+    } catch (err: any) {
+      setIsBindingApple(false);
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      toast.error(t('settings.oauth.apple.bindFailed', { error: errorMessage }));
+    }
+  };
+
+  // 解绑 Apple
+  const handleUnbindApple = async () => {
+    setIsUnbindingApple(true);
+    try {
+      await del('/auth/oauth/apple/bind');
+      toast.success(t('settings.oauth.apple.unbindSuccess'));
+      loadProfile(); // 刷新 profile 数据
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      toast.error(t('settings.oauth.apple.unbindFailed', { error: errorMessage }));
+    } finally {
+      setIsUnbindingApple(false);
+    }
+  };
+
   // 确认合并账户
   const handleConfirmMerge = async () => {
     if (!mergeInfo) return;
 
     setIsMerging(true);
     try {
-      const response = await post('/auth/oauth/github/bind/merge', {
-        existingUserId: mergeInfo.existingUserId,
-        githubUserId: mergeInfo.githubUserId,
-        githubUsername: mergeInfo.githubUsername,
-      });
+      const endpoint =
+        mergeInfo.provider === 'apple'
+          ? '/auth/oauth/apple/bind/merge'
+          : '/auth/oauth/github/bind/merge';
+      const payload =
+        mergeInfo.provider === 'apple'
+          ? {
+              existingUserId: mergeInfo.existingUserId,
+              appleUserId: mergeInfo.providerUserId,
+              appleUserName: mergeInfo.providerUsername,
+            }
+          : {
+              existingUserId: mergeInfo.existingUserId,
+              githubUserId: mergeInfo.providerUserId,
+              githubUsername: mergeInfo.providerUsername,
+            };
+
+      const response = await post(endpoint, payload);
 
       if (response.data?.merged) {
         // 设置 URL 参数以触发 useEffect 中的成功消息显示
@@ -196,6 +266,7 @@ function ProfilePage() {
             oauth: 'bind',
             bind: 'success',
             merged: 'true',
+            provider: mergeInfo.provider,
           },
           { replace: true }
         );
@@ -205,7 +276,11 @@ function ProfilePage() {
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
-      toast.error(t('settings.oauth.github.mergeFailed', { error: errorMessage }));
+      if (mergeInfo.provider === 'apple') {
+        toast.error(t('settings.oauth.apple.mergeFailed', { error: errorMessage }));
+      } else {
+        toast.error(t('settings.oauth.github.mergeFailed', { error: errorMessage }));
+      }
     } finally {
       setIsMerging(false);
     }
@@ -426,6 +501,10 @@ function ProfilePage() {
           isUnbindingGitHub={isUnbindingGitHub}
           onBindGitHub={handleBindGitHub}
           onUnbindGitHub={handleUnbindGitHub}
+          isBindingApple={isBindingApple}
+          isUnbindingApple={isUnbindingApple}
+          onBindApple={handleBindApple}
+          onUnbindApple={handleUnbindApple}
           onDeleteAccount={() => {
             setIsSettingsModalOpen(false);
             setIsDeleteAccountModalOpen(true);
@@ -433,6 +512,10 @@ function ProfilePage() {
           isGitHubOAuthEnabled={
             siteStatus?.oauth?.enabled === true &&
             siteStatus?.oauth?.providers?.github?.enabled === true
+          }
+          isAppleOAuthEnabled={
+            siteStatus?.oauth?.enabled === true &&
+            siteStatus?.oauth?.providers?.apple?.enabled === true
           }
         />
 
