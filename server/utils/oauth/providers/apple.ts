@@ -208,9 +208,23 @@ export class AppleOAuthProvider implements OAuthProvider {
     // 如果 user 参数中有 email，优先使用（首次授权时更可靠）
     const finalEmail = userData?.email || email;
 
+    // 生成友好的用户名：如果有 name 使用 name，否则生成 apple_ + 随机字符串
+    // 使用 sub 的哈希值前 6 位 + 随机字符串，确保唯一性且友好
+    let username: string;
+    if (name) {
+      username = name;
+    } else {
+      // 使用 sub 的简单哈希（取前 6 个字符，去掉特殊字符）和随机字符串生成友好用户名
+      // 如果 sub 去掉特殊字符后不足 6 位，使用整个清理后的字符串
+      const cleanedSub = sub.replace(/[^a-zA-Z0-9]/g, '');
+      const subHash = cleanedSub.substring(0, Math.min(6, cleanedSub.length)) || 'user';
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      username = `apple_${subHash}_${randomSuffix}`;
+    }
+
     return {
       id: sub,
-      username: name || sub, // Apple 没有用户名，使用 name 或 id
+      username,
       email: finalEmail,
       name,
       emailVerified,
