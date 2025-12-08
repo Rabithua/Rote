@@ -260,12 +260,16 @@ export async function mergeUserAccounts(
         .from(userOAuthBindings)
         .where(eq(userOAuthBindings.userid, targetUserId));
 
+      // 创建两个集合：一个用于快速检查 provider，一个用于检查 (provider, providerId) 组合
       const targetProviderSet = new Set(targetBindings.map((b) => b.provider));
+      const targetBindingSet = new Set(
+        targetBindings.map((b) => `${b.provider}:${b.providerId}`)
+      );
       const migratedBindings: Array<{ provider: string; providerId: string }> = [];
 
       // 为每个源账户的绑定创建到目标账户的绑定记录
       for (const binding of sourceBindings) {
-        // 检查目标账户是否已有该提供商的绑定
+        // 检查目标账户是否已有该提供商的绑定（只检查 provider，不检查 providerId）
         if (targetProviderSet.has(binding.provider)) {
           // 如果目标账户已有该提供商的绑定，跳过（保留目标账户的绑定）
           console.log(
@@ -274,9 +278,17 @@ export async function mergeUserAccounts(
           continue;
         }
 
-        // 检查该 providerId 是否已被其他用户使用
-        // 注意：由于 providerId 有唯一约束，如果 existingBinding 存在，它应该是源账户的绑定
-        // 但为了防御性编程，仍然检查 userid 是否匹配
+        // 检查目标账户是否已有相同的 (provider, providerId) 绑定
+        // 这是关键检查：防止重复插入相同的绑定
+        const bindingKey = `${binding.provider}:${binding.providerId}`;
+        if (targetBindingSet.has(bindingKey)) {
+          console.log(
+            `Skipping OAuth binding migration for ${binding.provider}:${binding.providerId}: target user already has this exact binding`
+          );
+          continue;
+        }
+
+        // 检查该 providerId 是否已被其他用户使用（双重验证）
         const [existingBinding] = await tx
           .select()
           .from(userOAuthBindings)
@@ -288,30 +300,54 @@ export async function mergeUserAccounts(
           )
           .limit(1);
 
-        // 如果 existingBinding 存在但 userid 不匹配，说明数据不一致（不应该发生）
-        // 为了安全，跳过迁移并记录警告
-        if (existingBinding && existingBinding.userid !== sourceUserId) {
-          console.warn(
-            `Data inconsistency detected: OAuth binding ${binding.provider}:${binding.providerId} ` +
-              `belongs to user ${existingBinding.userid} but expected to belong to source user ${sourceUserId}. ` +
-              `Skipping migration to prevent data corruption.`
-          );
-          continue;
+        // 如果 existingBinding 存在
+        if (existingBinding) {
+          if (existingBinding.userid === targetUserId) {
+            // 目标账户已经有这个绑定了，跳过（虽然前面已经检查过，但这是双重验证）
+            console.log(
+              `Skipping OAuth binding migration for ${binding.provider}:${binding.providerId}: target user already has this binding`
+            );
+            continue;
+          } else if (existingBinding.userid !== sourceUserId) {
+            // 该绑定属于其他用户，这是数据不一致（不应该发生）
+            console.warn(
+              `Data inconsistency detected: OAuth binding ${binding.provider}:${binding.providerId} ` +
+                `belongs to user ${existingBinding.userid} but expected to belong to source user ${sourceUserId}. ` +
+                `Skipping migration to prevent data corruption.`
+            );
+            continue;
+          }
+          // 如果 existingBinding.userid === sourceUserId，继续迁移（这是正常的）
         }
 
-        // 如果 existingBinding 存在且 userid 匹配，或者不存在，都继续迁移
-        // 如果不存在，说明这是源账户的绑定，应该被迁移
-        // 如果存在且匹配，说明这是源账户的绑定，也应该被迁移（虽然理论上不应该重复）
-
         // 创建绑定记录到目标账户
-        await tx.insert(userOAuthBindings).values({
-          userid: targetUserId,
-          provider: binding.provider,
-          providerId: binding.providerId,
-          providerUsername: binding.providerUsername,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        // 使用 try-catch 处理可能的唯一约束冲突（防御性编程）
+        try {
+          await tx.insert(userOAuthBindings).values({
+            userid: targetUserId,
+            provider: binding.provider,
+            providerId: binding.providerId,
+            providerUsername: binding.providerUsername,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+        } catch (insertError: any) {
+          // 如果插入失败，检查是否是唯一约束冲突
+          if (
+            insertError?.code === '23505' || // PostgreSQL unique violation
+            insertError?.message?.includes('unique constraint') ||
+            insertError?.message?.includes('duplicate key')
+          ) {
+            // 唯一约束冲突：说明绑定已存在，跳过并记录
+            console.warn(
+              `Unique constraint violation when inserting OAuth binding ${binding.provider}:${binding.providerId} ` +
+                `for target user ${targetUserId}. Binding may already exist. Skipping migration.`
+            );
+            continue;
+          }
+          // 其他错误，重新抛出
+          throw insertError;
+        }
 
         // 记录已迁移的绑定
         migratedBindings.push({
