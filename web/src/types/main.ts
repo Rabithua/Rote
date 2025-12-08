@@ -101,6 +101,11 @@ export type Profile =
       role?: 'user' | 'admin' | 'moderator' | 'super_admin';
       createdAt: string;
       updatedAt: string;
+      emailVerified?: boolean;
+      allowExplore?: boolean;
+      authProvider?: string;
+      authProviderId?: string | null;
+      authProviderUsername?: string | null;
     }
   | undefined;
 

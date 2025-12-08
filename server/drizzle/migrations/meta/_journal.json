@@ -15,6 +15,20 @@
       "when": 1763402249000,
       "tag": "0001_add_email_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1765180572172,
+      "tag": "0002_kind_runaways",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765187191427,
+      "tag": "0003_open_bug",
+      "breakpoints": true
     }
   ]
 }

@@ -31,6 +31,18 @@ iOS 应用会直接打开这个地址。您可以利用 `type=ioslogin` 这个�
 
 用户在此页面上进行的所有认证操作（如表单提交、与第三方 OAuth 提供商交互等）均由您的服务器处理。这部分是标准的 Web 认证流程。
 
+**支持的登录方式**：
+
+1. **用户名密码登录**：通过 `/v2/api/auth/login` 接口进行认证
+2. **GitHub OAuth 登录**：通过 `/v2/api/auth/oauth/github` 接口发起授权
+
+**GitHub OAuth 登录流程**：
+
+- 用户点击 GitHub 登录按钮后，重定向到 `/v2/api/auth/oauth/github?type=ioslogin&redirect=/login`
+- 服务器会重定向到 GitHub 授权页面
+- 用户授权后，GitHub 会回调到 `/v2/api/auth/oauth/github/callback`
+- 服务器处理回调，生成 Token，然后重定向到 iOS App 的自定义 Scheme
+
 ### 步骤 3：成功后的重定向（最关键的一步）
 
 当用户在您的服务器上成功认证后，服务器 **必须** 生成一个认证 Token (例如 JWT)，然后构造一个回调 URL，并执行 **HTTP 302 重定向**。
@@ -38,7 +50,7 @@ iOS 应用会直接打开这个地址。您可以利用 `type=ioslogin` 这个�
 **回调 URL 的格式必须如下**：
 
 ```
-rote://callback?token=YOUR_GENERATED_TOKEN
+rote://callback?token=YOUR_GENERATED_TOKEN&refreshToken=YOUR_REFRESH_TOKEN
 ```
 
 **URL 构成详解**：
@@ -47,9 +59,9 @@ rote://callback?token=YOUR_GENERATED_TOKEN
   - 这是在 iOS 应用中预先定义好的，用于唤醒应用的协议。**必须**是这个值。
 - **Host**: `callback`
   - 这部分可以自定义（例如 `auth`, `login-success` 等），但建议使用 `callback`。iOS 端目前没有严格校验 Host，但会解析整个 URL。
-- **Query Parameter**: `?token=YOUR_GENERATED_TOKEN`
-  - 这是最重要的部分。iOS 应用会专门查找名为 `token` 的查询参数来获取认证凭据。**参数名必须是 `token`**。
-  - `YOUR_GENERATED_TOKEN` 就是您服务器生成的实际用户 Token。
+- **Query Parameters**:
+  - `token=YOUR_GENERATED_TOKEN`：这是最重要的部分。iOS 应用会专门查找名为 `token` 的查询参数来获取认证凭据。**参数名必须是 `token`**。
+  - `refreshToken=YOUR_REFRESH_TOKEN`（可选但推荐）：刷新令牌，用于在 accessToken 过期后获取新的令牌。
 
 **服务器端实现示例 (使用 Express.js)**：
 
@@ -66,10 +78,13 @@ app.post("/login-handler", (req, res) => {
     // 2. 如果验证成功，生成 Token
     const jwtToken = generateJwtForUser(req.body.username);
 
-    // 3. 构造回调 URL
-    const callbackUrl = `rote://callback?token=${jwtToken}`;
+    // 3. 生成 refreshToken（可选但推荐）
+    const refreshToken = generateRefreshToken(req.body.username);
 
-    // 4. 执行重定向
+    // 4. 构造回调 URL
+    const callbackUrl = `rote://callback?token=${jwtToken}&refreshToken=${refreshToken}`;
+
+    // 5. 执行重定向
     res.redirect(callbackUrl);
   } else {
     // 处理登录失败的情况
@@ -84,13 +99,25 @@ app.post("/login-handler", (req, res) => {
 
 ## 3. 流程总结
 
-| 步骤 | 操作方     | 描述                                                                                                           |
-| :--- | :--------- | :------------------------------------------------------------------------------------------------------------- |
-| 1    | iOS App    | 用户点击登录，打开 `https://rote.ink/login?type=ioslogin`                                                      |
-| 2    | 用户       | 在网页上输入凭据，点击登录                                                                                     |
-| 3    | Web Server | 验证用户凭据，生成 Token                                                                                       |
-| 4    | Web Server | **关键**：返回 HTTP 302 响应，`Location` 头指向 `rote://callback?token=...`                                    |
-| 5    | iOS App    | `ASWebAuthenticationSession` 自动拦截重定向，关闭浏览器，将回调 URL `rote://callback?token=...` 传递给应用代码 |
-| 6    | iOS App    | 解析 URL，提取 `token` 参数，保存 Token 并完成登录                                                             |
+| 步骤 | 操作方     | 描述                                                                                                                            |
+| :--- | :--------- | :------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | iOS App    | 用户点击登录，打开 `https://rote.ink/login?type=ioslogin`                                                                       |
+| 2    | 用户       | 在网页上输入凭据（或通过 GitHub OAuth）进行登录                                                                                 |
+| 3    | Web Server | 验证用户凭据，生成 Token 和 RefreshToken                                                                                        |
+| 4    | Web Server | **关键**：返回 HTTP 302 响应，`Location` 头指向 `rote://callback?token=...&refreshToken=...`                                    |
+| 5    | iOS App    | `ASWebAuthenticationSession` 自动拦截重定向，关闭浏览器，将回调 URL `rote://callback?token=...&refreshToken=...` 传递给应用代码 |
+| 6    | iOS App    | 解析 URL，提取 `token` 和 `refreshToken` 参数，保存 Token 并完成登录                                                            |
+
+**GitHub OAuth 登录流程**：
+
+| 步骤 | 操作方     | 描述                                                                                                 |
+| :--- | :--------- | :--------------------------------------------------------------------------------------------------- |
+| 1    | iOS App    | 用户点击 GitHub 登录，打开 `https://rote.ink/v2/api/auth/oauth/github?type=ioslogin&redirect=/login` |
+| 2    | Web Server | 重定向到 GitHub 授权页面                                                                             |
+| 3    | 用户       | 在 GitHub 上完成授权                                                                                 |
+| 4    | GitHub     | 重定向回 `/v2/api/auth/oauth/github/callback`，携带授权码                                            |
+| 5    | Web Server | 交换授权码获取 Token，生成 JWT Token 和 RefreshToken                                                 |
+| 6    | Web Server | **关键**：返回 HTTP 302 响应，`Location` 头指向 `rote://callback?token=...&refreshToken=...`         |
+| 7    | iOS App    | `ASWebAuthenticationSession` 自动拦截重定向，关闭浏览器，提取 Token 并完成登录                       |
 
 请确保 Web 端的实现在用户成功登录后，严格按照上述格式执行重定向。这是整个认证流程能够闭环的关键。

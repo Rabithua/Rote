@@ -30,8 +30,14 @@ export const users = pgTable(
     username: varchar('username', { length: 100 }).notNull().unique(),
     // 邮箱是否已验证
     emailVerified: boolean('emailVerified').notNull().default(false),
-    passwordhash: bytea('passwordhash').notNull(),
-    salt: bytea('salt').notNull(),
+    passwordhash: bytea('passwordhash'),
+    salt: bytea('salt'),
+    // OAuth 认证提供商（'local' | 'github' | ...）
+    authProvider: varchar('authProvider', { length: 50 }).notNull().default('local'),
+    // OAuth 提供商的用户 ID
+    authProviderId: varchar('authProviderId', { length: 255 }),
+    // OAuth 提供商的用户名（例如 GitHub 用户名）
+    authProviderUsername: varchar('authProviderUsername', { length: 255 }),
     nickname: varchar('nickname', { length: 255 }),
     description: text('description'),
     cover: text('cover'),
@@ -43,6 +49,11 @@ export const users = pgTable(
   (table) => ({
     emailIdx: index('users_email_idx').on(table.email),
     usernameIdx: index('users_username_idx').on(table.username),
+    authProviderIdx: index('users_authProvider_idx').on(table.authProvider),
+    authProviderIdIdx: index('users_authProviderId_idx').on(table.authProviderId),
+    // 唯一约束：同一提供商下的 providerId 唯一（仅当 authProviderId 不为 null 时）
+    // 注意：Drizzle 不支持部分唯一索引，需要在应用层处理唯一性
+    uniqueAuthProvider: unique('unique_auth_provider').on(table.authProvider, table.authProviderId),
   })
 );
 

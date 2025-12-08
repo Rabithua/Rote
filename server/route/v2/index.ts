@@ -10,6 +10,7 @@ import authRouter from './auth';
 import changeRouter from './change';
 import notesRouter from './note';
 import notificationsRouter from './notification';
+import oauthRouter from './oauth';
 import openKeyRouter from './openKeyRouter';
 import reactionsRouter from './reaction';
 import siteRouter from './site';
@@ -103,6 +104,7 @@ router.get('/rss/:username', async (c: HonoContext) => {
 
 // 注册子路由
 router.route('/auth', authRouter);
+router.route('/auth/oauth', oauthRouter);
 router.route('/users', usersRouter);
 router.route('/notes', notesRouter);
 router.route('/reactions', reactionsRouter);

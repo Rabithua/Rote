@@ -12,6 +12,7 @@ import {
   getMySettings,
   getMyTags,
   getUserInfoByUsername,
+  oneUser,
   statistics,
   updateMySettings,
 } from '../../utils/dbMethods';
@@ -118,11 +119,22 @@ usersRouter.delete('/me', authenticateJWT, async (c: HonoContext) => {
   const body = await c.req.json();
   const { password } = body;
 
-  if (!password) {
-    throw new Error('Password is required');
+  // 获取完整用户信息以检查 authProvider
+  const fullUser = await oneUser(user.id);
+  if (!fullUser) {
+    throw new Error('User not found');
   }
 
-  const data = await deleteUserAccount(user.id, password);
+  // OAuth 用户不需要密码，但为了保持 API 一致性，仍然需要传递一个占位符
+  // 本地用户必须提供密码
+  if (fullUser.authProvider === 'local' && !password) {
+    throw new Error('Password is required for local users');
+  }
+
+  // 对于 OAuth 用户，如果没有提供密码，使用占位符
+  const passwordToVerify = password || 'oauth_user_placeholder';
+
+  const data = await deleteUserAccount(user.id, passwordToVerify);
   return c.json(createResponse(data), 200);
 });
 

@@ -53,7 +53,8 @@
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
       },
-      "iosAppAlmostReady": "IOS App 即将上线！"
+      "iosAppAlmostReady": "IOS App 即将上线！",
+      "iosAppEarlyAccess": "抢先测试"
     },
     "mine": {
       "leftNavBar": {
@@ -114,7 +115,12 @@
         "loggingOut": "退出登录中...",
         "logoutSuccess": "已退出登录",
         "registering": "注册中...",
-        "registerSuccess": "注册成功"
+        "registerSuccess": "注册成功",
+        "oauthLoginSuccess": "GitHub 登录成功",
+        "oauthCancelled": "已取消 GitHub 授权"
+      },
+      "oauth": {
+        "or": "或"
       },
       "fields": {
         "username": "用户名",
@@ -127,7 +133,8 @@
         "register": "注册",
         "back": "返回",
         "toHome": "前往首页",
-        "logout": "退出登录"
+        "logout": "退出登录",
+        "loginWithGitHub": "使用 GitHub 登录"
       },
       "nav": {
         "explore": "探索",
@@ -181,6 +188,35 @@
         "saving": "保存中…",
         "saveSuccess": "设置已保存",
         "saveFailed": "保存失败：{{error}}",
+        "oauth": {
+          "title": "账户关联",
+          "description": "关联第三方账户后，您可以使用多种方式登录",
+          "github": {
+            "title": "GitHub",
+            "bound": "已绑定",
+            "notBound": "未绑定",
+            "bind": "绑定 GitHub",
+            "unbind": "解绑 GitHub",
+            "binding": "绑定中…",
+            "unbinding": "解绑中…",
+            "bindSuccess": "GitHub 账户绑定成功",
+            "bindFailed": "绑定失败：{{error}}",
+            "mergeSuccess": "GitHub 账户绑定成功，账户数据已合并",
+            "mergeFailed": "账户合并失败：{{error}}",
+            "unbindSuccess": "GitHub 账户已解绑",
+            "unbindFailed": "解绑失败：{{error}}",
+            "mergeDialog": {
+              "title": "合并账户确认",
+              "description": "检测到该 GitHub 账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
+              "existingAccount": "已存在的账户",
+              "currentAccount": "当前账户",
+              "warning": "警告：此操作不可撤销，请确认这是您的账户。",
+              "cancel": "取消",
+              "confirm": "确认合并",
+              "merging": "合并中…"
+            }
+          }
+        },
         "deleteAccount": {
           "title": "删除账户",
           "description": "删除账户将永久删除您的所有数据，包括笔记、附件等，此操作不可恢复。",
@@ -396,7 +432,8 @@
         "site": "站点设置",
         "storage": "存储设置",
         "ui": "界面设置",
-        "security": "其他设置",
+        "security": "安全设置",
+        "oauth": "OAuth 登录",
         "users": "用户管理"
       },
       "site": {
@@ -445,6 +482,20 @@
         "description": "配置与安全相关的策略，例如邮箱验证要求等。",
         "requireVerifiedEmailForExplore": "仅允许已验证邮箱的用户出现在探索页",
         "requireVerifiedEmailForExploreDesc": "开启后，只有邮箱已验证的用户，其公开笔记才会被推荐到「探索」页面；已公开的笔记仍可通过链接访问。"
+      },
+      "oauth": {
+        "title": "OAuth 登录配置",
+        "description": "配置第三方 OAuth 提供商登录设置，允许用户通过 GitHub 等平台登录。",
+        "enabled": "启用 OAuth 登录",
+        "enabledDesc": "允许用户通过第三方 OAuth 提供商（如 GitHub）登录",
+        "github": {
+          "enabled": "启用 GitHub OAuth",
+          "enabledDesc": "允许用户通过 GitHub 账户登录",
+          "clientId": "Client ID",
+          "clientSecret": "Client Secret",
+          "callbackUrl": "回调 URL",
+          "callbackUrlDesc": "注意：此 URL 为后端 URL。 GitHub OAuth App 中配置的回调 URL，通常为：https://yourdomain.com/v2/api/auth/oauth/github/callback。"
+        }
       },
       "users": {
         "title": "用户管理",

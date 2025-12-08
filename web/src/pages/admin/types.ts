@@ -15,6 +15,18 @@ export interface SystemConfig {
   };
   security?: {
     requireVerifiedEmailForExplore?: boolean;
+    oauth?: {
+      enabled?: boolean;
+      providers?: {
+        github?: {
+          enabled?: boolean;
+          clientId?: string;
+          clientSecret?: string;
+          callbackUrl?: string;
+          scopes?: string[];
+        };
+      };
+    };
   };
   ui?: {
     theme?: string;
