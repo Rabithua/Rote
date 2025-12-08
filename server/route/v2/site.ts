@@ -1,5 +1,10 @@
 import { Hono } from 'hono';
-import type { NotificationConfig, StorageConfig, UiConfig } from '../../types/config';
+import type {
+  NotificationConfig,
+  SecurityConfig,
+  StorageConfig,
+  UiConfig,
+} from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getConfig, isInitialized } from '../../utils/config';
 import { checkDatabaseConnection, getSiteMapData } from '../../utils/dbMethods';
@@ -77,6 +82,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
     const notificationConfig = await getConfig<NotificationConfig>('notification');
     const storageConfig = (await getConfig('storage')) as Partial<StorageConfig> | null;
     const uiConfig = await getConfig<UiConfig>('ui');
+    const securityConfig = await getConfig<SecurityConfig>('security');
 
     // 检查数据库连接状态
     const databaseConnected = await checkDatabaseConnection();
@@ -124,6 +130,16 @@ siteRouter.get('/status', async (c: HonoContext) => {
       ui: {
         allowRegistration: uiConfig?.allowRegistration ?? true,
         allowUploadFile: uiConfig?.allowUploadFile ?? true,
+      },
+
+      // OAuth 配置（用于前端判断是否显示 OAuth 登录按钮）
+      oauth: {
+        enabled: securityConfig?.oauth?.enabled ?? false,
+        providers: {
+          github: {
+            enabled: securityConfig?.oauth?.providers?.github?.enabled ?? false,
+          },
+        },
       },
 
       // 时间戳
