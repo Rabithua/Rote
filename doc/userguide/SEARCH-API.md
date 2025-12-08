@@ -20,7 +20,7 @@ GET /v2/api/notes/search
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记 (true/false)
-- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑），支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
 
 **搜索范围**:
 

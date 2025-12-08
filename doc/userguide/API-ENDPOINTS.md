@@ -43,6 +43,8 @@
 | `/users/:username`     | GET    | 无   | 获取用户信息 |
 | `/users/me/profile`    | GET    | 登录 | 获取我的资料 |
 | `/users/me/profile`    | PUT    | 登录 | 更新我的资料 |
+| `/users/me/settings`   | GET    | 登录 | 获取我的设置 |
+| `/users/me/settings`   | PUT    | 登录 | 更新我的设置 |
 | `/users/me/tags`       | GET    | 登录 | 获取我的标签 |
 | `/users/me/heatmap`    | GET    | 登录 | 活跃热力图   |
 | `/users/me/statistics` | GET    | 登录 | 统计信息     |
@@ -62,6 +64,7 @@
 | ------------------------ | ------ | ---- | --------------------------------- |
 | `/notes`                 | POST   | 登录 | 创建笔记                          |
 | `/notes`                 | GET    | 登录 | 我的笔记列表                      |
+| `/notes/batch`           | POST   | 登录 | 批量获取笔记                      |
 | `/notes/:id`             | GET    | 动态 | 笔记详情（公开/私有由服务端控制） |
 | `/notes/:id`             | PUT    | 登录 | 更新笔记                          |
 | `/notes/:id`             | DELETE | 登录 | 删除笔记                          |
