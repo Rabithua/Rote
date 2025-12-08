@@ -18,6 +18,22 @@ export interface StorageConfig {
   urlPrefix: string;
 }
 
+export interface OAuthProviderConfig {
+  enabled: boolean;
+  clientId: string;
+  clientSecret: string;
+  callbackUrl: string;
+  scopes?: string[]; // 默认 ['user:email']
+}
+
+export interface OAuthConfig {
+  enabled: boolean;
+  providers: {
+    github?: OAuthProviderConfig;
+    // 未来可扩展其他提供商
+  };
+}
+
 export interface SecurityConfig {
   jwtSecret: string;
   jwtRefreshSecret: string;
@@ -26,6 +42,8 @@ export interface SecurityConfig {
   sessionSecret: string;
   // 是否要求邮箱已验证的用户才允许出现在探索页
   requireVerifiedEmailForExplore?: boolean;
+  // OAuth 配置
+  oauth?: OAuthConfig;
 }
 
 export interface NotificationConfig {
