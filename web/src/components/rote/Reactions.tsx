@@ -155,36 +155,32 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
           return (
             <Tooltip key={type}>
               <TooltipTrigger asChild>{ReactionButton}</TooltipTrigger>
-              <TooltipContent className="flex flex-row items-center p-2">
-                {reactionGroup.map(
-                  (reaction, index) =>
-                    reaction.user && (
-                      <Link
-                        to={`/user/${reaction.user.username}`}
-                        key={reaction.id}
-                        className={`flex cursor-pointer items-center transition-transform hover:scale-110 ${
-                          index > 0 ? '-ml-2' : ''
-                        }`}
-                        title={reaction.user.nickname || reaction.user.username}
-                      >
-                        <Avatar className="border-background ring-foreground/10 size-5 border-2 ring-1">
-                          <AvatarImage src={reaction.user.avatar || undefined} />
-                          <AvatarFallback className="text-[10px]">
-                            {reaction.user.nickname?.[0] || reaction.user.username[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                      </Link>
-                    )
-                )}
-                {reactionGroup.filter((r) => !r.user).length > 0 && (
-                  <div
-                    className={`border-background ring-foreground/10 bg-muted text-muted-foreground flex size-5 cursor-not-allowed items-center justify-center rounded-full border-2 text-[10px] ring-1 ${
-                      reactionGroup.filter((r) => r.user).length > 0 ? '-ml-2' : ''
-                    }`}
-                  >
-                    <UserIcon className="size-3" />
-                  </div>
-                )}
+              <TooltipContent className="p-2">
+                <div className="flex flex-row items-center -space-x-2">
+                  {reactionGroup.map(
+                    (reaction) =>
+                      reaction.user && (
+                        <Link
+                          to={`/user/${reaction.user.username}`}
+                          key={reaction.id}
+                          className="flex cursor-pointer items-center transition-transform hover:scale-110"
+                          title={reaction.user.nickname || reaction.user.username}
+                        >
+                          <Avatar className="border-background ring-foreground/10 size-5 border-2 ring-1">
+                            <AvatarImage src={reaction.user.avatar || undefined} />
+                            <AvatarFallback className="text-[10px]">
+                              {reaction.user.nickname?.[0] || reaction.user.username[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                        </Link>
+                      )
+                  )}
+                  {reactionGroup.filter((r) => !r.user).length > 0 && (
+                    <div className="border-background ring-foreground/10 bg-muted text-muted-foreground flex size-5 cursor-not-allowed items-center justify-center rounded-full border-2 text-[10px] ring-1">
+                      <UserIcon className="size-3" />
+                    </div>
+                  )}
+                </div>
               </TooltipContent>
             </Tooltip>
           );
