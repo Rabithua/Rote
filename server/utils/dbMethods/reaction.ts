@@ -14,7 +14,7 @@ export async function addReaction(data: {
   metadata?: any;
 }): Promise<any> {
   try {
-    const [reaction] = await db
+    const [insertedReaction] = await db
       .insert(reactions)
       .values({
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
@@ -29,6 +29,20 @@ export async function addReaction(data: {
         updatedAt: sql`now()`,
       })
       .returning();
+
+    // 查询带用户信息的完整记录
+    const reaction = await db.query.reactions.findFirst({
+      where: (reactions, { eq }) => eq(reactions.id, insertedReaction.id),
+      with: {
+        user: {
+          columns: {
+            username: true,
+            nickname: true,
+            avatar: true,
+          },
+        },
+      },
+    });
 
     // 记录变更历史（reactions 变化视为笔记更新）
     try {
