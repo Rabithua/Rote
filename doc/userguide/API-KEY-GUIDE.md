@@ -25,7 +25,7 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 ### 1. Create Note (POST method - Recommended)
 
-**Endpoint**: `POST /api/v2/open-key/notes`
+**Endpoint**: `POST /v2/api/openkey/notes`
 
 **Headers**:
 
@@ -70,7 +70,7 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 ### 2. Create Note (GET method - Legacy/Compatibility)
 
-**Endpoint**: `GET /api/v2/open-key/notes`
+**Endpoint**: `GET /v2/api/openkey/notes`
 
 **Headers**:
 
@@ -90,7 +90,7 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 ### 3. Retrieve Notes
 
-**Endpoint**: `GET /api/v2/open-key/notes`
+**Endpoint**: `GET /v2/api/openkey/notes`
 
 **Headers**:
 
@@ -180,7 +180,7 @@ Common error codes:
 ```javascript
 // Create note example
 async function createNote() {
-  const response = await fetch("https://your-api-url/api/v2/open-key/notes", {
+  const response = await fetch("https://your-api-url/v2/api/openkey/notes", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -201,7 +201,7 @@ async function createNote() {
 // Get notes example
 async function getNotes() {
   const response = await fetch(
-    "https://your-api-url/api/v2/open-key/notes?limit=10&skip=0",
+    "https://your-api-url/v2/api/openkey/notes?limit=10&skip=0",
     {
       method: "GET",
       headers: {
@@ -224,7 +224,7 @@ import json
 
 # Create note example
 def create_note():
-    url = "https://your-api-url/api/v2/open-key/notes"
+    url = "https://your-api-url/v2/api/openkey/notes"
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer YOUR_API_KEY"
@@ -241,7 +241,7 @@ def create_note():
 
 # Get notes example
 def get_notes():
-    url = "https://your-api-url/api/v2/open-key/notes?limit=10&skip=0"
+    url = "https://your-api-url/v2/api/openkey/notes?limit=10&skip=0"
     headers = {
         "Content-Type": "application/json",
         "Authorization": "Bearer YOUR_API_KEY"
