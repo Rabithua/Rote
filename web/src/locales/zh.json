@@ -115,7 +115,12 @@
         "loggingOut": "退出登录中...",
         "logoutSuccess": "已退出登录",
         "registering": "注册中...",
-        "registerSuccess": "注册成功"
+        "registerSuccess": "注册成功",
+        "oauthLoginSuccess": "GitHub 登录成功",
+        "oauthCancelled": "已取消 GitHub 授权"
+      },
+      "oauth": {
+        "or": "或"
       },
       "fields": {
         "username": "用户名",
@@ -128,7 +133,8 @@
         "register": "注册",
         "back": "返回",
         "toHome": "前往首页",
-        "logout": "退出登录"
+        "logout": "退出登录",
+        "loginWithGitHub": "使用 GitHub 登录"
       },
       "nav": {
         "explore": "探索",
@@ -397,7 +403,8 @@
         "site": "站点设置",
         "storage": "存储设置",
         "ui": "界面设置",
-        "security": "其他设置",
+        "security": "安全设置",
+        "oauth": "OAuth 登录",
         "users": "用户管理"
       },
       "site": {
@@ -446,6 +453,20 @@
         "description": "配置与安全相关的策略，例如邮箱验证要求等。",
         "requireVerifiedEmailForExplore": "仅允许已验证邮箱的用户出现在探索页",
         "requireVerifiedEmailForExploreDesc": "开启后，只有邮箱已验证的用户，其公开笔记才会被推荐到「探索」页面；已公开的笔记仍可通过链接访问。"
+      },
+      "oauth": {
+        "title": "OAuth 登录配置",
+        "description": "配置第三方 OAuth 提供商登录设置，允许用户通过 GitHub 等平台登录。",
+        "enabled": "启用 OAuth 登录",
+        "enabledDesc": "允许用户通过第三方 OAuth 提供商（如 GitHub）登录",
+        "github": {
+          "enabled": "启用 GitHub OAuth",
+          "enabledDesc": "允许用户通过 GitHub 账户登录",
+          "clientId": "Client ID",
+          "clientSecret": "Client Secret",
+          "callbackUrl": "回调 URL",
+          "callbackUrlDesc": "注意：此 URL 为后端 URL。 GitHub OAuth App 中配置的回调 URL，通常为：https://yourdomain.com/v2/api/auth/oauth/github/callback。"
+        }
       },
       "users": {
         "title": "用户管理",

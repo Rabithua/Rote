@@ -7,6 +7,7 @@ import { Database, Globe, Lock, Settings, Shield, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
+import OAuthConfigTab from './components/OAuthConfigTab';
 import SecurityConfigTab from './components/SecurityConfigTab';
 import SiteConfigTab from './components/SiteConfigTab';
 import StorageConfigTab from './components/StorageConfigTab';
@@ -19,9 +20,9 @@ export default function AdminDashboard() {
   const profile = useProfile();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui' | 'security' | 'users'>(
-    'site'
-  );
+  const [activeTab, setActiveTab] = useState<
+    'site' | 'storage' | 'ui' | 'security' | 'oauth' | 'users'
+  >('site');
 
   const {
     data: configs,
@@ -139,6 +140,14 @@ export default function AdminDashboard() {
             <Lock className="size-4" />
             {t('tabs.security')}
           </Button>
+          <Button
+            variant={activeTab === 'oauth' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('oauth')}
+            className="flex items-center gap-2 rounded-none"
+          >
+            <Shield className="size-4" />
+            {t('tabs.oauth')}
+          </Button>
         </div>
 
         {/* 站点配置 */}
@@ -179,6 +188,17 @@ export default function AdminDashboard() {
         {/* 安全配置 */}
         {activeTab === 'security' && (
           <SecurityConfigTab
+            securityConfig={securityConfig}
+            setSecurityConfig={setSecurityConfig}
+            isSaving={isSaving}
+            setIsSaving={setIsSaving}
+            onMutate={mutate}
+          />
+        )}
+
+        {/* OAuth 配置 */}
+        {activeTab === 'oauth' && (
+          <OAuthConfigTab
             securityConfig={securityConfig}
             setSecurityConfig={setSecurityConfig}
             isSaving={isSaving}

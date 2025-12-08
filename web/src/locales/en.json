@@ -111,7 +111,12 @@
         "loggingOut": "Logging out...",
         "logoutSuccess": "Logout successful",
         "registering": "Registering...",
-        "registerSuccess": "Registration successful"
+        "registerSuccess": "Registration successful",
+        "oauthLoginSuccess": "GitHub login successful",
+        "oauthCancelled": "GitHub authorization cancelled"
+      },
+      "oauth": {
+        "or": "OR"
       },
       "fields": {
         "username": "Username",
@@ -124,7 +129,8 @@
         "register": "Register",
         "back": "Back",
         "toHome": "Go to Home",
-        "logout": "Logout"
+        "logout": "Logout",
+        "loginWithGitHub": "Login with GitHub"
       },
       "nav": {
         "explore": "Explore",
@@ -396,7 +402,8 @@
         "site": "Site Settings",
         "storage": "Storage Settings",
         "ui": "UI Settings",
-        "security": "Other Settings",
+        "security": "Security Settings",
+        "oauth": "OAuth Login",
         "users": "User Management"
       },
       "site": {
@@ -445,6 +452,20 @@
         "description": "Configure security-related policies, such as email verification requirements.",
         "requireVerifiedEmailForExplore": "Only allow users with verified email to appear in Explore",
         "requireVerifiedEmailForExploreDesc": "When enabled, only users with verified email will have their public notes recommended in the Explore page; existing public notes remain accessible via direct links."
+      },
+      "oauth": {
+        "title": "OAuth Login Configuration",
+        "description": "Configure third-party OAuth provider login settings, allowing users to login via platforms like GitHub.",
+        "enabled": "Enable OAuth Login",
+        "enabledDesc": "Allow users to login via third-party OAuth providers (e.g., GitHub)",
+        "github": {
+          "enabled": "Enable GitHub OAuth",
+          "enabledDesc": "Allow users to login with GitHub account",
+          "clientId": "Client ID",
+          "clientSecret": "Client Secret",
+          "callbackUrl": "Callback URL",
+          "callbackUrlDesc": "Note: This URL is the backend URL. Callback URL configured in GitHub OAuth App, typically: https://yourdomain.com/v2/api/auth/oauth/github/callback. "
+        }
       },
       "users": {
         "title": "User Management",
