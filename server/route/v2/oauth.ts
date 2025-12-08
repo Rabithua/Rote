@@ -594,19 +594,26 @@ oauthRouter.post('/:provider/bind/merge', authenticateJWT, async (c: HonoContext
       return c.json(createResponse(null, 'Missing required parameters', 400), 400);
     }
 
+    // 在合并前进行所有验证，避免竞态条件
+    // 1. 验证目标用户和源用户都存在（防止在验证和合并之间被删除）
     const targetUser = await oneUser(user.id);
     if (!targetUser) {
       throw new Error('Target user not found');
     }
 
-    // 检查目标用户是否已经绑定了该 OAuth 提供商（避免重复绑定）
+    const sourceUser = await oneUser(existingUserId);
+    if (!sourceUser) {
+      throw new Error('Source user not found');
+    }
+
+    // 2. 检查目标用户是否已经绑定了该 OAuth 提供商（避免重复绑定）
     const targetBindings = await getUserOAuthBindings(user.id);
     const hasTargetBinding = targetBindings.some((binding) => binding.provider === providerName);
     if (hasTargetBinding) {
       throw new Error(`目标账户已绑定 ${providerName} 账户，请先解绑`);
     }
 
-    // 验证 existingUserId 对应的用户确实绑定了这个 OAuth ID
+    // 3. 验证 existingUserId 对应的用户确实绑定了这个 OAuth ID
     const existingUser = await findUserByOAuthBinding(providerName, providerUserId);
     if (!existingUser) {
       throw new Error('Existing user not found or OAuth binding mismatch');
@@ -616,28 +623,68 @@ oauthRouter.post('/:provider/bind/merge', authenticateJWT, async (c: HonoContext
       throw new Error(`${providerName} ID mismatch`);
     }
 
-    // 防止合并自己
+    // 4. 防止合并自己
     if (existingUserId === user.id) {
       throw new Error('Cannot merge account with itself');
     }
 
-    // 执行账户合并（不传递 updateProviderBinding，因为我们会手动创建绑定）
-    // 注意：authProviderUsername 已移除，从绑定表或用户名获取
+    // 5. 获取源账户的绑定信息（用于确定 providerUsername，在合并前获取）
     const existingBindings = await getUserOAuthBindings(existingUserId);
     const existingBinding = existingBindings.find((b) => b.provider === providerName);
     const finalProviderUsername =
       providerUsername || existingBinding?.providerUsername || existingUser.username;
+
+    // 6. 执行账户合并（在事务内完成所有操作，包括 OAuth 绑定迁移）
     const mergeResult = await mergeUserAccounts(existingUserId, user.id);
 
-    // 验证源账户已被删除
+    // 7. 验证源账户已被删除（合并应该在事务内完成，这里只是双重验证）
     const verifyDeleted = await oneUser(existingUserId);
     if (verifyDeleted) {
       console.error(`Error: Source user ${existingUserId} still exists after merge`);
       throw new Error('账户合并失败：源账户未被删除');
     }
 
-    // 合并后创建 OAuth 绑定记录
-    await bindOAuthProvider(user.id, providerName, providerUserId, finalProviderUsername);
+    // 8. 检查该 OAuth 绑定是否已被 mergeUserAccounts 迁移
+    const hasMergedBinding = mergeResult.migratedBindings.some(
+      (binding) => binding.provider === providerName && binding.providerId === providerUserId
+    );
+
+    // 9. 如果绑定未被迁移（例如目标账户已有该提供商的绑定，但这种情况应该不会发生，因为前面已检查），则需要手动创建
+    // 注意：这种情况理论上不应该发生，因为前面已经检查了目标账户没有该提供商的绑定
+    // 但为了防御性编程，仍然处理这种情况
+    if (!hasMergedBinding) {
+      try {
+        // 合并后创建 OAuth 绑定记录
+        await bindOAuthProvider(user.id, providerName, providerUserId, finalProviderUsername);
+      } catch (bindError: any) {
+        // 如果创建绑定失败，记录错误但不要抛出异常
+        // 因为源账户已经被删除，无法回滚，只能记录错误
+        console.error(
+          `Warning: Failed to create OAuth binding after merge: ${bindError.message}. ` +
+            `Source account ${existingUserId} has been deleted, but binding was not created. ` +
+            `This may cause data inconsistency.`
+        );
+        // 如果是因为唯一约束冲突（绑定已存在），这是正常的，可以忽略
+        if (
+          bindError.message?.includes('already bound') ||
+          bindError.message?.includes('unique constraint') ||
+          bindError.message?.includes('duplicate key')
+        ) {
+          console.log(
+            `OAuth binding ${providerName}:${providerUserId} already exists, this is expected after merge`
+          );
+        } else {
+          // 其他错误需要抛出，让调用方知道
+          throw new Error(
+            `账户合并成功，但创建 OAuth 绑定失败: ${bindError.message}。请检查绑定状态。`
+          );
+        }
+      }
+    } else {
+      console.log(
+        `OAuth binding ${providerName}:${providerUserId} was migrated during merge, skipping bind`
+      );
+    }
 
     return c.json(
       createResponse(
