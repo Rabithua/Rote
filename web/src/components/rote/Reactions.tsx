@@ -155,20 +155,19 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
           return (
             <Tooltip key={type}>
               <TooltipTrigger asChild>{ReactionButton}</TooltipTrigger>
-              <TooltipContent
-                side="top"
-                className="bg-background/80 flex max-w-[200px] flex-wrap gap-1 p-2 backdrop-blur-md"
-              >
+              <TooltipContent className="flex flex-row items-center p-2">
                 {reactionGroup.map(
-                  (reaction) =>
+                  (reaction, index) =>
                     reaction.user && (
                       <Link
                         to={`/user/${reaction.user.username}`}
                         key={reaction.id}
-                        className="flex cursor-pointer items-center gap-1"
+                        className={`flex cursor-pointer items-center transition-transform hover:scale-110 ${
+                          index > 0 ? '-ml-2' : ''
+                        }`}
                         title={reaction.user.nickname || reaction.user.username}
                       >
-                        <Avatar className="size-5">
+                        <Avatar className="border-background ring-foreground/10 size-5 border-2 ring-1">
                           <AvatarImage src={reaction.user.avatar || undefined} />
                           <AvatarFallback className="text-[10px]">
                             {reaction.user.nickname?.[0] || reaction.user.username[0]}
@@ -178,7 +177,11 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
                     )
                 )}
                 {reactionGroup.filter((r) => !r.user).length > 0 && (
-                  <div className="bg-muted text-muted-foreground flex size-5 items-center justify-center rounded-full text-[10px]">
+                  <div
+                    className={`border-background ring-foreground/10 bg-muted text-muted-foreground flex size-5 cursor-not-allowed items-center justify-center rounded-full border-2 text-[10px] ring-1 ${
+                      reactionGroup.filter((r) => r.user).length > 0 ? '-ml-2' : ''
+                    }`}
+                  >
                     <UserIcon className="size-3" />
                   </div>
                 )}
