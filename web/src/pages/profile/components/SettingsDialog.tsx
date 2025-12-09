@@ -114,17 +114,17 @@ export default function SettingsDialog({
                       key={provider}
                       className="flex items-center justify-between gap-4 rounded-lg border p-4"
                     >
-                      <div className="flex items-center gap-3">
-                        {IconComponent && <IconComponent className="size-5" />}
-                        <div className="shrink-0">
+                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                        {IconComponent && <IconComponent className="size-5 shrink-0" />}
+                        <div className="min-w-0 flex-1">
                           <div className="text-base font-semibold">
                             {t(providerInfo.labelKey, {
                               defaultValue: provider.charAt(0).toUpperCase() + provider.slice(1),
                             })}
                           </div>
-                          <div className="text-muted-foreground text-sm">
+                          <div className="text-muted-foreground min-w-0 text-sm">
                             {isBound && binding ? (
-                              <div className="flex items-center gap-2">
+                              <div className="min-w-0 break-all">
                                 {binding.providerUsername
                                   ? provider === 'github'
                                     ? `@${binding.providerUsername}`
@@ -139,33 +139,35 @@ export default function SettingsDialog({
                           </div>
                         </div>
                       </div>
-                      {isBound ? (
-                        <Button
-                          variant="outline"
-                          onClick={() => onUnbindOAuth(provider)}
-                          disabled={isUnbinding}
-                        >
-                          {isUnbinding && <Loader className="mr-2 size-4 animate-spin" />}
-                          {isUnbinding
-                            ? t(`settings.oauth.${provider}.unbinding`, {
-                                defaultValue: t('settings.oauth.unbinding'),
-                              })
-                            : t(`settings.oauth.${provider}.unbind`, {
-                                defaultValue: t('settings.oauth.unbind'),
-                              })}
-                        </Button>
-                      ) : (
-                        <Button onClick={() => onBindOAuth(provider)} disabled={isBinding}>
-                          {isBinding && <Loader className="mr-2 size-4 animate-spin" />}
-                          {isBinding
-                            ? t(`settings.oauth.${provider}.binding`, {
-                                defaultValue: t('settings.oauth.binding'),
-                              })
-                            : t(`settings.oauth.${provider}.bind`, {
-                                defaultValue: t('settings.oauth.bind'),
-                              })}
-                        </Button>
-                      )}
+                      <div className="shrink-0">
+                        {isBound ? (
+                          <Button
+                            variant="outline"
+                            onClick={() => onUnbindOAuth(provider)}
+                            disabled={isUnbinding}
+                          >
+                            {isUnbinding && <Loader className="mr-2 size-4 animate-spin" />}
+                            {isUnbinding
+                              ? t(`settings.oauth.${provider}.unbinding`, {
+                                  defaultValue: t('settings.oauth.unbinding'),
+                                })
+                              : t(`settings.oauth.${provider}.unbind`, {
+                                  defaultValue: t('settings.oauth.unbind'),
+                                })}
+                          </Button>
+                        ) : (
+                          <Button onClick={() => onBindOAuth(provider)} disabled={isBinding}>
+                            {isBinding && <Loader className="mr-2 size-4 animate-spin" />}
+                            {isBinding
+                              ? t(`settings.oauth.${provider}.binding`, {
+                                  defaultValue: t('settings.oauth.binding'),
+                                })
+                              : t(`settings.oauth.${provider}.bind`, {
+                                  defaultValue: t('settings.oauth.bind'),
+                                })}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
