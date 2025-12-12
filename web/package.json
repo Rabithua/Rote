@@ -8,7 +8,10 @@
     "dev": "vite --host --port 3001",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "scf:deploy": "scf deploy",
+    "scf:info": "scf info",
+    "scf:remove": "scf remove"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

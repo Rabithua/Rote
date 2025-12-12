@@ -1,0 +1,42 @@
+# Rote Web 前端：SCF website 组件部署配置
+#
+# 使用方法（在 web/ 目录执行）：
+# - 部署：scf deploy
+# - 查看：scf info
+# - 移除：scf remove
+#
+# 说明：
+# - 本配置会在本地先执行 hook 构建（Vite 输出到 dist/），再上传到 COS 并启用静态站点托管。
+# - SPA（react-router history）需要把 404 回退到 index.html，这里通过 error: index.html 实现。
+#
+# 文档：
+# - https://cloud.tencent.com/document/product/1154/51080
+
+# ## 应用信息 ##
+# app 建议保持稳定；同账号下需唯一（如冲突可自行改名）
+app: rote
+component: website
+name: rote-web
+
+inputs:
+  src:
+    # 构建命令（在代码上传之前执行）
+    hook: bun install && bun run build
+    # 构建产物目录（Vite 默认输出 dist）
+    src: ./dist
+    # 静态站点入口
+    index: index.html
+    # SPA 路由回退：将 404 等错误页回退到 index.html
+    error: index.html
+
+  # COS Bucket 名称（不允许大写字母；默认会追加 AppId 后缀）
+  bucketName: rote-web
+
+  # 可选：指定地域（不填使用默认配置）
+  # region: ap-guangzhou
+
+  protocol: https
+  # SPA 场景建议关闭错误状态码（避免 404 回退时触发“下载/附件”等浏览器行为）
+  disableErrorStatus: true
+  # 可选：每次部署覆盖同名文件
+  # replace: true
