@@ -42,7 +42,8 @@ authRouter.post('/register', async (c: HonoContext) => {
     throw new Error('Registration failed, username or email already exists');
   }
 
-  return c.json(createResponse(user), 201);
+  const sanitizedUser = sanitizeUserData(user);
+  return c.json(createResponse(sanitizedUser), 201);
 });
 
 // 登录 (手动实现，不再使用 Passport)
@@ -163,7 +164,8 @@ authRouter.put('/password', authenticateJWT, async (c: HonoContext) => {
   }
 
   const updatedUser = await changeUserPassword(oldpassword, newpassword, user.id);
-  return c.json(createResponse(updatedUser), 200);
+  const sanitizedUser = sanitizeUserData(updatedUser);
+  return c.json(createResponse(sanitizedUser), 200);
 });
 
 // Token 刷新端点
