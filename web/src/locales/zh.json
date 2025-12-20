@@ -23,11 +23,11 @@
         "features": {
           "restraint": {
             "title": "保持克制",
-            "description": "一切为了优雅的笔记体验"
+            "description": "一切为了优雅的笔记体验，和克制的互动体验"
           },
           "simple": {
-            "title": "简单而强大",
-            "description": "所有功能限制在 Web 端，PWA 以获得更加体验"
+            "title": "低心智负担",
+            "description": "更少的压力和更简单直观的记录体验乃至部署体验"
           },
           "openApi": {
             "title": "开放接口",
@@ -180,6 +180,7 @@
       "createFailed": "创建失败",
       "uploadSuccess": "上传成功",
       "uploadFailed": "上传失败",
+      "heicNotSupported": "不支持 HEIC 格式的图片，请选择其他格式（如 JPEG、PNG 等）",
       "editSuccess": "修改成功",
       "editFailed": "修改失败",
       "sideBarTitle": "除了这些...还有",

@@ -3,6 +3,24 @@ import imageCompression from 'browser-image-compression';
 export const shouldCompress = (f: File) =>
   f.type.startsWith('image/') && !f.type.startsWith('image/gif');
 
+// 检查文件是否为 HEIC 格式（不支持）
+export const isHeicFile = (file: File): boolean => {
+  const fileName = file.name.toLowerCase();
+  const fileType = file.type.toLowerCase();
+
+  // 检查 MIME 类型
+  if (fileType === 'image/heic' || fileType === 'image/heif') {
+    return true;
+  }
+
+  // 检查文件扩展名
+  if (fileName.endsWith('.heic') || fileName.endsWith('.heif')) {
+    return true;
+  }
+
+  return false;
+};
+
 // 根据文件大小动态调整压缩质量
 // 小文件用高质量，大文件用中等质量以平衡质量和文件大小
 export const qualityForSize = (size: number) => {

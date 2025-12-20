@@ -176,6 +176,7 @@
       "createFailed": "Creation failed",
       "uploadSuccess": "Upload successful",
       "uploadFailed": "Upload failed",
+      "heicNotSupported": "HEIC format is not supported. Please select another format (such as JPEG, PNG, etc.)",
       "editSuccess": "Edit successful",
       "editFailed": "Edit failed",
       "sideBarTitle": "Besides... there are also",

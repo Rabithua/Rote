@@ -17,6 +17,7 @@ interface EditProfileDialogProps {
   canUpload: boolean;
   inputAvatarRef: React.RefObject<HTMLInputElement | null>;
   onAvatarClick: () => void;
+  onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function EditProfileDialog({
@@ -29,6 +30,7 @@ export default function EditProfileDialog({
   canUpload,
   inputAvatarRef,
   onAvatarClick,
+  onFileChange,
 }: EditProfileDialogProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
 
@@ -46,6 +48,7 @@ export default function EditProfileDialog({
               max="1"
               className="hidden"
               ref={inputAvatarRef}
+              onChange={onFileChange}
               disabled={!canUpload}
               title="Upload avatar image"
             />
