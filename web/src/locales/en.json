@@ -807,6 +807,205 @@
           "githubIssues": "GitHub Issues:"
         }
       }
+    },
+    "selfhosted": {
+      "title": "Rote Self-Hosted Deployment Guide",
+      "description": "This guide will help you quickly deploy your own Rote instance",
+      "quickStart": {
+        "title": "Quick Start",
+        "description": "Rote provides two deployment methods. You can choose the appropriate method according to your needs.",
+        "method1": {
+          "title": "Method 1: Using Docker Hub Images",
+          "description": "This is the most common deployment method, suitable for most users.",
+          "steps": {
+            "prepareConfig": {
+              "label": "Prepare configuration file:",
+              "content": "Copy the docker-compose.yml file from the project to your server"
+            },
+            "setEnv": {
+              "label": "Set environment variables:",
+              "content": "Set the VITE_API_BASE environment variable to your backend address",
+              "directAccess": "If accessing directly:",
+              "reverseProxy": "If using a reverse proxy:",
+              "or": "or"
+            },
+            "startService": {
+              "label": "Start services:",
+              "latestVersion": "# Use latest version (default configuration)",
+              "specificVersion": "# Use specific version"
+            }
+          }
+        },
+        "method2": {
+          "title": "Method 2: Using Dokploy (Recommended)",
+          "description": "Dokploy is an open-source Docker deployment platform that provides a visual interface for application deployment and management. If you have Dokploy installed, you can deploy Rote with one click through the template.",
+          "steps": {
+            "accessDokploy": {
+              "label": "Access Dokploy:",
+              "content": "Open your Dokploy management interface"
+            },
+            "selectTemplate": {
+              "label": "Select template:",
+              "content": "Find and select the Rote template from the application template list"
+            },
+            "deployApp": {
+              "label": "Deploy application:",
+              "content": "Click the deploy button, Dokploy will automatically pull the images and start all services"
+            },
+            "configureDomain": {
+              "label": "Configure domain (optional):",
+              "content": "By default, deployment uses the automatically generated domain from Dokploy. If you need to configure a custom domain for your Rote, remember to set VITE_API_BASE in the environment variables to your domain address (e.g., http://your-domain.com or https://your-domain.com)"
+            }
+          }
+        }
+      },
+      "configuration": {
+        "title": "Configuration",
+        "description": "Rote uses environment variables for configuration. The main configuration items are as follows:",
+        "required": {
+          "title": "Required Configuration",
+          "postgresqlUrl": {
+            "label": "POSTGRESQL_URL:",
+            "content": "Database connection string in the format postgresql://username:password@host:port/database"
+          },
+          "viteApiBase": {
+            "label": "VITE_API_BASE:",
+            "content": "The API address for the frontend to access the backend, must match your actual deployment address"
+          }
+        },
+        "optional": {
+          "title": "Optional Configuration",
+          "postgresPassword": {
+            "label": "POSTGRES_PASSWORD:",
+            "content": "PostgreSQL database password (default: rote_password_123, must be changed in production)"
+          },
+          "imageTag": {
+            "label": "IMAGE_TAG:",
+            "content": "Specify the Docker image version to use (default: latest)"
+          }
+        },
+        "advanced": {
+          "title": "Advanced Configuration",
+          "description": "More configuration options (such as OAuth, file storage, email service, etc.) can be configured through the admin panel after deployment. After the first deployment, log in with an admin account and enter the admin panel to configure in detail."
+        }
+      },
+      "ports": {
+        "title": "Service Ports",
+        "description": "By default, Rote uses the following ports:",
+        "backend": {
+          "label": "18000:",
+          "content": "Backend API service port"
+        },
+        "frontend": {
+          "label": "18001:",
+          "content": "Frontend web service port"
+        },
+        "database": {
+          "label": "5432:",
+          "content": "PostgreSQL database port (internal to container, not exposed externally)"
+        },
+        "modifyNote": "If you need to modify the ports, you can change the ports configuration in the docker-compose.yml file."
+      },
+      "backup": {
+        "title": "Data Backup and Migration",
+        "description": "Rote uses Docker volumes to store data. Backup and migration are very simple.",
+        "backup": {
+          "title": "Backup Data",
+          "database": {
+            "label": "Backup database:",
+            "command": "# Export database"
+          },
+          "fileStorage": {
+            "label": "Backup file storage:",
+            "content": "If file storage is configured (such as S3/R2), please backup according to the corresponding service provider's backup plan"
+          }
+        },
+        "migration": {
+          "title": "Migrate Data",
+          "deploy": {
+            "label": "Deploy Rote on new server:",
+            "content": "Deploy on the new server according to the quick start steps"
+          },
+          "restore": {
+            "label": "Restore database:",
+            "command": "# Import database"
+          },
+          "fileStorage": {
+            "label": "Migrate file storage:",
+            "content": "If using cloud storage, migration is usually not needed; if using local storage, you need to sync the file directory"
+          }
+        }
+      },
+      "faq": {
+        "title": "Common Issues",
+        "serviceNotStart": {
+          "title": "Service cannot start",
+          "portCheck": {
+            "label": "Check port usage:",
+            "content": "Ensure ports 18000 and 18001 are not occupied by other programs"
+          },
+          "dockerCheck": {
+            "label": "Check Docker status:",
+            "content": "Run docker ps to view container status, run docker logs rote-backend to view logs"
+          },
+          "envCheck": {
+            "label": "Check environment variables:",
+            "content": "Ensure VITE_API_BASE is configured correctly"
+          }
+        },
+        "frontendCannotConnect": {
+          "title": "Frontend cannot connect to backend",
+          "viteApiBase": {
+            "label": "Check VITE_API_BASE:",
+            "content": "Ensure the backend address configured in the frontend is accessible"
+          },
+          "network": {
+            "label": "Check network connection:",
+            "content": "If using a reverse proxy, ensure the proxy configuration is correct"
+          },
+          "firewall": {
+            "label": "Check firewall:",
+            "content": "Ensure the firewall allows access to the corresponding ports"
+          }
+        },
+        "databaseConnectionFailed": {
+          "title": "Database connection failed",
+          "container": {
+            "label": "Check database container:",
+            "content": "Run docker logs rote-postgres to view database logs"
+          },
+          "connectionString": {
+            "label": "Check connection string:",
+            "content": "Ensure POSTGRESQL_URL is configured correctly"
+          },
+          "wait": {
+            "label": "Wait for database to be ready:",
+            "content": "On first startup, the database needs some time to initialize, please be patient"
+          }
+        },
+        "updateVersion": {
+          "title": "How to update version",
+          "backup": {
+            "label": "Backup data:",
+            "content": "Backup data first according to the data backup steps"
+          },
+          "pull": {
+            "label": "Pull new images:",
+            "latest": "# Pull latest images",
+            "specific": "# Or specify version"
+          },
+          "restart": {
+            "label": "Restart services:"
+          }
+        }
+      },
+      "help": {
+        "title": "Get Help",
+        "description": "If you encounter problems during deployment, you can get help through the following methods:",
+        "githubIssues": {
+          "label": "GitHub Issues:"
+        }
+      }
     }
   },
   "error": {

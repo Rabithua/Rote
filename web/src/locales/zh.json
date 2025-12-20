@@ -808,6 +808,205 @@
           "githubIssues": "GitHub Issues:"
         }
       }
+    },
+    "selfhosted": {
+      "title": "Rote 自托管部署指南",
+      "description": "本指南将帮助你快速部署自己的 Rote 实例",
+      "quickStart": {
+        "title": "快速开始",
+        "description": "Rote 提供了两种部署方式，你可以根据需求选择合适的方式。",
+        "method1": {
+          "title": "方式一：使用 Docker Hub 镜像",
+          "description": "这是最通用的部署方式，适合大多数用户。",
+          "steps": {
+            "prepareConfig": {
+              "label": "准备配置文件：",
+              "content": "将项目中的 docker-compose.yml 文件复制到你的服务器"
+            },
+            "setEnv": {
+              "label": "设置环境变量：",
+              "content": "设置 VITE_API_BASE 环境变量为你的后端地址",
+              "directAccess": "如果直接访问：",
+              "reverseProxy": "如果使用反向代理：",
+              "or": "或"
+            },
+            "startService": {
+              "label": "启动服务：",
+              "latestVersion": "# 使用最新版本（默认配置）",
+              "specificVersion": "# 使用特定版本"
+            }
+          }
+        },
+        "method2": {
+          "title": "方式二：使用 Dokploy（推荐）",
+          "description": "Dokploy 是一个开源的 Docker 部署平台，提供了可视化的应用部署和管理界面。如果你已经安装了 Dokploy，可以通过模板一键部署 Rote。",
+          "steps": {
+            "accessDokploy": {
+              "label": "访问 Dokploy：",
+              "content": "打开你的 Dokploy 管理界面"
+            },
+            "selectTemplate": {
+              "label": "选择模板：",
+              "content": "在应用模板列表中找到并选择 Rote 模板"
+            },
+            "deployApp": {
+              "label": "部署应用：",
+              "content": "点击部署按钮，Dokploy 会自动拉取镜像并启动所有服务"
+            },
+            "configureDomain": {
+              "label": "配置域名（可选）：",
+              "content": "默认部署使用的是 Dokploy 自动生成的域名，如果需要为你的 Rote 配置自定义域名，请记得在环境变量中设置 VITE_API_BASE 为你的域名地址（例如： http://your-domain.com 或 https://your-domain.com）"
+            }
+          }
+        }
+      },
+      "configuration": {
+        "title": "配置说明",
+        "description": "Rote 使用环境变量进行配置，主要配置项如下：",
+        "required": {
+          "title": "必需配置",
+          "postgresqlUrl": {
+            "label": "POSTGRESQL_URL：",
+            "content": "数据库连接字符串，格式为 postgresql://用户名:密码@主机:端口/数据库名"
+          },
+          "viteApiBase": {
+            "label": "VITE_API_BASE：",
+            "content": "前端访问后端的 API 地址，必须与你的实际部署地址一致"
+          }
+        },
+        "optional": {
+          "title": "可选配置",
+          "postgresPassword": {
+            "label": "POSTGRES_PASSWORD：",
+            "content": "PostgreSQL 数据库密码（默认：rote_password_123，生产环境请务必修改）"
+          },
+          "imageTag": {
+            "label": "IMAGE_TAG：",
+            "content": "指定使用的 Docker 镜像版本（默认：latest）"
+          }
+        },
+        "advanced": {
+          "title": "高级配置",
+          "description": "更多配置选项（如 OAuth、文件存储、邮件服务等）可以在部署后通过管理后台进行配置。首次部署后，使用管理员账号登录，进入管理面板即可进行详细配置。"
+        }
+      },
+      "ports": {
+        "title": "服务端口",
+        "description": "默认情况下，Rote 使用以下端口：",
+        "backend": {
+          "label": "18000：",
+          "content": "后端 API 服务端口"
+        },
+        "frontend": {
+          "label": "18001：",
+          "content": "前端 Web 服务端口"
+        },
+        "database": {
+          "label": "5432：",
+          "content": "PostgreSQL 数据库端口（容器内部，不对外暴露）"
+        },
+        "modifyNote": "如果需要修改端口，可以在 docker-compose.yml 文件中修改 ports 配置。"
+      },
+      "backup": {
+        "title": "数据备份和迁移",
+        "description": "Rote 使用 Docker 卷来存储数据，备份和迁移非常简单。",
+        "backup": {
+          "title": "备份数据",
+          "database": {
+            "label": "备份数据库：",
+            "command": "# 导出数据库"
+          },
+          "fileStorage": {
+            "label": "备份文件存储：",
+            "content": "如果配置了文件存储（如 S3/R2），请按照对应服务商的备份方案进行备份"
+          }
+        },
+        "migration": {
+          "title": "迁移数据",
+          "deploy": {
+            "label": "在新服务器上部署 Rote：",
+            "content": "按照快速开始步骤在新服务器上部署"
+          },
+          "restore": {
+            "label": "恢复数据库：",
+            "command": "# 导入数据库"
+          },
+          "fileStorage": {
+            "label": "迁移文件存储：",
+            "content": "如果使用云存储，通常不需要迁移；如果使用本地存储，需要同步文件目录"
+          }
+        }
+      },
+      "faq": {
+        "title": "常见问题",
+        "serviceNotStart": {
+          "title": "服务无法启动",
+          "portCheck": {
+            "label": "检查端口占用：",
+            "content": "确保 18000 和 18001 端口未被其他程序占用"
+          },
+          "dockerCheck": {
+            "label": "检查 Docker 状态：",
+            "content": "运行 docker ps 查看容器状态，运行 docker logs rote-backend 查看日志"
+          },
+          "envCheck": {
+            "label": "检查环境变量：",
+            "content": "确保 VITE_API_BASE 配置正确"
+          }
+        },
+        "frontendCannotConnect": {
+          "title": "前端无法连接后端",
+          "viteApiBase": {
+            "label": "检查 VITE_API_BASE：",
+            "content": "确保前端配置的后端地址可以访问"
+          },
+          "network": {
+            "label": "检查网络连接：",
+            "content": "如果使用反向代理，确保代理配置正确"
+          },
+          "firewall": {
+            "label": "检查防火墙：",
+            "content": "确保防火墙允许相应端口的访问"
+          }
+        },
+        "databaseConnectionFailed": {
+          "title": "数据库连接失败",
+          "container": {
+            "label": "检查数据库容器：",
+            "content": "运行 docker logs rote-postgres 查看数据库日志"
+          },
+          "connectionString": {
+            "label": "检查连接字符串：",
+            "content": "确保 POSTGRESQL_URL 配置正确"
+          },
+          "wait": {
+            "label": "等待数据库就绪：",
+            "content": "首次启动时，数据库需要一些时间初始化，请耐心等待"
+          }
+        },
+        "updateVersion": {
+          "title": "如何更新版本",
+          "backup": {
+            "label": "备份数据：",
+            "content": "按照数据备份步骤先备份数据"
+          },
+          "pull": {
+            "label": "拉取新镜像：",
+            "latest": "# 拉取最新镜像",
+            "specific": "# 或指定版本"
+          },
+          "restart": {
+            "label": "重启服务："
+          }
+        }
+      },
+      "help": {
+        "title": "获取帮助",
+        "description": "如果在部署过程中遇到问题，可以通过以下方式获取帮助：",
+        "githubIssues": {
+          "label": "GitHub Issues："
+        }
+      }
     }
   },
   "components": {

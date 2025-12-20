@@ -1,11 +1,13 @@
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
+import { AppleIcon } from '@/components/icons/Apple';
 import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
-import { formatTimeAgo, isTokenValid } from '@/utils/main';
+import { useTypewriter } from '@/hooks/useTypewriter';
+import { formatTimeAgo } from '@/utils/main';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -15,11 +17,13 @@ import {
   GitFork,
   Github,
   Globe2,
-  Lightbulb,
   MessageCircleQuestionIcon,
+  Server,
   Shield,
   Sparkles,
+  Split,
   Star,
+  Wrench,
 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,6 +35,15 @@ function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.landing' });
   const { isInitialized, isLoading, error } = useSystemStatus();
   const toastShownRef = useRef(false);
+
+  // 打字机效果文本数组
+  const typewriterTexts = ['个人笔记库', '碎碎念本子', '私人朋友圈', '个人频道', '微型博客'];
+  const typewriterText = useTypewriter({
+    texts: typewriterTexts,
+    typingSpeed: 100,
+    deletingSpeed: 50,
+    pauseTime: 2000,
+  });
 
   const { data: roteGithubData, isLoading: isRoteGithubDataLoading } = useSWR(
     'https://api.github.com/repos/rabithua/rote',
@@ -111,23 +124,52 @@ function Landing() {
     },
   ];
 
+  const andMoreFeatures = [
+    {
+      icon: Server,
+      title: '部署体验',
+      description: '使用 Dokploy 一键部署，数据备份和迁移如喝水般简单',
+    },
+    {
+      icon: Wrench,
+      title: '小工具们',
+      description: '随机回顾，标签云，oauth，RSS，EveDayOneCat...',
+    },
+    {
+      icon: Split,
+      title: '分离架构',
+      description: '前后端采用分离的架构设计，按需部署你需要的服务',
+    },
+    {
+      icon: AppleIcon,
+      title: 'IOS 客户端',
+      description: '更优雅的 App 客户端（非中国区可用）',
+    },
+  ];
+
   const quickLinks = [
     {
       name: 'Github',
       href: 'https://github.com/Rabithua/Rote',
-      icon: Github,
+      icon: <Github className="size-5 transition-transform" />,
       external: true,
     },
     {
       name: 'Explore Rote',
       href: '/explore',
-      icon: Globe2,
+      icon: <Globe2 className="size-5 transition-transform" />,
       external: false,
     },
     {
       name: 'Rabithua',
-      href: '/rabithua',
-      icon: Lightbulb,
+      href: 'https://beta.rote.ink/rabithua',
+      icon: (
+        <img
+          src="https://avatars.githubusercontent.com/u/34543831?v=4&size=64"
+          alt="Rabithua"
+          className="size-6 rounded-full border"
+        />
+      ),
       external: false,
     },
   ];
@@ -162,38 +204,45 @@ function Landing() {
         {/* Main heading - 更克制的设计 */}
         <div className="space-y-2 divide-y-[0.5px] px-2">
           <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            {t('slogen')}
+            一个看起来不太一样的
+            <span className="text-theme inline-block">
+              {typewriterText}
+              <span className="animate-pulse font-thin">|</span>
+            </span>
+            🤔
           </h1>
 
           {/* 副标题 - 更清晰的层次 */}
           <p className="text-info pb-3 text-xl leading-relaxed font-light">
-            {t('openApi')} · {t('data')}
+            开放API，记录的姿势不止一种🤩
+            ，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻
           </p>
         </div>
-
-        {/* Type tags - 更简洁的设计 */}
-        {/* <div className="mb-12 px-2">
-          <div className="bg-muted/30 inline-flex flex-wrap items-center justify-center gap-1.5 rounded-full border px-4 py-2">
-            {Array.from({ length: 5 }, (_, i) => (
-              <span key={i}>
-                <span className="text-info text-sm font-light">{t(`types.${i}`)}</span>
-                {i < 4 && <span className="text-info/50 mx-1.5">·</span>}
-              </span>
-            ))}
-          </div>
-        </div> */}
 
         {/* CTA Buttons - 更优雅的按钮设计 */}
         <div className="flex flex-row gap-3 px-2 pb-4">
           <Button asChild size="lg">
             <Link
               className="text-background hover:text-background"
-              to={isTokenValid() ? '/home' : '/login'}
+              to="https://demo.rote.ink/login"
             >
-              {isTokenValid() ? t('dashboard') : t('linksItems.0')}
+              Demo
               <ArrowRight className="ml-2 size-4" />
             </Link>
           </Button>
+
+          <Link
+            to="https://apps.apple.com/us/app/rote/id6755513897"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center"
+          >
+            <img
+              src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+              alt="Download on the App Store"
+              className="h-10"
+            />
+          </Link>
 
           <Button
             variant="outline"
@@ -211,7 +260,12 @@ function Landing() {
         <div className="group absolute right-10 bottom-0 flex flex-col items-center">
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="relative h-10 translate-y-3 rotate-5 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110">
+              <Link
+                to="https://apps.apple.com/us/app/rote/id6755513897"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative h-10 translate-y-3 rotate-5 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110"
+              >
                 {/* 亮色模式图片 */}
                 <img
                   src="/ios_icon_compressed.png"
@@ -224,11 +278,11 @@ function Landing() {
                   alt="hero"
                   className="z-1 hidden h-10 drop-shadow-2xl drop-shadow-black/10 dark:block"
                 />
-              </div>
+              </Link>
             </TooltipTrigger>
             <TooltipContent side="left" sideOffset={8}>
               <div className="flex flex-col gap-1">
-                <span>{t('iosAppAlmostReady')}</span>
+                <span>想要加入 IOS 测试版吗？</span>
                 <Link
                   to="https://testflight.apple.com/join/WC3ETKwp"
                   target="_blank"
@@ -259,8 +313,35 @@ function Landing() {
             <div key={index}>
               <div className="hover:bg-accent/5 group flex flex-row items-start gap-6 py-8 transition-all duration-300">
                 {/* Icon */}
-                <div className="border-theme flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed bg-[#07C160]/10 transition-all duration-300 group-hover:bg-[#07C160]/20">
-                  <feature.icon className="size-8 text-[#07C160]" />
+                <div className="border-theme bg-theme/10 group-hover:bg-theme/20 flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed transition-all duration-300">
+                  <feature.icon className="text-theme size-8" />
+                </div>
+
+                {/* Content */}
+                <div className="flex-1">
+                  <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
+                  <p className="text-info leading-relaxed font-light">{feature.description}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-background divide-y border-x sm:mx-4">
+        <div className="space-y-2 divide-y-[0.5px] p-2">
+          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">And More</p>
+          <h2 className="text-3xl font-bold">除了这些，还有...</h2>
+          <p className="text-info text-lg font-light">优雅的架构设计，部署姿势和很棒的客户端体验</p>
+        </div>
+
+        <div className="gap-6 p-2 md:grid md:grid-cols-2">
+          {andMoreFeatures.map((feature, index) => (
+            <div key={index}>
+              <div className="hover:bg-accent/5 group flex flex-row items-start gap-6 py-8 transition-all duration-300">
+                {/* Icon */}
+                <div className="border-theme bg-theme/10 group-hover:bg-theme/20 flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed transition-all duration-300">
+                  <feature.icon className="text-theme size-8" />
                 </div>
 
                 {/* Content */}
@@ -336,9 +417,9 @@ function Landing() {
                   to={link.href}
                   target={link.external ? '_blank' : undefined}
                   rel={link.external ? 'noopener noreferrer' : undefined}
-                  className="flex items-center justify-center gap-3 px-6 py-3"
+                  className="flex items-center justify-center gap-3 py-3"
                 >
-                  <link.icon className="size-5 transition-transform" />
+                  {link.icon}
                   <span className="font-medium">{link.name}</span>
                 </Link>
               </Button>
