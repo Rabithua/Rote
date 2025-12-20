@@ -18,7 +18,7 @@
 
 services:
   rote-backend:
-    image: rabithua/rote-backend:${IMAGE_TAG:-develop}
+    image: rabithua/rote-backend:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: rote-backend
     environment:
@@ -40,7 +40,7 @@ services:
       ]
 
   rote-frontend:
-    image: rabithua/rote-frontend:${IMAGE_TAG:-develop}
+    image: rabithua/rote-frontend:${IMAGE_TAG:-latest}
     pull_policy: always
     container_name: rote-frontend
     ports:

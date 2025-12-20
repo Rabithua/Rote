@@ -90,9 +90,9 @@ siteRouter.get('/status', async (c: HonoContext) => {
     // 计算 R2 存储是否可用
     const r2Configured = Boolean(
       storageConfig?.endpoint &&
-        storageConfig.bucket &&
-        storageConfig.accessKeyId &&
-        storageConfig.secretAccessKey
+      storageConfig.bucket &&
+      storageConfig.accessKeyId &&
+      storageConfig.secretAccessKey
     );
 
     // 构建响应数据

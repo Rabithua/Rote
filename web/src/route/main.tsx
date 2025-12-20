@@ -8,6 +8,7 @@ import AdminDashboard from '@/pages/admin';
 import PrivacyPolicyPage from '@/pages/app/privacy';
 import TermsOfServicePage from '@/pages/app/terms';
 import ArchivedPage from '@/pages/archived';
+import SelfhostedGuidePage from '@/pages/doc/selfhosted';
 import ExperimentPage from '@/pages/experiment';
 import ExplorePage from '@/pages/explore';
 import MineFilter from '@/pages/filter';
@@ -53,6 +54,16 @@ export default function GlobalRouterProvider() {
         {
           path: 'terms',
           element: <TermsOfServicePage />,
+        },
+      ],
+    },
+    {
+      path: 'doc',
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          path: 'selfhosted',
+          element: <SelfhostedGuidePage />,
         },
       ],
     },

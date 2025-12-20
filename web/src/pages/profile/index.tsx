@@ -12,6 +12,7 @@ import type { OpenKeys, Profile } from '@/types/main';
 import { del, get, post, put } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
+import { isHeicFile } from '@/utils/uploadHelpers';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { Stars, UserCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -273,10 +274,18 @@ function ProfilePage() {
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     if (!canUpload) return;
     const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      setAvatarFile(selectedFile);
-      setIsAvatarModalOpen(true);
+    if (!selectedFile) return;
+
+    // 检查是否为 HEIC 格式（不支持）
+    if (isHeicFile(selectedFile)) {
+      toast.error(t('heicNotSupported'));
+      // 清空 input 值，允许用户重新选择
+      event.target.value = '';
+      return;
     }
+
+    setAvatarFile(selectedFile);
+    setIsAvatarModalOpen(true);
   }
 
   // 保存头像
@@ -376,6 +385,14 @@ function ProfilePage() {
     const selectedFile = event.target.files?.[0];
     if (!selectedFile) return;
 
+    // 检查是否为 HEIC 格式（不支持）
+    if (isHeicFile(selectedFile)) {
+      toast.error(t('heicNotSupported'));
+      // 清空 input 值，允许用户重新选择
+      event.target.value = '';
+      return;
+    }
+
     setCoverChangeing(true);
     try {
       const coverUrl = await uploadCover(selectedFile);
@@ -438,6 +455,7 @@ function ProfilePage() {
             if (!canUpload) return;
             (inputAvatarRef.current as HTMLInputElement | null)?.click();
           }}
+          onFileChange={handleFileChange}
         />
 
         <input

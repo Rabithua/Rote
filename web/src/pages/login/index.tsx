@@ -75,6 +75,16 @@ function Login() {
     nickname: '',
   });
 
+  // 检测域名并自动填充演示账号
+  useEffect(() => {
+    if (window.location.hostname === 'demo.rote.ink') {
+      setLoginData({
+        username: 'username',
+        password: 'password',
+      });
+    }
+  }, []);
+
   const LoginDataZod = z.object({
     username: z.string().min(1, t('usernameRequired')).max(20, t('usernameMaxLength')),
     password: z
