@@ -1,5 +1,5 @@
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
-import { AppleIcon } from '@/components/icons/Apple';
+import { AppStoreIcon } from '@/components/icons/Apple';
 import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useTypewriter } from '@/hooks/useTypewriter';
-import { formatTimeAgo } from '@/utils/main';
+import { cn } from '@/utils/cn';
+import { formatTimeAgo, isTokenValid } from '@/utils/main';
 import {
-  ArrowRight,
   ArrowUpRight,
   BookOpen,
   Code,
@@ -37,7 +37,7 @@ function Landing() {
   const toastShownRef = useRef(false);
 
   // 打字机效果文本数组
-  const typewriterTexts = ['个人笔记库', '碎碎念本子', '私人朋友圈', '个人频道', '微型博客'];
+  const typewriterTexts = t('typewriterTexts', { returnObjects: true }) as string[];
   const typewriterText = useTypewriter({
     texts: typewriterTexts,
     typingSpeed: 100,
@@ -127,41 +127,47 @@ function Landing() {
   const andMoreFeatures = [
     {
       icon: Server,
-      title: '部署体验',
-      description: '使用 Dokploy 一键部署，数据备份和迁移如喝水般简单',
+      title: t('andMore.features.selfHosted.title'),
+      description: t('andMore.features.selfHosted.description'),
     },
     {
       icon: Wrench,
-      title: '小工具们',
-      description: '随机回顾，标签云，oauth，RSS，EveDayOneCat...',
+      title: t('andMore.features.tools.title'),
+      description: t('andMore.features.tools.description'),
     },
     {
       icon: Split,
-      title: '分离架构',
-      description: '前后端采用分离的架构设计，按需部署你需要的服务',
+      title: t('andMore.features.architecture.title'),
+      description: t('andMore.features.architecture.description'),
     },
     {
-      icon: AppleIcon,
-      title: 'IOS 客户端',
-      description: '更优雅的 App 客户端（非中国区可用）',
+      icon: AppStoreIcon,
+      title: t('andMore.features.iosClient.title'),
+      description: t('andMore.features.iosClient.description'),
     },
   ];
 
   const quickLinks = [
     {
-      name: 'Github',
+      name: t('quickLinks.selfHosted'),
+      href: '/doc/selfhosted',
+      icon: <Server className="size-5 transition-transform" />,
+      external: false,
+    },
+    {
+      name: t('quickLinks.github'),
       href: 'https://github.com/Rabithua/Rote',
       icon: <Github className="size-5 transition-transform" />,
       external: true,
     },
     {
-      name: 'Explore Rote',
+      name: t('quickLinks.explore'),
       href: '/explore',
       icon: <Globe2 className="size-5 transition-transform" />,
       external: false,
     },
     {
-      name: 'Rabithua',
+      name: t('quickLinks.rabithua'),
       href: 'https://beta.rote.ink/rabithua',
       icon: (
         <img
@@ -170,7 +176,7 @@ function Landing() {
           className="size-6 rounded-full border"
         />
       ),
-      external: false,
+      external: true,
     },
   ];
 
@@ -204,7 +210,8 @@ function Landing() {
         {/* Main heading - 更克制的设计 */}
         <div className="space-y-2 divide-y-[0.5px] px-2">
           <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            一个看起来不太一样的
+            {t('headingPrefix')}
+            <br className="block sm:hidden" />
             <span className="text-theme inline-block">
               {typewriterText}
               <span className="animate-pulse font-thin">|</span>
@@ -213,21 +220,29 @@ function Landing() {
           </h1>
 
           {/* 副标题 - 更清晰的层次 */}
-          <p className="text-info pb-3 text-xl leading-relaxed font-light">
-            开放API，记录的姿势不止一种🤩
-            ，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻
-          </p>
+          <p className="text-info pb-3 text-xl leading-relaxed font-light">{t('subtitle')}</p>
         </div>
 
         {/* CTA Buttons - 更优雅的按钮设计 */}
-        <div className="flex flex-row gap-3 px-2 pb-4">
-          <Button asChild size="lg">
+        <div className="flex flex-row flex-wrap gap-3 px-2 pb-4">
+          <Button size="lg" asChild>
             <Link
+              to={isTokenValid() ? '/home' : '/login'}
               className="text-background hover:text-background"
-              to="https://demo.rote.ink/login"
             >
+              {isTokenValid() ? t('dashboard') : t('linksItems.0')}
+            </Link>
+          </Button>
+
+          <Button
+            variant="outline"
+            asChild
+            size="lg"
+            className="border-muted-foreground/20 hover:bg-muted/50"
+          >
+            <Link target="_blank" rel="noopener noreferrer" to="https://demo.rote.ink/login">
               Demo
-              <ArrowRight className="ml-2 size-4" />
+              <ArrowUpRight className="inline-block size-5" />
             </Link>
           </Button>
 
@@ -238,7 +253,7 @@ function Landing() {
             className="flex items-center"
           >
             <img
-              src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+              src="/download-on-the-app-store.svg"
               alt="Download on the App Store"
               className="h-10"
             />
@@ -251,8 +266,9 @@ function Landing() {
             className="border-muted-foreground/20 hover:bg-muted/50"
           >
             <Link to="https://github.com/Rabithua/Rote" target="_blank">
-              <Github className="mr-2 size-4" />
+              <Github className="size-4" />
               {t('linksItems.2')}
+              <ArrowUpRight className="inline-block size-5" />
             </Link>
           </Button>
         </div>
@@ -282,14 +298,14 @@ function Landing() {
             </TooltipTrigger>
             <TooltipContent side="left" sideOffset={8}>
               <div className="flex flex-col gap-1">
-                <span>想要加入 IOS 测试版吗？</span>
+                <span>{t('iosAppTooltip.title')}</span>
                 <Link
                   to="https://testflight.apple.com/join/WC3ETKwp"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-theme hover:text-theme/80 inline-flex items-center hover:underline"
                 >
-                  {t('iosAppEarlyAccess')}
+                  {t('iosAppTooltip.earlyAccess')}
                   <ArrowUpRight className="size-3" />
                 </Link>
               </div>
@@ -330,9 +346,11 @@ function Landing() {
 
       <div className="bg-background divide-y border-x sm:mx-4">
         <div className="space-y-2 divide-y-[0.5px] p-2">
-          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">And More</p>
-          <h2 className="text-3xl font-bold">除了这些，还有...</h2>
-          <p className="text-info text-lg font-light">优雅的架构设计，部署姿势和很棒的客户端体验</p>
+          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+            {t('andMore.tagline')}
+          </p>
+          <h2 className="text-3xl font-bold">{t('andMore.title')}</h2>
+          <p className="text-info text-lg font-light">{t('andMore.subtitle')}</p>
         </div>
 
         <div className="gap-6 p-2 md:grid md:grid-cols-2">
@@ -412,15 +430,21 @@ function Landing() {
         <div className="flex flex-row flex-wrap gap-4 py-8">
           {quickLinks.map((link) => (
             <div key={link.name} className="group">
-              <Button variant="outline" asChild>
+              <Button variant={link.external ? 'outline' : 'default'} asChild>
                 <Link
                   to={link.href}
                   target={link.external ? '_blank' : undefined}
                   rel={link.external ? 'noopener noreferrer' : undefined}
-                  className="flex items-center justify-center gap-3 py-3"
+                  className={cn(
+                    'flex items-center justify-center gap-3 py-3',
+                    link.external
+                      ? 'text-foreground hover:text-foreground'
+                      : 'text-background hover:text-background'
+                  )}
                 >
                   {link.icon}
                   <span className="font-medium">{link.name}</span>
+                  {link.external && <ArrowUpRight className="inline-block size-5" />}
                 </Link>
               </Button>
             </div>

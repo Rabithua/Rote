@@ -1,20 +1,14 @@
 {
   "pages": {
     "landing": {
-      "poem": "采菊东篱下，悠然见南山",
-      "ComingSoon": "Coming soon",
-      "types": ["Complex Format Articles", "Text Only", "Inspiration Gallery", "Diary", "Todo"],
-      "slogen": "A personal note repository that looks different🤔",
-      "openApi": "Open API, more than one way to record🤩",
-      "data": "Take control of your own data, come and go freely, no data hostage🙅🏻",
-      "links": "Links:",
+      "poem": "",
+      "headingPrefix": "A note repository like ",
       "linksItems": ["Login", "User Guide", "Github", "Blog", "Download", "Donate"],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
       "issues": "Issues",
       "watch": "Watch",
-      "githubOpenSource": "Rote is open source on Github, welcome to Star!",
       "lastPushTime": "Last push time: ",
       "coreFeatures": {
         "title": "Core Features",
@@ -53,8 +47,47 @@
         "error": "Backend error detected, redirecting to setup page",
         "notInitialized": "System not initialized, redirecting to setup page"
       },
-      "iosAppAlmostReady": "IOS App is almost ready!",
-      "iosAppEarlyAccess": "Early Access"
+      "typewriterTexts": [
+        "Personal Note Repository",
+        "Thoughts Notebook",
+        "Private Twitter",
+        "Personal Channel",
+        "Micro Blog"
+      ],
+      "subtitle": "Open API, more than one way to record🤩, supports Self-Hosted, take control of your own data, come and go freely, no data hostage🙅🏻",
+      "iosAppTooltip": {
+        "title": "Want to join the iOS beta?",
+        "earlyAccess": "Early Access"
+      },
+      "andMore": {
+        "tagline": "And More",
+        "title": "Besides these, there are also...",
+        "subtitle": "Elegant architecture design, deployment options and great client experience",
+        "features": {
+          "selfHosted": {
+            "title": "Self-Hosted Deployment",
+            "description": "One-click deployment with Docker or Dokploy"
+          },
+          "tools": {
+            "title": "Little Tools",
+            "description": "Random review, tag cloud, OAuth, RSS, EveDayOneCat..."
+          },
+          "architecture": {
+            "title": "Separated Architecture",
+            "description": "Frontend and backend are separated, deploy only what you need"
+          },
+          "iosClient": {
+            "title": "iOS Client",
+            "description": "More elegant App client (available outside China)"
+          }
+        }
+      },
+      "quickLinks": {
+        "selfHosted": "Self-Hosted Guide",
+        "github": "Github",
+        "explore": "Explore Rote",
+        "rabithua": "Rabithua"
+      }
     },
     "mine": {
       "leftNavBar": {
