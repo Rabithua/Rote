@@ -12,9 +12,10 @@ import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { ActivityIcon, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
 
 function SideBar() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
@@ -25,7 +26,7 @@ function SideBar() {
   return isLoading ? (
     <LoadingPlaceholder className="py-8" size={6} />
   ) : (
-    <div className="grid grid-cols-2 divide-x-1 border-b">
+    <div className="grid grid-cols-2 divide-x border-b">
       <div className="gap2 flex flex-col items-center justify-center py-4">
         <SlidingNumber
           className="font-mono text-xl font-black"
@@ -85,12 +86,63 @@ function MineFilter() {
     [filter.tags.hasEvery, filter.keyword]
   );
 
-  const { data, mutate, loadMore, isLoading, isValidating } = useAPIInfinite(getProps, getRotesV2, {
-    initialSize: 1,
-    revalidateFirstPage: false,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-  });
+  const { data, mutate, loadMore, isLoading, isValidating, error, setSize } = useAPIInfinite(
+    getProps,
+    getRotesV2,
+    {
+      initialSize: 1,
+      revalidateFirstPage: false,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  );
+
+  // 当 filter 变化时，重置分页并重新验证
+  const prevFilterRef = useRef<{ tags: string[]; keyword: string } | null>(null);
+  const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    // 跳过初始挂载
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      prevFilterRef.current = { tags: filter.tags.hasEvery, keyword: filter.keyword };
+      return;
+    }
+
+    const currentTags = filter.tags.hasEvery;
+    const currentKeyword = filter.keyword;
+    const prevFilter = prevFilterRef.current;
+
+    if (!prevFilter) {
+      prevFilterRef.current = { tags: currentTags, keyword: currentKeyword };
+      return;
+    }
+
+    // 检查是否真的发生了变化
+    const tagsChanged =
+      currentTags.length !== prevFilter.tags.length ||
+      currentTags.some((tag: string, index: number) => tag !== prevFilter.tags[index]);
+    const keywordChanged = currentKeyword !== prevFilter.keyword;
+
+    if (tagsChanged || keywordChanged) {
+      // 更新引用
+      prevFilterRef.current = { tags: currentTags, keyword: currentKeyword };
+      // 重置到第一页并重新验证
+      setSize(1);
+      mutate();
+    }
+  }, [filter.tags.hasEvery, filter.keyword, setSize, mutate]);
+
+  // 处理错误提示
+  useEffect(() => {
+    if (error) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        t('searchError', { defaultValue: '搜索失败，请稍后重试' });
+      toast.error(errorMessage);
+    }
+  }, [error, t]);
 
   const refreshData = () => {
     if (isLoading || isValidating) {
@@ -122,7 +174,7 @@ function MineFilter() {
         starColor="#07C160"
         className="relative h-auto max-h-[25vh] overflow-hidden bg-none"
       >
-        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none [mask-image:linear-gradient(180deg,#000000_calc(100%-20%),transparent)] p-4 font-semibold">
+        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none mask-[linear-gradient(180deg,#000000_calc(100%-20%),transparent)] p-4 font-semibold">
           <div className="relative flex flex-wrap items-center gap-2">
             {t('includeTags')}
             {filter.tags.hasEvery.length > 0
@@ -177,14 +229,16 @@ function MineFilter() {
       <SearchBar
         defaultValue={filter.keyword}
         onSearch={(keyword) => {
+          const trimmedKeyword = keyword.trim();
           setFilter((prevState) => ({
             ...prevState,
-            keyword: keyword.trim(),
+            keyword: trimmedKeyword,
           }));
         }}
+        isLoading={isLoading || isValidating}
       />
       {TagsBlock}
-      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} error={error} />
     </ContainerWithSideBar>
   );
 }

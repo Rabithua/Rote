@@ -20,7 +20,7 @@ GET /v2/api/notes/search
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记 (true/false)
-- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）。标签会自动去除首尾空格，空标签会被忽略
 
 **搜索范围**:
 
@@ -73,7 +73,7 @@ GET /v2/api/notes/search/public
 - `keyword` (必需): 搜索关键词（最大 200 个字符）
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
-- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）。标签会自动去除首尾空格，空标签会被忽略
 
 **搜索范围**: 所有公开状态的笔记
 
@@ -95,7 +95,7 @@ GET /v2/api/notes/search/users/:username
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
-- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）。标签会自动去除首尾空格，空标签会被忽略
 
 **搜索范围**: 指定用户的公开笔记
 
@@ -113,7 +113,7 @@ GET /v2/api/openkey/notes/search
 - `skip` (可选): 跳过的笔记数量，用于分页
 - `limit` (可选): 返回的笔记数量限制，默认 20
 - `archived` (可选): 是否搜索已归档的笔记
-- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）
+- `tag` (可选): 按标签过滤，支持 `tag` 或 `tag[]` 两种格式（支持多个标签，使用 `hasEvery` 逻辑）。标签会自动去除首尾空格，空标签会被忽略
 
 **搜索范围**: API 密钥拥有者的所有笔记
 
@@ -133,9 +133,11 @@ GET /v2/api/openkey/notes/search
 
 搜索结果可以与其他过滤条件组合：
 
-- 标签过滤：支持 `tag=技术` 或 `tag[]=技术&tag[]=前端` 两种格式，多个标签时使用 `hasEvery` 逻辑（笔记需包含所有指定标签）
-- 归档状态：`archived=true`
-- 其他自定义过滤参数
+- **标签过滤**：支持 `tag=技术` 或 `tag[]=技术&tag[]=前端` 两种格式，多个标签时使用 `hasEvery` 逻辑（笔记需包含所有指定标签）
+  - 标签会自动去除首尾空格（trim）
+  - 空标签和只包含空格的标签会被自动过滤，不会参与搜索
+- **归档状态**：`archived=true`
+- **其他自定义过滤参数**
 
 ### 4. 排序规则
 
@@ -159,6 +161,11 @@ GET /v2/api/notes/search/public?keyword=JavaScript&tag=教程
 # 或使用 tag[] 参数（推荐用于多个标签）
 GET /v2/api/notes/search/public?keyword=JavaScript&tag[]=教程&tag[]=前端
 ```
+
+**注意**：标签参数中的空格会被自动处理：
+
+- `tag= 教程 ` 会被处理为 `tag=教程`
+- `tag[]= 教程 &tag[]= ` 中，第二个空标签会被忽略，只搜索包含"教程"标签的笔记
 
 ### 搜索用户"john"的公开笔记中包含"API"的内容
 
@@ -207,6 +214,22 @@ GET /v2/api/notes/search/users/john?keyword=API
   "data": null
 }
 ```
+
+### 500 Internal Server Error
+
+```json
+{
+  "code": 1,
+  "message": "Database error occurred. Please contact administrator.",
+  "data": null
+}
+```
+
+**注意**：如果遇到数据库错误，请检查：
+
+- 标签参数格式是否正确
+- 是否传入了不存在的字段名作为过滤条件
+- 服务器日志以获取更详细的错误信息
 
 ## 性能考虑
 

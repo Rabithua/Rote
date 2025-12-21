@@ -109,7 +109,15 @@ notesRouter.get('/search', authenticateJWT, async (c: HonoContext) => {
   // 处理标签过滤（支持 tag 和 tag[] 两种格式）
   const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
-    const tags = Array.isArray(tag) ? tag : [tag];
+    let tags: string[] = [];
+    if (Array.isArray(tag)) {
+      tags = tag
+        .filter((t) => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => (t as string).trim());
+    } else if (typeof tag === 'string' && tag.trim().length > 0) {
+      tags = [tag.trim()];
+    }
+
     if (tags.length > 0) {
       filter.tags = { hasEvery: tags };
     }
@@ -158,7 +166,15 @@ notesRouter.get('/search/public', async (c: HonoContext) => {
   // 处理标签过滤（支持 tag 和 tag[] 两种格式）
   const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
-    const tags = Array.isArray(tag) ? tag : [tag];
+    let tags: string[] = [];
+    if (Array.isArray(tag)) {
+      tags = tag
+        .filter((t) => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => (t as string).trim());
+    } else if (typeof tag === 'string' && tag.trim().length > 0) {
+      tags = [tag.trim()];
+    }
+
     if (tags.length > 0) {
       filter.tags = { hasEvery: tags };
     }
@@ -206,7 +222,15 @@ notesRouter.get('/search/users/:username', async (c: HonoContext) => {
 
   // 处理标签过滤（支持 tag 和 tag[] 两种格式）
   if (tag) {
-    const tags = Array.isArray(tag) ? tag : [tag];
+    let tags: string[] = [];
+    if (Array.isArray(tag)) {
+      tags = tag
+        .filter((t) => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => (t as string).trim());
+    } else if (typeof tag === 'string' && tag.trim().length > 0) {
+      tags = [tag.trim()];
+    }
+
     if (tags.length > 0) {
       filter.tags = { hasEvery: tags };
     }
@@ -254,7 +278,15 @@ notesRouter.get('/', authenticateJWT, async (c: HonoContext) => {
   // 处理标签过滤（支持 tag 和 tag[] 两种格式）
   const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
-    const tags = Array.isArray(tag) ? tag : [tag];
+    let tags: string[] = [];
+    if (Array.isArray(tag)) {
+      tags = tag
+        .filter((t) => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => (t as string).trim());
+    } else if (typeof tag === 'string' && tag.trim().length > 0) {
+      tags = [tag.trim()];
+    }
+
     if (tags.length > 0) {
       filter.tags = { hasEvery: tags };
     }
@@ -296,7 +328,15 @@ notesRouter.get('/users/:username', async (c: HonoContext) => {
   // 处理标签过滤（支持 tag 和 tag[] 两种格式）
   const tag = c.req.query('tag') || c.req.query('tag[]');
   if (tag) {
-    const tags = Array.isArray(tag) ? tag : [tag];
+    let tags: string[] = [];
+    if (Array.isArray(tag)) {
+      tags = tag
+        .filter((t) => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => (t as string).trim());
+    } else if (typeof tag === 'string' && tag.trim().length > 0) {
+      tags = [tag.trim()];
+    }
+
     if (tags.length > 0) {
       filter.tags = { hasEvery: tags };
     }
