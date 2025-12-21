@@ -1,18 +1,16 @@
 {
-  "name": "rote_node",
-  "version": "1.0.0",
-  "description": "node | postgresql | drizzle-orm",
+  "name": "rote-server",
+  "version": "1.2.3",
+  "description": "Rote Server, a backend server for Rote.",
   "main": "server.ts",
   "scripts": {
     "start": "bun run server.ts",
     "build": "tsc",
     "dev": "bun --watch server.ts",
-    "dev-f": "bun --watch server.ts",
     "dockerBuild": "docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .",
     "docker:start": "bun run server.ts",
-    "test:init": "bun run scripts/testInitialization.ts",
     "test:quick": "bun run scripts/quickTest.ts",
-    "test:all": "bun run test:quick && bun run test:init",
+    "test:all": "bun run test:quick",
     "test": "bun run tests/index.ts",
     "test:full": "bun run tests/index.ts",
     "lint": "eslint .",
@@ -28,10 +26,18 @@
   "keywords": [
     "node",
     "postgresql",
-    "drizzle-orm"
+    "drizzle-orm",
+    "rote",
+    "knowledge",
+    "management",
+    "sharing",
+    "note",
+    "note-taking",
+    "note-sharing",
+    "note-management"
   ],
   "author": "rabithua",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.948.0",
     "@aws-sdk/s3-request-presigner": "^3.948.0",

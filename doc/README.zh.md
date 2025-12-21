@@ -1,10 +1,18 @@
-[English](README.md) | [中文](README.zh.md)
+<p align="right"><a href="../README.md">English</a> | 中文</p>
 
 ![Group 1](https://github.com/Rabithua/Rote/assets/34543831/a06d5a5b-0580-4138-9282-449a725cd287)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/Rabithua/Rote.svg?style=social&label=Star)](https://github.com/Rabithua/Rote)
+[![GitHub forks](https://img.shields.io/github/forks/Rabithua/Rote.svg?style=social&label=Fork)](https://github.com/Rabithua/Rote/fork)
+
+**[Demo](https://demo.rote.ink/)** ｜ **[Website](https://beta.rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://beta.rote.ink/explore)** ｜ **[Rabithua](https://beta.rote.ink/rabithua)**
+
 > 开放 API，记录的姿势不止一种 🤩，支持 Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架 🙅🏻
 
-**[Website](https://beta.rote.ink)** ｜ **[Demo](https://demo.rote.ink/)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://beta.rote.ink/explore)** ｜ **[Rabithua](https://beta.rote.ink/rabithua)**
+### 预览
+
+![Rote Preview](assets/imgs/github_preview_img.png)
 
 ### 核心特性
 
@@ -18,7 +26,7 @@
 
 ### 快速开始
 
-#### 方式一：使用 Docker Hub 镜像（推荐）
+#### 方式一：使用 Docker Hub 镜像
 
 复制 `docker-compose.yml` 到你的已经装好 Docker 和 Docker Compose 的服务器
 
@@ -52,7 +60,3 @@ Dokploy 是一个开源的 Docker 部署平台，提供了可视化的应用部�
 ## 技术栈
 
 <img width="866" height="526" alt="technology" src="https://github.com/user-attachments/assets/2be3a73b-467e-4d4b-8d9f-2a129aba4825" />
-
----
-
-Made with ❤️ by [Rabithua](https://github.com/Rabithua)

@@ -1,9 +1,12 @@
 # Rote Web 前端：SCF website 组件部署配置
 #
+# ⚠️ 部署平台：腾讯云 Serverless Cloud Framework (SCF)
+# 此配置文件用于部署到腾讯云 COS 静态网站托管
+#
 # 使用方法（在 web/ 目录执行）：
-# - 部署：scf deploy
-# - 查看：scf info
-# - 移除：scf remove
+# - 部署：scf deploy 或 bun run scf:deploy
+# - 查看：scf info 或 bun run scf:info
+# - 移除：scf remove 或 bun run scf:remove
 #
 # 说明：
 # - 本配置会在本地先执行 hook 构建（Vite 输出到 dist/），再上传到 COS 并启用静态站点托管。
@@ -11,6 +14,8 @@
 #
 # 文档：
 # - https://cloud.tencent.com/document/product/1154/51080
+#
+# 注意：如果使用其他部署平台（如 Railway），请参考 nixpacks.toml 配置
 
 # ## 应用信息 ##
 # app 建议保持稳定；同账号下需唯一（如冲突可自行改名）
