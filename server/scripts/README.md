@@ -4,7 +4,6 @@ This directory contains comprehensive test scripts for the Rote backend initiali
 
 ## 📁 Files
 
-- `testInitialization.ts` - Complete test suite for initialization process
 - `quickTest.ts` - Quick validation test for basic functionality
 - `runTests.sh` - Shell script to run tests with various options
 - `testConfig.json` - Test configuration and expected results
@@ -31,9 +30,6 @@ This directory contains comprehensive test scripts for the Rote backend initiali
 # Run quick test only
 npm run test:quick
 
-# Run full test suite
-npm run test:init
-
 # Run all tests
 npm run test:all
 ```
@@ -50,11 +46,8 @@ chmod +x scripts/runTests.sh
 # Run quick test only
 ./scripts/runTests.sh --quick
 
-# Run full test suite only
-./scripts/runTests.sh --full
-
-# Wait for server to be ready
-./scripts/runTests.sh --wait
+# Run all tests and wait for server
+./scripts/runTests.sh --all --wait
 
 # Show help
 ./scripts/runTests.sh --help
@@ -65,9 +58,6 @@ chmod +x scripts/runTests.sh
 ```bash
 # Quick test
 npx ts-node scripts/quickTest.ts
-
-# Full test suite
-npx ts-node scripts/testInitialization.ts
 ```
 
 ## 🧪 Test Coverage
@@ -83,18 +73,6 @@ Tests the essential initialization flow:
 5. **Configuration Update** - Tests config modification
 6. **Middleware Testing** - Tests configuration middleware
 7. **Login Test** - Tests authentication with generated keys
-
-### Full Test Suite (`testInitialization.ts`)
-
-Comprehensive testing including:
-
-1. **System Status** - Initial and post-initialization state
-2. **System Initialization** - Complete setup process
-3. **Configuration Management** - Get, update, test configurations
-4. **URL Management** - Detect and update URLs
-5. **Middleware Testing** - Storage, security, notification middleware
-6. **Hot Updates** - Configuration hot-reloading
-7. **Error Handling** - Various error scenarios
 
 ## ⚙️ Configuration
 
@@ -194,7 +172,7 @@ Test data is defined in `testConfig.json`:
 For detailed debugging, you can modify the test scripts to include more verbose logging:
 
 ```typescript
-// In testInitialization.ts or quickTest.ts
+// In quickTest.ts
 console.log('Request URL:', url);
 console.log('Request Data:', data);
 console.log('Response Status:', response.status);

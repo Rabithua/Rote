@@ -80,15 +80,15 @@ run_quick_test() {
     fi
 }
 
-# Function to run full test
-run_full_test() {
-    print_status "Running full initialization test suite..."
+# Function to run all tests
+run_all_tests() {
+    print_status "Running all tests..."
     
-    if npm run test:init; then
-        print_success "Full test suite completed successfully"
+    if npm run test:all; then
+        print_success "All tests completed successfully"
         return 0
     else
-        print_error "Full test suite failed"
+        print_error "Tests failed"
         return 1
     fi
 }
@@ -99,7 +99,6 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -q, --quick     Run only quick test"
-    echo "  -f, --full      Run only full test suite"
     echo "  -a, --all       Run all tests (default)"
     echo "  -w, --wait      Wait for server to be ready"
     echo "  -h, --help      Show this help message"
@@ -110,14 +109,14 @@ show_help() {
     echo ""
     echo "Examples:"
     echo "  $0 --quick                    # Run quick test only"
-    echo "  $0 --full --wait              # Run full test and wait for server"
+    echo "  $0 --all --wait               # Run all tests and wait for server"
     echo "  TEST_BASE_URL=http://localhost:3001 $0  # Test different server"
 }
 
 # Main function
 main() {
     local run_quick=false
-    local run_full=false
+    local run_all=false
     local wait_for_server_flag=false
     
     # Parse arguments
@@ -127,13 +126,8 @@ main() {
                 run_quick=true
                 shift
                 ;;
-            -f|--full)
-                run_full=true
-                shift
-                ;;
             -a|--all)
-                run_quick=true
-                run_full=true
+                run_all=true
                 shift
                 ;;
             -w|--wait)
@@ -153,9 +147,8 @@ main() {
     done
     
     # Default to running all tests if no specific test is specified
-    if [[ "$run_quick" == false && "$run_full" == false ]]; then
-        run_quick=true
-        run_full=true
+    if [[ "$run_quick" == false && "$run_all" == false ]]; then
+        run_all=true
     fi
     
     print_status "Starting Rote Backend Initialization Tests"
@@ -184,8 +177,8 @@ main() {
         echo ""
     fi
     
-    if [[ "$run_full" == true ]]; then
-        if ! run_full_test; then
+    if [[ "$run_all" == true ]]; then
+        if ! run_all_tests; then
             exit_code=1
         fi
         echo ""

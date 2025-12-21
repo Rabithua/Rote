@@ -2,7 +2,7 @@
 
 ## 背景
 
-随着后端 API 已经重构为 RESTful 风格的 v2 版本，我们决定简化前端 API 调用模式，废弃原有的 `/src/api` 目录下的抽象函数，改为直接在业务逻辑中使用标准化的 API 调用。
+随着后端 API 已经重构为 RESTful 风格的 v2 版本，我们决定简化前端 API 调用模式。原有的 `/src/api` 目录下的抽象函数已被移除，改为直接在业务逻辑中使用标准化的 API 调用。
 
 ## 新的 API 调用方式
 
@@ -74,12 +74,12 @@ const result = await post('/notes', { content: 'New note' });
 
 ### 附件相关
 
-| 旧方法                      | 新方法（使用预签名接口）                                                                 |
-| --------------------------- | ---------------------------------------------------------------------------------------- |
-| `apiUploadFiles(formData)`  | 使用 `presign()`, `uploadToSignedUrl()`, `finalize()` 从 `@/utils/directUpload`         |
-| `apiDeleteAttachment(id)`   | `del('/attachments/' + id)`                                                              |
-| `apiDeleteAttachments(ids)` | `del('/attachments', { data: { ids } })`                                                 |
-| 无旧方法                    | `put('/attachments/sort', { roteId, attachmentIds })`                                    |
+| 旧方法                      | 新方法（使用预签名接口）                                                        |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `apiUploadFiles(formData)`  | 使用 `presign()`, `uploadToSignedUrl()`, `finalize()` 从 `@/utils/directUpload` |
+| `apiDeleteAttachment(id)`   | `del('/attachments/' + id)`                                                     |
+| `apiDeleteAttachments(ids)` | `del('/attachments', { data: { ids } })`                                        |
+| 无旧方法                    | `put('/attachments/sort', { roteId, attachmentIds })`                           |
 
 **附件上传新方法示例**：
 
@@ -132,13 +132,12 @@ const finalized = await finalize([
 
 2. 将现有的API调用替换为新的直接调用：
 
-   **旧方式**:
+   **旧方式**（已废弃，仅作参考）:
 
    ```typescript
-   import { apiGetMyRote } from '../api/rote/main';
-
-   // 使用
-   const notes = await apiGetMyRote({ skip: 0, limit: 10 });
+   // 注意：旧的 /src/api 目录已移除
+   // import { apiGetMyRote } from '../api/rote/main';
+   // const notes = await apiGetMyRote({ skip: 0, limit: 10 });
    ```
 
    **新方式**:

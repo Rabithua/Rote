@@ -58,9 +58,3 @@ export async function getRotesV2(props: ApiGetRotesParams) {
       throw new Error('Unknown API type');
   }
 }
-
-/**
- * @deprecated 使用 getRotesV2 替代，该函数现在是 getRotesV2 的别名
- * 为了向后兼容性而保留
- */
-export const searchRotesV2 = getRotesV2;

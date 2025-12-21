@@ -1,3 +1,10 @@
+# Rote Web 前端：Nixpacks 构建配置
+#
+# ⚠️ 部署平台：Railway、Render 等支持 Nixpacks 的平台
+# 此配置文件用于在这些平台上自动构建和部署前端应用
+#
+# 注意：如果使用腾讯云 SCF 部署，请参考 serverless.yml 配置
+
 [phases.setup]
 nixPkgs = ["nodejs", "nodePackages.pnpm", "bun"]
 
