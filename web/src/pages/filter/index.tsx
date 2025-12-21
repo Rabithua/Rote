@@ -234,8 +234,6 @@ function MineFilter() {
             ...prevState,
             keyword: trimmedKeyword,
           }));
-          setSize(1);
-          mutate();
         }}
         isLoading={isLoading || isValidating}
       />
