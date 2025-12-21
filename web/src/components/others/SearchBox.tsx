@@ -28,6 +28,10 @@ export default function SearchBar({
       className="flex items-center gap-2"
       onSubmit={(e) => {
         e.preventDefault();
+        // 如果正在加载，阻止提交
+        if (isLoading) {
+          return;
+        }
         // 优先从 ref 获取值，如果没有则从 DOM 获取
         const inputValue =
           inputRef.current?.value ||
@@ -48,6 +52,10 @@ export default function SearchBar({
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
+            // 如果正在加载，阻止搜索
+            if (isLoading) {
+              return;
+            }
             handleSearch(e.currentTarget.value);
           }
         }}

@@ -26,7 +26,7 @@ function SideBar() {
   return isLoading ? (
     <LoadingPlaceholder className="py-8" size={6} />
   ) : (
-    <div className="grid grid-cols-2 divide-x-1 border-b">
+    <div className="grid grid-cols-2 divide-x border-b">
       <div className="gap2 flex flex-col items-center justify-center py-4">
         <SlidingNumber
           className="font-mono text-xl font-black"
@@ -174,7 +174,7 @@ function MineFilter() {
         starColor="#07C160"
         className="relative h-auto max-h-[25vh] overflow-hidden bg-none"
       >
-        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none [mask-image:linear-gradient(180deg,#000000_calc(100%-20%),transparent)] p-4 font-semibold">
+        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none mask-[linear-gradient(180deg,#000000_calc(100%-20%),transparent)] p-4 font-semibold">
           <div className="relative flex flex-wrap items-center gap-2">
             {t('includeTags')}
             {filter.tags.hasEvery.length > 0

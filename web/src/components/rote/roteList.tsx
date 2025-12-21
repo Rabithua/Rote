@@ -76,7 +76,7 @@ function RoteList({
   }
 
   return (
-    <div className="relative flex w-full flex-col divide-y-1">
+    <div className="relative flex w-full flex-col divide-y">
       {rotes.map((item: any) => (
         <RoteItem rote={item} key={item.id} mutate={mutate} />
       ))}
