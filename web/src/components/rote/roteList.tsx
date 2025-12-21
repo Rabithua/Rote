@@ -2,9 +2,9 @@ import type { Rotes } from '@/types/main';
 
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteItem from '@/components/rote/roteItem';
-import { MessageSquareDashed } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { AlertCircle, MessageSquareDashed } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
@@ -12,10 +12,12 @@ function RoteList({
   data,
   loadMore,
   mutate,
+  error,
 }: {
   data?: Rotes[];
   loadMore: () => void;
   mutate: SWRInfiniteKeyedMutator<Rotes>;
+  error?: Error | null;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteList',
@@ -58,6 +60,20 @@ function RoteList({
       observer.unobserve(currentloaderRef);
     };
   }, [loadMore]);
+
+  // 如果有错误，显示错误提示
+  if (error) {
+    const errorMessage =
+      (error as any)?.response?.data?.message ||
+      error?.message ||
+      t('error', { defaultValue: '加载失败，请稍后重试' });
+    return (
+      <div className="bg-background flex shrink-0 flex-col items-center justify-center gap-4 py-8">
+        <AlertCircle className="text-destructive size-10" />
+        <div className="text-destructive text-center font-light">{errorMessage}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex w-full flex-col divide-y-1">

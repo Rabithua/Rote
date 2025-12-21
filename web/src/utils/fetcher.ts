@@ -67,7 +67,7 @@ export function useAPIInfinite<TData = unknown>(
   fetcher: (_data: ApiGetRotesParams) => Promise<TData>,
   options?: SWRInfiniteConfiguration
 ) {
-  const { data, size, setSize, isLoading, isValidating, mutate } = useSWRInfinite(
+  const { data, size, setSize, isLoading, isValidating, mutate, error } = useSWRInfinite(
     getKey,
     fetcher,
     options
@@ -85,5 +85,6 @@ export function useAPIInfinite<TData = unknown>(
     isLoading,
     mutate,
     loadMore,
+    error,
   };
 }

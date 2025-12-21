@@ -655,10 +655,12 @@ function buildSearchConditions(
   filter: any
 ) {
   return (rotes: any, { eq, and, or, ilike, sql }: any) => {
+    // 转义 keyword 中的单引号，防止 SQL 注入
+    const escapedKeyword = String(keyword).replace(/'/g, "''");
     const searchConditions = [
-      ilike(rotes.content, `%${keyword}%`),
-      ilike(rotes.title, `%${keyword}%`),
-      sql`${rotes.tags} @> ARRAY[${keyword}]::text[]`,
+      ilike(rotes.content, `%${escapedKeyword}%`),
+      ilike(rotes.title, `%${escapedKeyword}%`),
+      sql`${rotes.tags} @> ARRAY[${sql.raw(`'${escapedKeyword}'`)}]::text[]`,
     ];
 
     const conditions = [or(...searchConditions)];
@@ -671,6 +673,27 @@ function buildSearchConditions(
     if (filter && typeof filter === 'object') {
       Object.keys(filter).forEach((key) => {
         if (filter[key] !== undefined && filter[key] !== null) {
+          // 处理 tags 的 hasEvery 过滤（检查数组是否包含所有指定的标签）
+          if (key === 'tags' && filter[key]?.hasEvery) {
+            const tags = filter[key].hasEvery;
+            if (Array.isArray(tags) && tags.length > 0) {
+              // 使用 PostgreSQL 的 @> 操作符检查数组是否包含所有指定的标签
+              // 这里手动构造 ARRAY[...] 字面量，并对单引号进行转义，避免 SQL 注入
+              const escapedTags = tags.map((tag: string) => `'${String(tag).replace(/'/g, "''")}'`);
+              const tagsCondition = sql`${rotes.tags} @> ARRAY[${sql.raw(
+                escapedTags.join(',')
+              )}]::text[]`;
+              conditions.push(tagsCondition);
+            }
+            return;
+          }
+
+          // 跳过不存在的字段名（如 tag[]），只处理实际存在的数据库字段
+          // 检查字段是否存在于 rotes schema 中
+          if (!(key in rotes)) {
+            return;
+          }
+
           conditions.push(eq(rotes[key], filter[key]));
         }
       });
