@@ -1,8 +1,9 @@
 {
-  "name": "rote-web-frontend",
-  "description": "Frontend for Rote Web, a web application for managing and sharing knowledge.",
+  "name": "rote-web",
+  "version": "1.2.3",
+  "description": "Rote Web, a web application for managing and sharing knowledge.",
   "private": true,
-  "version": "0.0.0",
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 3001",

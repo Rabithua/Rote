@@ -1,7 +1,7 @@
 {
-  "name": "rote_node",
-  "version": "1.0.0",
-  "description": "node | postgresql | drizzle-orm",
+  "name": "rote-server",
+  "version": "1.2.3",
+  "description": "Rote Server, a backend server for Rote.",
   "main": "server.ts",
   "scripts": {
     "start": "bun run server.ts",
@@ -28,10 +28,18 @@
   "keywords": [
     "node",
     "postgresql",
-    "drizzle-orm"
+    "drizzle-orm",
+    "rote",
+    "knowledge",
+    "management",
+    "sharing",
+    "note",
+    "note-taking",
+    "note-sharing",
+    "note-management"
   ],
   "author": "rabithua",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@aws-sdk/client-s3": "^3.948.0",
     "@aws-sdk/s3-request-presigner": "^3.948.0",

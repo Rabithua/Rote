@@ -1,10 +1,14 @@
-[English](README.md) | [中文](README.zh.md)
+<p align="right">English | <a href="doc/README.zh.md">中文</a></p>
 
 ![Group 1](https://github.com/Rabithua/Rote/assets/34543831/a06d5a5b-0580-4138-9282-449a725cd287)
 
 > Open API, more than one way to record 🤩, supports Self-Hosted, take control of your own data, come and go freely, no data hostage 🙅🏻
 
-**[Website](https://beta.rote.ink)** ｜ **[Demo](https://demo.rote.ink/)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://beta.rote.ink/explore)** ｜ **[Rabithua](https://beta.rote.ink/rabithua)**
+### Preview
+
+![Rote Preview](doc/assets/imgs/github_preview_img.png)
+
+**[Demo](https://demo.rote.ink/)** ｜ **[Website](https://beta.rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://beta.rote.ink/explore)** ｜ **[Rabithua](https://beta.rote.ink/rabithua)**
 
 ### Core Features
 
@@ -18,7 +22,7 @@
 
 ### Quick Start
 
-#### Method 1: Using Docker Hub Image (Recommended)
+#### Method 1: Using Docker Hub Image
 
 Copy `docker-compose.yml` to your server with Docker and Docker Compose installed
 
@@ -52,7 +56,3 @@ For more deployment options and configuration instructions, please check the doc
 ## Technology Stack
 
 <img width="866" height="526" alt="technology" src="https://github.com/user-attachments/assets/2be3a73b-467e-4d4b-8d9f-2a129aba4825" />
-
----
-
-Made with ❤️ by [Rabithua](https://github.com/Rabithua)
