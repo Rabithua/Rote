@@ -503,7 +503,9 @@
         "name": "Site Name",
         "descriptionLabel": "Site Description",
         "frontendUrl": "Frontend URL",
-        "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds"
+        "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds",
+        "icpRecord": "ICP Record Number",
+        "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号"
       },
       "storage": {
         "title": "Storage Configuration",

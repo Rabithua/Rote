@@ -113,6 +113,25 @@ export default function SiteConfigTab({
           />
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="icpRecord">{t('site.icpRecord')}</Label>
+          <Input
+            id="icpRecord"
+            value={siteConfig?.icpRecord || ''}
+            onChange={(e) =>
+              setSiteConfig({
+                ...(siteConfig || {}),
+                name: siteConfig?.name || '',
+                frontendUrl: siteConfig?.frontendUrl || '',
+                description: siteConfig?.description || '',
+                icpRecord: e.target.value,
+              })
+            }
+            placeholder="京ICP备12345678号"
+          />
+          <p className="text-muted-foreground text-xs">{t('site.icpRecordDescription')}</p>
+        </div>
+
         <Button onClick={handleSave} disabled={isSaving} className="w-full">
           {isSaving ? t('saving') : t('save')}
         </Button>

@@ -5,6 +5,7 @@ export interface SystemConfig {
     description?: string;
     defaultLanguage?: string;
     allowedOrigins?: string[];
+    icpRecord?: string;
   };
   storage?: {
     endpoint: string;

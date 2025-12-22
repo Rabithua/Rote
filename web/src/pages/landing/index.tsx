@@ -5,6 +5,7 @@ import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { useSystemStatus } from '@/hooks/useSystemStatus';
 import { useTypewriter } from '@/hooks/useTypewriter';
 import { cn } from '@/utils/cn';
@@ -34,6 +35,7 @@ import useSWR from 'swr';
 function Landing() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.landing' });
   const { isInitialized, isLoading, error } = useSystemStatus();
+  const { data: siteStatus } = useSiteStatus();
   const toastShownRef = useRef(false);
 
   // 打字机效果文本数组
@@ -450,6 +452,21 @@ function Landing() {
             </div>
           ))}
         </div>
+
+        {/* ICP Record Footer */}
+        {siteStatus?.site?.icpRecord && (
+          <div className="bg-background/60 border-muted/20 border-t py-4">
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs"
+            >
+              {siteStatus.site.icpRecord}
+            </a>
+            <ArrowUpRight className="inline-block size-3" />
+          </div>
+        )}
       </div>
     </div>
   );
