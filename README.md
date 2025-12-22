@@ -6,7 +6,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Rabithua/Rote.svg?style=social&label=Star)](https://github.com/Rabithua/Rote)
 [![GitHub forks](https://img.shields.io/github/forks/Rabithua/Rote.svg?style=social&label=Fork)](https://github.com/Rabithua/Rote/fork)
 
-**[Demo](https://demo.rote.ink/)** ｜ **[Website](https://beta.rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://beta.rote.ink/explore)** ｜ **[Rabithua](https://beta.rote.ink/rabithua)**
+**[Demo](https://demo.rote.ink/)** ｜ **[Website](https://rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://rote.ink/explore)** ｜ **[Rabithua](https://rote.ink/rabithua)**
 
 > Open API, more than one way to record 🤩, supports Self-Hosted, take control of your own data, come and go freely, no data hostage 🙅🏻
 
@@ -53,7 +53,7 @@ Dokploy is an open-source Docker deployment platform that provides a visual inte
 
 For more deployment options and configuration instructions, please check the documentation in the `doc/` directory:
 
-- [Self-Hosted Deployment Guide](https://beta.rote.ink/doc/selfhosted) - Complete deployment and configuration guide
+- [Self-Hosted Deployment Guide](https://rote.ink/doc/selfhosted) - Complete deployment and configuration guide
 - [API Documentation](doc/userguide/API-ENDPOINTS.md) - API interface usage guide
 - [API Key Guide](doc/userguide/API-KEY-GUIDE.md) - How to use API Key
 

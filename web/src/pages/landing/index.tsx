@@ -170,7 +170,7 @@ function Landing() {
     },
     {
       name: t('quickLinks.rabithua'),
-      href: 'https://beta.rote.ink/rabithua',
+      href: 'https://rote.ink/rabithua',
       icon: (
         <img
           src="https://avatars.githubusercontent.com/u/34543831?v=4&size=64"
