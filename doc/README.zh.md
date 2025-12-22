@@ -6,7 +6,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Rabithua/Rote.svg?style=social&label=Star)](https://github.com/Rabithua/Rote)
 [![GitHub forks](https://img.shields.io/github/forks/Rabithua/Rote.svg?style=social&label=Fork)](https://github.com/Rabithua/Rote/fork)
 
-**[Demo](https://demo.rote.ink/)** ｜ **[Website](https://beta.rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://beta.rote.ink/explore)** ｜ **[Rabithua](https://beta.rote.ink/rabithua)**
+**[Demo](https://demo.rote.ink/)** ｜ **[Website](https://rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://rote.ink/explore)** ｜ **[Rabithua](https://rote.ink/rabithua)**
 
 > 开放 API，记录的姿势不止一种 🤩，支持 Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架 🙅🏻
 
@@ -53,7 +53,7 @@ Dokploy 是一个开源的 Docker 部署平台，提供了可视化的应用部�
 
 更多部署选项和配置说明，请查看 `doc/` 目录下的文档：
 
-- [自托管部署指南](https://beta.rote.ink/doc/selfhosted) - 完整的部署和配置说明
+- [自托管部署指南](https://rote.ink/doc/selfhosted) - 完整的部署和配置说明
 - [API 文档](doc/userguide/API-ENDPOINTS.md) - API 接口使用指南
 - [API Key 指南](doc/userguide/API-KEY-GUIDE.md) - 如何使用 API Key
 

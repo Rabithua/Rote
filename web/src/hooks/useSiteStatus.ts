@@ -15,6 +15,7 @@ interface SiteStatusData {
     description: string;
     url: string;
     defaultLanguage: string;
+    icpRecord?: string;
   };
   system: {
     version: string;
