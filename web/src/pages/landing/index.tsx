@@ -2,6 +2,7 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import { AppStoreIcon } from '@/components/icons/Apple';
 import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
+import ProductHunt from '@/components/others/ProductHunt';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -226,7 +227,7 @@ function Landing() {
         </div>
 
         {/* CTA Buttons - 更优雅的按钮设计 */}
-        <div className="flex flex-row flex-wrap gap-3 px-2 pb-4">
+        <div className="flex flex-row flex-wrap items-center gap-3 px-2 pb-4">
           <Button size="lg" asChild>
             <Link
               to={isTokenValid() ? '/home' : '/login'}
@@ -273,6 +274,8 @@ function Landing() {
               <ArrowUpRight className="inline-block size-5" />
             </Link>
           </Button>
+
+          <ProductHunt />
         </div>
 
         <div className="group absolute right-10 bottom-0 flex flex-col items-center">
@@ -429,7 +432,7 @@ function Landing() {
           <p className="text-info text-lg font-light">{t('exploreMore.subtitle')}</p>
         </div>
 
-        <div className="flex flex-row flex-wrap gap-4 py-8">
+        <div className="flex flex-row flex-wrap items-center gap-4 py-8">
           {quickLinks.map((link) => (
             <div key={link.name} className="group">
               <Button variant={link.external ? 'outline' : 'default'} asChild>
