@@ -76,7 +76,7 @@ function RoteItem({
         </Link>
       )}
 
-      <div className="flex flex-grow flex-col space-y-2 overflow-hidden">
+      <div className="flex grow flex-col space-y-2 overflow-hidden">
         {/* Header */}
         <div className="flex w-full cursor-default items-center gap-2">
           <Link className="shrink-0 font-semibold hover:underline" to={`/${rote.author.username}`}>
@@ -112,7 +112,7 @@ function RoteItem({
                 <TooltipTrigger asChild>
                   <PinIcon className="size-4 cursor-pointer" />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>已置顶</TooltipContent>
+                <TooltipContent sideOffset={4}>{t('isPinned')}</TooltipContent>
               </Tooltip>
             )}
 
@@ -121,7 +121,7 @@ function RoteItem({
                 <TooltipTrigger asChild>
                   <Globe2Icon className="size-4 cursor-pointer" />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>公开</TooltipContent>
+                <TooltipContent sideOffset={4}>{t('isPublic')}</TooltipContent>
               </Tooltip>
             )}
 
@@ -130,7 +130,7 @@ function RoteItem({
                 <TooltipTrigger asChild>
                   <Archive className="size-4 cursor-pointer" />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>已归档</TooltipContent>
+                <TooltipContent sideOffset={4}>{t('isArchived')}</TooltipContent>
               </Tooltip>
             )}
 
@@ -152,11 +152,11 @@ function RoteItem({
                     className="size-4 cursor-pointer"
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/rote/${rote.id}`);
-                      toast.success('已复制链接');
+                      toast.success(t('linkCopied'));
                     }}
                   />
                 </TooltipTrigger>
-                <TooltipContent sideOffset={4}>复制链接</TooltipContent>
+                <TooltipContent sideOffset={4}>{t('copyLink')}</TooltipContent>
               </Tooltip>
             )}
           </span>
@@ -196,7 +196,7 @@ function RoteItem({
                 className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
                 onClick={() => setIsExpanded(true)}
               >
-                <ArrowDownLeft className="size-4" /> 展开
+                <ArrowDownLeft className="size-4" /> {t('expand')}
               </div>
             </SoftBottom>
           )}
@@ -235,7 +235,7 @@ function RoteItem({
           <Dialog open={modalType === 'edit'} onOpenChange={() => setModalType(null)}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>编辑</DialogTitle>
+                <DialogTitle>{t('edit')}</DialogTitle>
               </DialogHeader>
               <RoteEditor
                 roteAtom={useEditor().editor_editRoteAtom}
@@ -252,8 +252,8 @@ function RoteItem({
             <DialogContent className="block">
               <DialogHeader>
                 <div className="flex items-center gap-4 border-b pb-4">
-                  <h1 className="text-xl font-semibold">订阅提醒</h1>
-                  <p className="text-info font-thin">开发中</p>
+                  <h1 className="text-xl font-semibold">{t('subscriptionReminder')}</h1>
+                  <p className="text-info font-thin">{t('inDevelopment')}</p>
                 </div>
               </DialogHeader>
               <NoticeCreateBoard />

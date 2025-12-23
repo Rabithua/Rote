@@ -3,7 +3,7 @@
     "landing": {
       "poem": "",
       "headingPrefix": "A note repository like ",
-      "linksItems": ["Login", "User Guide", "Github", "Blog", "Download", "Donate"],
+      "linksItems": ["Login", "", "GitHub"],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
@@ -101,10 +101,6 @@
         "login": "Login",
         "logout": "Logout"
       },
-      "roteTypes": {
-        "Rote": "Note",
-        "Article": "Article"
-      },
       "messages": {
         "loggingOut": "Logging out...",
         "logoutSuccess": "Logout successful",
@@ -115,21 +111,11 @@
         "cancel": "Cancel"
       }
     },
+    "error": {
+      "pageNotFound": "Page not found or an error occurred",
+      "pageNotFoundDesc": "Sorry, we couldn't find the page you were looking for"
+    },
     "login": {
-      "validation": {
-        "usernameRequired": "Username is required",
-        "usernameMaxLength": "Username cannot exceed 20 characters",
-        "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
-        "usernameConflict": "This username conflicts with system routes",
-        "passwordRequired": "Password is required",
-        "passwordMin": "Password must be at least 6 characters",
-        "passwordMaxLength": "Password cannot exceed 128 characters",
-        "emailRequired": "Email is required",
-        "emailMaxLength": "Email cannot exceed 30 characters",
-        "emailFormat": "Invalid email format",
-        "nicknameRequired": "Nickname is required",
-        "nicknameMaxLength": "Nickname cannot exceed 20 characters"
-      },
       "authorize": {
         "title": "Authorize Login",
         "message": "You are about to authorize Rote Web App to sign in to Rote iOS App as {{username}}",
@@ -139,10 +125,6 @@
         "loggingIn": "Logging in...",
         "loginSuccess": "Login successful",
         "backendDown": "Backend service is unavailable",
-        "checkDatabase": "Database connection failed",
-        "checkBackend": "Backend service is not responding",
-        "loggingOut": "Logging out...",
-        "logoutSuccess": "Logout successful",
         "registering": "Registering...",
         "registerSuccess": "Registration successful",
         "oauthLoginSuccess": "GitHub login successful",
@@ -162,9 +144,6 @@
       "buttons": {
         "login": "Login",
         "register": "Register",
-        "back": "Back",
-        "toHome": "Go to Home",
-        "logout": "Logout",
         "loginWithGitHub": "Login with GitHub",
         "loginWithApple": "Sign in with Apple"
       },
@@ -176,10 +155,18 @@
         "backendIssue": "Backend service issue",
         "dockerDeployment": "Using Docker deployment, backend container may take a few minutes to build. Please refresh the page later."
       },
-      "title": {
-        "login": "Login",
-        "register": "Register"
-      }
+      "usernameRequired": "Username is required",
+      "usernameMaxLength": "Username cannot exceed 20 characters",
+      "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
+      "usernameConflict": "This username conflicts with system routes",
+      "passwordRequired": "Password is required",
+      "passwordMin": "Password must be at least 6 characters",
+      "passwordMaxLength": "Password cannot exceed 128 characters",
+      "emailRequired": "Email is required",
+      "emailMaxLength": "Email cannot exceed 30 characters",
+      "emailFormat": "Invalid email format",
+      "nicknameRequired": "Nickname is required",
+      "nicknameMaxLength": "Nickname cannot exceed 20 characters"
     },
     "home": {
       "statistics": "Statistics"
@@ -190,7 +177,6 @@
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time:",
       "openKeyDescription": "OpenKey allows easy access to permission-specific features. Properly allocate permissions to avoid unnecessary troubles from OpenKey leakage.",
-      "loading": "Loading...",
       "noOpenKey": "No OpenKey yet, generate one?",
       "addOpenKey": "Generate an OpenKey",
       "email": "Email",
@@ -224,55 +210,35 @@
         "oauth": {
           "title": "Account Linking",
           "description": "Link third-party accounts to enable multiple login methods",
+          "bindSuccess": "Account bound successfully",
+          "bindFailed": "Binding failed: {{error}}",
+          "unbindSuccess": "Account unbound",
+          "unbindFailed": "Unbinding failed: {{error}}",
+          "mergeSuccess": "Account bound successfully, account data merged",
+          "mergeFailed": "Account merge failed: {{error}}",
+          "mergeDialog": {
+            "title": "Confirm Account Merge",
+            "description": "This account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
+            "existingAccount": "Existing Account",
+            "currentAccount": "Current Account",
+            "warning": "Warning: This operation cannot be undone. Please confirm this is your account.",
+            "cancel": "Cancel",
+            "confirm": "Confirm Merge",
+            "merging": "Merging…"
+          },
           "github": {
-            "title": "GitHub",
-            "bound": "Bound",
             "notBound": "Not Bound",
             "bind": "Bind GitHub",
             "unbind": "Unbind GitHub",
             "binding": "Binding…",
-            "unbinding": "Unbinding…",
-            "bindSuccess": "GitHub account bound successfully",
-            "bindFailed": "Binding failed: {{error}}",
-            "mergeSuccess": "GitHub account bound successfully, account data merged",
-            "mergeFailed": "Account merge failed: {{error}}",
-            "unbindSuccess": "GitHub account unbound",
-            "unbindFailed": "Unbinding failed: {{error}}",
-            "mergeDialog": {
-              "title": "Confirm Account Merge",
-              "description": "This GitHub account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
-              "existingAccount": "Existing Account",
-              "currentAccount": "Current Account",
-              "warning": "Warning: This operation cannot be undone. Please confirm this is your account.",
-              "cancel": "Cancel",
-              "confirm": "Confirm Merge",
-              "merging": "Merging…"
-            }
+            "unbinding": "Unbinding…"
           },
           "apple": {
-            "title": "Apple",
-            "bound": "Bound",
             "notBound": "Not Bound",
             "bind": "Bind Apple",
             "unbind": "Unbind Apple",
             "binding": "Binding…",
-            "unbinding": "Unbinding…",
-            "bindSuccess": "Apple account bound successfully",
-            "bindFailed": "Binding failed: {{error}}",
-            "mergeSuccess": "Apple account bound successfully, account data merged",
-            "mergeFailed": "Account merge failed: {{error}}",
-            "unbindSuccess": "Apple account unbound",
-            "unbindFailed": "Unbinding failed: {{error}}",
-            "mergeDialog": {
-              "title": "Confirm Account Merge",
-              "description": "This Apple account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
-              "existingAccount": "Existing Account",
-              "currentAccount": "Current Account",
-              "warning": "Warning: This operation cannot be undone. Please confirm this is your account.",
-              "cancel": "Cancel",
-              "confirm": "Confirm Merge",
-              "merging": "Merging…"
-            }
+            "unbinding": "Unbinding…"
           }
         },
         "deleteAccount": {
@@ -293,15 +259,9 @@
       }
     },
     "rote": {
-      "loading": "Loading...",
-      "sideBarTitle": "Relative Information",
-      "authorInfo": {
-        "nickname": "Nickname",
-        "username": "Username"
-      }
+      "sideBarTitle": "Relative Information"
     },
     "user": {
-      "loading": "Loading...",
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time: ",
       "publicNotes": "Public Notes",
@@ -319,9 +279,7 @@
       "none": "NONE",
       "data": "Data Statistics",
       "note": "Note",
-      "attachment": "Attachment",
-      "searchPlaceholder": "Search note content, title, or tags...",
-      "searchButton": "Search"
+      "attachment": "Attachment"
     },
     "explore": {
       "title": "Explore",
@@ -353,12 +311,9 @@
         "title": "ServiceWorker Notification",
         "description": "ServiceWorker enables advanced features like background notifications.",
         "status": "Status:",
-        "noStatus": "No status",
         "serviceId": "Service ID:",
         "notificationTest": "Test Notification",
         "sending": "Sending...",
-        "permissionProcessing": "Processing permissions...",
-        "complete": "Complete",
         "sendSuccess": "Sent successfully!",
         "sendFailed": "Send failed",
         "example": "Usage Example:",
@@ -406,12 +361,18 @@
       "title": "Rote Setup Wizard",
       "subtitle": "Welcome to Rote! Follow the steps to complete the setup",
       "steps": {
-        "basic": { "title": "Basic Settings", "description": "Set site basics" },
+        "basic": {
+          "title": "Basic Settings",
+          "description": "Set site basics"
+        },
         "storage": {
           "title": "Storage Settings",
           "description": "Configure S3 storage (optional)"
         },
-        "admin": { "title": "Admin Account", "description": "Create admin account" }
+        "admin": {
+          "title": "Admin Account",
+          "description": "Create admin account"
+        }
       },
       "labels": {
         "siteName": "Site Name",
@@ -470,7 +431,6 @@
         "saving": "Saving...",
         "testConnection": "Test S3 Connection",
         "skipS3": "Skip S3 Configuration",
-        "enableS3": "Enable S3 Configuration",
         "testing": "Testing connection..."
       },
       "toasts": {
@@ -480,9 +440,6 @@
         "testSuccess": "S3 connection test succeeded!",
         "testFailed": "Connection test failed: {{error}}",
         "pleaseFillS3": "Please fill in all S3 configuration fields first"
-      },
-      "ui": {
-        "statistics": "Statistics"
       }
     },
     "admin": {
@@ -516,8 +473,6 @@
         "secretAccessKey": "Secret Access Key",
         "urlPrefix": "URL Prefix",
         "urlPrefixDescription": "Public URL prefix for accessing uploaded files (optional)",
-        "notConfigured": "Storage configuration not set",
-        "configureLater": "You can configure it later in system settings",
         "testConnection": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Storage connection test successful!",
@@ -1043,10 +998,6 @@
       }
     }
   },
-  "error": {
-    "pageNotFound": "Page not found or an error occurred",
-    "pageNotFoundDesc": "Sorry, we couldn't find the page you were looking for"
-  },
   "components": {
     "d3": {
       "heatmap": {
@@ -1087,54 +1038,29 @@
       "minimumPermission": "At least one permission is required"
     },
     "sidebarSearch": {
-      "title": "Quick Search",
-      "placeholder": "Search notes...",
-      "button": "Go"
+      "placeholder": "Search notes..."
     },
     "randomRote": {
       "title": "Random Review",
       "publicNoteHint": "This is a public note from another user."
     },
-    "roteInputModel": {
-      "contentPlaceholder": "Ctrl + Enter to send",
-      "tagsPlaceholder": "Tags",
-      "pin": "Pin",
-      "archive": "Archive",
-      "send": "Send",
-      "stateOptions": {
-        "private": "Private",
-        "public": "Public"
-      },
-      "uploading": "Uploading...",
-      "uploadSuccess": "Upload successful",
-      "uploadFailed": "Upload failed",
-      "deleting": "Deleting...",
-      "deleteSuccess": "Delete successful",
-      "deleteFailed": "Delete failed",
-      "error": {
-        "emptyContent": "Content cannot be empty"
-      }
-    },
     "roteInputSimple": {
       "contentPlaceholder": "Ctrl + ↵ to send",
-      "tagsPlaceholder": "Tags",
       "pin": "Pin",
       "archive": "Archive",
       "send": "Send",
-      "stateOptions": {
-        "private": "Private",
-        "public": "Public"
-      },
-      "uploading": "Uploading...",
-      "uploadSuccess": "Upload successful",
       "uploadFailed": "Upload failed",
       "sending": "Sending...",
       "sendSuccess": "Send successful",
       "sendFailed": "Send failed",
+      "publicWarning": "Your content will be public and visible to anyone.",
+      "stateOptions": {
+        "public": "Public",
+        "private": "Private"
+      },
       "error": {
         "emptyContent": "Content cannot be empty"
-      },
-      "recentPosts": "The above are recent notes"
+      }
     },
     "roteItem": {
       "details": "Details",
@@ -1145,24 +1071,15 @@
       "unarchive": "Unarchive",
       "share": "Share",
       "delete": "Delete",
-      "expand": "Expand",
       "review": "Review",
-      "noticeSubcription": "Subscribe to Notifications",
-      "development": "In Development...",
-      "tooltips": {
-        "pinned": "Pinned",
-        "unpinned": "Unpinned",
-        "public": "Public",
-        "archived": "Archived",
-        "edited": "Edited at: {{time}}",
-        "copyLink": "Copy Link",
-        "copyLinkSuccess": "Link copied to clipboard"
-      },
+      "isPinned": "Pinned",
+      "isPublic": "Public",
+      "isArchived": "Archived",
+      "copyLink": "Copy link",
+      "expand": "Expand",
+      "subscriptionReminder": "Subscription Reminder",
+      "inDevelopment": "In Development",
       "messages": {
-        "copySuccess": "Content copied to clipboard",
-        "sending": "Sending...",
-        "sendSuccess": "Send successful",
-        "sendFailed": "Send failed",
         "deleting": "Deleting...",
         "deleteSuccess": "Delete successful",
         "deleteFailed": "Delete failed",
@@ -1178,21 +1095,32 @@
     "roteList": {
       "empty": "Nothing here"
     },
-    "roteShareCard": {
-      "copyLink": "Copy Link",
-      "save": "Save",
-      "linkCopied": "Link copied to clipboard",
-      "generatingImage": "Generating image...",
-      "imageSaved": "Image saved",
-      "imageGenerationFailed": "Failed to generate image",
-      "elementNotFound": "Element to save not found"
-    },
     "tagMap": {
       "noTags": "No tags yet",
       "expand": "Expand"
     },
-    "uploader": {
-      "fileLimit": "File count exceeds limit, excess files removed!"
+    "tagSelector": {
+      "selectTags": "Select tags...",
+      "tagsCount": "{{count}} tags",
+      "searchTags": "Search tags..."
+    }
+  },
+  "common": {
+    "timeAgo": {
+      "justNow": "Just now",
+      "secondsAgo": "{{count}} seconds ago",
+      "minutesAgo": "{{count}} minute ago",
+      "minutesAgo_plural": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgo_plural": "{{count}} hours ago",
+      "daysAgo": "{{count}} day ago",
+      "daysAgo_plural": "{{count}} days ago",
+      "weeksAgo": "{{count}} week ago",
+      "weeksAgo_plural": "{{count}} weeks ago",
+      "monthsAgo": "{{count}} month ago",
+      "monthsAgo_plural": "{{count}} months ago",
+      "yearsAgo": "{{count}} year ago",
+      "yearsAgo_plural": "{{count}} years ago"
     }
   }
 }

@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function TagSelector({
   tags,
@@ -25,6 +26,9 @@ export function TagSelector({
   setTags: (_tags: string[]) => void;
   callback?: (_tags: string[]) => void;
 }) {
+  const { t } = useTranslation('translation', {
+    keyPrefix: 'components.tagSelector',
+  });
   const [open, setOpen] = React.useState(false);
   const availableTags = useAtomValue(tagsAtom);
   const loadTags = useSetAtom(loadTagsAtom);
@@ -86,7 +90,7 @@ export function TagSelector({
           style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           <span className="flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap">
-            {tags.length > 0 ? `${tags.length} 个标签` : '选择标签...'}
+            {tags.length > 0 ? t('tagsCount', { count: tags.length }) : t('selectTags')}
           </span>
           <ChevronsUpDown className="ml-2 shrink-0 opacity-50" />
         </Button>
@@ -94,7 +98,7 @@ export function TagSelector({
       <PopoverContent className="h-50 w-[140px] p-0">
         <Command>
           <CommandInput
-            placeholder="搜索标签..."
+            placeholder={t('searchTags')}
             value={inputValue}
             onValueChange={setInputValue}
             onKeyDown={handleInputKeyDown}

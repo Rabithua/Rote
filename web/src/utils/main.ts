@@ -1,9 +1,12 @@
+import i18n from 'i18next';
 import { jwtDecode } from 'jwt-decode';
 
 import type { Rotes } from '@/types/main';
 import { toast } from 'sonner';
 
-export function formatTimeAgo(givenTime: string): string {
+type TranslationFunction = (key: string, options?: { count?: number }) => string;
+
+export function formatTimeAgo(givenTime: string, t?: TranslationFunction): string {
   const givenDate = new Date(givenTime);
   const currentDate = new Date();
   const timeDiff = currentDate.getTime() - givenDate.getTime();
@@ -15,23 +18,26 @@ export function formatTimeAgo(givenTime: string): string {
   const months = Math.floor(days / 30);
   const years = Math.floor(days / 365);
 
+  // 使用提供的翻译函数，如果没有则使用 i18n.t（直接访问全局翻译）
+  const translate = t || ((key: string, options?: { count?: number }) => i18n.t(key, options));
+
   if (years > 0) {
-    return years === 1 ? '1年前' : `${years}年前`;
+    return translate('common.timeAgo.yearsAgo', { count: years });
   } else if (months > 0) {
-    return months === 1 ? '1个月前' : `${months}个月前`;
+    return translate('common.timeAgo.monthsAgo', { count: months });
   } else if (days >= 7) {
     const weeks = Math.floor(days / 7);
-    return weeks === 1 ? '1周前' : `${weeks}周前`;
+    return translate('common.timeAgo.weeksAgo', { count: weeks });
   } else if (days > 0) {
-    return days === 1 ? '1天前' : `${days}天前`;
+    return translate('common.timeAgo.daysAgo', { count: days });
   } else if (hours > 0) {
-    return hours === 1 ? '1小时前' : `${hours}小时前`;
+    return translate('common.timeAgo.hoursAgo', { count: hours });
   } else if (minutes > 0) {
-    return minutes === 1 ? '1分钟前' : `${minutes}分钟前`;
+    return translate('common.timeAgo.minutesAgo', { count: minutes });
   } else if (seconds > 10) {
-    return `${seconds}秒前`;
+    return translate('common.timeAgo.secondsAgo', { count: seconds });
   } else {
-    return '刚刚';
+    return translate('common.timeAgo.justNow');
   }
 }
 

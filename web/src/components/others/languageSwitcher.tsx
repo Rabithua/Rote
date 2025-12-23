@@ -5,7 +5,10 @@ function LanguageSwitcher({ className = '' }: { className?: string }) {
   const currentLang = i18next.language.slice(0, 2);
 
   function switchLng() {
-    i18next.changeLanguage(currentLang === 'zh' ? 'en' : 'zh');
+    const languages = ['zh', 'en', 'ja'];
+    const currentIndex = languages.indexOf(currentLang);
+    const nextIndex = (currentIndex + 1) % languages.length;
+    i18next.changeLanguage(languages[nextIndex]);
   }
 
   return (
@@ -22,6 +25,11 @@ function LanguageSwitcher({ className = '' }: { className?: string }) {
         className={`border-[0.5px] px-2 py-1 ${currentLang === 'en' ? 'text-theme bg-theme/5' : 'text-primary border-transparent'}`}
       >
         EN
+      </span>
+      <span
+        className={`border-[0.5px] px-2 py-1 ${currentLang === 'ja' ? 'text-theme bg-theme/5' : 'text-primary border-transparent'}`}
+      >
+        日本語
       </span>
     </div>
   );

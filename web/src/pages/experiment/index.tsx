@@ -11,11 +11,11 @@ export default function ExperimentPage() {
     keyPrefix: 'pages.experiment',
   });
   return (
-    <div className="noScrollBar relative flex-1 divide-y-1 overflow-x-hidden overflow-y-visible pb-20">
-      <NavBar title={`${t('title')} / Experiment`} icon={<Snail className="size-6" />} />
-      <div className="flex w-full flex-col divide-y-1">
+    <div className="noScrollBar relative flex-1 divide-y overflow-x-hidden overflow-y-visible pb-20">
+      <NavBar title={`${t('title')}`} icon={<Snail className="size-6" />} />
+      <div className="flex w-full flex-col divide-y">
         <div className="px-4 py-3 font-thin">{t('description')}</div>
-        <div className="divide-x-1 divide-y-1 sm:grid sm:grid-cols-2">
+        <div className="divide-x divide-y sm:grid sm:grid-cols-2">
           <ServiceWorker />
           <ExportData />
           <ImportData />
