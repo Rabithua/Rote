@@ -1097,6 +1097,11 @@
       "selectTags": "选择标签...",
       "tagsCount": "{{count}} 个标签",
       "searchTags": "搜索标签..."
+    },
+    "productHunt": {
+      "findUsOn": "在 Product Hunt 上找到我们",
+      "scheduledDate": "预定发布时间：{{date}}",
+      "votePrompt": "来一票吧，球球啦 🥺！"
     }
   },
   "common": {

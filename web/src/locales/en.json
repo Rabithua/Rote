@@ -1103,6 +1103,11 @@
       "selectTags": "Select tags...",
       "tagsCount": "{{count}} tags",
       "searchTags": "Search tags..."
+    },
+    "productHunt": {
+      "findUsOn": "FIND US ON",
+      "scheduledDate": "Scheduled for {{date}}",
+      "votePrompt": "Support us by voting on Product Hunt! 🥺 "
     }
   },
   "common": {
