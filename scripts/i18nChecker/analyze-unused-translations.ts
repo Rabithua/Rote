@@ -97,14 +97,28 @@ function extractUsedKeys(filePath: string): Set<string> {
     const fullKey = currentPrefix ? `${currentPrefix}.${key}` : key;
     usedKeys.add(fullKey);
 
-    // 处理数组索引访问（如 linksItems.0）
+    // 处理数组索引访问（如 linksItems.0 或直接的数字索引 0）
     if (/^\d+$/.test(key)) {
-      // 这是一个数字索引，需要特殊处理
+      // 这是一个纯数字索引，需要特殊处理
       // 我们保留父路径
       const parentKey = currentPrefix;
       if (parentKey) {
         // 添加父路径本身（数组整体）
         usedKeys.add(parentKey);
+      }
+    } else if (/\.\d+$/.test(key)) {
+      // 处理带路径的数组索引访问（如 linksItems.0）
+      // 提取父路径（如 linksItems）
+      const keyParts = key.split(".");
+      const lastPart = keyParts[keyParts.length - 1];
+      if (/^\d+$/.test(lastPart)) {
+        // 最后一部分是数字索引
+        const parentKeyPath = keyParts.slice(0, -1).join(".");
+        const fullParentKey = currentPrefix
+          ? `${currentPrefix}.${parentKeyPath}`
+          : parentKeyPath;
+        // 添加父路径本身（数组整体）
+        usedKeys.add(fullParentKey);
       }
     }
   }
@@ -168,6 +182,22 @@ function extractUsedKeys(filePath: string): Set<string> {
           usedKeys.add(fullKey);
         }
       });
+    } else if (
+      template.includes("${rote.state}") ||
+      template.includes("${state}")
+    ) {
+      // 处理 stateOptions.${rote.state} 这种情况
+      const basePath = template.split("${")[0];
+      if (basePath && basePath.endsWith(".")) {
+        const fullKey = currentPrefix
+          ? `${currentPrefix}.${basePath.slice(0, -1)}`
+          : basePath.slice(0, -1);
+        // stateOptions 的可能值
+        const stateValues = ["public", "private"];
+        stateValues.forEach((state) => {
+          usedKeys.add(`${fullKey}.${state}`);
+        });
+      }
     } else if (template.includes("${")) {
       // 对于其他包含变量的模板，尝试提取基础路径
       // 例如：leftNavBar.${icon.name} -> leftNavBar.*

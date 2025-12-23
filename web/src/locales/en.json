@@ -3,7 +3,7 @@
     "landing": {
       "poem": "",
       "headingPrefix": "A note repository like ",
-      "linksItems": ["Login"],
+      "linksItems": ["Login", "", "GitHub"],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
@@ -1053,6 +1053,11 @@
       "sending": "Sending...",
       "sendSuccess": "Send successful",
       "sendFailed": "Send failed",
+      "publicWarning": "Your content will be public and visible to anyone.",
+      "stateOptions": {
+        "public": "Public",
+        "private": "Private"
+      },
       "error": {
         "emptyContent": "Content cannot be empty"
       }
@@ -1067,6 +1072,13 @@
       "share": "Share",
       "delete": "Delete",
       "review": "Review",
+      "isPinned": "Pinned",
+      "isPublic": "Public",
+      "isArchived": "Archived",
+      "copyLink": "Copy link",
+      "expand": "Expand",
+      "subscriptionReminder": "Subscription Reminder",
+      "inDevelopment": "In Development",
       "messages": {
         "deleting": "Deleting...",
         "deleteSuccess": "Delete successful",
@@ -1086,6 +1098,11 @@
     "tagMap": {
       "noTags": "No tags yet",
       "expand": "Expand"
+    },
+    "tagSelector": {
+      "selectTags": "Select tags...",
+      "tagsCount": "{{count}} tags",
+      "searchTags": "Search tags..."
     }
   }
 }

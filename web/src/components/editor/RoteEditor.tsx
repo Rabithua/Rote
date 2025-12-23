@@ -533,7 +533,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       {showPublicWarning && (
         <Alert className="animate-show">
           <Globe2Icon className="h-4 w-4" />
-          <AlertDescription>你的内容将会被公开，任何人都可以查看。</AlertDescription>
+          <AlertDescription>{t('publicWarning')}</AlertDescription>
         </Alert>
       )}
     </div>
