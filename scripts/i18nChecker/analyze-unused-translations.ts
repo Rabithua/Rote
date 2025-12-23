@@ -12,6 +12,61 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+// 支持的语言配置
+const SUPPORTED_LANGUAGES = [
+  { code: "zh", name: "中文", file: "zh.json" },
+  { code: "en", name: "英文", file: "en.json" },
+  { code: "ja", name: "日语", file: "ja.json" },
+] as const;
+
+// 检查键是否被使用的辅助函数
+function isKeyUsed(key: string, allUsedKeys: Set<string>): boolean {
+  // 直接匹配
+  if (allUsedKeys.has(key)) {
+    return true;
+  }
+
+  // 检查父路径或子路径匹配
+  for (const usedKey of allUsedKeys) {
+    if (
+      usedKey === key ||
+      usedKey.startsWith(key + ".") ||
+      key.startsWith(usedKey + ".")
+    ) {
+      return true;
+    }
+  }
+
+  // 特殊处理：检查键是否在子路径中被使用
+  // 例如：代码使用 pages.login.usernameRequired，但翻译文件中有 pages.login.validation.usernameRequired
+  const keyParts = key.split(".");
+  for (let i = keyParts.length - 1; i > 0; i--) {
+    const parentPath = keyParts.slice(0, i).join(".");
+    const childKey = keyParts.slice(i).join(".");
+    for (const usedKey of allUsedKeys) {
+      if (usedKey === `${parentPath}.${childKey}` || usedKey === childKey) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+// 找出未使用的键
+function findUnusedKeys(
+  translationKeys: Set<string>,
+  allUsedKeys: Set<string>
+): Set<string> {
+  const unusedKeys = new Set<string>();
+  translationKeys.forEach((key) => {
+    if (!isKeyUsed(key, allUsedKeys)) {
+      unusedKeys.add(key);
+    }
+  });
+  return unusedKeys;
+}
+
 // 递归获取所有文件路径
 function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   const files = readdirSync(dirPath);
@@ -120,6 +175,89 @@ function extractUsedKeys(filePath: string): Set<string> {
         // 添加父路径本身（数组整体）
         usedKeys.add(fullParentKey);
       }
+    }
+  }
+
+  // 匹配 i18n.t('...') 或 i18n.t("...") 调用（直接访问全局翻译，不使用 keyPrefix）
+  const i18nTCallRegex = /i18n\.t\(['"]([^'"]+)['"]/g;
+  while ((match = i18nTCallRegex.exec(content)) !== null) {
+    const key = match[1];
+    // i18n.t() 直接使用完整路径，不需要 keyPrefix
+    usedKeys.add(key);
+
+    // 处理数组索引访问
+    if (/\.\d+$/.test(key)) {
+      const keyParts = key.split(".");
+      const lastPart = keyParts[keyParts.length - 1];
+      if (/^\d+$/.test(lastPart)) {
+        const parentKeyPath = keyParts.slice(0, -1).join(".");
+        if (parentKeyPath) {
+          usedKeys.add(parentKeyPath);
+        }
+      }
+    }
+  }
+
+  // 匹配 translate('...') 调用（formatTimeAgo 函数中使用的包装函数）
+  const translateCallRegex = /translate\(['"]([^'"]+)['"]/g;
+  while ((match = translateCallRegex.exec(content)) !== null) {
+    const key = match[1];
+    // translate() 直接使用完整路径，不需要 keyPrefix
+    usedKeys.add(key);
+  }
+
+  // 特殊处理：如果代码中包含 formatTimeAgo 函数，自动添加 common.timeAgo.* 键
+  // 因为 formatTimeAgo 函数内部使用了这些键
+  if (
+    content.includes("formatTimeAgo") ||
+    content.includes("function formatTimeAgo")
+  ) {
+    const timeAgoKeys = [
+      "common.timeAgo.justNow",
+      "common.timeAgo.secondsAgo",
+      "common.timeAgo.minutesAgo",
+      "common.timeAgo.minutesAgo_plural",
+      "common.timeAgo.hoursAgo",
+      "common.timeAgo.hoursAgo_plural",
+      "common.timeAgo.daysAgo",
+      "common.timeAgo.daysAgo_plural",
+      "common.timeAgo.weeksAgo",
+      "common.timeAgo.weeksAgo_plural",
+      "common.timeAgo.monthsAgo",
+      "common.timeAgo.monthsAgo_plural",
+      "common.timeAgo.yearsAgo",
+      "common.timeAgo.yearsAgo_plural",
+    ];
+    timeAgoKeys.forEach((key) => usedKeys.add(key));
+  }
+
+  // 匹配 i18n.t(`...`) 模板字符串调用
+  const i18nTTemplateRegex = /i18n\.t\(`([^`]+)`/g;
+  while ((match = i18nTTemplateRegex.exec(content)) !== null) {
+    const template = match[1];
+    // 处理模板字符串中的变量（如 common.timeAgo.${key}）
+    // 对于 common.timeAgo.* 这种情况，添加所有可能的键
+    if (template.includes("common.timeAgo.")) {
+      const timeAgoKeys = [
+        "common.timeAgo.justNow",
+        "common.timeAgo.secondsAgo",
+        "common.timeAgo.minutesAgo",
+        "common.timeAgo.minutesAgo_plural",
+        "common.timeAgo.hoursAgo",
+        "common.timeAgo.hoursAgo_plural",
+        "common.timeAgo.daysAgo",
+        "common.timeAgo.daysAgo_plural",
+        "common.timeAgo.weeksAgo",
+        "common.timeAgo.weeksAgo_plural",
+        "common.timeAgo.monthsAgo",
+        "common.timeAgo.monthsAgo_plural",
+        "common.timeAgo.yearsAgo",
+        "common.timeAgo.yearsAgo_plural",
+      ];
+      timeAgoKeys.forEach((key) => usedKeys.add(key));
+    } else if (!template.includes("${")) {
+      // 如果没有变量，直接使用
+      usedKeys.add(template);
     }
   }
 
@@ -340,19 +478,30 @@ function extractUsedKeys(filePath: string): Set<string> {
 // 主函数
 function main() {
   const webSrcPath = join(process.cwd(), "web/src");
-  const zhJsonPath = join(webSrcPath, "locales/zh.json");
-  const enJsonPath = join(webSrcPath, "locales/en.json");
+  const localesPath = join(webSrcPath, "locales");
 
-  // 读取翻译文件
-  const zhJson = JSON.parse(readFileSync(zhJsonPath, "utf-8"));
-  const enJson = JSON.parse(readFileSync(enJsonPath, "utf-8"));
+  // 读取所有语言的翻译文件
+  const languageData = new Map<
+    string,
+    { name: string; json: any; keys: Set<string> }
+  >();
 
-  // 提取所有定义的键
-  const zhKeys = extractKeys(zhJson);
-  const enKeys = extractKeys(enJson);
-
-  console.log(`中文翻译文件中共有 ${zhKeys.size} 个键`);
-  console.log(`英文翻译文件中共有 ${enKeys.size} 个键`);
+  for (const lang of SUPPORTED_LANGUAGES) {
+    const jsonPath = join(localesPath, lang.file);
+    try {
+      const json = JSON.parse(readFileSync(jsonPath, "utf-8"));
+      const keys = extractKeys(json);
+      languageData.set(lang.code, {
+        name: lang.name,
+        json,
+        keys,
+      });
+      console.log(`${lang.name}翻译文件中共有 ${keys.size} 个键`);
+    } catch (error) {
+      console.error(`读取${lang.name}翻译文件失败: ${jsonPath}`, error);
+      process.exit(1);
+    }
+  }
 
   // 获取所有源代码文件
   const sourceFiles = getAllFiles(webSrcPath);
@@ -371,127 +520,65 @@ function main() {
 
   console.log(`代码中使用了 ${allUsedKeys.size} 个不同的键`);
 
-  // 找出未使用的键
-  const unusedZhKeys = new Set<string>();
-  const unusedEnKeys = new Set<string>();
+  // 找出所有语言的未使用键
+  const unusedKeysByLang = new Map<string, Set<string>>();
+  for (const [langCode, langData] of languageData.entries()) {
+    const unusedKeys = findUnusedKeys(langData.keys, allUsedKeys);
+    unusedKeysByLang.set(langCode, unusedKeys);
+  }
 
-  zhKeys.forEach((key) => {
-    // 检查键是否被使用（包括父路径）
-    let isUsed = false;
-    for (const usedKey of allUsedKeys) {
-      if (
-        usedKey === key ||
-        usedKey.startsWith(key + ".") ||
-        key.startsWith(usedKey + ".")
-      ) {
-        isUsed = true;
-        break;
-      }
-    }
+  // 找出所有文件中都未使用的键（需要同步删除）
+  const unusedInAll = new Set<string>();
+  const firstLangCode = SUPPORTED_LANGUAGES[0].code;
+  const firstUnusedKeys = unusedKeysByLang.get(firstLangCode)!;
 
-    // 特殊处理：检查键是否在子路径中被使用
-    // 例如：代码使用 pages.login.usernameRequired，但翻译文件中有 pages.login.validation.usernameRequired
-    // 这种情况下，应该认为键是被使用的（通过父路径访问）
-    if (!isUsed) {
-      // 检查是否有使用父路径的情况
-      const keyParts = key.split(".");
-      for (let i = keyParts.length - 1; i > 0; i--) {
-        const parentPath = keyParts.slice(0, i).join(".");
-        const childKey = keyParts.slice(i).join(".");
-        // 检查是否有使用 parentPath.childKey 的情况
-        for (const usedKey of allUsedKeys) {
-          if (usedKey === `${parentPath}.${childKey}` || usedKey === childKey) {
-            isUsed = true;
-            break;
-          }
-        }
-        if (isUsed) break;
-      }
-    }
-
-    if (!isUsed) {
-      unusedZhKeys.add(key);
-    }
-  });
-
-  enKeys.forEach((key) => {
-    let isUsed = false;
-    for (const usedKey of allUsedKeys) {
-      if (
-        usedKey === key ||
-        usedKey.startsWith(key + ".") ||
-        key.startsWith(usedKey + ".")
-      ) {
-        isUsed = true;
-        break;
-      }
-    }
-
-    // 特殊处理：检查键是否在子路径中被使用
-    // 例如：代码使用 pages.login.usernameRequired，但翻译文件中有 pages.login.validation.usernameRequired
-    // 这种情况下，应该认为键是被使用的（通过父路径访问）
-    if (!isUsed) {
-      // 检查是否有使用父路径的情况
-      const keyParts = key.split(".");
-      for (let i = keyParts.length - 1; i > 0; i--) {
-        const parentPath = keyParts.slice(0, i).join(".");
-        const childKey = keyParts.slice(i).join(".");
-        // 检查是否有使用 parentPath.childKey 的情况
-        for (const usedKey of allUsedKeys) {
-          if (usedKey === `${parentPath}.${childKey}` || usedKey === childKey) {
-            isUsed = true;
-            break;
-          }
-        }
-        if (isUsed) break;
-      }
-    }
-
-    if (!isUsed) {
-      unusedEnKeys.add(key);
-    }
-  });
-
-  // 找出两个文件中都未使用的键（需要同步删除）
-  const unusedInBoth = new Set<string>();
-  unusedZhKeys.forEach((key) => {
-    if (unusedEnKeys.has(key)) {
-      unusedInBoth.add(key);
+  firstUnusedKeys.forEach((key) => {
+    // 检查该键是否在所有语言中都未使用
+    const isUnusedInAll = Array.from(unusedKeysByLang.values()).every(
+      (unusedKeys) => unusedKeys.has(key)
+    );
+    if (isUnusedInAll) {
+      unusedInAll.add(key);
     }
   });
 
   console.log("\n=== 分析结果 ===");
-  console.log(`中文文件中未使用的键: ${unusedZhKeys.size}`);
-  console.log(`英文文件中未使用的键: ${unusedEnKeys.size}`);
-  console.log(`两个文件中都未使用的键: ${unusedInBoth.size}`);
+  for (const lang of SUPPORTED_LANGUAGES) {
+    const unusedCount = unusedKeysByLang.get(lang.code)?.size ?? 0;
+    console.log(`${lang.name}文件中未使用的键: ${unusedCount}`);
+  }
+  console.log(`所有文件中都未使用的键: ${unusedInAll.size}`);
 
   // 输出未使用的键列表
-  if (unusedInBoth.size > 0) {
-    console.log("\n=== 建议删除的键（两个文件都未使用）===");
-    const sortedKeys = Array.from(unusedInBoth).sort();
+  if (unusedInAll.size > 0) {
+    console.log("\n=== 建议删除的键（所有文件都未使用）===");
+    const sortedKeys = Array.from(unusedInAll).sort();
     sortedKeys.forEach((key) => {
       console.log(`  - ${key}`);
     });
 
     // 保存到文件
     const outputPath = join(__dirname, "unused-translation-keys.json");
-    const output = {
-      unusedInBoth: sortedKeys,
-      unusedZhOnly: Array.from(unusedZhKeys)
-        .filter((k) => !unusedInBoth.has(k))
-        .sort(),
-      unusedEnOnly: Array.from(unusedEnKeys)
-        .filter((k) => !unusedInBoth.has(k))
-        .sort(),
+    const output: any = {
+      unusedInAll: sortedKeys,
       stats: {
-        totalZhKeys: zhKeys.size,
-        totalEnKeys: enKeys.size,
         usedKeys: allUsedKeys.size,
-        unusedZhKeys: unusedZhKeys.size,
-        unusedEnKeys: unusedEnKeys.size,
-        unusedInBoth: unusedInBoth.size,
+        unusedInAll: unusedInAll.size,
       },
     };
+
+    // 为每种语言添加统计信息
+    for (const lang of SUPPORTED_LANGUAGES) {
+      const langData = languageData.get(lang.code)!;
+      const unusedKeys = unusedKeysByLang.get(lang.code)!;
+      const unusedOnly = Array.from(unusedKeys)
+        .filter((k) => !unusedInAll.has(k))
+        .sort();
+
+      output[`unused${lang.code.toUpperCase()}Only`] = unusedOnly;
+      output.stats[`total${lang.code.toUpperCase()}Keys`] = langData.keys.size;
+      output.stats[`unused${lang.code.toUpperCase()}Keys`] = unusedKeys.size;
+    }
     writeFileSync(outputPath, JSON.stringify(output, null, 2), "utf-8");
     console.log(`\n详细报告已保存到: ${outputPath}`);
   } else {

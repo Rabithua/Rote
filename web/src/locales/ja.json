@@ -13,7 +13,7 @@
       "coreFeatures": {
         "title": "コア機能",
         "subtitle": "より洗練されたノート体験と少ない精神的負担のために",
-        "tagline": "コア機能",
+        "tagline": "CORE FEATURES",
         "features": {
           "restraint": {
             "title": "控えめに",
@@ -36,12 +36,12 @@
       "construction": {
         "title": "まだ構築中...",
         "subtitle": "長期プロジェクトとして、Roteはまだ改善中です",
-        "tagline": "まだ構築中"
+        "tagline": "STILL UNDER CONSTRUCTION"
       },
       "exploreMore": {
         "title": "さらに探索",
         "subtitle": "ここには遊べるボタンがいくつかあります",
-        "tagline": "さらに探索"
+        "tagline": "EXPlORE MORE"
       },
       "redirectingToSetup": {
         "error": "バックエンドエラーが検出されました。セットアップページにリダイレクトしています",
@@ -60,7 +60,7 @@
         "earlyAccess": "早期アクセス"
       },
       "andMore": {
-        "tagline": "さらに",
+        "tagline": "AND MORE",
         "title": "これらに加えて、さらに...",
         "subtitle": "洗練されたアーキテクチャ設計、デプロイメントオプション、優れたクライアント体験",
         "features": {
@@ -1103,6 +1103,24 @@
       "selectTags": "タグを選択...",
       "tagsCount": "{{count}}個のタグ",
       "searchTags": "タグを検索..."
+    }
+  },
+  "common": {
+    "timeAgo": {
+      "justNow": "たった今",
+      "secondsAgo": "{{count}}秒前",
+      "minutesAgo": "{{count}}分前",
+      "minutesAgo_plural": "{{count}}分前",
+      "hoursAgo": "{{count}}時間前",
+      "hoursAgo_plural": "{{count}}時間前",
+      "daysAgo": "{{count}}日前",
+      "daysAgo_plural": "{{count}}日前",
+      "weeksAgo": "{{count}}週間前",
+      "weeksAgo_plural": "{{count}}週間前",
+      "monthsAgo": "{{count}}ヶ月前",
+      "monthsAgo_plural": "{{count}}ヶ月前",
+      "yearsAgo": "{{count}}年前",
+      "yearsAgo_plural": "{{count}}年前"
     }
   }
 }

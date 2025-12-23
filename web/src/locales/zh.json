@@ -1098,5 +1098,23 @@
       "tagsCount": "{{count}} 个标签",
       "searchTags": "搜索标签..."
     }
+  },
+  "common": {
+    "timeAgo": {
+      "justNow": "刚刚",
+      "secondsAgo": "{{count}}秒前",
+      "minutesAgo": "{{count}}分钟前",
+      "minutesAgo_plural": "{{count}}分钟前",
+      "hoursAgo": "{{count}}小时前",
+      "hoursAgo_plural": "{{count}}小时前",
+      "daysAgo": "{{count}}天前",
+      "daysAgo_plural": "{{count}}天前",
+      "weeksAgo": "{{count}}周前",
+      "weeksAgo_plural": "{{count}}周前",
+      "monthsAgo": "{{count}}个月前",
+      "monthsAgo_plural": "{{count}}个月前",
+      "yearsAgo": "{{count}}年前",
+      "yearsAgo_plural": "{{count}}年前"
+    }
   }
 }

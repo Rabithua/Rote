@@ -76,7 +76,7 @@ function RoteItem({
         </Link>
       )}
 
-      <div className="flex flex-grow flex-col space-y-2 overflow-hidden">
+      <div className="flex grow flex-col space-y-2 overflow-hidden">
         {/* Header */}
         <div className="flex w-full cursor-default items-center gap-2">
           <Link className="shrink-0 font-semibold hover:underline" to={`/${rote.author.username}`}>
