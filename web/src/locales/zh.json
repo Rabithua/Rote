@@ -3,7 +3,9 @@
     "landing": {
       "poem": "采菊东篱下，悠然见南山",
       "headingPrefix": "一个看起来不太一样的",
-      "linksItems": ["登录", "用户指南", "Github", "博客", "下载", "捐赠"],
+      "linksItems": [
+        "登录"
+      ],
       "dashboard": "仪表盘",
       "star": "Stars",
       "fork": "Forks",
@@ -47,7 +49,13 @@
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
       },
-      "typewriterTexts": ["个人笔记库", "碎碎念本子", "私人朋友圈", "个人频道", "微型博客"],
+      "typewriterTexts": [
+        "个人笔记库",
+        "碎碎念本子",
+        "私人朋友圈",
+        "个人频道",
+        "微型博客"
+      ],
       "subtitle": "开放API，记录的姿势不止一种🤩，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "iosAppTooltip": {
         "title": "想要加入 IOS 测试版吗？",
@@ -95,10 +103,6 @@
         "login": "登录",
         "logout": "登出"
       },
-      "roteTypes": {
-        "Rote": "笔记",
-        "Article": "文章"
-      },
       "messages": {
         "loggingOut": "退出登录中...",
         "logoutSuccess": "已退出登录",
@@ -114,20 +118,6 @@
       "pageNotFoundDesc": "抱歉，我们无法找到您要访问的页面"
     },
     "login": {
-      "validation": {
-        "usernameRequired": "请输入用户名",
-        "usernameMaxLength": "用户名不能超过20个字符",
-        "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
-        "usernameConflict": "此用户名与系统路由冲突",
-        "passwordRequired": "请输入密码",
-        "passwordMin": "密码长度至少6位",
-        "passwordMaxLength": "密码最长128位",
-        "emailRequired": "请输入邮箱",
-        "emailMaxLength": "邮箱最长30位",
-        "emailFormat": "请输入正确的邮箱格式",
-        "nicknameRequired": "请输入昵称",
-        "nicknameMaxLength": "昵称最长20位"
-      },
       "authorize": {
         "title": "授权登录",
         "message": "你将授权 Rote Web App 以 {{username}} 的身份登录 Rote iOS App",
@@ -137,10 +127,6 @@
         "loggingIn": "登录中...",
         "loginSuccess": "登录成功",
         "backendDown": "后端服务不可用",
-        "checkDatabase": "数据库连接失败",
-        "checkBackend": "后端服务无响应",
-        "loggingOut": "退出登录中...",
-        "logoutSuccess": "已退出登录",
         "registering": "注册中...",
         "registerSuccess": "注册成功",
         "oauthLoginSuccess": "GitHub 登录成功",
@@ -160,9 +146,6 @@
       "buttons": {
         "login": "登录",
         "register": "注册",
-        "back": "返回",
-        "toHome": "前往首页",
-        "logout": "退出登录",
         "loginWithGitHub": "使用 GitHub 登录",
         "loginWithApple": "使用 Apple 登录"
       },
@@ -174,10 +157,18 @@
         "backendIssue": "后端服务出现问题",
         "dockerDeployment": "使用Docker部署，后端容器可能需要几分钟构建，请稍后刷新页面"
       },
-      "title": {
-        "login": "登录",
-        "register": "注册"
-      }
+      "usernameRequired": "请输入用户名",
+      "usernameMaxLength": "用户名不能超过20个字符",
+      "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
+      "usernameConflict": "此用户名与系统路由冲突",
+      "passwordRequired": "请输入密码",
+      "passwordMin": "密码长度至少6位",
+      "passwordMaxLength": "密码最长128位",
+      "emailRequired": "请输入邮箱",
+      "emailMaxLength": "邮箱最长30位",
+      "emailFormat": "请输入正确的邮箱格式",
+      "nicknameRequired": "请输入昵称",
+      "nicknameMaxLength": "昵称最长20位"
     },
     "home": {
       "statistics": "统计 / Static"
@@ -188,7 +179,6 @@
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
       "openKeyDescription": "OpenKey 可以轻易的使用权限指定的功能，合理分配权限，避免 OpenKey 泄露带来不必要的麻烦。",
-      "loading": "加载中...",
       "noOpenKey": "暂时还没有OpenKey，生成一个？",
       "addOpenKey": "生成一个OpenKey",
       "email": "邮箱",
@@ -222,55 +212,35 @@
         "oauth": {
           "title": "账户关联",
           "description": "关联第三方账户后，您可以使用多种方式登录",
+          "bindSuccess": "账户绑定成功",
+          "bindFailed": "绑定失败：{{error}}",
+          "unbindSuccess": "账户已解绑",
+          "unbindFailed": "解绑失败：{{error}}",
+          "mergeSuccess": "账户绑定成功，账户数据已合并",
+          "mergeFailed": "账户合并失败：{{error}}",
+          "mergeDialog": {
+            "title": "合并账户确认",
+            "description": "检测到该账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
+            "existingAccount": "已存在的账户",
+            "currentAccount": "当前账户",
+            "warning": "警告：此操作不可撤销，请确认这是您的账户。",
+            "cancel": "取消",
+            "confirm": "确认合并",
+            "merging": "合并中…"
+          },
           "github": {
-            "title": "GitHub",
-            "bound": "已绑定",
             "notBound": "未绑定",
             "bind": "绑定 GitHub",
             "unbind": "解绑 GitHub",
             "binding": "绑定中…",
-            "unbinding": "解绑中…",
-            "bindSuccess": "GitHub 账户绑定成功",
-            "bindFailed": "绑定失败：{{error}}",
-            "mergeSuccess": "GitHub 账户绑定成功，账户数据已合并",
-            "mergeFailed": "账户合并失败：{{error}}",
-            "unbindSuccess": "GitHub 账户已解绑",
-            "unbindFailed": "解绑失败：{{error}}",
-            "mergeDialog": {
-              "title": "合并账户确认",
-              "description": "检测到该 GitHub 账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
-              "existingAccount": "已存在的账户",
-              "currentAccount": "当前账户",
-              "warning": "警告：此操作不可撤销，请确认这是您的账户。",
-              "cancel": "取消",
-              "confirm": "确认合并",
-              "merging": "合并中…"
-            }
+            "unbinding": "解绑中…"
           },
           "apple": {
-            "title": "Apple",
-            "bound": "已绑定",
             "notBound": "未绑定",
             "bind": "绑定 Apple",
             "unbind": "解绑 Apple",
             "binding": "绑定中…",
-            "unbinding": "解绑中…",
-            "bindSuccess": "Apple 账户绑定成功",
-            "bindFailed": "绑定失败：{{error}}",
-            "mergeSuccess": "Apple 账户绑定成功，账户数据已合并",
-            "mergeFailed": "账户合并失败：{{error}}",
-            "unbindSuccess": "Apple 账户已解绑",
-            "unbindFailed": "解绑失败：{{error}}",
-            "mergeDialog": {
-              "title": "合并账户确认",
-              "description": "检测到该 Apple 账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
-              "existingAccount": "已存在的账户",
-              "currentAccount": "当前账户",
-              "warning": "警告：此操作不可撤销，请确认这是您的账户。",
-              "cancel": "取消",
-              "confirm": "确认合并",
-              "merging": "合并中…"
-            }
+            "unbinding": "解绑中…"
           }
         },
         "deleteAccount": {
@@ -291,15 +261,9 @@
       }
     },
     "rote": {
-      "loading": "加载中...",
-      "sideBarTitle": "相关信息",
-      "authorInfo": {
-        "nickname": "昵称",
-        "username": "用户名"
-      }
+      "sideBarTitle": "相关信息"
     },
     "user": {
-      "loading": "加载中...",
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
       "publicNotes": "已公开的笔记 / Public Note",
@@ -317,9 +281,7 @@
       "none": "无",
       "data": "数据统计",
       "note": "笔记",
-      "attachment": "附件",
-      "searchPlaceholder": "搜索笔记内容、标题或标签...",
-      "searchButton": "搜索"
+      "attachment": "附件"
     },
     "explore": {
       "title": "探索 / Explore",
@@ -332,7 +294,7 @@
       "lastPushTime": "上次推送时间："
     },
     "experiment": {
-      "title": "实验室",
+      "title": "实验室 / Experiment",
       "description": "实验性质小功能，有可能会让rote变得更好用🤩",
       "exportData": {
         "title": "数据导出",
@@ -351,12 +313,9 @@
         "title": "ServiceWoker通知",
         "description": "ServiceWorker可以使用某些高级功能，比如后台通知等。",
         "status": "状态：",
-        "noStatus": "无状态",
         "serviceId": "服务标识:",
         "notificationTest": "通知测试",
         "sending": "发送中...",
-        "permissionProcessing": "权限处理中...",
-        "complete": "完成",
         "sendSuccess": "发送成功！",
         "sendFailed": "发送失败",
         "example": "使用示例：",
@@ -404,9 +363,18 @@
       "title": "Rote 初始化向导",
       "subtitle": "欢迎使用 Rote！请按照以下步骤完成系统配置",
       "steps": {
-        "basic": { "title": "基础配置", "description": "设置网站基本信息" },
-        "storage": { "title": "存储配置", "description": "配置 S3 云存储（可选）" },
-        "admin": { "title": "管理员账户", "description": "创建管理员账户" }
+        "basic": {
+          "title": "基础配置",
+          "description": "设置网站基本信息"
+        },
+        "storage": {
+          "title": "存储配置",
+          "description": "配置 S3 云存储（可选）"
+        },
+        "admin": {
+          "title": "管理员账户",
+          "description": "创建管理员账户"
+        }
       },
       "labels": {
         "siteName": "网站名称",
@@ -465,7 +433,6 @@
         "saving": "保存中...",
         "testConnection": "测试 S3 连接",
         "skipS3": "跳过 S3 配置",
-        "enableS3": "启用 S3 配置",
         "testing": "测试连接中..."
       },
       "toasts": {
@@ -475,9 +442,6 @@
         "testSuccess": "S3 连接测试成功！",
         "testFailed": "连接测试失败: {{error}}",
         "pleaseFillS3": "请先填写完整的 S3 配置信息"
-      },
-      "ui": {
-        "statistics": "统计 / Static"
       }
     },
     "admin": {
@@ -511,8 +475,6 @@
         "secretAccessKey": "Secret Access Key",
         "urlPrefix": "URL 前缀",
         "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（可选）",
-        "notConfigured": "存储配置未设置",
-        "configureLater": "可以在系统设置中稍后配置",
         "testConnection": "测试连接",
         "testing": "测试中...",
         "testSuccess": "存储连接测试成功！",
@@ -1078,54 +1040,24 @@
       "minimumPermission": "至少需要一个权限"
     },
     "sidebarSearch": {
-      "title": "快速搜索",
-      "placeholder": "搜索笔记...",
-      "button": "前往"
+      "placeholder": "搜索笔记..."
     },
     "randomRote": {
       "title": "随机回顾",
       "publicNoteHint": "此笔记为用户公开笔记。"
     },
-    "roteInputModel": {
-      "contentPlaceholder": "Ctrl + ↵ 发送",
-      "tagsPlaceholder": "标签",
-      "pin": "置顶",
-      "archive": "归档",
-      "send": "发送",
-      "stateOptions": {
-        "private": "私密",
-        "public": "公开"
-      },
-      "uploading": "上传中...",
-      "uploadSuccess": "上传成功",
-      "uploadFailed": "上传失败",
-      "deleting": "删除中...",
-      "deleteSuccess": "删除成功",
-      "deleteFailed": "删除失败",
-      "error": {
-        "emptyContent": "内容不能为空"
-      }
-    },
     "roteInputSimple": {
       "contentPlaceholder": "Ctrl + ↵ 发送",
-      "tagsPlaceholder": "标签",
       "pin": "置顶",
       "archive": "归档",
       "send": "发送",
-      "stateOptions": {
-        "private": "私密",
-        "public": "公开"
-      },
-      "uploading": "附件上传中...",
-      "uploadSuccess": "附件上传成功",
       "uploadFailed": "附件上传失败",
       "sending": "发送中...",
       "sendSuccess": "发送成功",
       "sendFailed": "发送失败",
       "error": {
         "emptyContent": "内容不能为空"
-      },
-      "recentPosts": "以上是最近的笔记"
+      }
     },
     "roteItem": {
       "details": "详情",
@@ -1136,24 +1068,8 @@
       "unarchive": "取消归档",
       "share": "分享",
       "delete": "删除",
-      "expand": "展开",
       "review": "回顾",
-      "noticeSubcription": "订阅通知",
-      "development": "开发中...",
-      "tooltips": {
-        "pinned": "已置顶",
-        "unpinned": "未置顶",
-        "public": "公开",
-        "archived": "已归档",
-        "edited": "已编辑：{{time}}",
-        "copyLink": "复制链接",
-        "copySuccess": "链接已复制到剪贴板"
-      },
       "messages": {
-        "copySuccess": "内容已复制到剪贴板",
-        "sending": "发送中...",
-        "sendSuccess": "发送成功",
-        "sendFailed": "发送失败",
         "deleting": "删除中...",
         "deleteSuccess": "删除成功",
         "deleteFailed": "删除失败",
@@ -1169,21 +1085,9 @@
     "roteList": {
       "empty": "还没有发布任何内容"
     },
-    "roteShareCard": {
-      "copyLink": "复制链接",
-      "save": "保存",
-      "linkCopied": "链接已复制到剪贴板",
-      "generatingImage": "正在生成图片...",
-      "imageSaved": "图片已保存",
-      "imageGenerationFailed": "图片生成失败",
-      "elementNotFound": "未找到要保存的元素"
-    },
     "tagMap": {
       "noTags": "还没有标签",
       "expand": "展开"
-    },
-    "uploader": {
-      "fileLimit": "文件数量超过限制，已去除多余文件！"
     }
   }
 }

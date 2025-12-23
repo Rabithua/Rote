@@ -1,0 +1,12 @@
+{
+  "name": "i18n-checker",
+  "version": "1.0.0",
+  "description": "i18n 翻译键检查工具",
+  "scripts": {
+    "analyze": "cd ../.. && bun run scripts/i18nChecker/index.ts analyze",
+    "remove": "cd ../.. && bun run scripts/i18nChecker/index.ts remove"
+  },
+  "dependencies": {
+    "@types/node": "^25.0.3"
+  }
+}
