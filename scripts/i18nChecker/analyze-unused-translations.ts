@@ -341,11 +341,18 @@ function extractUsedKeys(filePath: string): Set<string> {
       // 例如：leftNavBar.${icon.name} -> leftNavBar.*
       const basePath = template.split("${")[0];
       if (basePath && basePath.endsWith(".")) {
-        // 如果基础路径以 . 结尾，说明后面是变量，添加通配符匹配
+        // 如果基础路径以 . 结尾，说明后面是变量
         const fullKey = currentPrefix
           ? `${currentPrefix}.${basePath.slice(0, -1)}`
           : basePath.slice(0, -1);
-        // 添加所有可能的子键（基于常见模式）
+
+        // 1. 始终把父路径本身标记为「已使用」
+        //    这样凡是以该前缀开头的翻译键（例如
+        //    components.openKeyEditModel.permissions.EDITROTE）
+        //    都会被视为被动态使用，而不会被错误地标记为未使用
+        usedKeys.add(fullKey);
+
+        // 2. 基于常见模式，额外补充一批可能的子键（兼容现有逻辑）
         const commonKeys = [
           "home",
           "explore",
