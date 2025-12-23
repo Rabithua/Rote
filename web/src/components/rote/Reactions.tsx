@@ -2,7 +2,7 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import mainJson from '@/json/main.json';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { profileAtom } from '@/state/profile';
 import { visitorIdAtom } from '@/state/visitorId';
 import type { Reaction, Rote, Rotes } from '@/types/main';
@@ -13,8 +13,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
-
-const { preReactions } = mainJson;
 
 // 类型定义
 interface ReactionData {
@@ -33,6 +31,8 @@ interface ReactionsPartProps {
 
 export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps) {
   const profile = useAtomValue(profileAtom);
+  const { data: siteStatus } = useSiteStatus();
+  const preReactions = siteStatus?.frontendConfig?.preReactions ?? [];
 
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useAtom(visitorIdAtom);

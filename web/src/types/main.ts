@@ -144,15 +144,6 @@ export type HeatMapDay = {
   notesCount: number;
 };
 
-export type EditorType = {
-  tags: string[];
-  content: string;
-  state: RoteState;
-  archived: boolean;
-  pin: boolean;
-  type: 'rote';
-};
-
 export type TempState = {
   sendNewOne: null | Rote;
   editOne: null | Rote;

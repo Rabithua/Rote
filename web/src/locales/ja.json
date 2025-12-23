@@ -836,7 +836,12 @@
       "saving": "保存中...",
       "saveSuccess": "保存成功",
       "saveFailed": "保存失敗",
-      "minimumPermission": "少なくとも1つの権限が必要です"
+      "minimumPermission": "少なくとも1つの権限が必要です",
+      "permissions": {
+        "SENDROTE": "Rote を作成",
+        "GETROTE": "Rote を取得",
+        "EDITROTE": "Rote を編集（削除を含む）"
+      }
     },
     "sidebarSearch": {
       "placeholder": "ノートを検索..."

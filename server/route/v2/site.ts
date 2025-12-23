@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import mainJson from '../../json/main.json';
 import type {
   NotificationConfig,
   SecurityConfig,
@@ -161,6 +162,15 @@ siteRouter.get('/status', async (c: HonoContext) => {
 
       // 时间戳
       timestamp: new Date().toISOString(),
+
+      // 前端通用配置（来自 main.json）
+      frontendConfig: {
+        preReactions: mainJson.preReactions,
+        permissionKeys: mainJson.openkeyPermissions,
+        roteMaxLetter: mainJson.roteMaxLetter,
+        roteContentExpandedLetter: mainJson.roteContentExpandedLetter,
+        safeRoutes: mainJson.safeRoutes,
+      },
     };
 
     return c.json(createResponse(status), 200);

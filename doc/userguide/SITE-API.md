@@ -115,6 +115,13 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
         }
       }
     },
+    "frontendConfig": {
+      "preReactions": ["❤️", "👍", "..."],
+      "permissionKeys": ["SENDROTE", "GETROTE", "EDITROTE"],
+      "roteMaxLetter": 10000,
+      "roteContentExpandedLetter": 600,
+      "safeRoutes": ["home", "landing", "login", "..."]
+    },
     "timestamp": "2024-01-01T00:00:00.000Z"
   }
 }
@@ -145,6 +152,12 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
   - `providers`: object - 已启用的 OAuth 提供商列表（动态返回，根据配置和已注册的提供商）
     - `{providerName}`: object - 提供商配置
       - `enabled`: boolean - 该提供商是否已启用
+- `frontendConfig`: object - 前端通用配置（从 main.json 统一下发）
+  - `preReactions`: string[] - 预置表情列表（用于反应组件）
+  - `permissionKeys`: string[] - OpenKey 权限 key 列表（如 `SENDROTE`、`GETROTE`、`EDITROTE`），前端自行映射展示文案
+  - `roteMaxLetter`: number - 单条笔记最大字数限制
+  - `roteContentExpandedLetter`: number - 内容展开阈值
+  - `safeRoutes`: string[] - 保留路由前缀，用于校验用户名不可与系统路由冲突
 - `timestamp`: string - 响应时间戳（ISO 8601 格式）
 
 说明：

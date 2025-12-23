@@ -7,6 +7,14 @@ interface SiteStatusResponse<T = any> {
   data: T | null;
 }
 
+interface FrontendConfig {
+  preReactions: string[];
+  permissionKeys: string[];
+  roteMaxLetter: number;
+  roteContentExpandedLetter: number;
+  safeRoutes: string[];
+}
+
 interface SiteStatusData {
   isInitialized: boolean;
   databaseConnected: boolean;
@@ -43,6 +51,7 @@ interface SiteStatusData {
       };
     };
   };
+  frontendConfig: FrontendConfig;
   timestamp: string;
 }
 

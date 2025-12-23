@@ -830,7 +830,12 @@
       "saving": "保存中...",
       "saveSuccess": "保存成功",
       "saveFailed": "保存失败",
-      "minimumPermission": "至少需要一个权限"
+      "minimumPermission": "至少需要一个权限",
+      "permissions": {
+        "SENDROTE": "创建Rote",
+        "GETROTE": "获取Rote",
+        "EDITROTE": "编辑Rote（包括删除）"
+      }
     },
     "sidebarSearch": {
       "placeholder": "搜索笔记..."

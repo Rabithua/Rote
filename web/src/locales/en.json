@@ -836,7 +836,12 @@
       "saving": "Saving...",
       "saveSuccess": "Save successful",
       "saveFailed": "Save failed",
-      "minimumPermission": "At least one permission is required"
+      "minimumPermission": "At least one permission is required",
+      "permissions": {
+        "SENDROTE": "Create Rote",
+        "GETROTE": "Get Rote",
+        "EDITROTE": "Edit Rote (Including Delete)"
+      }
     },
     "sidebarSearch": {
       "placeholder": "Search notes..."
