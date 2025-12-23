@@ -2,6 +2,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from '../locales/en.json';
+import ja from '../locales/ja.json';
 import zh from '../locales/zh.json';
 
 const savedLang = localStorage.getItem('userLanguage');
@@ -15,10 +16,13 @@ i18n.use(initReactI18next).init({
     zh: {
       translation: zh,
     },
+    ja: {
+      translation: ja,
+    },
   },
   fallbackLng: userLang,
-  supportedLngs: ['en', 'zh'],
-  lng: ['en', 'zh'].includes(userLang) ? userLang : 'en',
+  supportedLngs: ['en', 'zh', 'ja'],
+  lng: ['en', 'zh', 'ja'].includes(userLang) ? userLang : 'en',
   react: {
     useSuspense: true,
     bindI18n: 'languageChanged',

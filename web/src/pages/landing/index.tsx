@@ -401,7 +401,7 @@ function Landing() {
           </div>
         ) : (
           <div className="flex flex-col gap-2 divide-y-[0.5px] p-2">
-            <div className="flex gap-2 pb-2 text-sm font-thin">
+            <div className="flex flex-wrap gap-2 pb-2 text-sm font-thin">
               {dataRender.map((item) => (
                 <div key={item.key} className="flex items-center gap-2">
                   {item.icon}
