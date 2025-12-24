@@ -10,7 +10,7 @@ function ProductHunt() {
   const isScheduled = new Date() < scheduledDate;
 
   return (
-    <Tooltip open={true}>
+    <Tooltip>
       <TooltipTrigger asChild>
         <Link
           to={productHuntUrl}
