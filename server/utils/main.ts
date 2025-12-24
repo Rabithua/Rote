@@ -1,12 +1,9 @@
 import type { User } from '../drizzle/schema';
 
-import mainJson from '../json/main.json';
 import type { SiteConfig } from '../types/config';
 import type { HonoContext } from '../types/hono';
 import { getGlobalConfig } from './config';
 import { getOneOpenKey } from './dbMethods';
-
-const { stateType, roteType, editorType } = mainJson;
 
 export function getApiUrl(c: HonoContext): string {
   const protocol = c.req.header('x-forwarded-proto') || 'http';
@@ -78,41 +75,10 @@ export function sanitizeOtherUserData(user: User) {
 // Request body data validation
 export async function bodyTypeCheck(c: HonoContext, next: () => Promise<void>) {
   const body = await c.req.json().catch(() => ({}));
-  const { type, state, editor, permissions } = body;
-
-  if (state && !stateType.includes(state.toString())) {
-    throw new Error('State wrong!');
-  }
+  const { permissions } = body;
 
   if (permissions && !Array.isArray(permissions)) {
     throw new Error('Permissions wrong!');
-  }
-
-  if (type && !roteType.includes(type.toString())) {
-    throw new Error('Type wrong!');
-  }
-
-  if (editor && !editorType.includes(editor.toString())) {
-    throw new Error('Editor wrong!');
-  }
-
-  await next();
-}
-
-// Query parameters validation
-export async function queryTypeCheck(c: HonoContext, next: () => Promise<void>) {
-  const { type, state, editor } = c.req.query();
-
-  if (state && !stateType.includes(state.toString())) {
-    throw new Error('State wrong!');
-  }
-
-  if (type && !roteType.includes(type.toString())) {
-    throw new Error('Type wrong!');
-  }
-
-  if (editor && !editorType.includes(editor.toString())) {
-    throw new Error('Editor wrong!');
   }
 
   await next();

@@ -1,8 +1,6 @@
 import { TagSelector } from '@/components/others/TagSelector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import mainJson from '@/json/main.json';
-
 import type { Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
 import { finalize as finalizeUpload, presign, uploadToSignedUrl } from '@/utils/directUpload';
@@ -20,8 +18,6 @@ import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import AttachmentList from './AttachmentList';
 
-const { roteMaxLetter } = mainJson;
-
 type RoteAtomType = PrimitiveAtom<Rote>;
 
 function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?: () => void }) {
@@ -33,6 +29,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [rote, setRote] = useAtom(roteAtom);
   const { data: siteStatus } = useSiteStatus();
+  const roteMaxLetter = siteStatus?.frontendConfig?.roteMaxLetter;
   const canUpload =
     !!siteStatus?.storage?.r2Configured && siteStatus?.ui?.allowUploadFile !== false;
 

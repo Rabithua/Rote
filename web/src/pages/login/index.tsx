@@ -12,7 +12,7 @@ import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import mainJson from '@/json/main.json';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { get, getApiUrl, post } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
@@ -22,12 +22,12 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
-const { safeRoutes } = mainJson;
 
 function Login() {
   const { t } = useTranslation('translation', {
     keyPrefix: 'pages.login',
   });
+  const { data: siteStatus } = useSiteStatus();
 
   const { data: backendStatusOk, isLoading: isCheckingStatus } = useAPIGet<{
     isInitialized: boolean;
@@ -100,7 +100,7 @@ function Login() {
       .min(1, t('usernameRequired'))
       .max(20, t('usernameMaxLength'))
       .regex(/^[A-Za-z0-9_-]+$/, t('usernameFormat'))
-      .refine((value) => !safeRoutes.includes(value), {
+      .refine((value) => !siteStatus?.frontendConfig?.safeRoutes?.includes(value), {
         message: t('usernameConflict'),
       }),
     password: z

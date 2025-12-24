@@ -1,4 +1,4 @@
-import mainJson from '@/json/main.json';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { useOpenKeys } from '@/state/openKeys';
 import type { OpenKey } from '@/types/main';
 import { put } from '@/utils/api';
@@ -16,21 +16,30 @@ interface OpenKeyEditModelProps {
 }
 
 function OpenKeyEditModel({ openKey, close, mutate }: OpenKeyEditModelProps) {
-  const { t, i18n } = useTranslation('translation', {
+  const { t } = useTranslation('translation', {
     keyPrefix: 'components.openKeyEditModel',
   });
+  const { data: siteStatus } = useSiteStatus();
   const [openKeys, setOpenKeys] = useOpenKeys();
   const defaultCheckedList: string[] = openKey.permissions;
   const checkboxRef = useRef<HTMLButtonElement>(null);
 
-  const processedOptions = useMemo(
-    () =>
-      mainJson.permissionOptions.map((option) => ({
-        ...option,
-        label: option.label[i18n.language as keyof typeof option.label],
-      })),
-    [i18n.language]
-  );
+  const processedOptions = useMemo(() => {
+    // 完全依赖后端返回的 permissionKeys，未配置时返回空列表
+    const permissionKeys = siteStatus?.frontendConfig.permissionKeys ?? [];
+    return permissionKeys.map((key) => ({
+      value: key,
+      checked: false,
+      disabled: false,
+      // i18n key 统一为 components.openKeyEditModel.permissions.${key}
+      label: t(`permissions.${key}`),
+    })) as Array<{
+      value: string;
+      checked: boolean;
+      disabled: boolean;
+      label: string;
+    }>;
+  }, [t, siteStatus?.frontendConfig?.permissionKeys]);
 
   const [checkedList, setCheckedList] = useState<string[]>(defaultCheckedList);
 

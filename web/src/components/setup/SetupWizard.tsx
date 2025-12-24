@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import mainJson from '@/json/main.json';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { cn } from '@/utils/cn';
 import { getConfigStatus, setupSystem, testStorageConnection } from '@/utils/setupApi';
 import { CheckCircle, Circle } from 'lucide-react';
@@ -12,8 +12,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import Divider from '../ui/divider';
-
-const { safeRoutes } = mainJson;
 
 // 向导步骤类型定义
 interface WizardStep {
@@ -69,6 +67,7 @@ const wizardSteps: WizardStep[] = [
 export default function SetupWizard() {
   const navigate = useNavigate();
   const { t } = useTranslation('translation');
+  const { data: siteStatus } = useSiteStatus();
   const [currentStep, setCurrentStep] = useState(0);
   const [config, setConfig] = useState<SetupConfig>({
     siteName: '',
@@ -166,7 +165,11 @@ export default function SetupWizard() {
       case 2: // 管理员账户
         if (!config.admin.username.trim()) {
           newErrors.username = 'required';
-        } else if (safeRoutes.includes(config.admin.username.trim().toLowerCase())) {
+        } else if (
+          siteStatus?.frontendConfig?.safeRoutes?.includes(
+            config.admin.username.trim().toLowerCase()
+          )
+        ) {
           newErrors.username = 'reserved';
         }
         if (!config.admin.email.trim()) {

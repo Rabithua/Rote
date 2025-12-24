@@ -6,13 +6,13 @@
 import { Hono } from 'hono';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
-import { createResponse, isOpenKeyOk, queryTypeCheck } from '../../utils/main';
+import { createResponse, isOpenKeyOk } from '../../utils/main';
 import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
 const router = new Hono<{ Variables: HonoVariables }>();
 
 // Create note using API key - GET method (kept for backward compatibility)
-router.get('/notes/create', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) => {
+router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
   const content = c.req.query('content');
   const state = c.req.query('state');
   const type = c.req.query('type');
@@ -181,7 +181,7 @@ router.get('/notes', isOpenKeyOk, async (c: HonoContext) => {
 });
 
 // Search notes using API key
-router.get('/notes/search', isOpenKeyOk, queryTypeCheck, async (c: HonoContext) => {
+router.get('/notes/search', isOpenKeyOk, async (c: HonoContext) => {
   const keyword = c.req.query('keyword');
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
