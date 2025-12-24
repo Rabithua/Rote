@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useSaveScrollPosition } from '@/hooks/useSaveScrollPosition';
 import { loadProfileAtom, profileAtom } from '@/state/profile';
 import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
@@ -83,7 +82,6 @@ export const tabsData: IconType[][] = [
 ];
 
 function LayoutDashboard() {
-  useSaveScrollPosition();
   const location = useLocation();
   const loadProfile = useSetAtom(loadProfileAtom);
   const setProfile = useSetAtom(profileAtom);

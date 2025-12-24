@@ -2,7 +2,8 @@
   "pages": {
     "landing": {
       "poem": "",
-      "headingPrefix": "のようなノートリポジトリ",
+      "headingBefore": "",
+      "headingAfter": " のようなノートリポジトリ 🤔",
       "linksItems": ["ログイン", "", "GitHub"],
       "dashboard": "ダッシュボード",
       "star": "スター",

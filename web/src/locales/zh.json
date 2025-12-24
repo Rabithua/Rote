@@ -2,7 +2,8 @@
   "pages": {
     "landing": {
       "poem": "采菊东篱下，悠然见南山",
-      "headingPrefix": "一个看起来不太一样的",
+      "headingBefore": "一个看起来不太一样的",
+      "headingAfter": " 🤔",
       "linksItems": ["登录", "", "GitHub"],
       "dashboard": "仪表盘",
       "star": "Stars",

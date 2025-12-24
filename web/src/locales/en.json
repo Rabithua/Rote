@@ -2,7 +2,8 @@
   "pages": {
     "landing": {
       "poem": "",
-      "headingPrefix": "A note repository like ",
+      "headingBefore": "A note repository like",
+      "headingAfter": " 🤔",
       "linksItems": ["Login", "", "GitHub"],
       "dashboard": "Dashboard",
       "star": "Stars",

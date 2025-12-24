@@ -213,13 +213,13 @@ function Landing() {
         {/* Main heading - 更克制的设计 */}
         <div className="space-y-2 divide-y-[0.5px] px-2">
           <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            {t('headingPrefix')}
+            {t('headingBefore')}
             <br className="block sm:hidden" />
             <span className="text-theme inline-block">
               {typewriterText}
               <span className="animate-pulse font-thin">|</span>
             </span>
-            🤔
+            {t('headingAfter')}
           </h1>
 
           {/* 副标题 - 更清晰的层次 */}
