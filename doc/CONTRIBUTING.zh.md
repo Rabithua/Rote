@@ -32,27 +32,42 @@
 
 ### 提交 Pull Request
 
-1. **Fork 项目**并创建你的特性分支
+1. **Fork 项目**（如果从外部仓库贡献）
+
+2. **从 `develop` 分支创建功能分支**
 
    ```bash
+   git checkout develop
+   git pull origin develop
    git checkout -b feature/amazing-feature
    ```
 
-2. **编写代码**，遵循项目的代码规范
+3. **编写代码**，遵循项目的代码规范
 
-3. **提交更改**
+4. **提交更改**，遵循提交信息规范
 
    ```bash
-   git commit -m "Add some amazing feature"
+   git commit -m "feat: Add some amazing feature"
    ```
 
-4. **推送到你的分支**
+5. **保持分支同步**（定期与 develop 同步）
+
+   ```bash
+   git fetch origin
+   git rebase origin/develop
+   # 或使用 merge: git merge origin/develop
+   ```
+
+6. **推送到你的分支**
 
    ```bash
    git push origin feature/amazing-feature
    ```
 
-5. **创建 Pull Request**
+7. **创建 Pull Request**，目标分支选择 `develop`
+   - 提供清晰的更改描述
+   - 如有相关 Issue，请引用
+   - 确保所有检查通过（代码检查、测试等）
 
 ### 改进文档
 
@@ -111,6 +126,64 @@ Rote 支持多语言，我们欢迎翻译贡献：
 - **认证机制**：使用基于 API Key 的安全认证机制
 
 ## 开发流程
+
+### Git 分支策略
+
+Rote 使用简化的 Git Flow 工作流，适合多人协作开发：
+
+```
+main (生产就绪)
+  ↑
+develop (集成分支)
+  ↑
+feature/xxx (功能分支)
+```
+
+**分支类型：**
+
+- **`main`**：生产就绪的代码。仅在进行充分测试后从 `develop` 合并。
+- **`develop`**：持续开发的集成分支。所有功能分支合并到这里。
+- **`feature/xxx`**：功能开发分支。从 `develop` 创建，合并回 `develop`。
+
+**分支命名规范：**
+
+- `feature/xxx` - 新功能（例如：`feature/add-s3-region-config`）
+- `bugfix/xxx` - Bug 修复（例如：`bugfix/fix-login-error`）
+- `hotfix/xxx` - 紧急生产修复（例如：`hotfix/security-patch`）
+- `refactor/xxx` - 代码重构（例如：`refactor/optimize-api`）
+
+**工作流程：**
+
+1. 从 `develop` 创建功能分支：
+
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/your-feature-name
+   ```
+
+2. 开发并提交你的更改
+
+3. 保持分支与 `develop` 同步：
+
+   ```bash
+   git fetch origin
+   git rebase origin/develop  # 或使用 git merge origin/develop
+   ```
+
+4. 推送分支并创建 Pull Request，目标分支选择 `develop`
+
+5. 代码审查通过后，合并到 `develop`
+
+6. 准备发布时，将 `develop` 合并到 `main`
+
+**重要提示：**
+
+- 不要直接提交到 `main` 或 `develop` 分支
+- 新工作始终创建功能分支
+- 保持功能分支专注于单一功能或修复
+- 定期与 `develop` 同步，避免冲突
+- 使用描述性的分支名称，清楚表明目的
 
 ### 设置开发环境
 
@@ -208,15 +281,73 @@ Rote 支持多语言，我们欢迎翻译贡献：
 
 ### 提交规范
 
-提交信息应该清晰描述更改内容，使用英文：
+我们遵循 [Conventional Commits](https://www.conventionalcommits.org/) 规范。提交信息应该清晰描述更改内容，使用英文：
 
-- `feat: Add new feature`
-- `fix: Fix bug`
-- `docs: Update documentation`
-- `style: Code formatting changes`
-- `refactor: Code refactoring`
-- `test: Add tests`
-- `chore: Build/toolchain related`
+**格式：**
+
+```
+<type>: <subject>
+
+[可选 body]
+
+[可选 footer]
+```
+
+**类型：**
+
+- `feat`: 添加新功能
+- `fix`: 修复 Bug
+- `docs`: 仅文档更改
+- `style`: 代码风格更改（格式化、缺少分号等）
+- `refactor`: 代码重构，不改变功能
+- `perf`: 性能改进
+- `test`: 添加或更新测试
+- `chore`: 构建过程、工具或依赖更新
+- `ci`: CI/CD 配置更改
+
+**示例：**
+
+```bash
+feat: add S3 region configuration support
+fix: resolve login authentication error
+docs: update API documentation for user endpoints
+refactor: optimize database query performance
+test: add unit tests for storage configuration
+```
+
+**最佳实践：**
+
+- 使用祈使语气（"add" 而不是 "added" 或 "adds"）
+- 主题行保持在 50 个字符以内
+- 主题行首字母大写
+- 主题行末尾不要使用句号
+- 使用 body 说明"什么"和"为什么"，而不是"如何"
+
+## Pull Request 流程
+
+1. **创建 PR 之前：**
+
+   - 确保你的分支与 `develop` 保持同步
+   - 运行所有测试和代码检查
+   - 验证你的更改按预期工作
+
+2. **PR 描述应包含：**
+
+   - 清晰的更改说明
+   - 相关 Issue 编号（如有）
+   - 截图（UI 更改时）
+   - 测试说明
+   - 破坏性更改（如有）
+
+3. **代码审查：**
+
+   - 处理所有审查意见
+   - 保持讨论建设性
+   - 根据反馈更新 PR
+
+4. **批准后：**
+   - 维护者将合并你的 PR
+   - 你的功能将包含在下一个版本中
 
 ## 测试
 

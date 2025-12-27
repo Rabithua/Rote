@@ -377,6 +377,7 @@
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "存储桶名称",
+        "region": "区域",
         "urlPrefix": "URL 前缀",
         "username": "用户名",
         "email": "邮箱",
@@ -391,6 +392,7 @@
         "accessKey": "请输入 S3 Access Key",
         "secretKey": "请输入 S3 Secret Key",
         "bucket": "请输入存储桶名称",
+        "region": "auto",
         "urlPrefix": "https://bucket.your-domain.com",
         "adminUsername": "请输入管理员用户名",
         "adminEmail": "请输入管理员邮箱",
@@ -399,6 +401,7 @@
       },
       "descriptions": {
         "frontendUrl": "前端URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。",
+        "region": "S3 区域，默认为 'auto'",
         "s3Optional": "S3 存储配置是可选的。您可以跳过此步骤，稍后在系统设置中配置。如果跳过，系统将无法上传附件，但其他功能可以正常使用。"
       },
       "validation": {
@@ -466,6 +469,9 @@
         "bucket": "存储桶",
         "accessKeyId": "Access Key ID",
         "secretAccessKey": "Secret Access Key",
+        "region": "区域",
+        "regionPlaceholder": "auto",
+        "regionDescription": "S3 区域，默认为 'auto'",
         "urlPrefix": "URL 前缀",
         "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（可选）",
         "testConnection": "测试连接",

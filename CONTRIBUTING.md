@@ -32,27 +32,42 @@ We welcome feature suggestions! Please:
 
 ### Submit Pull Requests
 
-1. **Fork the project** and create your feature branch
+1. **Fork the project** (if contributing from external repository)
+
+2. **Create a feature branch from `develop`**
 
    ```bash
+   git checkout develop
+   git pull origin develop
    git checkout -b feature/amazing-feature
    ```
 
-2. **Write code** following the project's code standards
+3. **Write code** following the project's code standards
 
-3. **Commit your changes**
+4. **Commit your changes** following commit message conventions
 
    ```bash
-   git commit -m "Add some amazing feature"
+   git commit -m "feat: Add some amazing feature"
    ```
 
-4. **Push to your branch**
+5. **Keep your branch up to date** (sync with develop regularly)
+
+   ```bash
+   git fetch origin
+   git rebase origin/develop
+   # or use merge: git merge origin/develop
+   ```
+
+6. **Push to your branch**
 
    ```bash
    git push origin feature/amazing-feature
    ```
 
-5. **Create a Pull Request**
+7. **Create a Pull Request** targeting the `develop` branch
+   - Provide a clear description of your changes
+   - Reference related issues if applicable
+   - Ensure all checks pass (linting, tests, etc.)
 
 ### Improve Documentation
 
@@ -111,6 +126,64 @@ Rote supports multiple languages, and we welcome translation contributions:
 - **Authentication**: Use API Key-based security authentication mechanism
 
 ## Development Workflow
+
+### Git Branch Strategy
+
+Rote uses a simplified Git Flow workflow suitable for collaborative development:
+
+```
+main (production-ready)
+  ↑
+develop (integration branch)
+  ↑
+feature/xxx (feature branches)
+```
+
+**Branch Types:**
+
+- **`main`**: Production-ready code. Only merged from `develop` after thorough testing.
+- **`develop`**: Integration branch for ongoing development. All feature branches merge here.
+- **`feature/xxx`**: Feature development branches. Created from `develop` and merged back to `develop`.
+
+**Branch Naming Conventions:**
+
+- `feature/xxx` - New features (e.g., `feature/add-s3-region-config`)
+- `bugfix/xxx` - Bug fixes (e.g., `bugfix/fix-login-error`)
+- `hotfix/xxx` - Urgent production fixes (e.g., `hotfix/security-patch`)
+- `refactor/xxx` - Code refactoring (e.g., `refactor/optimize-api`)
+
+**Workflow:**
+
+1. Create feature branch from `develop`:
+
+   ```bash
+   git checkout develop
+   git pull origin develop
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Develop and commit your changes
+
+3. Keep your branch synchronized with `develop`:
+
+   ```bash
+   git fetch origin
+   git rebase origin/develop  # or git merge origin/develop
+   ```
+
+4. Push your branch and create a Pull Request targeting `develop`
+
+5. After code review and approval, merge to `develop`
+
+6. When ready for release, merge `develop` to `main`
+
+**Important Notes:**
+
+- Never commit directly to `main` or `develop` branches
+- Always create a feature branch for new work
+- Keep feature branches focused on a single feature or fix
+- Regularly sync your branch with `develop` to avoid conflicts
+- Use descriptive branch names that clearly indicate the purpose
 
 ### Setting Up Development Environment
 
@@ -208,15 +281,73 @@ Rote supports multiple languages, and we welcome translation contributions:
 
 ### Commit Standards
 
-Commit messages should clearly describe the changes, use English:
+We follow [Conventional Commits](https://www.conventionalcommits.org/) specification. Commit messages should clearly describe the changes in English:
 
-- `feat: Add new feature`
-- `fix: Fix bug`
-- `docs: Update documentation`
-- `style: Code formatting changes`
-- `refactor: Code refactoring`
-- `test: Add tests`
-- `chore: Build/toolchain related`
+**Format:**
+
+```
+<type>: <subject>
+
+[optional body]
+
+[optional footer]
+```
+
+**Types:**
+
+- `feat`: Add a new feature
+- `fix`: Fix a bug
+- `docs`: Documentation changes only
+- `style`: Code style changes (formatting, missing semicolons, etc.)
+- `refactor`: Code refactoring without changing functionality
+- `perf`: Performance improvements
+- `test`: Add or update tests
+- `chore`: Build process, tooling, or dependency updates
+- `ci`: CI/CD configuration changes
+
+**Examples:**
+
+```bash
+feat: add S3 region configuration support
+fix: resolve login authentication error
+docs: update API documentation for user endpoints
+refactor: optimize database query performance
+test: add unit tests for storage configuration
+```
+
+**Best Practices:**
+
+- Use imperative mood ("add" not "added" or "adds")
+- Keep the subject line under 50 characters
+- Capitalize the first letter of the subject
+- Do not end the subject with a period
+- Use the body to explain what and why vs. how
+
+## Pull Request Process
+
+1. **Before creating a PR:**
+
+   - Ensure your branch is up to date with `develop`
+   - Run all tests and linting checks
+   - Verify your changes work as expected
+
+2. **PR Description should include:**
+
+   - Clear description of changes
+   - Related issue numbers (if applicable)
+   - Screenshots (for UI changes)
+   - Testing instructions
+   - Breaking changes (if any)
+
+3. **Code Review:**
+
+   - Address all review comments
+   - Keep discussions constructive
+   - Update your PR based on feedback
+
+4. **After approval:**
+   - Maintainers will merge your PR
+   - Your feature will be included in the next release
 
 ## Testing
 

@@ -383,6 +383,7 @@
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "Bucket Name",
+        "region": "Region",
         "urlPrefix": "URL Prefix",
         "username": "Username",
         "email": "Email",
@@ -397,6 +398,7 @@
         "accessKey": "Enter S3 Access Key",
         "secretKey": "Enter S3 Secret Key",
         "bucket": "Enter bucket name",
+        "region": "auto",
         "urlPrefix": "https://bucket.your-domain.com",
         "adminUsername": "Enter admin username",
         "adminEmail": "Enter admin email",
@@ -405,6 +407,7 @@
       },
       "descriptions": {
         "frontendUrl": "Frontend URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com).",
+        "region": "S3 region, defaults to 'auto'",
         "s3Optional": "S3 storage configuration is optional. You can skip this step and configure it later in system settings. If skipped, the system will not be able to upload attachments, but other features will work normally."
       },
       "validation": {
@@ -472,6 +475,9 @@
         "bucket": "Bucket",
         "accessKeyId": "Access Key ID",
         "secretAccessKey": "Secret Access Key",
+        "region": "Region",
+        "regionPlaceholder": "auto",
+        "regionDescription": "S3 region, defaults to 'auto'",
         "urlPrefix": "URL Prefix",
         "urlPrefixDescription": "Public URL prefix for accessing uploaded files (optional)",
         "testConnection": "Test Connection",

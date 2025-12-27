@@ -19,7 +19,7 @@ export class ConfigTester {
 
       const s3Client = new S3Client({
         endpoint: config.endpoint,
-        region: 'auto',
+        region: config.region || 'auto',
         credentials: {
           accessKeyId: config.accessKeyId,
           secretAccessKey: config.secretAccessKey,
