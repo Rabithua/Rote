@@ -19,9 +19,7 @@ export default function AdminDashboard() {
   const profile = useProfile();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    'site' | 'storage' | 'ui' | 'oauth' | 'users'
-  >('site');
+  const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui' | 'oauth' | 'users'>('site');
 
   const {
     data: configs,
