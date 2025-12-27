@@ -20,6 +20,8 @@ import type { SystemConfig } from '../types';
 interface UIConfigTabProps {
   uiConfig: SystemConfig['ui'] | undefined;
   setUiConfig: (config: SystemConfig['ui'] | undefined) => void;
+  securityConfig: SystemConfig['security'] | undefined;
+  setSecurityConfig: (config: SystemConfig['security'] | undefined) => void;
   isSaving: boolean;
   setIsSaving: (saving: boolean) => void;
   onMutate: () => void;
@@ -28,6 +30,8 @@ interface UIConfigTabProps {
 export default function UIConfigTab({
   uiConfig,
   setUiConfig,
+  securityConfig,
+  setSecurityConfig,
   isSaving,
   setIsSaving,
   onMutate,
@@ -58,14 +62,23 @@ export default function UIConfigTab({
     }
     setIsSaving(true);
     try {
-      await put('/admin/settings', {
-        group: 'ui',
-        config: uiConfig,
-      });
+      // 同时保存 UI 和安全配置
+      await Promise.all([
+        put('/admin/settings', {
+          group: 'ui',
+          config: uiConfig,
+        }),
+        put('/admin/settings', {
+          group: 'security',
+          config: securityConfig || { requireVerifiedEmailForExplore: false },
+        }),
+      ]);
       toast.success(t('saveSuccess'));
       onMutate();
       // 更新所有使用 site-status 的组件，确保 allowUploadFile 等配置实时生效
       globalMutate('site-status');
+      // 安全配置变更后，刷新全局配置缓存
+      globalMutate('/admin/settings');
     } catch (error: any) {
       // 优先使用后端返回的错误消息
       const errorMessage =
@@ -109,6 +122,24 @@ export default function UIConfigTab({
             checked={uiConfig?.allowUploadFile ?? true}
             onCheckedChange={(checked) =>
               setUiConfig({ ...(uiConfig || {}), allowUploadFile: checked })
+            }
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label>{t('security.requireVerifiedEmailForExplore')}</Label>
+            <p className="text-muted-foreground text-sm">
+              {t('security.requireVerifiedEmailForExploreDesc')}
+            </p>
+          </div>
+          <Switch
+            checked={securityConfig?.requireVerifiedEmailForExplore ?? false}
+            onCheckedChange={(checked) =>
+              setSecurityConfig({
+                ...(securityConfig || {}),
+                requireVerifiedEmailForExplore: checked,
+              })
             }
           />
         </div>

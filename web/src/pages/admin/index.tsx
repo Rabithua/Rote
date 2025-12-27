@@ -3,12 +3,11 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/state/profile';
 import { get } from '@/utils/api';
-import { Database, Globe, Lock, Settings, Shield, Users } from 'lucide-react';
+import { Database, Globe, Settings, Shield, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import OAuthConfigTab from './components/OAuthConfigTab';
-import SecurityConfigTab from './components/SecurityConfigTab';
 import SiteConfigTab from './components/SiteConfigTab';
 import StorageConfigTab from './components/StorageConfigTab';
 import UIConfigTab from './components/UIConfigTab';
@@ -21,7 +20,7 @@ export default function AdminDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'site' | 'storage' | 'ui' | 'security' | 'oauth' | 'users'
+    'site' | 'storage' | 'ui' | 'oauth' | 'users'
   >('site');
 
   const {
@@ -131,15 +130,6 @@ export default function AdminDashboard() {
             <Users className="size-4" />
             {t('tabs.users')}
           </Button>
-
-          <Button
-            variant={activeTab === 'security' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('security')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Lock className="size-4" />
-            {t('tabs.security')}
-          </Button>
           <Button
             variant={activeTab === 'oauth' ? 'default' : 'ghost'}
             onClick={() => setActiveTab('oauth')}
@@ -179,15 +169,6 @@ export default function AdminDashboard() {
           <UIConfigTab
             uiConfig={uiConfig}
             setUiConfig={setUiConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
-
-        {/* 安全配置 */}
-        {activeTab === 'security' && (
-          <SecurityConfigTab
             securityConfig={securityConfig}
             setSecurityConfig={setSecurityConfig}
             isSaving={isSaving}

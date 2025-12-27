@@ -447,7 +447,7 @@
       "tabs": {
         "site": "站点设置",
         "storage": "存储设置",
-        "ui": "界面设置",
+        "ui": "系统设置",
         "security": "安全设置",
         "oauth": "OAuth 登录",
         "users": "用户管理"

@@ -453,7 +453,7 @@
       "tabs": {
         "site": "サイト設定",
         "storage": "ストレージ設定",
-        "ui": "UI設定",
+        "ui": "システム設定",
         "security": "セキュリティ設定",
         "oauth": "OAuth ログイン",
         "users": "ユーザー管理"
