@@ -13,6 +13,7 @@ export interface SystemConfig {
     accessKeyId: string;
     secretAccessKey: string;
     urlPrefix: string;
+    region?: string;
   };
   security?: {
     requireVerifiedEmailForExplore?: boolean;

@@ -458,6 +458,23 @@ export default function SetupWizard() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="region">{t('pages.setupWizard.labels.region')}</Label>
+              <Input
+                id="region"
+                value={config.s3Config.region}
+                onChange={(e) =>
+                  updateConfig({
+                    s3Config: { ...config.s3Config, region: e.target.value },
+                  })
+                }
+                placeholder={t('pages.setupWizard.placeholders.region')}
+              />
+              <p className="text-muted-foreground text-xs">
+                {t('pages.setupWizard.descriptions.region')}
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="urlPrefix">{t('pages.setupWizard.labels.urlPrefix')}</Label>
               <Input
                 id="urlPrefix"

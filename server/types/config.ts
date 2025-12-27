@@ -17,6 +17,7 @@ export interface StorageConfig {
   accessKeyId: string;
   secretAccessKey: string;
   urlPrefix: string;
+  region?: string; // S3 region，默认为 'auto'
 }
 
 export interface OAuthProviderConfig {
@@ -113,6 +114,7 @@ export interface SetupRequest {
     accessKeyId: string;
     secretAccessKey: string;
     urlPrefix: string;
+    region?: string; // S3 region，默认为 'auto'
   };
   ui: {
     allowRegistration: boolean;

@@ -40,9 +40,10 @@ async function initializeConfig() {
   console.log('Access Key ID:', config.accessKeyId ? '***' : 'Not set');
   console.log('Secret Access Key:', config.secretAccessKey ? '***' : 'Not set');
   console.log('Bucket:', config.bucket);
+  console.log('Region:', config.region || 'auto');
 
   s3Client = new S3Client({
-    region: 'auto',
+    region: config.region || 'auto',
     endpoint: config.endpoint,
     credentials: {
       accessKeyId: config.accessKeyId,

@@ -113,6 +113,7 @@ export default function StorageConfigTab({
                 bucket: storageConfig?.bucket || '',
                 accessKeyId: storageConfig?.accessKeyId || '',
                 secretAccessKey: storageConfig?.secretAccessKey || '',
+                region: storageConfig?.region || '',
                 urlPrefix: storageConfig?.urlPrefix || '',
               })
             }
@@ -131,6 +132,7 @@ export default function StorageConfigTab({
                 bucket: e.target.value,
                 accessKeyId: storageConfig?.accessKeyId || '',
                 secretAccessKey: storageConfig?.secretAccessKey || '',
+                region: storageConfig?.region || '',
                 urlPrefix: storageConfig?.urlPrefix || '',
               })
             }
@@ -149,6 +151,7 @@ export default function StorageConfigTab({
                 bucket: storageConfig?.bucket || '',
                 accessKeyId: e.target.value,
                 secretAccessKey: storageConfig?.secretAccessKey || '',
+                region: storageConfig?.region || '',
                 urlPrefix: storageConfig?.urlPrefix || '',
               })
             }
@@ -168,11 +171,32 @@ export default function StorageConfigTab({
                 bucket: storageConfig?.bucket || '',
                 accessKeyId: storageConfig?.accessKeyId || '',
                 secretAccessKey: e.target.value,
+                region: storageConfig?.region || '',
                 urlPrefix: storageConfig?.urlPrefix || '',
               })
             }
             placeholder="Secret Access Key"
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="region">{t('storage.region')}</Label>
+          <Input
+            id="region"
+            value={storageConfig?.region || ''}
+            onChange={(e) =>
+              setStorageConfig({
+                endpoint: storageConfig?.endpoint || '',
+                bucket: storageConfig?.bucket || '',
+                accessKeyId: storageConfig?.accessKeyId || '',
+                secretAccessKey: storageConfig?.secretAccessKey || '',
+                region: e.target.value,
+                urlPrefix: storageConfig?.urlPrefix || '',
+              })
+            }
+            placeholder={t('storage.regionPlaceholder')}
+          />
+          <p className="text-muted-foreground text-xs">{t('storage.regionDescription')}</p>
         </div>
 
         <div className="space-y-2">
@@ -186,6 +210,7 @@ export default function StorageConfigTab({
                 bucket: storageConfig?.bucket || '',
                 accessKeyId: storageConfig?.accessKeyId || '',
                 secretAccessKey: storageConfig?.secretAccessKey || '',
+                region: storageConfig?.region || '',
                 urlPrefix: e.target.value,
               })
             }
