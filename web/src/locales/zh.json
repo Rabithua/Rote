@@ -693,6 +693,9 @@
       "findUsOn": "在 Product Hunt 上找到我们",
       "scheduledDate": "预定发布时间：{{date}}",
       "votePrompt": "来一票吧，球球啦 🥺！"
+    },
+    "verifiedIcon": {
+      "tooltip": "已验证邮箱"
     }
   },
   "common": {
