@@ -699,6 +699,9 @@
       "findUsOn": "Product Huntで見つける",
       "scheduledDate": "予定日：{{date}}",
       "votePrompt": "Product Huntで投票して応援してください！ 🥺"
+    },
+    "verifiedIcon": {
+      "tooltip": "確認済みメールアドレス"
     }
   },
   "common": {
