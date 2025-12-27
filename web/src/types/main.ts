@@ -47,6 +47,7 @@ export type Rote = {
     username: string;
     nickname: string;
     avatar: string;
+    emailVerified: boolean;
   };
   attachments: (Attachment | File)[];
   reactions: Reaction[];

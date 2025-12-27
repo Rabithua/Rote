@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import RoteEditor from '@/components/editor/RoteEditor';
+import { VerifiedIcon } from '@/components/icons/Verified';
 import { SoftBottom } from '@/components/others/SoftBottom';
 import UserAvatar from '@/components/others/UserAvatar';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
@@ -79,8 +80,12 @@ function RoteItem({
       <div className="flex grow flex-col space-y-2 overflow-hidden">
         {/* Header */}
         <div className="flex w-full cursor-default items-center gap-2">
-          <Link className="shrink-0 font-semibold hover:underline" to={`/${rote.author.username}`}>
+          <Link
+            className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline"
+            to={`/${rote.author.username}`}
+          >
             {isOwner ? profile?.nickname : rote.author.nickname}
+            {rote.author.emailVerified && <VerifiedIcon className="text-theme size-4 shrink-0" />}
           </Link>
 
           <span className="noScrollBar text-info overflow-scroll font-normal text-nowrap">

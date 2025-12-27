@@ -1,3 +1,4 @@
+import { VerifiedIcon } from '@/components/icons/Verified';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import UserAvatar from '@/components/others/UserAvatar';
@@ -92,7 +93,12 @@ function SingleRotePage() {
                   className="bg-foreground/5 text-primary size-12"
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-primary truncate font-semibold">{rote.author.nickname}</div>
+                  <div className="text-primary inline-flex items-center gap-1 truncate font-semibold">
+                    {rote.author.nickname}
+                    {rote.author.emailVerified && (
+                      <VerifiedIcon className="text-theme size-4 shrink-0" />
+                    )}
+                  </div>
                   <div className="text-info truncate text-sm">@{rote.author.username}</div>
                 </div>
               </div>
