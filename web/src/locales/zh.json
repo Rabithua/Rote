@@ -471,7 +471,7 @@
         "secretAccessKey": "Secret Access Key",
         "region": "区域",
         "regionPlaceholder": "auto",
-        "regionDescription": "S3 区域，默认为 'auto'。对于 Garage 等需要指定区域的存储服务，请填写相应的区域名称（如 'garage'）",
+        "regionDescription": "S3 区域，默认为 'auto'",
         "urlPrefix": "URL 前缀",
         "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（可选）",
         "testConnection": "测试连接",

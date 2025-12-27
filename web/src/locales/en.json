@@ -477,7 +477,7 @@
         "secretAccessKey": "Secret Access Key",
         "region": "Region",
         "regionPlaceholder": "auto",
-        "regionDescription": "S3 region, defaults to 'auto'. For storage services like Garage that require a specific region, enter the region name (e.g., 'garage')",
+        "regionDescription": "S3 region, defaults to 'auto'",
         "urlPrefix": "URL Prefix",
         "urlPrefixDescription": "Public URL prefix for accessing uploaded files (optional)",
         "testConnection": "Test Connection",

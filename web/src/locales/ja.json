@@ -477,7 +477,7 @@
         "secretAccessKey": "シークレットアクセスキー",
         "region": "リージョン",
         "regionPlaceholder": "auto",
-        "regionDescription": "S3リージョン、デフォルトは 'auto'。Garage など特定のリージョンが必要なストレージサービスの場合は、リージョン名を入力してください（例：'garage'）",
+        "regionDescription": "S3リージョン、デフォルトは 'auto'",
         "urlPrefix": "URLプレフィックス",
         "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（オプション）",
         "testConnection": "接続テスト",
