@@ -447,7 +447,7 @@
       "tabs": {
         "site": "站点设置",
         "storage": "存储设置",
-        "ui": "界面设置",
+        "ui": "系统设置",
         "security": "安全设置",
         "oauth": "OAuth 登录",
         "users": "用户管理"
@@ -555,6 +555,7 @@
           "actions": "操作",
           "verified": "已验证",
           "unverified": "未验证",
+          "homepage": "主页",
           "verifyEmail": "验证邮箱",
           "delete": "删除"
         },
