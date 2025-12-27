@@ -555,6 +555,7 @@
           "actions": "操作",
           "verified": "已验证",
           "unverified": "未验证",
+          "homepage": "主页",
           "verifyEmail": "验证邮箱",
           "delete": "删除"
         },

@@ -561,6 +561,7 @@
           "actions": "Actions",
           "verified": "Verified",
           "unverified": "Unverified",
+          "homepage": "Homepage",
           "verifyEmail": "Verify Email",
           "delete": "Delete"
         },

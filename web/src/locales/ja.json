@@ -561,6 +561,7 @@
           "actions": "操作",
           "verified": "確認済み",
           "unverified": "未確認",
+          "homepage": "ホームページ",
           "verifyEmail": "メールを確認",
           "delete": "削除"
         },
