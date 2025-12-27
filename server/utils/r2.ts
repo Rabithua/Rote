@@ -15,7 +15,7 @@ function getR2Client(): { s3: S3Client; bucketName: string; urlPrefix: string } 
   const config = getGlobalConfig<StorageConfig>('storage');
   if (config && config.endpoint && config.accessKeyId && config.secretAccessKey && config.bucket) {
     const s3 = new S3Client({
-      region: 'auto',
+      region: config.region || 'auto',
       endpoint: config.endpoint,
       credentials: {
         accessKeyId: config.accessKeyId,

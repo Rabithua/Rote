@@ -383,6 +383,7 @@
         "accessKey": "アクセスキー",
         "secretKey": "シークレットキー",
         "bucket": "バケット名",
+        "region": "リージョン",
         "urlPrefix": "URLプレフィックス",
         "username": "ユーザー名",
         "email": "メールアドレス",
@@ -397,6 +398,7 @@
         "accessKey": "S3アクセスキーを入力",
         "secretKey": "S3シークレットキーを入力",
         "bucket": "バケット名を入力",
+        "region": "auto",
         "urlPrefix": "https://bucket.your-domain.com",
         "adminUsername": "管理者ユーザー名を入力",
         "adminEmail": "管理者メールアドレスを入力",
@@ -405,6 +407,7 @@
       },
       "descriptions": {
         "frontendUrl": "フロントエンドURLは、フロントエンドアクセスアドレスを識別するために使用され、RSSフィードでリンクを生成するために使用されます。完全なURL（例：https://your-domain.com）を入力してください。",
+        "region": "S3リージョン、デフォルトは 'auto'",
         "s3Optional": "S3ストレージ設定はオプションです。このステップをスキップして、後でシステム設定で設定することもできます。スキップした場合、システムは添付ファイルをアップロードできませんが、他の機能は正常に動作します。"
       },
       "validation": {
@@ -472,6 +475,9 @@
         "bucket": "バケット",
         "accessKeyId": "アクセスキーID",
         "secretAccessKey": "シークレットアクセスキー",
+        "region": "リージョン",
+        "regionPlaceholder": "auto",
+        "regionDescription": "S3リージョン、デフォルトは 'auto'。Garage など特定のリージョンが必要なストレージサービスの場合は、リージョン名を入力してください（例：'garage'）",
         "urlPrefix": "URLプレフィックス",
         "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（オプション）",
         "testConnection": "接続テスト",
