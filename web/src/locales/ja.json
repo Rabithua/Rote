@@ -453,7 +453,7 @@
       "tabs": {
         "site": "サイト設定",
         "storage": "ストレージ設定",
-        "ui": "UI設定",
+        "ui": "システム設定",
         "security": "セキュリティ設定",
         "oauth": "OAuth ログイン",
         "users": "ユーザー管理"
@@ -561,6 +561,7 @@
           "actions": "操作",
           "verified": "確認済み",
           "unverified": "未確認",
+          "homepage": "ホームページ",
           "verifyEmail": "メールを確認",
           "delete": "削除"
         },

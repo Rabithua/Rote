@@ -32,6 +32,7 @@ import {
   ArrowUp,
   CheckCircle2,
   Ellipsis,
+  ExternalLink,
   Loader,
   Search,
   Trash2,
@@ -232,7 +233,14 @@ export default function UsersTab() {
                 <TableBody>
                   {data.users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
+                      <TableCell
+                        className="cursor-pointer font-medium hover:underline"
+                        onClick={() => {
+                          window.open(`/${user.username}`, '_blank');
+                        }}
+                      >
+                        {user.username}
+                      </TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.nickname || '-'}</TableCell>
                       <TableCell>
@@ -260,6 +268,14 @@ export default function UsersTab() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                window.open(`/${user.username}`, '_blank');
+                              }}
+                            >
+                              <ExternalLink className="mr-2 size-4" />
+                              {t('table.homepage')}
+                            </DropdownMenuItem>
                             {!user.emailVerified && (
                               <DropdownMenuItem
                                 onClick={() => handleVerifyEmail(user.id)}
