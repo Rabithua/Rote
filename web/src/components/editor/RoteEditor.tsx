@@ -50,6 +50,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         username: '',
         nickname: '',
         avatar: '',
+        emailVerified: false,
       },
       createdAt: '',
       updatedAt: '',

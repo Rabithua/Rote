@@ -15,6 +15,7 @@ export const emptyRote: Rote = {
     username: '',
     nickname: '',
     avatar: '',
+    emailVerified: false,
   },
   createdAt: '',
   updatedAt: '',

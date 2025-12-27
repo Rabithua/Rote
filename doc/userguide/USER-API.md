@@ -37,10 +37,15 @@ curl -X GET 'https://your-domain.com/v2/api/users/demo'
     "avatar": "https://example.com/avatar.jpg",
     "cover": "https://example.com/cover.jpg",
     "description": "用户简介",
-    "createdAt": "2024-01-01T00:00:00.000Z"
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "emailVerified": true
   }
 }
 ```
+
+字段说明：
+
+- `emailVerified`: boolean - 用户邮箱是否已完成验证（供前端显示认证状态使用）
 
 可能的错误：
 
@@ -391,7 +396,8 @@ Content-Disposition: attachment; filename=demo-2024-01-01-12-00-00.json
       "author": {
         "username": "demo",
         "nickname": "Demo",
-        "avatar": "https://example.com/avatar.jpg"
+        "avatar": "https://example.com/avatar.jpg",
+        "emailVerified": true
       },
       "attachments": [],
       "reactions": []

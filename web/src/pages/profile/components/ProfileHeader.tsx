@@ -1,4 +1,5 @@
 import defaultCover from '@/assets/img/defaultCover.png';
+import { VerifiedIcon } from '@/components/icons/Verified';
 import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
 import type { Profile } from '@/types/main';
@@ -82,7 +83,10 @@ export default function ProfileHeader({
       </div>
       <div className="mx-4 flex flex-col gap-1">
         <Link className="w-fit" to={`/${profile?.username}`}>
-          <h1 className="w-fit text-2xl font-semibold hover:underline">{profile?.nickname}</h1>
+          <h1 className="inline-flex w-fit items-center gap-1 text-2xl font-semibold hover:underline">
+            {profile?.nickname}
+            {profile?.emailVerified && <VerifiedIcon className="text-theme size-5 shrink-0" />}
+          </h1>
           <h2 className="text-info w-fit text-base hover:underline">@{profile?.username}</h2>
         </Link>
         <div className="text-base">

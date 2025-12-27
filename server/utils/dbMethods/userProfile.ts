@@ -67,6 +67,7 @@ export async function getUserInfoByUsername(username: string): Promise<{
   username: string;
   createdAt: Date;
   description: string | null;
+  emailVerified: boolean;
 }> {
   try {
     const [user] = await db
@@ -78,6 +79,7 @@ export async function getUserInfoByUsername(username: string): Promise<{
         username: users.username,
         createdAt: users.createdAt,
         description: users.description,
+        emailVerified: users.emailVerified,
       })
       .from(users)
       .where(eq(users.username, username))

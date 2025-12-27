@@ -1,4 +1,5 @@
 import defaultCover from '@/assets/img/defaultCover.png';
+import { VerifiedIcon } from '@/components/icons/Verified';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import UserAvatar from '@/components/others/UserAvatar';
@@ -143,7 +144,10 @@ function UserPage() {
                 avatar={userInfo?.avatar}
                 className="bg-background size-6 shrink-0 border sm:block"
               />
-              <span>{userInfo?.nickname || userInfo?.username}</span>
+              <span className="inline-flex items-center gap-1">
+                {userInfo?.nickname || userInfo?.username}
+                {userInfo?.emailVerified && <VerifiedIcon className="text-theme size-4 shrink-0" />}
+              </span>
             </>
           }
           onNavClick={refreshData}
@@ -170,7 +174,10 @@ function UserPage() {
             />
           </div>
           <div className="mx-4 flex flex-col gap-1">
-            <div className="text-2xl font-semibold">{userInfo?.nickname}</div>
+            <div className="inline-flex items-center gap-1 text-2xl font-semibold">
+              {userInfo?.nickname}
+              {userInfo?.emailVerified && <VerifiedIcon className="text-theme size-5 shrink-0" />}
+            </div>
             <div className="text-info text-base">@{userInfo?.username}</div>
             <div className="text-base">
               <div className="aTagStyle break-words whitespace-pre-line">

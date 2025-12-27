@@ -699,6 +699,9 @@
       "findUsOn": "FIND US ON",
       "scheduledDate": "Scheduled for {{date}}",
       "votePrompt": "Support us by voting on Product Hunt! 🥺 "
+    },
+    "verifiedIcon": {
+      "tooltip": "Verified Email"
     }
   },
   "common": {
