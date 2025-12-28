@@ -28,6 +28,14 @@ export async function addReaction(data: {
         createdAt: sql`now()`,
         updatedAt: sql`now()`,
       })
+      .onConflictDoUpdate({
+        target: [reactions.userid, reactions.visitorId, reactions.roteid, reactions.type],
+        set: {
+          updatedAt: sql`now()`,
+          visitorInfo: data.visitorInfo || null,
+          metadata: data.metadata || null,
+        },
+      })
       .returning();
 
     // 查询带用户信息的完整记录
