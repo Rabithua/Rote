@@ -49,6 +49,9 @@ async function initializeConfig() {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
     },
+    // 使用路径风格访问，兼容所有 S3 兼容服务（AWS S3、R2、Garage、MinIO 等）
+    // 路径风格是 S3 API 的标准格式，所有服务商都支持
+    forcePathStyle: true,
   });
 
   bucketName = config.bucket;

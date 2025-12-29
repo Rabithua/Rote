@@ -10,6 +10,23 @@ import { getGlobalConfig } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
 
+/**
+ * 判断是否需要使用路径风格访问
+ * 路径风格是 S3 API 的标准格式，所有 S3 兼容服务都支持：
+ * - AWS S3: 支持路径风格和虚拟主机风格
+ * - Cloudflare R2: 支持路径风格和虚拟主机风格
+ * - Garage: 主要使用路径风格
+ * - MinIO: 主要使用路径风格
+ * - 其他 S3 兼容服务: 大多数都支持路径风格
+ *
+ * 为了最大兼容性，默认使用路径风格
+ */
+function shouldUsePathStyle(_endpoint: string): boolean {
+  // 路径风格是标准格式，所有 S3 兼容服务都支持
+  // 虚拟主机风格只是 AWS S3 的优化，但不是必需的
+  return true;
+}
+
 // 动态获取 R2 配置并创建 S3 客户端
 function getR2Client(): { s3: S3Client; bucketName: string; urlPrefix: string } | null {
   const config = getGlobalConfig<StorageConfig>('storage');
@@ -21,6 +38,9 @@ function getR2Client(): { s3: S3Client; bucketName: string; urlPrefix: string } 
         accessKeyId: config.accessKeyId,
         secretAccessKey: config.secretAccessKey,
       },
+      // 智能判断是否使用路径风格，兼容所有 S3 兼容服务
+      // 路径风格是 S3 API 的标准格式，所有服务商都支持
+      forcePathStyle: shouldUsePathStyle(config.endpoint),
     });
     return {
       s3,

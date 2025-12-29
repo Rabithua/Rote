@@ -6,6 +6,16 @@ import type { ConfigTestResult, StorageConfig } from '../types/config';
  */
 export class ConfigTester {
   /**
+   * 判断是否需要使用路径风格访问
+   * 路径风格是 S3 API 的标准格式，所有 S3 兼容服务都支持
+   */
+  private static shouldUsePathStyle(_endpoint: string): boolean {
+    // 路径风格是标准格式，所有 S3 兼容服务都支持
+    // 虚拟主机风格只是 AWS S3 的优化，但不是必需的
+    return true;
+  }
+
+  /**
    * 测试存储配置（R2/S3）
    */
   public static async testStorage(config: StorageConfig): Promise<ConfigTestResult> {
@@ -24,6 +34,9 @@ export class ConfigTester {
           accessKeyId: config.accessKeyId,
           secretAccessKey: config.secretAccessKey,
         },
+        // 使用路径风格访问，兼容所有 S3 兼容服务（AWS S3、R2、Garage、MinIO 等）
+        // 路径风格是 S3 API 的标准格式，所有服务商都支持
+        forcePathStyle: this.shouldUsePathStyle(config.endpoint),
       });
 
       // 测试存储桶访问权限

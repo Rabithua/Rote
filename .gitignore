@@ -34,3 +34,5 @@ web/public/sitemap.xml
 # Serverless Cloud Framework（SCF）本地状态与缓存
 .serverless
 .serverless/**
+
+garage
