@@ -4,6 +4,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import { RequestChecksumCalculation } from '@aws-sdk/middleware-flexible-checksums';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageConfig } from '../types/config';
 import { getGlobalConfig } from './config';
@@ -41,6 +42,9 @@ function getR2Client(): { s3: S3Client; bucketName: string; urlPrefix: string } 
       // 智能判断是否使用路径风格，兼容所有 S3 兼容服务
       // 路径风格是 S3 API 的标准格式，所有服务商都支持
       forcePathStyle: shouldUsePathStyle(config.endpoint),
+      // 仅在明确要求时计算校验和，避免与 Garage 等 S3 兼容服务的校验和验证冲突
+      // Garage 可能不支持或不正确支持 AWS SDK 自动添加的校验和
+      requestChecksumCalculation: RequestChecksumCalculation.WHEN_REQUIRED,
     });
     return {
       s3,
@@ -103,11 +107,14 @@ export async function presignPutUrl(
     Key: key,
     ContentType: contentType || undefined,
     cacheControl,
+    // 明确不设置校验和算法，避免 AWS SDK 自动添加校验和参数
+    // Garage 等 S3 兼容服务可能不支持或不正确支持 AWS SDK 自动添加的校验和
   } as any);
 
   const putUrl = await getSignedUrl(s3, command, {
     expiresIn,
   });
+
   const url = `${urlPrefix}/${key}`;
   return { putUrl, url };
 }
