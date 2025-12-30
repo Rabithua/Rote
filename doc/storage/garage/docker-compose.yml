@@ -1,0 +1,16 @@
+services:
+  garage:
+    image: dxflrs/garage:v2.1.0
+    container_name: garage
+    restart: unless-stopped
+    ports:
+      - "3900:3900" # S3 API
+      - "3901:3901" # RPC 通信
+      - "3902:3902" # Web 静态网站托管
+      - "3903:3903" # 管理 API
+    volumes:
+      - ./garage.toml:/etc/garage.toml
+      - ./meta:/var/lib/garage/meta
+      - ./data:/var/lib/garage/data
+    environment:
+      - RUST_LOG=garage=info

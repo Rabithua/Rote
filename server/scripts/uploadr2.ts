@@ -3,6 +3,7 @@
  */
 
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { RequestChecksumCalculation } from '@aws-sdk/middleware-flexible-checksums';
 import { eq } from 'drizzle-orm';
 import { readdir, readFile } from 'fs/promises';
 import { extname, join, relative } from 'path';
@@ -49,6 +50,12 @@ async function initializeConfig() {
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
     },
+    // 使用路径风格访问，兼容所有 S3 兼容服务（AWS S3、R2、Garage、MinIO 等）
+    // 路径风格是 S3 API 的标准格式，所有服务商都支持
+    forcePathStyle: true,
+    // 仅在明确要求时计算校验和，避免与 Garage 等 S3 兼容服务的校验和验证冲突
+    // Garage 可能不支持或不正确支持 AWS SDK 自动添加的校验和
+    requestChecksumCalculation: RequestChecksumCalculation.WHEN_REQUIRED,
   });
 
   bucketName = config.bucket;
