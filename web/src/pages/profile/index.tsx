@@ -20,6 +20,7 @@ import type { Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import AvatarCropDialog from './components/AvatarCropDialog';
 import DeleteAccountDialog from './components/DeleteAccountDialog';
 import EditProfileDialog from './components/EditProfileDialog';
@@ -35,6 +36,7 @@ function ProfilePage() {
   const canUpload =
     !!siteStatus?.storage?.r2Configured && siteStatus?.ui?.allowUploadFile !== false;
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
+  const { t: tLogin } = useTranslation('translation', { keyPrefix: 'pages.login' });
   const inputAvatarRef = useRef<HTMLInputElement>(null);
   const inputCoverRef = useRef<HTMLInputElement>(null);
 
@@ -315,7 +317,28 @@ function ProfilePage() {
   }
 
   function saveProfile() {
-    if (!profile) return;
+    if (!profile || !editProfile) return;
+
+    // 如果用户名有变化，进行验证
+    if (editProfile.username !== undefined && editProfile.username !== profile.username) {
+      const usernameSchema = z
+        .string()
+        .min(1, tLogin('usernameRequired'))
+        .max(20, tLogin('usernameMaxLength'))
+        .regex(/^[A-Za-z0-9_-]+$/, tLogin('usernameFormat'))
+        .refine((value) => !siteStatus?.frontendConfig?.safeRoutes?.includes(value), {
+          message: tLogin('usernameConflict'),
+        });
+
+      const validationResult = usernameSchema.safeParse(editProfile.username);
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.issues[0]?.message || t('editFailed');
+        toast.error(errorMessage);
+        setProfileEditing(false);
+        return;
+      }
+    }
+
     setProfileEditing(true);
     patchProfile(editProfile as Partial<NonNullable<Profile>>)
       .then(() => {
@@ -323,8 +346,24 @@ function ProfilePage() {
         setIsModalOpen(false);
         setProfileEditing(false);
       })
-      .catch(() => {
-        toast.error(t('editFailed'));
+      .catch((error: any) => {
+        // 处理后端返回的错误
+        const errorMessage =
+          error?.response?.data?.message ||
+          error?.message ||
+          error?.response?.data?.error ||
+          t('editFailed');
+
+        // 检查是否是用户名相关的错误
+        if (
+          errorMessage.includes('username') ||
+          errorMessage.includes('Username') ||
+          errorMessage.includes('already exists')
+        ) {
+          toast.error(tLogin('usernameConflict') || errorMessage);
+        } else {
+          toast.error(errorMessage);
+        }
         setIsModalOpen(false);
         setProfileEditing(false);
       });

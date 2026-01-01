@@ -40,7 +40,7 @@ export default function EditProfileDialog({
         <DialogHeader>
           <DialogTitle>{t('editProfile')}</DialogTitle>
         </DialogHeader>
-        <div className="flex max-h-[70dvh] w-full cursor-default gap-5 overflow-y-scroll">
+        <div className="flex max-h-[70dvh] w-full cursor-default gap-5 overflow-y-scroll px-1">
           <div className="flex w-full flex-col gap-1">
             <input
               type="file"
@@ -67,10 +67,15 @@ export default function EditProfileDialog({
             />
             <div className="mt-2 text-base font-semibold">{t('username')}</div>
             <Input
-              disabled
               className="w-full rounded-md font-mono"
               maxLength={20}
               value={editProfile?.username || ''}
+              onInput={(e: React.FormEvent<HTMLInputElement>) => {
+                onProfileChange({
+                  ...editProfile,
+                  username: (e.target as HTMLInputElement).value,
+                });
+              }}
             />
             <div className="mt-2 text-base font-semibold">{t('nickname')}</div>
             <Input
