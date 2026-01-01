@@ -138,6 +138,8 @@
       },
       "fields": {
         "username": "Username",
+        "usernameOrEmail": "Username or Email",
+        "usernameOrEmailPlaceholder": "username or email",
         "password": "Password",
         "email": "Email",
         "nickname": "Nickname"
@@ -157,6 +159,7 @@
         "dockerDeployment": "Using Docker deployment, backend container may take a few minutes to build. Please refresh the page later."
       },
       "usernameRequired": "Username is required",
+      "usernameOrEmailRequired": "Username or email is required",
       "usernameMaxLength": "Username cannot exceed 20 characters",
       "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
       "usernameConflict": "This username conflicts with system routes",
