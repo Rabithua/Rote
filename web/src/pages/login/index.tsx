@@ -89,22 +89,26 @@ function Login() {
     username: z
       .string()
       .min(1, t('usernameOrEmailRequired'))
-      .refine(
-        (val) => {
-          // 如果包含 @ 符号，按邮箱格式验证
-          if (val.includes('@')) {
-            return z.string().email().safeParse(val).success;
+      .superRefine((val, ctx) => {
+        // 如果包含 @ 符号，按邮箱格式验证
+        if (val.includes('@')) {
+          const emailResult = z.string().email().safeParse(val);
+          if (!emailResult.success) {
+            ctx.addIssue({
+              code: 'custom',
+              message: t('emailFormat'),
+            });
           }
+        } else {
           // 否则按用户名格式验证
-          return val.length <= 20;
-        },
-        (val) => {
-          if (val.includes('@')) {
-            return { message: t('emailFormat') };
+          if (val.length > 20) {
+            ctx.addIssue({
+              code: 'custom',
+              message: t('usernameMaxLength'),
+            });
           }
-          return { message: t('usernameMaxLength') };
         }
-      ),
+      }),
     password: z
       .string()
       .refine((val) => val.length > 0, { message: t('passwordRequired') })

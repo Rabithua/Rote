@@ -24,12 +24,7 @@ export async function passportCheckUser(data: { usernameOrEmail: string }) {
         updatedAt: users.updatedAt,
       })
       .from(users)
-      .where(
-        or(
-          eq(users.username, data.usernameOrEmail),
-          eq(users.email, data.usernameOrEmail)
-        )
-      )
+      .where(or(eq(users.username, data.usernameOrEmail), eq(users.email, data.usernameOrEmail)))
       .limit(1);
 
     return {
