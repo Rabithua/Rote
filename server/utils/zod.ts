@@ -39,6 +39,18 @@ export const passwordChangeZod = z.object({
     .max(128, 'Password cannot exceed 128 characters'),
 });
 
+// 用户名更新验证
+export const UsernameUpdateZod = z.object({
+  username: z
+    .string()
+    .min(1, 'Username cannot be empty')
+    .max(20, 'Username cannot exceed 20 characters')
+    .regex(/^[A-Za-z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen')
+    .refine((value) => !safeRoutes.includes(value), {
+      message: 'Username conflicts with routes, please choose another one',
+    }),
+});
+
 // 笔记相关验证
 export const NoteCreateZod = z.object({
   title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),

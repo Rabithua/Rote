@@ -20,7 +20,9 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   if (
     errorCode === '23505' ||
     errorMessage.includes('unique constraint') ||
-    errorMessage.includes('duplicate key')
+    errorMessage.includes('duplicate key') ||
+    errorMessage.includes('Username already exists') ||
+    errorMessage.includes('Email already exists')
   ) {
     // 根据约束名称或字段信息判断具体的唯一约束错误
     let message = 'Resource already exists';
@@ -30,19 +32,21 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
     if (errorMessage.includes('user_sw_subscriptions') && errorMessage.includes('endpoint')) {
       message = 'Subscription endpoint already exists';
     }
-    // 检查是否是用户名的唯一约束
+    // 检查是否是用户名的唯一约束（包括手动检查的情况）
     else if (
-      errorMessage.includes('users') &&
-      errorMessage.includes('username') &&
-      !errorMessage.includes('email')
+      errorMessage.includes('Username already exists') ||
+      (errorMessage.includes('users') &&
+        errorMessage.includes('username') &&
+        !errorMessage.includes('email'))
     ) {
       message = 'Username already exists';
     }
-    // 检查是否是邮箱的唯一约束
+    // 检查是否是邮箱的唯一约束（包括手动检查的情况）
     else if (
-      errorMessage.includes('users') &&
-      errorMessage.includes('email') &&
-      !errorMessage.includes('username')
+      errorMessage.includes('Email already exists') ||
+      (errorMessage.includes('users') &&
+        errorMessage.includes('email') &&
+        !errorMessage.includes('username'))
     ) {
       message = 'Email already exists';
     }
