@@ -86,7 +86,25 @@ function Login() {
   }, []);
 
   const LoginDataZod = z.object({
-    username: z.string().min(1, t('usernameRequired')).max(20, t('usernameMaxLength')),
+    username: z
+      .string()
+      .min(1, t('usernameOrEmailRequired'))
+      .refine(
+        (val) => {
+          // 如果包含 @ 符号，按邮箱格式验证
+          if (val.includes('@')) {
+            return z.string().email().safeParse(val).success;
+          }
+          // 否则按用户名格式验证
+          return val.length <= 20;
+        },
+        (val) => {
+          if (val.includes('@')) {
+            return { message: t('emailFormat') };
+          }
+          return { message: t('usernameMaxLength') };
+        }
+      ),
     password: z
       .string()
       .refine((val) => val.length > 0, { message: t('passwordRequired') })
@@ -398,12 +416,12 @@ function Login() {
                     <TabsContent value="login" className="space-y-4 py-4">
                       <div className="space-y-5">
                         <div className="space-y-2">
-                          <Label htmlFor="login-username">{t('fields.username')}</Label>
+                          <Label htmlFor="login-username">{t('fields.usernameOrEmail')}</Label>
                           <Input
                             id="login-username"
-                            placeholder="username"
+                            placeholder={t('fields.usernameOrEmailPlaceholder')}
                             className="text-md rounded-md font-mono"
-                            maxLength={20}
+                            maxLength={255}
                             value={loginData.username}
                             onInput={(e) => handleInputChange(e, 'username', 'login')}
                           />

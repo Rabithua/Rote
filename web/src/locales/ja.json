@@ -138,6 +138,8 @@
       },
       "fields": {
         "username": "ユーザー名",
+        "usernameOrEmail": "ユーザー名またはメールアドレス",
+        "usernameOrEmailPlaceholder": "username or email",
         "password": "パスワード",
         "email": "メールアドレス",
         "nickname": "ニックネーム"
@@ -157,6 +159,7 @@
         "dockerDeployment": "Docker デプロイメントを使用している場合、バックエンドコンテナの構築に数分かかる場合があります。後でページを更新してください。"
       },
       "usernameRequired": "ユーザー名は必須です",
+      "usernameOrEmailRequired": "ユーザー名またはメールアドレスは必須です",
       "usernameMaxLength": "ユーザー名は20文字以内で入力してください",
       "usernameFormat": "ユーザー名は英字、数字、アンダースコア、ハイフンのみ使用できます",
       "usernameConflict": "このユーザー名はシステムルートと競合しています",
