@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
 import { users } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -12,6 +12,7 @@ export async function editMyProfile(
     nickname?: string | null;
     description?: string | null;
     cover?: string | null;
+    username?: string;
   }
 ): Promise<{
   id: string;
@@ -26,11 +27,25 @@ export async function editMyProfile(
   updatedAt: Date;
 }> {
   try {
+    // 如果提供了新用户名，检查是否已被其他用户使用
+    if (data.username !== undefined) {
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.username, data.username), ne(users.id, userid)))
+        .limit(1);
+
+      if (existingUser.length > 0) {
+        throw new DatabaseError('Username already exists', new Error('Username already exists'));
+      }
+    }
+
     const updateData: {
       avatar?: string | null;
       nickname?: string | null;
       description?: string | null;
       cover?: string | null;
+      username?: string;
       updatedAt: Date;
     } = {
       updatedAt: new Date(),
@@ -39,6 +54,7 @@ export async function editMyProfile(
     if (data.nickname !== undefined) updateData.nickname = data.nickname || null;
     if (data.description !== undefined) updateData.description = data.description || null;
     if (data.cover !== undefined) updateData.cover = data.cover || null;
+    if (data.username !== undefined) updateData.username = data.username;
 
     const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning();
 
@@ -54,7 +70,14 @@ export async function editMyProfile(
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
-  } catch (error) {
+  } catch (error: any) {
+    // 处理 PostgreSQL 唯一约束冲突错误
+    if (error.code === '23505') {
+      throw new DatabaseError('Username already exists', error);
+    }
+    if (error instanceof DatabaseError) {
+      throw error;
+    }
     throw new DatabaseError('Failed to update user profile', error);
   }
 }

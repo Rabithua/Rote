@@ -52,11 +52,11 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
   const { username, password } = body;
 
   if (!username || !password) {
-    throw new Error('Username and password are required');
+    throw new Error('Username or email and password are required');
   }
 
-  // 查找用户
-  const { user, err } = await passportCheckUser({ username });
+  // 查找用户（支持用户名或邮箱）
+  const { user, err } = await passportCheckUser({ usernameOrEmail: username });
   if (err || !user) {
     throw new Error('User not found.');
   }
@@ -99,7 +99,7 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
           const isEqual = crypto.timingSafeEqual(passwordhashBuffer, hashedPassword);
 
           if (!isEqual) {
-            return reject(new Error('Incorrect username or password.'));
+            return reject(new Error('Incorrect username/email or password.'));
           }
 
           // 生成 JWT tokens (完全无状态，不存储到数据库)

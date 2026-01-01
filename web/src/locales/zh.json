@@ -132,6 +132,8 @@
       },
       "fields": {
         "username": "用户名",
+        "usernameOrEmail": "用户名或邮箱",
+        "usernameOrEmailPlaceholder": "username or email",
         "password": "密码",
         "email": "邮箱",
         "nickname": "昵称"
@@ -151,6 +153,7 @@
         "dockerDeployment": "使用Docker部署，后端容器可能需要几分钟构建，请稍后刷新页面"
       },
       "usernameRequired": "请输入用户名",
+      "usernameOrEmailRequired": "请输入用户名或邮箱",
       "usernameMaxLength": "用户名不能超过20个字符",
       "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
       "usernameConflict": "此用户名与系统路由冲突",

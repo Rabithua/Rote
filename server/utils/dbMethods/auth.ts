@@ -1,10 +1,10 @@
-import { eq } from 'drizzle-orm';
+import { eq, or } from 'drizzle-orm';
 import { users } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // 认证相关方法
-export async function passportCheckUser(data: { username: string }) {
+export async function passportCheckUser(data: { usernameOrEmail: string }) {
   try {
     const [user] = await db
       .select({
@@ -24,7 +24,7 @@ export async function passportCheckUser(data: { username: string }) {
         updatedAt: users.updatedAt,
       })
       .from(users)
-      .where(eq(users.username, data.username))
+      .where(or(eq(users.username, data.usernameOrEmail), eq(users.email, data.usernameOrEmail)))
       .limit(1);
 
     return {

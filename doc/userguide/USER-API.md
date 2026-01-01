@@ -117,6 +117,11 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/profile' \
   - `Authorization: Bearer <accessToken>`（必填）
   - `Content-Type: application/json`
 - **Body**:
+  - `username`: string（可选，用户名）
+    - 长度：1-20 字符
+    - 格式：只能包含字母、数字、下划线（`_`）和连字符（`-`）
+    - 唯一性：不能与其他用户重复
+    - 保留字：不能与系统路由冲突
   - `nickname`: string（可选，昵称）
   - `description`: string（可选，个人简介）
   - `avatar`: string（可选，头像 URL）
@@ -129,6 +134,7 @@ curl -X PUT 'https://your-domain.com/v2/api/users/me/profile' \
   -H 'Authorization: Bearer <ACCESS_TOKEN>' \
   -H 'Content-Type: application/json' \
   -d '{
+    "username": "newusername",
     "nickname": "新昵称",
     "description": "新的个人简介",
     "avatar": "https://example.com/new-avatar.jpg",
@@ -145,7 +151,7 @@ curl -X PUT 'https://your-domain.com/v2/api/users/me/profile' \
   "data": {
     "id": "uuid",
     "email": "demo@example.com",
-    "username": "demo",
+    "username": "newusername",
     "nickname": "新昵称",
     "description": "新的个人简介",
     "avatar": "https://example.com/new-avatar.jpg",
@@ -160,7 +166,8 @@ curl -X PUT 'https://your-domain.com/v2/api/users/me/profile' \
 可能的错误：
 
 - 401 未认证（需要登录）
-- 400 字段格式错误
+- 400 字段格式错误（例如：用户名格式不正确、长度超出限制、与系统路由冲突）
+- 400 用户名已被使用（唯一性冲突）
 
 ---
 

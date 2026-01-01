@@ -16,16 +16,25 @@
 - **URL**: `/v2/api/auth/login`
 - **Headers**: `Content-Type: application/json`
 - **Body**:
-  - `username`: string
+  - `username`: string（可以是用户名或邮箱）
   - `password`: string
 
 请求示例（cURL）:
 
 ```bash
+# 使用用户名登录
 curl -X POST 'https://your-domain.com/v2/api/auth/login' \
   -H 'Content-Type: application/json' \
   -d '{
     "username": "demo",
+    "password": "your_password"
+  }'
+
+# 使用邮箱登录
+curl -X POST 'https://your-domain.com/v2/api/auth/login' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "username": "demo@example.com",
     "password": "your_password"
   }'
 ```
@@ -57,7 +66,8 @@ curl -X POST 'https://your-domain.com/v2/api/auth/login' \
 
 可能的错误：
 
-- 401 未认证（用户名或密码错误）
+- 401 未认证（用户名/邮箱或密码错误，提示：`Incorrect username/email or password.`）
+- 401 用户不存在（提示：`User not found.`）
 - 401 OAuth 账户不能使用密码登录（提示：`This account uses OAuth login. Please use {provider} to sign in.`）
 - 503 服务未就绪（安全配置未完成）
 

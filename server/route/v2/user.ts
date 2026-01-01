@@ -17,6 +17,7 @@ import {
   updateMySettings,
 } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
+import { UsernameUpdateZod } from '../../utils/zod';
 
 // 用户相关路由
 const usersRouter = new Hono<{ Variables: HonoVariables }>();
@@ -43,6 +44,12 @@ usersRouter.get('/me/profile', authenticateJWT, async (c: HonoContext) => {
 usersRouter.put('/me/profile', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const body = await c.req.json();
+
+  // 如果提供了 username 字段，进行验证
+  if (body.username !== undefined) {
+    UsernameUpdateZod.parse({ username: body.username });
+  }
+
   const data = await editMyProfile(user.id, body);
 
   return c.json(createResponse(data), 200);
