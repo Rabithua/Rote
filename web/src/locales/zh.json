@@ -51,7 +51,7 @@
       "typewriterTexts": ["个人笔记库", "碎碎念本子", "私人朋友圈", "个人频道", "微型博客"],
       "subtitle": "开放API，记录的姿势不止一种🤩，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "iosAppTooltip": {
-        "title": "想要加入 IOS 测试版吗？",
+        "title": "想要加入 iOS 测试版吗？",
         "earlyAccess": "抢先测试"
       },
       "andMore": {
@@ -72,8 +72,8 @@
             "description": "前后端采用分离的架构设计，按需部署你需要的服务"
           },
           "iosClient": {
-            "title": "IOS 客户端",
-            "description": "更优雅的 App 客户端（非中国区可用）"
+            "title": "iOS 客户端",
+            "description": "更优雅的 App 客户端"
           }
         }
       },
