@@ -6,6 +6,7 @@ import SearchBar from '@/components/others/SearchBox';
 import TagMap from '@/components/others/tagMap';
 import RandomRote from '@/components/rote/randomRote';
 import RoteList from '@/components/rote/roteList';
+import { PageMeta } from '@/components/seo/PageMeta';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { useEditor } from '@/state/editor';
 import type { ApiGetRotesParams, Rotes } from '@/types/main';
@@ -94,19 +95,24 @@ function HomePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.home' });
 
   return (
-    <ContainerWithSideBar
-      sidebar={<SideBar />}
-      sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-          <div className="flex items-center gap-2">
-            <ChartAreaIcon className="size-5" />
-            {t('statistics')}
+    <>
+      {/* 功能型页面：使用站点默认信息 */}
+      <PageMeta />
+
+      <ContainerWithSideBar
+        sidebar={<SideBar />}
+        sidebarHeader={
+          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+            <div className="flex items-center gap-2">
+              <ChartAreaIcon className="size-5" />
+              {t('statistics')}
+            </div>
           </div>
-        </div>
-      }
-    >
-      <MainPage />
-    </ContainerWithSideBar>
+        }
+      >
+        <MainPage />
+      </ContainerWithSideBar>
+    </>
   );
 }
 

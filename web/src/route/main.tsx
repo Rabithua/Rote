@@ -1,7 +1,17 @@
 import ScrollPositionManager from '@/components/ScrollPositionManager';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import LayoutDashboard from '@/layout/dashboard';
 import { isTokenValid } from '@/utils/main';
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
+import { buildAbsoluteUrl, getBaseUrl, getOgLocale } from '@/utils/meta';
+import { Helmet } from '@dr.pogodin/react-helmet';
+import { useTranslation } from 'react-i18next';
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+  useLocation,
+} from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
 
 import ErrorPage from '@/pages/404';
@@ -22,11 +32,53 @@ import SetupPage from '@/pages/setup';
 import UserPage from '@/pages/user/:username';
 
 /**
- * 根路由组件，用于在 RouterProvider 内部渲染 ScrollPositionManager
+ * 全局 AppHelmet 组件，在 Router 内部使用 useLocation
+ */
+const AppHelmet = () => {
+  const { data: siteStatus } = useSiteStatus();
+  const { i18n } = useTranslation();
+  const location = useLocation();
+  const siteName = siteStatus?.site?.name || 'Rote';
+  const siteDescription = siteStatus?.site?.description || '';
+  const baseUrl = getBaseUrl(siteStatus);
+  const ogLocale = getOgLocale(i18n?.language || 'en');
+  const defaultImage = `${baseUrl}/logo.png`;
+
+  // 动态获取当前路径并构建完整 URL
+  const currentUrl = buildAbsoluteUrl(location?.pathname || '/', baseUrl);
+
+  return (
+    <Helmet>
+      <title>{siteName || 'Rote'}</title>
+      {siteDescription ? <meta name="description" content={siteDescription} /> : null}
+      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      <link rel="apple-touch-startup-image" href="/logo.png" />
+
+      {/* 动态设置 canonical URL 和 og:url */}
+      <link rel="canonical" href={currentUrl} />
+
+      {/* Open Graph 基础标签 */}
+      <meta property="og:site_name" content={siteName || 'Rote'} />
+      <meta property="og:type" content="website" />
+      <meta property="og:locale" content={ogLocale} />
+      {siteDescription ? <meta property="og:description" content={siteDescription} /> : null}
+      <meta property="og:url" content={currentUrl} />
+      <meta property="og:image" content={defaultImage} />
+
+      {/* Twitter Card 基础标签 */}
+      <meta name="twitter:card" content="summary" />
+      <meta name="twitter:image" content={defaultImage} />
+    </Helmet>
+  );
+};
+
+/**
+ * 根路由组件，用于在 RouterProvider 内部渲染 ScrollPositionManager 和 AppHelmet
  */
 function RootLayout() {
   return (
     <>
+      <AppHelmet />
       <ScrollPositionManager />
       <Outlet />
     </>

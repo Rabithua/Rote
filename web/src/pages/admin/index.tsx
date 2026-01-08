@@ -1,5 +1,6 @@
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { PageMeta } from '@/components/seo/PageMeta';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/state/profile';
 import { get } from '@/utils/api';
@@ -90,105 +91,110 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="noScrollBar relative flex-1 divide-y overflow-x-hidden overflow-y-visible pb-20">
-      <NavBar title={t('title')} icon={<Shield className="size-6" />} />
+    <>
+      {/* 功能型页面：使用站点默认信息 + robots noindex */}
+      <PageMeta robots="noindex, nofollow" />
 
-      <div className="flex flex-col divide-y">
-        {/* Tab 导航 */}
-        <div className="noScrollBar flex divide-x overflow-x-scroll">
-          <Button
-            variant={activeTab === 'site' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('site')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Globe className="size-4" />
-            {t('tabs.site')}
-          </Button>
-          <Button
-            variant={activeTab === 'storage' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('storage')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Database className="size-4" />
-            {t('tabs.storage')}
-          </Button>
-          <Button
-            variant={activeTab === 'ui' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('ui')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Settings className="size-4" />
-            {t('tabs.ui')}
-          </Button>
-          <Button
-            variant={activeTab === 'users' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('users')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Users className="size-4" />
-            {t('tabs.users')}
-          </Button>
-          <Button
-            variant={activeTab === 'oauth' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('oauth')}
-            className="flex items-center gap-2 rounded-none"
-          >
-            <Shield className="size-4" />
-            {t('tabs.oauth')}
-          </Button>
+      <div className="noScrollBar relative flex-1 divide-y overflow-x-hidden overflow-y-visible pb-20">
+        <NavBar title={t('title')} icon={<Shield className="size-6" />} />
+
+        <div className="flex flex-col divide-y">
+          {/* Tab 导航 */}
+          <div className="noScrollBar flex divide-x overflow-x-scroll">
+            <Button
+              variant={activeTab === 'site' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('site')}
+              className="flex items-center gap-2 rounded-none"
+            >
+              <Globe className="size-4" />
+              {t('tabs.site')}
+            </Button>
+            <Button
+              variant={activeTab === 'storage' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('storage')}
+              className="flex items-center gap-2 rounded-none"
+            >
+              <Database className="size-4" />
+              {t('tabs.storage')}
+            </Button>
+            <Button
+              variant={activeTab === 'ui' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('ui')}
+              className="flex items-center gap-2 rounded-none"
+            >
+              <Settings className="size-4" />
+              {t('tabs.ui')}
+            </Button>
+            <Button
+              variant={activeTab === 'users' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('users')}
+              className="flex items-center gap-2 rounded-none"
+            >
+              <Users className="size-4" />
+              {t('tabs.users')}
+            </Button>
+            <Button
+              variant={activeTab === 'oauth' ? 'default' : 'ghost'}
+              onClick={() => setActiveTab('oauth')}
+              className="flex items-center gap-2 rounded-none"
+            >
+              <Shield className="size-4" />
+              {t('tabs.oauth')}
+            </Button>
+          </div>
+
+          {/* 站点配置 */}
+          {activeTab === 'site' && (
+            <SiteConfigTab
+              siteConfig={siteConfig}
+              setSiteConfig={setSiteConfig}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              onMutate={mutate}
+            />
+          )}
+
+          {/* 存储配置 */}
+          {activeTab === 'storage' && (
+            <StorageConfigTab
+              storageConfig={storageConfig}
+              setStorageConfig={setStorageConfig}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              isTesting={isTesting}
+              setIsTesting={setIsTesting}
+              onMutate={mutate}
+            />
+          )}
+
+          {/* UI 配置 */}
+          {activeTab === 'ui' && (
+            <UIConfigTab
+              uiConfig={uiConfig}
+              setUiConfig={setUiConfig}
+              securityConfig={securityConfig}
+              setSecurityConfig={setSecurityConfig}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              onMutate={mutate}
+            />
+          )}
+
+          {/* OAuth 配置 */}
+          {activeTab === 'oauth' && (
+            <OAuthConfigTab
+              securityConfig={securityConfig}
+              setSecurityConfig={setSecurityConfig}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              onMutate={mutate}
+            />
+          )}
+
+          {/* 用户管理 */}
+          {activeTab === 'users' && <UsersTab />}
         </div>
-
-        {/* 站点配置 */}
-        {activeTab === 'site' && (
-          <SiteConfigTab
-            siteConfig={siteConfig}
-            setSiteConfig={setSiteConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
-
-        {/* 存储配置 */}
-        {activeTab === 'storage' && (
-          <StorageConfigTab
-            storageConfig={storageConfig}
-            setStorageConfig={setStorageConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            isTesting={isTesting}
-            setIsTesting={setIsTesting}
-            onMutate={mutate}
-          />
-        )}
-
-        {/* UI 配置 */}
-        {activeTab === 'ui' && (
-          <UIConfigTab
-            uiConfig={uiConfig}
-            setUiConfig={setUiConfig}
-            securityConfig={securityConfig}
-            setSecurityConfig={setSecurityConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
-
-        {/* OAuth 配置 */}
-        {activeTab === 'oauth' && (
-          <OAuthConfigTab
-            securityConfig={securityConfig}
-            setSecurityConfig={setSecurityConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
-
-        {/* 用户管理 */}
-        {activeTab === 'users' && <UsersTab />}
       </div>
-    </div>
+    </>
   );
 }

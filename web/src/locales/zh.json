@@ -267,7 +267,8 @@
       "sideBarTitle": "除了这些...还有",
       "helmet": {
         "loading": "加载中...",
-        "defaultDesc": "rote.ink"
+        "defaultDesc": "rote.ink",
+        "profileDesc": "{{name}} 的个人主页"
       }
     },
     "filter": {
