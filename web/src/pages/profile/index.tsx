@@ -1,5 +1,4 @@
 import NavBar from '@/components/layout/navBar';
-import { PageMeta } from '@/components/seo/PageMeta';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import {
@@ -451,120 +450,115 @@ function ProfilePage() {
   }
 
   return (
-    <>
-      {/* 功能型页面：使用站点默认信息 */}
-      <PageMeta />
-
-      <ContainerWithSideBar
-        sidebar={<ProfileSidebar />}
-        sidebarHeader={
-          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-            <div className="flex items-center gap-2">
-              <Stars className="size-5" />
-              {t('sideBarTitle')}
-            </div>
+    <ContainerWithSideBar
+      sidebar={<ProfileSidebar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+          <div className="flex items-center gap-2">
+            <Stars className="size-5" />
+            {t('sideBarTitle')}
           </div>
-        }
-      >
-        <div className="flex flex-col divide-y pb-20">
-          <NavBar title={t('title')} icon={<UserCircle2 className="size-7" />} />
-          <ProfileHeader
-            profile={profile}
-            canUpload={canUpload}
-            coverChangeing={coverChangeing}
-            inputCoverRef={inputCoverRef}
-            inputAvatarRef={inputAvatarRef}
-            onChangeCover={changeCover}
-            onOpenSettings={() => setIsSettingsModalOpen(true)}
-            onOpenEditProfile={() => setIsModalOpen(true)}
-          />
-
-          <OpenKeySection
-            openKeys={openKeys}
-            isLoading={openKeyLoading}
-            onCreateOpenKey={generateOpenKeyFun}
-            onMutate={mutateOpenKeys}
-          />
-
-          <EditProfileDialog
-            isOpen={isModalOpen}
-            onOpenChange={setIsModalOpen}
-            editProfile={editProfile}
-            onProfileChange={setEditProfile}
-            onSave={saveProfile}
-            isSaving={profileEditing}
-            canUpload={canUpload}
-            inputAvatarRef={inputAvatarRef}
-            onAvatarClick={() => {
-              if (!canUpload) return;
-              (inputAvatarRef.current as HTMLInputElement | null)?.click();
-            }}
-            onFileChange={handleFileChange}
-          />
-
-          <input
-            type="file"
-            accept="image/*"
-            max="1"
-            className="hidden"
-            ref={inputAvatarRef}
-            onChange={handleFileChange}
-            disabled={!canUpload}
-            title="Upload avatar image"
-          />
-
-          <SettingsDialog
-            isOpen={isSettingsModalOpen}
-            onOpenChange={setIsSettingsModalOpen}
-            allowExplore={allowExplore}
-            onAllowExploreChange={(checked) => setAllowExplore(checked)}
-            onSave={saveSettings}
-            isSaving={settingsSaving}
-            profile={profile}
-            onDeleteAccount={() => {
-              setIsSettingsModalOpen(false);
-              setIsDeleteAccountModalOpen(true);
-            }}
-            enabledOAuthProviders={siteStatus?.oauth?.providers || {}}
-            bindingProviders={bindingProviders}
-            unbindingProviders={unbindingProviders}
-            onBindOAuth={handleBindOAuth}
-            onUnbindOAuth={handleUnbindOAuth}
-          />
-
-          <MergeAccountDialog
-            isOpen={isMergeDialogOpen}
-            onOpenChange={setIsMergeDialogOpen}
-            mergeInfo={mergeInfo}
-            profile={profile}
-            onConfirm={handleConfirmMerge}
-            onCancel={handleCancelMerge}
-            isMerging={isMerging}
-          />
-
-          <DeleteAccountDialog
-            isOpen={isDeleteAccountModalOpen}
-            onOpenChange={setIsDeleteAccountModalOpen}
-            password={deletePassword}
-            onPasswordChange={setDeletePassword}
-            onConfirm={handleDeleteAccount}
-            onCancel={() => {
-              setIsDeleteAccountModalOpen(false);
-              setDeletePassword('');
-            }}
-            isDeleting={isDeletingAccount}
-          />
-
-          <AvatarCropDialog
-            isOpen={isAvatarModalOpen}
-            onOpenChange={setIsAvatarModalOpen}
-            imageFile={avatarFile}
-            onSave={handleAvatarSave}
-            isUploading={avatarUploading}
-          />
         </div>
-      </ContainerWithSideBar>
-    </>
+      }
+    >
+      <div className="flex flex-col divide-y pb-20">
+        <NavBar title={t('title')} icon={<UserCircle2 className="size-7" />} />
+        <ProfileHeader
+          profile={profile}
+          canUpload={canUpload}
+          coverChangeing={coverChangeing}
+          inputCoverRef={inputCoverRef}
+          inputAvatarRef={inputAvatarRef}
+          onChangeCover={changeCover}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
+          onOpenEditProfile={() => setIsModalOpen(true)}
+        />
+
+        <OpenKeySection
+          openKeys={openKeys}
+          isLoading={openKeyLoading}
+          onCreateOpenKey={generateOpenKeyFun}
+          onMutate={mutateOpenKeys}
+        />
+
+        <EditProfileDialog
+          isOpen={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          editProfile={editProfile}
+          onProfileChange={setEditProfile}
+          onSave={saveProfile}
+          isSaving={profileEditing}
+          canUpload={canUpload}
+          inputAvatarRef={inputAvatarRef}
+          onAvatarClick={() => {
+            if (!canUpload) return;
+            (inputAvatarRef.current as HTMLInputElement | null)?.click();
+          }}
+          onFileChange={handleFileChange}
+        />
+
+        <input
+          type="file"
+          accept="image/*"
+          max="1"
+          className="hidden"
+          ref={inputAvatarRef}
+          onChange={handleFileChange}
+          disabled={!canUpload}
+          title="Upload avatar image"
+        />
+
+        <SettingsDialog
+          isOpen={isSettingsModalOpen}
+          onOpenChange={setIsSettingsModalOpen}
+          allowExplore={allowExplore}
+          onAllowExploreChange={(checked) => setAllowExplore(checked)}
+          onSave={saveSettings}
+          isSaving={settingsSaving}
+          profile={profile}
+          onDeleteAccount={() => {
+            setIsSettingsModalOpen(false);
+            setIsDeleteAccountModalOpen(true);
+          }}
+          enabledOAuthProviders={siteStatus?.oauth?.providers || {}}
+          bindingProviders={bindingProviders}
+          unbindingProviders={unbindingProviders}
+          onBindOAuth={handleBindOAuth}
+          onUnbindOAuth={handleUnbindOAuth}
+        />
+
+        <MergeAccountDialog
+          isOpen={isMergeDialogOpen}
+          onOpenChange={setIsMergeDialogOpen}
+          mergeInfo={mergeInfo}
+          profile={profile}
+          onConfirm={handleConfirmMerge}
+          onCancel={handleCancelMerge}
+          isMerging={isMerging}
+        />
+
+        <DeleteAccountDialog
+          isOpen={isDeleteAccountModalOpen}
+          onOpenChange={setIsDeleteAccountModalOpen}
+          password={deletePassword}
+          onPasswordChange={setDeletePassword}
+          onConfirm={handleDeleteAccount}
+          onCancel={() => {
+            setIsDeleteAccountModalOpen(false);
+            setDeletePassword('');
+          }}
+          isDeleting={isDeletingAccount}
+        />
+
+        <AvatarCropDialog
+          isOpen={isAvatarModalOpen}
+          onOpenChange={setIsAvatarModalOpen}
+          imageFile={avatarFile}
+          onSave={handleAvatarSave}
+          isUploading={avatarUploading}
+        />
+      </div>
+    </ContainerWithSideBar>
   );
 }
 

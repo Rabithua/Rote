@@ -4,7 +4,6 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import SearchBar from '@/components/others/SearchBox';
 import RoteList from '@/components/rote/roteList';
-import { PageMeta } from '@/components/seo/PageMeta';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
@@ -209,43 +208,38 @@ function MineFilter() {
   );
 
   return (
-    <>
-      {/* 功能型页面：使用站点默认信息 */}
-      <PageMeta />
-
-      <ContainerWithSideBar
-        sidebar={<SideBar />}
-        sidebarHeader={
-          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-            <div className="flex items-center gap-2">
-              <ActivityIcon className="size-5" />
-              {t('data')}
-            </div>
+    <ContainerWithSideBar
+      sidebar={<SideBar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+          <div className="flex items-center gap-2">
+            <ActivityIcon className="size-5" />
+            {t('data')}
           </div>
-        }
-      >
-        <NavBar title={t('title')} onNavClick={refreshData}>
-          {isLoading ||
-            (isValidating && (
-              <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
-            ))}
-        </NavBar>
+        </div>
+      }
+    >
+      <NavBar title={t('title')} onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
 
-        <SearchBar
-          defaultValue={filter.keyword}
-          onSearch={(keyword) => {
-            const trimmedKeyword = keyword.trim();
-            setFilter((prevState) => ({
-              ...prevState,
-              keyword: trimmedKeyword,
-            }));
-          }}
-          isLoading={isLoading || isValidating}
-        />
-        {TagsBlock}
-        <RoteList data={data} loadMore={loadMore} mutate={mutate} error={error} />
-      </ContainerWithSideBar>
-    </>
+      <SearchBar
+        defaultValue={filter.keyword}
+        onSearch={(keyword) => {
+          const trimmedKeyword = keyword.trim();
+          setFilter((prevState) => ({
+            ...prevState,
+            keyword: trimmedKeyword,
+          }));
+        }}
+        isLoading={isLoading || isValidating}
+      />
+      {TagsBlock}
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} error={error} />
+    </ContainerWithSideBar>
   );
 }
 

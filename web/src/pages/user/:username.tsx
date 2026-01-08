@@ -4,14 +4,12 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import UserAvatar from '@/components/others/UserAvatar';
 import RoteList from '@/components/rote/roteList';
-import { PageMeta } from '@/components/seo/PageMeta';
-import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
-import { buildAbsoluteUrl, getBaseUrl } from '@/utils/meta';
 import { getRotesV2 } from '@/utils/roteApi';
+import { Helmet } from '@dr.pogodin/react-helmet';
 import Linkify from 'linkify-react';
 import { Globe2, RefreshCw, Rss, Stars } from 'lucide-react';
 import moment from 'moment';
@@ -21,7 +19,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 function UserPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.user' });
-  const { data: siteStatus } = useSiteStatus();
   const navigate = useNavigate();
   const { username }: any = useParams();
   const {
@@ -90,7 +87,7 @@ function UserPage() {
   };
 
   const SideBar = () => (
-    <div className="grid grid-cols-3 divide-x border-b">
+    <div className="grid grid-cols-3 divide-x-1 border-b">
       <a
         href={`${API_URL}/rss/${username}`}
         target="_blank"
@@ -114,39 +111,20 @@ function UserPage() {
     return null;
   }
 
-  const baseUrl = getBaseUrl(siteStatus);
-  const userTitle = userInfo?.username
-    ? `${userInfo?.nickname || userInfo?.username}@${userInfo.username}`
-    : t('helmet.loading');
-  // 优先使用用户简介，如果没有简介则使用更友好的描述
-  const userDescription = userInfo?.description
-    ? userInfo.description
-    : t('helmet.profileDesc', {
-        name: userInfo?.nickname || userInfo?.username || '',
-        defaultValue: `${userInfo?.nickname || userInfo?.username || ''} 的个人主页`,
-      });
-  const userImagePath = userInfo?.avatar
-    ? buildAbsoluteUrl(userInfo.avatar, baseUrl)
-    : buildAbsoluteUrl('/DefaultAvatar.svg', baseUrl);
-
   return isLoading ? (
     <LoadingPlaceholder className="h-dvh w-full" size={6} />
   ) : (
     <>
-      <PageMeta
-        ogType="profile"
-        title={userTitle}
-        description={userDescription}
-        imagePath={userImagePath}
-        extraMeta={
-          <link
-            rel="alternate"
-            type="application/rss+xml"
-            title={`${userInfo?.nickname || userInfo?.username} RSS`}
-            href={`${API_URL}/rss/${username}`}
-          />
-        }
-      />
+      <Helmet>
+        <title>{userInfo?.nickname || userInfo?.username || t('helmet.loading')}</title>
+        <meta name="description" content={userInfo?.description || t('helmet.defaultDesc')} />
+        <link
+          rel="alternate"
+          type="application/rss+xml"
+          title={`${userInfo?.nickname || userInfo?.username} RSS`}
+          href={`${API_URL}/rss/${username}`}
+        />
+      </Helmet>
 
       <ContainerWithSideBar
         sidebar={<SideBar />}
@@ -191,7 +169,7 @@ function UserPage() {
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}
             <UserAvatar
               avatar={userInfo?.avatar}
-              className="bg-background size-20 shrink-0 translate-y-[-50%] border-4 sm:block"
+              className="bg-background size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block"
               fallbackClassName="bg-muted/80"
             />
           </div>
@@ -202,7 +180,7 @@ function UserPage() {
             </div>
             <div className="text-info text-base">@{userInfo?.username}</div>
             <div className="text-base">
-              <div className="aTagStyle wrap-break-word whitespace-pre-line">
+              <div className="aTagStyle break-words whitespace-pre-line">
                 <Linkify>{(userInfo?.description as any) || t('noDescription')}</Linkify>
               </div>
             </div>

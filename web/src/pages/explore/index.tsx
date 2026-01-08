@@ -3,7 +3,6 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RandomCat from '@/components/others/RandomCat';
 import RoteList from '@/components/rote/roteList';
-import { PageMeta } from '@/components/seo/PageMeta';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Rotes } from '@/types/main';
 import { useAPIInfinite } from '@/utils/fetcher';
@@ -25,8 +24,6 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 function ExplorePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.explore' });
-  const pageTitle = t('title', { defaultValue: '探索' });
-  const pageDescription = t('sideBarTitle', { defaultValue: '探索公开笔记' });
 
   const getPropsPublic = (
     pageIndex: number,
@@ -56,29 +53,25 @@ function ExplorePage() {
   };
 
   return (
-    <>
-      <PageMeta title={pageTitle} description={pageDescription} />
-
-      <ContainerWithSideBar
-        sidebar={<SideBar />}
-        sidebarHeader={
-          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-            <div className="flex items-center gap-2">
-              <Github className="size-5" />
-              {t('sideBarTitle')}
-            </div>
+    <ContainerWithSideBar
+      sidebar={<SideBar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+          <div className="flex items-center gap-2">
+            <Github className="size-5" />
+            {t('sideBarTitle')}
           </div>
-        }
-      >
-        <NavBar title={t('title')} icon={<Globe2 className="size-6" />} onNavClick={refreshData}>
-          {isLoading ||
-            (isValidating && (
-              <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
-            ))}
-        </NavBar>
-        <RoteList data={data} loadMore={loadMore} mutate={mutate} />
-      </ContainerWithSideBar>
-    </>
+        </div>
+      }
+    >
+      <NavBar title={t('title')} icon={<Globe2 className="size-6" />} onNavClick={refreshData}>
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+          ))}
+      </NavBar>
+      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+    </ContainerWithSideBar>
   );
 }
 
