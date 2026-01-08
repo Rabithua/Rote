@@ -9,6 +9,7 @@ import { TypingText } from '@/components/animate-ui/text/typing';
 import { AppleIcon } from '@/components/icons/Apple';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import Logo from '@/components/others/logo';
+import { PageMeta } from '@/components/seo/PageMeta';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -371,198 +372,203 @@ function Login() {
     Object.values(backendStatusOk.oauth.providers).some((p: any) => p?.enabled);
 
   return (
-    <div className="relative flex h-dvh w-full items-center justify-center">
-      <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
-        {isCheckingStatus ? (
-          <LoadingPlaceholder className="py-8" size={6} />
-        ) : profile && searchParams.get('type') === 'ioslogin' ? (
-          // 已登录且是 iOS 登录流程，显示授权UI
-          <>
-            <div className="mb-4">
-              <Logo className="w-32" color="#07C160" />
-            </div>
-            <div className="bg-muted/50 w-full rounded-lg p-6">
-              <h2 className="mb-4 text-lg"> {t('authorize.title')}</h2>
-              <p className="mb-6 text-sm font-light">
-                {t('authorize.message', {
-                  username: profile.nickname || profile.username,
-                })}
-              </p>
-              <Button onClick={authorizeIosLogin} className="w-full">
-                {t('authorize.button')}
-              </Button>
-            </div>
-          </>
-        ) : (
-          // 未登录或普通 web 访问，显示标准登录/注册UI
-          <>
-            <div className="mb-4">
-              <Logo className="w-32" color="#07C160" />
-            </div>
+    <>
+      {/* 功能型页面：使用站点默认信息 + robots noindex */}
+      <PageMeta robots="noindex, nofollow" />
 
-            {backendStatusOk ? (
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="bg-muted w-full rounded-lg"
-              >
-                <TabsList
-                  className={`grid w-full ${backendStatusOk.ui?.allowRegistration !== false ? 'grid-cols-2' : 'grid-cols-1'}`}
+      <div className="relative flex h-dvh w-full items-center justify-center">
+        <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
+          {isCheckingStatus ? (
+            <LoadingPlaceholder className="py-8" size={6} />
+          ) : profile && searchParams.get('type') === 'ioslogin' ? (
+            // 已登录且是 iOS 登录流程，显示授权UI
+            <>
+              <div className="mb-4">
+                <Logo className="w-32" color="#07C160" />
+              </div>
+              <div className="bg-muted/50 w-full rounded-lg p-6">
+                <h2 className="mb-4 text-lg"> {t('authorize.title')}</h2>
+                <p className="mb-6 text-sm font-light">
+                  {t('authorize.message', {
+                    username: profile.nickname || profile.username,
+                  })}
+                </p>
+                <Button onClick={authorizeIosLogin} className="w-full">
+                  {t('authorize.button')}
+                </Button>
+              </div>
+            </>
+          ) : (
+            // 未登录或普通 web 访问，显示标准登录/注册UI
+            <>
+              <div className="mb-4">
+                <Logo className="w-32" color="#07C160" />
+              </div>
+
+              {backendStatusOk ? (
+                <Tabs
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+                  className="bg-muted w-full rounded-lg"
                 >
-                  <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
-                  {backendStatusOk.ui?.allowRegistration !== false && (
-                    <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
-                  )}
-                </TabsList>
-
-                <TabsContents className="bg-background mx-1 -mt-2 mb-1 h-full rounded-sm">
-                  <div className="space-y-4 p-4">
-                    <TabsContent value="login" className="space-y-4 py-4">
-                      <div className="space-y-5">
-                        <div className="space-y-2">
-                          <Label htmlFor="login-username">{t('fields.usernameOrEmail')}</Label>
-                          <Input
-                            id="login-username"
-                            placeholder={t('fields.usernameOrEmailPlaceholder')}
-                            className="text-md rounded-md font-mono"
-                            maxLength={255}
-                            value={loginData.username}
-                            onInput={(e) => handleInputChange(e, 'username', 'login')}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="login-password">{t('fields.password')}</Label>
-                          <Input
-                            id="login-password"
-                            placeholder="password"
-                            type="password"
-                            className="text-md rounded-md font-mono"
-                            maxLength={30}
-                            value={loginData.password}
-                            onInput={(e) => handleInputChange(e, 'password', 'login')}
-                            onKeyDown={handleLoginKeyDown}
-                          />
-                        </div>
-                      </div>
-                      <Button disabled={disbled} onClick={login} className="w-full">
-                        {disbled ? t('messages.loggingIn') : t('buttons.login')}
-                      </Button>
-                      {hasEnabledOAuthProviders && (
-                        <>
-                          <div className="relative my-4">
-                            <div className="absolute inset-0 flex items-center">
-                              <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                              <span className="bg-background text-muted-foreground px-2">
-                                {t('oauth.or')}
-                              </span>
-                            </div>
-                          </div>
-                          {backendStatusOk?.oauth?.providers &&
-                            Object.entries(backendStatusOk.oauth.providers).map(
-                              ([provider, config]: [string, any]) => {
-                                if (!config?.enabled) return null;
-                                const providerInfo = getOAuthProviderInfo(provider);
-                                const IconComponent = providerInfo.icon;
-                                return (
-                                  <Button
-                                    key={provider}
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleOAuthLogin(provider)}
-                                    className="w-full"
-                                    disabled={disbled}
-                                  >
-                                    {IconComponent && <IconComponent className="mr-2 size-4" />}
-                                    {t(providerInfo.labelKey)}
-                                  </Button>
-                                );
-                              }
-                            )}
-                        </>
-                      )}
-                    </TabsContent>
-
+                  <TabsList
+                    className={`grid w-full ${backendStatusOk.ui?.allowRegistration !== false ? 'grid-cols-2' : 'grid-cols-1'}`}
+                  >
+                    <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
                     {backendStatusOk.ui?.allowRegistration !== false && (
-                      <TabsContent value="register" className="space-y-4 py-4">
+                      <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>
+                    )}
+                  </TabsList>
+
+                  <TabsContents className="bg-background mx-1 -mt-2 mb-1 h-full rounded-sm">
+                    <div className="space-y-4 p-4">
+                      <TabsContent value="login" className="space-y-4 py-4">
                         <div className="space-y-5">
                           <div className="space-y-2">
-                            <Label htmlFor="register-username">{t('fields.username')}</Label>
+                            <Label htmlFor="login-username">{t('fields.usernameOrEmail')}</Label>
                             <Input
-                              id="register-username"
-                              placeholder="username"
+                              id="login-username"
+                              placeholder={t('fields.usernameOrEmailPlaceholder')}
                               className="text-md rounded-md font-mono"
-                              maxLength={20}
-                              value={registerData.username}
-                              onInput={(e) => handleInputChange(e, 'username', 'register')}
+                              maxLength={255}
+                              value={loginData.username}
+                              onInput={(e) => handleInputChange(e, 'username', 'login')}
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="register-email">{t('fields.email')}</Label>
+                            <Label htmlFor="login-password">{t('fields.password')}</Label>
                             <Input
-                              id="register-email"
-                              placeholder="someone@mail.com"
-                              className="text-md rounded-md font-mono"
-                              maxLength={30}
-                              value={registerData.email}
-                              onInput={(e) => handleInputChange(e, 'email', 'register')}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="register-nickname">{t('fields.nickname')}</Label>
-                            <Input
-                              id="register-nickname"
-                              placeholder="nickname"
-                              className="text-md rounded-md font-mono"
-                              maxLength={20}
-                              value={registerData.nickname}
-                              onInput={(e) => handleInputChange(e, 'nickname', 'register')}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="register-password">{t('fields.password')}</Label>
-                            <Input
-                              id="register-password"
+                              id="login-password"
                               placeholder="password"
                               type="password"
                               className="text-md rounded-md font-mono"
                               maxLength={30}
-                              value={registerData.password}
-                              onInput={(e) => handleInputChange(e, 'password', 'register')}
-                              onKeyDown={handleRegisterKeyDown}
+                              value={loginData.password}
+                              onInput={(e) => handleInputChange(e, 'password', 'login')}
+                              onKeyDown={handleLoginKeyDown}
                             />
                           </div>
                         </div>
-                        <Button disabled={disbled} onClick={register} className="w-full">
-                          {disbled ? t('messages.registering') : t('buttons.register')}
+                        <Button disabled={disbled} onClick={login} className="w-full">
+                          {disbled ? t('messages.loggingIn') : t('buttons.login')}
                         </Button>
+                        {hasEnabledOAuthProviders && (
+                          <>
+                            <div className="relative my-4">
+                              <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                              </div>
+                              <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background text-muted-foreground px-2">
+                                  {t('oauth.or')}
+                                </span>
+                              </div>
+                            </div>
+                            {backendStatusOk?.oauth?.providers &&
+                              Object.entries(backendStatusOk.oauth.providers).map(
+                                ([provider, config]: [string, any]) => {
+                                  if (!config?.enabled) return null;
+                                  const providerInfo = getOAuthProviderInfo(provider);
+                                  const IconComponent = providerInfo.icon;
+                                  return (
+                                    <Button
+                                      key={provider}
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => handleOAuthLogin(provider)}
+                                      className="w-full"
+                                      disabled={disbled}
+                                    >
+                                      {IconComponent && <IconComponent className="mr-2 size-4" />}
+                                      {t(providerInfo.labelKey)}
+                                    </Button>
+                                  );
+                                }
+                              )}
+                          </>
+                        )}
                       </TabsContent>
-                    )}
 
-                    <div className="my-4 flex cursor-pointer items-center justify-center gap-1 text-sm duration-300 active:scale-95">
-                      <Link to="/explore">
-                        <div className="duration-300 hover:opacity-60">{t('nav.explore')}</div>
-                      </Link>
-                      <span className="px-2">/</span>
-                      <Link to="/landing">
-                        <div className="duration-300 hover:opacity-60">{t('nav.home')}</div>
-                      </Link>
+                      {backendStatusOk.ui?.allowRegistration !== false && (
+                        <TabsContent value="register" className="space-y-4 py-4">
+                          <div className="space-y-5">
+                            <div className="space-y-2">
+                              <Label htmlFor="register-username">{t('fields.username')}</Label>
+                              <Input
+                                id="register-username"
+                                placeholder="username"
+                                className="text-md rounded-md font-mono"
+                                maxLength={20}
+                                value={registerData.username}
+                                onInput={(e) => handleInputChange(e, 'username', 'register')}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="register-email">{t('fields.email')}</Label>
+                              <Input
+                                id="register-email"
+                                placeholder="someone@mail.com"
+                                className="text-md rounded-md font-mono"
+                                maxLength={30}
+                                value={registerData.email}
+                                onInput={(e) => handleInputChange(e, 'email', 'register')}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="register-nickname">{t('fields.nickname')}</Label>
+                              <Input
+                                id="register-nickname"
+                                placeholder="nickname"
+                                className="text-md rounded-md font-mono"
+                                maxLength={20}
+                                value={registerData.nickname}
+                                onInput={(e) => handleInputChange(e, 'nickname', 'register')}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="register-password">{t('fields.password')}</Label>
+                              <Input
+                                id="register-password"
+                                placeholder="password"
+                                type="password"
+                                className="text-md rounded-md font-mono"
+                                maxLength={30}
+                                value={registerData.password}
+                                onInput={(e) => handleInputChange(e, 'password', 'register')}
+                                onKeyDown={handleRegisterKeyDown}
+                              />
+                            </div>
+                          </div>
+                          <Button disabled={disbled} onClick={register} className="w-full">
+                            {disbled ? t('messages.registering') : t('buttons.register')}
+                          </Button>
+                        </TabsContent>
+                      )}
+
+                      <div className="my-4 flex cursor-pointer items-center justify-center gap-1 text-sm duration-300 active:scale-95">
+                        <Link to="/explore">
+                          <div className="duration-300 hover:opacity-60">{t('nav.explore')}</div>
+                        </Link>
+                        <span className="px-2">/</span>
+                        <Link to="/landing">
+                          <div className="duration-300 hover:opacity-60">{t('nav.home')}</div>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </TabsContents>
-              </Tabs>
-            ) : (
-              <div>
-                <div className=" ">{t('error.backendIssue')}</div>
-                <div>{JSON.stringify(backendStatusOk)}</div>
-                <TypingText className="text-sm opacity-60" text={t('error.dockerDeployment')} />
-              </div>
-            )}
-          </>
-        )}
+                  </TabsContents>
+                </Tabs>
+              ) : (
+                <div>
+                  <div className=" ">{t('error.backendIssue')}</div>
+                  <div>{JSON.stringify(backendStatusOk)}</div>
+                  <TypingText className="text-sm opacity-60" text={t('error.dockerDeployment')} />
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

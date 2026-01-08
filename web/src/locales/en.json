@@ -273,7 +273,8 @@
       "sideBarTitle": "Besides... there are also",
       "helmet": {
         "loading": "loading...",
-        "defaultDesc": "rote.ink"
+        "defaultDesc": "rote.ink",
+        "profileDesc": "{{name}}'s profile"
       }
     },
     "filter": {

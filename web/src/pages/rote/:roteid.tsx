@@ -3,18 +3,28 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import UserAvatar from '@/components/others/UserAvatar';
 import RoteItem from '@/components/rote/roteItem';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-
 import type { Rote } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
+import {
+  buildAbsoluteUrl,
+  extractTextFromContent,
+  extractTitle,
+  getBaseUrl,
+  getImageUrl,
+  truncateText,
+} from '@/utils/meta';
 import { Navigation, RefreshCw, Rss } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
 function SingleRotePage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.rote' });
+  const { data: siteStatus } = useSiteStatus();
   const navigate = useNavigate();
   const { roteid } = useParams();
 
@@ -105,7 +115,7 @@ function SingleRotePage() {
             </Link>
           </div>
         )}
-        <div className="grid grid-cols-3 divide-x-1 border-b">
+        <div className="grid grid-cols-3 divide-x border-b">
           <a
             href={`${API_URL}/rss/${rote?.author?.username}`}
             target="_blank"
@@ -125,27 +135,98 @@ function SingleRotePage() {
       </div>
     );
 
+  // 生成元信息（标题 / 描述 / 图片）
+  const meta = useMemo(() => {
+    if (!rote || !siteStatus) return null;
+
+    const baseUrl = getBaseUrl(siteStatus);
+    const roteUrl = buildAbsoluteUrl(`/rote/${roteid}`, baseUrl);
+
+    // 标题：优先使用笔记标题，否则使用作者名字@username
+    const roteTitle = extractTitle(rote);
+    const fallbackTitle = rote.author
+      ? `${rote.author.nickname || rote.author.username}@${rote.author.username}`
+      : t('sideBarTitle', { defaultValue: 'Rote' });
+    const pageTitle = truncateText(roteTitle || fallbackTitle, 60);
+
+    // 描述：从内容中提取纯文本
+    const extractedText = extractTextFromContent(rote.content);
+    const description =
+      extractedText && extractedText.length > 0
+        ? truncateText(extractedText, 160)
+        : siteStatus.site?.description || '';
+
+    // 图片：优先使用首个图片附件
+    const firstImageAttachment = rote.attachments?.find(
+      (att) => att && !(att instanceof File) && att.details?.mimetype?.startsWith('image/')
+    ) as any;
+    const imageUrl =
+      getImageUrl(firstImageAttachment, baseUrl, siteStatus.storage?.urlPrefix) ||
+      buildAbsoluteUrl('/logo.png', baseUrl);
+
+    const hasImage = !!firstImageAttachment;
+
+    return {
+      pageTitle,
+      description,
+      roteUrl,
+      imageUrl,
+      hasImage,
+    };
+  }, [rote, siteStatus, roteid, t]);
+
   return isLoading ? (
     <LoadingPlaceholder className="py-16" size={6} />
   ) : rote ? (
-    <ContainerWithSideBar
-      sidebar={<SideBar />}
-      sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-          <Navigation className="size-5" />
-          <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
-        </div>
-      }
-      className="pb-16"
-    >
-      <NavBar onNavClick={refreshData}>
-        {isLoading ||
-          (isValidating && (
-            <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
-          ))}
-      </NavBar>
-      <RoteItem showAvatar={false} rote={rote} mutateSingle={mutate} />
-    </ContainerWithSideBar>
+    <>
+      {meta && (
+        <PageMeta
+          ogType="article"
+          path={`/rote/${roteid}`}
+          title={meta.pageTitle}
+          description={meta.description}
+          imagePath={meta.imageUrl}
+          extraMeta={
+            rote.author ? (
+              <>
+                <meta property="article:author" content={rote.author.username} />
+                {rote.createdAt && (
+                  <meta
+                    property="article:published_time"
+                    content={new Date(rote.createdAt).toISOString()}
+                  />
+                )}
+                {rote.updatedAt && (
+                  <meta
+                    property="article:modified_time"
+                    content={new Date(rote.updatedAt).toISOString()}
+                  />
+                )}
+              </>
+            ) : null
+          }
+        />
+      )}
+
+      <ContainerWithSideBar
+        sidebar={<SideBar />}
+        sidebarHeader={
+          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+            <Navigation className="size-5" />
+            <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
+          </div>
+        }
+        className="pb-16"
+      >
+        <NavBar onNavClick={refreshData}>
+          {isLoading ||
+            (isValidating && (
+              <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+            ))}
+        </NavBar>
+        <RoteItem showAvatar={false} rote={rote} mutateSingle={mutate} />
+      </ContainerWithSideBar>
+    </>
   ) : null;
 }
 

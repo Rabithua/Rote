@@ -3,6 +3,7 @@ import { AppStoreIcon } from '@/components/icons/Apple';
 import LanguageSwitcher from '@/components/others/languageSwitcher';
 import Logo from '@/components/others/logo';
 import ProductHunt from '@/components/others/ProductHunt';
+import { PageMeta } from '@/components/seo/PageMeta';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -187,291 +188,304 @@ function Landing() {
   if (!isLoading && (!isInitialized || error)) {
     return <Navigate to="/setup" replace />;
   }
+  const siteDescription =
+    siteStatus?.site?.description ||
+    t('subtitle', {
+      defaultValue: 'Personal note like twitter',
+    });
 
   return (
-    <div className="bg-pattern min-h-dvh divide-y font-sans">
-      {/* Logo and Title - 更优雅的层次 */}
-      <div className="bg-background/90 sticky top-0 z-10 w-full px-6 py-4 backdrop-blur-md">
-        <div className="flex w-full items-end gap-4">
-          <div className="flex shrink-0 justify-center">
-            <Logo className="h-6 w-auto opacity-90" color="#07C160" />
-          </div>
+    <>
+      {/* 内容型页面：自定义描述，标题使用站点默认 */}
+      <PageMeta description={siteDescription} />
 
-          {/* 诗句 - 更小更低调 */}
-          <div className="flex min-w-0 flex-1 gap-2">
-            <span className="text-info truncate text-sm font-light tracking-wide" title={t('poem')}>
-              {t('poem')}
-            </span>
-          </div>
+      <div className="bg-pattern min-h-dvh divide-y font-sans">
+        {/* Logo and Title - 更优雅的层次 */}
+        <div className="bg-background/90 sticky top-0 z-10 w-full px-6 py-4 backdrop-blur-md">
+          <div className="flex w-full items-end gap-4">
+            <div className="flex shrink-0 justify-center">
+              <Logo className="h-6 w-auto opacity-90" color="#07C160" />
+            </div>
 
-          <LanguageSwitcher className="ml-auto shrink-0" />
-        </div>
-      </div>
-
-      {/* Hero Section */}
-      <div className="bg-background relative space-y-6 divide-y-[0.5px] overflow-hidden border-r border-l py-20 sm:mx-4">
-        {/* Main heading - 更克制的设计 */}
-        <div className="space-y-2 divide-y-[0.5px] px-2">
-          <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
-            {t('headingBefore')}
-            <br className="block sm:hidden" />
-            <span className="text-theme inline-block">
-              {typewriterText}
-              <span className="animate-pulse font-thin">|</span>
-            </span>
-            {t('headingAfter')}
-          </h1>
-
-          {/* 副标题 - 更清晰的层次 */}
-          <p className="text-info pb-3 text-xl leading-relaxed font-light">{t('subtitle')}</p>
-        </div>
-
-        {/* CTA Buttons - 更优雅的按钮设计 */}
-        <div className="flex flex-row flex-wrap items-center gap-3 px-2 pb-4">
-          <Button size="lg" asChild>
-            <Link
-              to={isTokenValid() ? '/home' : '/login'}
-              className="text-background hover:text-background"
-            >
-              {isTokenValid() ? t('dashboard') : t('linksItems.0')}
-            </Link>
-          </Button>
-
-          <Button
-            variant="outline"
-            asChild
-            size="lg"
-            className="border-muted-foreground/20 hover:bg-muted/50"
-          >
-            <Link target="_blank" rel="noopener noreferrer" to="https://demo.rote.ink/login">
-              Demo
-              <ArrowUpRight className="inline-block size-5" />
-            </Link>
-          </Button>
-
-          <Link
-            to="https://apps.apple.com/us/app/rote/id6755513897"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-          >
-            <img
-              src="/download-on-the-app-store.svg"
-              alt="Download on the App Store"
-              className="h-10"
-            />
-          </Link>
-
-          <Button
-            variant="outline"
-            size="lg"
-            asChild
-            className="border-muted-foreground/20 hover:bg-muted/50"
-          >
-            <Link to="https://github.com/Rabithua/Rote" target="_blank">
-              <Github className="size-4" />
-              {t('linksItems.2')}
-              <ArrowUpRight className="inline-block size-5" />
-            </Link>
-          </Button>
-
-          <ProductHunt />
-        </div>
-
-        <div className="group absolute right-10 bottom-0 flex flex-col items-center">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link
-                to="https://apps.apple.com/us/app/rote/id6755513897"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative h-10 translate-y-3 rotate-5 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110"
+            {/* 诗句 - 更小更低调 */}
+            <div className="flex min-w-0 flex-1 gap-2">
+              <span
+                className="text-info truncate text-sm font-light tracking-wide"
+                title={t('poem')}
               >
-                {/* 亮色模式图片 */}
-                <img
-                  src="/ios_icon_compressed.png"
-                  alt="hero"
-                  className="z-1 h-10 drop-shadow-2xl drop-shadow-black/10 dark:hidden"
-                />
-                {/* 暗色模式图片 */}
-                <img
-                  src="/ios_icon_dark_compressed.png"
-                  alt="hero"
-                  className="z-1 hidden h-10 drop-shadow-2xl drop-shadow-black/10 dark:block"
-                />
+                {t('poem')}
+              </span>
+            </div>
+
+            <LanguageSwitcher className="ml-auto shrink-0" />
+          </div>
+        </div>
+
+        {/* Hero Section */}
+        <div className="bg-background relative space-y-6 divide-y-[0.5px] overflow-hidden border-r border-l py-20 sm:mx-4">
+          {/* Main heading - 更克制的设计 */}
+          <div className="space-y-2 divide-y-[0.5px] px-2">
+            <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
+              {t('headingBefore')}
+              <br className="block sm:hidden" />
+              <span className="text-theme inline-block">
+                {typewriterText}
+                <span className="animate-pulse font-thin">|</span>
+              </span>
+              {t('headingAfter')}
+            </h1>
+
+            {/* 副标题 - 更清晰的层次 */}
+            <p className="text-info pb-3 text-xl leading-relaxed font-light">{t('subtitle')}</p>
+          </div>
+
+          {/* CTA Buttons - 更优雅的按钮设计 */}
+          <div className="flex flex-row flex-wrap items-center gap-3 px-2 pb-4">
+            <Button size="lg" asChild>
+              <Link
+                to={isTokenValid() ? '/home' : '/login'}
+                className="text-background hover:text-background"
+              >
+                {isTokenValid() ? t('dashboard') : t('linksItems.0')}
               </Link>
-            </TooltipTrigger>
-            <TooltipContent side="left" sideOffset={8}>
-              <div className="flex flex-col gap-1">
-                <span>{t('iosAppTooltip.title')}</span>
-                <Link
-                  to="https://testflight.apple.com/join/WC3ETKwp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-theme hover:text-theme/80 inline-flex items-center hover:underline"
-                >
-                  {t('iosAppTooltip.earlyAccess')}
-                  <ArrowUpRight className="size-3" />
-                </Link>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
+            </Button>
 
-      {/* Features Section */}
-      <div className="bg-background divide-y border-x sm:mx-4">
-        <div className="space-y-2 divide-y-[0.5px] p-2">
-          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
-            {t('coreFeatures.tagline')}
-          </p>
-          <h2 className="text-3xl font-bold">{t('coreFeatures.title')}</h2>
-          <p className="text-info text-lg font-light">{t('coreFeatures.subtitle')}</p>
-        </div>
+            <Button
+              variant="outline"
+              asChild
+              size="lg"
+              className="border-muted-foreground/20 hover:bg-muted/50"
+            >
+              <Link target="_blank" rel="noopener noreferrer" to="https://demo.rote.ink/login">
+                Demo
+                <ArrowUpRight className="inline-block size-5" />
+              </Link>
+            </Button>
 
-        <div className="gap-6 p-2 md:grid md:grid-cols-2">
-          {features.map((feature, index) => (
-            <div key={index}>
-              <div className="hover:bg-accent/5 group flex flex-row items-start gap-6 py-8 transition-all duration-300">
-                {/* Icon */}
-                <div className="border-theme bg-theme/10 group-hover:bg-theme/20 flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed transition-all duration-300">
-                  <feature.icon className="text-theme size-8" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1">
-                  <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
-                  <p className="text-info leading-relaxed font-light">{feature.description}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-background divide-y border-x sm:mx-4">
-        <div className="space-y-2 divide-y-[0.5px] p-2">
-          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
-            {t('andMore.tagline')}
-          </p>
-          <h2 className="text-3xl font-bold">{t('andMore.title')}</h2>
-          <p className="text-info text-lg font-light">{t('andMore.subtitle')}</p>
-        </div>
-
-        <div className="gap-6 p-2 md:grid md:grid-cols-2">
-          {andMoreFeatures.map((feature, index) => (
-            <div key={index}>
-              <div className="hover:bg-accent/5 group flex flex-row items-start gap-6 py-8 transition-all duration-300">
-                {/* Icon */}
-                <div className="border-theme bg-theme/10 group-hover:bg-theme/20 flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed transition-all duration-300">
-                  <feature.icon className="text-theme size-8" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1">
-                  <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
-                  <p className="text-info leading-relaxed font-light">{feature.description}</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-background divide-y border-x sm:mx-4">
-        <div className="space-y-2 divide-y-[0.5px] p-2">
-          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
-            {t('construction.tagline')}
-          </p>
-          <h2 className="text-3xl font-bold">{t('construction.title')}</h2>
-          <p className="text-info text-lg font-light">{t('construction.subtitle')}</p>
-        </div>
-        {isRoteGithubDataLoading ? (
-          <div className="flex flex-col gap-2 p-2">
-            {/* 骨架屏 - 模拟 GitHub 数据展示 */}
-            <div className="flex gap-2">
-              {Array.from({ length: 4 }, (_, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Skeleton className="h-4 w-4" />
-                  <div className="flex items-center gap-1">
-                    <Skeleton className="h-4 w-8" />
-                    <Skeleton className="h-4 w-12" />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <Skeleton className="h-3 w-32" />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2 divide-y-[0.5px] p-2">
-            <div className="flex flex-wrap gap-2 pb-2 text-sm font-thin">
-              {dataRender.map((item) => (
-                <div key={item.key} className="flex items-center gap-2">
-                  {item.icon}
-                  <div className="flex items-center gap-1 text-sm">
-                    <SlidingNumber number={roteGithubData[item.key]} /> {item.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className={`text-xs opacity-40 ${getTimeColor(roteGithubData.pushed_at)}`}>
-              {t('lastPushTime')}
-              {formatTimeAgo(roteGithubData.pushed_at)}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Links Section */}
-      <div className="bg-background/80 divide-y-[0.5px] p-2 backdrop:blur-xl sm:p-6">
-        <div className="space-y-2 divide-y-[0.5px]">
-          <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
-            {t('exploreMore.tagline')}
-          </p>
-          <h3 className="text-3xl font-bold">{t('exploreMore.title')}</h3>
-          <p className="text-info text-lg font-light">{t('exploreMore.subtitle')}</p>
-        </div>
-
-        <div className="flex flex-row flex-wrap items-center gap-4 py-8">
-          {quickLinks.map((link) => (
-            <div key={link.name} className="group">
-              <Button variant={link.external ? 'outline' : 'default'} asChild>
-                <Link
-                  to={link.href}
-                  target={link.external ? '_blank' : undefined}
-                  rel={link.external ? 'noopener noreferrer' : undefined}
-                  className={cn(
-                    'flex items-center justify-center gap-3 py-3',
-                    link.external
-                      ? 'text-foreground hover:text-foreground'
-                      : 'text-background hover:text-background'
-                  )}
-                >
-                  {link.icon}
-                  <span className="font-medium">{link.name}</span>
-                  {link.external && <ArrowUpRight className="inline-block size-5" />}
-                </Link>
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        {/* ICP Record Footer */}
-        {siteStatus?.site?.icpRecord && (
-          <div className="bg-background/60 border-muted/20 border-t py-4">
-            <a
-              href="https://beian.miit.gov.cn/"
+            <Link
+              to="https://apps.apple.com/us/app/rote/id6755513897"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs"
+              className="flex items-center"
             >
-              {siteStatus.site.icpRecord}
-            </a>
-            <ArrowUpRight className="inline-block size-3" />
+              <img
+                src="/download-on-the-app-store.svg"
+                alt="Download on the App Store"
+                className="h-10"
+              />
+            </Link>
+
+            <Button
+              variant="outline"
+              size="lg"
+              asChild
+              className="border-muted-foreground/20 hover:bg-muted/50"
+            >
+              <Link to="https://github.com/Rabithua/Rote" target="_blank">
+                <Github className="size-4" />
+                {t('linksItems.2')}
+                <ArrowUpRight className="inline-block size-5" />
+              </Link>
+            </Button>
+
+            <ProductHunt />
           </div>
-        )}
+
+          <div className="group absolute right-10 bottom-0 flex flex-col items-center">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to="https://apps.apple.com/us/app/rote/id6755513897"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative h-10 translate-y-3 rotate-5 transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-110"
+                >
+                  {/* 亮色模式图片 */}
+                  <img
+                    src="/ios_icon_compressed.png"
+                    alt="hero"
+                    className="z-1 h-10 drop-shadow-2xl drop-shadow-black/10 dark:hidden"
+                  />
+                  {/* 暗色模式图片 */}
+                  <img
+                    src="/ios_icon_dark_compressed.png"
+                    alt="hero"
+                    className="z-1 hidden h-10 drop-shadow-2xl drop-shadow-black/10 dark:block"
+                  />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="left" sideOffset={8}>
+                <div className="flex flex-col gap-1">
+                  <span>{t('iosAppTooltip.title')}</span>
+                  <Link
+                    to="https://testflight.apple.com/join/WC3ETKwp"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-theme hover:text-theme/80 inline-flex items-center hover:underline"
+                  >
+                    {t('iosAppTooltip.earlyAccess')}
+                    <ArrowUpRight className="size-3" />
+                  </Link>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+
+        {/* Features Section */}
+        <div className="bg-background divide-y border-x sm:mx-4">
+          <div className="space-y-2 divide-y-[0.5px] p-2">
+            <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+              {t('coreFeatures.tagline')}
+            </p>
+            <h2 className="text-3xl font-bold">{t('coreFeatures.title')}</h2>
+            <p className="text-info text-lg font-light">{t('coreFeatures.subtitle')}</p>
+          </div>
+
+          <div className="gap-6 p-2 md:grid md:grid-cols-2">
+            {features.map((feature, index) => (
+              <div key={index}>
+                <div className="hover:bg-accent/5 group flex flex-row items-start gap-6 py-8 transition-all duration-300">
+                  {/* Icon */}
+                  <div className="border-theme bg-theme/10 group-hover:bg-theme/20 flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed transition-all duration-300">
+                    <feature.icon className="text-theme size-8" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
+                    <p className="text-info leading-relaxed font-light">{feature.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-background divide-y border-x sm:mx-4">
+          <div className="space-y-2 divide-y-[0.5px] p-2">
+            <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+              {t('andMore.tagline')}
+            </p>
+            <h2 className="text-3xl font-bold">{t('andMore.title')}</h2>
+            <p className="text-info text-lg font-light">{t('andMore.subtitle')}</p>
+          </div>
+
+          <div className="gap-6 p-2 md:grid md:grid-cols-2">
+            {andMoreFeatures.map((feature, index) => (
+              <div key={index}>
+                <div className="hover:bg-accent/5 group flex flex-row items-start gap-6 py-8 transition-all duration-300">
+                  {/* Icon */}
+                  <div className="border-theme bg-theme/10 group-hover:bg-theme/20 flex size-16 shrink-0 items-center justify-center rounded-md border-[0.5px] border-dashed transition-all duration-300">
+                    <feature.icon className="text-theme size-8" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <h3 className="mb-3 text-xl font-semibold">{feature.title}</h3>
+                    <p className="text-info leading-relaxed font-light">{feature.description}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-background divide-y border-x sm:mx-4">
+          <div className="space-y-2 divide-y-[0.5px] p-2">
+            <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+              {t('construction.tagline')}
+            </p>
+            <h2 className="text-3xl font-bold">{t('construction.title')}</h2>
+            <p className="text-info text-lg font-light">{t('construction.subtitle')}</p>
+          </div>
+          {isRoteGithubDataLoading ? (
+            <div className="flex flex-col gap-2 p-2">
+              {/* 骨架屏 - 模拟 GitHub 数据展示 */}
+              <div className="flex gap-2">
+                {Array.from({ length: 4 }, (_, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4" />
+                    <div className="flex items-center gap-1">
+                      <Skeleton className="h-4 w-8" />
+                      <Skeleton className="h-4 w-12" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Skeleton className="h-3 w-32" />
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2 divide-y-[0.5px] p-2">
+              <div className="flex flex-wrap gap-2 pb-2 text-sm font-thin">
+                {dataRender.map((item) => (
+                  <div key={item.key} className="flex items-center gap-2">
+                    {item.icon}
+                    <div className="flex items-center gap-1 text-sm">
+                      <SlidingNumber number={roteGithubData[item.key]} /> {item.title}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className={`text-xs opacity-40 ${getTimeColor(roteGithubData.pushed_at)}`}>
+                {t('lastPushTime')}
+                {formatTimeAgo(roteGithubData.pushed_at)}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Quick Links Section */}
+        <div className="bg-background/80 divide-y-[0.5px] p-2 backdrop:blur-xl sm:p-6">
+          <div className="space-y-2 divide-y-[0.5px]">
+            <p className="text-theme/20 pb-2 font-mono text-xs font-light uppercase">
+              {t('exploreMore.tagline')}
+            </p>
+            <h3 className="text-3xl font-bold">{t('exploreMore.title')}</h3>
+            <p className="text-info text-lg font-light">{t('exploreMore.subtitle')}</p>
+          </div>
+
+          <div className="flex flex-row flex-wrap items-center gap-4 py-8">
+            {quickLinks.map((link) => (
+              <div key={link.name} className="group">
+                <Button variant={link.external ? 'outline' : 'default'} asChild>
+                  <Link
+                    to={link.href}
+                    target={link.external ? '_blank' : undefined}
+                    rel={link.external ? 'noopener noreferrer' : undefined}
+                    className={cn(
+                      'flex items-center justify-center gap-3 py-3',
+                      link.external
+                        ? 'text-foreground hover:text-foreground'
+                        : 'text-background hover:text-background'
+                    )}
+                  >
+                    {link.icon}
+                    <span className="font-medium">{link.name}</span>
+                    {link.external && <ArrowUpRight className="inline-block size-5" />}
+                  </Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {/* ICP Record Footer */}
+          {siteStatus?.site?.icpRecord && (
+            <div className="bg-background/60 border-muted/20 border-t py-4">
+              <a
+                href="https://beian.miit.gov.cn/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs"
+              >
+                {siteStatus.site.icpRecord}
+              </a>
+              <ArrowUpRight className="inline-block size-3" />
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
