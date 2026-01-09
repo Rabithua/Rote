@@ -1,0 +1,2217 @@
+{
+  "info": {
+    "_postman_id": "rote-api-collection",
+    "name": "Project API",
+    "description": "Rote API - A note-taking and sharing platform API built with Hono framework.\n\nBase URL: {{base_url}}/v2/api\n\n## Authentication\nMost endpoints require JWT authentication via Bearer token in the Authorization header.\n\n## Response Format\nAll responses follow the format:\n```json\n{\n  \"code\": 0,\n  \"message\": \"Success\",\n  \"data\": {...}\n}\n```",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/health",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "health"]
+            },
+            "description": "Returns server health status. No authentication required."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v2/api/health",
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "health"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "cookie": [],
+              "body": "{\n  \"code\": 0,\n  \"message\": \"Success\",\n  \"data\": {\n    \"status\": \"healthy\",\n    \"timestamp\": \"2024-01-15T10:30:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Health check endpoints"
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"test@example.com\",\n  \"nickname\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "register"]
+            },
+            "description": "Creates a new user account. Registration may be disabled by admin settings."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"test@example.com\",\n  \"nickname\": \"Test User\"\n}"},
+                "url": {"raw": "{{base_url}}/v2/api/auth/register", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "register"]}
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "cookie": [],
+              "body": "{\n  \"code\": 0,\n  \"message\": \"Success\",\n  \"data\": {\n    \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n    \"username\": \"testuser\",\n    \"email\": \"test@example.com\",\n    \"nickname\": \"Test User\",\n    \"role\": \"user\",\n    \"createdAt\": \"2024-01-15T10:30:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "login"]
+            },
+            "description": "Authenticates user with username/email and password. Returns JWT access and refresh tokens."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"},
+                "url": {"raw": "{{base_url}}/v2/api/auth/login", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "login"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "cookie": [],
+              "body": "{\n  \"code\": 0,\n  \"message\": \"Success\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"user\": {\n      \"id\": \"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\n      \"username\": \"testuser\",\n      \"nickname\": \"Test User\",\n      \"role\": \"user\"\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldpassword\": \"oldpassword123\",\n  \"newpassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/password",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "password"]
+            },
+            "description": "Updates the authenticated user's password. Requires current password verification."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{access_token}}"}],
+                "body": {"mode": "raw", "raw": "{\n  \"oldpassword\": \"oldpassword123\",\n  \"newpassword\": \"newpassword123\"\n}"},
+                "url": {"raw": "{{base_url}}/v2/api/auth/password", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "password"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "cookie": [],
+              "body": "{\n  \"code\": 0,\n  \"message\": \"Password changed successfully\",\n  \"data\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "refresh"]
+            },
+            "description": "Exchanges a valid refresh token for a new access token. Use when access token expires."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {"mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"},
+                "url": {"raw": "{{base_url}}/v2/api/auth/refresh", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "refresh"]}
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "cookie": [],
+              "body": "{\n  \"code\": 0,\n  \"message\": \"Success\",\n  \"data\": {\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n    \"refreshToken\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"\n  }\n}"
+            }
+          ]
+        }
+      ],
+      "description": "Authentication endpoints for user registration, login, and token management."
+    },
+    {
+      "name": "OAuth",
+      "item": [
+        {
+          "name": "Initiate OAuth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/oauth/:provider?redirect=/login",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider"],
+              "query": [
+                {
+                  "key": "redirect",
+                  "value": "/login"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "provider",
+                  "value": "github",
+                  "description": "OAuth provider name (e.g., github, apple)"
+                }
+              ]
+            },
+            "description": "Initiate OAuth authentication flow with a provider."
+          }
+        },
+        {
+          "name": "Bind OAuth Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind?redirect=/profile",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "bind"],
+              "query": [
+                {
+                  "key": "redirect",
+                  "value": "/profile"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "provider",
+                  "value": "github"
+                }
+              ]
+            },
+            "description": "Bind an OAuth account to the current user. Requires authentication."
+          }
+        },
+        {
+          "name": "OAuth Callback (GET)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/oauth/:provider/callback?code=&state=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "callback"],
+              "query": [
+                {
+                  "key": "code",
+                  "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": ""
+                }
+              ],
+              "variable": [
+                {
+                  "key": "provider",
+                  "value": "github"
+                }
+              ]
+            },
+            "description": "OAuth callback endpoint for GET-based providers (e.g., GitHub)."
+          }
+        },
+        {
+          "name": "OAuth Callback (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "code",
+                  "value": ""
+                },
+                {
+                  "key": "state",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/oauth/:provider/callback",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "callback"],
+              "variable": [
+                {
+                  "key": "provider",
+                  "value": "apple"
+                }
+              ]
+            },
+            "description": "OAuth callback endpoint for POST-based providers (e.g., Apple)."
+          }
+        },
+        {
+          "name": "Merge and Bind OAuth",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"existingUserId\": \"uuid-of-existing-user\",\n  \"githubUserId\": \"github-user-id\",\n  \"githubUsername\": \"github-username\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind/merge",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "bind", "merge"],
+              "variable": [
+                {
+                  "key": "provider",
+                  "value": "github"
+                }
+              ]
+            },
+            "description": "Merge accounts and bind OAuth provider."
+          }
+        },
+        {
+          "name": "Unbind OAuth Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "bind"],
+              "variable": [
+                {
+                  "key": "provider",
+                  "value": "github"
+                }
+              ]
+            },
+            "description": "Unbind an OAuth account from the current user."
+          }
+        }
+      ],
+      "description": "OAuth authentication endpoints for third-party login providers."
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get User by Username",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/:username",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", ":username"],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "testuser"
+                }
+              ]
+            },
+            "description": "Get public user information by username."
+          }
+        },
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/profile",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "profile"]
+            },
+            "description": "Get the current user's profile. Requires authentication."
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nickname\": \"New Nickname\",\n  \"description\": \"My bio\",\n  \"avatar\": \"https://example.com/avatar.jpg\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/profile",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "profile"]
+            },
+            "description": "Update the current user's profile."
+          }
+        },
+        {
+          "name": "Get My Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/settings",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "settings"]
+            },
+            "description": "Get the current user's settings."
+          }
+        },
+        {
+          "name": "Update My Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showInExplore\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/settings",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "settings"]
+            },
+            "description": "Update the current user's settings."
+          }
+        },
+        {
+          "name": "Get My Tags",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/tags",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "tags"]
+            },
+            "description": "Get all tags used by the current user."
+          }
+        },
+        {
+          "name": "Get My Heatmap",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/heatmap?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "heatmap"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "description": "Get the user's activity heatmap data for a date range."
+          }
+        },
+        {
+          "name": "Get My Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "statistics"]
+            },
+            "description": "Get the current user's statistics."
+          }
+        },
+        {
+          "name": "Export My Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me/export",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "export"]
+            },
+            "description": "Export all user data as JSON file."
+          }
+        },
+        {
+          "name": "Delete My Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"your-password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/users/me",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me"]
+            },
+            "description": "Delete the current user's account. Requires password confirmation."
+          }
+        }
+      ],
+      "description": "User profile and settings management endpoints."
+    },
+    {
+      "name": "Notes",
+      "item": [
+        {
+          "name": "Create Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is my note content\",\n  \"title\": \"My Note Title\",\n  \"type\": \"rote\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"state\": \"private\",\n  \"pin\": false,\n  \"archived\": false,\n  \"editor\": \"markdown\",\n  \"attachmentIds\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes"]
+            },
+            "description": "Create a new note."
+          }
+        },
+        {
+          "name": "Get My Notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes?skip=0&limit=20&archived=false&tag=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "archived",
+                  "value": "false"
+                },
+                {
+                  "key": "tag",
+                  "value": "",
+                  "description": "Filter by tag"
+                }
+              ]
+            },
+            "description": "Get the current user's notes with pagination and filters."
+          }
+        },
+        {
+          "name": "Get Random Note",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "description": "Optional - returns user's random note if authenticated, public random note otherwise"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/random",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "random"]
+            },
+            "description": "Get a random note. Returns user's note if authenticated, public note otherwise."
+          }
+        },
+        {
+          "name": "Search My Notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/search?keyword=search term&skip=0&limit=20&archived=false",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "search"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "search term"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "archived",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Search the current user's notes by keyword."
+          }
+        },
+        {
+          "name": "Search Public Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/search/public?keyword=search term&skip=0&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "search", "public"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "search term"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search all public notes by keyword."
+          }
+        },
+        {
+          "name": "Search User's Public Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/search/users/:username?keyword=search term&skip=0&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "search", "users", ":username"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "search term"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "testuser"
+                }
+              ]
+            },
+            "description": "Search a specific user's public notes by keyword."
+          }
+        },
+        {
+          "name": "Get User's Public Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/users/:username?skip=0&limit=20&archived=false",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "users", ":username"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "archived",
+                  "value": "false"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "testuser"
+                }
+              ]
+            },
+            "description": "Get a user's public notes."
+          }
+        },
+        {
+          "name": "Get All Public Notes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/public?skip=0&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "public"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Get all public notes with pagination."
+          }
+        },
+        {
+          "name": "Batch Get Notes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "description": "Optional - for accessing private notes"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"uuid-1\",\n    \"uuid-2\",\n    \"uuid-3\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/batch",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "batch"]
+            },
+            "description": "Batch get notes by IDs. Maximum 100 notes per request."
+          }
+        },
+        {
+          "name": "Get Note by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "description": "Optional - required for private notes"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "note-uuid"
+                }
+              ]
+            },
+            "description": "Get a note by its ID. Private notes require authentication."
+          }
+        },
+        {
+          "name": "Update Note",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Updated content\",\n  \"title\": \"Updated Title\",\n  \"tags\": [\"updated-tag\"],\n  \"state\": \"public\",\n  \"pin\": true,\n  \"archived\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "note-uuid"
+                }
+              ]
+            },
+            "description": "Update an existing note."
+          }
+        },
+        {
+          "name": "Delete Note",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/notes/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "note-uuid"
+                }
+              ]
+            },
+            "description": "Delete a note by its ID."
+          }
+        }
+      ],
+      "description": "Note (Rote) management endpoints for creating, reading, updating, and deleting notes."
+    },
+    {
+      "name": "Reactions",
+      "item": [
+        {
+          "name": "Add Reaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "description": "Optional - use visitorId for unauthenticated users"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"like\",\n  \"roteid\": \"note-uuid\",\n  \"visitorId\": \"visitor-uuid\",\n  \"visitorInfo\": {},\n  \"metadata\": {}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/reactions",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "reactions"]
+            },
+            "description": "Add a reaction to a note. Supports both authenticated users and visitors."
+          }
+        },
+        {
+          "name": "Remove Reaction",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "description": "Optional - use visitorId query param for unauthenticated users"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/reactions/:roteid/:type?visitorId=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "reactions", ":roteid", ":type"],
+              "query": [
+                {
+                  "key": "visitorId",
+                  "value": "",
+                  "description": "Required for unauthenticated users"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "roteid",
+                  "value": "note-uuid"
+                },
+                {
+                  "key": "type",
+                  "value": "like"
+                }
+              ]
+            },
+            "description": "Remove a reaction from a note."
+          }
+        }
+      ],
+      "description": "Reaction endpoints for adding and removing reactions on notes."
+    },
+    {
+      "name": "Attachments",
+      "item": [
+        {
+          "name": "Presign Upload URLs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"files\": [\n    {\n      \"filename\": \"image.jpg\",\n      \"contentType\": \"image/jpeg\",\n      \"size\": 1024000\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/attachments/presign",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", "presign"]
+            },
+            "description": "Get presigned URLs for direct file upload to R2 storage. Maximum 9 files, 20MB each."
+          }
+        },
+        {
+          "name": "Finalize Upload",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"attachments\": [\n    {\n      \"uuid\": \"attachment-uuid\",\n      \"originalKey\": \"users/user-id/uploads/uuid.jpg\",\n      \"compressedKey\": \"users/user-id/compressed/uuid.webp\",\n      \"size\": 1024000,\n      \"mimetype\": \"image/jpeg\",\n      \"hash\": \"file-hash\"\n    }\n  ],\n  \"noteId\": \"optional-note-uuid\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/attachments/finalize",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", "finalize"]
+            },
+            "description": "Finalize uploaded attachments and save to database."
+          }
+        },
+        {
+          "name": "Update Attachment Sort Order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roteId\": \"note-uuid\",\n  \"attachmentIds\": [\n    \"attachment-uuid-1\",\n    \"attachment-uuid-2\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/attachments/sort",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", "sort"]
+            },
+            "description": "Update the sort order of attachments for a note."
+          }
+        },
+        {
+          "name": "Delete Attachment",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/attachments/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "attachment-uuid"
+                }
+              ]
+            },
+            "description": "Delete a single attachment."
+          }
+        },
+        {
+          "name": "Batch Delete Attachments",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\n    \"attachment-uuid-1\",\n    \"attachment-uuid-2\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/attachments",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments"]
+            },
+            "description": "Batch delete multiple attachments. Maximum 100 per request."
+          }
+        }
+      ],
+      "description": "Attachment management endpoints for file uploads."
+    },
+    {
+      "name": "API Keys",
+      "item": [
+        {
+          "name": "Create API Key",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/api-keys",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys"]
+            },
+            "description": "Generate a new API key for the current user."
+          }
+        },
+        {
+          "name": "Get My API Keys",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/api-keys",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys"]
+            },
+            "description": "Get all API keys for the current user."
+          }
+        },
+        {
+          "name": "Update API Key",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\"SENDROTE\", \"GETROTE\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/api-keys/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "api-key-uuid"
+                }
+              ]
+            },
+            "description": "Update an API key's permissions."
+          }
+        },
+        {
+          "name": "Delete API Key",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/api-keys/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "api-key-uuid"
+                }
+              ]
+            },
+            "description": "Delete an API key."
+          }
+        }
+      ],
+      "description": "API key management endpoints for programmatic access."
+    },
+    {
+      "name": "OpenKey API",
+      "item": [
+        {
+          "name": "Create Note (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&type=rote&title=My Title&tag=tag1&tag=tag2",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes", "create"],
+              "query": [
+                {
+                  "key": "content",
+                  "value": "My note content"
+                },
+                {
+                  "key": "state",
+                  "value": "private"
+                },
+                {
+                  "key": "type",
+                  "value": "rote"
+                },
+                {
+                  "key": "title",
+                  "value": "My Title"
+                },
+                {
+                  "key": "tag",
+                  "value": "tag1"
+                },
+                {
+                  "key": "tag",
+                  "value": "tag2"
+                }
+              ]
+            },
+            "description": "Create a note using API key (GET method for backward compatibility). Requires SENDROTE permission."
+          }
+        },
+        {
+          "name": "Create Note (POST - /create)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"pin\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/openkey/notes/create",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes", "create"]
+            },
+            "description": "Create a note using API key (POST to /create endpoint). Requires SENDROTE permission."
+          }
+        },
+        {
+          "name": "Create Note (POST - RESTful)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"pin\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/openkey/notes",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes"]
+            },
+            "description": "Create a note using API key (RESTful POST). Requires SENDROTE permission."
+          }
+        },
+        {
+          "name": "Get Notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/openkey/notes?skip=0&limit=20&archived=false",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "archived",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Get notes using API key. Requires GETROTE permission."
+          }
+        },
+        {
+          "name": "Search Notes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/openkey/notes/search?keyword=search term&skip=0&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes", "search"],
+              "query": [
+                {
+                  "key": "keyword",
+                  "value": "search term"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search notes using API key."
+          }
+        }
+      ],
+      "description": "OpenKey API endpoints for programmatic access using API keys."
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Add Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endpoint\": \"https://fcm.googleapis.com/fcm/send/...\",\n  \"keys\": {\n    \"p256dh\": \"public-key\",\n    \"auth\": \"auth-secret\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions"]
+            },
+            "description": "Add a push notification subscription."
+          }
+        },
+        {
+          "name": "Get My Subscriptions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/subscriptions",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions"]
+            },
+            "description": "Get all push notification subscriptions for the current user."
+          }
+        },
+        {
+          "name": "Update Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "subscription-uuid"
+                }
+              ]
+            },
+            "description": "Update a subscription."
+          }
+        },
+        {
+          "name": "Delete Subscription",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/subscriptions/:id",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "subscription-uuid"
+                }
+              ]
+            },
+            "description": "Delete a subscription."
+          }
+        },
+        {
+          "name": "Test All Subscriptions",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/subscriptions/test-all",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", "test-all"]
+            },
+            "description": "Test all push notification endpoints for the current user."
+          }
+        },
+        {
+          "name": "Send Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Notification Title\",\n  \"body\": \"Notification body text\",\n  \"image\": \"https://example.com/image.png\",\n  \"data\": {\n    \"type\": \"custom\",\n    \"url\": \"https://example.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/subscriptions/:id/notify",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", ":id", "notify"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "subscription-uuid"
+                }
+              ]
+            },
+            "description": "Send a push notification to a specific subscription."
+          }
+        }
+      ],
+      "description": "Push notification subscription management endpoints."
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Create Notification (Disabled)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"NoteOnceNoticeJob\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/notifications",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notifications"]
+            },
+            "description": "Create a notification (currently disabled - returns success but performs no action)."
+          }
+        }
+      ],
+      "description": "Notification endpoints (currently disabled)."
+    },
+    {
+      "name": "Changes",
+      "item": [
+        {
+          "name": "Get Changes by Origin ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/changes/origin/:originid?skip=0&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "origin", ":originid"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "originid",
+                  "value": "origin-uuid"
+                }
+              ]
+            },
+            "description": "Get change records by original note ID (for iOS client sync)."
+          }
+        },
+        {
+          "name": "Get Changes by Rote ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/changes/rote/:roteid?skip=0&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "rote", ":roteid"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "roteid",
+                  "value": "rote-uuid"
+                }
+              ]
+            },
+            "description": "Get change records by note ID."
+          }
+        },
+        {
+          "name": "Get My Changes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/changes/user?skip=0&limit=20&action=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "user"],
+              "query": [
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "description": "Filter by action: CREATE, UPDATE, DELETE"
+                }
+              ]
+            },
+            "description": "Get all change records for the current user."
+          }
+        },
+        {
+          "name": "Get Changes After Timestamp",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/changes/after?timestamp=2024-01-01T00:00:00Z&skip=0&limit=20&action=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "after"],
+              "query": [
+                {
+                  "key": "timestamp",
+                  "value": "2024-01-01T00:00:00Z",
+                  "description": "ISO 8601 or Unix timestamp"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "action",
+                  "value": "",
+                  "description": "Filter by action: CREATE, UPDATE, DELETE"
+                }
+              ]
+            },
+            "description": "Get change records after a specific timestamp (for iOS client sync)."
+          }
+        }
+      ],
+      "description": "Change tracking endpoints for synchronization."
+    },
+    {
+      "name": "Site",
+      "item": [
+        {
+          "name": "Get Site Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/site/status",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "site", "status"]
+            },
+            "description": "Get site status and configuration information."
+          }
+        },
+        {
+          "name": "Get Config Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/site/config-status",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "site", "config-status"]
+            },
+            "description": "Get system configuration status (for initialization wizard)."
+          }
+        },
+        {
+          "name": "Get Sitemap",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/site/sitemap",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "site", "sitemap"]
+            },
+            "description": "Get the site's XML sitemap."
+          }
+        }
+      ],
+      "description": "Site information and configuration endpoints."
+    },
+    {
+      "name": "RSS",
+      "item": [
+        {
+          "name": "Get Public RSS Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/rss/public",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "rss", "public"]
+            },
+            "description": "Get RSS feed of all public notes."
+          }
+        },
+        {
+          "name": "Get User RSS Feed",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/rss/:username",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "rss", ":username"],
+              "variable": [
+                {
+                  "key": "username",
+                  "value": "testuser"
+                }
+              ]
+            },
+            "description": "Get RSS feed of a user's public notes."
+          }
+        }
+      ],
+      "description": "RSS feed endpoints."
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get System Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/status",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "status"]
+            },
+            "description": "Get system initialization status."
+          }
+        },
+        {
+          "name": "System Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"site\": {\n    \"name\": \"My Rote Instance\",\n    \"frontendUrl\": \"https://example.com\",\n    \"description\": \"My note-taking platform\",\n    \"defaultLanguage\": \"en\"\n  },\n  \"storage\": {\n    \"endpoint\": \"https://xxx.r2.cloudflarestorage.com\",\n    \"bucket\": \"my-bucket\",\n    \"accessKeyId\": \"access-key\",\n    \"secretAccessKey\": \"secret-key\",\n    \"urlPrefix\": \"https://cdn.example.com\"\n  },\n  \"ui\": {\n    \"allowRegistration\": true,\n    \"allowUploadFile\": true,\n    \"defaultUserRole\": \"user\",\n    \"apiRateLimit\": 100\n  },\n  \"admin\": {\n    \"username\": \"admin\",\n    \"email\": \"admin@example.com\",\n    \"password\": \"securepassword\",\n    \"nickname\": \"Administrator\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/setup",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "setup"]
+            },
+            "description": "Initialize the system with configuration and admin user. Only works if system is not initialized."
+          }
+        },
+        {
+          "name": "Get All Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/settings?group=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings"],
+              "query": [
+                {
+                  "key": "group",
+                  "value": "",
+                  "description": "Optional: site, storage, security, notification, ui, system"
+                }
+              ]
+            },
+            "description": "Get all configuration settings. Requires admin role."
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"group\": \"ui\",\n  \"config\": {\n    \"allowRegistration\": true,\n    \"allowUploadFile\": true,\n    \"defaultUserRole\": \"user\",\n    \"apiRateLimit\": 100\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/settings",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings"]
+            },
+            "description": "Update configuration settings. Requires admin role."
+          }
+        },
+        {
+          "name": "Test Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}",
+                "description": "Required after initialization"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"storage\",\n  \"config\": {\n    \"endpoint\": \"https://xxx.r2.cloudflarestorage.com\",\n    \"bucket\": \"my-bucket\",\n    \"accessKeyId\": \"access-key\",\n    \"secretAccessKey\": \"secret-key\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/settings/test",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "test"]
+            },
+            "description": "Test configuration connection (storage or database)."
+          }
+        },
+        {
+          "name": "Regenerate Security Keys",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/settings/regenerate-keys",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "regenerate-keys"]
+            },
+            "description": "Regenerate security keys (JWT, VAPID). Requires super_admin role."
+          }
+        },
+        {
+          "name": "Detect URLs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/settings/detect-urls",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "detect-urls"]
+            },
+            "description": "Auto-detect current API and frontend URLs. Requires admin role."
+          }
+        },
+        {
+          "name": "Update URLs",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"frontendUrl\": \"https://example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/settings/update-urls",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "update-urls"]
+            },
+            "description": "Update URL configuration. Requires admin role."
+          }
+        },
+        {
+          "name": "Refresh Config Cache",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/refresh-cache",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "refresh-cache"]
+            },
+            "description": "Refresh configuration cache. Requires admin role."
+          }
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/users?page=1&limit=10&role=&search=&sortField=&sortOrder=",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "description": "Filter by role"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search by username/email"
+                },
+                {
+                  "key": "sortField",
+                  "value": ""
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "",
+                  "description": "asc or desc"
+                }
+              ]
+            },
+            "description": "List all users with pagination. Requires admin role."
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/users/:userId",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "user-uuid"
+                }
+              ]
+            },
+            "description": "Get user details by ID. Requires admin role."
+          }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"moderator\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/users/:userId/role",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId", "role"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "user-uuid"
+                }
+              ]
+            },
+            "description": "Update a user's role. Requires super_admin role."
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/users/:userId",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "user-uuid"
+                }
+              ]
+            },
+            "description": "Delete a user. Requires super_admin role."
+          }
+        },
+        {
+          "name": "Verify User Email",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/users/:userId/verify-email",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId", "verify-email"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "user-uuid"
+                }
+              ]
+            },
+            "description": "Manually verify a user's email. Requires admin role."
+          }
+        },
+        {
+          "name": "Get Role Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/api/admin/roles/stats",
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "roles", "stats"]
+            },
+            "description": "Get user role statistics. Requires admin role."
+          }
+        }
+      ],
+      "description": "Admin endpoints for system configuration and user management."
+    }
+  ]
+}
