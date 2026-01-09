@@ -11,12 +11,40 @@ import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
 const router = new Hono<{ Variables: HonoVariables }>();
 
+// 处理标签，过滤空白标签并验证长度
+const processTags = (tags: any): string[] => {
+  if (Array.isArray(tags)) {
+    const processed = tags
+      .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
+      .map((t) => t.trim());
+    // 验证标签长度和数量
+    if (processed.length > 20) {
+      throw new Error('Maximum 20 tags allowed');
+    }
+    for (const tag of processed) {
+      if (tag.length > 50) {
+        throw new Error('Single tag cannot exceed 50 characters');
+      }
+    }
+    return processed;
+  }
+  if (tags && typeof tags === 'string' && tags.trim().length > 0) {
+    const trimmed = tags.trim();
+    if (trimmed.length > 50) {
+      throw new Error('Single tag cannot exceed 50 characters');
+    }
+    return [trimmed];
+  }
+  return [];
+};
+
 // Create note using API key - GET method (kept for backward compatibility)
 router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
   const content = c.req.query('content');
   const state = c.req.query('state');
   const type = c.req.query('type');
-  const tag = c.req.query('tag');
+  const title = c.req.query('title');
+  const tags = c.req.queries('tag');
   const pin = c.req.query('pin');
 
   // 确保 content 是字符串类型
@@ -34,38 +62,46 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     throw new Error('API key permission does not match');
   }
 
-  // 处理标签，过滤空白标签并验证长度
-  const processTags = (tags: any): string[] => {
-    if (Array.isArray(tags)) {
-      const processed = tags
-        .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
-        .map((t) => t.trim());
-      // 验证标签长度和数量
-      if (processed.length > 20) {
-        throw new Error('Maximum 20 tags allowed');
-      }
-      for (const tag of processed) {
-        if (tag.length > 50) {
-          throw new Error('Single tag cannot exceed 50 characters');
-        }
-      }
-      return processed;
-    }
-    if (tags && typeof tags === 'string' && tags.trim().length > 0) {
-      const trimmed = tags.trim();
-      if (trimmed.length > 50) {
-        throw new Error('Single tag cannot exceed 50 characters');
-      }
-      return [trimmed];
-    }
-    return [];
+  const rote = {
+    content,
+    title: title || '',
+    state: state || 'private',
+    type: type || 'Rote',
+    tags: processTags(tags),
+    pin: !!pin,
   };
+
+  const result = await createRote({
+    ...rote,
+    authorid: openKey.userid,
+  });
+
+  return c.json(createResponse(result), 201);
+});
+
+// Create note using API key - POST method for /notes/create endpoint
+router.post('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
+  const body = await c.req.json();
+  const { content, state, type, title, tags, pin } = body;
+
+  if (!content) {
+    throw new Error('Content is required');
+  }
+
+  // 验证输入长度（验证整个 body，确保所有字段都被验证）
+  NoteCreateZod.parse(body);
+
+  const openKey = c.get('openKey');
+  if (!openKey?.permissions.includes('SENDROTE')) {
+    throw new Error('API key permission does not match');
+  }
 
   const rote = {
     content,
+    title: title || '',
     state: state || 'private',
-    type: type || 'Rote',
-    tags: processTags(tag),
+    type: type || 'rote',
+    tags: processTags(tags),
     pin: !!pin,
   };
 
@@ -80,7 +116,7 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
 // Create note using API key - POST method (proper RESTful interface)
 router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
   const body = await c.req.json();
-  const { content, state, type, tags, pin } = body;
+  const { content, state, type, title, tags, pin } = body;
 
   if (!content) {
     throw new Error('Content is required');
@@ -94,24 +130,9 @@ router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
     throw new Error('API key permission does not match');
   }
 
-  // 处理标签，过滤空白标签
-  const processTags = (tags: any): string[] => {
-    if (Array.isArray(tags)) {
-      return tags
-        .filter((t) => t && typeof t === 'string' && t.trim().length > 0)
-        .map((t) => t.trim());
-    }
-    if (tags && typeof tags === 'string' && tags.trim().length > 0) {
-      return tags
-        .split(' ')
-        .filter((t) => t.trim().length > 0)
-        .map((t) => t.trim());
-    }
-    return [];
-  };
-
   const rote = {
     content,
+    title: title || '',
     state: state || 'private',
     type: type || 'rote',
     tags: processTags(tags),

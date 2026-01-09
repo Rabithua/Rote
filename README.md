@@ -22,7 +22,7 @@
 - **Unbounded Freedom**: Complete control over your data, free to export data
 - **Self-Hosted Deployment**: One-click deployment using Docker or Dokploy
 - **Separated Architecture**: Frontend and backend use separated architecture design, deploy only the services you need
-- **iOS Client**: More elegant App client (available outside China)
+- **iOS Client**: More elegant App client
 
 ### Quick Start
 

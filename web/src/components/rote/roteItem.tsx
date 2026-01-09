@@ -183,7 +183,8 @@ function RoteItem({
         </div>
 
         {/* Content */}
-        <div className="font-zhengwen relative break-words whitespace-pre-line">
+        <div className="font-zhengwen relative wrap-break-word whitespace-pre-line">
+          <div className="font-semibold">{rote.title}</div>
           <div className="aTagStyle">
             {rote.content.length > roteContentExpandedLetter ? (
               isExpanded ? (
