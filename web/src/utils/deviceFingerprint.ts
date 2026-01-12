@@ -291,8 +291,7 @@ export async function generateVisitorId(): Promise<string> {
     }
 
     return visitorId;
-  } catch (error) {
-    console.warn('生成访客 ID 失败，使用降级方案:', error);
+  } catch (_error) {
     // 降级方案：使用基本设备信息生成简单哈希
     const fallbackData = `${navigator.userAgent}_${navigator.language}_${screen.width}x${screen.height}`;
     const fallbackId = `fb_${simpleHash(fallbackData).substring(0, 32)}`;
