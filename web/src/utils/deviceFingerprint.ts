@@ -201,58 +201,23 @@ function getFontList(): string[] {
 }
 
 /**
- * 获取音频指纹
+ * 简单的字符串哈希函数（作为 crypto.subtle 的降级方案）
  */
-function getAudioFingerprint(): Promise<string> {
-  return new Promise((resolve) => {
-    try {
-      const AudioContextClass =
-        window.AudioContext ||
-        (window as { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) {
-        resolve('no-audio-support');
-        return;
-      }
-      const audioContext = new AudioContextClass();
-      const oscillator = audioContext.createOscillator();
-      const analyser = audioContext.createAnalyser();
-      const gainNode = audioContext.createGain();
-      const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(10000, audioContext.currentTime);
-
-      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-
-      oscillator.connect(analyser);
-      analyser.connect(scriptProcessor);
-      scriptProcessor.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-
-      scriptProcessor.onaudioprocess = function (bins) {
-        const buffer = bins.inputBuffer.getChannelData(0);
-        let sum = 0;
-        for (let i = 0; i < buffer.length; i++) {
-          sum += Math.abs(buffer[i]);
-        }
-        const audioHash = sum.toString();
-
-        oscillator.disconnect();
-        scriptProcessor.disconnect();
-        audioContext.close();
-
-        resolve(audioHash);
-      };
-
-      oscillator.start(0);
-    } catch {
-      resolve('audio_not_supported');
-    }
-  });
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash; // 转换为32位整数
+  }
+  // 将数字转换为16进制字符串，并补齐到64位
+  const hexHash = Math.abs(hash).toString(16);
+  return hexHash.padStart(16, '0').repeat(4).substring(0, 64);
 }
 
 /**
  * 生成设备指纹哈希
+ * 只使用稳定的设备特征，确保同一设备生成相同的指纹
  */
 async function generateFingerprint(): Promise<string> {
   const deviceInfo = getDeviceInfo();
@@ -260,52 +225,77 @@ async function generateFingerprint(): Promise<string> {
   const timezoneInfo = getTimezoneInfo();
   const canvasInfo = getCanvasFingerprint();
   const fontList = getFontList();
-  const audioHash = await getAudioFingerprint();
+  // 移除音频指纹，因为它不够稳定
+  // const audioHash = await getAudioFingerprint();
 
-  // 组合所有信息
+  // 只使用稳定的设备特征
   const fingerprintData = {
-    device: deviceInfo,
-    screen: screenInfo,
-    timezone: timezoneInfo,
+    // 设备稳定特征
+    userAgent: deviceInfo.userAgent,
+    platform: deviceInfo.platform,
+    language: deviceInfo.language,
+    hardwareConcurrency: deviceInfo.hardwareConcurrency,
+    maxTouchPoints: deviceInfo.maxTouchPoints,
+    vendor: deviceInfo.vendor,
+    // 屏幕稳定特征
+    screenWidth: screenInfo.width,
+    screenHeight: screenInfo.height,
+    colorDepth: screenInfo.colorDepth,
+    devicePixelRatio: screenInfo.devicePixelRatio,
+    // 时区
+    timezone: timezoneInfo.timezone,
+    // Canvas 指纹（相对稳定）
     canvas: canvasInfo,
+    // 字体列表
     fonts: fontList.sort().join(','),
-    audio: audioHash,
   };
 
   // 生成哈希值
   const dataString = JSON.stringify(fingerprintData);
-  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(dataString));
-  const hashArray = Array.from(new Uint8Array(hash));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 
-  return hashHex;
+  // 检查 crypto.subtle 是否可用（仅在安全上下文中可用：HTTPS 或 localhost）
+  if (typeof crypto !== 'undefined' && crypto.subtle) {
+    try {
+      const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(dataString));
+      const hashArray = Array.from(new Uint8Array(hash));
+      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    } catch {
+      // crypto.subtle 调用失败，使用降级方案
+      return simpleHash(dataString);
+    }
+  }
+
+  // crypto.subtle 不可用（非安全上下文），使用简单哈希
+  return simpleHash(dataString);
 }
 
 /**
- * 生成临时访客 ID（基于设备指纹 + 随机数）
+ * 生成访客 ID（基于纯设备指纹）
+ * 同一设备即使清除 localStorage 后也会生成相同的 ID
  */
 export async function generateVisitorId(): Promise<string> {
   try {
-    // 尝试从 localStorage 获取已存在的访客 ID
-    const existingId = localStorage.getItem('rote_visitor_id');
-    if (existingId) {
-      return existingId;
+    // 直接生成设备指纹作为访客 ID
+    // 不依赖 localStorage 缓存，确保同一设备始终返回相同 ID
+    const fingerprint = await generateFingerprint();
+
+    // 使用完整指纹的前32位作为访客 ID，加上 'fp_' 前缀标识
+    const visitorId = `fp_${fingerprint.substring(0, 32)}`;
+
+    // 可选：缓存到 localStorage 以提高性能（但不依赖它）
+    try {
+      localStorage.setItem('rote_visitor_id', visitorId);
+    } catch {
+      // localStorage 不可用，忽略
     }
 
-    // 生成新的访客 ID
-    const fingerprint = await generateFingerprint();
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 15);
-
-    const visitorId = `${fingerprint.substring(0, 16)}_${timestamp}_${random}`;
-
-    // 保存到 localStorage
-    localStorage.setItem('rote_visitor_id', visitorId);
-
     return visitorId;
-  } catch {
-    const fallbackId = `fallback_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    localStorage.setItem('rote_visitor_id', fallbackId);
+  } catch (error) {
+    console.warn('生成访客 ID 失败，使用降级方案:', error);
+    // 降级方案：使用基本设备信息生成简单哈希
+    const fallbackData = `${navigator.userAgent}_${navigator.language}_${screen.width}x${screen.height}`;
+    const fallbackId = `fb_${simpleHash(fallbackData).substring(0, 32)}`;
     return fallbackId;
   }
 }
