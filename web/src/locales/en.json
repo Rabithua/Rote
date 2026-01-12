@@ -382,7 +382,10 @@
         "siteName": "Site Name",
         "siteDescription": "Site Description",
         "frontendUrl": "Frontend URL",
-        "accountId": "S3 Account ID",
+        "storageType": "Storage Type",
+        "customEndpoint": "Custom S3 (Garage/MinIO)",
+        "accountId": "R2 Account ID",
+        "endpoint": "S3 Endpoint",
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "Bucket Name",
@@ -397,7 +400,8 @@
         "siteName": "Enter site name",
         "siteDescription": "Enter site description",
         "frontendUrl": "https://your-domain.com",
-        "accountId": "your-account-id",
+        "accountId": "your-r2-account-id",
+        "endpoint": "http://localhost:3900",
         "accessKey": "Enter S3 Access Key",
         "secretKey": "Enter S3 Secret Key",
         "bucket": "Enter bucket name",
@@ -410,6 +414,8 @@
       },
       "descriptions": {
         "frontendUrl": "Frontend URL is used to identify your frontend access address and will be used to generate links in RSS feeds. Please enter the complete URL (e.g., https://your-domain.com).",
+        "storageType": "Choose Cloudflare R2 or custom S3-compatible storage (Garage, MinIO, AWS S3, etc.)",
+        "endpoint": "S3 API endpoint URL (e.g., http://localhost:3900 for Garage)",
         "region": "S3 region, defaults to 'auto'",
         "s3Optional": "S3 storage configuration is optional. You can skip this step and configure it later in system settings. If skipped, the system will not be able to upload attachments, but other features will work normally."
       },
@@ -417,7 +423,9 @@
         "siteNameRequired": "Site name is required",
         "frontendUrlRequired": "Frontend URL is required",
         "frontendUrlInvalid": "Please enter a valid URL (starts with http:// or https://)",
-        "accountIdRequired": "S3 Account ID is required",
+        "accountIdRequired": "R2 Account ID is required",
+        "endpointRequired": "S3 Endpoint is required",
+        "endpointInvalid": "Please enter a valid endpoint URL (starts with http:// or https://)",
         "accessKeyRequired": "Access Key is required",
         "secretKeyRequired": "Secret Key is required",
         "bucketRequired": "Bucket name is required",
@@ -474,19 +482,31 @@
       "storage": {
         "title": "Storage Configuration",
         "description": "Configure S3 cloud storage settings",
-        "endpoint": "Endpoint",
+        "storageType": "Storage Type",
+        "storageTypeDescription": "Choose Cloudflare R2 or custom S3-compatible storage (Garage, MinIO, AWS S3, etc.)",
+        "customEndpoint": "Custom S3 (Garage/MinIO)",
+        "accountId": "R2 Account ID",
+        "accountIdPlaceholder": "your-r2-account-id",
+        "endpoint": "S3 Endpoint",
+        "endpointPlaceholder": "http://localhost:3900",
+        "endpointDescription": "S3 API endpoint address (e.g., http://localhost:3900 for Garage)",
         "bucket": "Bucket",
+        "bucketPlaceholder": "bucket-name",
         "accessKeyId": "Access Key ID",
+        "accessKeyIdPlaceholder": "Access Key ID",
         "secretAccessKey": "Secret Access Key",
+        "secretAccessKeyPlaceholder": "Secret Access Key",
         "region": "Region",
         "regionPlaceholder": "auto",
         "regionDescription": "S3 region, defaults to 'auto'",
         "urlPrefix": "URL Prefix",
+        "urlPrefixPlaceholder": "https://your-cdn-domain.com",
         "urlPrefixDescription": "Public URL prefix for accessing uploaded files (optional)",
         "testConnection": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Storage connection test successful!",
-        "testFailed": "Connection test failed: {{error}}"
+        "testFailed": "Connection test failed: {{error}}",
+        "fillAllRequired": "Please fill in all required fields"
       },
       "ui": {
         "title": "UI Configuration",
@@ -642,12 +662,14 @@
       "contentPlaceholder": "Ctrl + ↵ to send",
       "pin": "Pin",
       "archive": "Archive",
+      "articleReference": "Reference Article",
       "send": "Send",
-      "uploadFailed": "Upload failed",
+      "uploadFailed": "Attachment upload failed",
       "sending": "Sending...",
-      "sendSuccess": "Send successful",
-      "sendFailed": "Send failed",
-      "publicWarning": "Your content will be public and visible to anyone.",
+      "sendSuccess": "Sent successfully",
+      "sendFailed": "Failed to send",
+      "publicWarning": "Your content will be public and visible to everyone.",
+      "referencedArticles": "Referenced Articles",
       "stateOptions": {
         "public": "Public",
         "private": "Private"
@@ -705,6 +727,37 @@
     },
     "verifiedIcon": {
       "tooltip": "Verified Email"
+    }
+  },
+  "article": {
+    "editor": {
+      "title": "Create Article",
+      "editTitle": "Edit Article",
+      "editorLabel": "Editor",
+      "previewLabel": "Preview",
+      "previewPlaceholder": "Preview will appear here",
+      "contentPlaceholder": "# Article Title",
+      "cancel": "Cancel",
+      "save": "Save Article",
+      "update": "Update Article",
+      "emptyContent": "Content cannot be empty",
+      "needTitle": "Please add a level-1 heading (# Title) in the content",
+      "createSuccess": "Article created",
+      "createFailed": "Failed to create",
+      "updateSuccess": "Article updated",
+      "updateFailed": "Failed to update"
+    },
+    "selection": {
+      "title": "Select Article",
+      "createNew": "Create Article",
+      "createNewDesc": "Create a new Markdown article",
+      "noArticles": "No articles yet, click the button above to create one"
+    },
+    "viewer": {
+      "title": "Article Preview",
+      "loadFailed": "Failed to load article",
+      "notFound": "Article content not found",
+      "edit": "Edit article"
     }
   },
   "common": {

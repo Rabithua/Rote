@@ -36,6 +36,7 @@
   - `createdAt`: 创建时间（ISO 8601 格式）
   - `updatedAt`: 更新时间（ISO 8601 格式）
 - **reactions**: 反应数组，每个反应包含：
+
   - `id`: 反应 ID（UUID 格式）
   - `type`: 反应类型（emoji 字符，如 `"👍"`）
   - `userid`: 用户 ID（UUID 格式，已登录用户，可选）
@@ -45,6 +46,33 @@
   - `metadata`: 附加元数据（JSON 对象，可选）
   - `createdAt`: 创建时间（ISO 8601 格式）
   - `updatedAt`: 更新时间（ISO 8601 格式）
+
+- **articleId**: 关联文章 ID（UUID 格式，可选，创建/更新时使用）
+- **article**: 关联的文章对象（可选，查询时返回）。包含：
+  - `id`: 文章 ID（UUID 格式）
+  - `content`: 原始 Markdown 内容
+  - `createdAt`: 文章创建时间（ISO 8601 格式）
+  - `updatedAt`: 文章更新时间（ISO 8601 格式）
+
+**说明**：每个笔记最多关联一篇文章。笔记表中的 `articleId` 字段用于存储关联文章的 ID。
+
+`article` 示例：
+
+```json
+{
+  "article": {
+    "id": "a219cacc-1938-4540-880d-e03ddc96b390",
+    "content": "# 标题\n...",
+    "createdAt": "2026-01-12T07:45:21.626Z",
+    "updatedAt": "2026-01-12T07:45:21.626Z"
+  }
+}
+```
+
+获取文章全文：
+
+- 作者：`GET /v2/api/articles/:articleId`
+- 非作者（需要笔记上下文）：`GET /v2/api/articles/:articleId?noteId=<noteId>`
 
 ---
 
@@ -65,6 +93,7 @@
   - `pin`: boolean（可选）
   - `archived`: boolean（可选）
   - `attachmentIds`: string[]（可选）
+  - `articleId`: string（可选，关联文章 ID，UUID 格式）
 
 请求示例（cURL）:
 
@@ -96,6 +125,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
     "state": "public",
     "archived": false,
     "authorid": "user-uuid",
+    "articleId": null,
     "pin": false,
     "editor": "normal",
     "createdAt": "2024-01-01T00:00:00.000Z",
@@ -107,7 +137,8 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
       "emailVerified": true
     },
     "attachments": [],
-    "reactions": []
+    "reactions": [],
+    "article": null
   }
 }
 ```
@@ -163,6 +194,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/?skip=0&limit=20&archived=fals
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -173,7 +205,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/?skip=0&limit=20&archived=fals
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
@@ -215,6 +248,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
     "state": "public",
     "archived": false,
     "authorid": "user-uuid",
+    "articleId": null,
     "pin": false,
     "editor": "normal",
     "createdAt": "2024-01-01T00:00:00.000Z",
@@ -260,7 +294,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
         "createdAt": "2024-01-01T00:00:00.000Z",
         "updatedAt": "2024-01-01T00:00:00.000Z"
       }
-    ]
+    ],
+    "article": null
   }
 }
 ```
@@ -309,6 +344,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -319,7 +355,8 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     },
     {
       "id": "uuid2",
@@ -330,6 +367,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
       "state": "private",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -340,7 +378,8 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
@@ -380,6 +419,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
   - `pin`: boolean（可选）
   - `archived`: boolean（可选）
   - `attachmentIds`: string[]（可选）
+  - `articleId`: string | null（可选，关联文章 ID，UUID 格式，传 `null` 清除关联）
 
 请求示例（cURL）:
 
@@ -406,11 +446,12 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
     "id": "uuid",
     "title": "更新后的标题",
     "type": "Rote",
-    "tags": ["标签1"],
+    "tags": ["新标签1", "新标签2"],
     "content": "更新后的笔记内容",
     "state": "public",
     "archived": false,
     "authorid": "user-uuid",
+    "articleId": null,
     "pin": false,
     "editor": "normal",
     "createdAt": "2024-01-01T00:00:00.000Z",
@@ -422,7 +463,8 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
       "emailVerified": true
     },
     "attachments": [],
-    "reactions": []
+    "reactions": [],
+    "article": null
   }
 }
 ```
@@ -500,6 +542,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
     "state": "public",
     "archived": false,
     "authorid": "user-uuid",
+    "articleId": null,
     "pin": false,
     "editor": "normal",
     "createdAt": "2024-01-01T00:00:00.000Z",
@@ -511,7 +554,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
       "emailVerified": true
     },
     "attachments": [],
-    "reactions": []
+    "reactions": [],
+    "article": null
   }
 }
 ```
@@ -559,6 +603,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -569,7 +614,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
@@ -622,6 +668,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -632,7 +679,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
@@ -687,6 +735,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -697,7 +746,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
@@ -752,6 +802,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/users/demo?skip=0&limit=20'
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -762,7 +813,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/users/demo?skip=0&limit=20'
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
@@ -812,6 +864,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/public?skip=0&limit=20'
       "state": "public",
       "archived": false,
       "authorid": "user-uuid",
+      "articleId": null,
       "pin": false,
       "editor": "normal",
       "createdAt": "2024-01-01T00:00:00.000Z",
@@ -822,7 +875,8 @@ curl -X GET 'https://your-domain.com/v2/api/notes/public?skip=0&limit=20'
         "avatar": "https://example.com/avatar.jpg"
       },
       "attachments": [],
-      "reactions": []
+      "reactions": [],
+      "article": null
     }
   ]
 }
