@@ -376,7 +376,10 @@
         "siteName": "网站名称",
         "siteDescription": "网站描述",
         "frontendUrl": "前端 URL",
-        "accountId": "S3 Account ID",
+        "storageType": "存储类型",
+        "customEndpoint": "自定义 S3 (Garage/MinIO)",
+        "accountId": "R2 Account ID",
+        "endpoint": "S3 Endpoint",
         "accessKey": "Access Key",
         "secretKey": "Secret Key",
         "bucket": "存储桶名称",
@@ -391,7 +394,8 @@
         "siteName": "请输入网站名称",
         "siteDescription": "请输入网站描述",
         "frontendUrl": "https://your-domain.com",
-        "accountId": "your-account-id",
+        "accountId": "your-r2-account-id",
+        "endpoint": "http://localhost:3900",
         "accessKey": "请输入 S3 Access Key",
         "secretKey": "请输入 S3 Secret Key",
         "bucket": "请输入存储桶名称",
@@ -404,6 +408,8 @@
       },
       "descriptions": {
         "frontendUrl": "前端URL用于标识您的前端访问地址，将用于生成RSS Feed中的链接。建议填写完整的URL（如：https://your-domain.com）。",
+        "storageType": "选择 Cloudflare R2 或自定义 S3 兼容存储（Garage、MinIO、AWS S3 等）",
+        "endpoint": "S3 API 端点地址（例如 Garage 的 http://localhost:3900）",
         "region": "S3 区域，默认为 'auto'",
         "s3Optional": "S3 存储配置是可选的。您可以跳过此步骤，稍后在系统设置中配置。如果跳过，系统将无法上传附件，但其他功能可以正常使用。"
       },
@@ -411,7 +417,9 @@
         "siteNameRequired": "网站名称不能为空",
         "frontendUrlRequired": "前端URL不能为空",
         "frontendUrlInvalid": "请输入有效的URL（以http://或https://开头）",
-        "accountIdRequired": "S3 Account ID不能为空",
+        "accountIdRequired": "R2 Account ID不能为空",
+        "endpointRequired": "S3 Endpoint不能为空",
+        "endpointInvalid": "请输入有效的 Endpoint URL（以http://或https://开头）",
         "accessKeyRequired": "Access Key不能为空",
         "secretKeyRequired": "Secret Key不能为空",
         "bucketRequired": "存储桶名称不能为空",
@@ -468,19 +476,31 @@
       "storage": {
         "title": "存储配置",
         "description": "配置 S3 云存储设置",
-        "endpoint": "端点",
-        "bucket": "存储桶",
+        "storageType": "存储类型",
+        "storageTypeDescription": "选择 Cloudflare R2 或自定义 S3 兼容存储（Garage、MinIO、AWS S3 等）",
+        "customEndpoint": "自定义 S3 (Garage/MinIO)",
+        "accountId": "R2 Account ID",
+        "accountIdPlaceholder": "your-r2-account-id",
+        "endpoint": "S3 Endpoint",
+        "endpointPlaceholder": "http://localhost:3900",
+        "endpointDescription": "S3 API 端点地址（例如 Garage 的 http://localhost:3900）",
+        "bucket": "Bucket",
+        "bucketPlaceholder": "bucket-name",
         "accessKeyId": "Access Key ID",
+        "accessKeyIdPlaceholder": "Access Key ID",
         "secretAccessKey": "Secret Access Key",
-        "region": "区域",
+        "secretAccessKeyPlaceholder": "Secret Access Key",
+        "region": "Region",
         "regionPlaceholder": "auto",
         "regionDescription": "S3 区域，默认为 'auto'",
         "urlPrefix": "URL 前缀",
+        "urlPrefixPlaceholder": "https://your-cdn-domain.com",
         "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（可选）",
         "testConnection": "测试连接",
         "testing": "测试中...",
         "testSuccess": "存储连接测试成功！",
-        "testFailed": "连接测试失败: {{error}}"
+        "testFailed": "连接测试失败: {{error}}",
+        "fillAllRequired": "请填写所有必填字段"
       },
       "ui": {
         "title": "界面配置",
@@ -636,12 +656,14 @@
       "contentPlaceholder": "Ctrl + ↵ 发送",
       "pin": "置顶",
       "archive": "归档",
+      "articleReference": "引用文章",
       "send": "发送",
       "uploadFailed": "附件上传失败",
       "sending": "发送中...",
       "sendSuccess": "发送成功",
       "sendFailed": "发送失败",
       "publicWarning": "你的内容将会被公开，任何人都可以查看。",
+      "referencedArticles": "引用的文章",
       "stateOptions": {
         "public": "公开",
         "private": "私密"
@@ -699,6 +721,37 @@
     },
     "verifiedIcon": {
       "tooltip": "已验证邮箱"
+    }
+  },
+  "article": {
+    "editor": {
+      "title": "创建文章",
+      "editTitle": "编辑文章",
+      "editorLabel": "编辑器",
+      "previewLabel": "预览",
+      "previewPlaceholder": "预览将在此显示",
+      "contentPlaceholder": "# 文章标题",
+      "cancel": "取消",
+      "save": "保存文章",
+      "update": "更新文章",
+      "emptyContent": "内容不能为空",
+      "needTitle": "请在内容中添加一级标题（# 标题）",
+      "createSuccess": "文章已创建",
+      "createFailed": "创建失败",
+      "updateSuccess": "文章已更新",
+      "updateFailed": "更新失败"
+    },
+    "selection": {
+      "title": "选择文章",
+      "createNew": "创建文章",
+      "createNewDesc": "创建一篇新的Markdown文章",
+      "noArticles": "暂无文章，点击上方按钮新建"
+    },
+    "viewer": {
+      "title": "文章预览",
+      "loadFailed": "加载文章失败",
+      "notFound": "未找到文章内容",
+      "edit": "编辑文章"
     }
   },
   "common": {

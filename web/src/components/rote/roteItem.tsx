@@ -16,6 +16,7 @@ import { useInView } from 'react-intersection-observer';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
+import { ArticleCard } from '@/components/article/ArticleCard';
 import RoteEditor from '@/components/editor/RoteEditor';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import { SoftBottom } from '@/components/others/SoftBottom';
@@ -73,7 +74,7 @@ function RoteItem({
     >
       {showAvatar && (
         <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author.username}`}>
-          <UserAvatar avatar={rote.author.avatar} className="size-[40px] bg-[#00000010]" />
+          <UserAvatar avatar={rote.author.avatar} className="size-10 bg-[#00000010]" />
         </Link>
       )}
 
@@ -207,6 +208,20 @@ function RoteItem({
             </SoftBottom>
           )}
         </div>
+
+        {/* Article reference */}
+        {rote.article && (
+          <div className="flex flex-col gap-2">
+            <ArticleCard
+              key={rote.articleId || rote.article.id}
+              article={rote.article}
+              articleId={rote.articleId || rote.article.id}
+              noteId={rote.id}
+              enableViewer
+              className="w-full"
+            />
+          </div>
+        )}
 
         {/* Attachments */}
         {rote.attachments?.length > 0 && (

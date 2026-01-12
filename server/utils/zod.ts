@@ -70,6 +70,9 @@ export const NoteCreateZod = z.object({
   pin: z.boolean().optional(),
   editor: z.string().optional(),
   attachmentIds: z.array(z.string().uuid('Invalid attachment ID')).optional(),
+  articleId: z.string().uuid('Invalid article ID').optional(),
+  // 兼容旧客户端：严格单篇后最多 1 个
+  articleIds: z.array(z.string().uuid('Invalid article ID')).max(1).optional(),
 });
 
 export const NoteUpdateZod = z.object({
@@ -87,6 +90,22 @@ export const NoteUpdateZod = z.object({
   pin: z.boolean().optional(),
   editor: z.string().optional(),
   attachmentIds: z.array(z.string().uuid('Invalid attachment ID')).optional(),
+  // 单篇文章：传 null 表示清空
+  articleId: z.string().uuid('Invalid article ID').nullable().optional(),
+  // 兼容旧客户端：严格单篇后最多 1 个
+  articleIds: z.array(z.string().uuid('Invalid article ID')).max(1).optional(),
+});
+
+// 文章相关验证
+export const ArticleCreateZod = z.object({
+  content: z
+    .string()
+    .min(1, 'Content cannot be empty')
+    .max(1000000, 'Content cannot exceed 1,000,000 characters'),
+});
+
+export const ArticleUpdateZod = z.object({
+  content: z.string().max(1000000, 'Content cannot exceed 1,000,000 characters').optional(),
 });
 
 // 搜索关键词验证

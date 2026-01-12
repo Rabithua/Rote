@@ -53,7 +53,7 @@ function getDeviceInfo(): DeviceInfo {
     vendor: nav.vendor,
     vendorSub: nav.vendorSub,
     productSub: nav.productSub,
-    oscpu: (nav as any).oscpu,
+    oscpu: (nav as { oscpu?: string }).oscpu,
   };
 }
 
@@ -206,7 +206,14 @@ function getFontList(): string[] {
 function getAudioFingerprint(): Promise<string> {
   return new Promise((resolve) => {
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextClass =
+        window.AudioContext ||
+        (window as { webkitAudioContext?: typeof window.AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) {
+        resolve('no-audio-support');
+        return;
+      }
+      const audioContext = new AudioContextClass();
       const oscillator = audioContext.createOscillator();
       const analyser = audioContext.createAnalyser();
       const gainNode = audioContext.createGain();

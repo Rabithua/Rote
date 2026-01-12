@@ -50,6 +50,13 @@
       "when": 1765212685452,
       "tag": "0006_demonic_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1768223165577,
+      "tag": "0007_colorful_manta",
+      "breakpoints": true
     }
   ]
 }

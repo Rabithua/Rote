@@ -51,6 +51,9 @@ export type Rote = {
   };
   attachments: (Attachment | File)[];
   reactions: Reaction[];
+  // 直接绑定的文章（一对一关系）
+  article?: ArticleSummary | null;
+  articleId?: string | null;
 };
 
 export type Attachment = {
@@ -87,6 +90,23 @@ export type Attachment = {
 };
 
 export type Rotes = Rote[];
+
+export type Article = {
+  id: string;
+  content: string;
+  authorId?: string;
+  createdAt: string;
+  updatedAt: string;
+  author?: {
+    username: string;
+    nickname: string | null;
+    avatar: string | null;
+    emailVerified: boolean;
+  };
+};
+
+// 笔记中引用的文章摘要（只包含 content，title/summary 由前端解析）
+export type ArticleSummary = Pick<Article, 'content' | 'createdAt' | 'updatedAt'> & { id?: string };
 
 export type RotesAction =
   | { type: 'addOne'; rote: Rote }
