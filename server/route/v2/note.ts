@@ -19,6 +19,7 @@ import {
   searchMyRotes,
   searchPublicRotes,
   searchUserPublicRotes,
+  setNoteArticleId,
 } from '../../utils/dbMethods';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
 import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
@@ -42,6 +43,8 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
     pin?: boolean;
     editor?: string;
     attachmentIds?: string[];
+    articleId?: string;
+    articleIds?: string[]; // 兼容旧客户端：严格单篇后最多 1 个
   };
   const user = c.get('user') as User;
 
@@ -66,10 +69,19 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
     await bindAttachmentsToRote(user.id, rote.id, attachmentIds);
   }
 
-  // createRote 已经返回了包含关联数据的完整对象，不需要重新查询
-  // 但如果传入了附件ID，需要重新查询以获取最新的附件信息
-  const fullRote =
-    Array.isArray(attachmentIds) && attachmentIds.length > 0 ? await findRoteById(rote.id) : rote;
+  // 绑定文章（优先 articleId；兼容 articleIds，取第一个）
+  const articleIdToSet =
+    typeof (body as any).articleId === 'string'
+      ? (body as any).articleId
+      : Array.isArray((body as any).articleIds) && (body as any).articleIds.length > 0
+        ? (body as any).articleIds[0]
+        : null;
+  if (articleIdToSet) {
+    await setNoteArticleId(rote.id, articleIdToSet, user.id);
+  }
+
+  // 重新查询以获取最新关联数据（附件/文章等）
+  const fullRote = await findRoteById(rote.id);
   return c.json(createResponse(fullRote), 201);
 });
 
@@ -498,7 +510,18 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
   NoteUpdateZod.parse(body);
 
   // 确保使用路由参数中的 id，而不是 body 中的 id（防止不一致）
-  const data = await editRote({ ...body, id, authorid: user.id });
+  await editRote({ ...body, id, authorid: user.id });
+
+  // 更新文章绑定（优先 articleId；兼容 articleIds，取第一个）
+  if (typeof (body as any).articleId === 'string' || (body as any).articleId === null) {
+    await setNoteArticleId(id, (body as any).articleId ?? null, user.id);
+  } else if (Array.isArray((body as any).articleIds)) {
+    const articleIdToSet = (body as any).articleIds.length > 0 ? (body as any).articleIds[0] : null;
+    await setNoteArticleId(id, articleIdToSet, user.id);
+  }
+
+  // 重新获取最新数据（包含更新后的 article）
+  const data = await findRoteById(id);
 
   return c.json(createResponse(data), 200);
 });

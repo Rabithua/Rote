@@ -4,6 +4,15 @@ import { authService } from './auth';
 // API版本路径
 const API_PATH = '/v2/api';
 
+// 全局对象扩展类型定义
+declare global {
+  interface Window {
+    __ROTE_CONFIG__?: {
+      VITE_API_BASE?: string;
+    };
+  }
+}
+
 /**
  * 获取 API 基础 URL
  * 优先级：运行时配置 > 构建时配置 > 默认值
@@ -14,7 +23,7 @@ export const getApiPoint = (): string => {
   const defaultValue = 'http://localhost:3000';
 
   // 优先读取运行时配置（从 window 对象，由容器启动脚本注入）
-  const runtimeConfig = (window as any).__ROTE_CONFIG__;
+  const runtimeConfig = window.__ROTE_CONFIG__;
   if (runtimeConfig?.VITE_API_BASE) {
     const runtimeApiBase = String(runtimeConfig.VITE_API_BASE).trim();
     // 检查是否是占位符（配置注入失败的情况）
@@ -82,6 +91,12 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// 自定义错误接口
+interface ApiError extends Error {
+  response?: any;
+  code?: number;
+}
+
 // 响应拦截器
 api.interceptors.response.use(
   (response) => {
@@ -92,12 +107,12 @@ api.interceptors.response.use(
     if (responseData && typeof responseData === 'object' && 'code' in responseData) {
       if (responseData.code !== 0) {
         // 业务错误，抛出异常
-        const error = new Error(responseData.message || 'Request failed');
-        (error as any).response = {
+        const error = new Error(responseData.message || 'Request failed') as ApiError;
+        error.response = {
           ...response,
           data: responseData,
         };
-        (error as any).code = responseData.code;
+        error.code = responseData.code;
         return Promise.reject(error);
       }
     }

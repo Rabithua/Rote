@@ -9,8 +9,16 @@ export type PresignItem = {
   compressed: { key: string; putUrl: string; url: string; contentType: 'image/webp' };
 };
 
+export interface PresignResponse {
+  code: number;
+  message?: string;
+  data: {
+    items: PresignItem[];
+  };
+}
+
 export async function presign(files: PresignFile[]) {
-  const res = (await post('/attachments/presign', { files })) as any;
+  const res = (await post('/attachments/presign', { files })) as PresignResponse;
   if (res.code !== 0) throw new Error(res.message || 'presign failed');
   return res.data.items as PresignItem[];
 }
@@ -24,7 +32,7 @@ export async function uploadToSignedUrl(putUrl: string, blob: Blob) {
     headers: {
       'Content-Type': blob.type || 'application/octet-stream',
     },
-    transformRequest: [(data) => data as any],
+    transformRequest: [(data) => data as Blob],
     transitional: { clarifyTimeoutError: true },
     validateStatus: () => true,
   });
@@ -46,7 +54,7 @@ export type FinalizeAttachment = {
 };
 
 export async function finalize(attachments: FinalizeAttachment[], noteId?: string) {
-  const res = (await post('/attachments/finalize', { attachments, noteId })) as any;
+  const res = (await post('/attachments/finalize', { attachments, noteId })) as Record<string, any>;
   if (res.code !== 0) throw new Error(res.message || 'finalize failed');
-  return res.data as any[];
+  return (res.data as any[]) || [];
 }

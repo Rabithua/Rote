@@ -1,19 +1,23 @@
+import { ArticleCard } from '@/components/article/ArticleCard';
 import { TagSelector } from '@/components/others/TagSelector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import type { Attachment, Rote } from '@/types/main';
+import type { Article, Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
 import { finalize as finalizeUpload, presign, uploadToSignedUrl } from '@/utils/directUpload';
 // 压缩与并发工具
 import { useSiteStatus } from '@/hooks/useSiteStatus';
+import { listMyArticles } from '@/utils/articleApi';
 import { maybeCompressToWebp, qualityForSize, runConcurrency } from '@/utils/uploadHelpers';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import debounce from 'lodash/debounce';
-import { Archive, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
+import { Archive, BookOpen, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'react-photo-view/dist/react-photo-view.css';
 import { toast } from 'sonner';
+import { ArticleEditorModal } from '../article/ArticleEditorModal';
+import { ArticleSelectionModal } from '../article/ArticleSelectionModal';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import AttachmentList from './AttachmentList';
@@ -34,6 +38,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     !!siteStatus?.storage?.r2Configured && siteStatus?.ui?.allowUploadFile !== false;
 
   const [localContent, setLocalContent] = useState(rote.content);
+  const [articleModalOpen, setArticleModalOpen] = useState(false);
+  const [articleSelectionOpen, setArticleSelectionOpen] = useState(false);
+  const [availableArticles, setAvailableArticles] = useState<Article[]>([]);
+  // 选中的文章 ID（一对一，只能有一个）
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(
+    () => rote.articleId ?? rote.article?.id ?? null
+  );
 
   // 重置编辑器状态
   const resetEditor = useCallback(() => {
@@ -45,6 +56,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       archived: false,
       state: 'private' as const,
       reactions: [],
+      article: null,
+      articleId: null,
       id: '',
       author: {
         username: '',
@@ -59,6 +72,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     setRote(emptyRote);
     setLocalContent('');
     setUploadingFiles(new Set());
+    setSelectedArticleId(null);
   }, [setRote]);
 
   useEffect(() => {
@@ -66,6 +80,15 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       setLocalContent(rote.content);
     }
   }, [rote.content]);
+
+  // 同步选中的文章（仅当切换到不同的已存在笔记时）
+  // 新建笔记时不同步，避免覆盖用户选择的文章
+  useEffect(() => {
+    if (rote.id) {
+      // 只有编辑现有笔记时才从 rote 同步文章状态
+      setSelectedArticleId(rote.articleId ?? rote.article?.id ?? null);
+    }
+  }, [rote.id]);
 
   const debouncedUpdateContent = useMemo(
     () =>
@@ -80,6 +103,20 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   useEffect(() => () => debouncedUpdateContent.cancel(), [debouncedUpdateContent]);
 
+  const fetchArticles = useCallback(async () => {
+    try {
+      const list = await listMyArticles();
+      setAvailableArticles(list);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || t('sendFailed');
+      toast.error(msg);
+    }
+  }, [t]);
+
+  useEffect(() => {
+    void fetchArticles();
+  }, [fetchArticles]);
+
   const handleContentChange = useCallback(
     (content: string) => {
       setLocalContent(content);
@@ -87,6 +124,21 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     },
     [debouncedUpdateContent]
   );
+
+  // 选择文章（一对一绑定）
+  const selectArticle = useCallback((articleId: string) => {
+    setSelectedArticleId(articleId);
+  }, []);
+
+  // 移除绑定的文章
+  const removeArticle = useCallback(() => {
+    setSelectedArticleId(null);
+  }, []);
+
+  const handleArticleCreated = useCallback((article: Article) => {
+    setAvailableArticles((prev) => [article, ...prev]);
+    setSelectedArticleId(article.id);
+  }, []);
 
   // 删除附件：先本地移除（乐观），再静默调用后端删除
   const deleteFile = useCallback(
@@ -271,11 +323,18 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       .filter((a) => a.roteid === rote.id)
       .map((a) => a.id);
 
+    // 从 rote 中排除 article 字段，避免干扰请求
+
+    const { article: _article, ...roteWithoutArticle } = rote;
+
     const submitData: any = {
-      ...rote,
+      ...roteWithoutArticle,
       content: contentToSubmit.trim(),
       id: rote.id || undefined,
       attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
+      // 编辑时：如果 selectedArticleId 为 null，显式传 null 以删除绑定
+      // 新建时：如果 selectedArticleId 为 null，不传该字段
+      articleId: rote.id ? selectedArticleId : selectedArticleId || undefined,
     };
 
     const submitPromise = rote.id
@@ -324,7 +383,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       .finally(() => {
         setSubmitting(false);
       });
-  }, [localContent, rote, t, callback, setRote]);
+  }, [localContent, rote, t, callback, setRote, selectedArticleId, resetEditor]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -433,7 +492,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
 
   return (
-    <div className="bg-background grow space-y-2">
+    <div className="bg-background grow space-y-2 overflow-hidden">
       <Textarea
         value={localContent}
         placeholder={t('contentPlaceholder')}
@@ -460,6 +519,38 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           roteId={rote.id}
           disabled={submiting}
         />
+      )}
+
+      {/* 绑定的文章 - 一对一，只在有绑定时显示 */}
+      {selectedArticleId && (
+        <div className="space-y-2 overflow-hidden">
+          {(() => {
+            const article =
+              availableArticles.find((a) => a.id === selectedArticleId) || rote.article;
+            if (!article) return null;
+            return (
+              <div key={selectedArticleId} className="group relative overflow-hidden">
+                <ArticleCard
+                  article={article}
+                  articleId={selectedArticleId}
+                  className="w-full"
+                  enableViewer
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="absolute top-2 right-2 size-6 p-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeArticle();
+                  }}
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       <div className={`animate-show flex shrink-0 flex-wrap gap-2 opacity-0 duration-300`}>
@@ -507,6 +598,17 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
+            <BookOpen
+              className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
+                selectedArticleId ? 'bg-foreground/3' : ''
+              }`}
+              onClick={() => setArticleSelectionOpen(true)}
+            />
+          </TooltipTrigger>
+          <TooltipContent sideOffset={4}>{t('articleReference')}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Globe2
               className={`size-8 cursor-pointer rounded-md p-2 duration-300 ${
                 rote.state === 'public' ? 'bg-foreground/3' : ''
@@ -534,6 +636,27 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           <AlertDescription>{t('publicWarning')}</AlertDescription>
         </Alert>
       )}
+
+      <ArticleSelectionModal
+        open={articleSelectionOpen}
+        onOpenChange={setArticleSelectionOpen}
+        articles={availableArticles}
+        selectedId={selectedArticleId}
+        onSelect={selectArticle}
+        onCreateNew={() => {
+          setArticleSelectionOpen(false);
+          setArticleModalOpen(true);
+        }}
+      />
+
+      <ArticleEditorModal
+        open={articleModalOpen}
+        onOpenChange={setArticleModalOpen}
+        onCreated={(article) => {
+          handleArticleCreated(article);
+          void fetchArticles();
+        }}
+      />
     </div>
   );
 }

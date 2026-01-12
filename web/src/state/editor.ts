@@ -10,6 +10,8 @@ export const emptyRote: Rote = {
   archived: false,
   state: 'private',
   reactions: [],
+  article: null,
+  articleId: null,
   id: '',
   author: {
     username: '',

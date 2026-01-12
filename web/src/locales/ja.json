@@ -474,19 +474,31 @@
       "storage": {
         "title": "ストレージ設定",
         "description": "S3クラウドストレージ設定を構成",
-        "endpoint": "エンドポイント",
+        "storageType": "ストレージタイプ",
+        "storageTypeDescription": "Cloudflare R2 またはカスタム S3 互換ストレージ（Garage、MinIO、AWS S3 など）を選択",
+        "customEndpoint": "カスタム S3 (Garage/MinIO)",
+        "accountId": "R2 アカウント ID",
+        "accountIdPlaceholder": "your-r2-account-id",
+        "endpoint": "S3 エンドポイント",
+        "endpointPlaceholder": "http://localhost:3900",
+        "endpointDescription": "S3 API エンドポイントアドレス（例：Garage の http://localhost:3900）",
         "bucket": "バケット",
+        "bucketPlaceholder": "bucket-name",
         "accessKeyId": "アクセスキーID",
+        "accessKeyIdPlaceholder": "Access Key ID",
         "secretAccessKey": "シークレットアクセスキー",
+        "secretAccessKeyPlaceholder": "Secret Access Key",
         "region": "リージョン",
         "regionPlaceholder": "auto",
         "regionDescription": "S3リージョン、デフォルトは 'auto'",
         "urlPrefix": "URLプレフィックス",
+        "urlPrefixPlaceholder": "https://your-cdn-domain.com",
         "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（オプション）",
         "testConnection": "接続テスト",
         "testing": "テスト中...",
         "testSuccess": "ストレージ接続テスト成功！",
-        "testFailed": "接続テストに失敗しました：{{error}}"
+        "testFailed": "接続テストに失敗しました：{{error}}",
+        "fillAllRequired": "すべての必須フィールドを入力してください"
       },
       "ui": {
         "title": "UI設定",
@@ -642,12 +654,14 @@
       "contentPlaceholder": "Ctrl + ↵ で送信",
       "pin": "ピン留め",
       "archive": "アーカイブ",
+      "articleReference": "記事を参照",
       "send": "送信",
-      "uploadFailed": "アップロード失敗",
+      "uploadFailed": "添付ファイルのアップロードに失敗しました",
       "sending": "送信中...",
       "sendSuccess": "送信成功",
       "sendFailed": "送信失敗",
-      "publicWarning": "あなたのコンテンツは公開され、誰でも閲覧可能になります。",
+      "publicWarning": "あなたのコンテンツは公開され、誰でも閲覧できます。",
+      "referencedArticles": "参照された記事",
       "stateOptions": {
         "public": "公開",
         "private": "非公開"
@@ -705,6 +719,37 @@
     },
     "verifiedIcon": {
       "tooltip": "確認済みメールアドレス"
+    }
+  },
+  "article": {
+    "editor": {
+      "title": "記事を作成",
+      "editTitle": "記事を編集",
+      "editorLabel": "エディター",
+      "previewLabel": "プレビュー",
+      "previewPlaceholder": "プレビューがここに表示されます",
+      "contentPlaceholder": "# 記事タイトル",
+      "cancel": "キャンセル",
+      "save": "記事を保存",
+      "update": "記事を更新",
+      "emptyContent": "コンテンツは空にできません",
+      "needTitle": "コンテンツに一級見出し（# タイトル）を追加してください",
+      "createSuccess": "記事を作成しました",
+      "createFailed": "作成に失敗しました",
+      "updateSuccess": "記事を更新しました",
+      "updateFailed": "更新に失敗しました"
+    },
+    "selection": {
+      "title": "記事を選択",
+      "createNew": "記事を作成",
+      "createNewDesc": "新しいMarkdown記事を作成",
+      "noArticles": "記事がありません。上のボタンをクリックして作成してください"
+    },
+    "viewer": {
+      "title": "記事プレビュー",
+      "loadFailed": "記事の読み込みに失敗しました",
+      "notFound": "記事コンテンツが見つかりません",
+      "edit": "記事を編集"
     }
   },
   "common": {

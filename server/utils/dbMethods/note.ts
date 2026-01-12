@@ -6,6 +6,16 @@ import db from '../drizzle';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 
+// 文章查询配置常量
+const ARTICLE_QUERY = {
+  columns: {
+    id: true,
+    content: true,
+    createdAt: true,
+    updatedAt: true,
+  },
+};
+
 // 笔记相关方法
 export async function createRote(data: any): Promise<any> {
   try {
@@ -159,6 +169,7 @@ export async function findRoteById(id: string): Promise<any> {
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
     return rote || null;
@@ -201,6 +212,7 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
     return rotesList;
@@ -260,6 +272,7 @@ export async function editRote(data: any): Promise<any> {
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
 
@@ -402,6 +415,7 @@ export async function findMyRote(
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     };
 
@@ -448,6 +462,7 @@ export async function findUserPublicRote(
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
     return rotesList;
@@ -586,6 +601,7 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
 
@@ -748,6 +764,7 @@ export async function searchMyRotes(
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
     return rotesList;
@@ -791,6 +808,7 @@ export async function searchPublicRotes(
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
     return rotesList;
@@ -836,6 +854,7 @@ export async function searchUserPublicRotes(
             },
           },
         },
+        article: ARTICLE_QUERY,
       },
     });
     return rotesList;

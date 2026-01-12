@@ -121,6 +121,23 @@ export const userSwSubscriptions = pgTable(
   })
 );
 
+// Articles 表
+export const articles = pgTable(
+  'articles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    content: text('content').notNull(),
+    authorId: uuid('authorId')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    authorIdIdx: index('articles_authorId_idx').on(table.authorId),
+  })
+);
+
 // Rotes 表
 export const rotes = pgTable(
   'rotes',
@@ -133,6 +150,8 @@ export const rotes = pgTable(
     state: varchar('state', { length: 50 }).notNull().default('private'),
     archived: boolean('archived').notNull().default(false),
     authorid: uuid('authorid').notNull(),
+    // 单篇文章引用：可为空
+    articleId: uuid('articleId'),
     pin: boolean('pin').notNull().default(false),
     editor: varchar('editor', { length: 100 }).default('normal'),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
@@ -151,6 +170,13 @@ export const rotes = pgTable(
       foreignColumns: [users.id],
     })
       .onDelete('cascade')
+      .onUpdate('cascade'),
+    articleIdIdx: index('rotes_articleId_idx').on(table.articleId),
+    articleIdFk: foreignKey({
+      columns: [table.articleId],
+      foreignColumns: [articles.id],
+    })
+      .onDelete('set null')
       .onUpdate('cascade'),
   })
 );
@@ -280,11 +306,41 @@ export const roteChanges = pgTable(
   })
 );
 
-// 定义关系
+// User OAuth Bindings 表 - 支持多个 OAuth 绑定
+export const userOAuthBindings = pgTable(
+  'user_oauth_bindings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userid: uuid('userid').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull(), // 'github', 'apple', etc.
+    providerId: varchar('providerId', { length: 255 }).notNull(), // OAuth 提供商的用户 ID
+    providerUsername: varchar('providerUsername', { length: 255 }), // OAuth 提供商的用户名
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    useridIdx: index('user_oauth_bindings_userid_idx').on(table.userid),
+    providerIdx: index('user_oauth_bindings_provider_idx').on(table.provider),
+    providerIdIdx: index('user_oauth_bindings_providerId_idx').on(table.providerId),
+    // 唯一约束：同一用户不能重复绑定同一个提供商
+    uniqueUserProvider: unique('unique_user_provider').on(table.userid, table.provider),
+    // 唯一约束：同一提供商下的 providerId 唯一（防止一个 OAuth 账户绑定到多个用户）
+    uniqueProviderId: unique('unique_provider_id').on(table.provider, table.providerId),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+  })
+);
+
+// 关系定义
 export const usersRelations = relations(users, ({ one, many }) => ({
   attachments: many(attachments),
   userreaction: many(reactions),
   rotes: many(rotes),
+  articles: many(articles),
   openkey: many(userOpenKeys),
   usersetting: one(userSettings, {
     fields: [users.id],
@@ -320,6 +376,10 @@ export const rotesRelations = relations(rotes, ({ one, many }) => ({
     fields: [rotes.authorid],
     references: [users.id],
   }),
+  article: one(articles, {
+    fields: [rotes.articleId],
+    references: [articles.id],
+  }),
   attachments: many(attachments),
   reactions: many(reactions),
   changes: many(roteChanges),
@@ -354,6 +414,21 @@ export const roteChangesRelations = relations(roteChanges, ({ one }) => ({
   }),
 }));
 
+export const articlesRelations = relations(articles, ({ one, many }) => ({
+  author: one(users, {
+    fields: [articles.authorId],
+    references: [users.id],
+  }),
+  rotes: many(rotes),
+}));
+
+export const userOAuthBindingsRelations = relations(userOAuthBindings, ({ one }) => ({
+  user: one(users, {
+    fields: [userOAuthBindings.userid],
+    references: [users.id],
+  }),
+}));
+
 // 导出类型
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -372,45 +447,8 @@ export type NewReaction = typeof reactions.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
 export type RoteChange = typeof roteChanges.$inferSelect;
-// User OAuth Bindings 表 - 支持多个 OAuth 绑定
-export const userOAuthBindings = pgTable(
-  'user_oauth_bindings',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    userid: uuid('userid').notNull(),
-    provider: varchar('provider', { length: 50 }).notNull(), // 'github', 'apple', etc.
-    providerId: varchar('providerId', { length: 255 }).notNull(), // OAuth 提供商的用户 ID
-    providerUsername: varchar('providerUsername', { length: 255 }), // OAuth 提供商的用户名
-    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
-    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
-  },
-  (table) => ({
-    useridIdx: index('user_oauth_bindings_userid_idx').on(table.userid),
-    providerIdx: index('user_oauth_bindings_provider_idx').on(table.provider),
-    providerIdIdx: index('user_oauth_bindings_providerId_idx').on(table.providerId),
-    // 唯一约束：同一用户不能重复绑定同一个提供商
-    uniqueUserProvider: unique('unique_user_provider').on(table.userid, table.provider),
-    // 唯一约束：同一提供商下的 providerId 唯一（防止一个 OAuth 账户绑定到多个用户）
-    uniqueProviderId: unique('unique_provider_id').on(table.provider, table.providerId),
-    useridFk: foreignKey({
-      columns: [table.userid],
-      foreignColumns: [users.id],
-    })
-      .onDelete('cascade')
-      .onUpdate('cascade'),
-  })
-);
-
 export type NewRoteChange = typeof roteChanges.$inferInsert;
-
-// Relations
-export const userOAuthBindingsRelations = relations(userOAuthBindings, ({ one }) => ({
-  user: one(users, {
-    fields: [userOAuthBindings.userid],
-    references: [users.id],
-  }),
-}));
-
-// Types
+export type Article = typeof articles.$inferSelect;
+export type NewArticle = typeof articles.$inferInsert;
 export type UserOAuthBinding = typeof userOAuthBindings.$inferSelect;
 export type NewUserOAuthBinding = typeof userOAuthBindings.$inferInsert;

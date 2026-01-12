@@ -29,7 +29,9 @@ interface SetupConfig {
 
   // S3 存储配置（可选）
   s3Config: {
-    accountId: string;
+    useCustomEndpoint: boolean; // 是否使用自定义 endpoint（用于 Garage、MinIO 等）
+    accountId: string; // R2 Account ID（R2 模式）
+    endpoint: string; // 自定义 endpoint（自定义模式）
     accessKey: string;
     secretKey: string;
     bucket: string;
@@ -74,7 +76,9 @@ export default function SetupWizard() {
     siteDescription: '',
     frontendUrl: typeof window !== 'undefined' ? window.location.origin : '',
     s3Config: {
+      useCustomEndpoint: false,
       accountId: '',
+      endpoint: '',
       accessKey: '',
       secretKey: '',
       bucket: '',
@@ -132,7 +136,9 @@ export default function SetupWizard() {
         // S3 存储配置（可选）
         // 如果填写了部分字段，验证所有字段都必须填写
         const hasAnyS3Field =
-          config.s3Config.accountId.trim() ||
+          (config.s3Config.useCustomEndpoint
+            ? config.s3Config.endpoint.trim()
+            : config.s3Config.accountId.trim()) ||
           config.s3Config.accessKey.trim() ||
           config.s3Config.secretKey.trim() ||
           config.s3Config.bucket.trim() ||
@@ -140,8 +146,18 @@ export default function SetupWizard() {
 
         if (hasAnyS3Field) {
           // 如果填写了任何字段，则所有字段都必须填写
-          if (!config.s3Config.accountId.trim()) {
-            newErrors.accountId = 'required';
+          if (config.s3Config.useCustomEndpoint) {
+            // 自定义 endpoint 模式
+            if (!config.s3Config.endpoint.trim()) {
+              newErrors.endpoint = 'required';
+            } else if (!/^https?:\/\/.+/.test(config.s3Config.endpoint)) {
+              newErrors.endpoint = 'invalid';
+            }
+          } else {
+            // R2 模式
+            if (!config.s3Config.accountId.trim()) {
+              newErrors.accountId = 'required';
+            }
           }
           if (!config.s3Config.accessKey.trim()) {
             newErrors.accessKey = 'required';
@@ -232,10 +248,19 @@ export default function SetupWizard() {
       };
 
       // 如果填写了 S3 配置，则添加存储配置
-      if (config.s3Config.accountId && config.s3Config.bucket) {
+      const hasS3Config = config.s3Config.useCustomEndpoint
+        ? config.s3Config.endpoint && config.s3Config.bucket
+        : config.s3Config.accountId && config.s3Config.bucket;
+
+      if (hasS3Config) {
+        // 根据模式确定 endpoint
+        const endpoint = config.s3Config.useCustomEndpoint
+          ? config.s3Config.endpoint
+          : `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`;
+
         setupData.storage = {
           type: 's3',
-          endpoint: `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`,
+          endpoint,
           bucket: config.s3Config.bucket,
           accessKeyId: config.s3Config.accessKey,
           secretAccessKey: config.s3Config.secretKey,
@@ -267,20 +292,30 @@ export default function SetupWizard() {
 
   // 测试 S3 连接
   const handleTestConnection = async () => {
-    if (
-      !config.s3Config.accountId ||
-      !config.s3Config.accessKey ||
-      !config.s3Config.secretKey ||
-      !config.s3Config.bucket
-    ) {
+    const hasRequiredFields = config.s3Config.useCustomEndpoint
+      ? config.s3Config.endpoint &&
+        config.s3Config.accessKey &&
+        config.s3Config.secretKey &&
+        config.s3Config.bucket
+      : config.s3Config.accountId &&
+        config.s3Config.accessKey &&
+        config.s3Config.secretKey &&
+        config.s3Config.bucket;
+
+    if (!hasRequiredFields) {
       toast.error(t('pages.setupWizard.toasts.pleaseFillS3'));
       return;
     }
 
     setIsTesting(true);
     try {
+      // 根据模式确定 endpoint
+      const endpoint = config.s3Config.useCustomEndpoint
+        ? config.s3Config.endpoint
+        : `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`;
+
       const testData = {
-        endpoint: `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`,
+        endpoint,
         bucket: config.s3Config.bucket,
         accessKeyId: config.s3Config.accessKey,
         secretAccessKey: config.s3Config.secretKey,
@@ -377,25 +412,90 @@ export default function SetupWizard() {
 
             <Divider />
 
+            {/* 存储类型切换 */}
             <div className="space-y-2">
-              <Label htmlFor="accountId">{t('pages.setupWizard.labels.accountId')}</Label>
-              <Input
-                id="accountId"
-                value={config.s3Config.accountId}
-                onChange={(e) =>
-                  updateConfig({
-                    s3Config: { ...config.s3Config, accountId: e.target.value },
-                  })
-                }
-                placeholder={t('pages.setupWizard.placeholders.accountId')}
-                className={errors.accountId ? 'border-destructive' : ''}
-              />
-              {errors.accountId && (
-                <p className="text-destructive text-sm">
-                  {t('pages.setupWizard.validation.accountIdRequired')}
-                </p>
-              )}
+              <Label>{t('pages.setupWizard.labels.storageType')}</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={!config.s3Config.useCustomEndpoint ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() =>
+                    updateConfig({
+                      s3Config: { ...config.s3Config, useCustomEndpoint: false },
+                    })
+                  }
+                >
+                  Cloudflare R2
+                </Button>
+                <Button
+                  type="button"
+                  variant={config.s3Config.useCustomEndpoint ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() =>
+                    updateConfig({
+                      s3Config: { ...config.s3Config, useCustomEndpoint: true },
+                    })
+                  }
+                >
+                  {t('pages.setupWizard.labels.customEndpoint')}
+                </Button>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {t('pages.setupWizard.descriptions.storageType')}
+              </p>
             </div>
+
+            {/* R2 模式：Account ID */}
+            {!config.s3Config.useCustomEndpoint && (
+              <div className="space-y-2">
+                <Label htmlFor="accountId">{t('pages.setupWizard.labels.accountId')}</Label>
+                <Input
+                  id="accountId"
+                  value={config.s3Config.accountId}
+                  onChange={(e) =>
+                    updateConfig({
+                      s3Config: { ...config.s3Config, accountId: e.target.value },
+                    })
+                  }
+                  placeholder={t('pages.setupWizard.placeholders.accountId')}
+                  className={errors.accountId ? 'border-destructive' : ''}
+                />
+                {errors.accountId && (
+                  <p className="text-destructive text-sm">
+                    {t('pages.setupWizard.validation.accountIdRequired')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* 自定义 Endpoint 模式 */}
+            {config.s3Config.useCustomEndpoint && (
+              <div className="space-y-2">
+                <Label htmlFor="endpoint">{t('pages.setupWizard.labels.endpoint')}</Label>
+                <Input
+                  id="endpoint"
+                  value={config.s3Config.endpoint}
+                  onChange={(e) =>
+                    updateConfig({
+                      s3Config: { ...config.s3Config, endpoint: e.target.value },
+                    })
+                  }
+                  placeholder={t('pages.setupWizard.placeholders.endpoint')}
+                  className={errors.endpoint ? 'border-destructive' : ''}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t('pages.setupWizard.descriptions.endpoint')}
+                </p>
+                {errors.endpoint && (
+                  <p className="text-destructive text-sm">
+                    {errors.endpoint === 'required'
+                      ? t('pages.setupWizard.validation.endpointRequired')
+                      : t('pages.setupWizard.validation.endpointInvalid')}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="accessKey">{t('pages.setupWizard.labels.accessKey')}</Label>
