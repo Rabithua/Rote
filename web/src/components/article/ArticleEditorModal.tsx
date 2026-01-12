@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Article } from '@/types/main';
 import { createArticle, updateArticle } from '@/utils/articleApi';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -34,14 +34,25 @@ export function ArticleEditorModal({ open, onOpenChange, onCreated, article, onU
     setContent('');
   };
 
-  useEffect(() => {
-    if (open && article) {
-      // 编辑模式：加载文章内容
+  // 使用 ref 追踪上一次的 open 和 article 状态，在渲染时同步更新 content
+  const prevOpenRef = useRef(open);
+  const prevArticleIdRef = useRef(article?.id);
+
+  // 在渲染时直接调整 state，避免 useEffect 中的 prop 变化触发 state 更新
+  if (open && !prevOpenRef.current) {
+    // Dialog 刚打开
+    if (article) {
       setContent(article.content || '');
-    } else if (!open) {
-      reset();
     }
-  }, [open, article]);
+  } else if (open && article && article.id !== prevArticleIdRef.current) {
+    // 切换到不同的文章
+    setContent(article.content || '');
+  } else if (!open && prevOpenRef.current) {
+    // Dialog 关闭时重置
+    reset();
+  }
+  prevOpenRef.current = open;
+  prevArticleIdRef.current = article?.id;
 
   const onSubmit = async () => {
     if (!content.trim()) {
