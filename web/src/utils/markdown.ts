@@ -1,3 +1,5 @@
+// 封面图提取：复用 markdownParser.ts 的实现
+export { extractFirstImageFromMarkdown } from './markdownParser';
 // 从 Markdown content 中解析标题和摘要
 
 function stripMarkdownInline(text: string): string {
@@ -51,17 +53,6 @@ export function extractSummaryFromMarkdown(content: string): string {
     if (t) return t.slice(0, 150);
   }
   return '';
-}
-
-// 从 Markdown 内容中提取第一张图片的 URL
-export function extractFirstImageFromMarkdown(content: string): string | null {
-  // 匹配 Markdown 图片语法: ![alt](url)
-  const markdownImageRegex = /!\[[^\]]*\]\(([^)]+)\)/;
-  const match = content.match(markdownImageRegex);
-  if (match && match[1]) {
-    return match[1].trim();
-  }
-  return null;
 }
 
 // 解析 Markdown 内容的 title 和 summary
