@@ -66,7 +66,7 @@ export function ArticleViewerModal({
       <Skeleton className="h-[50vh] w-full" />
     </div>
   ) : article ? (
-    <div className="prose prose-sm dark:prose-invert noScrollBar max-w-none flex-1 overflow-y-auto py-6">
+    <div className="prose prose-sm dark:prose-invert noScrollBar max-h-[80vh] max-w-none flex-1 overflow-scroll overflow-y-auto py-6">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
     </div>
   ) : (
@@ -77,7 +77,7 @@ export function ArticleViewerModal({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogTitle className="hidden px-6 pt-4 text-lg font-semibold">{t('title')}</DialogTitle>
-        <DialogContent className="max-w-screen rounded-none sm:max-w-3xl md:h-[90vh]">
+        <DialogContent className="max-w-screen rounded-none sm:max-w-3xl">
           {editable && article && (
             <div className="absolute right-12 bottom-12 z-1">
               <Button

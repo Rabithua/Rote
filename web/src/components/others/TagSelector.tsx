@@ -86,7 +86,7 @@ export function TagSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[120px] justify-between overflow-hidden sm:w-[160px]"
+          className="w-25 justify-between overflow-hidden sm:w-40"
           style={{ textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
           <span className="flex-1 overflow-hidden text-left text-ellipsis whitespace-nowrap">
@@ -95,7 +95,7 @@ export function TagSelector({
           <ChevronsUpDown className="ml-2 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="h-50 w-[140px] p-0">
+      <PopoverContent className="h-50 w-35 p-0">
         <Command>
           <CommandInput
             placeholder={t('searchTags')}
@@ -106,10 +106,20 @@ export function TagSelector({
           <CommandList>
             <CommandGroup>
               {availableTags?.map((tag) => (
-                <CommandItem key={tag} value={tag} onSelect={() => handleTagSelect(tag)}>
-                  {tag}
+                <CommandItem
+                  key={tag}
+                  value={tag}
+                  onSelect={() => handleTagSelect(tag)}
+                  className="flex flex-1"
+                >
+                  <div className="inline-block max-w-40 overflow-hidden text-ellipsis whitespace-nowrap">
+                    {tag}
+                  </div>
                   <Check
-                    className={cn('ml-auto', tags.includes(tag) ? 'opacity-100' : 'opacity-0')}
+                    className={cn(
+                      'ml-auto shrink-0',
+                      tags.includes(tag) ? 'opacity-100' : 'opacity-0'
+                    )}
                   />
                 </CommandItem>
               ))}
