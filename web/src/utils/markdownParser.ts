@@ -1,4 +1,28 @@
 /**
+ * 从Markdown内容中提取第一张图片的URL
+ * 规则：匹配第一个 ![alt](url) 语法，返回 url
+ * @param content Markdown内容
+ * @returns 图片URL或null
+ */
+/**
+ * 提取 Markdown 首张图片 URL，兼容行首有空白符、列表符号等
+ * @param content Markdown内容
+ * @returns 图片URL或null
+ */
+export function extractFirstImageFromMarkdown(content: string): string | null {
+  if (!content) return null;
+  const lines = content.split(/\r?\n/);
+  // 支持行首有空格、tab、-、*、> 等
+  const imageRegex = /^[\s>*-]*!\[[^\]]*\]\(([^)]+)\)/;
+  for (const raw of lines) {
+    const match = raw.match(imageRegex);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  return null;
+}
+/**
  * 从Markdown内容中提取标题和摘要
  * 规则与后端保持一致，确保前后端解析结果相同
  */
