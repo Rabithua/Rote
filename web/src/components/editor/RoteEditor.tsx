@@ -566,7 +566,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         ))}
       </div>
 
-      <div className="noScrollBar flex flex-wrap items-center gap-2 overflow-x-scroll">
+      <div className="noScrollBar flex flex-wrap items-center gap-1 overflow-x-scroll sm:gap-2">
         <TagSelector
           tags={rote.tags}
           setTags={updateTags}
