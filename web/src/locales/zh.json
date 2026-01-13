@@ -198,6 +198,13 @@
       "editFailed": "修改失败",
       "sideBarTitle": "除了这些...还有",
       "settings": {
+        "themeLabel": "颜色模式",
+        "themeDescription": "选择深色、浅色或跟随系统。",
+        "themeSystem": "跟随系统",
+        "themeLight": "浅色模式",
+        "themeDark": "深色模式",
+        "languageLabel": "界面语言",
+        "languageDescription": "选择界面显示语言。",
         "title": "额外设置",
         "allowExploreLabel": "允许我的公开笔记出现在探索页",
         "allowExploreDescription": "关闭后，你的公开笔记仍然可以通过链接访问，但不会在「探索」页面中被推荐展示。",

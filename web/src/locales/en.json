@@ -204,6 +204,13 @@
       "editFailed": "Edit failed",
       "sideBarTitle": "Besides... there are also",
       "settings": {
+        "themeLabel": "Theme Mode",
+        "themeDescription": "Choose dark, light, or follow system.",
+        "themeSystem": "System",
+        "themeLight": "Light",
+        "themeDark": "Dark",
+        "languageLabel": "Language",
+        "languageDescription": "Select the interface language.",
         "title": "Additional Settings",
         "allowExploreLabel": "Allow my public notes to appear in Explore",
         "allowExploreDescription": "When turned off, your public notes are still accessible via direct links, but will not be recommended in the Explore page.",

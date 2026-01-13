@@ -204,6 +204,13 @@
       "editFailed": "編集失敗",
       "sideBarTitle": "さらに... 他にも",
       "settings": {
+        "themeLabel": "テーマモード",
+        "themeDescription": "ダーク・ライト・システムから選択できます。",
+        "themeSystem": "システムに従う",
+        "themeLight": "ライトモード",
+        "themeDark": "ダークモード",
+        "languageLabel": "言語",
+        "languageDescription": "インターフェースの表示言語を選択します。",
         "title": "追加設定",
         "allowExploreLabel": "公開ノートを探索ページに表示する",
         "allowExploreDescription": "オフにすると、公開ノートは直接リンクでアクセス可能ですが、探索ページでは推奨されません。",
