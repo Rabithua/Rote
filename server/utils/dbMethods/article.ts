@@ -1,11 +1,33 @@
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
-import { articles, rotes } from '../../drizzle/schema';
+import { type Article, articles, rotes } from '../../drizzle/schema';
 import db from '../drizzle';
 import { parseMarkdownMeta } from '../markdown';
 import { DatabaseError } from './common';
 
+export interface ArticleMeta {
+  title: string;
+  summary: string;
+}
+
+export type ArticleWithMeta = Article & ArticleMeta;
+
+export type ArticleAuthor = {
+  username: string;
+  nickname: string | null;
+  avatar: string | null;
+  emailVerified: boolean;
+};
+
+export type ArticleWithAuthor = ArticleWithMeta & {
+  author: ArticleAuthor;
+};
+
 // 设置笔记的文章绑定（一对一关系）
-export async function setNoteArticleId(noteId: string, articleId: string | null, authorId: string) {
+export async function setNoteArticleId(
+  noteId: string,
+  articleId: string | null,
+  authorId: string
+): Promise<void> {
   try {
     const note = await db.query.rotes.findFirst({
       where: (tbl, { eq }) => eq(tbl.id, noteId),
@@ -29,7 +51,10 @@ export async function setNoteArticleId(noteId: string, articleId: string | null,
 }
 
 // 创建文章
-export async function createArticle(data: { content: string; authorId: string }) {
+export async function createArticle(data: {
+  content: string;
+  authorId: string;
+}): Promise<ArticleWithMeta> {
   try {
     const [article] = await db
       .insert(articles)
@@ -46,14 +71,18 @@ export async function createArticle(data: { content: string; authorId: string })
 
     // 补充计算字段
     const meta = parseMarkdownMeta(article.content);
-    return { ...article, ...meta } as any;
+    return { ...article, ...meta };
   } catch (error: any) {
     throw new DatabaseError('Failed to create article', error);
   }
 }
 
 // 更新文章
-export async function updateArticle(data: { id: string; authorId: string; content?: string }) {
+export async function updateArticle(data: {
+  id: string;
+  authorId: string;
+  content?: string;
+}): Promise<ArticleWithMeta | null> {
   try {
     const { id, authorId, ...rest } = data;
     const [article] = await db
@@ -67,14 +96,17 @@ export async function updateArticle(data: { id: string; authorId: string; conten
 
     if (!article) return null;
     const meta = parseMarkdownMeta(article.content);
-    return { ...article, ...meta } as any;
+    return { ...article, ...meta };
   } catch (error: any) {
     throw new DatabaseError(`Failed to update article: ${data.id}`, error);
   }
 }
 
 // 删除文章
-export async function deleteArticle(data: { id: string; authorId: string }) {
+export async function deleteArticle(data: {
+  id: string;
+  authorId: string;
+}): Promise<Article | null> {
   try {
     const [article] = await db
       .delete(articles)
@@ -87,7 +119,7 @@ export async function deleteArticle(data: { id: string; authorId: string }) {
 }
 
 // 获取单篇文章（包含作者基础字段）
-export async function findArticleById(id: string) {
+export async function findArticleById(id: string): Promise<ArticleWithAuthor | null> {
   try {
     const article = await db.query.articles.findFirst({
       where: (tbl, { eq }) => eq(tbl.id, id),
@@ -104,7 +136,7 @@ export async function findArticleById(id: string) {
     });
     if (!article) return null;
     const meta = parseMarkdownMeta(article.content);
-    return { ...article, ...meta } as any;
+    return { ...article, ...meta };
   } catch (error: any) {
     throw new DatabaseError(`Failed to find article by id: ${id}`, error);
   }
@@ -114,7 +146,7 @@ export async function findArticleById(id: string) {
 export async function listMyArticles(
   authorId: string,
   params?: { skip?: number; limit?: number; keyword?: string }
-) {
+): Promise<ArticleWithMeta[]> {
   try {
     const { skip, limit, keyword } = params || {};
 
@@ -131,14 +163,14 @@ export async function listMyArticles(
       .offset(skip ?? 0);
 
     // 为列表补充 title/summary 计算字段
-    return result.map((a) => ({ ...a, ...parseMarkdownMeta(a.content) })) as any[];
+    return result.map((a) => ({ ...a, ...parseMarkdownMeta(a.content) }));
   } catch (error: any) {
     throw new DatabaseError('Failed to list articles', error);
   }
 }
 
 // 校验文章归属
-export async function findArticlesByIds(ids: string[], authorId?: string) {
+export async function findArticlesByIds(ids: string[], authorId?: string): Promise<Article[]> {
   try {
     if (!ids.length) return [];
     const whereClause = authorId
@@ -157,7 +189,7 @@ export async function replaceNoteArticleRefs(
   noteId: string,
   articleIds: string[],
   authorId: string
-) {
+): Promise<void> {
   if (Array.isArray(articleIds) && articleIds.length > 1) {
     throw new Error('Only one article is allowed per note');
   }
@@ -166,7 +198,7 @@ export async function replaceNoteArticleRefs(
 }
 
 // 获取某个笔记下的文章引用（简略字段）
-export async function getNoteArticleCard(noteId: string) {
+export async function getNoteArticleCard(noteId: string): Promise<ArticleWithAuthor | null> {
   try {
     const note = await db.query.rotes.findFirst({
       where: (tbl, { eq }) => eq(tbl.id, noteId),
@@ -197,15 +229,17 @@ export async function getNoteArticleCard(noteId: string) {
     if (!article) return null;
 
     const meta = parseMarkdownMeta(article.content);
-    const { content: _content, ...restArticle } = article as any;
-    return { ...restArticle, ...meta } as any;
+    return { ...article, ...meta };
   } catch (error: any) {
     throw new DatabaseError('Failed to get note article', error);
   }
 }
 
 // 获取某个笔记上下文中的文章全文（必须存在引用）
-export async function getArticleInNoteContext(articleId: string, noteId: string) {
+export async function getArticleInNoteContext(
+  articleId: string,
+  noteId: string
+): Promise<ArticleWithAuthor | null> {
   try {
     const note = await db.query.rotes.findFirst({
       where: (tbl, { eq }) => eq(tbl.id, noteId),
@@ -229,7 +263,7 @@ export async function getArticleInNoteContext(articleId: string, noteId: string)
     });
     if (!article) return null;
     const meta = parseMarkdownMeta(article.content);
-    return { ...article, ...meta } as any;
+    return { ...article, ...meta };
   } catch (error: any) {
     throw new DatabaseError('Failed to get article in note context', error);
   }
