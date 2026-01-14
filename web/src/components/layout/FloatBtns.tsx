@@ -1,5 +1,6 @@
 import { ArrowUp } from 'lucide-react';
 import { type ReactNode } from 'react';
+import { Button } from '../ui/button';
 
 export default function FloatBtns({
   scrollContainerName,
@@ -24,12 +25,9 @@ export default function FloatBtns({
     <div className="animate-show fixed right-8 bottom-16 z-10 flex flex-col gap-2 self-end duration-300">
       {/* 渲染子组件 */}
       {children}
-      <div
-        className="bg-primary text-primary-foreground w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105"
-        onClick={goTop}
-      >
+      <Button onClick={goTop}>
         <ArrowUp className="size-4" />
-      </div>
+      </Button>
     </div>
   );
 }

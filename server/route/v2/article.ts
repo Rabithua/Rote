@@ -7,8 +7,8 @@ import {
   deleteArticle,
   findArticleById,
   findRoteById,
-  getArticleInNoteContext,
   getNoteArticleCard,
+  getNoteByArticleId,
   listMyArticles,
   setNoteArticleId,
   updateArticle,
@@ -114,42 +114,34 @@ articlesRouter.get('/by-note/:noteId', optionalJWT, async (c: HonoContext) => {
   return c.json(createResponse(article), 200);
 });
 
-// 获取文章全文（需要上下文 noteId 或作者权限）
+// 获取文章全文（作者可直接访问，非作者自动查找公开笔记引用并返回笔记数据）
 articlesRouter.get('/:id', optionalJWT, async (c: HonoContext) => {
   const user = c.get('user') as User | undefined;
   const id = c.req.param('id');
-  const noteId = c.req.query('noteId');
 
   if (!id || !isValidUUID(id)) {
     throw new Error('Invalid or missing ID');
   }
 
   const article = await findArticleById(id);
+
   if (!article) {
     throw new Error('Article not found');
   }
 
-  // 作者可直接访问
+  const note = await getNoteByArticleId(id);
+
+  // 作者可直接访问，返回文章和其关联的笔记（如有）
   if (user && article.authorId === user.id) {
-    return c.json(createResponse(article), 200);
+    return c.json(createResponse({ ...article, note }), 200);
   }
 
-  // 非作者必须提供 noteId，并且该笔记可访问且包含引用
-  if (!noteId || !isValidUUID(noteId)) {
-    throw new Error('noteId is required to access this article');
+  if (!note || note.state !== 'public') {
+    throw new Error('Access denied: no public note references this article');
   }
 
-  const note = await findRoteById(noteId);
-  if (!isNoteAccessible(note, user || null)) {
-    throw new Error('Access denied: note is private');
-  }
-
-  const articleInContext = await getArticleInNoteContext(id, noteId);
-  if (!articleInContext) {
-    throw new Error('Article is not referenced by the specified note');
-  }
-
-  return c.json(createResponse(articleInContext), 200);
+  // 返回文章和公开笔记数据
+  return c.json(createResponse({ ...article, note }), 200);
 });
 
 // 更新笔记与文章引用（仅作者，一对一绑定）

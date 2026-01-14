@@ -9,6 +9,7 @@ import AdminDashboard from '@/pages/admin';
 import PrivacyPolicyPage from '@/pages/app/privacy';
 import TermsOfServicePage from '@/pages/app/terms';
 import ArchivedPage from '@/pages/archived';
+import ArticleDetailPage from '@/pages/article/:articleid';
 import SelfhostedGuidePage from '@/pages/doc/selfhosted';
 import ExperimentPage from '@/pages/experiment';
 import ExplorePage from '@/pages/explore';
@@ -135,6 +136,16 @@ export default function GlobalRouterProvider() {
                 {
                   path: ':roteid',
                   element: <SingleRotePage />,
+                },
+              ],
+            },
+            {
+              path: 'article',
+              errorElement: <ErrorPage />,
+              children: [
+                {
+                  path: ':articleid',
+                  element: <ArticleDetailPage />,
                 },
               ],
             },

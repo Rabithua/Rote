@@ -272,6 +272,10 @@
     "rote": {
       "sideBarTitle": "Relative Information"
     },
+    "article": {
+      "sideBarTitle": "Relative Information",
+      "relatedNote": "Related Note"
+    },
     "user": {
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time: ",

@@ -936,3 +936,45 @@ export async function getAllPublicRssData(limit = 20): Promise<{ notes: any[] }>
     throw new DatabaseError('获取所有公开笔记RSS数据失败', error);
   }
 }
+
+// 根据文章ID查找公开且未归档的笔记（用于文章公开访问）
+export async function getNoteByArticleId(articleId: string): Promise<any> {
+  try {
+    if (!articleId) return null;
+    // 查找公开且未归档且 articleId 匹配的笔记
+    const note = await db.query.rotes.findFirst({
+      where: (rotes, { eq, and }) => and(eq(rotes.articleId, articleId), eq(rotes.archived, false)),
+      with: {
+        author: {
+          columns: {
+            username: true,
+            nickname: true,
+            avatar: true,
+            emailVerified: true,
+          },
+        },
+        attachments: {
+          orderBy: (attachments, { asc }) => [
+            asc(attachments.sortIndex),
+            asc(attachments.createdAt),
+          ],
+        },
+        reactions: {
+          with: {
+            user: {
+              columns: {
+                username: true,
+                nickname: true,
+                avatar: true,
+              },
+            },
+          },
+        },
+        article: ARTICLE_QUERY,
+      },
+    });
+    return note || null;
+  } catch (error) {
+    throw new DatabaseError('Failed to find public note by articleId', error);
+  }
+}
