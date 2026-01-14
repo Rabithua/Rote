@@ -2,7 +2,7 @@ import { Divider } from '@/components/ui/divider';
 import { Switch } from '@/components/ui/switch';
 import { API_POINT, del, post } from '@/utils/api';
 import { checkPermission, registerSW, requestNotificationPermission } from '@/utils/main';
-import { Bell, Loader2 } from 'lucide-react';
+import { Bell, Loader } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -184,7 +184,7 @@ export default function ServiceWorker() {
             }}
           >
             {sending ? (
-              <Loader2 className="mr-2 size-4 animate-spin" />
+              <Loader className="mr-2 size-4 animate-spin" />
             ) : (
               <Bell className="mr-2 size-4" />
             )}
