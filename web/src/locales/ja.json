@@ -272,6 +272,10 @@
     "rote": {
       "sideBarTitle": "関連情報"
     },
+    "article": {
+      "sideBarTitle": "関連情報",
+      "relatedNote": "関連ノート"
+    },
     "user": {
       "noDescription": "この人は怠け者で、まだ説明を残していません...",
       "registerTime": "登録時間：",

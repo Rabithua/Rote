@@ -1,8 +1,8 @@
 import type { Article, ArticleSummary } from '@/types/main';
 import { extractFirstImageFromMarkdown, parseMarkdownMeta } from '@/utils/markdown';
 import { Check, Newspaper } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { ArticleViewerModal } from './ArticleViewerModal';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface ArticleCardProps {
   article: Article | ArticleSummary;
@@ -26,9 +26,8 @@ export function ArticleCard({
   showCheckmark = false,
   className = '',
   enableViewer = false,
-  noteId,
 }: ArticleCardProps) {
-  const [viewerOpen, setViewerOpen] = useState(false);
+  const navigate = useNavigate();
   const resolvedArticleId = articleId ?? article.id;
 
   // 从 content 中解析 title、summary 和封面图片
@@ -42,10 +41,8 @@ export function ArticleCard({
   const handleClick = () => {
     if (onClick) {
       onClick();
-    } else if (enableViewer) {
-      if (resolvedArticleId) {
-        setViewerOpen(true);
-      }
+    } else if (enableViewer && resolvedArticleId) {
+      navigate(`/article/${resolvedArticleId}`);
     }
   };
 
@@ -87,15 +84,7 @@ export function ArticleCard({
         {showCheckmark && isSelected && <Check className="text-primary size-6 shrink-0" />}
       </div>
 
-      {enableViewer && resolvedArticleId && (
-        <ArticleViewerModal
-          articleId={resolvedArticleId}
-          noteId={noteId}
-          open={viewerOpen}
-          editable
-          onOpenChange={setViewerOpen}
-        />
-      )}
+      {/* 文章详情页已独立，不再弹窗展示 */}
     </>
   );
 }

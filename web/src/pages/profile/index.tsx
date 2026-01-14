@@ -54,6 +54,7 @@ function ProfilePage() {
   const loadProfile = useSetAtom(loadProfileAtom);
   const loadUserSettings = useSetAtom(loadUserSettingsAtom);
   const patchProfile = useSetAtom(patchProfileAtom);
+
   useEffect(() => {
     if (!profile) {
       loadProfile();

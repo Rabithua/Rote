@@ -1,0 +1,158 @@
+import { ArticleEditorModal } from '@/components/article/ArticleEditorModal';
+import { VerifiedIcon } from '@/components/icons/Verified';
+import FloatBtns from '@/components/layout/FloatBtns';
+import NavBar from '@/components/layout/navBar';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import UserAvatar from '@/components/others/UserAvatar';
+import { Button } from '@/components/ui/button';
+import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { profileAtom } from '@/state/profile';
+import { API_URL, get } from '@/utils/api';
+import { useAPIGet } from '@/utils/fetcher';
+import { useAtomValue } from 'jotai';
+import { ArrowUpRight, Navigation, PenBox, RefreshCw, Rss } from 'lucide-react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import remarkGfm from 'remark-gfm';
+
+function ArticleDetailPage() {
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.article' });
+  const navigate = useNavigate();
+  const { articleid } = useParams();
+  const profile = useAtomValue(profileAtom);
+
+  const {
+    data: article,
+    isLoading,
+    mutate,
+    isValidating,
+  } = useAPIGet<any>(articleid || '', () => get('/articles/' + articleid).then((res) => res.data), {
+    onError: (err: any) => {
+      const hasResponse = err?.response !== undefined;
+      const status = err?.response?.status;
+      if (!hasResponse || (status && status >= 400)) {
+        navigate('/404');
+      }
+    },
+  });
+
+  const refreshData = () => {
+    if (isLoading || isValidating) {
+      return;
+    }
+    mutate();
+  };
+
+  const SideBar = () =>
+    isLoading ? (
+      <LoadingPlaceholder className="py-8" size={6} />
+    ) : (
+      <div className="">
+        {article?.author && (
+          <div className="border-b p-4">
+            <Link to={`/${article.author.username}`} className="block">
+              <div className="flex items-center gap-3">
+                <UserAvatar
+                  avatar={article.author.avatar}
+                  className="bg-foreground/5 text-primary size-12"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-primary inline-flex items-center gap-1 truncate font-semibold">
+                    {article.author.nickname}
+                    {article.author.emailVerified && (
+                      <VerifiedIcon className="text-theme size-4 shrink-0" />
+                    )}
+                  </div>
+                  <div className="text-info truncate text-sm">@{article.author.username}</div>
+                </div>
+              </div>
+            </Link>
+          </div>
+        )}
+        <div className="grid grid-cols-3 divide-x border-b">
+          <a
+            href={`${API_URL}/rss/${article?.author?.username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-foreground/3 flex cursor-pointer items-center justify-center gap-2 py-4"
+          >
+            <Rss className="size-5" />
+            <div className="text-xl">RSS</div>
+          </a>
+          <div className="flex items-center justify-center gap-2 py-4">
+            <div className="text-xl">☝️</div>
+          </div>
+          <div className="flex items-center justify-center gap-2 py-4">
+            <div className="text-xl">🤓</div>
+          </div>
+        </div>
+      </div>
+    );
+
+  const [editorOpen, setEditorOpen] = useState(false);
+
+  return isLoading ? (
+    <LoadingPlaceholder className="py-16" size={6} />
+  ) : article ? (
+    <>
+      <ContainerWithSideBar
+        sidebar={<SideBar />}
+        sidebarHeader={
+          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+            <Navigation className="size-5" />
+            <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
+          </div>
+        }
+        className="pb-16"
+      >
+        <NavBar onNavClick={refreshData}>
+          {isLoading ||
+            (isValidating && (
+              <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
+            ))}
+        </NavBar>
+        <div className="divide-y">
+          <div className="prose prose-sm dark:prose-invert max-w-full p-4">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
+          </div>
+          {article.note && (
+            <Link
+              to={`/rote/${article.note.id}`}
+              className="block p-4 text-sm font-light hover:underline"
+            >
+              {t('relatedNote')}: {article.note.content}
+              <ArrowUpRight className="inline size-4" />
+            </Link>
+          )}
+        </div>
+        {/* 浮动操作按钮区，编辑按钮注入 */}
+        <FloatBtns>
+          {profile && article.author && profile.username === article.author.username && (
+            <Button onClick={() => setEditorOpen(true)}>
+              <PenBox className="size-4" />
+            </Button>
+          )}
+        </FloatBtns>
+      </ContainerWithSideBar>
+      {/* 编辑弹窗，仅本人可见 */}
+      {profile && article.author && profile.username === article.author.username && (
+        <ArticleEditorModal
+          open={editorOpen}
+          onOpenChange={(open) => {
+            setEditorOpen(open);
+            if (!open) refreshData();
+          }}
+          article={article}
+          onUpdated={() => {
+            refreshData();
+            setEditorOpen(false);
+          }}
+        />
+      )}
+    </>
+  ) : null;
+}
+
+export default ArticleDetailPage;

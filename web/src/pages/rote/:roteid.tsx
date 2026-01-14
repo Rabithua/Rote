@@ -105,7 +105,7 @@ function SingleRotePage() {
             </Link>
           </div>
         )}
-        <div className="grid grid-cols-3 divide-x-1 border-b">
+        <div className="grid grid-cols-3 divide-x border-b">
           <a
             href={`${API_URL}/rss/${rote?.author?.username}`}
             target="_blank"

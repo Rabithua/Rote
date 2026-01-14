@@ -121,7 +121,7 @@ export default function SubList() {
   };
 
   return (
-    <div className="divide-y-1">
+    <div className="divide-y">
       {isLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
       ) : error ? (
@@ -151,7 +151,7 @@ export default function SubList() {
               {t('testAllEndpoints')}
             </Button>
           </div>
-          <div className="relative divide-y-1">
+          <div className="relative divide-y">
             {data && Array.isArray(data) && data.length > 0 ? (
               data.map((item: Subscription) => (
                 <div key={item.id} className="space-y-2 p-2">

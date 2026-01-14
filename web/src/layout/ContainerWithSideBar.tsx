@@ -20,15 +20,15 @@ function ContainerWithSideBar({
   const [drawOpen, setDrawOpen] = useState(false);
 
   return (
-    <div className={`flex min-h-screen md:divide-x-1 ${className || ''}`}>
-      <div className="relative min-w-0 flex-1 divide-y-1 overflow-visible pb-20 sm:pb-0">
+    <div className={`flex min-h-screen md:divide-x ${className || ''}`}>
+      <div className="relative min-w-0 flex-1 divide-y overflow-visible pb-20 sm:pb-0">
         {children}
       </div>
 
       {(sidebar || sidebarHeader) && (
         <SideContentLayout>
           {sidebarHeader}
-          {sidebar && <div className="sticky top-0 flex w-full flex-col divide-y-1">{sidebar}</div>}
+          {sidebar && <div className="sticky top-0 flex w-full flex-col divide-y">{sidebar}</div>}
         </SideContentLayout>
       )}
 

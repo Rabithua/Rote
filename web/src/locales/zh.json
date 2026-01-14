@@ -266,6 +266,10 @@
     "rote": {
       "sideBarTitle": "相关信息"
     },
+    "article": {
+      "sideBarTitle": "相关信息",
+      "relatedNote": "相关笔记"
+    },
     "user": {
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
