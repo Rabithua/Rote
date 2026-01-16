@@ -120,29 +120,22 @@ curl -X GET 'https://your-domain.com/v2/api/articles/?skip=0&limit=20' \
 - **Headers**: `Authorization: Bearer <accessToken>`（可选）
 - **路径参数**:
   - `id`: string（文章 ID，UUID 格式）
-- **Query 参数**:
-  - `noteId`: string（可选，笔记 ID，非作者访问时必填）
+- **Query 参数**: 无
 
 **访问权限说明**：
 
-- 作者可直接访问自己的文章，无需提供 `noteId`
-- 非作者需要提供 `noteId` 参数，且该笔记必须：
-  - 可被当前用户访问（公开笔记或用户自己的私有笔记）
-  - 关联了该文章
+- 作者可直接访问自己的文章
+- 非作者访问时，系统会自动查找 **引用了该文章且当前用户可访问的笔记**（例如公开笔记）作为上下文
+  - 只要存在至少一个可访问的笔记引用了该文章，即可查看文章详情
+  - 如果不存在任何可访问的笔记引用该文章，则拒绝访问
 
 请求示例（cURL）:
 
-作者访问：
+作者访问 或 非作者访问（系统自动查找上下文）：
 
 ```bash
 curl -X GET 'https://your-domain.com/v2/api/articles/<ARTICLE_ID>' \
   -H 'Authorization: Bearer <ACCESS_TOKEN>'
-```
-
-非作者访问（通过笔记上下文）：
-
-```bash
-curl -X GET 'https://your-domain.com/v2/api/articles/<ARTICLE_ID>?noteId=<NOTE_ID>'
 ```
 
 成功响应示例（200）：
@@ -172,9 +165,7 @@ curl -X GET 'https://your-domain.com/v2/api/articles/<ARTICLE_ID>?noteId=<NOTE_I
 可能的错误：
 
 - 404 文章不存在
-- 400 非作者访问时缺少 noteId 参数
-- 403 笔记为私有且非作者
-- 403 文章未被指定笔记引用
+- 403 Access denied: no public note references this article（无权访问，未找到可访问的关联笔记）
 
 ---
 

@@ -22,6 +22,7 @@
 - **Unbounded Freedom**: Complete control over your data, free to export data
 - **Self-Hosted Deployment**: One-click deployment using Docker or Dokploy
 - **Separated Architecture**: Frontend and backend use separated architecture design, deploy only the services you need
+- **Markdown Articles**: Standalone Article support, can be referenced by notes, offering a pure writing and reading experience
 - **iOS Client**: More elegant App client
 
 ### Quick Start
