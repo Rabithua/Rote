@@ -2,10 +2,11 @@ import { ArticleCard } from '@/components/article/ArticleCard';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { Article } from '@/types/main';
 import { listMyArticles } from '@/utils/articleApi';
-import { Loader2, Signature } from 'lucide-react';
+import { Signature } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import LoadingPlaceholder from '../others/LoadingPlaceholder';
 
 interface Props {
   open: boolean;
@@ -94,7 +95,7 @@ export function ArticleSelectionModal({
           <div className="noScrollBar min-h-0 flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex h-32 w-full items-center justify-center">
-                <Loader2 className="text-muted-foreground/50 animate-spin" />
+                <LoadingPlaceholder />
               </div>
             ) : (
               <div className="flex min-w-0 flex-col gap-2">

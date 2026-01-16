@@ -52,7 +52,8 @@
     "admin",
     "app",
     "unknown",
-    "doc"
+    "doc",
+    "article"
   ],
   "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE"]
 }
