@@ -58,6 +58,10 @@ For more deployment options and configuration instructions, please check the doc
 - [API Documentation](doc/userguide/API-ENDPOINTS.md) - API interface usage guide
 - [API Key Guide](doc/userguide/API-KEY-GUIDE.md) - How to use API Key
 
+### Community Projects
+
+- [Raycast Extension](https://github.com/aBER0724/rote-raycast) - Raycast extension for Rote, developed by [@aBER0724](https://github.com/aBER0724)
+
 ## Technology Stack
 
 <img width="866" height="526" alt="technology" src="https://github.com/user-attachments/assets/2be3a73b-467e-4d4b-8d9f-2a129aba4825" />
