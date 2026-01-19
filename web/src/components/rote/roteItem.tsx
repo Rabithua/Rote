@@ -44,11 +44,13 @@ function RoteItem({
   mutate,
   mutateSingle,
   showAvatar = true,
+  enableContentCollapse = true,
 }: {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
   showAvatar?: boolean;
+  enableContentCollapse?: boolean;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
@@ -187,7 +189,7 @@ function RoteItem({
         <div className="font-zhengwen relative wrap-break-word whitespace-pre-line">
           <div className="font-semibold">{rote.title}</div>
           <div className="aTagStyle">
-            {rote.content.length > roteContentExpandedLetter ? (
+            {enableContentCollapse && rote.content.length > roteContentExpandedLetter ? (
               isExpanded ? (
                 <Linkify>{rote.content}</Linkify>
               ) : (
@@ -197,7 +199,7 @@ function RoteItem({
               <Linkify>{rote.content}</Linkify>
             )}
           </div>
-          {rote.content.length > roteContentExpandedLetter && !isExpanded && (
+          {enableContentCollapse && rote.content.length > roteContentExpandedLetter && !isExpanded && (
             <SoftBottom>
               <div
                 className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
