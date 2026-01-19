@@ -6,6 +6,7 @@ export * from './attachment';
 export * from './auth';
 export * from './change';
 export * from './common';
+export * from './linkPreview';
 export * from './note';
 export * from './reaction';
 export * from './site';

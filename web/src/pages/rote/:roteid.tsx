@@ -144,7 +144,12 @@ function SingleRotePage() {
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
           ))}
       </NavBar>
-      <RoteItem showAvatar={false} rote={rote} mutateSingle={mutate} enableContentCollapse={false} />
+      <RoteItem
+        showAvatar={false}
+        rote={rote}
+        mutateSingle={mutate}
+        enableContentCollapse={false}
+      />
     </ContainerWithSideBar>
   ) : null;
 }

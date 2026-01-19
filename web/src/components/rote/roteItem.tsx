@@ -22,6 +22,7 @@ import { VerifiedIcon } from '@/components/icons/Verified';
 import { SoftBottom } from '@/components/others/SoftBottom';
 import UserAvatar from '@/components/others/UserAvatar';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
+import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
@@ -199,16 +200,18 @@ function RoteItem({
               <Linkify>{rote.content}</Linkify>
             )}
           </div>
-          {enableContentCollapse && rote.content.length > roteContentExpandedLetter && !isExpanded && (
-            <SoftBottom>
-              <div
-                className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
-                onClick={() => setIsExpanded(true)}
-              >
-                <ArrowDownLeft className="size-4" /> {t('expand')}
-              </div>
-            </SoftBottom>
-          )}
+          {enableContentCollapse &&
+            rote.content.length > roteContentExpandedLetter &&
+            !isExpanded && (
+              <SoftBottom>
+                <div
+                  className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
+                  onClick={() => setIsExpanded(true)}
+                >
+                  <ArrowDownLeft className="size-4" /> {t('expand')}
+                </div>
+              </SoftBottom>
+            )}
         </div>
 
         {/* Article reference */}
@@ -222,6 +225,14 @@ function RoteItem({
               enableViewer
               className="w-full"
             />
+          </div>
+        )}
+
+        {!rote.articleId && !rote.article && (rote.linkPreviews?.length || 0) > 0 && (
+          <div className="flex flex-col gap-2">
+            {rote.linkPreviews?.map((preview) => (
+              <LinkPreviewCard key={preview.id} preview={preview} />
+            ))}
           </div>
         )}
 

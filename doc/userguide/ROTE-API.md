@@ -36,7 +36,6 @@
   - `createdAt`: 创建时间（ISO 8601 格式）
   - `updatedAt`: 更新时间（ISO 8601 格式）
 - **reactions**: 反应数组，每个反应包含：
-
   - `id`: 反应 ID（UUID 格式）
   - `type`: 反应类型（emoji 字符，如 `"👍"`）
   - `userid`: 用户 ID（UUID 格式，已登录用户，可选）
@@ -46,6 +45,17 @@
   - `metadata`: 附加元数据（JSON 对象，可选）
   - `createdAt`: 创建时间（ISO 8601 格式）
   - `updatedAt`: 更新时间（ISO 8601 格式）
+
+- **linkPreviews**: 链接预览数组，每个预览包含：
+  - `id`: 预览 ID（UUID 格式）
+  - `url`: 链接 URL
+  - `title`: 标题（可选）
+  - `description`: 描述（可选）
+  - `image`: 图片 URL（可选）
+  - `siteName`: 站点名称（可选）
+  - `contentExcerpt`: 内容摘要（可选）
+  - `score`: 相关性评分（数字，可选）
+  - `createdAt`: 创建时间（ISO 8601 格式）
 
 - **articleId**: 关联文章 ID（UUID 格式，可选，创建/更新时使用）
 - **article**: 关联的文章对象（可选，查询时返回）。包含：
@@ -138,6 +148,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
     },
     "attachments": [],
     "reactions": [],
+    "linkPreviews": [],
     "article": null
   }
 }
@@ -206,6 +217,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/?skip=0&limit=20&archived=fals
       },
       "attachments": [],
       "reactions": [],
+      "linkPreviews": [],
       "article": null
     }
   ]
@@ -295,6 +307,19 @@ curl -X GET 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
         "updatedAt": "2024-01-01T00:00:00.000Z"
       }
     ],
+    "linkPreviews": [
+      {
+        "id": "preview-uuid",
+        "url": "https://example.com/article",
+        "title": "Example Article",
+        "description": "This is an example article.",
+        "image": "https://example.com/image.jpg",
+        "siteName": "Example Site",
+        "contentExcerpt": "This is an example article...",
+        "score": 80,
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
     "article": null
   }
 }
@@ -356,6 +381,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
       },
       "attachments": [],
       "reactions": [],
+      "linkPreviews": [],
       "article": null
     },
     {
@@ -379,6 +405,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
       },
       "attachments": [],
       "reactions": [],
+      "linkPreviews": [],
       "article": null
     }
   ]
@@ -464,6 +491,7 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
     },
     "attachments": [],
     "reactions": [],
+    "linkPreviews": [],
     "article": null
   }
 }
@@ -555,6 +583,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
     },
     "attachments": [],
     "reactions": [],
+    "linkPreviews": [],
     "article": null
   }
 }
@@ -615,6 +644,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
       },
       "attachments": [],
       "reactions": [],
+      "linkPreviews": [],
       "article": null
     }
   ]
@@ -680,6 +710,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
       },
       "attachments": [],
       "reactions": [],
+      "linkPreviews": [],
       "article": null
     }
   ]
@@ -747,6 +778,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
       },
       "attachments": [],
       "reactions": [],
+      "linkPreviews": [],
       "article": null
     }
   ]
