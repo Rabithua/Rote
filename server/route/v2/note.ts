@@ -7,6 +7,7 @@ import {
   createRote,
   deleteRote,
   deleteRoteAttachmentsByRoteId,
+  deleteRoteLinkPreviewsByRoteId,
   editRote,
   findMyRandomRote,
   findMyRote,
@@ -21,6 +22,7 @@ import {
   searchUserPublicRotes,
   setNoteArticleId,
 } from '../../utils/dbMethods';
+import { extractUrlsFromContent, parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
 import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
 
@@ -78,6 +80,12 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
         : null;
   if (articleIdToSet) {
     await setNoteArticleId(rote.id, articleIdToSet, user.id);
+  }
+
+  if (!articleIdToSet) {
+    void parseAndStoreRoteLinkPreviews(rote.id, rote.content).catch((error) => {
+      console.error('Failed to parse link previews:', error);
+    });
   }
 
   // 重新查询以获取最新关联数据（附件/文章等）
@@ -513,15 +521,41 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
   await editRote({ ...body, id, authorid: user.id });
 
   // 更新文章绑定（优先 articleId；兼容 articleIds，取第一个）
-  if (typeof (body as any).articleId === 'string' || (body as any).articleId === null) {
-    await setNoteArticleId(id, (body as any).articleId ?? null, user.id);
+  let articleIdToSet: string | null | undefined;
+  if ('articleId' in (body as any)) {
+    const articleId = (body as any).articleId;
+    articleIdToSet = typeof articleId === 'string' ? articleId : (articleId ?? null);
   } else if (Array.isArray((body as any).articleIds)) {
-    const articleIdToSet = (body as any).articleIds.length > 0 ? (body as any).articleIds[0] : null;
+    articleIdToSet = (body as any).articleIds.length > 0 ? (body as any).articleIds[0] : null;
+  }
+
+  if (articleIdToSet !== undefined) {
     await setNoteArticleId(id, articleIdToSet, user.id);
   }
 
   // 重新获取最新数据（包含更新后的 article）
   const data = await findRoteById(id);
+
+  const hasArticle = Boolean(data?.articleId || data?.article);
+  const contentProvided = Object.prototype.hasOwnProperty.call(body, 'content');
+  const contentForPreview = contentProvided ? (body as any).content : data?.content;
+
+  if (hasArticle && articleIdToSet !== undefined) {
+    await deleteRoteLinkPreviewsByRoteId(id);
+  } else if (
+    (contentProvided || articleIdToSet !== undefined) &&
+    typeof contentForPreview === 'string'
+  ) {
+    const urls = extractUrlsFromContent(contentForPreview);
+    if (urls.length === 0 || hasArticle) {
+      await deleteRoteLinkPreviewsByRoteId(id);
+    } else {
+      await deleteRoteLinkPreviewsByRoteId(id);
+      void parseAndStoreRoteLinkPreviews(id, contentForPreview).catch((error) => {
+        console.error('Failed to parse link previews:', error);
+      });
+    }
+  }
 
   return c.json(createResponse(data), 200);
 });

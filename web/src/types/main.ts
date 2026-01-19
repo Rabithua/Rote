@@ -54,6 +54,7 @@ export type Rote = {
   // 直接绑定的文章（一对一关系）
   article?: ArticleSummary | null;
   articleId?: string | null;
+  linkPreviews?: LinkPreview[];
 };
 
 export type Attachment = {
@@ -107,6 +108,19 @@ export type Article = {
 
 // 笔记中引用的文章摘要（只包含 content，title/summary 由前端解析）
 export type ArticleSummary = Pick<Article, 'content' | 'createdAt' | 'updatedAt'> & { id?: string };
+
+export type LinkPreview = {
+  id: string;
+  roteid: string;
+  url: string;
+  title?: string | null;
+  description?: string | null;
+  image?: string | null;
+  siteName?: string | null;
+  contentExcerpt?: string | null;
+  score?: number | null;
+  createdAt: string;
+};
 
 export type RotesAction =
   | { type: 'addOne'; rote: Rote }

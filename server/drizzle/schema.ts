@@ -215,6 +215,33 @@ export const attachments = pgTable(
   })
 );
 
+// Rote Link Previews 表
+export const roteLinkPreviews = pgTable(
+  'rote_link_previews',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roteid: uuid('roteid').notNull(),
+    url: text('url').notNull(),
+    title: text('title'),
+    description: text('description'),
+    image: text('image'),
+    siteName: text('siteName'),
+    contentExcerpt: text('contentExcerpt'),
+    score: integer('score'),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    roteidIdx: index('rote_link_previews_roteid_idx').on(table.roteid),
+    roteidUrlUnique: unique('rote_link_previews_roteid_url_unique').on(table.roteid, table.url),
+    roteidFk: foreignKey({
+      columns: [table.roteid],
+      foreignColumns: [rotes.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+  })
+);
+
 // Reactions 表
 export const reactions = pgTable(
   'reactions',
@@ -381,6 +408,7 @@ export const rotesRelations = relations(rotes, ({ one, many }) => ({
     references: [articles.id],
   }),
   attachments: many(attachments),
+  linkPreviews: many(roteLinkPreviews),
   reactions: many(reactions),
   changes: many(roteChanges),
 }));
@@ -393,6 +421,13 @@ export const attachmentsRelations = relations(attachments, ({ one }) => ({
   user: one(users, {
     fields: [attachments.userid],
     references: [users.id],
+  }),
+}));
+
+export const roteLinkPreviewsRelations = relations(roteLinkPreviews, ({ one }) => ({
+  rote: one(rotes, {
+    fields: [roteLinkPreviews.roteid],
+    references: [rotes.id],
   }),
 }));
 
@@ -442,6 +477,8 @@ export type Rote = typeof rotes.$inferSelect;
 export type NewRote = typeof rotes.$inferInsert;
 export type Attachment = typeof attachments.$inferSelect;
 export type NewAttachment = typeof attachments.$inferInsert;
+export type RoteLinkPreview = typeof roteLinkPreviews.$inferSelect;
+export type NewRoteLinkPreview = typeof roteLinkPreviews.$inferInsert;
 export type Reaction = typeof reactions.$inferSelect;
 export type NewReaction = typeof reactions.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
