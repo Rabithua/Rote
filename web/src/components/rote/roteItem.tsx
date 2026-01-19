@@ -232,12 +232,12 @@ function RoteItem({
           !rote.article &&
           (rote.attachments?.length || 0) === 0 &&
           (rote.linkPreviews?.length || 0) > 0 && (
-          <div className="flex flex-col gap-2">
-            {rote.linkPreviews?.map((preview) => (
-              <LinkPreviewCard key={preview.id} preview={preview} />
-            ))}
-          </div>
-        )}
+            <div className="flex flex-col gap-2">
+              {rote.linkPreviews?.map((preview) => (
+                <LinkPreviewCard key={preview.id} preview={preview} />
+              ))}
+            </div>
+          )}
 
         {/* Attachments */}
         {rote.attachments?.length > 0 && (
