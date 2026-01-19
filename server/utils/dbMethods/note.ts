@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
 import { rotes, users } from '../../drizzle/schema';
 import type { SecurityConfig } from '../../types/config';
 import { getGlobalConfig } from '../config';
@@ -104,7 +104,7 @@ export async function createRote(data: any): Promise<any> {
             ],
           },
           linkPreviews: {
-              orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+            orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
           },
           reactions: {
             with: {
@@ -414,7 +414,7 @@ export async function findMyRote(
         },
         attachments: true,
         linkPreviews: {
-          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+          orderBy: (linkPreviews: any, { asc }: any) => [asc(linkPreviews.createdAt)],
         },
         reactions: {
           with: {

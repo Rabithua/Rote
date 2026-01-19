@@ -1,4 +1,4 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { roteLinkPreviews } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';

@@ -89,7 +89,7 @@ async function fetchHtml(url: string): Promise<string | null> {
       return null;
     }
     return await response.text();
-  } catch (error: any) {
+  } catch (_error: any) {
     return null;
   } finally {
     clearTimeout(timeout);

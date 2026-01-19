@@ -200,16 +200,18 @@ function RoteItem({
               <Linkify>{rote.content}</Linkify>
             )}
           </div>
-          {enableContentCollapse && rote.content.length > roteContentExpandedLetter && !isExpanded && (
-            <SoftBottom>
-              <div
-                className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
-                onClick={() => setIsExpanded(true)}
-              >
-                <ArrowDownLeft className="size-4" /> {t('expand')}
-              </div>
-            </SoftBottom>
-          )}
+          {enableContentCollapse &&
+            rote.content.length > roteContentExpandedLetter &&
+            !isExpanded && (
+              <SoftBottom>
+                <div
+                  className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
+                  onClick={() => setIsExpanded(true)}
+                >
+                  <ArrowDownLeft className="size-4" /> {t('expand')}
+                </div>
+              </SoftBottom>
+            )}
         </div>
 
         {/* Article reference */}

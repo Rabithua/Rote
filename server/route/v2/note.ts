@@ -524,7 +524,7 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
   let articleIdToSet: string | null | undefined;
   if ('articleId' in (body as any)) {
     const articleId = (body as any).articleId;
-    articleIdToSet = typeof articleId === 'string' ? articleId : articleId ?? null;
+    articleIdToSet = typeof articleId === 'string' ? articleId : (articleId ?? null);
   } else if (Array.isArray((body as any).articleIds)) {
     articleIdToSet = (body as any).articleIds.length > 0 ? (body as any).articleIds[0] : null;
   }
@@ -542,7 +542,10 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
 
   if (hasArticle && articleIdToSet !== undefined) {
     await deleteRoteLinkPreviewsByRoteId(id);
-  } else if ((contentProvided || articleIdToSet !== undefined) && typeof contentForPreview === 'string') {
+  } else if (
+    (contentProvided || articleIdToSet !== undefined) &&
+    typeof contentForPreview === 'string'
+  ) {
     const urls = extractUrlsFromContent(contentForPreview);
     if (urls.length === 0 || hasArticle) {
       await deleteRoteLinkPreviewsByRoteId(id);
