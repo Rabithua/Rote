@@ -1,4 +1,4 @@
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, count, desc, eq, sql } from 'drizzle-orm';
 import { rotes, users } from '../../drizzle/schema';
 import type { SecurityConfig } from '../../types/config';
 import { getGlobalConfig } from '../config';
@@ -103,6 +103,9 @@ export async function createRote(data: any): Promise<any> {
               asc(attachments.createdAt),
             ],
           },
+          linkPreviews: {
+              orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+          },
           reactions: {
             with: {
               user: {
@@ -158,6 +161,9 @@ export async function findRoteById(id: string): Promise<any> {
             asc(attachments.createdAt),
           ],
         },
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -200,6 +206,9 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
             asc(attachments.sortIndex),
             asc(attachments.createdAt),
           ],
+        },
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
         reactions: {
           with: {
@@ -404,6 +413,9 @@ export async function findMyRote(
           },
         },
         attachments: true,
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -451,6 +463,9 @@ export async function findUserPublicRote(
           },
         },
         attachments: true,
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -590,6 +605,9 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
           },
         },
         attachments: true,
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -753,6 +771,9 @@ export async function searchMyRotes(
           },
         },
         attachments: true,
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -797,6 +818,9 @@ export async function searchPublicRotes(
           },
         },
         attachments: true,
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -843,6 +867,9 @@ export async function searchUserPublicRotes(
           },
         },
         attachments: true,
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
+        },
         reactions: {
           with: {
             user: {
@@ -958,6 +985,9 @@ export async function getNoteByArticleId(articleId: string): Promise<any> {
             asc(attachments.sortIndex),
             asc(attachments.createdAt),
           ],
+        },
+        linkPreviews: {
+          orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
         reactions: {
           with: {

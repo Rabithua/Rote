@@ -49,17 +49,17 @@ export function ArticleCard({
   return (
     <>
       <div
-        className={`hover:bg-muted/50 flex cursor-pointer items-center gap-2 overflow-hidden rounded-md border p-3 duration-200 ${
+        className={`hover:bg-secondary bg-secondary/50 flex cursor-pointer items-stretch overflow-hidden rounded-md border duration-200 ${
           isSelected ? 'bg-primary/10' : ''
         } ${className}`}
         onClick={handleClick}
       >
-        <div className="flex min-w-0 flex-1 items-start gap-2">
+        <div className="bg-foreground/5 flex size-18 shrink-0 items-center justify-center">
           {coverImage ? (
             <img
               src={coverImage}
               alt=""
-              className="size-12 shrink-0 object-cover"
+              className="size-full object-cover"
               onError={(e) => {
                 // 图片加载失败时隐藏，显示后备图标
                 e.currentTarget.style.display = 'none';
@@ -68,18 +68,18 @@ export function ArticleCard({
             />
           ) : null}
           <div
-            className={`text-muted flex aspect-square size-12 shrink-0 items-center justify-center ${
+            className={`text-primary flex size-full items-center justify-center ${
               coverImage ? 'hidden' : ''
             }`}
           >
-            <Newspaper className="size-8" />
+            <Newspaper className="size-7" />
           </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="truncate text-sm font-semibold">{title}</div>
-            {summary && (
-              <div className="text-muted-foreground line-clamp-1 text-xs font-light">{summary}</div>
-            )}
-          </div>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1 px-3 py-2">
+          <div className="truncate text-sm font-semibold">{title}</div>
+          {summary && (
+            <div className="text-muted-foreground line-clamp-1 text-xs font-light">{summary}</div>
+          )}
         </div>
         {showCheckmark && isSelected && <Check className="text-primary size-6 shrink-0" />}
       </div>
