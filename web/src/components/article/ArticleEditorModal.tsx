@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import type { Article } from '@/types/main';
 import { createArticle, updateArticle } from '@/utils/articleApi';
+import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
+import { maybeCompressToWebp } from '@/utils/uploadHelpers';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
@@ -123,6 +125,97 @@ export function ArticleEditorModal({ open, onOpenChange, onCreated, article, onU
     }
   };
 
+  const uploadAndInsert = async (files: FileList | File[], textarea: HTMLTextAreaElement) => {
+    const fileArray = Array.from(files).filter((f) => f.type.startsWith('image/'));
+    if (fileArray.length === 0) return;
+
+    // 1. 生成占位符并插入
+    // 更安全的做法是：只负责生成占位符字符串，一次性插入到 textarea，然后利用 replace 替换占位符
+    // 为避免覆盖用户在此期间的输入，替换时应使用 setContent(prev => ...)
+
+    const uploads = fileArray.map((file) => {
+      const id = crypto.randomUUID();
+      const placeholder = `![Uploading ${file.name}...](${id})`;
+      return { file, id, placeholder };
+    });
+
+    // 插入所有占位符
+    const placeholdersText = uploads.map((u) => u.placeholder).join('\n');
+    const startPos = textarea.selectionStart;
+    const endPos = textarea.selectionEnd;
+
+    // 初始插入
+    setContent((prev) => {
+      // 注意：这里使用的是调用 insert 时的位置。如果用户在上传过程中移动光标，这部分逻辑只在初始发生一次，没问题。
+      const pre = prev.substring(0, startPos);
+      const suf = prev.substring(endPos);
+      return pre + placeholdersText + suf;
+    });
+
+    // 2. 并发上传
+    for (const { file, placeholder } of uploads) {
+      try {
+        // 压缩
+        const compressed = await maybeCompressToWebp(file);
+
+        // 预签名
+        const presignFiles = [{ filename: file.name, contentType: file.type, size: file.size }];
+        // 如果有压缩图，虽然目前 presign 接口内部会自动处理 compressedKey（如果是预定义的后缀），
+        // 但根据 `attachment.ts` 的逻辑，它会返回 original 和 compressed (固定 image/webp) 的 putUrl
+        // 我们只需要传 original 的信息给 presign 即可。
+
+        const presignResult = await presign(presignFiles);
+        const item = presignResult[0];
+
+        // 上传原图
+        await uploadToSignedUrl(item.original.putUrl, file);
+
+        // 上传压缩图（如果有）
+        if (compressed && item.compressed) {
+          await uploadToSignedUrl(item.compressed.putUrl, compressed);
+        }
+
+        // Finalize
+        const finalizePayload = {
+          uuid: item.uuid,
+          originalKey: item.original.key,
+          compressedKey: compressed && item.compressed ? item.compressed.key : undefined,
+          size: file.size,
+          mimetype: file.type,
+          // hash: ... // 前端暂未计算 hash
+        };
+
+        const [finalized] = await finalize([finalizePayload]);
+
+        // 替换占位符
+        const finalUrl = finalized.compressUrl || finalized.url;
+        const finalMarkdown = `![${file.name}](${finalUrl})`;
+
+        setContent((prev) => prev.replace(placeholder, finalMarkdown));
+      } catch (_err) {
+        // console.error('Upload failed', err);
+        toast.error(`Failed to upload ${file.name}`);
+        // 失败时移除占位符或保留供用户查看？这里选择替换为错误提示
+        setContent((prev) => prev.replace(placeholder, `![Upload Failed: ${file.name}]()`));
+      }
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (e.clipboardData.files.length > 0) {
+      e.preventDefault();
+      uploadAndInsert(e.clipboardData.files, e.currentTarget);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.files.length > 0) {
+      uploadAndInsert(e.dataTransfer.files, e.currentTarget);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTitle className="hidden px-6 pt-4 text-lg font-semibold">
@@ -139,6 +232,8 @@ export function ArticleEditorModal({ open, onOpenChange, onCreated, article, onU
                 className="scrollbar-thin min-h-0 flex-1 resize-none font-mono text-sm"
                 value={content}
                 onChange={handleContentChange}
+                onPaste={handlePaste}
+                onDrop={handleDrop}
                 placeholder={t('contentPlaceholder')}
                 disabled={loading}
               />

@@ -70,14 +70,31 @@ function calculateScore(data: {
   return score;
 }
 
+function getProxyUrl(originalUrl: string): string {
+  try {
+    const url = new URL(originalUrl);
+    if (url.hostname === 'twitter.com' || url.hostname === 'www.twitter.com') {
+      url.hostname = 'fxtwitter.com';
+    } else if (url.hostname === 'x.com' || url.hostname === 'www.x.com') {
+      url.hostname = 'fixupx.com';
+    } else if (url.hostname === 'bsky.app' || url.hostname === 'www.bsky.app') {
+      url.hostname = 'fxbsky.app';
+    }
+    return url.toString();
+  } catch {
+    return originalUrl;
+  }
+}
+
 async function fetchHtml(url: string): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(url, {
+    const proxyUrl = getProxyUrl(url);
+    const response = await fetch(proxyUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'RoteLinkPreview/1.0',
+        'User-Agent': 'Bot', // FxEmbed requires a bot-like UA or they might redirect normal users
         Accept: 'text/html,application/xhtml+xml',
       },
     });

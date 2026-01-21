@@ -5,39 +5,46 @@
     "description": "Rote API - A note-taking and sharing platform API built with Hono framework.\n\nBase URL: {{base_url}}/v2/api\n\n## Authentication\nMost endpoints require JWT authentication via Bearer token in the Authorization header.\n\n## Response Format\nAll responses follow the format:\n```json\n{\n  \"code\": 0,\n  \"message\": \"Success\",\n  \"data\": {...}\n}\n```",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:3000",
-      "type": "string"
-    }
-  ],
   "item": [
     {
       "name": "Health",
       "item": [
         {
           "name": "Health Check",
+          "id": "13a87307-dc8d-427a-83c1-af48ff008af4",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/health",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "health"
+              ]
             },
             "description": "Returns server health status. No authentication required."
           },
           "response": [
             {
+              "id": "7ab5e919-b331-47cb-8799-1c1a04dae5db",
               "name": "Success",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v2/api/health",
-                  "host": ["{{base_url}}"],
-                  "path": ["v2", "api", "health"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "api",
+                    "health"
+                  ]
                 }
               },
               "status": "OK",
@@ -49,6 +56,7 @@
           ]
         }
       ],
+      "id": "66400a59-5ebc-44be-bc14-dea2246a3a4b",
       "description": "Health check endpoints"
     },
     {
@@ -56,6 +64,7 @@
       "item": [
         {
           "name": "Register",
+          "id": "4f69ab36-f205-4828-995d-491bb2649520",
           "request": {
             "method": "POST",
             "header": [
@@ -70,19 +79,46 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "register"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "register"
+              ]
             },
             "description": "Creates a new user account. Registration may be disabled by admin settings."
           },
           "response": [
             {
+              "id": "37474983-874e-4e95-b064-a2d2081f9ac5",
               "name": "Success",
               "originalRequest": {
                 "method": "POST",
-                "header": [{"key": "Content-Type", "value": "application/json"}],
-                "body": {"mode": "raw", "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"test@example.com\",\n  \"nickname\": \"Test User\"\n}"},
-                "url": {"raw": "{{base_url}}/v2/api/auth/register", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "register"]}
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\",\n  \"email\": \"test@example.com\",\n  \"nickname\": \"Test User\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v2/api/auth/register",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "api",
+                    "auth",
+                    "register"
+                  ]
+                }
               },
               "status": "Created",
               "code": 201,
@@ -94,6 +130,7 @@
         },
         {
           "name": "Login",
+          "id": "880ac5ed-3ded-48ae-a0a7-09d3264dafc8",
           "request": {
             "method": "POST",
             "header": [
@@ -108,19 +145,46 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "login"
+              ]
             },
             "description": "Authenticates user with username/email and password. Returns JWT access and refresh tokens."
           },
           "response": [
             {
+              "id": "b3f7d2fd-e1a9-47fe-aaf2-3b00deb93586",
               "name": "Success",
               "originalRequest": {
                 "method": "POST",
-                "header": [{"key": "Content-Type", "value": "application/json"}],
-                "body": {"mode": "raw", "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"},
-                "url": {"raw": "{{base_url}}/v2/api/auth/login", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "login"]}
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v2/api/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "api",
+                    "auth",
+                    "login"
+                  ]
+                }
               },
               "status": "OK",
               "code": 200,
@@ -132,6 +196,7 @@
         },
         {
           "name": "Change Password",
+          "id": "87d7a885-289f-47a7-bf4b-ff3d92b52d63",
           "request": {
             "method": "PUT",
             "header": [
@@ -150,19 +215,50 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/password",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "password"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "password"
+              ]
             },
             "description": "Updates the authenticated user's password. Requires current password verification."
           },
           "response": [
             {
+              "id": "61830915-cdb4-48b8-ad66-4af6621c6357",
               "name": "Success",
               "originalRequest": {
                 "method": "PUT",
-                "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "Authorization", "value": "Bearer {{access_token}}"}],
-                "body": {"mode": "raw", "raw": "{\n  \"oldpassword\": \"oldpassword123\",\n  \"newpassword\": \"newpassword123\"\n}"},
-                "url": {"raw": "{{base_url}}/v2/api/auth/password", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "password"]}
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"oldpassword\": \"oldpassword123\",\n  \"newpassword\": \"newpassword123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v2/api/auth/password",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "api",
+                    "auth",
+                    "password"
+                  ]
+                }
               },
               "status": "OK",
               "code": 200,
@@ -174,6 +270,7 @@
         },
         {
           "name": "Refresh Token",
+          "id": "817ebf24-f7d8-4117-8af7-1ef3946ab831",
           "request": {
             "method": "POST",
             "header": [
@@ -188,19 +285,46 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/refresh",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "refresh"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "refresh"
+              ]
             },
             "description": "Exchanges a valid refresh token for a new access token. Use when access token expires."
           },
           "response": [
             {
+              "id": "daefd042-0d12-474d-a14c-373c9003821d",
               "name": "Success",
               "originalRequest": {
                 "method": "POST",
-                "header": [{"key": "Content-Type", "value": "application/json"}],
-                "body": {"mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"},
-                "url": {"raw": "{{base_url}}/v2/api/auth/refresh", "host": ["{{base_url}}"], "path": ["v2", "api", "auth", "refresh"]}
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v2/api/auth/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "v2",
+                    "api",
+                    "auth",
+                    "refresh"
+                  ]
+                }
               },
               "status": "OK",
               "code": 200,
@@ -211,6 +335,7 @@
           ]
         }
       ],
+      "id": "6af89d01-a23d-417d-b277-b558dd9271b8",
       "description": "Authentication endpoints for user registration, login, and token management."
     },
     {
@@ -218,13 +343,22 @@
       "item": [
         {
           "name": "Initiate OAuth",
+          "id": "730b2720-4e95-466e-b163-52f1e5fa9ec2",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider?redirect=/login",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "oauth", ":provider"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "oauth",
+                ":provider"
+              ],
               "query": [
                 {
                   "key": "redirect",
@@ -240,10 +374,12 @@
               ]
             },
             "description": "Initiate OAuth authentication flow with a provider."
-          }
+          },
+          "response": []
         },
         {
           "name": "Bind OAuth Account",
+          "id": "34631dd4-0c80-404d-8667-72e547838bb5",
           "request": {
             "method": "GET",
             "header": [
@@ -254,8 +390,17 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind?redirect=/profile",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "oauth", ":provider", "bind"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "oauth",
+                ":provider",
+                "bind"
+              ],
               "query": [
                 {
                   "key": "redirect",
@@ -270,17 +415,28 @@
               ]
             },
             "description": "Bind an OAuth account to the current user. Requires authentication."
-          }
+          },
+          "response": []
         },
         {
           "name": "OAuth Callback (GET)",
+          "id": "19505a57-52d5-4248-9940-c23c20dc5019",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/callback?code=&state=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "oauth", ":provider", "callback"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "oauth",
+                ":provider",
+                "callback"
+              ],
               "query": [
                 {
                   "key": "code",
@@ -299,10 +455,12 @@
               ]
             },
             "description": "OAuth callback endpoint for GET-based providers (e.g., GitHub)."
-          }
+          },
+          "response": []
         },
         {
           "name": "OAuth Callback (POST)",
+          "id": "b1c7d360-3d25-4428-9577-0f9d55f9891c",
           "request": {
             "method": "POST",
             "header": [
@@ -326,8 +484,17 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/callback",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "oauth", ":provider", "callback"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "oauth",
+                ":provider",
+                "callback"
+              ],
               "variable": [
                 {
                   "key": "provider",
@@ -336,10 +503,12 @@
               ]
             },
             "description": "OAuth callback endpoint for POST-based providers (e.g., Apple)."
-          }
+          },
+          "response": []
         },
         {
           "name": "Merge and Bind OAuth",
+          "id": "453529a0-77b1-4941-a0f5-c56750e95452",
           "request": {
             "method": "POST",
             "header": [
@@ -358,8 +527,18 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind/merge",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "oauth", ":provider", "bind", "merge"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "oauth",
+                ":provider",
+                "bind",
+                "merge"
+              ],
               "variable": [
                 {
                   "key": "provider",
@@ -368,10 +547,12 @@
               ]
             },
             "description": "Merge accounts and bind OAuth provider."
-          }
+          },
+          "response": []
         },
         {
           "name": "Unbind OAuth Account",
+          "id": "20c7cebc-de0f-4d04-8490-fba48ba0bfe0",
           "request": {
             "method": "DELETE",
             "header": [
@@ -382,8 +563,17 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "auth", "oauth", ":provider", "bind"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "auth",
+                "oauth",
+                ":provider",
+                "bind"
+              ],
               "variable": [
                 {
                   "key": "provider",
@@ -392,9 +582,11 @@
               ]
             },
             "description": "Unbind an OAuth account from the current user."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "57d72208-b928-41e0-b414-73a99f1ab15f",
       "description": "OAuth authentication endpoints for third-party login providers."
     },
     {
@@ -402,13 +594,21 @@
       "item": [
         {
           "name": "Get User by Username",
+          "id": "9720b99c-f9f7-42d6-803f-89343f4f9637",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/users/:username",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", ":username"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                ":username"
+              ],
               "variable": [
                 {
                   "key": "username",
@@ -417,10 +617,12 @@
               ]
             },
             "description": "Get public user information by username."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Profile",
+          "id": "159d1e35-1621-4f5d-8733-f77c1807d956",
           "request": {
             "method": "GET",
             "header": [
@@ -431,14 +633,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/profile",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "profile"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "profile"
+              ]
             },
             "description": "Get the current user's profile. Requires authentication."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update My Profile",
+          "id": "8c5d7dbb-adbb-49df-8caa-8e294a8a1908",
           "request": {
             "method": "PUT",
             "header": [
@@ -457,14 +669,24 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/profile",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "profile"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "profile"
+              ]
             },
             "description": "Update the current user's profile."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Settings",
+          "id": "8b5e93a7-3a8c-4335-92a5-2405d4ef11b7",
           "request": {
             "method": "GET",
             "header": [
@@ -475,14 +697,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/settings",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "settings"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "settings"
+              ]
             },
             "description": "Get the current user's settings."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update My Settings",
+          "id": "566afeea-9ee6-421d-9222-8c392580c734",
           "request": {
             "method": "PUT",
             "header": [
@@ -501,14 +733,24 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/settings",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "settings"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "settings"
+              ]
             },
             "description": "Update the current user's settings."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Tags",
+          "id": "f3509fd8-a8b3-40aa-8586-74aab290bd13",
           "request": {
             "method": "GET",
             "header": [
@@ -519,14 +761,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/tags",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "tags"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "tags"
+              ]
             },
             "description": "Get all tags used by the current user."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Heatmap",
+          "id": "3b5acb8a-d299-4074-b35e-3ae480131caa",
           "request": {
             "method": "GET",
             "header": [
@@ -537,8 +789,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/heatmap?startDate=2024-01-01&endDate=2024-12-31",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "heatmap"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "heatmap"
+              ],
               "query": [
                 {
                   "key": "startDate",
@@ -551,10 +811,12 @@
               ]
             },
             "description": "Get the user's activity heatmap data for a date range."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Statistics",
+          "id": "e10119f7-ebc4-4735-86a1-a67d0d138c2a",
           "request": {
             "method": "GET",
             "header": [
@@ -565,14 +827,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/statistics",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "statistics"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "statistics"
+              ]
             },
             "description": "Get the current user's statistics."
-          }
+          },
+          "response": []
         },
         {
           "name": "Export My Data",
+          "id": "b1d65dbb-08f9-4fb3-989f-922aa4db7e0e",
           "request": {
             "method": "GET",
             "header": [
@@ -583,14 +855,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/export",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me", "export"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me",
+                "export"
+              ]
             },
             "description": "Export all user data as JSON file."
-          }
+          },
+          "response": []
         },
         {
           "name": "Delete My Account",
+          "id": "72f4097f-6f85-4203-a8d9-ded0c6814bd6",
           "request": {
             "method": "DELETE",
             "header": [
@@ -609,13 +891,22 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/users/me",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "users", "me"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "users",
+                "me"
+              ]
             },
             "description": "Delete the current user's account. Requires password confirmation."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "4abff654-74d6-476c-b80f-1b2c3c4304b1",
       "description": "User profile and settings management endpoints."
     },
     {
@@ -623,6 +914,7 @@
       "item": [
         {
           "name": "Create Note",
+          "id": "49ee9c1b-dc33-4140-ba6f-8174acaebb9d",
           "request": {
             "method": "POST",
             "header": [
@@ -641,14 +933,22 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes"
+              ]
             },
             "description": "Create a new note."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Notes",
+          "id": "4170b04f-c357-4e0b-9c5c-7a299db34e9b",
           "request": {
             "method": "GET",
             "header": [
@@ -659,8 +959,14 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes?skip=0&limit=20&archived=false&tag=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -682,10 +988,12 @@
               ]
             },
             "description": "Get the current user's notes with pagination and filters."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Random Note",
+          "id": "a580bb84-1eb2-448f-8774-b4afbea4bbd9",
           "request": {
             "method": "GET",
             "header": [
@@ -697,14 +1005,23 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/random",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "random"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "random"
+              ]
             },
             "description": "Get a random note. Returns user's note if authenticated, public note otherwise."
-          }
+          },
+          "response": []
         },
         {
           "name": "Search My Notes",
+          "id": "c13060c6-5df8-4064-80af-575cddb0af63",
           "request": {
             "method": "GET",
             "header": [
@@ -715,8 +1032,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/search?keyword=search term&skip=0&limit=20&archived=false",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "search"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "search"
+              ],
               "query": [
                 {
                   "key": "keyword",
@@ -737,17 +1061,27 @@
               ]
             },
             "description": "Search the current user's notes by keyword."
-          }
+          },
+          "response": []
         },
         {
           "name": "Search Public Notes",
+          "id": "6b39d241-c74c-4743-be05-1453f13b0f42",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/search/public?keyword=search term&skip=0&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "search", "public"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "search",
+                "public"
+              ],
               "query": [
                 {
                   "key": "keyword",
@@ -764,17 +1098,28 @@
               ]
             },
             "description": "Search all public notes by keyword."
-          }
+          },
+          "response": []
         },
         {
           "name": "Search User's Public Notes",
+          "id": "6569ad95-9ab3-4fc7-a6a7-6135915c2595",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/search/users/:username?keyword=search term&skip=0&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "search", "users", ":username"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "search",
+                "users",
+                ":username"
+              ],
               "query": [
                 {
                   "key": "keyword",
@@ -797,17 +1142,27 @@
               ]
             },
             "description": "Search a specific user's public notes by keyword."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get User's Public Notes",
+          "id": "5c82f8d8-c647-456b-803b-e89514c8758b",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/users/:username?skip=0&limit=20&archived=false",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "users", ":username"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "users",
+                ":username"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -830,17 +1185,26 @@
               ]
             },
             "description": "Get a user's public notes."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get All Public Notes",
+          "id": "404370a6-9efa-4fab-b254-26f85f9c01b2",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/public?skip=0&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "public"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "public"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -853,10 +1217,12 @@
               ]
             },
             "description": "Get all public notes with pagination."
-          }
+          },
+          "response": []
         },
         {
           "name": "Batch Get Notes",
+          "id": "6cca4355-b880-497a-b6f1-e01389c0ce32",
           "request": {
             "method": "POST",
             "header": [
@@ -876,14 +1242,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes/batch",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", "batch"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                "batch"
+              ]
             },
             "description": "Batch get notes by IDs. Maximum 100 notes per request."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Note by ID",
+          "id": "5e538c17-08c1-40d7-9f2c-72801e5344c5",
           "request": {
             "method": "GET",
             "header": [
@@ -895,8 +1270,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -905,10 +1287,12 @@
               ]
             },
             "description": "Get a note by its ID. Private notes require authentication."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Note",
+          "id": "cdb578d9-5be9-41ee-b8c4-36d618030877",
           "request": {
             "method": "PUT",
             "header": [
@@ -927,8 +1311,15 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -937,10 +1328,12 @@
               ]
             },
             "description": "Update an existing note."
-          }
+          },
+          "response": []
         },
         {
           "name": "Delete Note",
+          "id": "6e833e96-8c46-40fb-a59a-206f9c19c171",
           "request": {
             "method": "DELETE",
             "header": [
@@ -951,8 +1344,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notes", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notes",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -961,9 +1361,11 @@
               ]
             },
             "description": "Delete a note by its ID."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "9644fa0b-db00-4f8f-9f24-00c3ffb54374",
       "description": "Note (Rote) management endpoints for creating, reading, updating, and deleting notes."
     },
     {
@@ -971,6 +1373,7 @@
       "item": [
         {
           "name": "Add Reaction",
+          "id": "d6958b27-9541-416c-b21a-28c483ee46e1",
           "request": {
             "method": "POST",
             "header": [
@@ -986,18 +1389,26 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"type\": \"like\",\n  \"roteid\": \"note-uuid\",\n  \"visitorId\": \"visitor-uuid\",\n  \"visitorInfo\": {},\n  \"metadata\": {}\n}"
+              "raw": "{\n    \"type\": \"裤！\",\n    \"roteid\": \"8f564303-e217-4da1-8947-c21653793dd2\",\n    \"metadata\": {\n        \"source\": \"web\"\n    }\n}"
             },
             "url": {
               "raw": "{{base_url}}/v2/api/reactions",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "reactions"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "reactions"
+              ]
             },
             "description": "Add a reaction to a note. Supports both authenticated users and visitors."
-          }
+          },
+          "response": []
         },
         {
           "name": "Remove Reaction",
+          "id": "5a68f8c0-c354-4d03-b0e3-0126dcc67106",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1009,8 +1420,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/reactions/:roteid/:type?visitorId=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "reactions", ":roteid", ":type"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "reactions",
+                ":roteid",
+                ":type"
+              ],
               "query": [
                 {
                   "key": "visitorId",
@@ -1030,9 +1449,11 @@
               ]
             },
             "description": "Remove a reaction from a note."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "7b5e4d69-af19-4ecb-8e8b-859aaa4f7d8e",
       "description": "Reaction endpoints for adding and removing reactions on notes."
     },
     {
@@ -1040,6 +1461,7 @@
       "item": [
         {
           "name": "Presign Upload URLs",
+          "id": "0da3fc4a-1f5c-4a6d-9284-93a6e20d6bc2",
           "request": {
             "method": "POST",
             "header": [
@@ -1058,14 +1480,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/presign",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "attachments", "presign"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "attachments",
+                "presign"
+              ]
             },
             "description": "Get presigned URLs for direct file upload to R2 storage. Maximum 9 files, 20MB each."
-          }
+          },
+          "response": []
         },
         {
           "name": "Finalize Upload",
+          "id": "1636a974-c19d-40ec-aa13-d7794589a2e6",
           "request": {
             "method": "POST",
             "header": [
@@ -1084,14 +1515,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/finalize",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "attachments", "finalize"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "attachments",
+                "finalize"
+              ]
             },
             "description": "Finalize uploaded attachments and save to database."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Attachment Sort Order",
+          "id": "7ec92a8a-25b1-40d3-89e1-d67fd6d7fca7",
           "request": {
             "method": "PUT",
             "header": [
@@ -1110,14 +1550,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/sort",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "attachments", "sort"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "attachments",
+                "sort"
+              ]
             },
             "description": "Update the sort order of attachments for a note."
-          }
+          },
+          "response": []
         },
         {
           "name": "Delete Attachment",
+          "id": "591afd4d-6337-460b-ac93-8c16bed12584",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1128,8 +1577,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "attachments", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "attachments",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -1138,10 +1594,12 @@
               ]
             },
             "description": "Delete a single attachment."
-          }
+          },
+          "response": []
         },
         {
           "name": "Batch Delete Attachments",
+          "id": "36cd33d1-c39f-49b2-af2d-3d5b22c73805",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1160,13 +1618,21 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "attachments"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "attachments"
+              ]
             },
             "description": "Batch delete multiple attachments. Maximum 100 per request."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "83a0bbbb-96e4-4826-b5a8-29da21bc9c1f",
       "description": "Attachment management endpoints for file uploads."
     },
     {
@@ -1174,6 +1640,7 @@
       "item": [
         {
           "name": "Create API Key",
+          "id": "9ec139d7-5ff4-444a-92a2-6a8bae418ff6",
           "request": {
             "method": "POST",
             "header": [
@@ -1184,14 +1651,22 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "api-keys"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "api-keys"
+              ]
             },
             "description": "Generate a new API key for the current user."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My API Keys",
+          "id": "815acc39-0f14-4584-bb85-10b8a5865062",
           "request": {
             "method": "GET",
             "header": [
@@ -1202,14 +1677,22 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "api-keys"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "api-keys"
+              ]
             },
             "description": "Get all API keys for the current user."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update API Key",
+          "id": "fceceaf0-2670-4d05-9103-0ae998706ad2",
           "request": {
             "method": "PUT",
             "header": [
@@ -1228,8 +1711,15 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "api-keys", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "api-keys",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -1238,10 +1728,12 @@
               ]
             },
             "description": "Update an API key's permissions."
-          }
+          },
+          "response": []
         },
         {
           "name": "Delete API Key",
+          "id": "c420f0ed-3bbc-48fc-ac54-eefec68f8433",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1252,8 +1744,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "api-keys", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "api-keys",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -1262,9 +1761,11 @@
               ]
             },
             "description": "Delete an API key."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "cfe6a9f9-1ea1-4d30-a4a2-976608fa129b",
       "description": "API key management endpoints for programmatic access."
     },
     {
@@ -1272,6 +1773,7 @@
       "item": [
         {
           "name": "Create Note (GET)",
+          "id": "46560546-39b8-480c-b95d-c84b8dc609d3",
           "request": {
             "method": "GET",
             "header": [
@@ -1282,8 +1784,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&type=rote&title=My Title&tag=tag1&tag=tag2",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "openkey", "notes", "create"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "openkey",
+                "notes",
+                "create"
+              ],
               "query": [
                 {
                   "key": "content",
@@ -1312,10 +1822,12 @@
               ]
             },
             "description": "Create a note using API key (GET method for backward compatibility). Requires SENDROTE permission."
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Note (POST - /create)",
+          "id": "d881146f-9853-448f-9d4e-f1d0beb7b72b",
           "request": {
             "method": "POST",
             "header": [
@@ -1334,14 +1846,24 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/create",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "openkey", "notes", "create"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "openkey",
+                "notes",
+                "create"
+              ]
             },
             "description": "Create a note using API key (POST to /create endpoint). Requires SENDROTE permission."
-          }
+          },
+          "response": []
         },
         {
           "name": "Create Note (POST - RESTful)",
+          "id": "83615b6c-ddca-4404-8eab-d0fabe839557",
           "request": {
             "method": "POST",
             "header": [
@@ -1360,14 +1882,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "openkey", "notes"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "openkey",
+                "notes"
+              ]
             },
             "description": "Create a note using API key (RESTful POST). Requires SENDROTE permission."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Notes",
+          "id": "bbe79daa-5036-4772-a300-0a068c93026a",
           "request": {
             "method": "GET",
             "header": [
@@ -1378,8 +1909,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes?skip=0&limit=20&archived=false",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "openkey", "notes"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "openkey",
+                "notes"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -1396,10 +1934,12 @@
               ]
             },
             "description": "Get notes using API key. Requires GETROTE permission."
-          }
+          },
+          "response": []
         },
         {
           "name": "Search Notes",
+          "id": "1b6807e3-442b-40fb-b5b8-0534e715df30",
           "request": {
             "method": "GET",
             "header": [
@@ -1410,8 +1950,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/search?keyword=search term&skip=0&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "openkey", "notes", "search"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "openkey",
+                "notes",
+                "search"
+              ],
               "query": [
                 {
                   "key": "keyword",
@@ -1428,9 +1976,11 @@
               ]
             },
             "description": "Search notes using API key."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "a91403fe-9fe7-45b1-be6a-a948a8281c55",
       "description": "OpenKey API endpoints for programmatic access using API keys."
     },
     {
@@ -1438,6 +1988,7 @@
       "item": [
         {
           "name": "Add Subscription",
+          "id": "ed317dfa-d20a-4fdc-9bef-790088ac871f",
           "request": {
             "method": "POST",
             "header": [
@@ -1456,14 +2007,22 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "subscriptions"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "subscriptions"
+              ]
             },
             "description": "Add a push notification subscription."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Subscriptions",
+          "id": "5b5bc276-422d-4c44-b4ee-ff0b18cf7991",
           "request": {
             "method": "GET",
             "header": [
@@ -1474,14 +2033,22 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "subscriptions"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "subscriptions"
+              ]
             },
             "description": "Get all push notification subscriptions for the current user."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Subscription",
+          "id": "422d1d89-7b66-4a91-939f-7ae297c56b58",
           "request": {
             "method": "PUT",
             "header": [
@@ -1500,8 +2067,15 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "subscriptions", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "subscriptions",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -1510,10 +2084,12 @@
               ]
             },
             "description": "Update a subscription."
-          }
+          },
+          "response": []
         },
         {
           "name": "Delete Subscription",
+          "id": "a1c6f1fc-e5c4-40a0-b20b-9e73fc1d2d7b",
           "request": {
             "method": "DELETE",
             "header": [
@@ -1524,8 +2100,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/:id",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "subscriptions", ":id"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "subscriptions",
+                ":id"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -1534,10 +2117,12 @@
               ]
             },
             "description": "Delete a subscription."
-          }
+          },
+          "response": []
         },
         {
           "name": "Test All Subscriptions",
+          "id": "dc159771-016f-4e0e-8d6c-168fad3d8c9a",
           "request": {
             "method": "POST",
             "header": [
@@ -1548,14 +2133,23 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/test-all",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "subscriptions", "test-all"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "subscriptions",
+                "test-all"
+              ]
             },
             "description": "Test all push notification endpoints for the current user."
-          }
+          },
+          "response": []
         },
         {
           "name": "Send Notification",
+          "id": "35ee1f3c-4b8d-464f-8185-c5172485bc2d",
           "request": {
             "method": "POST",
             "header": [
@@ -1570,8 +2164,16 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/:id/notify",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "subscriptions", ":id", "notify"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "subscriptions",
+                ":id",
+                "notify"
+              ],
               "variable": [
                 {
                   "key": "id",
@@ -1580,9 +2182,11 @@
               ]
             },
             "description": "Send a push notification to a specific subscription."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "05da5e21-e908-4aeb-b480-de5b6b5000a4",
       "description": "Push notification subscription management endpoints."
     },
     {
@@ -1590,6 +2194,7 @@
       "item": [
         {
           "name": "Create Notification (Disabled)",
+          "id": "714ad0b1-a165-4bbb-bc32-9b02685a2922",
           "request": {
             "method": "POST",
             "header": [
@@ -1608,13 +2213,21 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notifications",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "notifications"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "notifications"
+              ]
             },
             "description": "Create a notification (currently disabled - returns success but performs no action)."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "b1997dea-5ea7-4f7a-98a8-dccc8b29e417",
       "description": "Notification endpoints (currently disabled)."
     },
     {
@@ -1622,6 +2235,7 @@
       "item": [
         {
           "name": "Get Changes by Origin ID",
+          "id": "adb71687-2ae3-4c1a-897a-b78a5f98a726",
           "request": {
             "method": "GET",
             "header": [
@@ -1632,8 +2246,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/origin/:originid?skip=0&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "changes", "origin", ":originid"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "changes",
+                "origin",
+                ":originid"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -1652,10 +2274,12 @@
               ]
             },
             "description": "Get change records by original note ID (for iOS client sync)."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Changes by Rote ID",
+          "id": "273545c0-7bf1-4eab-bb6f-8976ce913197",
           "request": {
             "method": "GET",
             "header": [
@@ -1666,8 +2290,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/rote/:roteid?skip=0&limit=20",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "changes", "rote", ":roteid"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "changes",
+                "rote",
+                ":roteid"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -1686,10 +2318,12 @@
               ]
             },
             "description": "Get change records by note ID."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get My Changes",
+          "id": "ec0e7b91-f0cb-405f-a0b1-686dd8c796ab",
           "request": {
             "method": "GET",
             "header": [
@@ -1700,8 +2334,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/user?skip=0&limit=20&action=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "changes", "user"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "changes",
+                "user"
+              ],
               "query": [
                 {
                   "key": "skip",
@@ -1719,10 +2360,12 @@
               ]
             },
             "description": "Get all change records for the current user."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Changes After Timestamp",
+          "id": "ccf89e2c-ac87-4b93-aeb9-1adbb4e813a0",
           "request": {
             "method": "GET",
             "header": [
@@ -1733,8 +2376,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/after?timestamp=2024-01-01T00:00:00Z&skip=0&limit=20&action=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "changes", "after"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "changes",
+                "after"
+              ],
               "query": [
                 {
                   "key": "timestamp",
@@ -1757,9 +2407,11 @@
               ]
             },
             "description": "Get change records after a specific timestamp (for iOS client sync)."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "9ce64064-280d-4ffa-86a5-51588a808285",
       "description": "Change tracking endpoints for synchronization."
     },
     {
@@ -1767,44 +2419,72 @@
       "item": [
         {
           "name": "Get Site Status",
+          "id": "c5ca97d4-da13-4da9-9b03-bc0d408a7a21",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/site/status",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "site", "status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "site",
+                "status"
+              ]
             },
             "description": "Get site status and configuration information."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Config Status",
+          "id": "fa9bd9dc-e544-4d4b-9fd1-c6bf93d6f53a",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/site/config-status",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "site", "config-status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "site",
+                "config-status"
+              ]
             },
             "description": "Get system configuration status (for initialization wizard)."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Sitemap",
+          "id": "89258d37-4dba-4fce-b8a6-27a47068aff2",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/site/sitemap",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "site", "sitemap"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "site",
+                "sitemap"
+              ]
             },
             "description": "Get the site's XML sitemap."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "b19bc6f3-4fd3-4f80-ba28-aca6a9f4a4b5",
       "description": "Site information and configuration endpoints."
     },
     {
@@ -1812,26 +2492,43 @@
       "item": [
         {
           "name": "Get Public RSS Feed",
+          "id": "63e35dfa-99c7-4b60-b4e2-c4907ce0bd33",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/rss/public",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "rss", "public"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "rss",
+                "public"
+              ]
             },
             "description": "Get RSS feed of all public notes."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get User RSS Feed",
+          "id": "17caf61e-bb12-44d3-bf5a-8313b2547fcd",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/rss/:username",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "rss", ":username"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "rss",
+                ":username"
+              ],
               "variable": [
                 {
                   "key": "username",
@@ -1840,9 +2537,11 @@
               ]
             },
             "description": "Get RSS feed of a user's public notes."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "4049b8b7-4e1b-4057-9aa7-4497ec9a8a82",
       "description": "RSS feed endpoints."
     },
     {
@@ -1850,19 +2549,29 @@
       "item": [
         {
           "name": "Get System Status",
+          "id": "130aebf5-1ae9-4314-85db-135bd3e9bff2",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/status",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "status"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "status"
+              ]
             },
             "description": "Get system initialization status."
-          }
+          },
+          "response": []
         },
         {
           "name": "System Setup",
+          "id": "a3c277d8-4a87-42dc-b0c3-e8e3f1d5a541",
           "request": {
             "method": "POST",
             "header": [
@@ -1877,14 +2586,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/setup",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "setup"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "setup"
+              ]
             },
             "description": "Initialize the system with configuration and admin user. Only works if system is not initialized."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get All Settings",
+          "id": "d394805e-e074-4d78-bbb7-858f84f1f93f",
           "request": {
             "method": "GET",
             "header": [
@@ -1895,8 +2613,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings?group=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "settings"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "settings"
+              ],
               "query": [
                 {
                   "key": "group",
@@ -1906,10 +2631,12 @@
               ]
             },
             "description": "Get all configuration settings. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update Settings",
+          "id": "c08a29bc-d515-491d-958e-57d5d3d1ef47",
           "request": {
             "method": "PUT",
             "header": [
@@ -1928,14 +2655,23 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "settings"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "settings"
+              ]
             },
             "description": "Update configuration settings. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Test Configuration",
+          "id": "6017f70f-fcf7-4e0a-baef-25406a5c8968",
           "request": {
             "method": "POST",
             "header": [
@@ -1955,14 +2691,24 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/test",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "settings", "test"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "settings",
+                "test"
+              ]
             },
             "description": "Test configuration connection (storage or database)."
-          }
+          },
+          "response": []
         },
         {
           "name": "Regenerate Security Keys",
+          "id": "fd6400d3-732f-49af-bbf1-29f124c2ae0d",
           "request": {
             "method": "POST",
             "header": [
@@ -1973,14 +2719,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/regenerate-keys",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "settings", "regenerate-keys"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "settings",
+                "regenerate-keys"
+              ]
             },
             "description": "Regenerate security keys (JWT, VAPID). Requires super_admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Detect URLs",
+          "id": "2fa8d7c1-cfc5-49bc-a2dd-918766aac1ec",
           "request": {
             "method": "GET",
             "header": [
@@ -1991,14 +2747,24 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/detect-urls",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "settings", "detect-urls"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "settings",
+                "detect-urls"
+              ]
             },
             "description": "Auto-detect current API and frontend URLs. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update URLs",
+          "id": "a2f8f876-dfeb-4439-a2b5-3630656111b9",
           "request": {
             "method": "POST",
             "header": [
@@ -2017,14 +2783,24 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/update-urls",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "settings", "update-urls"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "settings",
+                "update-urls"
+              ]
             },
             "description": "Update URL configuration. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Refresh Config Cache",
+          "id": "5e704ffa-749a-467b-b573-0ddd6bee135a",
           "request": {
             "method": "POST",
             "header": [
@@ -2035,14 +2811,23 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/refresh-cache",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "refresh-cache"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "refresh-cache"
+              ]
             },
             "description": "Refresh configuration cache. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "List Users",
+          "id": "c3324540-dc79-43d4-9cd2-8dc75829c506",
           "request": {
             "method": "GET",
             "header": [
@@ -2053,8 +2838,15 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users?page=1&limit=10&role=&search=&sortField=&sortOrder=",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "users"
+              ],
               "query": [
                 {
                   "key": "page",
@@ -2086,10 +2878,12 @@
               ]
             },
             "description": "List all users with pagination. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get User by ID",
+          "id": "f5300d9b-2023-4506-ba97-40030956b669",
           "request": {
             "method": "GET",
             "header": [
@@ -2100,8 +2894,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "users", ":userId"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "users",
+                ":userId"
+              ],
               "variable": [
                 {
                   "key": "userId",
@@ -2110,10 +2912,12 @@
               ]
             },
             "description": "Get user details by ID. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Update User Role",
+          "id": "6c9a9928-9076-431a-befa-f6837a8ff0a8",
           "request": {
             "method": "PUT",
             "header": [
@@ -2132,8 +2936,17 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId/role",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "users", ":userId", "role"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "users",
+                ":userId",
+                "role"
+              ],
               "variable": [
                 {
                   "key": "userId",
@@ -2142,10 +2955,12 @@
               ]
             },
             "description": "Update a user's role. Requires super_admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Delete User",
+          "id": "1750dee8-0180-4438-a784-0f31530691da",
           "request": {
             "method": "DELETE",
             "header": [
@@ -2156,8 +2971,16 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "users", ":userId"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "users",
+                ":userId"
+              ],
               "variable": [
                 {
                   "key": "userId",
@@ -2166,10 +2989,12 @@
               ]
             },
             "description": "Delete a user. Requires super_admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Verify User Email",
+          "id": "2102556f-ca2b-4c8c-8790-71ccf8434302",
           "request": {
             "method": "PUT",
             "header": [
@@ -2180,8 +3005,17 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId/verify-email",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "users", ":userId", "verify-email"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "users",
+                ":userId",
+                "verify-email"
+              ],
               "variable": [
                 {
                   "key": "userId",
@@ -2190,10 +3024,12 @@
               ]
             },
             "description": "Manually verify a user's email. Requires admin role."
-          }
+          },
+          "response": []
         },
         {
           "name": "Get Role Statistics",
+          "id": "d9632c7a-4a93-406e-b235-049051a1e8ec",
           "request": {
             "method": "GET",
             "header": [
@@ -2204,14 +3040,32 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/roles/stats",
-              "host": ["{{base_url}}"],
-              "path": ["v2", "api", "admin", "roles", "stats"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "admin",
+                "roles",
+                "stats"
+              ]
             },
             "description": "Get user role statistics. Requires admin role."
-          }
+          },
+          "response": []
         }
       ],
+      "id": "b212101e-16f6-4725-83aa-78dc058b083a",
       "description": "Admin endpoints for system configuration and user management."
+    }
+  ],
+  "variable": [
+    {
+      "id": "22069f76-b59a-41b1-a739-af034a0b63e6",
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
     }
   ]
 }
