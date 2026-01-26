@@ -34,16 +34,14 @@ const extractAccountIdFromEndpoint = (endpoint: string) => {
   return match ? match[1] : '';
 };
 
-const isCosEndpoint = (endpoint: string) =>
-  /cos\.([a-z0-9-]+)\.myqcloud\.com/i.test(endpoint);
+const isCosEndpoint = (endpoint: string) => /cos\.([a-z0-9-]+)\.myqcloud\.com/i.test(endpoint);
 
 const extractCosRegionFromEndpoint = (endpoint: string) => {
   const match = endpoint.match(/cos\.([a-z0-9-]+)\.myqcloud\.com/i);
   return match ? match[1] : '';
 };
 
-const getCosEndpoint = (region: string) =>
-  region ? `https://cos.${region}.myqcloud.com` : '';
+const getCosEndpoint = (region: string) => (region ? `https://cos.${region}.myqcloud.com` : '');
 
 const getStorageTypeFromEndpoint = (endpoint?: string) => {
   if (!endpoint) return 'r2';
@@ -191,7 +189,7 @@ export default function StorageConfigTab({
         error?.response?.data?.error ||
         'Unknown error';
       toast.error(t('saveFailed', { error: errorMessage }));
-  } finally {
+    } finally {
       setIsSaving(false);
     }
   };
@@ -285,7 +283,9 @@ export default function StorageConfigTab({
                   urlPrefix: storageConfig?.urlPrefix || '',
                 })
               }
-              placeholder={isCos ? t('storage.cosEndpointPlaceholder') : t('storage.endpointPlaceholder')}
+              placeholder={
+                isCos ? t('storage.cosEndpointPlaceholder') : t('storage.endpointPlaceholder')
+              }
             />
             <p className="text-muted-foreground text-xs">
               {isCos ? t('storage.cosEndpointDescription') : t('storage.endpointDescription')}
@@ -359,7 +359,9 @@ export default function StorageConfigTab({
               value={storageConfig?.region || ''}
               onChange={(e) =>
                 setStorageConfig({
-                  endpoint: isCos ? getCosEndpoint(e.target.value.trim()) : storageConfig?.endpoint || '',
+                  endpoint: isCos
+                    ? getCosEndpoint(e.target.value.trim())
+                    : storageConfig?.endpoint || '',
                   bucket: storageConfig?.bucket || '',
                   accessKeyId: storageConfig?.accessKeyId || '',
                   secretAccessKey: storageConfig?.secretAccessKey || '',

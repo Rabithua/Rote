@@ -66,8 +66,7 @@ const wizardSteps: WizardStep[] = [
   },
 ];
 
-const getCosEndpoint = (region: string) =>
-  region ? `https://cos.${region}.myqcloud.com` : '';
+const getCosEndpoint = (region: string) => (region ? `https://cos.${region}.myqcloud.com` : '');
 
 const extractCosRegion = (endpoint: string) => {
   const match = endpoint.match(/cos\.([a-z0-9-]+)\.myqcloud\.com/i);
@@ -173,7 +172,11 @@ export default function SetupWizard() {
                 newErrors.region = 'required';
               }
               const expectedCosEndpoint = getCosEndpoint(regionValue);
-              if (normalizedEndpoint && expectedCosEndpoint && normalizedEndpoint !== expectedCosEndpoint) {
+              if (
+                normalizedEndpoint &&
+                expectedCosEndpoint &&
+                normalizedEndpoint !== expectedCosEndpoint
+              ) {
                 newErrors.endpoint = 'cos';
               }
             }
@@ -461,7 +464,8 @@ export default function SetupWizard() {
           </div>
         );
 
-      case 1: { // S3 存储配置（可选）
+      case 1: {
+        // S3 存储配置（可选）
         const storageType = config.s3Config.storageType;
         const isR2 = storageType === 'r2';
         const isCos = storageType === 'cos';
@@ -550,7 +554,9 @@ export default function SetupWizard() {
                       s3Config: {
                         ...config.s3Config,
                         endpoint: e.target.value,
-                        region: isCos ? extractCosRegion(e.target.value) || config.s3Config.region : config.s3Config.region,
+                        region: isCos
+                          ? extractCosRegion(e.target.value) || config.s3Config.region
+                          : config.s3Config.region,
                       },
                     })
                   }
@@ -649,7 +655,9 @@ export default function SetupWizard() {
                       s3Config: {
                         ...config.s3Config,
                         region: e.target.value,
-                        endpoint: isCos ? getCosEndpoint(e.target.value.trim()) : config.s3Config.endpoint,
+                        endpoint: isCos
+                          ? getCosEndpoint(e.target.value.trim())
+                          : config.s3Config.endpoint,
                       },
                     })
                   }
