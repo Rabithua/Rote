@@ -34,6 +34,22 @@ const extractAccountIdFromEndpoint = (endpoint: string) => {
   return match ? match[1] : '';
 };
 
+const isCosEndpoint = (endpoint: string) => /cos\.([a-z0-9-]+)\.myqcloud\.com/i.test(endpoint);
+
+const extractCosRegionFromEndpoint = (endpoint: string) => {
+  const match = endpoint.match(/cos\.([a-z0-9-]+)\.myqcloud\.com/i);
+  return match ? match[1] : '';
+};
+
+const getCosEndpoint = (region: string) => (region ? `https://cos.${region}.myqcloud.com` : '');
+
+const getStorageTypeFromEndpoint = (endpoint?: string) => {
+  if (!endpoint) return 'r2';
+  if (isR2Endpoint(endpoint)) return 'r2';
+  if (isCosEndpoint(endpoint)) return 'cos';
+  return 'custom';
+};
+
 export default function StorageConfigTab({
   storageConfig,
   setStorageConfig,
@@ -49,14 +65,9 @@ export default function StorageConfigTab({
   // 根据现有配置计算模式（使用派生状态而非 useEffect）
   const isR2EndpointFormat = storageConfig?.endpoint ? isR2Endpoint(storageConfig.endpoint) : true;
 
-  // 存储类型模式：false = R2 模式，true = 自定义 Endpoint 模式
-  const [useCustomEndpoint, setUseCustomEndpoint] = useState(() => {
-    // 初始化时根据现有配置判断模式
-    if (storageConfig?.endpoint) {
-      return !isR2Endpoint(storageConfig.endpoint);
-    }
-    return false; // 默认 R2 模式
-  });
+  const [storageType, setStorageType] = useState<'r2' | 'cos' | 'custom'>(() =>
+    getStorageTypeFromEndpoint(storageConfig?.endpoint)
+  );
 
   // R2 Account ID（从 endpoint 提取或单独存储）
   const [accountId, setAccountId] = useState(() => {
@@ -72,7 +83,54 @@ export default function StorageConfigTab({
       ? extractAccountIdFromEndpoint(storageConfig.endpoint)
       : accountId;
 
+  const updateStorageType = (nextType: 'r2' | 'cos' | 'custom') => {
+    setStorageType(nextType);
+
+    const inferredCosRegion = storageConfig?.endpoint
+      ? extractCosRegionFromEndpoint(storageConfig.endpoint)
+      : '';
+    const nextRegion =
+      nextType === 'cos'
+        ? storageConfig?.region && storageConfig.region !== 'auto'
+          ? storageConfig.region
+          : inferredCosRegion
+        : nextType === 'r2'
+          ? 'auto'
+          : storageConfig?.region === 'auto'
+            ? ''
+            : storageConfig?.region || '';
+
+    const nextEndpoint =
+      nextType === 'r2'
+        ? currentAccountId
+          ? `https://${currentAccountId}.r2.cloudflarestorage.com`
+          : ''
+        : nextType === 'cos'
+          ? getCosEndpoint(nextRegion)
+          : storageConfig?.endpoint || '';
+
+    setStorageConfig({
+      endpoint: nextEndpoint,
+      bucket: storageConfig?.bucket || '',
+      accessKeyId: storageConfig?.accessKeyId || '',
+      secretAccessKey: storageConfig?.secretAccessKey || '',
+      region: nextRegion,
+      urlPrefix: storageConfig?.urlPrefix || '',
+    });
+  };
+
   const handleTest = async () => {
+    if (
+      !storageConfig?.endpoint?.trim() ||
+      !storageConfig?.bucket?.trim() ||
+      !storageConfig?.accessKeyId?.trim() ||
+      !storageConfig?.secretAccessKey?.trim() ||
+      !storageConfig?.urlPrefix?.trim() ||
+      (storageType === 'cos' && !storageConfig?.region?.trim())
+    ) {
+      toast.error(t('storage.fillAllRequired'));
+      return;
+    }
     setIsTesting(true);
     try {
       const result = await testStorageConnection(storageConfig);
@@ -81,9 +139,9 @@ export default function StorageConfigTab({
         toast.success(t('storage.testSuccess'));
       } else {
         toast.error(
-          t('storage.testFailed', {
+          `${t('storage.testFailed', {
             error: result.message || 'Unknown error',
-          })
+          })} ${t('storage.seeConsole')}`
         );
       }
     } catch (error: any) {
@@ -93,7 +151,7 @@ export default function StorageConfigTab({
         error?.message ||
         error?.response?.data?.error ||
         'Unknown error';
-      toast.error(t('storage.testFailed', { error: errorMessage }));
+      toast.error(`${t('storage.testFailed', { error: errorMessage })} ${t('storage.seeConsole')}`);
     } finally {
       setIsTesting(false);
     }
@@ -106,7 +164,9 @@ export default function StorageConfigTab({
       !storageConfig.endpoint?.trim() ||
       !storageConfig.bucket?.trim() ||
       !storageConfig.accessKeyId?.trim() ||
-      !storageConfig.secretAccessKey?.trim()
+      !storageConfig.secretAccessKey?.trim() ||
+      !storageConfig.urlPrefix?.trim() ||
+      (storageType === 'cos' && !storageConfig.region?.trim())
     ) {
       toast.error(t('storage.fillAllRequired'));
       return;
@@ -134,6 +194,9 @@ export default function StorageConfigTab({
     }
   };
 
+  const isR2 = storageType === 'r2';
+  const isCos = storageType === 'cos';
+
   return (
     <Card className="rounded-none border-none shadow-none">
       <CardHeader className="pb-0">
@@ -148,30 +211,25 @@ export default function StorageConfigTab({
           <div className="flex gap-2">
             <Button
               type="button"
-              variant={!useCustomEndpoint ? 'default' : 'outline'}
+              variant={isR2 ? 'default' : 'outline'}
               size="sm"
-              onClick={() => {
-                setUseCustomEndpoint(false);
-                // 如果有 accountId，更新 endpoint 为 R2 格式
-                if (currentAccountId) {
-                  setStorageConfig({
-                    endpoint: `https://${currentAccountId}.r2.cloudflarestorage.com`,
-                    bucket: storageConfig?.bucket || '',
-                    accessKeyId: storageConfig?.accessKeyId || '',
-                    secretAccessKey: storageConfig?.secretAccessKey || '',
-                    region: storageConfig?.region || 'auto',
-                    urlPrefix: storageConfig?.urlPrefix || '',
-                  });
-                }
-              }}
+              onClick={() => updateStorageType('r2')}
             >
               Cloudflare R2
             </Button>
             <Button
               type="button"
-              variant={useCustomEndpoint ? 'default' : 'outline'}
+              variant={isCos ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setUseCustomEndpoint(true)}
+              onClick={() => updateStorageType('cos')}
+            >
+              {t('storage.cos')}
+            </Button>
+            <Button
+              type="button"
+              variant={!isR2 && !isCos ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => updateStorageType('custom')}
             >
               {t('storage.customEndpoint')}
             </Button>
@@ -180,7 +238,7 @@ export default function StorageConfigTab({
         </div>
 
         {/* R2 模式：Account ID */}
-        {!useCustomEndpoint && (
+        {isR2 && (
           <div className="space-y-2">
             <Label htmlFor="accountId">{t('storage.accountId')}</Label>
             <Input
@@ -204,10 +262,12 @@ export default function StorageConfigTab({
           </div>
         )}
 
-        {/* 自定义 Endpoint 模式 */}
-        {useCustomEndpoint && (
+        {/* COS / 自定义 Endpoint 模式 */}
+        {!isR2 && (
           <div className="space-y-2">
-            <Label htmlFor="endpoint">{t('storage.endpoint')}</Label>
+            <Label htmlFor="endpoint">
+              {isCos ? t('storage.cosEndpoint') : t('storage.endpoint')}
+            </Label>
             <Input
               id="endpoint"
               value={storageConfig?.endpoint || ''}
@@ -217,13 +277,19 @@ export default function StorageConfigTab({
                   bucket: storageConfig?.bucket || '',
                   accessKeyId: storageConfig?.accessKeyId || '',
                   secretAccessKey: storageConfig?.secretAccessKey || '',
-                  region: storageConfig?.region || '',
+                  region: isCos
+                    ? extractCosRegionFromEndpoint(e.target.value) || storageConfig?.region || ''
+                    : storageConfig?.region || '',
                   urlPrefix: storageConfig?.urlPrefix || '',
                 })
               }
-              placeholder={t('storage.endpointPlaceholder')}
+              placeholder={
+                isCos ? t('storage.cosEndpointPlaceholder') : t('storage.endpointPlaceholder')
+              }
             />
-            <p className="text-muted-foreground text-xs">{t('storage.endpointDescription')}</p>
+            <p className="text-muted-foreground text-xs">
+              {isCos ? t('storage.cosEndpointDescription') : t('storage.endpointDescription')}
+            </p>
           </div>
         )}
 
@@ -285,25 +351,33 @@ export default function StorageConfigTab({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="region">{t('storage.region')}</Label>
-          <Input
-            id="region"
-            value={storageConfig?.region || ''}
-            onChange={(e) =>
-              setStorageConfig({
-                endpoint: storageConfig?.endpoint || '',
-                bucket: storageConfig?.bucket || '',
-                accessKeyId: storageConfig?.accessKeyId || '',
-                secretAccessKey: storageConfig?.secretAccessKey || '',
-                region: e.target.value,
-                urlPrefix: storageConfig?.urlPrefix || '',
-              })
-            }
-            placeholder={t('storage.regionPlaceholder')}
-          />
-          <p className="text-muted-foreground text-xs">{t('storage.regionDescription')}</p>
-        </div>
+        {!isR2 && (
+          <div className="space-y-2">
+            <Label htmlFor="region">{t('storage.region')}</Label>
+            <Input
+              id="region"
+              value={storageConfig?.region || ''}
+              onChange={(e) =>
+                setStorageConfig({
+                  endpoint: isCos
+                    ? getCosEndpoint(e.target.value.trim())
+                    : storageConfig?.endpoint || '',
+                  bucket: storageConfig?.bucket || '',
+                  accessKeyId: storageConfig?.accessKeyId || '',
+                  secretAccessKey: storageConfig?.secretAccessKey || '',
+                  region: e.target.value,
+                  urlPrefix: storageConfig?.urlPrefix || '',
+                })
+              }
+              placeholder={
+                isCos ? t('storage.cosRegionPlaceholder') : t('storage.regionPlaceholder')
+              }
+            />
+            <p className="text-muted-foreground text-xs">
+              {isCos ? t('storage.cosRegionDescription') : t('storage.regionDescription')}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="urlPrefix">{t('storage.urlPrefix')}</Label>

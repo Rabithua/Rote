@@ -29,7 +29,7 @@ interface SetupConfig {
 
   // S3 存储配置（可选）
   s3Config: {
-    useCustomEndpoint: boolean; // 是否使用自定义 endpoint（用于 Garage、MinIO 等）
+    storageType: 'r2' | 'cos' | 'custom';
     accountId: string; // R2 Account ID（R2 模式）
     endpoint: string; // 自定义 endpoint（自定义模式）
     accessKey: string;
@@ -66,6 +66,13 @@ const wizardSteps: WizardStep[] = [
   },
 ];
 
+const getCosEndpoint = (region: string) => (region ? `https://cos.${region}.myqcloud.com` : '');
+
+const extractCosRegion = (endpoint: string) => {
+  const match = endpoint.match(/cos\.([a-z0-9-]+)\.myqcloud\.com/i);
+  return match ? match[1] : '';
+};
+
 export default function SetupWizard() {
   const navigate = useNavigate();
   const { t } = useTranslation('translation');
@@ -76,7 +83,7 @@ export default function SetupWizard() {
     siteDescription: '',
     frontendUrl: typeof window !== 'undefined' ? window.location.origin : '',
     s3Config: {
-      useCustomEndpoint: false,
+      storageType: 'r2',
       accountId: '',
       endpoint: '',
       accessKey: '',
@@ -135,10 +142,12 @@ export default function SetupWizard() {
       case 1: {
         // S3 存储配置（可选）
         // 如果填写了部分字段，验证所有字段都必须填写
+        const storageType = config.s3Config.storageType;
+        const endpointValue = config.s3Config.endpoint.trim();
+        const normalizedEndpoint = endpointValue.replace(/\/+$/, '');
+        const regionValue = config.s3Config.region.trim();
         const hasAnyS3Field =
-          (config.s3Config.useCustomEndpoint
-            ? config.s3Config.endpoint.trim()
-            : config.s3Config.accountId.trim()) ||
+          (storageType === 'r2' ? config.s3Config.accountId.trim() : endpointValue) ||
           config.s3Config.accessKey.trim() ||
           config.s3Config.secretKey.trim() ||
           config.s3Config.bucket.trim() ||
@@ -146,17 +155,30 @@ export default function SetupWizard() {
 
         if (hasAnyS3Field) {
           // 如果填写了任何字段，则所有字段都必须填写
-          if (config.s3Config.useCustomEndpoint) {
-            // 自定义 endpoint 模式
-            if (!config.s3Config.endpoint.trim()) {
-              newErrors.endpoint = 'required';
-            } else if (!/^https?:\/\/.+/.test(config.s3Config.endpoint)) {
-              newErrors.endpoint = 'invalid';
-            }
-          } else {
+          if (storageType === 'r2') {
             // R2 模式
             if (!config.s3Config.accountId.trim()) {
               newErrors.accountId = 'required';
+            }
+          } else {
+            // 自定义/COS endpoint 模式
+            if (!endpointValue) {
+              newErrors.endpoint = 'required';
+            } else if (!/^https?:\/\/.+/.test(endpointValue)) {
+              newErrors.endpoint = 'invalid';
+            }
+            if (storageType === 'cos') {
+              if (!regionValue) {
+                newErrors.region = 'required';
+              }
+              const expectedCosEndpoint = getCosEndpoint(regionValue);
+              if (
+                normalizedEndpoint &&
+                expectedCosEndpoint &&
+                normalizedEndpoint !== expectedCosEndpoint
+              ) {
+                newErrors.endpoint = 'cos';
+              }
             }
           }
           if (!config.s3Config.accessKey.trim()) {
@@ -248,15 +270,17 @@ export default function SetupWizard() {
       };
 
       // 如果填写了 S3 配置，则添加存储配置
-      const hasS3Config = config.s3Config.useCustomEndpoint
-        ? config.s3Config.endpoint && config.s3Config.bucket
-        : config.s3Config.accountId && config.s3Config.bucket;
+      const hasS3Config =
+        config.s3Config.storageType === 'r2'
+          ? config.s3Config.accountId && config.s3Config.bucket && config.s3Config.urlPrefix
+          : config.s3Config.endpoint && config.s3Config.bucket && config.s3Config.urlPrefix;
 
       if (hasS3Config) {
         // 根据模式确定 endpoint
-        const endpoint = config.s3Config.useCustomEndpoint
-          ? config.s3Config.endpoint
-          : `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`;
+        const endpoint =
+          config.s3Config.storageType === 'r2'
+            ? `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`
+            : config.s3Config.endpoint;
 
         setupData.storage = {
           type: 's3',
@@ -290,17 +314,52 @@ export default function SetupWizard() {
     setConfig((prev) => ({ ...prev, ...updates }));
   };
 
+  const updateStorageType = (storageType: SetupConfig['s3Config']['storageType']) => {
+    const inferredCosRegion = extractCosRegion(config.s3Config.endpoint);
+    const nextRegion =
+      storageType === 'cos'
+        ? config.s3Config.region && config.s3Config.region !== 'auto'
+          ? config.s3Config.region
+          : inferredCosRegion
+        : storageType === 'r2'
+          ? 'auto'
+          : config.s3Config.region === 'auto'
+            ? ''
+            : config.s3Config.region;
+
+    const nextEndpoint =
+      storageType === 'r2'
+        ? config.s3Config.accountId
+          ? `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`
+          : ''
+        : storageType === 'cos'
+          ? getCosEndpoint(nextRegion)
+          : config.s3Config.endpoint;
+
+    updateConfig({
+      s3Config: {
+        ...config.s3Config,
+        storageType,
+        region: nextRegion,
+        endpoint: nextEndpoint,
+      },
+    });
+  };
+
   // 测试 S3 连接
   const handleTestConnection = async () => {
-    const hasRequiredFields = config.s3Config.useCustomEndpoint
-      ? config.s3Config.endpoint &&
-        config.s3Config.accessKey &&
-        config.s3Config.secretKey &&
-        config.s3Config.bucket
-      : config.s3Config.accountId &&
-        config.s3Config.accessKey &&
-        config.s3Config.secretKey &&
-        config.s3Config.bucket;
+    const hasRequiredFields =
+      config.s3Config.storageType === 'r2'
+        ? config.s3Config.accountId &&
+          config.s3Config.accessKey &&
+          config.s3Config.secretKey &&
+          config.s3Config.bucket &&
+          config.s3Config.urlPrefix
+        : config.s3Config.endpoint &&
+          config.s3Config.accessKey &&
+          config.s3Config.secretKey &&
+          config.s3Config.bucket &&
+          config.s3Config.urlPrefix;
 
     if (!hasRequiredFields) {
       toast.error(t('pages.setupWizard.toasts.pleaseFillS3'));
@@ -310,9 +369,10 @@ export default function SetupWizard() {
     setIsTesting(true);
     try {
       // 根据模式确定 endpoint
-      const endpoint = config.s3Config.useCustomEndpoint
-        ? config.s3Config.endpoint
-        : `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`;
+      const endpoint =
+        config.s3Config.storageType === 'r2'
+          ? `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`
+          : config.s3Config.endpoint;
 
       const testData = {
         endpoint,
@@ -329,14 +389,18 @@ export default function SetupWizard() {
         toast.success(t('pages.setupWizard.toasts.testSuccess'));
       } else {
         toast.error(
-          t('pages.setupWizard.toasts.testFailed', {
+          `${t('pages.setupWizard.toasts.testFailed', {
             error: result.message || 'Unknown error',
-          })
+          })} ${t('pages.setupWizard.toasts.seeConsole')}`
         );
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
-      toast.error(t('pages.setupWizard.toasts.testFailed', { error: errorMessage }));
+      toast.error(
+        `${t('pages.setupWizard.toasts.testFailed', { error: errorMessage })} ${t(
+          'pages.setupWizard.toasts.seeConsole'
+        )}`
+      );
     } finally {
       setIsTesting(false);
     }
@@ -400,7 +464,12 @@ export default function SetupWizard() {
           </div>
         );
 
-      case 1: // S3 存储配置（可选）
+      case 1: {
+        // S3 存储配置（可选）
+        const storageType = config.s3Config.storageType;
+        const isR2 = storageType === 'r2';
+        const isCos = storageType === 'cos';
+
         return (
           <div className="space-y-6">
             <p className="text-muted-foreground mb-4 text-sm">
@@ -418,25 +487,25 @@ export default function SetupWizard() {
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant={!config.s3Config.useCustomEndpoint ? 'default' : 'outline'}
+                  variant={isR2 ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() =>
-                    updateConfig({
-                      s3Config: { ...config.s3Config, useCustomEndpoint: false },
-                    })
-                  }
+                  onClick={() => updateStorageType('r2')}
                 >
                   Cloudflare R2
                 </Button>
                 <Button
                   type="button"
-                  variant={config.s3Config.useCustomEndpoint ? 'default' : 'outline'}
+                  variant={isCos ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() =>
-                    updateConfig({
-                      s3Config: { ...config.s3Config, useCustomEndpoint: true },
-                    })
-                  }
+                  onClick={() => updateStorageType('cos')}
+                >
+                  {t('pages.setupWizard.labels.cos')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={!isR2 && !isCos ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => updateStorageType('custom')}
                 >
                   {t('pages.setupWizard.labels.customEndpoint')}
                 </Button>
@@ -447,7 +516,7 @@ export default function SetupWizard() {
             </div>
 
             {/* R2 模式：Account ID */}
-            {!config.s3Config.useCustomEndpoint && (
+            {isR2 && (
               <div className="space-y-2">
                 <Label htmlFor="accountId">{t('pages.setupWizard.labels.accountId')}</Label>
                 <Input
@@ -469,29 +538,47 @@ export default function SetupWizard() {
               </div>
             )}
 
-            {/* 自定义 Endpoint 模式 */}
-            {config.s3Config.useCustomEndpoint && (
+            {/* COS / 自定义 Endpoint 模式 */}
+            {!isR2 && (
               <div className="space-y-2">
-                <Label htmlFor="endpoint">{t('pages.setupWizard.labels.endpoint')}</Label>
+                <Label htmlFor="endpoint">
+                  {isCos
+                    ? t('pages.setupWizard.labels.cosEndpoint')
+                    : t('pages.setupWizard.labels.endpoint')}
+                </Label>
                 <Input
                   id="endpoint"
                   value={config.s3Config.endpoint}
                   onChange={(e) =>
                     updateConfig({
-                      s3Config: { ...config.s3Config, endpoint: e.target.value },
+                      s3Config: {
+                        ...config.s3Config,
+                        endpoint: e.target.value,
+                        region: isCos
+                          ? extractCosRegion(e.target.value) || config.s3Config.region
+                          : config.s3Config.region,
+                      },
                     })
                   }
-                  placeholder={t('pages.setupWizard.placeholders.endpoint')}
+                  placeholder={
+                    isCos
+                      ? t('pages.setupWizard.placeholders.cosEndpoint')
+                      : t('pages.setupWizard.placeholders.endpoint')
+                  }
                   className={errors.endpoint ? 'border-destructive' : ''}
                 />
                 <p className="text-muted-foreground text-xs">
-                  {t('pages.setupWizard.descriptions.endpoint')}
+                  {isCos
+                    ? t('pages.setupWizard.descriptions.cosEndpoint')
+                    : t('pages.setupWizard.descriptions.endpoint')}
                 </p>
                 {errors.endpoint && (
                   <p className="text-destructive text-sm">
                     {errors.endpoint === 'required'
                       ? t('pages.setupWizard.validation.endpointRequired')
-                      : t('pages.setupWizard.validation.endpointInvalid')}
+                      : errors.endpoint === 'cos'
+                        ? t('pages.setupWizard.validation.cosEndpointInvalid')
+                        : t('pages.setupWizard.validation.endpointInvalid')}
                   </p>
                 )}
               </div>
@@ -557,22 +644,42 @@ export default function SetupWizard() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="region">{t('pages.setupWizard.labels.region')}</Label>
-              <Input
-                id="region"
-                value={config.s3Config.region}
-                onChange={(e) =>
-                  updateConfig({
-                    s3Config: { ...config.s3Config, region: e.target.value },
-                  })
-                }
-                placeholder={t('pages.setupWizard.placeholders.region')}
-              />
-              <p className="text-muted-foreground text-xs">
-                {t('pages.setupWizard.descriptions.region')}
-              </p>
-            </div>
+            {!isR2 && (
+              <div className="space-y-2">
+                <Label htmlFor="region">{t('pages.setupWizard.labels.region')}</Label>
+                <Input
+                  id="region"
+                  value={config.s3Config.region}
+                  onChange={(e) =>
+                    updateConfig({
+                      s3Config: {
+                        ...config.s3Config,
+                        region: e.target.value,
+                        endpoint: isCos
+                          ? getCosEndpoint(e.target.value.trim())
+                          : config.s3Config.endpoint,
+                      },
+                    })
+                  }
+                  placeholder={
+                    isCos
+                      ? t('pages.setupWizard.placeholders.cosRegion')
+                      : t('pages.setupWizard.placeholders.region')
+                  }
+                  className={errors.region ? 'border-destructive' : ''}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {isCos
+                    ? t('pages.setupWizard.descriptions.cosRegion')
+                    : t('pages.setupWizard.descriptions.region')}
+                </p>
+                {errors.region && (
+                  <p className="text-destructive text-sm">
+                    {t('pages.setupWizard.validation.regionRequired')}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="urlPrefix">{t('pages.setupWizard.labels.urlPrefix')}</Label>
@@ -611,6 +718,7 @@ export default function SetupWizard() {
             </div>
           </div>
         );
+      }
 
       case 2: // 管理员账户
         return (
