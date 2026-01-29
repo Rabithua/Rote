@@ -29,7 +29,7 @@
 
 #### Method 1: Using Docker Hub Image
 
-Copy `docker-compose.yml` to your server with Docker and Docker Compose installed
+Copy [docker-compose.yml](https://github.com/Rabithua/Rote/blob/main/docker-compose.yml) to your server with Docker and Docker Compose installed
 
 > Note: If you use a reverse proxy, VITE_API_BASE should be your backend address after the reverse proxy
 

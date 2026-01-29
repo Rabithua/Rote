@@ -29,7 +29,7 @@
 
 #### 方式一：使用 Docker Hub 镜像
 
-复制 `docker-compose.yml` 到你的已经装好 Docker 和 Docker Compose 的服务器
+复制 [docker-compose.yml](https://github.com/Rabithua/Rote/blob/main/docker-compose.yml) 到你的已经装好 Docker 和 Docker Compose 的服务器
 
 > 注意：如果你使用反向代理的话，VITE_API_BASE 应该是你反向代理后的后端地址
 
