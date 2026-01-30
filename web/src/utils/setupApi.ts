@@ -29,7 +29,7 @@ export interface StorageConfigForTest {
   bucket: string;
   accessKeyId: string;
   secretAccessKey: string;
-  urlPrefix?: string;
+  urlPrefix: string;
   region?: string;
 }
 
@@ -43,7 +43,8 @@ export async function testStorageConnection(
     !config.endpoint?.trim() ||
     !config.bucket?.trim() ||
     !config.accessKeyId?.trim() ||
-    !config.secretAccessKey?.trim()
+    !config.secretAccessKey?.trim() ||
+    !config.urlPrefix?.trim()
   ) {
     return {
       success: false,

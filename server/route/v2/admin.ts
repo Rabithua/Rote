@@ -41,6 +41,84 @@ import { createResponse, getApiUrl } from '../../utils/main';
 
 const adminRouter = new Hono<{ Variables: HonoVariables }>();
 
+const redactStorageConfig = (config?: any) => ({
+  endpoint: config?.endpoint,
+  bucket: config?.bucket,
+  region: config?.region,
+  urlPrefix: config?.urlPrefix,
+  hasAccessKeyId: Boolean(config?.accessKeyId),
+  hasSecretAccessKey: Boolean(config?.secretAccessKey),
+});
+
+const getStorageFriendlyError = (details: any, fallbackMessage?: string) => {
+  const code = details?.name || details?.Code || details?.code;
+  const httpStatus = details?.$metadata?.httpStatusCode;
+  const rawMessage = typeof details?.message === 'string' ? details.message : '';
+
+  if (code === 'NoSuchBucket' || httpStatus === 404) {
+    return 'Bucket not found. Please confirm the bucket name and region.';
+  }
+
+  if (code === 'AccessDenied' || httpStatus === 403) {
+    return 'Access denied. Please check access keys and bucket permissions.';
+  }
+
+  if (code === 'InvalidAccessKeyId' || code === 'SignatureDoesNotMatch') {
+    return 'Invalid credentials. Please verify access key and secret.';
+  }
+
+  if (code === 'PermanentRedirect' || code === 'MovedPermanently') {
+    return 'Endpoint or region mismatch. Please verify the endpoint and region.';
+  }
+
+  if (
+    code === 'UnknownEndpoint' ||
+    rawMessage.includes('Inaccessible host') ||
+    rawMessage.includes('ENOTFOUND')
+  ) {
+    return 'Unable to reach the endpoint. Please verify the endpoint address and network.';
+  }
+
+  if (
+    code === 'NetworkingError' ||
+    rawMessage.includes('ECONNREFUSED') ||
+    rawMessage.includes('ETIMEDOUT') ||
+    rawMessage.includes('EHOSTUNREACH')
+  ) {
+    return 'Network error while connecting to the endpoint. Please check connectivity.';
+  }
+
+  if (rawMessage) {
+    return rawMessage;
+  }
+
+  if (fallbackMessage) {
+    return fallbackMessage;
+  }
+
+  return 'Please verify the endpoint, bucket, and credentials.';
+};
+
+const logStorageTestStart = (source: string, config: any) => {
+  console.info('[storage-test] start', source, redactStorageConfig(config));
+};
+
+const logStorageTestResult = (source: string, result: ConfigTestResult) => {
+  if (result.success) {
+    console.info('[storage-test] success', source, result.details || {});
+    return;
+  }
+
+  const metadata = (result.details as any)?.$metadata;
+  console.warn('[storage-test] failed', source, {
+    message: result.message,
+    httpStatusCode: metadata?.httpStatusCode,
+    requestId: metadata?.requestId,
+    extendedRequestId: metadata?.extendedRequestId,
+    details: result.details,
+  });
+};
+
 // 获取系统初始化状态
 adminRouter.get('/status', async (c: HonoContext) => {
   try {
@@ -132,16 +210,20 @@ adminRouter.post('/setup', async (c: HonoContext) => {
         !setupData.storage.endpoint ||
         !setupData.storage.bucket ||
         !setupData.storage.accessKeyId ||
-        !setupData.storage.secretAccessKey
+        !setupData.storage.secretAccessKey ||
+        !setupData.storage.urlPrefix
       ) {
         return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
       }
 
       // 测试存储配置
+      logStorageTestStart('setup', setupData.storage);
       const storageTest = await ConfigTester.testStorage(setupData.storage);
+      logStorageTestResult('setup', storageTest);
       if (!storageTest.success) {
+        const friendlyMessage = getStorageFriendlyError(storageTest.details, storageTest.message);
         return c.json(
-          createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
+          createResponse(null, `Storage configuration test failed: ${friendlyMessage}`),
           400
         );
       }
@@ -332,15 +414,24 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
     // 如果是存储配置，需要先验证配置是否可用
     if (group === 'storage') {
       // 验证存储配置字段是否完整
-      if (!config.endpoint || !config.bucket || !config.accessKeyId || !config.secretAccessKey) {
+      if (
+        !config.endpoint ||
+        !config.bucket ||
+        !config.accessKeyId ||
+        !config.secretAccessKey ||
+        !config.urlPrefix
+      ) {
         return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
       }
 
       // 测试存储配置是否可用
+      logStorageTestStart('settings:update', config);
       const storageTest = await ConfigTester.testStorage(config);
+      logStorageTestResult('settings:update', storageTest);
       if (!storageTest.success) {
+        const friendlyMessage = getStorageFriendlyError(storageTest.details, storageTest.message);
         return c.json(
-          createResponse(null, `Storage configuration test failed: ${storageTest.message}`),
+          createResponse(null, `Storage configuration test failed: ${friendlyMessage}`),
           400
         );
       }
@@ -444,7 +535,12 @@ adminRouter.post('/settings/test', optionalJWT, async (c: HonoContext) => {
 
     switch (type) {
       case 'storage':
+        if (!config.urlPrefix) {
+          return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+        }
+        logStorageTestStart('settings:test', config);
         testResult = await ConfigTester.testStorage(config);
+        logStorageTestResult('settings:test', testResult);
         break;
       case 'database':
         testResult = await ConfigTester.testDatabase();

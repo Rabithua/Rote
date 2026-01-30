@@ -6,14 +6,22 @@ import type { ConfigTestResult, StorageConfig } from '../types/config';
  * 配置测试工具类
  */
 export class ConfigTester {
+  private static normalizeEndpoint(endpoint: string): string {
+    return endpoint.trim().replace(/\/+$/, '');
+  }
+
+  private static extractCosRegion(endpoint: string): string | null {
+    const match = endpoint.match(/cos\.([a-z0-9-]+)\.myqcloud\.com/i);
+    return match ? match[1] : null;
+  }
+
   /**
    * 判断是否需要使用路径风格访问
    * 路径风格是 S3 API 的标准格式，所有 S3 兼容服务都支持
    */
   private static shouldUsePathStyle(_endpoint: string): boolean {
-    // 路径风格是标准格式，所有 S3 兼容服务都支持
-    // 虚拟主机风格只是 AWS S3 的优化，但不是必需的
-    return true;
+    // COS 新桶默认不支持路径风格访问
+    return !this.extractCosRegion(_endpoint);
   }
 
   /**
@@ -28,23 +36,61 @@ export class ConfigTester {
         };
       }
 
+      const endpoint = this.normalizeEndpoint(config.endpoint);
+      const bucketName = config.bucket;
+
+      const cosRegion = this.extractCosRegion(endpoint);
+      const resolvedRegion = config.region || cosRegion || 'auto';
+
+      if (cosRegion && config.region && config.region !== cosRegion) {
+        return {
+          success: false,
+          message: `Region mismatch: endpoint region is "${cosRegion}", but config region is "${config.region}"`,
+        };
+      }
+
+      if (cosRegion && resolvedRegion === 'auto') {
+        return {
+          success: false,
+          message: 'COS requires an explicit region (e.g., ap-shanghai). Please set region.',
+        };
+      }
+
+      if (
+        cosRegion &&
+        bucketName &&
+        endpoint.toLowerCase().includes(`${bucketName.toLowerCase()}.cos.${cosRegion}`)
+      ) {
+        return {
+          success: false,
+          message: `COS endpoint should not include bucket. Use "https://cos.${cosRegion}.myqcloud.com"`,
+        };
+      }
+
+      if (cosRegion && !bucketName) {
+        return {
+          success: false,
+          message: 'Bucket is required for COS configuration.',
+        };
+      }
+
       const s3Client = new S3Client({
-        endpoint: config.endpoint,
-        region: config.region || 'auto',
+        endpoint,
+        region: resolvedRegion,
         credentials: {
           accessKeyId: config.accessKeyId,
           secretAccessKey: config.secretAccessKey,
         },
         // 使用路径风格访问，兼容所有 S3 兼容服务（AWS S3、R2、Garage、MinIO 等）
         // 路径风格是 S3 API 的标准格式，所有服务商都支持
-        forcePathStyle: this.shouldUsePathStyle(config.endpoint),
+        forcePathStyle: this.shouldUsePathStyle(endpoint),
         // 仅在明确要求时计算校验和，避免与 Garage 等 S3 兼容服务的校验和验证冲突
         // Garage 可能不支持或不正确支持 AWS SDK 自动添加的校验和
         requestChecksumCalculation: RequestChecksumCalculation.WHEN_REQUIRED,
       });
 
       // 测试存储桶访问权限
-      await s3Client.send(new HeadBucketCommand({ Bucket: config.bucket }));
+      await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
 
       return {
         success: true,
