@@ -5,12 +5,32 @@
 
 import { Hono } from 'hono';
 import type { HonoContext, HonoVariables } from '../../types/hono';
-import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
+import {
+  createArticle,
+  createRote,
+  findMyRote,
+  searchMyRotes,
+  setNoteArticleId,
+} from '../../utils/dbMethods';
 import { parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
 import { createResponse, isOpenKeyOk } from '../../utils/main';
-import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
+import { ArticleCreateZod, NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
 const router = new Hono<{ Variables: HonoVariables }>();
+
+function requireOpenKeyPerm(...perms: string[]) {
+  return async (c: HonoContext, next: () => Promise<void>) => {
+    const openKey = c.get('openKey')!;
+    if (!openKey) throw new Error('Need openkey!');
+
+    // Require ANY of the provided permissions.
+    if (perms.length > 0 && !perms.some((p) => openKey.permissions?.includes(p))) {
+      throw new Error('API key permission does not match');
+    }
+
+    await next();
+  };
+}
 
 // 处理标签，过滤空白标签并验证长度
 const processTags = (tags: any): string[] => {
@@ -39,8 +59,19 @@ const processTags = (tags: any): string[] => {
   return [];
 };
 
+// Create article using API key - POST method
+router.post('/articles', isOpenKeyOk, requireOpenKeyPerm('SENDARTICLE'), async (c: HonoContext) => {
+  const body = await c.req.json();
+  ArticleCreateZod.parse(body);
+
+  const openKey = c.get('openKey')!;
+  const { content } = body as { content: string };
+  const article = await createArticle({ content, authorId: openKey.userid });
+  return c.json(createResponse(article), 201);
+});
+
 // Create note using API key - GET method (kept for backward compatibility)
-router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
+router.get('/notes/create', isOpenKeyOk, requireOpenKeyPerm('SENDROTE'), async (c: HonoContext) => {
   const content = c.req.query('content');
   const state = c.req.query('state');
   const type = c.req.query('type');
@@ -58,10 +89,7 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     throw new Error('Content cannot exceed 1,000,000 characters');
   }
 
-  const openKey = c.get('openKey');
-  if (!openKey?.permissions.includes('SENDROTE')) {
-    throw new Error('API key permission does not match');
-  }
+  const openKey = c.get('openKey')!;
 
   const rote = {
     content,
@@ -77,6 +105,13 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     authorid: openKey.userid,
   });
 
+  // Optional: bind a single article (same behavior as authenticated API).
+  const articleId = c.req.query('articleId');
+  if (articleId && typeof articleId === 'string') {
+    await setNoteArticleId(result.id, articleId, openKey.userid);
+    return c.json(createResponse(result), 201);
+  }
+
   // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
   void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
     console.error('Failed to parse link previews (openkey create):', error);
@@ -86,46 +121,61 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
 });
 
 // Create note using API key - POST method for /notes/create endpoint
-router.post('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
-  const body = await c.req.json();
-  const { content, state, type, title, tags, pin } = body;
+router.post(
+  '/notes/create',
+  isOpenKeyOk,
+  requireOpenKeyPerm('SENDROTE'),
+  async (c: HonoContext) => {
+    const body = await c.req.json();
+    const { content, state, type, title, tags, pin } = body;
 
-  if (!content) {
-    throw new Error('Content is required');
+    if (!content) {
+      throw new Error('Content is required');
+    }
+
+    // 验证输入长度（验证整个 body，确保所有字段都被验证）
+    NoteCreateZod.parse(body);
+
+    const openKey = c.get('openKey')!;
+
+    const rote = {
+      content,
+      title: title || '',
+      state: state || 'private',
+      type: type || 'rote',
+      tags: processTags(tags),
+      pin: !!pin,
+    };
+
+    const result = await createRote({
+      ...rote,
+      authorid: openKey.userid,
+    });
+
+    // Optional: bind a single article (same behavior as authenticated API).
+    const articleIdToSet =
+      typeof (body as any).articleId === 'string'
+        ? (body as any).articleId
+        : Array.isArray((body as any).articleIds) && (body as any).articleIds.length > 0
+          ? (body as any).articleIds[0]
+          : null;
+
+    if (articleIdToSet) {
+      await setNoteArticleId(result.id, articleIdToSet, openKey.userid);
+      return c.json(createResponse(result), 201);
+    }
+
+    // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
+    void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
+      console.error('Failed to parse link previews (openkey create):', error);
+    });
+
+    return c.json(createResponse(result), 201);
   }
-
-  // 验证输入长度（验证整个 body，确保所有字段都被验证）
-  NoteCreateZod.parse(body);
-
-  const openKey = c.get('openKey');
-  if (!openKey?.permissions.includes('SENDROTE')) {
-    throw new Error('API key permission does not match');
-  }
-
-  const rote = {
-    content,
-    title: title || '',
-    state: state || 'private',
-    type: type || 'rote',
-    tags: processTags(tags),
-    pin: !!pin,
-  };
-
-  const result = await createRote({
-    ...rote,
-    authorid: openKey.userid,
-  });
-
-  // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
-  void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
-    console.error('Failed to parse link previews (openkey create):', error);
-  });
-
-  return c.json(createResponse(result), 201);
-});
+);
 
 // Create note using API key - POST method (proper RESTful interface)
-router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
+router.post('/notes', isOpenKeyOk, requireOpenKeyPerm('SENDROTE'), async (c: HonoContext) => {
   const body = await c.req.json();
   const { content, state, type, title, tags, pin } = body;
 
@@ -136,10 +186,7 @@ router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
   // 验证输入长度（验证整个 body，确保所有字段都被验证）
   NoteCreateZod.parse(body);
 
-  const openKey = c.get('openKey');
-  if (!openKey?.permissions.includes('SENDROTE')) {
-    throw new Error('API key permission does not match');
-  }
+  const openKey = c.get('openKey')!;
 
   const rote = {
     content,
@@ -154,6 +201,19 @@ router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
     ...rote,
     authorid: openKey.userid,
   });
+
+  // Optional: bind a single article (same behavior as authenticated API).
+  const articleIdToSet =
+    typeof (body as any).articleId === 'string'
+      ? (body as any).articleId
+      : Array.isArray((body as any).articleIds) && (body as any).articleIds.length > 0
+        ? (body as any).articleIds[0]
+        : null;
+
+  if (articleIdToSet) {
+    await setNoteArticleId(result.id, articleIdToSet, openKey.userid);
+    return c.json(createResponse(result), 201);
+  }
 
   // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
   void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
@@ -164,12 +224,12 @@ router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
 });
 
 // Retrieve notes using API key
-router.get('/notes', isOpenKeyOk, async (c: HonoContext) => {
+router.get('/notes', isOpenKeyOk, requireOpenKeyPerm('GETROTE'), async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
 
-  const openKey = c.get('openKey');
+  const openKey = c.get('openKey')!;
   if (!openKey?.permissions.includes('GETROTE')) {
     throw new Error('API key permission does not match');
   }
@@ -218,13 +278,13 @@ router.get('/notes', isOpenKeyOk, async (c: HonoContext) => {
 });
 
 // Search notes using API key
-router.get('/notes/search', isOpenKeyOk, async (c: HonoContext) => {
+router.get('/notes/search', isOpenKeyOk, requireOpenKeyPerm('GETROTE'), async (c: HonoContext) => {
   const keyword = c.req.query('keyword');
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
   const archived = c.req.query('archived');
 
-  const openKey = c.get('openKey');
+  const openKey = c.get('openKey')!;
   if (!openKey) {
     throw new Error('API key is required');
   }
