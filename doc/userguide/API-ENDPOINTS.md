@@ -151,7 +151,7 @@
 | `/openkey/notes`        | POST | API Key | 创建笔记         |
 | `/openkey/notes`        | GET  | API Key | 获取笔记列表     |
 | `/openkey/notes/search` | GET  | API Key | 搜索笔记         |
-| `/openkey/articles`     | POST | API Key | 创建文章（需要 SENDARTICLE 或 SENDROTE） |
+| `/openkey/articles`     | POST | API Key | 创建文章（需要 SENDARTICLE） |
 
 鉴权：通过 `openkey` 传入（推荐）
 - GET：`?openkey=<API_KEY>`
