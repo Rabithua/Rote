@@ -151,8 +151,11 @@
 | `/openkey/notes`        | POST | API Key | 创建笔记         |
 | `/openkey/notes`        | GET  | API Key | 获取笔记列表     |
 | `/openkey/notes/search` | GET  | API Key | 搜索笔记         |
+| `/openkey/articles`     | POST | API Key | 创建文章         |
 
-请求头：`Authorization: Bearer <API_KEY>`
+鉴权：通过 `openkey` 传入（推荐）
+- GET：`?openkey=<API_KEY>`
+- POST：请求体中包含 `{"openkey":"<API_KEY>"}`
 
 ### 14) 站点
 

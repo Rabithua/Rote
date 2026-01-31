@@ -5,10 +5,16 @@
 
 import { Hono } from 'hono';
 import type { HonoContext, HonoVariables } from '../../types/hono';
-import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
+import {
+  createArticle,
+  createRote,
+  findMyRote,
+  searchMyRotes,
+  setNoteArticleId,
+} from '../../utils/dbMethods';
 import { parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
 import { createResponse, isOpenKeyOk } from '../../utils/main';
-import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
+import { ArticleCreateZod, NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
 const router = new Hono<{ Variables: HonoVariables }>();
 
@@ -38,6 +44,21 @@ const processTags = (tags: any): string[] => {
   }
   return [];
 };
+
+// Create article using API key - POST method
+router.post('/articles', isOpenKeyOk, async (c: HonoContext) => {
+  const body = await c.req.json();
+  ArticleCreateZod.parse(body);
+
+  const openKey = c.get('openKey');
+  if (!openKey?.permissions.includes('SENDROTE')) {
+    throw new Error('API key permission does not match');
+  }
+
+  const { content } = body as { content: string };
+  const article = await createArticle({ content, authorId: openKey.userid });
+  return c.json(createResponse(article), 201);
+});
 
 // Create note using API key - GET method (kept for backward compatibility)
 router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
@@ -76,6 +97,13 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     ...rote,
     authorid: openKey.userid,
   });
+
+  // Optional: bind a single article (same behavior as authenticated API).
+  const articleId = c.req.query('articleId');
+  if (articleId && typeof articleId === 'string') {
+    await setNoteArticleId(result.id, articleId, openKey.userid);
+    return c.json(createResponse(result), 201);
+  }
 
   // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
   void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
@@ -116,6 +144,19 @@ router.post('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     authorid: openKey.userid,
   });
 
+  // Optional: bind a single article (same behavior as authenticated API).
+  const articleIdToSet =
+    typeof (body as any).articleId === 'string'
+      ? (body as any).articleId
+      : Array.isArray((body as any).articleIds) && (body as any).articleIds.length > 0
+        ? (body as any).articleIds[0]
+        : null;
+
+  if (articleIdToSet) {
+    await setNoteArticleId(result.id, articleIdToSet, openKey.userid);
+    return c.json(createResponse(result), 201);
+  }
+
   // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
   void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
     console.error('Failed to parse link previews (openkey create):', error);
@@ -154,6 +195,19 @@ router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
     ...rote,
     authorid: openKey.userid,
   });
+
+  // Optional: bind a single article (same behavior as authenticated API).
+  const articleIdToSet =
+    typeof (body as any).articleId === 'string'
+      ? (body as any).articleId
+      : Array.isArray((body as any).articleIds) && (body as any).articleIds.length > 0
+        ? (body as any).articleIds[0]
+        : null;
+
+  if (articleIdToSet) {
+    await setNoteArticleId(result.id, articleIdToSet, openKey.userid);
+    return c.json(createResponse(result), 201);
+  }
 
   // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
   void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
