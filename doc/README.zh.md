@@ -58,6 +58,11 @@ Dokploy 是一个开源的 Docker 部署平台，提供了可视化的应用部�
 - [API 文档](doc/userguide/API-ENDPOINTS.md) - API 接口使用指南
 - [API Key 指南](doc/userguide/API-KEY-GUIDE.md) - 如何使用 API Key
 
+### 视频教程（B 站）
+
+- [本地部署教程](https://www.bilibili.com/video/BV1vc6iBfE1F)
+- [使用 Dokploy 部署 Rote](https://www.bilibili.com/video/BV1z96vBeEYr)
+
 ### 社区项目
 
 - [Raycast 插件](https://github.com/aBER0724/rote-raycast) - Rote 的 Raycast 插件，由 [@aBER0724](https://github.com/aBER0724) 开发

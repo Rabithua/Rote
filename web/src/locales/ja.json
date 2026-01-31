@@ -4,7 +4,11 @@
       "poem": "",
       "headingBefore": "",
       "headingAfter": " のようなノートリポジトリ 🤔",
-      "linksItems": ["ログイン", "", "GitHub"],
+      "linksItems": [
+        "ログイン",
+        "",
+        "GitHub"
+      ],
       "dashboard": "ダッシュボード",
       "star": "スター",
       "fork": "フォーク",
@@ -675,7 +679,8 @@
       "permissions": {
         "SENDROTE": "Rote を作成",
         "GETROTE": "Rote を取得",
-        "EDITROTE": "Rote を編集（削除を含む）"
+        "EDITROTE": "Rote を編集（削除を含む）",
+        "SENDARTICLE": "記事を作成"
       }
     },
     "sidebarSearch": {

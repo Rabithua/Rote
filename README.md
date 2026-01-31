@@ -58,6 +58,11 @@ For more deployment options and configuration instructions, please check the doc
 - [API Documentation](doc/userguide/API-ENDPOINTS.md) - API interface usage guide
 - [API Key Guide](doc/userguide/API-KEY-GUIDE.md) - How to use API Key
 
+### Video Tutorials (Bilibili)
+
+- [Local deployment tutorial](https://www.bilibili.com/video/BV1vc6iBfE1F)
+- [Rote deployment via Dokploy](https://www.bilibili.com/video/BV1z96vBeEYr)
+
 ### Community Projects
 
 - [Raycast Extension](https://github.com/aBER0724/rote-raycast) - Raycast extension for Rote, developed by [@aBER0724](https://github.com/aBER0724)
