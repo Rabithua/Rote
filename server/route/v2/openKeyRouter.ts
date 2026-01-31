@@ -51,7 +51,8 @@ router.post('/articles', isOpenKeyOk, async (c: HonoContext) => {
   ArticleCreateZod.parse(body);
 
   const openKey = c.get('openKey');
-  if (!openKey?.permissions.includes('SENDROTE')) {
+  // New permission: SENDARTICLE. Keep SENDROTE as a fallback for older keys.
+  if (!openKey?.permissions.includes('SENDARTICLE') && !openKey?.permissions.includes('SENDROTE')) {
     throw new Error('API key permission does not match');
   }
 

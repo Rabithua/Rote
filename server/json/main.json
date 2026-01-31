@@ -55,5 +55,5 @@
     "doc",
     "article"
   ],
-  "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE"]
+  "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE", "SENDARTICLE"]
 }
