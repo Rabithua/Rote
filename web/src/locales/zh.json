@@ -4,7 +4,11 @@
       "poem": "采菊东篱下，悠然见南山",
       "headingBefore": "一个看起来不太一样的",
       "headingAfter": " 🤔",
-      "linksItems": ["登录", "", "GitHub"],
+      "linksItems": [
+        "登录",
+        "",
+        "GitHub"
+      ],
       "dashboard": "仪表盘",
       "star": "Stars",
       "fork": "Forks",
@@ -48,7 +52,13 @@
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
       },
-      "typewriterTexts": ["个人笔记库", "碎碎念本子", "私人朋友圈", "个人频道", "微型博客"],
+      "typewriterTexts": [
+        "个人笔记库",
+        "碎碎念本子",
+        "私人朋友圈",
+        "个人频道",
+        "微型博客"
+      ],
       "subtitle": "开放API，记录的姿势不止一种🤩，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "iosAppTooltip": {
         "title": "想要加入 iOS 测试版吗？",
@@ -669,7 +679,8 @@
       "permissions": {
         "SENDROTE": "创建Rote",
         "GETROTE": "获取Rote",
-        "EDITROTE": "编辑Rote（包括删除）"
+        "EDITROTE": "编辑Rote（包括删除）",
+        "SENDARTICLE": "创建文章"
       }
     },
     "sidebarSearch": {

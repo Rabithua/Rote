@@ -4,7 +4,11 @@
       "poem": "",
       "headingBefore": "A note repository like",
       "headingAfter": " 🤔",
-      "linksItems": ["Login", "", "GitHub"],
+      "linksItems": [
+        "Login",
+        "",
+        "GitHub"
+      ],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
@@ -675,7 +679,8 @@
       "permissions": {
         "SENDROTE": "Create Rote",
         "GETROTE": "Get Rote",
-        "EDITROTE": "Edit Rote (Including Delete)"
+        "EDITROTE": "Edit Rote (Including Delete)",
+        "SENDARTICLE": "Create Article"
       }
     },
     "sidebarSearch": {

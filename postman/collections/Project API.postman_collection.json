@@ -1772,18 +1772,50 @@
       "name": "OpenKey API",
       "item": [
         {
+          "name": "Create Article (POST)",
+          "id": "2c52cc81-b6a0-455e-a461-7ec882b455b2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My article content\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v2/api/openkey/articles?openkey={{openkey}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "api",
+                "openkey",
+                "articles"
+              ],
+              "query": [
+                {
+                  "key": "openkey",
+                  "value": "{{openkey}}"
+                }
+              ]
+            },
+            "description": "Create an article using OpenKey. Requires SENDARTICLE permission."
+          },
+          "response": []
+        },
+        {
           "name": "Create Note (GET)",
           "id": "46560546-39b8-480c-b95d-c84b8dc609d3",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{api_key}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&type=rote&title=My Title&tag=tag1&tag=tag2",
+              "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&type=rote&title=My Title&tag=tag1&tag=tag2&openkey={{openkey}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1795,6 +1827,10 @@
                 "create"
               ],
               "query": [
+                {
+                  "key": "openkey",
+                  "value": "{{openkey}}"
+                },
                 {
                   "key": "content",
                   "value": "My note content"
@@ -1834,18 +1870,14 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "X-API-Key",
-                "value": "{{api_key}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"pin\": false\n}"
+              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\n    \"tag1\",\n    \"tag2\"\n  ],\n  \"pin\": false\n}"
             },
             "url": {
-              "raw": "{{base_url}}/v2/api/openkey/notes/create",
+              "raw": "{{base_url}}/v2/api/openkey/notes/create?openkey={{openkey}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1855,6 +1887,12 @@
                 "openkey",
                 "notes",
                 "create"
+              ],
+              "query": [
+                {
+                  "key": "openkey",
+                  "value": "{{openkey}}"
+                }
               ]
             },
             "description": "Create a note using API key (POST to /create endpoint). Requires SENDROTE permission."
@@ -1870,18 +1908,14 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
-              },
-              {
-                "key": "X-API-Key",
-                "value": "{{api_key}}"
               }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"pin\": false\n}"
+              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\n    \"tag1\",\n    \"tag2\"\n  ],\n  \"pin\": false\n}"
             },
             "url": {
-              "raw": "{{base_url}}/v2/api/openkey/notes",
+              "raw": "{{base_url}}/v2/api/openkey/notes?openkey={{openkey}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1890,6 +1924,12 @@
                 "api",
                 "openkey",
                 "notes"
+              ],
+              "query": [
+                {
+                  "key": "openkey",
+                  "value": "{{openkey}}"
+                }
               ]
             },
             "description": "Create a note using API key (RESTful POST). Requires SENDROTE permission."
@@ -1901,14 +1941,9 @@
           "id": "bbe79daa-5036-4772-a300-0a068c93026a",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{api_key}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/v2/api/openkey/notes?skip=0&limit=20&archived=false",
+              "raw": "{{base_url}}/v2/api/openkey/notes?skip=0&limit=20&archived=false&openkey={{openkey}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1919,6 +1954,10 @@
                 "notes"
               ],
               "query": [
+                {
+                  "key": "openkey",
+                  "value": "{{openkey}}"
+                },
                 {
                   "key": "skip",
                   "value": "0"
@@ -1942,14 +1981,9 @@
           "id": "1b6807e3-442b-40fb-b5b8-0534e715df30",
           "request": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-API-Key",
-                "value": "{{api_key}}"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{base_url}}/v2/api/openkey/notes/search?keyword=search term&skip=0&limit=20",
+              "raw": "{{base_url}}/v2/api/openkey/notes/search?keyword=search term&skip=0&limit=20&openkey={{openkey}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -1961,6 +1995,10 @@
                 "search"
               ],
               "query": [
+                {
+                  "key": "openkey",
+                  "value": "{{openkey}}"
+                },
                 {
                   "key": "keyword",
                   "value": "search term"
@@ -1981,7 +2019,7 @@
         }
       ],
       "id": "a91403fe-9fe7-45b1-be6a-a948a8281c55",
-      "description": "OpenKey API endpoints for programmatic access using API keys."
+      "description": "OpenKey API endpoints for programmatic access using API keys.\n\nAuth: pass the key via `openkey` (query for GET, JSON body for POST)."
     },
     {
       "name": "Subscriptions",
