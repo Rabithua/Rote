@@ -6,6 +6,7 @@
 import { Hono } from 'hono';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { createRote, findMyRote, searchMyRotes } from '../../utils/dbMethods';
+import { parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
 import { createResponse, isOpenKeyOk } from '../../utils/main';
 import { NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
 
@@ -76,6 +77,11 @@ router.get('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     authorid: openKey.userid,
   });
 
+  // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
+  void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
+    console.error('Failed to parse link previews (openkey create):', error);
+  });
+
   return c.json(createResponse(result), 201);
 });
 
@@ -110,6 +116,11 @@ router.post('/notes/create', isOpenKeyOk, async (c: HonoContext) => {
     authorid: openKey.userid,
   });
 
+  // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
+  void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
+    console.error('Failed to parse link previews (openkey create):', error);
+  });
+
   return c.json(createResponse(result), 201);
 });
 
@@ -142,6 +153,11 @@ router.post('/notes', isOpenKeyOk, async (c: HonoContext) => {
   const result = await createRote({
     ...rote,
     authorid: openKey.userid,
+  });
+
+  // Keep behavior consistent with the authenticated notes API: generate link previews asynchronously.
+  void parseAndStoreRoteLinkPreviews(result.id, result.content).catch((error) => {
+    console.error('Failed to parse link previews (openkey create):', error);
   });
 
   return c.json(createResponse(result), 201);
