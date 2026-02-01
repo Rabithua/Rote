@@ -104,8 +104,8 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
           <DropdownMenuContent align="end">{actionsMenu()}</DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="">
-        {t('permissions')}：{openKey.permissions.join(',')}
+      <div className="font-mono text-sm break-all">
+        {t('permissions')}：{openKey.permissions.join(', ')}
       </div>
       <div className="text-primary/30">
         {t('example')}：

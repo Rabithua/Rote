@@ -670,7 +670,9 @@
         "SENDROTE": "创建Rote",
         "GETROTE": "获取Rote",
         "EDITROTE": "编辑Rote（包括删除）",
-        "SENDARTICLE": "创建文章"
+        "SENDARTICLE": "创建文章",
+        "ADDREACTION": "添加反应",
+        "DELETEREACTION": "删除反应"
       }
     },
     "sidebarSearch": {
