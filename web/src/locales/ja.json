@@ -4,11 +4,7 @@
       "poem": "",
       "headingBefore": "",
       "headingAfter": " のようなノートリポジトリ 🤔",
-      "linksItems": [
-        "ログイン",
-        "",
-        "GitHub"
-      ],
+      "linksItems": ["ログイン", "", "GitHub"],
       "dashboard": "ダッシュボード",
       "star": "スター",
       "fork": "フォーク",
@@ -778,6 +774,16 @@
       "createFailed": "作成に失敗しました",
       "updateSuccess": "記事を更新しました",
       "updateFailed": "更新に失敗しました"
+    },
+    "actions": {
+      "copyLink": "リンクをコピー",
+      "linkCopied": "リンクをコピーしました",
+      "edit": "記事を編集",
+      "delete": "記事を削除",
+      "deleting": "削除中...",
+      "deleteConfirm": "この記事を削除してもよろしいですか？この操作は取り消せません。",
+      "deleteSuccess": "記事を削除しました",
+      "deleteFailed": "削除に失敗しました"
     },
     "selection": {
       "title": "記事を選択",

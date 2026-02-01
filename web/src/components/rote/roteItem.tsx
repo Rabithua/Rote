@@ -224,6 +224,11 @@ function RoteItem({
               noteId={rote.id}
               enableViewer
               className="w-full"
+              authorId={rote.article.authorId}
+              onDeleted={() => {
+                mutate?.();
+                mutateSingle?.();
+              }}
             />
           </div>
         )}

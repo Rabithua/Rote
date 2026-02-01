@@ -4,11 +4,7 @@
       "poem": "采菊东篱下，悠然见南山",
       "headingBefore": "一个看起来不太一样的",
       "headingAfter": " 🤔",
-      "linksItems": [
-        "登录",
-        "",
-        "GitHub"
-      ],
+      "linksItems": ["登录", "", "GitHub"],
       "dashboard": "仪表盘",
       "star": "Stars",
       "fork": "Forks",
@@ -52,13 +48,7 @@
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
       },
-      "typewriterTexts": [
-        "个人笔记库",
-        "碎碎念本子",
-        "私人朋友圈",
-        "个人频道",
-        "微型博客"
-      ],
+      "typewriterTexts": ["个人笔记库", "碎碎念本子", "私人朋友圈", "个人频道", "微型博客"],
       "subtitle": "开放API，记录的姿势不止一种🤩，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "iosAppTooltip": {
         "title": "想要加入 iOS 测试版吗？",
@@ -778,6 +768,16 @@
       "createFailed": "创建失败",
       "updateSuccess": "文章已更新",
       "updateFailed": "更新失败"
+    },
+    "actions": {
+      "copyLink": "复制链接",
+      "linkCopied": "链接已复制",
+      "edit": "编辑文章",
+      "delete": "删除文章",
+      "deleting": "删除中...",
+      "deleteConfirm": "确定要删除这篇文章吗？此操作不可恢复。",
+      "deleteSuccess": "文章已删除",
+      "deleteFailed": "删除失败"
     },
     "selection": {
       "title": "选择文章",

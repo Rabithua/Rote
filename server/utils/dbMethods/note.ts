@@ -11,6 +11,7 @@ const ARTICLE_QUERY = {
   columns: {
     id: true,
     content: true,
+    authorId: true,
     createdAt: true,
     updatedAt: true,
   },
