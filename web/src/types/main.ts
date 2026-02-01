@@ -107,7 +107,9 @@ export type Article = {
 };
 
 // 笔记中引用的文章摘要（只包含 content，title/summary 由前端解析）
-export type ArticleSummary = Pick<Article, 'content' | 'createdAt' | 'updatedAt'> & { id?: string };
+export type ArticleSummary = Pick<Article, 'content' | 'createdAt' | 'updatedAt' | 'authorId'> & {
+  id?: string;
+};
 
 export type LinkPreview = {
   id: string;

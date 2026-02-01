@@ -1,11 +1,13 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useArticleActions } from '@/hooks/useArticleActions';
 import type { Article } from '@/types/main';
 import { createArticle, updateArticle } from '@/utils/articleApi';
 import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
+import { Trash2 } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
@@ -21,12 +23,31 @@ interface Props {
   // 编辑模式：传入 article 即为编辑模式
   article?: Article | null;
   onUpdated?: (article: Article) => void;
+  // 删除成功后的回调
+  onDeleted?: () => void;
 }
 
-export function ArticleEditorModal({ open, onOpenChange, onCreated, article, onUpdated }: Props) {
+export function ArticleEditorModal({
+  open,
+  onOpenChange,
+  onCreated,
+  article,
+  onUpdated,
+  onDeleted,
+}: Props) {
   const { t } = useTranslation('translation', { keyPrefix: 'article.editor' });
+  const { t: tActions } = useTranslation('translation', { keyPrefix: 'article.actions' });
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // 使用共享 hook 处理删除操作
+  const { isDeleting, handleDelete } = useArticleActions({
+    articleId: article?.id,
+    onDeleted: () => {
+      onOpenChange(false);
+      onDeleted?.();
+    },
+  });
 
   // 判断是否为编辑模式
   const isEditMode = !!article;
@@ -254,13 +275,34 @@ export function ArticleEditorModal({ open, onOpenChange, onCreated, article, onU
             </div>
           </div>
 
-          <div className="flex shrink-0 justify-end gap-2 border-t pt-3">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={onSubmit} disabled={loading}>
-              {isEditMode ? t('update') : t('save')}
-            </Button>
+          <div className="flex shrink-0 justify-between gap-2 border-t pt-3">
+            {/* 左侧：删除按钮（仅编辑模式） */}
+            <div>
+              {isEditMode && (
+                <Button
+                  variant="ghost"
+                  onClick={handleDelete}
+                  disabled={loading || isDeleting}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="mr-1 size-4" />
+                  {isDeleting ? tActions('deleting') : tActions('delete')}
+                </Button>
+              )}
+            </div>
+            {/* 右侧：取消和保存按钮 */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={loading || isDeleting}
+              >
+                {t('cancel')}
+              </Button>
+              <Button onClick={onSubmit} disabled={loading || isDeleting}>
+                {isEditMode ? t('update') : t('save')}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
