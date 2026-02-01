@@ -676,7 +676,9 @@
         "SENDROTE": "Create Rote",
         "GETROTE": "Get Rote",
         "EDITROTE": "Edit Rote (Including Delete)",
-        "SENDARTICLE": "Create Article"
+        "SENDARTICLE": "Create Article",
+        "ADDREACTION": "Add Reaction",
+        "DELETEREACTION": "Delete Reaction"
       }
     },
     "sidebarSearch": {

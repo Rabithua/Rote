@@ -676,7 +676,9 @@
         "SENDROTE": "Rote を作成",
         "GETROTE": "Rote を取得",
         "EDITROTE": "Rote を編集（削除を含む）",
-        "SENDARTICLE": "記事を作成"
+        "SENDARTICLE": "記事を作成",
+        "ADDREACTION": "リアクションを追加",
+        "DELETEREACTION": "リアクションを削除"
       }
     },
     "sidebarSearch": {
