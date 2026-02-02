@@ -1,18 +1,32 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { OpenKey } from '@/types/main';
-import { API_URL, del } from '@/utils/api';
-import { Copy, Edit, Ellipsis, EyeClosed, EyeIcon, Terminal, Trash2 } from 'lucide-react';
+import type { OpenKey, OpenKeyUsageLog } from '@/types/main';
+import { API_URL, del, get } from '@/utils/api';
+import { formatTimeAgo } from '@/utils/main';
+import {
+  Copy,
+  Edit,
+  Ellipsis,
+  EyeClosed,
+  EyeIcon,
+  History,
+  Loader2,
+  Terminal,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
+import useSWR from 'swr';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Button } from '../ui/button';
+import { ScrollArea } from '../ui/scroll-area';
 import OpenKeyEditModel from './openKeyEditModel';
 
 function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMutator<OpenKey[]> }) {
@@ -21,7 +35,21 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
   });
   const [, setOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isLogDialogOpen, setIsLogDialogOpen] = useState<boolean>(false);
   const [hidekey, setHideKey] = useState(true);
+  const [logSkip, setLogSkip] = useState(0);
+  const logLimit = 20;
+
+  const { data: logsData, isLoading: logsLoading } = useSWR<OpenKeyUsageLog[]>(
+    isLogDialogOpen ? `/api-keys/${openKey.id}/logs?limit=${logLimit}&skip=${logSkip}` : null,
+    (url: string) => get(url).then((res) => res.data),
+    { revalidateOnFocus: false }
+  );
+
+  function formatLastUsed(lastUsedAt: string | null | undefined): string {
+    if (!lastUsedAt) return t('neverUsed');
+    return formatTimeAgo(lastUsedAt);
+  }
 
   function actionsMenu() {
     function deleteOpenKey() {
@@ -45,6 +73,10 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
 
     return (
       <>
+        <DropdownMenuItem onClick={() => setIsLogDialogOpen(true)}>
+          <History className="size-4" />
+          {t('viewLogs')}
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => {
             setOpen(false);
@@ -64,7 +96,6 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
 
   function onModelCancel() {
     setIsModalOpen(false);
-    // setEditRote({});
   }
 
   function changeHideKey() {
@@ -79,6 +110,23 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
     } catch {
       toast.error(t('copyFailed'));
     }
+  }
+
+  function getStatusColor(statusCode: number | null): string {
+    if (!statusCode) return 'text-gray-400';
+    if (statusCode >= 200 && statusCode < 300) return 'text-green-500';
+    if (statusCode >= 400) return 'text-red-500';
+    return 'text-yellow-500';
+  }
+
+  function getMethodColor(method: string): string {
+    const colors: Record<string, string> = {
+      GET: 'bg-blue-100 text-blue-700',
+      POST: 'bg-green-100 text-green-700',
+      PUT: 'bg-amber-100 text-amber-700',
+      DELETE: 'bg-red-100 text-red-700',
+    };
+    return colors[method] || 'bg-gray-100 text-gray-700';
   }
 
   return (
@@ -126,6 +174,16 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
         </button>
       </div>
 
+      <div className="text-primary/60 mt-1 flex items-center gap-4 text-sm">
+        <span>
+          {t('usageCount')}：{openKey.usageCount ?? 0}
+        </span>
+        <span>
+          {t('lastUsedAt')}：{formatLastUsed(openKey.lastUsedAt)}
+        </span>
+      </div>
+
+      {/* Edit Dialog */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
           <Alert>
@@ -140,6 +198,61 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
             openKey={openKey}
             mutate={mutate}
           ></OpenKeyEditModel>
+        </DialogContent>
+      </Dialog>
+
+      {/* Usage Logs Dialog */}
+      <Dialog open={isLogDialogOpen} onOpenChange={setIsLogDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{t('usageLogs')}</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-96">
+            {logsLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="size-6 animate-spin" />
+              </div>
+            ) : logsData && logsData.length > 0 ? (
+              <div className="space-y-2">
+                {logsData.map((log) => (
+                  <div key={log.id} className="rounded-lg border p-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`rounded px-1.5 py-0.5 text-xs font-medium ${getMethodColor(log.method)}`}
+                      >
+                        {log.method}
+                      </span>
+                      <span className="font-mono text-xs">{log.endpoint}</span>
+                      <span
+                        className={`ml-auto font-mono text-xs ${getStatusColor(log.statusCode)}`}
+                      >
+                        {log.statusCode ?? '-'}
+                      </span>
+                    </div>
+                    <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-4 text-xs">
+                      <span>{log.clientIp || '-'}</span>
+                      <span>{log.responseTime ? `${log.responseTime}ms` : '-'}</span>
+                      <span className="ml-auto">{formatTimeAgo(log.createdAt)}</span>
+                    </div>
+                    {log.errorMessage && (
+                      <div className="mt-1 text-xs text-red-500">{log.errorMessage}</div>
+                    )}
+                  </div>
+                ))}
+                {logsData.length >= logLimit && (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setLogSkip((prev) => prev + logLimit)}
+                  >
+                    {t('loadMore')}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-muted-foreground py-8 text-center">{t('noLogs')}</div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>

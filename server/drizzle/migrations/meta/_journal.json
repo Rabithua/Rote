@@ -78,6 +78,13 @@
       "when": 1768810911950,
       "tag": "0010_hard_rocket_raccoon",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1770032753350,
+      "tag": "0011_dusty_firelord",
+      "breakpoints": true
     }
   ]
 }

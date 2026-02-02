@@ -95,6 +95,33 @@ export const userOpenKeys = pgTable(
   })
 );
 
+// OpenKey 使用日志表
+export const openKeyUsageLogs = pgTable(
+  'open_key_usage_logs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    openKeyId: uuid('openKeyId').notNull(),
+    endpoint: varchar('endpoint', { length: 255 }).notNull(),
+    method: varchar('method', { length: 10 }).notNull(),
+    clientIp: varchar('clientIp', { length: 45 }),
+    userAgent: text('userAgent'),
+    statusCode: integer('statusCode'),
+    responseTime: integer('responseTime'),
+    errorMessage: text('errorMessage'),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    openKeyIdIdx: index('open_key_usage_logs_openKeyId_idx').on(table.openKeyId),
+    createdAtIdx: index('open_key_usage_logs_createdAt_idx').on(table.createdAt),
+    openKeyIdFk: foreignKey({
+      columns: [table.openKeyId],
+      foreignColumns: [userOpenKeys.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+  })
+);
+
 // User SW Subscriptions 表
 export const userSwSubscriptions = pgTable(
   'user_sw_subscriptions',
@@ -384,10 +411,18 @@ export const userSettingsRelations = relations(userSettings, ({ one }) => ({
   }),
 }));
 
-export const userOpenKeysRelations = relations(userOpenKeys, ({ one }) => ({
+export const userOpenKeysRelations = relations(userOpenKeys, ({ one, many }) => ({
   user: one(users, {
     fields: [userOpenKeys.userid],
     references: [users.id],
+  }),
+  usageLogs: many(openKeyUsageLogs),
+}));
+
+export const openKeyUsageLogsRelations = relations(openKeyUsageLogs, ({ one }) => ({
+  openKey: one(userOpenKeys, {
+    fields: [openKeyUsageLogs.openKeyId],
+    references: [userOpenKeys.id],
   }),
 }));
 
@@ -489,3 +524,5 @@ export type Article = typeof articles.$inferSelect;
 export type NewArticle = typeof articles.$inferInsert;
 export type UserOAuthBinding = typeof userOAuthBindings.$inferSelect;
 export type NewUserOAuthBinding = typeof userOAuthBindings.$inferInsert;
+export type OpenKeyUsageLog = typeof openKeyUsageLogs.$inferSelect;
+export type NewOpenKeyUsageLog = typeof openKeyUsageLogs.$inferInsert;
