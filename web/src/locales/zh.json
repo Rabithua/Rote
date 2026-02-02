@@ -657,7 +657,19 @@
       "deleteSuccess": "删除成功",
       "deleteFailed": "删除失败",
       "copySuccess": "内容已复制到剪贴板",
-      "copyFailed": "无法复制内容到剪贴板"
+      "copyFailed": "无法复制内容到剪贴板",
+      "usageCount": "调用次数",
+      "lastUsedAt": "最后使用",
+      "neverUsed": "从未使用",
+      "viewLogs": "查看日志",
+      "usageLogs": "使用日志",
+      "noLogs": "暂无调用记录",
+      "endpoint": "端点",
+      "method": "方法",
+      "clientIp": "IP地址",
+      "statusCode": "状态码",
+      "responseTime": "耗时",
+      "loadMore": "加载更多"
     },
     "openKeyEditModel": {
       "selectAll": "全选",

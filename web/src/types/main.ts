@@ -163,8 +163,23 @@ export type OpenKey = {
   id: string;
   userid: string;
   permissions: string[];
+  usageCount?: number;
+  lastUsedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type OpenKeyUsageLog = {
+  id: string;
+  openKeyId: string;
+  endpoint: string;
+  method: string;
+  clientIp: string | null;
+  userAgent: string | null;
+  statusCode: number | null;
+  responseTime: number | null;
+  errorMessage: string | null;
+  createdAt: string;
 };
 
 export type OpenKeys = OpenKey[];

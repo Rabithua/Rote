@@ -6,7 +6,8 @@ import {
   deleteMyOneOpenKey,
   editMyOneOpenKey,
   generateOpenKey,
-  getMyOpenKey,
+  getMyOpenKeysWithStats,
+  getOpenKeyUsageLogs,
 } from '../../utils/dbMethods';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
 
@@ -24,14 +25,40 @@ apiKeysRouter.post('/', authenticateJWT, async (c: HonoContext) => {
   return c.json(createResponse(data), 201);
 });
 
-// 获取所有API密钥
+// 获取所有API密钥（带统计）
 apiKeysRouter.get('/', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   if (!user.id) {
     throw new Error('User ID is required');
   }
 
-  const data = await getMyOpenKey(user.id);
+  const data = await getMyOpenKeysWithStats(user.id);
+  return c.json(createResponse(data), 200);
+});
+
+// 获取API密钥使用日志
+apiKeysRouter.get('/:id/logs', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const id = c.req.param('id');
+  const skip = parseInt(c.req.query('skip') || '0');
+  const limit = parseInt(c.req.query('limit') || '50');
+
+  if (!user.id) {
+    throw new Error('User ID is required');
+  }
+
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid API Key ID');
+  }
+
+  // 获取用户的所有 OpenKeys 检查权限
+  const userOpenKeys = await getMyOpenKeysWithStats(user.id);
+  const hasAccess = userOpenKeys.some((key: any) => key.id === id);
+  if (!hasAccess) {
+    throw new Error('Unauthorized to view this API key logs');
+  }
+
+  const data = await getOpenKeyUsageLogs(id, limit, skip);
   return c.json(createResponse(data), 200);
 });
 

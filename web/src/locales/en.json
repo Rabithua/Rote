@@ -663,7 +663,19 @@
       "deleteSuccess": "Delete successful",
       "deleteFailed": "Delete failed",
       "copySuccess": "Content copied to clipboard",
-      "copyFailed": "Failed to copy content to clipboard"
+      "copyFailed": "Failed to copy content to clipboard",
+      "usageCount": "Calls",
+      "lastUsedAt": "Last Used",
+      "neverUsed": "Never used",
+      "viewLogs": "View Logs",
+      "usageLogs": "Usage Logs",
+      "noLogs": "No call records yet",
+      "endpoint": "Endpoint",
+      "method": "Method",
+      "clientIp": "IP Address",
+      "statusCode": "Status",
+      "responseTime": "Response Time",
+      "loadMore": "Load More"
     },
     "openKeyEditModel": {
       "selectAll": "Select All",
