@@ -55,5 +55,13 @@
     "doc",
     "article"
   ],
-  "openkeyPermissions": ["SENDROTE", "GETROTE", "EDITROTE", "SENDARTICLE"]
+  "openkeyPermissions": [
+    "SENDROTE",
+    "GETROTE",
+    "EDITROTE",
+    "SENDARTICLE",
+    "ADDREACTION",
+    "DELETEREACTION",
+    "EDITPROFILE"
+  ]
 }

@@ -5,12 +5,21 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
+import { useArticleActions } from '@/hooks/useArticleActions';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { profileAtom } from '@/state/profile';
 import { API_URL, get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { useAtomValue } from 'jotai';
-import { ArrowUpRight, Navigation, PenBox, RefreshCw, Rss } from 'lucide-react';
+import {
+  ArrowUpRight,
+  Link as LinkIcon,
+  Navigation,
+  PenBox,
+  RefreshCw,
+  Rss,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
@@ -44,6 +53,17 @@ function ArticleDetailPage() {
     }
     mutate();
   };
+
+  // 使用共享 hook 处理复制链接和删除操作
+  const { isDeleting, handleCopyLink, handleDelete } = useArticleActions({
+    articleId: articleid,
+    onDeleted: () => {
+      navigate('/');
+    },
+  });
+
+  // 判断是否为作者
+  const isAuthor = profile && article?.author && profile.username === article.author.username;
 
   const SideBar = () =>
     isLoading ? (
@@ -127,17 +147,25 @@ function ArticleDetailPage() {
             </Link>
           )}
         </div>
-        {/* 浮动操作按钮区，编辑按钮注入 */}
+        {/* 浮动操作按钮区 */}
         <FloatBtns>
-          {profile && article.author && profile.username === article.author.username && (
-            <Button onClick={() => setEditorOpen(true)}>
-              <PenBox className="size-4" />
-            </Button>
+          {isAuthor && (
+            <>
+              <Button onClick={() => setEditorOpen(true)}>
+                <PenBox className="size-4" />
+              </Button>
+              <Button onClick={handleCopyLink}>
+                <LinkIcon className="size-4" />
+              </Button>
+              <Button onClick={handleDelete} disabled={isDeleting}>
+                <Trash2 className="size-4" />
+              </Button>
+            </>
           )}
         </FloatBtns>
       </ContainerWithSideBar>
       {/* 编辑弹窗，仅本人可见 */}
-      {profile && article.author && profile.username === article.author.username && (
+      {isAuthor && (
         <ArticleEditorModal
           open={editorOpen}
           onOpenChange={(open) => {
@@ -148,6 +176,9 @@ function ArticleDetailPage() {
           onUpdated={() => {
             refreshData();
             setEditorOpen(false);
+          }}
+          onDeleted={() => {
+            navigate('/');
           }}
         />
       )}

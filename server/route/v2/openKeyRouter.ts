@@ -6,15 +6,26 @@
 import { Hono } from 'hono';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
+  addReaction,
   createArticle,
   createRote,
+  editMyProfile,
   findMyRote,
+  findRoteById,
+  getMyProfile,
+  removeReaction,
   searchMyRotes,
   setNoteArticleId,
 } from '../../utils/dbMethods';
 import { parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
-import { createResponse, isOpenKeyOk } from '../../utils/main';
-import { ArticleCreateZod, NoteCreateZod, SearchKeywordZod } from '../../utils/zod';
+import { createResponse, isOpenKeyOk, isValidUUID } from '../../utils/main';
+import {
+  ArticleCreateZod,
+  NoteCreateZod,
+  ReactionCreateZod,
+  SearchKeywordZod,
+  UsernameUpdateZod,
+} from '../../utils/zod';
 
 const router = new Hono<{ Variables: HonoVariables }>();
 
@@ -338,6 +349,112 @@ router.get('/notes/search', isOpenKeyOk, requireOpenKeyPerm('GETROTE'), async (c
   );
 
   return c.json(createResponse(rotes), 200);
+});
+
+// Query current OpenKey permissions
+router.get('/permissions', isOpenKeyOk, async (c: HonoContext) => {
+  const openKey = c.get('openKey')!;
+  return c.json(
+    createResponse({
+      permissions: openKey.permissions || [],
+    }),
+    200
+  );
+});
+
+// Add reaction using API key
+router.post(
+  '/reactions',
+  isOpenKeyOk,
+  requireOpenKeyPerm('ADDREACTION'),
+  async (c: HonoContext) => {
+    const body = await c.req.json();
+    const { type, roteid, metadata } = body;
+
+    // Validate required fields
+    if (!type || !roteid) {
+      throw new Error('Type and rote ID are required');
+    }
+
+    // Validate input using zod
+    ReactionCreateZod.parse({ type, roteid });
+
+    // Validate roteid format
+    if (!isValidUUID(roteid)) {
+      throw new Error('Invalid rote ID format');
+    }
+
+    // Check if note exists
+    const rote = await findRoteById(roteid);
+    if (!rote) {
+      throw new Error('Rote not found');
+    }
+
+    const openKey = c.get('openKey')!;
+
+    // Build reaction data with OpenKey user
+    const reactionData = {
+      type,
+      roteid,
+      userid: openKey.userid,
+      metadata,
+    };
+
+    const reaction = await addReaction(reactionData);
+    return c.json(createResponse(reaction), 201);
+  }
+);
+
+// Remove reaction using API key
+router.delete(
+  '/reactions/:roteid/:type',
+  isOpenKeyOk,
+  requireOpenKeyPerm('DELETEREACTION'),
+  async (c: HonoContext) => {
+    const roteid = c.req.param('roteid');
+    const type = c.req.param('type');
+
+    if (!type || !roteid) {
+      throw new Error('Type and rote ID are required');
+    }
+
+    // Validate roteid format
+    if (!isValidUUID(roteid)) {
+      throw new Error('Invalid rote ID format');
+    }
+
+    const openKey = c.get('openKey')!;
+
+    // Remove reaction for this OpenKey user
+    const result = await removeReaction({
+      type,
+      roteid,
+      userid: openKey.userid,
+    });
+
+    return c.json(createResponse(result), 200);
+  }
+);
+
+// Get profile using API key
+router.get('/profile', isOpenKeyOk, requireOpenKeyPerm('EDITPROFILE'), async (c: HonoContext) => {
+  const openKey = c.get('openKey')!;
+  const profile = await getMyProfile(openKey.userid);
+  return c.json(createResponse(profile), 200);
+});
+
+// Update profile using API key
+router.put('/profile', isOpenKeyOk, requireOpenKeyPerm('EDITPROFILE'), async (c: HonoContext) => {
+  const body = await c.req.json();
+  const openKey = c.get('openKey')!;
+
+  // Validate username if provided (same as /users/me/profile)
+  if (body.username !== undefined) {
+    UsernameUpdateZod.parse({ username: body.username });
+  }
+
+  const profile = await editMyProfile(openKey.userid, body);
+  return c.json(createResponse(profile), 200);
 });
 
 export default router;

@@ -107,7 +107,9 @@ export type Article = {
 };
 
 // 笔记中引用的文章摘要（只包含 content，title/summary 由前端解析）
-export type ArticleSummary = Pick<Article, 'content' | 'createdAt' | 'updatedAt'> & { id?: string };
+export type ArticleSummary = Pick<Article, 'content' | 'createdAt' | 'updatedAt' | 'authorId'> & {
+  id?: string;
+};
 
 export type LinkPreview = {
   id: string;
@@ -161,8 +163,23 @@ export type OpenKey = {
   id: string;
   userid: string;
   permissions: string[];
+  usageCount?: number;
+  lastUsedAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type OpenKeyUsageLog = {
+  id: string;
+  openKeyId: string;
+  endpoint: string;
+  method: string;
+  clientIp: string | null;
+  userAgent: string | null;
+  statusCode: number | null;
+  responseTime: number | null;
+  errorMessage: string | null;
+  createdAt: string;
 };
 
 export type OpenKeys = OpenKey[];

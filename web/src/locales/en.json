@@ -4,11 +4,7 @@
       "poem": "",
       "headingBefore": "A note repository like",
       "headingAfter": " 🤔",
-      "linksItems": [
-        "Login",
-        "",
-        "GitHub"
-      ],
+      "linksItems": ["Login", "", "GitHub"],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
@@ -667,7 +663,19 @@
       "deleteSuccess": "Delete successful",
       "deleteFailed": "Delete failed",
       "copySuccess": "Content copied to clipboard",
-      "copyFailed": "Failed to copy content to clipboard"
+      "copyFailed": "Failed to copy content to clipboard",
+      "usageCount": "Calls",
+      "lastUsedAt": "Last Used",
+      "neverUsed": "Never used",
+      "viewLogs": "View Logs",
+      "usageLogs": "Usage Logs",
+      "noLogs": "No call records yet",
+      "endpoint": "Endpoint",
+      "method": "Method",
+      "clientIp": "IP Address",
+      "statusCode": "Status",
+      "responseTime": "Response Time",
+      "loadMore": "Load More"
     },
     "openKeyEditModel": {
       "selectAll": "Select All",
@@ -680,7 +688,10 @@
         "SENDROTE": "Create Rote",
         "GETROTE": "Get Rote",
         "EDITROTE": "Edit Rote (Including Delete)",
-        "SENDARTICLE": "Create Article"
+        "SENDARTICLE": "Create Article",
+        "ADDREACTION": "Add Reaction",
+        "DELETEREACTION": "Delete Reaction",
+        "EDITPROFILE": "Edit Profile"
       }
     },
     "sidebarSearch": {
@@ -778,6 +789,16 @@
       "createFailed": "Failed to create",
       "updateSuccess": "Article updated",
       "updateFailed": "Failed to update"
+    },
+    "actions": {
+      "copyLink": "Copy Link",
+      "linkCopied": "Link copied",
+      "edit": "Edit Article",
+      "delete": "Delete Article",
+      "deleting": "Deleting...",
+      "deleteConfirm": "Are you sure you want to delete this article? This action cannot be undone.",
+      "deleteSuccess": "Article deleted",
+      "deleteFailed": "Failed to delete"
     },
     "selection": {
       "title": "Select Article",

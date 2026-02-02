@@ -4,11 +4,7 @@
       "poem": "",
       "headingBefore": "",
       "headingAfter": " のようなノートリポジトリ 🤔",
-      "linksItems": [
-        "ログイン",
-        "",
-        "GitHub"
-      ],
+      "linksItems": ["ログイン", "", "GitHub"],
       "dashboard": "ダッシュボード",
       "star": "スター",
       "fork": "フォーク",
@@ -667,7 +663,19 @@
       "deleteSuccess": "削除成功",
       "deleteFailed": "削除失敗",
       "copySuccess": "コンテンツをクリップボードにコピーしました",
-      "copyFailed": "コンテンツのコピーに失敗しました"
+      "copyFailed": "コンテンツのコピーに失敗しました",
+      "usageCount": "呼び出し回数",
+      "lastUsedAt": "最終使用",
+      "neverUsed": "未使用",
+      "viewLogs": "ログを表示",
+      "usageLogs": "使用ログ",
+      "noLogs": "まだ呼び出し記録がありません",
+      "endpoint": "エンドポイント",
+      "method": "メソッド",
+      "clientIp": "IPアドレス",
+      "statusCode": "ステータス",
+      "responseTime": "応答時間",
+      "loadMore": "さらに読み込む"
     },
     "openKeyEditModel": {
       "selectAll": "すべて選択",
@@ -680,7 +688,10 @@
         "SENDROTE": "Rote を作成",
         "GETROTE": "Rote を取得",
         "EDITROTE": "Rote を編集（削除を含む）",
-        "SENDARTICLE": "記事を作成"
+        "SENDARTICLE": "記事を作成",
+        "ADDREACTION": "リアクションを追加",
+        "DELETEREACTION": "リアクションを削除",
+        "EDITPROFILE": "プロフィールを編集"
       }
     },
     "sidebarSearch": {
@@ -778,6 +789,16 @@
       "createFailed": "作成に失敗しました",
       "updateSuccess": "記事を更新しました",
       "updateFailed": "更新に失敗しました"
+    },
+    "actions": {
+      "copyLink": "リンクをコピー",
+      "linkCopied": "リンクをコピーしました",
+      "edit": "記事を編集",
+      "delete": "記事を削除",
+      "deleting": "削除中...",
+      "deleteConfirm": "この記事を削除してもよろしいですか？この操作は取り消せません。",
+      "deleteSuccess": "記事を削除しました",
+      "deleteFailed": "削除に失敗しました"
     },
     "selection": {
       "title": "記事を選択",
