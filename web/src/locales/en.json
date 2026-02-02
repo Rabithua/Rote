@@ -678,7 +678,8 @@
         "EDITROTE": "Edit Rote (Including Delete)",
         "SENDARTICLE": "Create Article",
         "ADDREACTION": "Add Reaction",
-        "DELETEREACTION": "Delete Reaction"
+        "DELETEREACTION": "Delete Reaction",
+        "EDITPROFILE": "Edit Profile"
       }
     },
     "sidebarSearch": {
