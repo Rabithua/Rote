@@ -1,4 +1,4 @@
-import { desc, eq, getTableColumns, sql } from 'drizzle-orm';
+import { asc, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import { openKeyUsageLogs, userOpenKeys } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -59,7 +59,8 @@ export async function getMyOpenKeysWithStats(userid: string): Promise<any> {
           ),
       })
       .from(userOpenKeys)
-      .where(eq(userOpenKeys.userid, userid));
+      .where(eq(userOpenKeys.userid, userid))
+      .orderBy(asc(userOpenKeys.createdAt));
     return openKeys;
   } catch (error) {
     throw new DatabaseError('Failed to get user open keys with stats', error);
