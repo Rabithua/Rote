@@ -9,8 +9,10 @@ import {
   addReaction,
   createArticle,
   createRote,
+  editMyProfile,
   findMyRote,
   findRoteById,
+  getMyProfile,
   removeReaction,
   searchMyRotes,
   setNoteArticleId,
@@ -22,6 +24,7 @@ import {
   NoteCreateZod,
   ReactionCreateZod,
   SearchKeywordZod,
+  UsernameUpdateZod,
 } from '../../utils/zod';
 
 const router = new Hono<{ Variables: HonoVariables }>();
@@ -432,5 +435,26 @@ router.delete(
     return c.json(createResponse(result), 200);
   }
 );
+
+// Get profile using API key
+router.get('/profile', isOpenKeyOk, requireOpenKeyPerm('EDITPROFILE'), async (c: HonoContext) => {
+  const openKey = c.get('openKey')!;
+  const profile = await getMyProfile(openKey.userid);
+  return c.json(createResponse(profile), 200);
+});
+
+// Update profile using API key
+router.put('/profile', isOpenKeyOk, requireOpenKeyPerm('EDITPROFILE'), async (c: HonoContext) => {
+  const body = await c.req.json();
+  const openKey = c.get('openKey')!;
+
+  // Validate username if provided (same as /users/me/profile)
+  if (body.username !== undefined) {
+    UsernameUpdateZod.parse({ username: body.username });
+  }
+
+  const profile = await editMyProfile(openKey.userid, body);
+  return c.json(createResponse(profile), 200);
+});
 
 export default router;

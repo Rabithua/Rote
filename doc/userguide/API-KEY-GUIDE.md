@@ -18,6 +18,11 @@ API Keys can have the following permissions:
 
 - `SENDROTE`: Allows creating notes
 - `GETROTE`: Allows retrieving notes
+- `EDITROTE`: Allows editing and deleting notes
+- `SENDARTICLE`: Allows creating articles
+- `ADDREACTION`: Allows adding reactions to notes
+- `DELETEREACTION`: Allows deleting reactions from notes
+- `EDITPROFILE`: Allows getting and updating user profile
 
 When generating or updating an API Key, you can specify which permissions it should have.
 
@@ -152,6 +157,90 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Required Permission**: `GETROTE`
 
+### 4. Get Profile
+
+**Endpoint**: `GET /v2/api/openkey/profile`
+
+**Headers**:
+
+- `Authorization: Bearer YOUR_API_KEY`
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "emailVerified": true,
+    "username": "username",
+    "nickname": "User Nickname",
+    "description": "User description",
+    "avatar": "https://example.com/avatar.jpg",
+    "cover": "https://example.com/cover.jpg",
+    "role": "user",
+    "createdAt": "2025-05-27T10:30:00Z",
+    "updatedAt": "2025-05-27T10:30:00Z",
+    "allowExplore": true,
+    "oauthBindings": []
+  }
+}
+```
+
+**Required Permission**: `EDITPROFILE`
+
+### 5. Update Profile
+
+**Endpoint**: `PUT /v2/api/openkey/profile`
+
+**Headers**:
+
+- `Content-Type: application/json`
+- `Authorization: Bearer YOUR_API_KEY`
+
+**Request Body**:
+
+```json
+{
+  "nickname": "New Nickname",
+  "description": "New description",
+  "avatar": "https://example.com/new-avatar.jpg",
+  "cover": "https://example.com/new-cover.jpg",
+  "username": "newusername"
+}
+```
+
+All fields are optional. Username validation:
+
+- 1-20 characters
+- Only letters, numbers, underscores and hyphens allowed
+- Cannot conflict with system routes
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "user_id",
+    "email": "user@example.com",
+    "username": "newusername",
+    "nickname": "New Nickname",
+    "description": "New description",
+    "avatar": "https://example.com/new-avatar.jpg",
+    "cover": "https://example.com/new-cover.jpg",
+    "role": "user",
+    "createdAt": "2025-05-27T10:30:00Z",
+    "updatedAt": "2025-05-27T10:30:00Z"
+  }
+}
+```
+
+**Required Permission**: `EDITPROFILE`
+
 ## Error Handling
 
 API errors are returned with appropriate HTTP status codes and a JSON response with error details.
@@ -208,7 +297,7 @@ async function getNotes() {
         "Content-Type": "application/json",
         Authorization: "Bearer YOUR_API_KEY",
       },
-    }
+    },
   );
 
   const data = await response.json();

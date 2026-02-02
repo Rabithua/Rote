@@ -678,7 +678,8 @@
         "EDITROTE": "Rote を編集（削除を含む）",
         "SENDARTICLE": "記事を作成",
         "ADDREACTION": "リアクションを追加",
-        "DELETEREACTION": "リアクションを削除"
+        "DELETEREACTION": "リアクションを削除",
+        "EDITPROFILE": "プロフィールを編集"
       }
     },
     "sidebarSearch": {
