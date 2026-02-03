@@ -6,11 +6,13 @@ The API Key (OpenKey) feature allows external applications to interact with the 
 
 ## Authentication
 
-All API Key requests must include the API key in the request header:
+All API Key requests must include the `openkey` parameter. This can be done in two ways:
 
-```
-Authorization: Bearer YOUR_API_KEY
-```
+1.  **Query Parameter** (Recommended for GET requests):
+    `https://your-api-url/v2/api/openkey/endpoint?openkey=YOUR_API_KEY`
+
+2.  **Request Body** (Recommended for POST/PUT/DELETE requests):
+    Include `"openkey": "YOUR_API_KEY"` in the JSON body.
 
 ## Permissions
 
@@ -35,18 +37,19 @@ When generating or updating an API Key, you can specify which permissions it sho
 **Headers**:
 
 - `Content-Type: application/json`
-- `Authorization: Bearer YOUR_API_KEY`
 
 **Request Body**:
 
 ```json
 {
+  "openkey": "YOUR_API_KEY",
   "content": "Note content (required, max 1,000,000 characters)",
   "title": "Optional title (max 200 characters)",
   "state": "private|public",
   "type": "rote|article|other",
   "tags": ["tag1", "tag2"], // Each tag max 50 characters, max 20 tags
-  "pin": false
+  "pin": false,
+  "articleId": "optional-article-uuid" // Bind to an existing article
 }
 ```
 
@@ -75,50 +78,74 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 ### 2. Create Note (GET method - Legacy/Compatibility)
 
-**Endpoint**: `GET /v2/api/openkey/notes`
-
-**Headers**:
-
-- `Authorization: Bearer YOUR_API_KEY`
+**Endpoint**: `GET /v2/api/openkey/notes/create`
 
 **Query Parameters**:
 
+- `openkey`: YOUR_API_KEY (Required)
 - `content`: Note content (required, max 1,000,000 characters)
 - `state`: Note state (private or public, defaults to private)
-- `type`: Note type (defaults to "rote")
+- `type`: Note type (defaults to "Rote")
+- `title`: Optional title
 - `tag`: Tags (can be multiple, e.g., `tag=tag1&tag=tag2`, each tag max 50 characters, max 20 tags)
 - `pin`: Whether to pin the note (true/false)
+- `articleId`: Optional article ID to bind
 
 **Response**: Same as POST method
 
 **Required Permission**: `SENDROTE`
 
-### 3. Retrieve Notes
+### 3. Create Article
+
+**Endpoint**: `POST /v2/api/openkey/articles`
+
+**Headers**:
+
+- `Content-Type: application/json`
+
+**Request Body**:
+
+```json
+{
+  "openkey": "YOUR_API_KEY",
+  "content": "Article content (required)"
+}
+```
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "article_id",
+    "content": "Article content",
+    "authorId": "user_id",
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+}
+```
+
+**Required Permission**: `SENDARTICLE`
+
+### 4. Retrieve Notes
 
 **Endpoint**: `GET /v2/api/openkey/notes`
 
 **Headers**:
 
 - `Content-Type: application/json`
-- `Authorization: Bearer YOUR_API_KEY`
 
 **Query Parameters**:
 
+- `openkey`: YOUR_API_KEY (Required)
 - `skip`: Number of items to skip (pagination)
 - `limit`: Maximum number of items to return (pagination)
 - `archived`: Whether to include archived notes (true/false)
 - `tag`: Tag filter, supports `tag` or `tag[]` format (multiple tags use `hasEvery` logic - notes must contain all specified tags)
-
-**Request Body** (optional filter):
-
-```json
-{
-  "filter": {
-    "searchText": "search term",
-    "tags": ["tag1", "tag2"]
-  }
-}
-```
+- _Note_: Any other query parameters provided will be used as exact match filters against note fields.
 
 **Response**:
 
@@ -157,13 +184,93 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Required Permission**: `GETROTE`
 
-### 4. Get Profile
+### 5. Search Notes
 
-**Endpoint**: `GET /v2/api/openkey/profile`
+**Endpoint**: `GET /v2/api/openkey/notes/search`
+
+**Query Parameters**:
+
+- `openkey`: YOUR_API_KEY (Required)
+- `keyword`: Search keyword (required)
+- `skip`: Number of items to skip
+- `limit`: Maximum number of items to return
+- `archived`: include archived notes (true/false)
+- `tag`: Tag filter
+
+**Response**: Same as Retrieve Notes (list of notes)
+
+**Required Permission**: `GETROTE`
+
+### 6. Add Reaction
+
+**Endpoint**: `POST /v2/api/openkey/reactions`
 
 **Headers**:
 
-- `Authorization: Bearer YOUR_API_KEY`
+- `Content-Type: application/json`
+
+**Request Body**:
+
+```json
+{
+  "openkey": "YOUR_API_KEY",
+  "type": "like",
+  "roteid": "note_uuid",
+  "metadata": {} // Optional
+}
+```
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "reaction_id",
+    "type": "like",
+    "roteid": "note_uuid",
+    "userid": "user_id"
+  }
+}
+```
+
+**Required Permission**: `ADDREACTION`
+
+### 7. Remove Reaction
+
+**Endpoint**: `DELETE /v2/api/openkey/reactions/:roteid/:type`
+
+**Path Parameters**:
+
+- `roteid`: The UUID of the note
+- `type`: The type of reaction to remove (e.g., "like")
+
+**Query Parameters**:
+
+- `openkey`: YOUR_API_KEY (Required)
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "count": 1
+  }
+}
+```
+
+**Required Permission**: `DELETEREACTION`
+
+### 8. Get Profile
+
+**Endpoint**: `GET /v2/api/openkey/profile`
+
+**Query Parameters**:
+
+- `openkey`: YOUR_API_KEY (Required)
 
 **Response**:
 
@@ -191,19 +298,19 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Required Permission**: `EDITPROFILE`
 
-### 5. Update Profile
+### 9. Update Profile
 
 **Endpoint**: `PUT /v2/api/openkey/profile`
 
 **Headers**:
 
 - `Content-Type: application/json`
-- `Authorization: Bearer YOUR_API_KEY`
 
 **Request Body**:
 
 ```json
 {
+  "openkey": "YOUR_API_KEY",
   "nickname": "New Nickname",
   "description": "New description",
   "avatar": "https://example.com/new-avatar.jpg",
@@ -241,6 +348,28 @@ All fields are optional. Username validation:
 
 **Required Permission**: `EDITPROFILE`
 
+### 10. Check Permissions
+
+**Endpoint**: `GET /v2/api/openkey/permissions`
+
+**Query Parameters**:
+
+- `openkey`: YOUR_API_KEY (Required)
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "permissions": ["SENDROTE", "GETROTE"]
+  }
+}
+```
+
+**Required Permission**: None (Valid API Key required)
+
 ## Error Handling
 
 API errors are returned with appropriate HTTP status codes and a JSON response with error details.
@@ -261,98 +390,3 @@ Common error codes:
 - 403: Insufficient permissions
 - 400: Missing required parameters or invalid request
 - 400: Input length exceeds limit (title > 200 chars, content > 1,000,000 chars, tag > 50 chars, or > 20 tags)
-
-## Code Examples
-
-### JavaScript/Node.js
-
-```javascript
-// Create note example
-async function createNote() {
-  const response = await fetch("https://your-api-url/v2/api/openkey/notes", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Bearer YOUR_API_KEY",
-    },
-    body: JSON.stringify({
-      content: "This is a test note created via API",
-      title: "API Test",
-      state: "private",
-      tags: ["api", "test"],
-    }),
-  });
-
-  const data = await response.json();
-  console.log(data);
-}
-
-// Get notes example
-async function getNotes() {
-  const response = await fetch(
-    "https://your-api-url/v2/api/openkey/notes?limit=10&skip=0",
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer YOUR_API_KEY",
-      },
-    },
-  );
-
-  const data = await response.json();
-  console.log(data);
-}
-```
-
-### Python
-
-```python
-import requests
-import json
-
-# Create note example
-def create_note():
-    url = "https://your-api-url/v2/api/openkey/notes"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer YOUR_API_KEY"
-    }
-    payload = {
-        "content": "This is a test note created via API",
-        "title": "API Test",
-        "state": "private",
-        "tags": ["api", "test"]
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    print(response.json())
-
-# Get notes example
-def get_notes():
-    url = "https://your-api-url/v2/api/openkey/notes?limit=10&skip=0"
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer YOUR_API_KEY"
-    }
-
-    response = requests.get(url, headers=headers)
-    print(response.json())
-```
-
-## Best Practices
-
-1. **Secure Your API Keys**: Treat API keys as sensitive credentials and never expose them in client-side code.
-2. **Use Specific Permissions**: Only assign the permissions that your application needs.
-3. **Rate Limit Your Requests**: Avoid sending too many requests in a short period.
-4. **Handle Errors Properly**: Implement proper error handling for failed requests.
-5. **Use POST for Creating Notes**: Prefer the POST method over the GET method for creating notes.
-
-## Managing API Keys
-
-You can manage your API keys through the web interface:
-
-1. Navigate to the API Keys section in your account settings
-2. Create new API keys with specific permissions
-3. Update or delete existing API keys
-4. View your API key usage history
