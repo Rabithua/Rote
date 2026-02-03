@@ -1,0 +1,863 @@
+🚀 Starting OpenKey Endpoints Complete Test
+
+Target: http://localhost:3000/v2/api/openkey
+OpenKey: ae8f4d1f...
+────────────────────────────────────────────────────────────────────────────────
+
+📋 Using provided OpenKey, skipping authentication
+────────────────────────────────────────────────────────────────────────────────
+
+📋 Testing All OpenKey Endpoints
+────────────────────────────────────────────────────────────────────────────────
+
+📤 POST /notes
+Request data: {
+  "openkey": "ae8f4d1f-7b4f-43ed-80ea-672f91a11589",
+  "content": "This is a test note created via OpenKey POST method.",
+  "title": "Test Note Title",
+  "state": "private",
+  "type": "rote",
+  "tags": [
+    "test",
+    "openkey"
+  ],
+  "pin": false
+}
+📥 Response Status: 201
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
+    "title": "Test Note Title",
+    "type": "rote",
+    "tags": [
+      "test",
+      "openkey"
+    ],
+    "content": "This is a test note created via OpenKey POST method.",
+    "state": "private",
+    "archived": false,
+    "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "articleId": null,
+    "pin": false,
+    "editor": "normal",
+    "createdAt": "2026-02-03T05:11:57.829Z",
+    "updatedAt": "2026-02-03T05:11:57.829Z",
+    "author": {
+      "username": "administrator",
+      "nickname": "Administrator",
+      "avatar": null,
+      "emailVerified": true
+    },
+    "attachments": [],
+    "linkPreviews": [],
+    "reactions": []
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 1: Create Note (POST) (81ms): Note created with ID: f03663c8-22e0-47ee-ae25-8a6e4099141a
+
+📤 GET /notes/create?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589&content=This+is+a+test+note+created+via+OpenKey+GET+method.&state=private&type=rote&title=Test+Note+GET&pin=false&tag=test&tag=legacy
+📥 Response Status: 201
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
+    "title": "Test Note GET",
+    "type": "rote",
+    "tags": [
+      "test",
+      "legacy"
+    ],
+    "content": "This is a test note created via OpenKey GET method.",
+    "state": "private",
+    "archived": false,
+    "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "articleId": null,
+    "pin": true,
+    "editor": "normal",
+    "createdAt": "2026-02-03T05:11:57.869Z",
+    "updatedAt": "2026-02-03T05:11:57.869Z",
+    "author": {
+      "username": "administrator",
+      "nickname": "Administrator",
+      "avatar": null,
+      "emailVerified": true
+    },
+    "attachments": [],
+    "linkPreviews": [],
+    "reactions": []
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 2: Create Note (GET - Legacy) (26ms): Note created with ID: 631cdee0-8cc2-42ac-b13b-bb4889dd8dc9
+
+📤 POST /articles
+Request data: {
+  "openkey": "ae8f4d1f-7b4f-43ed-80ea-672f91a11589",
+  "content": "# Test Article\n\nThis is a test article created via OpenKey API.\n\n## Introduction\n\nLorem ipsum dolor sit amet."
+}
+📥 Response Status: 201
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "bc703968-68f1-4c11-a819-2c929f395bf9",
+    "content": "# Test Article\n\nThis is a test article created via OpenKey API.\n\n## Introduction\n\nLorem ipsum dolor sit amet.",
+    "authorId": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "createdAt": "2026-02-03T05:11:57.883Z",
+    "updatedAt": "2026-02-03T05:11:57.883Z",
+    "title": "Test Article",
+    "summary": "This is a test article created via OpenKey API."
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 3: Create Article (POST) (7ms): Article created with ID: bc703968-68f1-4c11-a819-2c929f395bf9
+
+📤 GET /notes?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589&limit=10&skip=0
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
+      "title": "Test Note GET",
+      "type": "rote",
+      "tags": [
+        "test",
+        "legacy"
+      ],
+      "content": "This is a test note created via OpenKey GET method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": true,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:57.869Z",
+      "updatedAt": "2026-02-03T05:11:57.869Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "509ad0d4-393d-4e73-92d6-b05c1e34f6d6",
+      "title": "Test Note GET",
+      "type": "rote",
+      "tags": [
+        "test",
+        "legacy"
+      ],
+      "content": "This is a test note created via OpenKey GET method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": true,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:21.607Z",
+      "updatedAt": "2026-02-03T05:11:21.607Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
+      "title": "Test Note Title",
+      "type": "rote",
+      "tags": [
+        "test",
+        "openkey"
+      ],
+      "content": "This is a test note created via OpenKey POST method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:57.829Z",
+      "updatedAt": "2026-02-03T05:11:57.829Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "3b125bef-6a58-4c20-b800-c59703c6faa2",
+      "title": "Test Note Title",
+      "type": "rote",
+      "tags": [
+        "test",
+        "openkey"
+      ],
+      "content": "This is a test note created via OpenKey POST method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:21.554Z",
+      "updatedAt": "2026-02-03T05:11:21.554Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "32a88d1e-a15e-4f99-bc41-cb8a3157e6ef",
+      "title": "",
+      "type": "Rote",
+      "tags": [],
+      "content": "ReactionTest",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:05:14.627Z",
+      "updatedAt": "2026-02-03T05:05:14.627Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "3e52cb5b-7045-4f9f-869d-8f8b456d26d0",
+      "title": "",
+      "type": "rote",
+      "tags": [],
+      "content": "Test POST /notes/create",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:05:14.546Z",
+      "updatedAt": "2026-02-03T05:05:14.546Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "83b86c78-c920-4cde-88ea-41d34b383aad",
+      "title": "",
+      "type": "Rote",
+      "tags": [],
+      "content": "TestGETCreate",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:05:14.526Z",
+      "updatedAt": "2026-02-03T05:05:14.526Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "b1d032d9-c843-4268-b2a9-a7ef51686f96",
+      "title": "",
+      "type": "rote",
+      "tags": [],
+      "content": "Test POST /notes",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:05:14.476Z",
+      "updatedAt": "2026-02-03T05:05:14.476Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "a9f1669f-4d4d-49c2-8020-202554ee5447",
+      "title": "",
+      "type": "Rote",
+      "tags": [],
+      "content": "NoteForReaction",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:00:28.134Z",
+      "updatedAt": "2026-02-03T05:00:28.134Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "c59747c9-196d-4eb1-9d8c-d942d63f9f9b",
+      "title": "",
+      "type": "rote",
+      "tags": [],
+      "content": "TestPostBody",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:00:04.486Z",
+      "updatedAt": "2026-02-03T05:00:04.486Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    }
+  ]
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 4: Retrieve Notes (GET) (8ms): Retrieved 10 notes
+
+📤 GET /notes?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589&limit=10&skip=0&tag=test
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
+      "title": "Test Note GET",
+      "type": "rote",
+      "tags": [
+        "test",
+        "legacy"
+      ],
+      "content": "This is a test note created via OpenKey GET method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": true,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:57.869Z",
+      "updatedAt": "2026-02-03T05:11:57.869Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "509ad0d4-393d-4e73-92d6-b05c1e34f6d6",
+      "title": "Test Note GET",
+      "type": "rote",
+      "tags": [
+        "test",
+        "legacy"
+      ],
+      "content": "This is a test note created via OpenKey GET method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": true,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:21.607Z",
+      "updatedAt": "2026-02-03T05:11:21.607Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
+      "title": "Test Note Title",
+      "type": "rote",
+      "tags": [
+        "test",
+        "openkey"
+      ],
+      "content": "This is a test note created via OpenKey POST method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:57.829Z",
+      "updatedAt": "2026-02-03T05:11:57.829Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "3b125bef-6a58-4c20-b800-c59703c6faa2",
+      "title": "Test Note Title",
+      "type": "rote",
+      "tags": [
+        "test",
+        "openkey"
+      ],
+      "content": "This is a test note created via OpenKey POST method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:21.554Z",
+      "updatedAt": "2026-02-03T05:11:21.554Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    }
+  ]
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 4b: Retrieve Notes with Tag Filter (10ms): Retrieved 4 notes with tag filter
+
+📤 GET /notes/search?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589&keyword=test+note&limit=10&skip=0
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
+      "title": "Test Note GET",
+      "type": "rote",
+      "tags": [
+        "test",
+        "legacy"
+      ],
+      "content": "This is a test note created via OpenKey GET method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": true,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:57.869Z",
+      "updatedAt": "2026-02-03T05:11:57.869Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "509ad0d4-393d-4e73-92d6-b05c1e34f6d6",
+      "title": "Test Note GET",
+      "type": "rote",
+      "tags": [
+        "test",
+        "legacy"
+      ],
+      "content": "This is a test note created via OpenKey GET method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": true,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:21.607Z",
+      "updatedAt": "2026-02-03T05:11:21.607Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
+      "title": "Test Note Title",
+      "type": "rote",
+      "tags": [
+        "test",
+        "openkey"
+      ],
+      "content": "This is a test note created via OpenKey POST method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:57.829Z",
+      "updatedAt": "2026-02-03T05:11:57.829Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    },
+    {
+      "id": "3b125bef-6a58-4c20-b800-c59703c6faa2",
+      "title": "Test Note Title",
+      "type": "rote",
+      "tags": [
+        "test",
+        "openkey"
+      ],
+      "content": "This is a test note created via OpenKey POST method.",
+      "state": "private",
+      "archived": false,
+      "authorid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+      "articleId": null,
+      "pin": false,
+      "editor": "normal",
+      "createdAt": "2026-02-03T05:11:21.554Z",
+      "updatedAt": "2026-02-03T05:11:21.554Z",
+      "author": {
+        "username": "administrator",
+        "nickname": "Administrator",
+        "avatar": null,
+        "emailVerified": true
+      },
+      "attachments": [],
+      "linkPreviews": [],
+      "reactions": [],
+      "article": null
+    }
+  ]
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 5: Search Notes (GET) (7ms): Found 4 notes matching "test note"
+
+📤 POST /reactions
+Request data: {
+  "openkey": "ae8f4d1f-7b4f-43ed-80ea-672f91a11589",
+  "type": "like",
+  "roteid": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
+  "metadata": {
+    "source": "openkey-test"
+  }
+}
+📥 Response Status: 201
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "303e9059-fd35-4343-b251-ec7670ace632",
+    "type": "like",
+    "userid": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "visitorId": null,
+    "visitorInfo": null,
+    "roteid": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
+    "metadata": {
+      "source": "openkey-test"
+    },
+    "createdAt": "2026-02-03T05:11:57.921Z",
+    "updatedAt": "2026-02-03T05:11:57.921Z",
+    "user": {
+      "username": "administrator",
+      "nickname": "Administrator",
+      "avatar": null
+    }
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 6: Add Reaction (POST) (25ms): Added "like" reaction to note: f03663c8-22e0-47ee-ae25-8a6e4099141a
+
+📤 DELETE /reactions/f03663c8-22e0-47ee-ae25-8a6e4099141a/like?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "count": 1
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 7: Remove Reaction (DELETE) (8ms): Removed "like" reaction from note: f03663c8-22e0-47ee-ae25-8a6e4099141a
+
+📤 GET /profile?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "emailVerified": true,
+    "email": "rabithua@gmail.com",
+    "username": "administrator",
+    "nickname": "Administrator",
+    "description": "Profile updated via OpenKey API test",
+    "avatar": null,
+    "cover": null,
+    "role": "super_admin",
+    "createdAt": "2026-01-21T07:38:13.999Z",
+    "updatedAt": "2026-02-03T05:11:21.703Z",
+    "allowExplore": true,
+    "oauthBindings": []
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 8: Get Profile (GET) (3ms): Profile retrieved for user: administrator
+
+📤 GET /profile?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "emailVerified": true,
+    "email": "rabithua@gmail.com",
+    "username": "administrator",
+    "nickname": "Administrator",
+    "description": "Profile updated via OpenKey API test",
+    "avatar": null,
+    "cover": null,
+    "role": "super_admin",
+    "createdAt": "2026-01-21T07:38:13.999Z",
+    "updatedAt": "2026-02-03T05:11:21.703Z",
+    "allowExplore": true,
+    "oauthBindings": []
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 8: Get Profile (GET) (4ms): Profile retrieved for user: administrator
+
+📤 PUT /profile
+Request data: {
+  "openkey": "ae8f4d1f-7b4f-43ed-80ea-672f91a11589",
+  "nickname": "OpenKey Test User",
+  "description": "Profile updated via OpenKey API test"
+}
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "email": "rabithua@gmail.com",
+    "username": "administrator",
+    "nickname": "OpenKey Test User",
+    "description": "Profile updated via OpenKey API test",
+    "avatar": null,
+    "cover": null,
+    "role": "super_admin",
+    "createdAt": "2026-01-21T07:38:13.999Z",
+    "updatedAt": "2026-02-03T05:11:57.958Z"
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+
+📤 PUT /profile
+Request data: {
+  "openkey": "ae8f4d1f-7b4f-43ed-80ea-672f91a11589",
+  "nickname": "Administrator"
+}
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "0001db4e-b9ef-454d-b627-f5e71d86e817",
+    "email": "rabithua@gmail.com",
+    "username": "administrator",
+    "nickname": "Administrator",
+    "description": "Profile updated via OpenKey API test",
+    "avatar": null,
+    "cover": null,
+    "role": "super_admin",
+    "createdAt": "2026-01-21T07:38:13.999Z",
+    "updatedAt": "2026-02-03T05:11:57.961Z"
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 9: Update Profile (PUT) (13ms): Profile updated and restored
+
+📤 GET /permissions?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589
+📥 Response Status: 200
+✅ Response Data: {
+  "code": 0,
+  "message": "success",
+  "data": {
+    "permissions": [
+      "SENDROTE",
+      "ADDREACTION",
+      "EDITROTE",
+      "GETROTE",
+      "SENDARTICLE",
+      "DELETEREACTION",
+      "EDITPROFILE"
+    ]
+  }
+}
+────────────────────────────────────────────────────────────────────────────────
+✅ Endpoint 10: Check Permissions (GET) (1ms): Permissions: SENDROTE, ADDREACTION, EDITROTE, GETROTE, SENDARTICLE, DELETEREACTION, EDITPROFILE
+
+📋 Phase 4: Error Scenario Tests
+────────────────────────────────────────────────────────────────────────────────
+
+📤 GET /notes?openkey=invalid-key-12345
+📥 Response Status: 500
+❌ Response Error: {
+  "code": 1,
+  "message": "DatabaseError: Failed to get open key: invalid-key-12345",
+  "data": null
+}
+❌ Error Message: DatabaseError: Failed to get open key: invalid-key-12345
+────────────────────────────────────────────────────────────────────────────────
+✅ Error Test: Invalid OpenKey (12ms): Correctly rejected with status 500
+
+📤 POST /notes
+Request data: {
+  "openkey": "ae8f4d1f-7b4f-43ed-80ea-672f91a11589",
+  "title": "Test"
+}
+📥 Response Status: 400
+❌ Response Error: {
+  "code": 1,
+  "message": "Content is required",
+  "data": null
+}
+❌ Error Message: Content is required
+────────────────────────────────────────────────────────────────────────────────
+✅ Error Test: Missing Content (5ms): Correctly rejected with status 400
+
+📋 Phase 5: Cleanup
+────────────────────────────────────────────────────────────────────────────────
+
+🧹 Cleaning up test data...
+   Created 2 notes: f03663c8-22e0-47ee-ae25-8a6e4099141a, 631cdee0-8cc2-42ac-b13b-bb4889dd8dc9
+   Created 1 articles: bc703968-68f1-4c11-a819-2c929f395bf9
+
+================================================================================
+📊 测试结果摘要
+================================================================================
+总测试数: 14
+通过: 14 ✅
+失败: 0 
+总耗时: 210ms
+平均耗时: 15ms/测试
+================================================================================
+
+详细测试结果:
+  ✅ Endpoint 1: Create Note (POST) (81ms): Note created with ID: f03663c8-22e0-47ee-ae25-8a6e4099141a
+  ✅ Endpoint 2: Create Note (GET - Legacy) (26ms): Note created with ID: 631cdee0-8cc2-42ac-b13b-bb4889dd8dc9
+  ✅ Endpoint 3: Create Article (POST) (7ms): Article created with ID: bc703968-68f1-4c11-a819-2c929f395bf9
+  ✅ Endpoint 4: Retrieve Notes (GET) (8ms): Retrieved 10 notes
+  ✅ Endpoint 4b: Retrieve Notes with Tag Filter (10ms): Retrieved 4 notes with tag filter
+  ✅ Endpoint 5: Search Notes (GET) (7ms): Found 4 notes matching "test note"
+  ✅ Endpoint 6: Add Reaction (POST) (25ms): Added "like" reaction to note: f03663c8-22e0-47ee-ae25-8a6e4099141a
+  ✅ Endpoint 7: Remove Reaction (DELETE) (8ms): Removed "like" reaction from note: f03663c8-22e0-47ee-ae25-8a6e4099141a
+  ✅ Endpoint 8: Get Profile (GET) (3ms): Profile retrieved for user: administrator
+  ✅ Endpoint 8: Get Profile (GET) (4ms): Profile retrieved for user: administrator
+  ✅ Endpoint 9: Update Profile (PUT) (13ms): Profile updated and restored
+  ✅ Endpoint 10: Check Permissions (GET) (1ms): Permissions: SENDROTE, ADDREACTION, EDITROTE, GETROTE, SENDARTICLE, DELETEREACTION, EDITPROFILE
+  ✅ Error Test: Invalid OpenKey (12ms): Correctly rejected with status 500
+  ✅ Error Test: Missing Content (5ms): Correctly rejected with status 400
