@@ -109,6 +109,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
         frontendUrl: (siteConfig as any)?.frontendUrl || '',
         defaultLanguage: (siteConfig as any)?.defaultLanguage || 'zh-CN',
         icpRecord: (siteConfig as any)?.icpRecord || undefined,
+        announcement: (siteConfig as any)?.announcement || undefined,
       },
 
       // 系统信息

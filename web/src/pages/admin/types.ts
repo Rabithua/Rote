@@ -6,6 +6,11 @@ export interface SystemConfig {
     defaultLanguage?: string;
     allowedOrigins?: string[];
     icpRecord?: string;
+    announcement?: {
+      enabled: boolean;
+      content: string;
+      link?: string;
+    };
   };
   storage?: {
     endpoint: string;
