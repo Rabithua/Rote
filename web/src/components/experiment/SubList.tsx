@@ -88,7 +88,7 @@ export default function SubList() {
           action:
             failedCount > 0
               ? {
-                  label: t('clearInvalid'),
+                  label: t('messages.clearInvalid'),
                   onClick: () => handleClearInvalidEndpoints(failedCount),
                 }
               : undefined,
