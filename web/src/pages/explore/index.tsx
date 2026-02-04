@@ -158,7 +158,9 @@ const Announcement = () => {
   }
 
   const Content = () => (
-    <div className={`px-4 py-4 text-sm font-thin ${announcement.link ? 'hover:underline' : ''}`}>
+    <div
+      className={`animate-show bg-foreground/2 block px-4 py-4 text-sm font-thin duration-300 ${announcement.link ? 'hover:underline' : ''}`}
+    >
       <Activity className="mr-2 inline size-3" />
       <div className="inline">{announcement.content}</div>
       {announcement.link && <ArrowUpRight className="ml-1 inline size-3" />}
@@ -167,11 +169,7 @@ const Announcement = () => {
 
   if (announcement.link) {
     return (
-      <Link
-        to={announcement.link}
-        target="_blank"
-        className="animate-show bg-foreground/2 block duration-300"
-      >
+      <Link to={announcement.link} target="_blank">
         <Content />
       </Link>
     );
