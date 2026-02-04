@@ -497,7 +497,15 @@
         "frontendUrl": "フロントエンドURL",
         "frontendUrlDescription": "フロントエンドアクセスURL、RSSフィードでノートリンクを生成するために使用",
         "icpRecord": "ICP記録番号",
-        "icpRecordDescription": "ウェブサイトICP記録番号、例：京ICP备12345678号"
+        "icpRecordDescription": "ウェブサイトICP記録番号、例：京ICP备12345678号",
+        "announcement": {
+          "title": "サイトのお知らせ",
+          "description": "探索ページの上部に表示されるお知らせ",
+          "content": "お知らせ内容",
+          "contentPlaceholder": "お知らせの内容を入力",
+          "link": "お知らせリンク",
+          "linkPlaceholder": "オプション、お知らせをクリックしたときのジャンプ先"
+        }
       },
       "storage": {
         "title": "ストレージ設定",

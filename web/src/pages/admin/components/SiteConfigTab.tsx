@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import Divider from '@/components/ui/divider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { put } from '@/utils/api';
 import { useTranslation } from 'react-i18next';
@@ -64,6 +65,75 @@ export default function SiteConfigTab({
       </CardHeader>
       <Divider />
       <CardContent className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-base">{t('site.announcement.title')}</Label>
+              <p className="text-muted-foreground text-sm">{t('site.announcement.description')}</p>
+            </div>
+            <Switch
+              checked={siteConfig?.announcement?.enabled || false}
+              onCheckedChange={(checked: boolean) =>
+                setSiteConfig({
+                  ...(siteConfig || {}),
+                  name: siteConfig?.name || '',
+                  frontendUrl: siteConfig?.frontendUrl || '',
+                  announcement: {
+                    enabled: checked,
+                    content: siteConfig?.announcement?.content || '',
+                    link: siteConfig?.announcement?.link || '',
+                  },
+                })
+              }
+            />
+          </div>
+
+          {siteConfig?.announcement?.enabled && (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="announcementContent">{t('site.announcement.content')}</Label>
+                <Textarea
+                  id="announcementContent"
+                  value={siteConfig?.announcement?.content || ''}
+                  onChange={(e) =>
+                    setSiteConfig({
+                      ...(siteConfig || {}),
+                      name: siteConfig?.name || '',
+                      frontendUrl: siteConfig?.frontendUrl || '',
+                      announcement: {
+                        ...(siteConfig?.announcement || { enabled: true, content: '', link: '' }),
+                        content: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder={t('site.announcement.contentPlaceholder')}
+                  rows={2}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="announcementLink">{t('site.announcement.link')}</Label>
+                <Input
+                  id="announcementLink"
+                  value={siteConfig?.announcement?.link || ''}
+                  onChange={(e) =>
+                    setSiteConfig({
+                      ...(siteConfig || {}),
+                      name: siteConfig?.name || '',
+                      frontendUrl: siteConfig?.frontendUrl || '',
+                      announcement: {
+                        ...(siteConfig?.announcement || { enabled: true, content: '', link: '' }),
+                        link: e.target.value,
+                      },
+                    })
+                  }
+                  placeholder="https://example.com"
+                />
+              </div>
+            </>
+          )}
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="siteName">{t('site.name')}</Label>
           <Input

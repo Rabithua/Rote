@@ -491,7 +491,15 @@
         "frontendUrl": "前端 URL",
         "frontendUrlDescription": "前端访问地址，用于生成 RSS Feed 中的笔记链接",
         "icpRecord": "ICP 备案号",
-        "icpRecordDescription": "网站备案号，如：京ICP备12345678号"
+        "icpRecordDescription": "网站备案号，如：京ICP备12345678号",
+        "announcement": {
+          "title": "站点公告",
+          "description": "在探索页面顶部显示的站点公告",
+          "content": "公告内容",
+          "contentPlaceholder": "输入公告内容",
+          "link": "公告链接",
+          "linkPlaceholder": "可选，点击公告跳转的链接"
+        }
       },
       "storage": {
         "title": "存储配置",

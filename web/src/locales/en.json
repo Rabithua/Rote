@@ -497,7 +497,15 @@
         "frontendUrl": "Frontend URL",
         "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds",
         "icpRecord": "ICP Record Number",
-        "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号"
+        "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号",
+        "announcement": {
+          "title": "Site Announcement",
+          "description": "Announcement displayed at the top of the Explore page.",
+          "content": "Announcement Content",
+          "contentPlaceholder": "Enter announcement content",
+          "link": "Announcement Link",
+          "linkPlaceholder": "Optional, link to jump to when clicking the announcement"
+        }
       },
       "storage": {
         "title": "Storage Configuration",
