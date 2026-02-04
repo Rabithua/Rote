@@ -157,7 +157,7 @@ const Announcement = () => {
     return null;
   }
 
-  const Content = () => (
+  const content = (
     <div
       className={`animate-show bg-foreground/2 block px-4 py-4 text-sm font-thin duration-300 ${announcement.link ? 'hover:underline' : ''}`}
     >
@@ -170,12 +170,12 @@ const Announcement = () => {
   if (announcement.link) {
     return (
       <Link to={announcement.link} target="_blank">
-        <Content />
+        {content}
       </Link>
     );
   }
 
-  return <Content />;
+  return content;
 };
 
 export default ExplorePage;
