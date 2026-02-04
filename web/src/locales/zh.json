@@ -348,7 +348,12 @@
           "deleteSuccess": "订阅删除成功",
           "deleteFailed": "删除失败: {{error}}",
           "testNotificationSent": "测试通知已发送",
-          "confirmDelete": "确定要删除这个订阅吗？"
+          "confirmDelete": "确定要删除这个订阅吗？",
+          "clearInvalid": "清理无效端点",
+          "clearingInvalid": "清理中...",
+          "clearSuccess": "清理成功！共清理了 {{count}} 个无效端点",
+          "clearFailed": "清理失败: {{error}}",
+          "clearConfirm": "测试发现 {{count}} 个无效端点，是否清理？"
         },
         "noSubscriptions": "没有订阅的通知端点"
       }

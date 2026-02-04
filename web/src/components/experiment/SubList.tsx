@@ -76,14 +76,23 @@ export default function SubList() {
     try {
       const response = await post('/subscriptions/test-all');
       const result = response.data;
+      const failedCount = result.summary.failed;
 
       toast.success(
         t('messages.testCompleted', {
           success: result.summary.success,
-          failed: result.summary.failed,
+          failed: failedCount,
         }),
         {
           id: loadingToast,
+          action:
+            failedCount > 0
+              ? {
+                  label: t('clearInvalid'),
+                  onClick: () => handleClearInvalidEndpoints(failedCount),
+                }
+              : undefined,
+          duration: failedCount > 0 ? 10000 : 4000,
         }
       );
 
@@ -96,6 +105,30 @@ export default function SubList() {
       });
     } finally {
       setIsTestingAll(false);
+    }
+  };
+
+  const handleClearInvalidEndpoints = async (count: number) => {
+    if (!confirm(t('messages.clearConfirm', { count }))) {
+      return;
+    }
+    const loadingToast = toast.loading(t('messages.clearingInvalid'));
+    try {
+      const res = await del('/subscriptions/inactive/all');
+      // res.data 可能是 { count: number } 或其他，假设返回 count
+      // 后端返回 createResponse(data)，data 是 deleteInactiveSubscriptions 的返回值
+      // postgres delete returning 这里可能返回数组 [{id: ...}]
+      const deletedCount = Array.isArray(res.data) ? res.data.length : 0;
+
+      toast.success(t('messages.clearSuccess', { count: deletedCount }), {
+        id: loadingToast,
+      });
+      mutate();
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('messages.clearFailed', { error: errorMessage }), {
+        id: loadingToast,
+      });
     }
   };
 
@@ -198,7 +231,7 @@ export default function SubList() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                  <p className="font-mono text-xs font-thin break-words whitespace-break-spaces opacity-50">
+                  <p className="font-mono text-xs font-thin wrap-break-word whitespace-break-spaces opacity-50">
                     {item.endpoint}
                   </p>
                   <div className="font-mono text-xs">

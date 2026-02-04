@@ -354,7 +354,12 @@
           "deleteSuccess": "Subscription deleted successfully",
           "deleteFailed": "Delete failed: {{error}}",
           "testNotificationSent": "Test notification sent",
-          "confirmDelete": "Are you sure you want to delete this subscription?"
+          "confirmDelete": "Are you sure you want to delete this subscription?",
+          "clearInvalid": "Clear Invalid Endpoints",
+          "clearingInvalid": "Clearing...",
+          "clearSuccess": "Cleared successfully! {{count}} invalid endpoints removed.",
+          "clearFailed": "Clear failed: {{error}}",
+          "clearConfirm": "Found {{count}} invalid endpoints. Clear them?"
         },
         "noSubscriptions": "No subscribed notification endpoints"
       }

@@ -354,7 +354,12 @@
           "deleteSuccess": "購読を削除しました",
           "deleteFailed": "削除に失敗しました：{{error}}",
           "testNotificationSent": "テスト通知を送信しました",
-          "confirmDelete": "この購読を削除してもよろしいですか？"
+          "confirmDelete": "この購読を削除してもよろしいですか？",
+          "clearInvalid": "無効なエンドポイントを削除",
+          "clearingInvalid": "削除中...",
+          "clearSuccess": "削除完了！{{count}} 個の無効なエンドポイントを削除しました。",
+          "clearFailed": "削除失敗: {{error}}",
+          "clearConfirm": "{{count}} 個の無効なエンドポイントが見つかりました。削除しますか？"
         },
         "noSubscriptions": "購読済み通知エンドポイントがありません"
       }
