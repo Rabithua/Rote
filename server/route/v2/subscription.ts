@@ -4,6 +4,7 @@ import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
   addSubScriptionToUser,
+  deleteInactiveSubscriptions,
   deleteSubScription,
   findSubScriptionToUser,
   findSubScriptionToUserByendpoint,
@@ -61,6 +62,13 @@ subscriptionsRouter.delete('/:id', authenticateJWT, async (c: HonoContext) => {
   }
 
   const data = await deleteSubScription(id);
+  return c.json(createResponse(data), 200);
+});
+
+// 清理所有失效订阅
+subscriptionsRouter.delete('/inactive/all', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const data = await deleteInactiveSubscriptions(user.id);
   return c.json(createResponse(data), 200);
 });
 

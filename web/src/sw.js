@@ -188,17 +188,45 @@ self.addEventListener('message', async (event) => {
     case 'subNotice': {
       // 为避免 applicationServerKey 变更导致 InvalidStateError，先取消旧订阅再重订阅
       try {
+        // 动态获取最新的 VAPID key
+        const vapidKey = await getVapidPublicKey();
         const existing = await self.registration.pushManager.getSubscription();
+
         if (existing) {
+          // 检查现有订阅的 key 是否与当前 VAPID key 一致
+          const currentKey = existing.options.applicationServerKey;
+          const newKey = urlBase64ToUint8Array(vapidKey);
+
+          const isSameKey = (a, b) => {
+            if (!a || !b) return false;
+            const arrA = new Uint8Array(a);
+            const arrB = new Uint8Array(b);
+            if (arrA.length !== arrB.length) return false;
+            for (let i = 0; i < arrA.length; i++) if (arrA[i] !== arrB[i]) return false;
+            return true;
+          };
+
+          if (isSameKey(currentKey, newKey)) {
+            // 订阅有效且 key 一致，直接使用现有订阅
+            const responsePayload = {
+              method: 'subNoticeResponse',
+              payload: JSON.stringify(existing),
+            };
+
+            if (event.source) {
+              event.source.postMessage(responsePayload);
+            } else if (event.ports && event.ports[0]) {
+              event.ports[0].postMessage(responsePayload);
+            }
+            break;
+          }
+
+          // key 不一致，取消订阅并重新订阅
           try {
             await existing.unsubscribe();
           } catch {}
         }
-      } catch {}
 
-      try {
-        // 动态获取最新的 VAPID key
-        const vapidKey = await getVapidPublicKey();
         const subscription = await self.registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidKey),

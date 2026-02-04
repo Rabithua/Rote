@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { userSwSubscriptions } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -199,5 +199,19 @@ export async function updateSubScription(
       throw error;
     }
     throw new DatabaseError(`Failed to update subscription: ${subId}`, error);
+  }
+}
+
+export async function deleteInactiveSubscriptions(userId: string): Promise<any> {
+  try {
+    const result = await db
+      .delete(userSwSubscriptions)
+      .where(
+        and(eq(userSwSubscriptions.userid, userId), eq(userSwSubscriptions.status, 'inactive'))
+      )
+      .returning();
+    return result;
+  } catch (error) {
+    throw new DatabaseError(`Failed to delete inactive subscriptions for user: ${userId}`, error);
   }
 }
