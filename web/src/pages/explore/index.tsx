@@ -10,12 +10,12 @@ import { useAPIInfinite } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import { getRotesV2 } from '@/utils/roteApi';
 import {
+  Activity,
   ArrowUpRight,
   Eye,
   GitFork,
   Github,
   Globe2,
-  Megaphone,
   MessageCircleQuestionIcon,
   RefreshCw,
   Star,
@@ -158,10 +158,8 @@ const Announcement = () => {
   }
 
   const Content = () => (
-    <div
-      className={`bg-primary/5 px-4 py-4 text-sm font-light ${announcement.link ? 'underline' : ''}`}
-    >
-      <Megaphone className="mr-2 inline size-4" />
+    <div className={`px-4 py-4 text-sm font-thin ${announcement.link ? 'hover:underline' : ''}`}>
+      <Activity className="mr-2 inline size-3" />
       <div className="inline">{announcement.content}</div>
       {announcement.link && <ArrowUpRight className="ml-1 inline size-3" />}
     </div>
@@ -169,7 +167,11 @@ const Announcement = () => {
 
   if (announcement.link) {
     return (
-      <Link to={announcement.link} target="_blank" className="block hover:opacity-80">
+      <Link
+        to={announcement.link}
+        target="_blank"
+        className="animate-show bg-foreground/2 block duration-300"
+      >
         <Content />
       </Link>
     );

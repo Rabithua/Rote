@@ -87,7 +87,13 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
       "name": "Rote",
       "description": "一个开源的个人笔记仓库系统",
       "frontendUrl": "https://rote.ink",
-      "defaultLanguage": "zh-CN"
+      "defaultLanguage": "zh-CN",
+      "icpRecord": "京ICP备12345678号",
+      "announcement": {
+        "enabled": true,
+        "content": "系统维护通知",
+        "link": "https://example.com/notice"
+      }
     },
     "system": {
       "version": "1.0.0",
@@ -136,6 +142,11 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
   - `description`: string - 站点描述
   - `frontendUrl`: string - 前端地址
   - `defaultLanguage`: string - 默认语言
+  - `icpRecord`: string | undefined - ICP 备案号
+  - `announcement`: object | undefined - 站点公告配置
+    - `enabled`: boolean - 是否启用
+    - `content`: string - 公告内容
+    - `link`: string | undefined - 公告链接
 - `system`: object - 系统信息
   - `version`: string - 系统版本
   - `lastMigration`: string - 最后迁移版本
@@ -262,7 +273,6 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
 探索页中公开笔记的展示，除了依赖笔记本身为 `public` 状态外，还受到以下两个配置的共同影响：
 
 - **用户级配置**（通过用户设置接口维护，见 `USER-API.md`）
-
   - `allowExplore`: boolean
     - 当为 `false` 时，用户的公开笔记不会出现在「探索」页推荐中，但仍可以通过直接链接访问。
 
