@@ -183,7 +183,6 @@ export async function importData(userId: string, data: any): Promise<any> {
     });
 
     return {
-      success: true,
       count: notes.length,
       created: createdCount,
       updated: updatedCount,

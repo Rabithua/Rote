@@ -320,7 +320,22 @@
       "importData": {
         "title": "Data Import",
         "description": "Import data from other note platforms.",
-        "notSupported": "Currently not supported."
+        "notSupported": "Currently not supported.",
+        "notesFound": "Notes Found",
+        "attachmentsFound": "Attachments Found",
+        "dialogTitle": "Usage Instructions",
+        "dialogDescription": "Please upload a file matching the following JSON format.",
+        "dialogExample": "JSON Example",
+        "dialogNote": "The system will match based on Note ID. If the ID exists and belongs to you, the note content will be updated; if the ID does not exist, a new note will be created. Nested attachment data will also be processed.",
+        "fileParsed": "Parsed {{count}} notes",
+        "invalidFormat": "Invalid file format. Please upload a valid JSON file.",
+        "parseError": "Failed to parse JSON file",
+        "importSuccess": "Import successful! Processed: {{count}}, Created: {{created}}, Updated: {{updated}}",
+        "importFailed": "Import failed",
+        "clickToUpload": "Click to upload file",
+        "cancel": "Cancel",
+        "importing": "Importing...",
+        "confirmImport": "Confirm Import"
       },
       "serviceWorker": {
         "title": "ServiceWorker Notification",

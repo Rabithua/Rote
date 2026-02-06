@@ -314,7 +314,22 @@
       "importData": {
         "title": "数据导入",
         "description": "导入来自其他笔记平台的数据。",
-        "notSupported": "导入数据功能施工中"
+        "notSupported": "导入数据功能施工中",
+        "notesFound": "笔记数量",
+        "attachmentsFound": "附件数量",
+        "dialogTitle": "使用说明",
+        "dialogDescription": "请上传符合以下 JSON 格式的文件。",
+        "dialogExample": "JSON 示例",
+        "dialogNote": "系统将根据 Note ID 进行匹配，如果 ID 已存在且属于您，将更新笔记内容；如果 ID 不存在，将创建新笔记。同时也会处理嵌套的 attachments 数据。",
+        "fileParsed": "已解析 {{count}} 条笔记",
+        "invalidFormat": "文件格式无效，请上传有效的 JSON 文件",
+        "parseError": "JSON 文件解析失败",
+        "importSuccess": "导入成功！共处理: {{count}}, 新增: {{created}}, 更新: {{updated}}",
+        "importFailed": "导入失败",
+        "clickToUpload": "点击上传文件",
+        "cancel": "取消",
+        "importing": "导入中...",
+        "confirmImport": "确认导入"
       },
       "serviceWorker": {
         "title": "ServiceWoker通知",

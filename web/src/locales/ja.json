@@ -320,7 +320,22 @@
       "importData": {
         "title": "データインポート",
         "description": "他のノートプラットフォームからデータをインポートします。",
-        "notSupported": "現在サポートされていません。"
+        "notSupported": "現在サポートされていません。",
+        "notesFound": "ノートが見つかりました",
+        "attachmentsFound": "添付ファイルが見つかりました",
+        "dialogTitle": "使用手順",
+        "dialogDescription": "以下のJSON形式に一致するファイルをアップロードしてください。",
+        "dialogExample": "JSONの例",
+        "dialogNote": "システムはノートIDに基づいて照合します。IDが存在し、あなたのものである場合、ノートの内容が更新されます。IDが存在しない場合、新しいノートが作成されます。ネストされた添付データも処理されます。",
+        "fileParsed": "{{count}} 件のノートを解析しました",
+        "invalidFormat": "無効なファイル形式です。有効な JSON ファイルをアップロードしてください。",
+        "parseError": "JSON ファイルの解析に失敗しました",
+        "importSuccess": "インポート成功！処理済み: {{count}}, 作成: {{created}}, 更新: {{updated}}",
+        "importFailed": "インポートに失敗しました",
+        "clickToUpload": "クリックしてファイルをアップロード",
+        "cancel": "キャンセル",
+        "importing": "インポート中...",
+        "confirmImport": "インポートを確認"
       },
       "serviceWorker": {
         "title": "ServiceWorker 通知",

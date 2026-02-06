@@ -9,10 +9,11 @@ import {
 import { Divider } from '@/components/ui/divider';
 import { post } from '@/utils/api';
 import saveAs from 'file-saver';
-import { Download, HelpCircle, Loader2, Upload } from 'lucide-react';
+import { CloudUpload, Download, HelpCircle, Loader2, Upload } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { SlidingNumber } from '../animate-ui/text/sliding-number';
 import { SoftBottom } from '../others/SoftBottom';
 import { Button } from '../ui/button';
 
@@ -21,7 +22,10 @@ export default function ImportData() {
     keyPrefix: 'pages.experiment.importData',
   });
   const [isImporting, setIsImporting] = useState(false);
-  const [stats, setStats] = useState<{ noteCount: number } | null>(null);
+  const [stats, setStats] = useState<{
+    noteCount: number;
+    attachmentCount: number;
+  } | null>(null);
   const [fileData, setFileData] = useState<any | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,7 +38,17 @@ export default function ImportData() {
       try {
         const json = JSON.parse(event.target?.result as string);
         if (json.notes && Array.isArray(json.notes)) {
-          setStats({ noteCount: json.notes.length });
+          let attachmentCount = 0;
+          json.notes.forEach((note: any) => {
+            if (note.attachments && Array.isArray(note.attachments)) {
+              attachmentCount += note.attachments.length;
+            }
+          });
+
+          setStats({
+            noteCount: json.notes.length,
+            attachmentCount,
+          });
           setFileData(json);
           toast.success(t('fileParsed', { count: json.notes.length }));
         } else {
@@ -56,20 +70,20 @@ export default function ImportData() {
     try {
       setIsImporting(true);
       const res = await post<{
-        success: boolean;
         count: number;
         created: number;
         updated: number;
       }>('/users/me/import', fileData);
-      if (res.success) {
+      if (res) {
+        // Handle variable structure: might be flat or nested in data
+        const data = (res as any).data || res;
         toast.success(
           t('importSuccess', {
-            count: res.count,
-            created: res.created,
-            updated: res.updated,
+            count: data.count,
+            created: data.created,
+            updated: data.updated,
           }),
           {
-            description: `Created: ${res.created}, Updated: ${res.updated}`,
             duration: 5000,
           }
         );
@@ -99,6 +113,15 @@ export default function ImportData() {
           state: 'private',
           createdAt: '2024-03-20T10:00:00Z',
           updatedAt: '2024-03-20T10:00:00Z',
+          attachments: [
+            {
+              id: 'attachment-uuid',
+              originalName: 'image.png',
+              mimeType: 'image/png',
+              size: 1024,
+              url: 'https://...',
+            },
+          ],
         },
       ],
     };
@@ -123,15 +146,13 @@ export default function ImportData() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>使用说明</DialogTitle>
-              <DialogDescription className="font-light">
-                请上传符合以下 JSON 格式的文件。
-              </DialogDescription>
+              <DialogTitle>{t('dialogTitle')}</DialogTitle>
+              <DialogDescription className="font-light">{t('dialogDescription')}</DialogDescription>
             </DialogHeader>
             <div className="text-muted-foreground flex flex-col gap-4 text-sm">
               <div className="bg-muted/50 rounded-lg p-3">
                 <div className="text-foreground mb-2 flex items-center justify-between text-xs font-semibold">
-                  JSON 示例
+                  {t('dialogExample')}
                   <Button
                     variant="ghost"
                     className="cursor-pointer"
@@ -152,6 +173,18 @@ export default function ImportData() {
                           state: 'private',
                           createdAt: '2024-03-20T10:00:00Z',
                           updatedAt: '2024-03-20T10:00:00Z',
+                          attachments: [
+                            {
+                              id: 'attachment-uuid',
+                              url: 'https://...',
+                              storage: 'R2',
+                              details: {
+                                originalName: 'image.png',
+                                mimeType: 'image/png',
+                                size: 1024,
+                              },
+                            },
+                          ],
                         },
                       ],
                     },
@@ -160,10 +193,7 @@ export default function ImportData() {
                   )}
                 </pre>
               </div>
-              <div className="text-xs leading-relaxed font-light">
-                系统将根据 Note ID 进行匹配，如果 ID 已存在且属于您，将更新笔记内容；如果 ID
-                不存在，将创建新笔记。
-              </div>
+              <div className="text-xs leading-relaxed font-light">{t('dialogNote')}</div>
             </div>
           </DialogContent>
         </Dialog>
@@ -189,34 +219,42 @@ export default function ImportData() {
           </div>
         ) : (
           <div className="flex w-full max-w-sm flex-col items-center gap-6">
-            <div className="bg-accent/20 flex w-full flex-col items-center justify-center gap-2 p-6">
-              <div className="text-4xl font-semibold">{stats.noteCount}</div>
-              <div className="text-info text-sm">{t('notesFound')}</div>
+            <div className="bg-accent/20 flex w-full items-center justify-around p-6">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <SlidingNumber
+                  className="text-4xl font-semibold"
+                  number={stats.noteCount}
+                ></SlidingNumber>
+                <div className="text-info text-sm">{t('notesFound')}</div>
+              </div>
+              <div className="flex flex-col items-center justify-center gap-2">
+                <SlidingNumber
+                  className="text-4xl font-semibold"
+                  number={stats.attachmentCount}
+                ></SlidingNumber>
+                <div className="text-info text-sm">{t('attachmentsFound')}</div>
+              </div>
             </div>
 
-            <div className="flex w-full gap-4">
-              <button
+            <div className="flex w-full justify-center gap-4">
+              <Button
                 onClick={() => {
                   setStats(null);
                   setFileData(null);
                 }}
-                className="border-border hover:bg-accent flex-1 rounded-md border px-4 py-2 text-sm transition-colors"
+                variant="secondary"
                 disabled={isImporting}
               >
                 {t('cancel')}
-              </button>
-              <button
-                onClick={handleImport}
-                disabled={isImporting}
-                className="bg-foreground text-primary-foreground flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2 transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              </Button>
+              <Button onClick={handleImport} disabled={isImporting} variant="default">
                 {isImporting ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
-                  <Download className="size-4" />
+                  <CloudUpload className="size-4" />
                 )}
                 {isImporting ? t('importing') : t('confirmImport')}
-              </button>
+              </Button>
             </div>
           </div>
         )}
