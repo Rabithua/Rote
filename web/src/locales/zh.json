@@ -433,6 +433,7 @@
         "cosEndpoint": "COS API 端点地址（例如 https://cos.ap-shanghai.myqcloud.com，不要包含桶名）",
         "region": "S3 区域，默认为 'auto'",
         "cosRegion": "COS 区域（必填，例如 ap-shanghai）",
+        "urlPrefix": "用于访问上传文件的公共 URL 前缀（必填），这个是实际上储存资源访问的域名",
         "s3Optional": "S3 存储配置是可选的。您可以跳过此步骤，稍后在系统设置中配置。如果跳过，系统将无法上传附件，但其他功能可以正常使用。"
       },
       "validation": {
@@ -534,13 +535,15 @@
         "cosRegionDescription": "COS 区域（必填，例如 ap-shanghai）",
         "urlPrefix": "URL 前缀",
         "urlPrefixPlaceholder": "https://your-cdn-domain.com",
-        "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（必填）",
+        "urlPrefixDescription": "用于访问上传文件的公共 URL 前缀（必填），这个是实际上储存资源访问的域名",
         "testConnection": "测试连接",
         "testing": "测试中...",
         "testSuccess": "存储连接测试成功！",
         "testFailed": "连接测试失败: {{error}}",
         "seeConsole": "详细信息请查看控制台。",
-        "fillAllRequired": "请填写所有必填字段"
+        "fillAllRequired": "请填写所有必填字段",
+        "save": "保存",
+        "saving": "保存中..."
       },
       "ui": {
         "title": "界面配置",

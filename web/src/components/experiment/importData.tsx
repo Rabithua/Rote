@@ -40,8 +40,8 @@ export default function ImportData() {
         } else {
           toast.error(t('invalidFormat'));
         }
-      } catch (error) {
-        console.error('JSON Parse error:', error);
+      } catch (_error) {
+        // console.error('JSON Parse error:', error);
         toast.error(t('parseError'));
       }
     };
@@ -76,9 +76,9 @@ export default function ImportData() {
         setStats(null);
         setFileData(null);
       }
-    } catch (error: any) {
-      console.error('Import error:', error);
-      toast.error(error.message || t('importFailed'));
+    } catch (_error: any) {
+      // console.error('Import error:', error);
+      toast.error(_error.message || t('importFailed'));
     } finally {
       setIsImporting(false);
     }

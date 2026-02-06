@@ -439,6 +439,7 @@
         "cosEndpoint": "COS API endpoint URL (e.g., https://cos.ap-shanghai.myqcloud.com, no bucket)",
         "region": "S3 region, defaults to 'auto'",
         "cosRegion": "COS region (required, e.g., ap-shanghai)",
+        "urlPrefix": "Public URL prefix for accessing uploaded files (required), this is the domain name used to access the actually stored resources.",
         "s3Optional": "S3 storage configuration is optional. You can skip this step and configure it later in system settings. If skipped, the system will not be able to upload attachments, but other features will work normally."
       },
       "validation": {
@@ -540,13 +541,15 @@
         "cosRegionDescription": "COS region (required, e.g., ap-shanghai)",
         "urlPrefix": "URL Prefix",
         "urlPrefixPlaceholder": "https://your-cdn-domain.com",
-        "urlPrefixDescription": "Public URL prefix for accessing uploaded files (required)",
+        "urlPrefixDescription": "Public URL prefix for accessing uploaded files (required), this is the domain name used to access the actually stored resources.",
         "testConnection": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Storage connection test successful!",
         "testFailed": "Connection test failed: {{error}}",
         "seeConsole": "See console for details.",
-        "fillAllRequired": "Please fill in all required fields"
+        "fillAllRequired": "Please fill in all required fields",
+        "save": "Save",
+        "saving": "Saving..."
       },
       "ui": {
         "title": "UI Configuration",

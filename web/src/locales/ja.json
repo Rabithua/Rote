@@ -439,6 +439,7 @@
         "cosEndpoint": "COS API エンドポイント URL（例：https://cos.ap-shanghai.myqcloud.com、バケット名は不要）",
         "region": "S3リージョン、デフォルトは 'auto'",
         "cosRegion": "COS リージョン（必須、例：ap-shanghai）",
+        "urlPrefix": "アップロードされたファイルにアクセスするための公開URLプレフィックス（必須）、これは実際に保存されたリソースにアクセスするために使用されるドメイン名です",
         "s3Optional": "S3ストレージ設定はオプションです。このステップをスキップして、後でシステム設定で設定することもできます。スキップした場合、システムは添付ファイルをアップロードできませんが、他の機能は正常に動作します。"
       },
       "validation": {
@@ -540,13 +541,15 @@
         "cosRegionDescription": "COS リージョン（必須、例：ap-shanghai）",
         "urlPrefix": "URLプレフィックス",
         "urlPrefixPlaceholder": "https://your-cdn-domain.com",
-        "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（必須）",
+        "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（必須）、これは実際に保存されたリソースにアクセスするために使用されるドメイン名です",
         "testConnection": "接続テスト",
         "testing": "テスト中...",
         "testSuccess": "ストレージ接続テスト成功！",
         "testFailed": "接続テストに失敗しました：{{error}}",
         "seeConsole": "詳細はコンソールを確認してください。",
-        "fillAllRequired": "すべての必須フィールドを入力してください"
+        "fillAllRequired": "すべての必須フィールドを入力してください",
+        "save": "保存",
+        "saving": "保存中..."
       },
       "ui": {
         "title": "UI設定",
