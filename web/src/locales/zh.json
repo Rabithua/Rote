@@ -321,6 +321,8 @@
         "dialogDescription": "请上传符合以下 JSON 格式的文件。",
         "dialogExample": "JSON 示例",
         "dialogNote": "系统将根据 Note ID 进行匹配，如果 ID 已存在且属于您，将更新笔记内容；如果 ID 不存在，将创建新笔记。同时也会处理嵌套的 attachments 数据。",
+        "convertToolHint": "如果您想迁移其他平台的数据，可以使用我们的数据转换工具：",
+        "convertToolLinkName": "Rerote - Rote 数据转换工具",
         "fileParsed": "已解析 {{count}} 条笔记",
         "invalidFormat": "文件格式无效，请上传有效的 JSON 文件",
         "parseError": "JSON 文件解析失败",

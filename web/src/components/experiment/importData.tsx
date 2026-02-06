@@ -9,7 +9,15 @@ import {
 import { Divider } from '@/components/ui/divider';
 import { post } from '@/utils/api';
 import saveAs from 'file-saver';
-import { CloudUpload, Download, HelpCircle, Loader2, Upload } from 'lucide-react';
+import {
+  ArrowUpRight,
+  CloudUpload,
+  Download,
+  HelpCircle,
+  Loader2,
+  PocketKnife,
+  Upload,
+} from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -135,68 +143,70 @@ export default function ImportData() {
     <div className="noScrollBar relative w-full overflow-x-hidden overflow-y-scroll p-4 sm:aspect-square">
       <div className="flex w-full items-center justify-between">
         <div className="text-2xl font-semibold">
-          {t('title')} <br />
-          <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
-        </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <button className="border-border hover:bg-accent text-muted-foreground flex size-8 cursor-pointer items-center justify-center rounded-full border transition-colors">
-              <HelpCircle className="size-4" />
-            </button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{t('dialogTitle')}</DialogTitle>
-              <DialogDescription className="font-light">{t('dialogDescription')}</DialogDescription>
-            </DialogHeader>
-            <div className="text-muted-foreground flex flex-col gap-4 text-sm">
-              <div className="bg-muted/50 rounded-lg p-3">
-                <div className="text-foreground mb-2 flex items-center justify-between text-xs font-semibold">
-                  {t('dialogExample')}
-                  <Button
-                    variant="ghost"
-                    className="cursor-pointer"
-                    onClick={handleDownloadExample}
-                  >
-                    <Download className="size-3" />
-                  </Button>
-                </div>
-                <pre className="text-muted-foreground overflow-x-auto text-[10px] leading-tight">
-                  {JSON.stringify(
-                    {
-                      notes: [
+          <div className="flex items-center">
+            {t('title')}
+            <Dialog>
+              <DialogTrigger asChild>
+                <HelpCircle className="ml-2 inline-block size-6 cursor-pointer" />
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t('dialogTitle')}</DialogTitle>
+                  <DialogDescription className="font-light">
+                    {t('dialogDescription')}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="text-muted-foreground flex flex-col gap-4 text-sm">
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <div className="text-foreground mb-2 flex items-center justify-between text-xs font-semibold">
+                      {t('dialogExample')}
+                      <Button
+                        variant="ghost"
+                        className="cursor-pointer"
+                        onClick={handleDownloadExample}
+                      >
+                        <Download className="size-3" />
+                      </Button>
+                    </div>
+                    <pre className="text-muted-foreground overflow-x-auto text-[10px] leading-tight">
+                      {JSON.stringify(
                         {
-                          id: '550e8400-e29b-41d4-a716-446655440000',
-                          title: 'Example Note',
-                          content: 'Note content...',
-                          tags: ['tag1', 'tag2'],
-                          state: 'private',
-                          createdAt: '2024-03-20T10:00:00Z',
-                          updatedAt: '2024-03-20T10:00:00Z',
-                          attachments: [
+                          notes: [
                             {
-                              id: 'attachment-uuid',
-                              url: 'https://...',
-                              storage: 'R2',
-                              details: {
-                                originalName: 'image.png',
-                                mimeType: 'image/png',
-                                size: 1024,
-                              },
+                              id: '550e8400-e29b-41d4-a716-446655440000',
+                              title: 'Example Note',
+                              content: 'Note content...',
+                              tags: ['tag1', 'tag2'],
+                              state: 'private',
+                              createdAt: '2024-03-20T10:00:00Z',
+                              updatedAt: '2024-03-20T10:00:00Z',
+                              attachments: [
+                                {
+                                  id: 'attachment-uuid',
+                                  url: 'https://...',
+                                  storage: 'R2',
+                                  details: {
+                                    originalName: 'image.png',
+                                    mimeType: 'image/png',
+                                    size: 1024,
+                                  },
+                                },
+                              ],
                             },
                           ],
                         },
-                      ],
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              </div>
-              <div className="text-xs leading-relaxed font-light">{t('dialogNote')}</div>
-            </div>
-          </DialogContent>
-        </Dialog>
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </div>
+                  <div className="text-xs leading-relaxed font-light">{t('dialogNote')}</div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+          <div className="text-info mt-2 text-sm font-normal">{t('description')}</div>
+        </div>
       </div>
       <Divider></Divider>
 
@@ -214,8 +224,8 @@ export default function ImportData() {
             onClick={triggerFileSelect}
             className="border-border hover:bg-accent/50 flex w-full max-w-sm cursor-pointer flex-col items-center justify-center gap-4 border border-dashed p-10 transition-colors"
           >
-            <Upload className="text-muted-foreground size-12" />
-            <div className="text-muted-foreground text-center">{t('clickToUpload')}</div>
+            <Upload className="text-muted-foreground size-6" />
+            <div className="text-muted-foreground text-center text-sm">{t('clickToUpload')}</div>
           </div>
         ) : (
           <div className="flex w-full max-w-sm flex-col items-center gap-6">
@@ -258,6 +268,22 @@ export default function ImportData() {
             </div>
           </div>
         )}
+
+        <div className="bg-muted/50 rounded-lg p-3">
+          <div className="text-xs leading-relaxed font-light">
+            <PocketKnife className="mr-1 mb-[2px] inline-block size-3" />
+            {t('convertToolHint')}
+            <a
+              href="https://rerote.vercel.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary ml-1 underline"
+            >
+              {t('convertToolLinkName')}
+            </a>
+            <ArrowUpRight className="ml-1 inline-block size-3" />
+          </div>
+        </div>
       </div>
 
       <SoftBottom className="translate-y-4" spacer />

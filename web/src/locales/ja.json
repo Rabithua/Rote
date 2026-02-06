@@ -327,6 +327,8 @@
         "dialogDescription": "以下のJSON形式に一致するファイルをアップロードしてください。",
         "dialogExample": "JSONの例",
         "dialogNote": "システムはノートIDに基づいて照合します。IDが存在し、あなたのものである場合、ノートの内容が更新されます。IDが存在しない場合、新しいノートが作成されます。ネストされた添付データも処理されます。",
+        "convertToolHint": "他のプラットフォームからデータを移行したい場合は、当社のデータ変換ツールを使用できます：",
+        "convertToolLinkName": "Rerote - Rote データ変換ツール",
         "fileParsed": "{{count}} 件のノートを解析しました",
         "invalidFormat": "無効なファイル形式です。有効な JSON ファイルをアップロードしてください。",
         "parseError": "JSON ファイルの解析に失敗しました",

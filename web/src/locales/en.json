@@ -327,6 +327,8 @@
         "dialogDescription": "Please upload a file matching the following JSON format.",
         "dialogExample": "JSON Example",
         "dialogNote": "The system will match based on Note ID. If the ID exists and belongs to you, the note content will be updated; if the ID does not exist, a new note will be created. Nested attachment data will also be processed.",
+        "convertToolHint": "If you want to migrate data from other platforms, you can use our data conversion tool:",
+        "convertToolLinkName": "Rerote - Rote Data Conversion Tool",
         "fileParsed": "Parsed {{count}} notes",
         "invalidFormat": "Invalid file format. Please upload a valid JSON file.",
         "parseError": "Failed to parse JSON file",
