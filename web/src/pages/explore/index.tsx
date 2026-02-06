@@ -3,12 +3,15 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RandomCat from '@/components/others/RandomCat';
 import RoteList from '@/components/rote/roteList';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import type { ApiGetRotesParams, Rotes } from '@/types/main';
 import { useAPIInfinite } from '@/utils/fetcher';
 import { formatTimeAgo } from '@/utils/main';
 import { getRotesV2 } from '@/utils/roteApi';
 import {
+  Activity,
+  ArrowUpRight,
   Eye,
   GitFork,
   Github,
@@ -70,6 +73,7 @@ function ExplorePage() {
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
           ))}
       </NavBar>
+      <Announcement />
       <RoteList data={data} loadMore={loadMore} mutate={mutate} />
     </ContainerWithSideBar>
   );
@@ -143,6 +147,35 @@ const SideBar = () => {
       </div>
     </div>
   );
+};
+
+const Announcement = () => {
+  const { data: siteStatus } = useSiteStatus();
+  const announcement = siteStatus?.site?.announcement;
+
+  if (!announcement?.enabled || !announcement?.content) {
+    return null;
+  }
+
+  const content = (
+    <div
+      className={`animate-show bg-foreground/2 block px-4 py-4 text-sm font-thin duration-300 ${announcement.link ? 'hover:underline' : ''}`}
+    >
+      <Activity className="mr-2 inline size-3" />
+      <div className="inline">{announcement.content}</div>
+      {announcement.link && <ArrowUpRight className="ml-1 inline size-3" />}
+    </div>
+  );
+
+  if (announcement.link) {
+    return (
+      <Link to={announcement.link} target="_blank">
+        {content}
+      </Link>
+    );
+  }
+
+  return content;
 };
 
 export default ExplorePage;

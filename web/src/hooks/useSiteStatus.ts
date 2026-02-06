@@ -23,7 +23,13 @@ interface SiteStatusData {
     description: string;
     url: string;
     defaultLanguage: string;
+
     icpRecord?: string;
+    announcement?: {
+      enabled: boolean;
+      content: string;
+      link?: string;
+    };
   };
   system: {
     version: string;

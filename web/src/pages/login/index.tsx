@@ -79,7 +79,7 @@ function Login() {
   useEffect(() => {
     if (window.location.hostname === 'demo.rote.ink') {
       setLoginData({
-        username: 'username',
+        username: 'guang',
         password: 'password',
       });
     }

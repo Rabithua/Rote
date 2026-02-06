@@ -320,7 +320,24 @@
       "importData": {
         "title": "Data Import",
         "description": "Import data from other note platforms.",
-        "notSupported": "Currently not supported."
+        "notSupported": "Currently not supported.",
+        "notesFound": "Notes Found",
+        "attachmentsFound": "Attachments Found",
+        "dialogTitle": "Usage Instructions",
+        "dialogDescription": "Please upload a file matching the following JSON format.",
+        "dialogExample": "JSON Example",
+        "dialogNote": "The system will match based on Note ID. If the ID exists and belongs to you, the note content will be updated; if the ID does not exist, a new note will be created. Nested attachment data will also be processed.",
+        "convertToolHint": "If you want to migrate data from other platforms, you can use our data conversion tool:",
+        "convertToolLinkName": "Rerote - Rote Data Conversion Tool",
+        "fileParsed": "Parsed {{count}} notes",
+        "invalidFormat": "Invalid file format. Please upload a valid JSON file.",
+        "parseError": "Failed to parse JSON file",
+        "importSuccess": "Import successful! Processed: {{count}}, Created: {{created}}, Updated: {{updated}}",
+        "importFailed": "Import failed",
+        "clickToUpload": "Click to upload file",
+        "cancel": "Cancel",
+        "importing": "Importing...",
+        "confirmImport": "Confirm Import"
       },
       "serviceWorker": {
         "title": "ServiceWorker Notification",
@@ -354,7 +371,12 @@
           "deleteSuccess": "Subscription deleted successfully",
           "deleteFailed": "Delete failed: {{error}}",
           "testNotificationSent": "Test notification sent",
-          "confirmDelete": "Are you sure you want to delete this subscription?"
+          "confirmDelete": "Are you sure you want to delete this subscription?",
+          "clearInvalid": "Clear Invalid Endpoints",
+          "clearingInvalid": "Clearing...",
+          "clearSuccess": "Cleared successfully! {{count}} invalid endpoints removed.",
+          "clearFailed": "Clear failed: {{error}}",
+          "clearConfirm": "Found {{count}} invalid endpoints. Clear them?"
         },
         "noSubscriptions": "No subscribed notification endpoints"
       }
@@ -434,6 +456,7 @@
         "cosEndpoint": "COS API endpoint URL (e.g., https://cos.ap-shanghai.myqcloud.com, no bucket)",
         "region": "S3 region, defaults to 'auto'",
         "cosRegion": "COS region (required, e.g., ap-shanghai)",
+        "urlPrefix": "Public URL prefix for accessing uploaded files (required), this is the domain name used to access the actually stored resources.",
         "s3Optional": "S3 storage configuration is optional. You can skip this step and configure it later in system settings. If skipped, the system will not be able to upload attachments, but other features will work normally."
       },
       "validation": {
@@ -497,7 +520,15 @@
         "frontendUrl": "Frontend URL",
         "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds",
         "icpRecord": "ICP Record Number",
-        "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号"
+        "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号",
+        "announcement": {
+          "title": "Site Announcement",
+          "description": "Announcement displayed at the top of the Explore page.",
+          "content": "Announcement Content",
+          "contentPlaceholder": "Enter announcement content",
+          "link": "Announcement Link",
+          "linkPlaceholder": "Optional, link to jump to when clicking the announcement"
+        }
       },
       "storage": {
         "title": "Storage Configuration",
@@ -527,13 +558,15 @@
         "cosRegionDescription": "COS region (required, e.g., ap-shanghai)",
         "urlPrefix": "URL Prefix",
         "urlPrefixPlaceholder": "https://your-cdn-domain.com",
-        "urlPrefixDescription": "Public URL prefix for accessing uploaded files (required)",
+        "urlPrefixDescription": "Public URL prefix for accessing uploaded files (required), this is the domain name used to access the actually stored resources.",
         "testConnection": "Test Connection",
         "testing": "Testing...",
         "testSuccess": "Storage connection test successful!",
         "testFailed": "Connection test failed: {{error}}",
         "seeConsole": "See console for details.",
-        "fillAllRequired": "Please fill in all required fields"
+        "fillAllRequired": "Please fill in all required fields",
+        "save": "Save",
+        "saving": "Saving..."
       },
       "ui": {
         "title": "UI Configuration",

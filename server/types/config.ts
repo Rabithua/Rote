@@ -9,6 +9,11 @@ export interface SiteConfig {
   defaultLanguage?: string;
   allowedOrigins?: string[]; // CORS 允许的 origin 列表，为空或不设置则允许所有
   icpRecord?: string; // ICP 备案号
+  announcement?: {
+    enabled: boolean;
+    content: string;
+    link?: string;
+  };
 }
 
 export interface StorageConfig {

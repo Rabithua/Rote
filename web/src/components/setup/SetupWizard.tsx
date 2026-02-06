@@ -5,12 +5,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { cn } from '@/utils/cn';
-import { getConfigStatus, setupSystem, testStorageConnection } from '@/utils/setupApi';
+import {
+  extractAccountIdFromEndpoint,
+  getCosEndpoint,
+  getStorageTypeFromEndpoint,
+} from '@/utils/s3';
+import { getConfigStatus, setupSystem } from '@/utils/setupApi';
 import { CheckCircle, Circle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import S3ConfigForm from '../common/S3ConfigForm';
 import Divider from '../ui/divider';
 
 // 向导步骤类型定义
@@ -66,13 +72,6 @@ const wizardSteps: WizardStep[] = [
   },
 ];
 
-const getCosEndpoint = (region: string) => (region ? `https://cos.${region}.myqcloud.com` : '');
-
-const extractCosRegion = (endpoint: string) => {
-  const match = endpoint.match(/cos\.([a-z0-9-]+)\.myqcloud\.com/i);
-  return match ? match[1] : '';
-};
-
 export default function SetupWizard() {
   const navigate = useNavigate();
   const { t } = useTranslation('translation');
@@ -101,7 +100,7 @@ export default function SetupWizard() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
+  // const [isTesting, setIsTesting] = useState(false); // Managed by S3ConfigForm
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [_isSystemInitialized, setIsSystemInitialized] = useState(false);
 
@@ -314,98 +313,6 @@ export default function SetupWizard() {
     setConfig((prev) => ({ ...prev, ...updates }));
   };
 
-  const updateStorageType = (storageType: SetupConfig['s3Config']['storageType']) => {
-    const inferredCosRegion = extractCosRegion(config.s3Config.endpoint);
-    const nextRegion =
-      storageType === 'cos'
-        ? config.s3Config.region && config.s3Config.region !== 'auto'
-          ? config.s3Config.region
-          : inferredCosRegion
-        : storageType === 'r2'
-          ? 'auto'
-          : config.s3Config.region === 'auto'
-            ? ''
-            : config.s3Config.region;
-
-    const nextEndpoint =
-      storageType === 'r2'
-        ? config.s3Config.accountId
-          ? `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`
-          : ''
-        : storageType === 'cos'
-          ? getCosEndpoint(nextRegion)
-          : config.s3Config.endpoint;
-
-    updateConfig({
-      s3Config: {
-        ...config.s3Config,
-        storageType,
-        region: nextRegion,
-        endpoint: nextEndpoint,
-      },
-    });
-  };
-
-  // 测试 S3 连接
-  const handleTestConnection = async () => {
-    const hasRequiredFields =
-      config.s3Config.storageType === 'r2'
-        ? config.s3Config.accountId &&
-          config.s3Config.accessKey &&
-          config.s3Config.secretKey &&
-          config.s3Config.bucket &&
-          config.s3Config.urlPrefix
-        : config.s3Config.endpoint &&
-          config.s3Config.accessKey &&
-          config.s3Config.secretKey &&
-          config.s3Config.bucket &&
-          config.s3Config.urlPrefix;
-
-    if (!hasRequiredFields) {
-      toast.error(t('pages.setupWizard.toasts.pleaseFillS3'));
-      return;
-    }
-
-    setIsTesting(true);
-    try {
-      // 根据模式确定 endpoint
-      const endpoint =
-        config.s3Config.storageType === 'r2'
-          ? `https://${config.s3Config.accountId}.r2.cloudflarestorage.com`
-          : config.s3Config.endpoint;
-
-      const testData = {
-        endpoint,
-        bucket: config.s3Config.bucket,
-        accessKeyId: config.s3Config.accessKey,
-        secretAccessKey: config.s3Config.secretKey,
-        region: config.s3Config.region,
-        urlPrefix: config.s3Config.urlPrefix,
-      };
-
-      const result = await testStorageConnection(testData);
-
-      if (result.success) {
-        toast.success(t('pages.setupWizard.toasts.testSuccess'));
-      } else {
-        toast.error(
-          `${t('pages.setupWizard.toasts.testFailed', {
-            error: result.message || 'Unknown error',
-          })} ${t('pages.setupWizard.toasts.seeConsole')}`
-        );
-      }
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
-      toast.error(
-        `${t('pages.setupWizard.toasts.testFailed', { error: errorMessage })} ${t(
-          'pages.setupWizard.toasts.seeConsole'
-        )}`
-      );
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
   // 渲染步骤内容
   const renderStepContent = () => {
     switch (currentStep) {
@@ -466,9 +373,14 @@ export default function SetupWizard() {
 
       case 1: {
         // S3 存储配置（可选）
-        const storageType = config.s3Config.storageType;
-        const isR2 = storageType === 'r2';
-        const isCos = storageType === 'cos';
+        const s3ConfigAdapter = {
+          endpoint: config.s3Config.endpoint,
+          bucket: config.s3Config.bucket,
+          accessKeyId: config.s3Config.accessKey,
+          secretAccessKey: config.s3Config.secretKey,
+          region: config.s3Config.region,
+          urlPrefix: config.s3Config.urlPrefix,
+        };
 
         return (
           <div className="space-y-6">
@@ -481,241 +393,42 @@ export default function SetupWizard() {
 
             <Divider />
 
-            {/* 存储类型切换 */}
-            <div className="space-y-2">
-              <Label>{t('pages.setupWizard.labels.storageType')}</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant={isR2 ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => updateStorageType('r2')}
-                >
-                  Cloudflare R2
-                </Button>
-                <Button
-                  type="button"
-                  variant={isCos ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => updateStorageType('cos')}
-                >
-                  {t('pages.setupWizard.labels.cos')}
-                </Button>
-                <Button
-                  type="button"
-                  variant={!isR2 && !isCos ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => updateStorageType('custom')}
-                >
-                  {t('pages.setupWizard.labels.customEndpoint')}
-                </Button>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {t('pages.setupWizard.descriptions.storageType')}
-              </p>
-            </div>
+            <S3ConfigForm
+              config={s3ConfigAdapter}
+              onChange={(newConfig) => {
+                if (!newConfig) return;
+                const storageType = getStorageTypeFromEndpoint(newConfig.endpoint);
+                const accountId =
+                  storageType === 'r2' ? extractAccountIdFromEndpoint(newConfig.endpoint) : '';
 
-            {/* R2 模式：Account ID */}
-            {isR2 && (
-              <div className="space-y-2">
-                <Label htmlFor="accountId">{t('pages.setupWizard.labels.accountId')}</Label>
-                <Input
-                  id="accountId"
-                  value={config.s3Config.accountId}
-                  onChange={(e) =>
-                    updateConfig({
-                      s3Config: { ...config.s3Config, accountId: e.target.value },
-                    })
-                  }
-                  placeholder={t('pages.setupWizard.placeholders.accountId')}
-                  className={errors.accountId ? 'border-destructive' : ''}
-                />
-                {errors.accountId && (
-                  <p className="text-destructive text-sm">
-                    {t('pages.setupWizard.validation.accountIdRequired')}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* COS / 自定义 Endpoint 模式 */}
-            {!isR2 && (
-              <div className="space-y-2">
-                <Label htmlFor="endpoint">
-                  {isCos
-                    ? t('pages.setupWizard.labels.cosEndpoint')
-                    : t('pages.setupWizard.labels.endpoint')}
-                </Label>
-                <Input
-                  id="endpoint"
-                  value={config.s3Config.endpoint}
-                  onChange={(e) =>
-                    updateConfig({
-                      s3Config: {
-                        ...config.s3Config,
-                        endpoint: e.target.value,
-                        region: isCos
-                          ? extractCosRegion(e.target.value) || config.s3Config.region
-                          : config.s3Config.region,
-                      },
-                    })
-                  }
-                  placeholder={
-                    isCos
-                      ? t('pages.setupWizard.placeholders.cosEndpoint')
-                      : t('pages.setupWizard.placeholders.endpoint')
-                  }
-                  className={errors.endpoint ? 'border-destructive' : ''}
-                />
-                <p className="text-muted-foreground text-xs">
-                  {isCos
-                    ? t('pages.setupWizard.descriptions.cosEndpoint')
-                    : t('pages.setupWizard.descriptions.endpoint')}
-                </p>
-                {errors.endpoint && (
-                  <p className="text-destructive text-sm">
-                    {errors.endpoint === 'required'
-                      ? t('pages.setupWizard.validation.endpointRequired')
-                      : errors.endpoint === 'cos'
-                        ? t('pages.setupWizard.validation.cosEndpointInvalid')
-                        : t('pages.setupWizard.validation.endpointInvalid')}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="accessKey">{t('pages.setupWizard.labels.accessKey')}</Label>
-              <Input
-                id="accessKey"
-                value={config.s3Config.accessKey}
-                onChange={(e) =>
-                  updateConfig({
-                    s3Config: { ...config.s3Config, accessKey: e.target.value },
-                  })
-                }
-                placeholder={t('pages.setupWizard.placeholders.accessKey')}
-                className={errors.accessKey ? 'border-destructive' : ''}
-              />
-              {errors.accessKey && (
-                <p className="text-destructive text-sm">
-                  {t('pages.setupWizard.validation.accessKeyRequired')}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="secretKey">{t('pages.setupWizard.labels.secretKey')}</Label>
-              <Input
-                id="secretKey"
-                value={config.s3Config.secretKey}
-                onChange={(e) =>
-                  updateConfig({
-                    s3Config: { ...config.s3Config, secretKey: e.target.value },
-                  })
-                }
-                placeholder={t('pages.setupWizard.placeholders.secretKey')}
-                className={errors.secretKey ? 'border-destructive' : ''}
-              />
-              {errors.secretKey && (
-                <p className="text-destructive text-sm">
-                  {t('pages.setupWizard.validation.secretKeyRequired')}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="bucket">{t('pages.setupWizard.labels.bucket')}</Label>
-              <Input
-                id="bucket"
-                value={config.s3Config.bucket}
-                onChange={(e) =>
-                  updateConfig({
-                    s3Config: { ...config.s3Config, bucket: e.target.value },
-                  })
-                }
-                placeholder={t('pages.setupWizard.placeholders.bucket')}
-                className={errors.bucket ? 'border-destructive' : ''}
-              />
-              {errors.bucket && (
-                <p className="text-destructive text-sm">
-                  {t('pages.setupWizard.validation.bucketRequired')}
-                </p>
-              )}
-            </div>
-
-            {!isR2 && (
-              <div className="space-y-2">
-                <Label htmlFor="region">{t('pages.setupWizard.labels.region')}</Label>
-                <Input
-                  id="region"
-                  value={config.s3Config.region}
-                  onChange={(e) =>
-                    updateConfig({
-                      s3Config: {
-                        ...config.s3Config,
-                        region: e.target.value,
-                        endpoint: isCos
-                          ? getCosEndpoint(e.target.value.trim())
-                          : config.s3Config.endpoint,
-                      },
-                    })
-                  }
-                  placeholder={
-                    isCos
-                      ? t('pages.setupWizard.placeholders.cosRegion')
-                      : t('pages.setupWizard.placeholders.region')
-                  }
-                  className={errors.region ? 'border-destructive' : ''}
-                />
-                <p className="text-muted-foreground text-xs">
-                  {isCos
-                    ? t('pages.setupWizard.descriptions.cosRegion')
-                    : t('pages.setupWizard.descriptions.region')}
-                </p>
-                {errors.region && (
-                  <p className="text-destructive text-sm">
-                    {t('pages.setupWizard.validation.regionRequired')}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="urlPrefix">{t('pages.setupWizard.labels.urlPrefix')}</Label>
-              <Input
-                id="urlPrefix"
-                value={config.s3Config.urlPrefix}
-                onChange={(e) =>
-                  updateConfig({
-                    s3Config: { ...config.s3Config, urlPrefix: e.target.value },
-                  })
-                }
-                placeholder={t('pages.setupWizard.placeholders.urlPrefix')}
-                className={errors.urlPrefix ? 'border-destructive' : ''}
-              />
-              {errors.urlPrefix && (
-                <p className="text-destructive text-sm">
-                  {errors.urlPrefix === 'required'
-                    ? t('pages.setupWizard.validation.urlPrefixRequired')
-                    : t('pages.setupWizard.validation.urlPrefixInvalid')}
-                </p>
-              )}
-            </div>
-
-            <div className="pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestConnection}
-                disabled={isTesting}
-                className="w-full"
-              >
-                {isTesting
-                  ? t('pages.setupWizard.buttons.testing')
-                  : t('pages.setupWizard.buttons.testConnection')}
-              </Button>
-            </div>
+                updateConfig({
+                  s3Config: {
+                    ...config.s3Config,
+                    storageType,
+                    accountId,
+                    endpoint: newConfig.endpoint,
+                    bucket: newConfig.bucket,
+                    accessKey: newConfig.accessKeyId,
+                    secretKey: newConfig.secretAccessKey,
+                    region: newConfig.region || 'auto',
+                    urlPrefix: newConfig.urlPrefix,
+                  },
+                });
+              }}
+              errors={{
+                endpoint:
+                  errors.endpoint === 'invalid'
+                    ? t('pages.setupWizard.validation.endpointInvalid')
+                    : errors.endpoint,
+                accountId: errors.accountId,
+                accessKeyId: errors.accessKey,
+                secretAccessKey: errors.secretKey,
+                bucket: errors.bucket,
+                region: errors.region,
+                urlPrefix: errors.urlPrefix,
+              }}
+              showTestConnection={true}
+            />
           </div>
         );
       }

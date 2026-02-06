@@ -53,6 +53,7 @@ export function ArticleSelectionModal({
 
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change
       fetchArticles();
     }
   }, [open]);

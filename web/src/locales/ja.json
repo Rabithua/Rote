@@ -320,7 +320,24 @@
       "importData": {
         "title": "データインポート",
         "description": "他のノートプラットフォームからデータをインポートします。",
-        "notSupported": "現在サポートされていません。"
+        "notSupported": "現在サポートされていません。",
+        "notesFound": "ノートが見つかりました",
+        "attachmentsFound": "添付ファイルが見つかりました",
+        "dialogTitle": "使用手順",
+        "dialogDescription": "以下のJSON形式に一致するファイルをアップロードしてください。",
+        "dialogExample": "JSONの例",
+        "dialogNote": "システムはノートIDに基づいて照合します。IDが存在し、あなたのものである場合、ノートの内容が更新されます。IDが存在しない場合、新しいノートが作成されます。ネストされた添付データも処理されます。",
+        "convertToolHint": "他のプラットフォームからデータを移行したい場合は、当社のデータ変換ツールを使用できます：",
+        "convertToolLinkName": "Rerote - Rote データ変換ツール",
+        "fileParsed": "{{count}} 件のノートを解析しました",
+        "invalidFormat": "無効なファイル形式です。有効な JSON ファイルをアップロードしてください。",
+        "parseError": "JSON ファイルの解析に失敗しました",
+        "importSuccess": "インポート成功！処理済み: {{count}}, 作成: {{created}}, 更新: {{updated}}",
+        "importFailed": "インポートに失敗しました",
+        "clickToUpload": "クリックしてファイルをアップロード",
+        "cancel": "キャンセル",
+        "importing": "インポート中...",
+        "confirmImport": "インポートを確認"
       },
       "serviceWorker": {
         "title": "ServiceWorker 通知",
@@ -354,7 +371,12 @@
           "deleteSuccess": "購読を削除しました",
           "deleteFailed": "削除に失敗しました：{{error}}",
           "testNotificationSent": "テスト通知を送信しました",
-          "confirmDelete": "この購読を削除してもよろしいですか？"
+          "confirmDelete": "この購読を削除してもよろしいですか？",
+          "clearInvalid": "無効なエンドポイントを削除",
+          "clearingInvalid": "削除中...",
+          "clearSuccess": "削除完了！{{count}} 個の無効なエンドポイントを削除しました。",
+          "clearFailed": "削除失敗: {{error}}",
+          "clearConfirm": "{{count}} 個の無効なエンドポイントが見つかりました。削除しますか？"
         },
         "noSubscriptions": "購読済み通知エンドポイントがありません"
       }
@@ -434,6 +456,7 @@
         "cosEndpoint": "COS API エンドポイント URL（例：https://cos.ap-shanghai.myqcloud.com、バケット名は不要）",
         "region": "S3リージョン、デフォルトは 'auto'",
         "cosRegion": "COS リージョン（必須、例：ap-shanghai）",
+        "urlPrefix": "アップロードされたファイルにアクセスするための公開URLプレフィックス（必須）、これは実際に保存されたリソースにアクセスするために使用されるドメイン名です",
         "s3Optional": "S3ストレージ設定はオプションです。このステップをスキップして、後でシステム設定で設定することもできます。スキップした場合、システムは添付ファイルをアップロードできませんが、他の機能は正常に動作します。"
       },
       "validation": {
@@ -497,7 +520,15 @@
         "frontendUrl": "フロントエンドURL",
         "frontendUrlDescription": "フロントエンドアクセスURL、RSSフィードでノートリンクを生成するために使用",
         "icpRecord": "ICP記録番号",
-        "icpRecordDescription": "ウェブサイトICP記録番号、例：京ICP备12345678号"
+        "icpRecordDescription": "ウェブサイトICP記録番号、例：京ICP备12345678号",
+        "announcement": {
+          "title": "サイトのお知らせ",
+          "description": "探索ページの上部に表示されるお知らせ",
+          "content": "お知らせ内容",
+          "contentPlaceholder": "お知らせの内容を入力",
+          "link": "お知らせリンク",
+          "linkPlaceholder": "オプション、お知らせをクリックしたときのジャンプ先"
+        }
       },
       "storage": {
         "title": "ストレージ設定",
@@ -527,13 +558,15 @@
         "cosRegionDescription": "COS リージョン（必須、例：ap-shanghai）",
         "urlPrefix": "URLプレフィックス",
         "urlPrefixPlaceholder": "https://your-cdn-domain.com",
-        "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（必須）",
+        "urlPrefixDescription": "アップロードされたファイルにアクセスするための公開URLプレフィックス（必須）、これは実際に保存されたリソースにアクセスするために使用されるドメイン名です",
         "testConnection": "接続テスト",
         "testing": "テスト中...",
         "testSuccess": "ストレージ接続テスト成功！",
         "testFailed": "接続テストに失敗しました：{{error}}",
         "seeConsole": "詳細はコンソールを確認してください。",
-        "fillAllRequired": "すべての必須フィールドを入力してください"
+        "fillAllRequired": "すべての必須フィールドを入力してください",
+        "save": "保存",
+        "saving": "保存中..."
       },
       "ui": {
         "title": "UI設定",

@@ -12,6 +12,7 @@ import {
   getMySettings,
   getMyTags,
   getUserInfoByUsername,
+  importData,
   oneUser,
   statistics,
   updateMySettings,
@@ -118,6 +119,15 @@ usersRouter.get('/me/export', authenticateJWT, async (c: HonoContext) => {
   );
 
   return c.text(jsonData);
+});
+
+// 导入用户数据
+usersRouter.post('/me/import', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+
+  const result = await importData(user.id, body);
+  return c.json(createResponse(result), 200);
 });
 
 // 删除当前用户账户
