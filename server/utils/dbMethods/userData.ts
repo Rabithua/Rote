@@ -91,3 +91,107 @@ export async function getMyTags(userid: string): Promise<any> {
     throw new DatabaseError('Failed to get user tags', error);
   }
 }
+
+export async function importData(userId: string, data: any): Promise<any> {
+  const { notes } = data;
+
+  if (!Array.isArray(notes)) {
+    throw new Error('Invalid data format: notes must be an array');
+  }
+
+  try {
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    await db.transaction(async (tx) => {
+      // 检查并在需要时创建默认附件（如果逻辑需要，这里暂时跳过）
+
+      if (notes && notes.length > 0) {
+        for (const note of notes) {
+          // 1. 安全检查：如果笔记已存在，检查所有权
+          // 注意：exportData 中使用的是 db.query.rotes.findMany
+          // 这里使用 tx.query.rotes.findFirst
+          const existingNote = await tx.query.rotes.findFirst({
+            where: eq(rotes.id, note.id),
+          });
+
+          if (existingNote) {
+            if (existingNote.authorid !== userId) {
+              // 严格模式：报错
+              throw new Error(
+                `Security violation: Cannot update note ${note.id} owned by another user`
+              );
+            }
+            updatedCount++;
+          } else {
+            createdCount++;
+          }
+
+          // 2. 准备笔记数据
+          const noteData = {
+            ...note,
+            authorid: userId, // 强制归属
+            updatedAt: new Date(),
+            // createdAt 保持原样或重置，这里保留原样如果存在
+            createdAt: note.createdAt ? new Date(note.createdAt) : new Date(),
+          };
+
+          // 移除关联对象
+          delete noteData.author;
+          delete noteData.attachments;
+          delete noteData.reactions;
+          delete noteData.linkPreviews;
+          delete noteData.changes;
+
+          // 3. Upsert
+          await tx.insert(rotes).values(noteData).onConflictDoUpdate({
+            target: rotes.id,
+            set: noteData,
+          });
+
+          // 4. 处理附件
+          if (Array.isArray(note.attachments)) {
+            for (const attachment of note.attachments) {
+              const existingAttachment = await tx.query.attachments.findFirst({
+                where: eq(attachments.id, attachment.id),
+              });
+
+              if (existingAttachment && existingAttachment.userid !== userId) {
+                throw new Error(
+                  `Security violation: Cannot update attachment ${attachment.id} owned by another user`
+                );
+              }
+
+              const attachmentData = {
+                ...attachment,
+                userid: userId, // 强制归属
+                roteid: note.id,
+                updatedAt: new Date(),
+                createdAt: attachment.createdAt ? new Date(attachment.createdAt) : new Date(),
+              };
+              delete attachmentData.rote;
+              delete attachmentData.user;
+
+              await tx.insert(attachments).values(attachmentData).onConflictDoUpdate({
+                target: attachments.id,
+                set: attachmentData,
+              });
+            }
+          }
+        }
+      }
+    });
+
+    return {
+      success: true,
+      count: notes.length,
+      created: createdCount,
+      updated: updatedCount,
+    };
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Security violation')) {
+      throw new DatabaseError(error.message, error);
+    }
+    throw new DatabaseError('Failed to import user data', error);
+  }
+}

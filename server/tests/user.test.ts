@@ -242,4 +242,39 @@ export class UserTestSuite {
       return null;
     }
   }
+  /**
+   * 测试导入数据
+   */
+  async testImportData(data: any) {
+    const startTime = Date.now();
+    try {
+      const response = await this.client.post('/users/me/import', data);
+
+      TestAssertions.assertStatus(response.status, 200, 'Import Data');
+      TestAssertions.assertSuccess(response.data, 'Import Data');
+
+      const result = response.data.data;
+      TestAssertions.assertNotNull(result, 'Import result should be returned');
+      TestAssertions.assertEquals(result.success, true, 'Import should be successful');
+
+      const duration = Date.now() - startTime;
+      this.resultManager.recordResult(
+        'Import Data',
+        true,
+        `Imported ${result.count} items`,
+        duration
+      );
+      return result;
+    } catch (error: any) {
+      const duration = Date.now() - startTime;
+      this.resultManager.recordResult(
+        'Import Data',
+        false,
+        'Failed to import data',
+        duration,
+        error
+      );
+      return null;
+    }
+  }
 }
