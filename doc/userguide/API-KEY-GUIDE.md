@@ -390,3 +390,48 @@ Common error codes:
 - 403: Insufficient permissions
 - 400: Missing required parameters or invalid request
 - 400: Input length exceeds limit (title > 200 chars, content > 1,000,000 chars, tag > 50 chars, or > 20 tags)
+
+### 11. Monitoring API Key Usage
+
+You can retrieve usage logs for a specific API Key to monitor its activity.
+
+**Endpoint**: `GET /v2/api/api-keys/:id/logs`
+
+**Headers**:
+
+- `Authorization: Bearer <accessToken>` (Required, must be the owner of the API Key)
+- `Content-Type: application/json`
+
+**Path Parameters**:
+
+- `id`: The UUID of the API Key
+
+**Query Parameters**:
+
+- `skip`: Number of items to skip (pagination, default 0)
+- `limit`: Maximum number of items to return (pagination, default 50)
+
+**Response**:
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "log_uuid",
+      "openKeyId": "api_key_uuid",
+      "endpoint": "/v2/api/openkey/notes",
+      "method": "POST",
+      "clientIp": "127.0.0.1",
+      "userAgent": "PostmanRuntime/7.26.8",
+      "statusCode": 201,
+      "responseTime": 45,
+      "errorMessage": null,
+      "createdAt": "2025-05-27T10:30:00Z"
+    }
+  ]
+}
+```
+
+**Required Permission**: Authenticated user must be the owner of the API Key.
