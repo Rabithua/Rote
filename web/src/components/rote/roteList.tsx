@@ -1,6 +1,7 @@
-import type { Rotes } from '@/types/main';
+import type { Rote, Rotes } from '@/types/main';
 
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import CollapsedRoteGroup from '@/components/rote/CollapsedRoteGroup';
 import RoteItem from '@/components/rote/roteItem';
 import { AlertCircle, MessageSquareDashed } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -13,11 +14,15 @@ function RoteList({
   loadMore,
   mutate,
   error,
+  enableFolding = false,
+  isValidating,
 }: {
   data?: Rotes[];
   loadMore: () => void;
   mutate: SWRInfiniteKeyedMutator<Rotes>;
   error?: Error | null;
+  enableFolding?: boolean;
+  isValidating?: boolean;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteList',
@@ -75,15 +80,56 @@ function RoteList({
     );
   }
 
+  const renderRotes = () => {
+    if (!enableFolding) {
+      return rotes.map((item: any) => <RoteItem rote={item} key={item.id} mutate={mutate} />);
+    }
+
+    const groups: Rote[][] = [];
+    let currentGroup: Rote[] = [];
+
+    rotes.forEach((rote, index) => {
+      if (index === 0) {
+        currentGroup.push(rote);
+        return;
+      }
+
+      const prevRote = rotes[index - 1];
+      const timeDiff = new Date(prevRote.createdAt).getTime() - new Date(rote.createdAt).getTime();
+      const isSameAuthor =
+        rote.authorid && prevRote.authorid && rote.authorid === prevRote.authorid;
+      // 10 minutes = 600 * 1000 ms
+      const isWithinTime = Math.abs(timeDiff) < 10 * 60 * 1000;
+
+      if (isSameAuthor && isWithinTime) {
+        currentGroup.push(rote);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [rote];
+      }
+    });
+
+    if (currentGroup.length > 0) {
+      groups.push(currentGroup);
+    }
+
+    return groups.map((group) => {
+      if (group.length > 1) {
+        // cast mutate to satisfy types if needed, though they should match
+        return <CollapsedRoteGroup key={group[0].id} rotes={group} mutate={mutate as any} />;
+      }
+      return <RoteItem key={group[0].id} rote={group[0]} mutate={mutate} />;
+    });
+  };
+
   return (
     <div className="relative flex w-full flex-col divide-y">
-      {rotes.map((item: any) => (
-        <RoteItem rote={item} key={item.id} mutate={mutate} />
-      ))}
+      {renderRotes()}
       {isReachingEnd ? null : (
-        <div ref={loaderRef}>
-          <LoadingPlaceholder className="py-8" size={6} />
-        </div>
+        <>
+          <div ref={loaderRef} className="h-4 w-full" />
+          {(isValidating ?? true) && <LoadingPlaceholder className="py-8" size={6} />}
+        </>
       )}
       {isReachingEnd && rotes.length === 0 ? (
         <div className="bg-background flex shrink-0 flex-col items-center justify-center gap-4 py-8">

@@ -785,7 +785,9 @@
       "linkCopied": "Link copied to clipboard"
     },
     "roteList": {
-      "empty": "Nothing here"
+      "empty": "Nothing here",
+      "collapsedCount": "Show {{count}} more notes from {{name}}",
+      "collapse": "Collapse"
     },
     "tagMap": {
       "noTags": "No tags yet",

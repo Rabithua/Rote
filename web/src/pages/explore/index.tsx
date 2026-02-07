@@ -74,7 +74,13 @@ function ExplorePage() {
           ))}
       </NavBar>
       <Announcement />
-      <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+      <RoteList
+        data={data}
+        loadMore={loadMore}
+        mutate={mutate}
+        enableFolding={true}
+        isValidating={isValidating}
+      />
     </ContainerWithSideBar>
   );
 }
