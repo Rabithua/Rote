@@ -17,14 +17,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/health",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "health"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "health"]
             },
             "description": "Returns server health status. No authentication required."
           },
@@ -37,14 +31,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/v2/api/health",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v2",
-                    "api",
-                    "health"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "health"]
                 }
               },
               "status": "OK",
@@ -79,15 +67,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/register",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "register"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "register"]
             },
             "description": "Creates a new user account. Registration may be disabled by admin settings."
           },
@@ -109,15 +90,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v2/api/auth/register",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v2",
-                    "api",
-                    "auth",
-                    "register"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "auth", "register"]
                 }
               },
               "status": "Created",
@@ -145,15 +119,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "login"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "login"]
             },
             "description": "Authenticates user with username/email and password. Returns JWT access and refresh tokens."
           },
@@ -175,15 +142,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v2/api/auth/login",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v2",
-                    "api",
-                    "auth",
-                    "login"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "auth", "login"]
                 }
               },
               "status": "OK",
@@ -215,15 +175,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/password",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "password"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "password"]
             },
             "description": "Updates the authenticated user's password. Requires current password verification."
           },
@@ -249,15 +202,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v2/api/auth/password",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v2",
-                    "api",
-                    "auth",
-                    "password"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "auth", "password"]
                 }
               },
               "status": "OK",
@@ -285,15 +231,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/refresh",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "refresh"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "refresh"]
             },
             "description": "Exchanges a valid refresh token for a new access token. Use when access token expires."
           },
@@ -315,15 +254,8 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/v2/api/auth/refresh",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "v2",
-                    "api",
-                    "auth",
-                    "refresh"
-                  ]
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "auth", "refresh"]
                 }
               },
               "status": "OK",
@@ -349,16 +281,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider?redirect=/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "oauth",
-                ":provider"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider"],
               "query": [
                 {
                   "key": "redirect",
@@ -390,17 +314,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind?redirect=/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "oauth",
-                ":provider",
-                "bind"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "bind"],
               "query": [
                 {
                   "key": "redirect",
@@ -426,17 +341,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/callback?code=&state=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "oauth",
-                ":provider",
-                "callback"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "callback"],
               "query": [
                 {
                   "key": "code",
@@ -484,17 +390,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/callback",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "oauth",
-                ":provider",
-                "callback"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "callback"],
               "variable": [
                 {
                   "key": "provider",
@@ -527,9 +424,7 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind/merge",
-              "host": [
-                "{{base_url}}"
-              ],
+              "host": ["{{base_url}}"],
               "path": [
                 "v2",
                 "api",
@@ -563,17 +458,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/auth/oauth/:provider/bind",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "auth",
-                "oauth",
-                ":provider",
-                "bind"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "auth", "oauth", ":provider", "bind"],
               "variable": [
                 {
                   "key": "provider",
@@ -600,15 +486,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/users/:username",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                ":username"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", ":username"],
               "variable": [
                 {
                   "key": "username",
@@ -633,16 +512,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "profile"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "profile"]
             },
             "description": "Get the current user's profile. Requires authentication."
           },
@@ -669,16 +540,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/profile",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "profile"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "profile"]
             },
             "description": "Update the current user's profile."
           },
@@ -697,16 +560,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/settings",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "settings"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "settings"]
             },
             "description": "Get the current user's settings."
           },
@@ -733,16 +588,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/settings",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "settings"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "settings"]
             },
             "description": "Update the current user's settings."
           },
@@ -761,16 +608,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/tags",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "tags"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "tags"]
             },
             "description": "Get all tags used by the current user."
           },
@@ -789,16 +628,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/heatmap?startDate=2024-01-01&endDate=2024-12-31",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "heatmap"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "heatmap"],
               "query": [
                 {
                   "key": "startDate",
@@ -827,16 +658,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/statistics",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "statistics"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "statistics"]
             },
             "description": "Get the current user's statistics."
           },
@@ -855,16 +678,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/users/me/export",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me",
-                "export"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me", "export"]
             },
             "description": "Export all user data as JSON file."
           },
@@ -891,15 +706,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/users/me",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "users",
-                "me"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "users", "me"]
             },
             "description": "Delete the current user's account. Requires password confirmation."
           },
@@ -933,14 +741,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes"]
             },
             "description": "Create a new note."
           },
@@ -959,14 +761,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes?skip=0&limit=20&archived=false&tag=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes"],
               "query": [
                 {
                   "key": "skip",
@@ -1005,15 +801,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/random",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "random"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "random"]
             },
             "description": "Get a random note. Returns user's note if authenticated, public note otherwise."
           },
@@ -1032,15 +821,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/search?keyword=search term&skip=0&limit=20&archived=false",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "search"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "search"],
               "query": [
                 {
                   "key": "keyword",
@@ -1072,16 +854,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/search/public?keyword=search term&skip=0&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "search",
-                "public"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "search", "public"],
               "query": [
                 {
                   "key": "keyword",
@@ -1109,17 +883,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/search/users/:username?keyword=search term&skip=0&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "search",
-                "users",
-                ":username"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "search", "users", ":username"],
               "query": [
                 {
                   "key": "keyword",
@@ -1153,16 +918,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/users/:username?skip=0&limit=20&archived=false",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "users",
-                ":username"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "users", ":username"],
               "query": [
                 {
                   "key": "skip",
@@ -1196,15 +953,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/public?skip=0&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "public"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "public"],
               "query": [
                 {
                   "key": "skip",
@@ -1242,15 +992,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes/batch",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                "batch"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", "batch"]
             },
             "description": "Batch get notes by IDs. Maximum 100 notes per request."
           },
@@ -1270,15 +1013,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -1311,15 +1047,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -1344,15 +1073,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/notes/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notes",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notes", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -1393,14 +1115,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/reactions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "reactions"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "reactions"]
             },
             "description": "Add a reaction to a note. Supports both authenticated users and visitors."
           },
@@ -1420,16 +1136,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/reactions/:roteid/:type?visitorId=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "reactions",
-                ":roteid",
-                ":type"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "reactions", ":roteid", ":type"],
               "query": [
                 {
                   "key": "visitorId",
@@ -1480,15 +1188,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/presign",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "attachments",
-                "presign"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", "presign"]
             },
             "description": "Get presigned URLs for direct file upload to R2 storage. Maximum 9 files, 20MB each."
           },
@@ -1515,15 +1216,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/finalize",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "attachments",
-                "finalize"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", "finalize"]
             },
             "description": "Finalize uploaded attachments and save to database."
           },
@@ -1550,15 +1244,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/sort",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "attachments",
-                "sort"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", "sort"]
             },
             "description": "Update the sort order of attachments for a note."
           },
@@ -1577,15 +1264,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/attachments/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "attachments",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -1618,14 +1298,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/attachments",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "attachments"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "attachments"]
             },
             "description": "Batch delete multiple attachments. Maximum 100 per request."
           },
@@ -1651,14 +1325,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "api-keys"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys"]
             },
             "description": "Generate a new API key for the current user."
           },
@@ -1677,14 +1345,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "api-keys"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys"]
             },
             "description": "Get all API keys for the current user."
           },
@@ -1711,15 +1373,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "api-keys",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -1744,15 +1399,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/api-keys/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "api-keys",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "api-keys", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -1788,15 +1436,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/articles?openkey={{openkey}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "openkey",
-                "articles"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "articles"],
               "query": [
                 {
                   "key": "openkey",
@@ -1816,16 +1457,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&type=rote&title=My Title&tag=tag1&tag=tag2&openkey={{openkey}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "openkey",
-                "notes",
-                "create"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes", "create"],
               "query": [
                 {
                   "key": "openkey",
@@ -1878,16 +1511,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/create?openkey={{openkey}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "openkey",
-                "notes",
-                "create"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes", "create"],
               "query": [
                 {
                   "key": "openkey",
@@ -1916,15 +1541,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes?openkey={{openkey}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "openkey",
-                "notes"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes"],
               "query": [
                 {
                   "key": "openkey",
@@ -1944,15 +1562,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes?skip=0&limit=20&archived=false&openkey={{openkey}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "openkey",
-                "notes"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes"],
               "query": [
                 {
                   "key": "openkey",
@@ -1984,16 +1595,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/search?keyword=search term&skip=0&limit=20&openkey={{openkey}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "openkey",
-                "notes",
-                "search"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "openkey", "notes", "search"],
               "query": [
                 {
                   "key": "openkey",
@@ -2045,14 +1648,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "subscriptions"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions"]
             },
             "description": "Add a push notification subscription."
           },
@@ -2071,14 +1668,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "subscriptions"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions"]
             },
             "description": "Get all push notification subscriptions for the current user."
           },
@@ -2105,15 +1696,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "subscriptions",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -2138,15 +1722,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/:id",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "subscriptions",
-                ":id"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", ":id"],
               "variable": [
                 {
                   "key": "id",
@@ -2171,15 +1748,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/test-all",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "subscriptions",
-                "test-all"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", "test-all"]
             },
             "description": "Test all push notification endpoints for the current user."
           },
@@ -2202,16 +1772,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/subscriptions/:id/notify",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "subscriptions",
-                ":id",
-                "notify"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "subscriptions", ":id", "notify"],
               "variable": [
                 {
                   "key": "id",
@@ -2251,14 +1813,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notifications",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "notifications"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "notifications"]
             },
             "description": "Create a notification (currently disabled - returns success but performs no action)."
           },
@@ -2284,16 +1840,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/origin/:originid?skip=0&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "changes",
-                "origin",
-                ":originid"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "origin", ":originid"],
               "query": [
                 {
                   "key": "skip",
@@ -2328,16 +1876,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/rote/:roteid?skip=0&limit=20",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "changes",
-                "rote",
-                ":roteid"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "rote", ":roteid"],
               "query": [
                 {
                   "key": "skip",
@@ -2372,15 +1912,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/user?skip=0&limit=20&action=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "changes",
-                "user"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "user"],
               "query": [
                 {
                   "key": "skip",
@@ -2414,15 +1947,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/changes/after?timestamp=2024-01-01T00:00:00Z&skip=0&limit=20&action=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "changes",
-                "after"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "changes", "after"],
               "query": [
                 {
                   "key": "timestamp",
@@ -2463,15 +1989,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/site/status",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "site",
-                "status"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "site", "status"]
             },
             "description": "Get site status and configuration information."
           },
@@ -2485,15 +2004,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/site/config-status",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "site",
-                "config-status"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "site", "config-status"]
             },
             "description": "Get system configuration status (for initialization wizard)."
           },
@@ -2507,15 +2019,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/site/sitemap",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "site",
-                "sitemap"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "site", "sitemap"]
             },
             "description": "Get the site's XML sitemap."
           },
@@ -2536,15 +2041,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/rss/public",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "rss",
-                "public"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "rss", "public"]
             },
             "description": "Get RSS feed of all public notes."
           },
@@ -2558,15 +2056,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/rss/:username",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "rss",
-                ":username"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "rss", ":username"],
               "variable": [
                 {
                   "key": "username",
@@ -2593,15 +2084,8 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/status",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "status"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "status"]
             },
             "description": "Get system initialization status."
           },
@@ -2624,15 +2108,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/setup",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "setup"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "setup"]
             },
             "description": "Initialize the system with configuration and admin user. Only works if system is not initialized."
           },
@@ -2651,15 +2128,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings?group=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "settings"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings"],
               "query": [
                 {
                   "key": "group",
@@ -2693,15 +2163,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "settings"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings"]
             },
             "description": "Update configuration settings. Requires admin role."
           },
@@ -2729,16 +2192,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/test",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "settings",
-                "test"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "test"]
             },
             "description": "Test configuration connection (storage or database)."
           },
@@ -2757,16 +2212,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/regenerate-keys",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "settings",
-                "regenerate-keys"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "regenerate-keys"]
             },
             "description": "Regenerate security keys (JWT, VAPID). Requires super_admin role."
           },
@@ -2785,16 +2232,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/detect-urls",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "settings",
-                "detect-urls"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "detect-urls"]
             },
             "description": "Auto-detect current API and frontend URLs. Requires admin role."
           },
@@ -2821,16 +2260,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/settings/update-urls",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "settings",
-                "update-urls"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "settings", "update-urls"]
             },
             "description": "Update URL configuration. Requires admin role."
           },
@@ -2849,15 +2280,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/refresh-cache",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "refresh-cache"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "refresh-cache"]
             },
             "description": "Refresh configuration cache. Requires admin role."
           },
@@ -2876,15 +2300,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users?page=1&limit=10&role=&search=&sortField=&sortOrder=",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "users"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users"],
               "query": [
                 {
                   "key": "page",
@@ -2932,16 +2349,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "users",
-                ":userId"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId"],
               "variable": [
                 {
                   "key": "userId",
@@ -2974,17 +2383,8 @@
             },
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId/role",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "users",
-                ":userId",
-                "role"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId", "role"],
               "variable": [
                 {
                   "key": "userId",
@@ -3009,16 +2409,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "users",
-                ":userId"
-              ],
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "users", ":userId"],
               "variable": [
                 {
                   "key": "userId",
@@ -3043,9 +2435,7 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/users/:userId/verify-email",
-              "host": [
-                "{{base_url}}"
-              ],
+              "host": ["{{base_url}}"],
               "path": [
                 "v2",
                 "api",
@@ -3078,16 +2468,8 @@
             ],
             "url": {
               "raw": "{{base_url}}/v2/api/admin/roles/stats",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "v2",
-                "api",
-                "admin",
-                "roles",
-                "stats"
-              ]
+              "host": ["{{base_url}}"],
+              "path": ["v2", "api", "admin", "roles", "stats"]
             },
             "description": "Get user role statistics. Requires admin role."
           },
