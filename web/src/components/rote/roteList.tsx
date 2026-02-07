@@ -98,8 +98,8 @@ function RoteList({
       const timeDiff = new Date(prevRote.createdAt).getTime() - new Date(rote.createdAt).getTime();
       const isSameAuthor =
         rote.authorid && prevRote.authorid && rote.authorid === prevRote.authorid;
-      // 10 minutes = 600 * 1000 ms
-      const isWithinTime = Math.abs(timeDiff) < 10 * 60 * 1000;
+      // 1 minute = 60 * 1000 ms
+      const isWithinTime = Math.abs(timeDiff) < 60 * 1000;
 
       if (isSameAuthor && isWithinTime) {
         currentGroup.push(rote);
@@ -114,11 +114,11 @@ function RoteList({
     }
 
     return groups.map((group) => {
-      if (group.length > 1) {
+      if (group.length > 3) {
         // cast mutate to satisfy types if needed, though they should match
         return <CollapsedRoteGroup key={group[0].id} rotes={group} mutate={mutate as any} />;
       }
-      return <RoteItem key={group[0].id} rote={group[0]} mutate={mutate} />;
+      return group.map((rote) => <RoteItem key={rote.id} rote={rote} mutate={mutate} />);
     });
   };
 
