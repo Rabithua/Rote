@@ -126,10 +126,10 @@ function RoteList({
     <div className="relative flex w-full flex-col divide-y">
       {renderRotes()}
       {isReachingEnd ? null : (
-        <>
+        <div className="flex w-full flex-col">
           <div ref={loaderRef} className="h-4 w-full" />
           {(isValidating ?? true) && <LoadingPlaceholder className="py-8" size={6} />}
-        </>
+        </div>
       )}
       {isReachingEnd && rotes.length === 0 ? (
         <div className="bg-background flex shrink-0 flex-col items-center justify-center gap-4 py-8">
