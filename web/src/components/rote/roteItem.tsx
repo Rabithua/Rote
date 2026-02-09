@@ -192,12 +192,14 @@ function RoteItem({
           <div className="aTagStyle">
             {enableContentCollapse && rote.content.length > roteContentExpandedLetter ? (
               isExpanded ? (
-                <Linkify>{rote.content}</Linkify>
+                <Linkify options={{ target: '_blank' }}>{rote.content}</Linkify>
               ) : (
-                <Linkify>{`${rote.content.slice(0, roteContentExpandedLetter)}...`}</Linkify>
+                <Linkify
+                  options={{ target: '_blank' }}
+                >{`${rote.content.slice(0, roteContentExpandedLetter)}...`}</Linkify>
               )
             ) : (
-              <Linkify>{rote.content}</Linkify>
+              <Linkify options={{ target: '_blank' }}>{rote.content}</Linkify>
             )}
           </div>
           {enableContentCollapse &&
