@@ -113,6 +113,11 @@ function RoteList({
       groups.push(currentGroup);
     }
 
+    // If there is only one group, we don't collapse it to avoid user confusion
+    if (groups.length === 1) {
+      return groups[0].map((rote) => <RoteItem key={rote.id} rote={rote} mutate={mutate} />);
+    }
+
     return groups.map((group) => {
       if (group.length > 3) {
         // cast mutate to satisfy types if needed, though they should match
