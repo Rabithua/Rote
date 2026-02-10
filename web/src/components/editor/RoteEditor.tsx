@@ -622,7 +622,9 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       {showPublicWarning && (
         <Alert className="animate-show">
           <Globe2Icon className="h-4 w-4" />
-          <AlertDescription>{t('publicWarning')}</AlertDescription>
+          <AlertDescription className="text-primary font-light">
+            {t('publicWarning')}
+          </AlertDescription>
         </Alert>
       )}
 
