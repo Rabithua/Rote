@@ -9,7 +9,7 @@ import AdminDashboard from '@/pages/admin';
 import PrivacyPolicyPage from '@/pages/app/privacy';
 import TermsOfServicePage from '@/pages/app/terms';
 import ArchivedPage from '@/pages/archived';
-import ArticleDetailPage from '@/pages/article/:articleid';
+import ArticleDetailPage from '@/pages/article/[articleid]';
 import SelfhostedGuidePage from '@/pages/doc/selfhosted';
 import ExperimentPage from '@/pages/experiment';
 import ExplorePage from '@/pages/explore';
@@ -18,9 +18,9 @@ import HomePage from '@/pages/home';
 import Landing from '@/pages/landing';
 import Login from '@/pages/login';
 import ProfilePage from '@/pages/profile';
-import SingleRotePage from '@/pages/rote/:roteid';
+import SingleRotePage from '@/pages/rote/[roteid]';
 import SetupPage from '@/pages/setup';
-import UserPage from '@/pages/user/:username';
+import UserPage from '@/pages/user/[username]';
 
 /**
  * 根路由组件，用于在 RouterProvider 内部渲染 ScrollPositionManager
