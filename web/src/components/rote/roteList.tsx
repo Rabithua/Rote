@@ -1,7 +1,6 @@
-import type { Rote, Rotes } from '@/types/main';
+import type { Rotes } from '@/types/main';
 
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import CollapsedRoteGroup from '@/components/rote/CollapsedRoteGroup';
 import RoteItem from '@/components/rote/roteItem';
 import { AlertCircle, MessageSquareDashed } from 'lucide-react';
 import { useEffect, useRef } from 'react';
@@ -14,14 +13,12 @@ function RoteList({
   loadMore,
   mutate,
   error,
-  enableFolding = false,
   isValidating,
 }: {
   data?: Rotes[];
   loadMore: () => void;
   mutate: SWRInfiniteKeyedMutator<Rotes>;
   error?: Error | null;
-  enableFolding?: boolean;
   isValidating?: boolean;
 }) {
   const { t } = useTranslation('translation', {
@@ -81,50 +78,7 @@ function RoteList({
   }
 
   const renderRotes = () => {
-    if (!enableFolding) {
-      return rotes.map((item: any) => <RoteItem rote={item} key={item.id} mutate={mutate} />);
-    }
-
-    const groups: Rote[][] = [];
-    let currentGroup: Rote[] = [];
-
-    rotes.forEach((rote, index) => {
-      if (index === 0) {
-        currentGroup.push(rote);
-        return;
-      }
-
-      const prevRote = rotes[index - 1];
-      const timeDiff = new Date(prevRote.createdAt).getTime() - new Date(rote.createdAt).getTime();
-      const isSameAuthor =
-        rote.authorid && prevRote.authorid && rote.authorid === prevRote.authorid;
-      // 1 minute = 60 * 1000 ms
-      const isWithinTime = Math.abs(timeDiff) < 60 * 1000;
-
-      if (isSameAuthor && isWithinTime) {
-        currentGroup.push(rote);
-      } else {
-        groups.push(currentGroup);
-        currentGroup = [rote];
-      }
-    });
-
-    if (currentGroup.length > 0) {
-      groups.push(currentGroup);
-    }
-
-    // If there is only one group, we don't collapse it to avoid user confusion
-    if (groups.length === 1) {
-      return groups[0].map((rote) => <RoteItem key={rote.id} rote={rote} mutate={mutate} />);
-    }
-
-    return groups.map((group) => {
-      if (group.length > 3) {
-        // cast mutate to satisfy types if needed, though they should match
-        return <CollapsedRoteGroup key={group[0].id} rotes={group} mutate={mutate as any} />;
-      }
-      return group.map((rote) => <RoteItem key={rote.id} rote={rote} mutate={mutate} />);
-    });
+    return rotes.map((item: any) => <RoteItem rote={item} key={item.id} mutate={mutate} />);
   };
 
   return (
