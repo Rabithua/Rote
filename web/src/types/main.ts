@@ -30,6 +30,22 @@ export interface Reaction {
   updatedAt: string;
 }
 
+export interface RoteComment {
+  id: string;
+  roteid: string;
+  userid: string;
+  parentId?: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    username: string;
+    nickname: string | null;
+    avatar: string | null;
+  } | null;
+  children?: RoteComment[];
+}
+
 export type Rote = {
   id: string;
   title?: string;

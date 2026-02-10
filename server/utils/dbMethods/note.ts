@@ -1,4 +1,4 @@
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { rotes, users } from '../../drizzle/schema';
 import type { SecurityConfig } from '../../types/config';
 import { getGlobalConfig } from '../config';
@@ -228,6 +228,29 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
     return rotesList;
   } catch (error) {
     throw new DatabaseError(`Failed to find rotes by ids: ${ids.join(',')}`, error);
+  }
+}
+
+export async function findRotesMetaByIds(
+  ids: string[]
+): Promise<Array<{ id: string; state: string; authorid: string }>> {
+  try {
+    if (!ids || ids.length === 0) {
+      return [];
+    }
+
+    const rows = await db
+      .select({
+        id: rotes.id,
+        state: rotes.state,
+        authorid: rotes.authorid,
+      })
+      .from(rotes)
+      .where(inArray(rotes.id, ids));
+
+    return rows;
+  } catch (error) {
+    throw new DatabaseError(`Failed to find rotes meta by ids: ${ids.join(',')}`, error);
   }
 }
 

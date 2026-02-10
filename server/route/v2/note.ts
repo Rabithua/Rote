@@ -4,7 +4,9 @@ import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
   bindAttachmentsToRote,
+  createRoteComment,
   createRote,
+  deleteRoteComment,
   deleteRote,
   deleteRoteAttachmentsByRoteId,
   deleteRoteLinkPreviewsByRoteId,
@@ -13,8 +15,12 @@ import {
   findMyRote,
   findPublicRote,
   findRandomPublicRote,
+  getRoteCommentCount,
+  getRoteCommentById,
+  getRoteCommentsByRoteId,
+  getRoteCommentCounts,
   findRoteById,
-  findRotesByIds,
+  findRotesMetaByIds,
   findUserPublicRote,
   getUserInfoByUsername,
   searchMyRotes,
@@ -24,7 +30,7 @@ import {
 } from '../../utils/dbMethods';
 import { extractUrlsFromContent, parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
-import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
+import { CommentCreateZod, NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
 
 // 笔记相关路由
 const notesRouter = new Hono<{ Variables: HonoVariables }>();
@@ -475,6 +481,157 @@ notesRouter.post('/batch', optionalJWT, bodyTypeCheck, async (c: HonoContext) =>
   const orderedRotes = uniqueIds.map((id) => roteMap.get(id)).filter((rote) => rote !== undefined);
 
   return c.json(createResponse(orderedRotes), 200);
+});
+
+// 批量获取回复/评论数量
+notesRouter.post('/comments/counts', optionalJWT, bodyTypeCheck, async (c: HonoContext) => {
+  const user = c.get('user') as User | undefined;
+  const body = await c.req.json();
+  const { ids } = body as { ids: string[] };
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    throw new Error('ids must be a non-empty array');
+  }
+
+  const uniqueIds = [...new Set(ids)];
+  const invalidIds = uniqueIds.filter((id) => !isValidUUID(id));
+  if (invalidIds.length > 0) {
+    throw new Error(`Invalid UUID format: ${invalidIds.join(', ')}`);
+  }
+
+  if (uniqueIds.length > 200) {
+    throw new Error('Maximum 200 notes can be requested at once');
+  }
+
+  const rotesMeta = await findRotesMetaByIds(uniqueIds);
+  const accessibleIds = rotesMeta
+    .filter((rote) => rote.state === 'public' || rote.authorid === user?.id)
+    .map((rote) => rote.id);
+
+  const counts = await getRoteCommentCounts(accessibleIds);
+  return c.json(createResponse({ counts }), 200);
+});
+
+// 获取笔记回复/评论列表
+notesRouter.get('/:id/comments', optionalJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User | undefined;
+  const id = c.req.param('id');
+
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid or missing ID');
+  }
+
+  const rote = await findRoteById(id);
+  if (!rote) {
+    throw new Error('Note not found');
+  }
+
+  if (rote.state !== 'public' && rote.authorid !== user?.id) {
+    throw new Error('Access denied: note is private');
+  }
+
+  const comments = await getRoteCommentsByRoteId(id);
+  return c.json(createResponse(comments), 200);
+});
+
+// 获取笔记回复/评论数量
+notesRouter.get('/:id/comments/count', optionalJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User | undefined;
+  const id = c.req.param('id');
+
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid or missing ID');
+  }
+
+  const rote = await findRoteById(id);
+  if (!rote) {
+    throw new Error('Note not found');
+  }
+
+  if (rote.state !== 'public' && rote.authorid !== user?.id) {
+    throw new Error('Access denied: note is private');
+  }
+
+  const count = await getRoteCommentCount(id);
+  return c.json(createResponse({ count }), 200);
+});
+
+// 创建回复/评论
+notesRouter.post('/:id/comments', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const id = c.req.param('id');
+  const body = await c.req.json();
+
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid or missing ID');
+  }
+
+  CommentCreateZod.parse(body);
+
+  const rote = await findRoteById(id);
+  if (!rote) {
+    throw new Error('Note not found');
+  }
+
+  if (rote.state !== 'public' && rote.authorid !== user.id) {
+    throw new Error('Access denied: note is private');
+  }
+
+  const parentId = body.parentId ?? null;
+  if (parentId) {
+    if (!isValidUUID(parentId)) {
+      throw new Error('Invalid parent ID');
+    }
+    const parent = await getRoteCommentById(parentId);
+    if (!parent || parent.roteid !== id) {
+      throw new Error('Parent comment not found');
+    }
+  }
+
+  const comment = await createRoteComment({
+    roteid: id,
+    userid: user.id,
+    content: body.content,
+    parentId,
+  });
+
+  return c.json(createResponse(comment), 201);
+});
+
+// 删除回复/评论
+notesRouter.delete('/:id/comments/:commentId', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const id = c.req.param('id');
+  const commentId = c.req.param('commentId');
+
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid or missing ID');
+  }
+  if (!commentId || !isValidUUID(commentId)) {
+    throw new Error('Invalid or missing comment ID');
+  }
+
+  const rote = await findRoteById(id);
+  if (!rote) {
+    throw new Error('Note not found');
+  }
+
+  const comment = await getRoteCommentById(commentId);
+  if (!comment || comment.roteid !== id) {
+    throw new Error('Comment not found');
+  }
+
+  const isOwner = comment.userid === user.id;
+  const isNoteOwner = rote.authorid === user.id;
+  const isModerator =
+    user.role === 'admin' || user.role === 'moderator' || user.role === 'super_admin';
+
+  if (!isOwner && !isNoteOwner && !isModerator) {
+    throw new Error('Access denied: cannot delete this comment');
+  }
+
+  const data = await deleteRoteComment(commentId);
+  return c.json(createResponse(data), 200);
 });
 
 // 获取笔记详情

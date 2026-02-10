@@ -149,6 +149,7 @@ function SingleRotePage() {
         rote={rote}
         mutateSingle={mutate}
         enableContentCollapse={false}
+        showComments
       />
     </ContainerWithSideBar>
   ) : null;

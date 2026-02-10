@@ -7,6 +7,7 @@ import {
   Edit,
   Globe2Icon,
   LinkIcon,
+  MessageCircle,
   PinIcon,
   SmilePlus,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ import { VerifiedIcon } from '@/components/icons/Verified';
 import { SoftBottom } from '@/components/others/SoftBottom';
 import UserAvatar from '@/components/others/UserAvatar';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
+import CommentsSection from '@/components/rote/CommentsSection';
 import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
@@ -33,10 +35,12 @@ import { useEditor } from '@/state/editor';
 import { profileAtom } from '@/state/profile';
 import type { Attachment, Rote, Rotes } from '@/types/main';
 import { formatTimeAgo } from '@/utils/main';
+import { getRoteCommentCount } from '@/utils/commentApi';
 import { useAtomValue } from 'jotai';
 import { useTranslation } from 'react-i18next';
 import type { KeyedMutator } from 'swr';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
+import { useAPIGet } from '@/utils/fetcher';
 
 const roteContentExpandedLetter = 280;
 
@@ -46,12 +50,16 @@ function RoteItem({
   mutateSingle,
   showAvatar = true,
   enableContentCollapse = true,
+  showComments = false,
+  commentCount,
 }: {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
   showAvatar?: boolean;
   enableContentCollapse?: boolean;
+  showComments?: boolean;
+  commentCount?: number;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
@@ -63,6 +71,14 @@ function RoteItem({
   const profile = useAtomValue(profileAtom);
 
   const isOwner = profile?.username === rote.author.username;
+  const { data: fetchedCommentCount } = useAPIGet(
+    commentCount === undefined && inView ? ['comment-count', rote.id] : null,
+    () => getRoteCommentCount(rote.id),
+    {
+      revalidateOnFocus: false,
+    }
+  );
+  const resolvedCommentCount = commentCount ?? fetchedCommentCount ?? 0;
 
   const onEdit = useCallback(() => {
     setRote(rote);
@@ -264,12 +280,24 @@ function RoteItem({
           </div>
         )}
 
-        {/* Reactions */}
-        {inView ? (
-          <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
-        ) : (
-          <SmilePlus className="bg-foreground/5 ml-auto size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
-        )}
+        {/* Reactions & Comments */}
+        <div className="flex items-center justify-between gap-3">
+          {inView ? (
+            <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
+          ) : (
+            <SmilePlus className="bg-foreground/5 size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
+          )}
+
+          <Link
+            to={`/rote/${rote.id}`}
+            className="text-info hover:text-foreground flex items-center gap-1 text-xs"
+          >
+            <MessageCircle className="size-4" />
+            <span>{resolvedCommentCount}</span>
+          </Link>
+        </div>
+
+        {showComments && <CommentsSection roteId={rote.id} />}
       </div>
 
       {inView && (

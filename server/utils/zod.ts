@@ -128,6 +128,15 @@ export const ReactionCreateZod = z.object({
   metadata: z.record(z.string(), z.any()).optional(),
 });
 
+// 回复/评论相关验证
+export const CommentCreateZod = z.object({
+  content: z
+    .string()
+    .min(1, 'Content cannot be empty')
+    .max(2000, 'Content cannot exceed 2,000 characters'),
+  parentId: z.string().uuid('Invalid parent ID').optional().nullable(),
+});
+
 // 附件文件名验证
 export const AttachmentPresignZod = z.object({
   files: z

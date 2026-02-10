@@ -309,6 +309,47 @@ export const reactions = pgTable(
 );
 
 // Settings 表
+// Rote Comments 表
+export const roteComments = pgTable(
+  'rote_comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    roteid: uuid('roteid').notNull(),
+    userid: uuid('userid').notNull(),
+    parentId: uuid('parentId'),
+    content: text('content').notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    roteidIdx: index('rote_comments_roteid_idx').on(table.roteid),
+    parentIdIdx: index('rote_comments_parentId_idx').on(table.parentId),
+    useridIdx: index('rote_comments_userid_idx').on(table.userid),
+    roteidCreatedAtIdx: index('rote_comments_roteid_createdAt_idx').on(
+      table.roteid,
+      table.createdAt
+    ),
+    roteidFk: foreignKey({
+      columns: [table.roteid],
+      foreignColumns: [rotes.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    parentIdFk: foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [table.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+  })
+);
+
 export const settings = pgTable(
   'settings',
   {
@@ -393,6 +434,7 @@ export const userOAuthBindings = pgTable(
 export const usersRelations = relations(users, ({ one, many }) => ({
   attachments: many(attachments),
   userreaction: many(reactions),
+  comments: many(roteComments),
   rotes: many(rotes),
   articles: many(articles),
   openkey: many(userOpenKeys),
@@ -445,6 +487,7 @@ export const rotesRelations = relations(rotes, ({ one, many }) => ({
   attachments: many(attachments),
   linkPreviews: many(roteLinkPreviews),
   reactions: many(reactions),
+  comments: many(roteComments),
   changes: many(roteChanges),
 }));
 
@@ -475,6 +518,22 @@ export const reactionsRelations = relations(reactions, ({ one }) => ({
     fields: [reactions.userid],
     references: [users.id],
   }),
+}));
+
+export const roteCommentsRelations = relations(roteComments, ({ one, many }) => ({
+  rote: one(rotes, {
+    fields: [roteComments.roteid],
+    references: [rotes.id],
+  }),
+  user: one(users, {
+    fields: [roteComments.userid],
+    references: [users.id],
+  }),
+  parent: one(roteComments, {
+    fields: [roteComments.parentId],
+    references: [roteComments.id],
+  }),
+  replies: many(roteComments),
 }));
 
 export const roteChangesRelations = relations(roteChanges, ({ one }) => ({
@@ -516,6 +575,8 @@ export type RoteLinkPreview = typeof roteLinkPreviews.$inferSelect;
 export type NewRoteLinkPreview = typeof roteLinkPreviews.$inferInsert;
 export type Reaction = typeof reactions.$inferSelect;
 export type NewReaction = typeof reactions.$inferInsert;
+export type RoteComment = typeof roteComments.$inferSelect;
+export type NewRoteComment = typeof roteComments.$inferInsert;
 export type Setting = typeof settings.$inferSelect;
 export type NewSetting = typeof settings.$inferInsert;
 export type RoteChange = typeof roteChanges.$inferSelect;

@@ -2,8 +2,10 @@ import type { Rotes } from '@/types/main';
 
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteItem from '@/components/rote/roteItem';
+import { getRoteCommentCounts } from '@/utils/commentApi';
+import { useAPIGet } from '@/utils/fetcher';
 import { AlertCircle, MessageSquareDashed } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
@@ -26,11 +28,20 @@ function RoteList({
   const loaderRef = useRef<HTMLDivElement>(null);
 
   const rotes: Rotes = data ? ([] as Rotes).concat(...data) : [];
+  const roteIds = useMemo(() => rotes.map((rote) => rote.id), [rotes]);
   const isEmpty = data?.[0]?.length === 0;
   // TODO:如何优雅处理limit字段的传输
   // const limit = getProps(0, []).limit || 20;
   const limit = 20;
   const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < limit);
+
+  const { data: commentCounts } = useAPIGet(
+    roteIds.length > 0 ? ['comment-counts', roteIds] : null,
+    () => getRoteCommentCounts(roteIds),
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   useEffect(() => {
     const currentloaderRef = loaderRef.current;
@@ -78,7 +89,12 @@ function RoteList({
   return (
     <div className="relative flex w-full flex-col divide-y">
       {rotes.map((item: any) => (
-        <RoteItem rote={item} key={item.id} mutate={mutate} />
+        <RoteItem
+          rote={item}
+          key={item.id}
+          mutate={mutate}
+          commentCount={commentCounts?.[item.id] ?? 0}
+        />
       ))}
       {isReachingEnd ? null : (
         <div ref={loaderRef}>
