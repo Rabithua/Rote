@@ -13,4 +13,4 @@ PORT=3000
 # ==========================================
 
 # PostgreSQL 数据库连接字符串
-POSTGRESQL_URL=postgresql://postgres:Hu_Zhi_Rong20021007!^&@101.37.12.123:5432/postgres
+POSTGRESQL_URL=postgresql://""
