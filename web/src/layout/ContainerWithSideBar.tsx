@@ -1,5 +1,6 @@
 import FloatBtns from '@/components/layout/FloatBtns';
 import { SideContentLayout } from '@/components/layout/SideContentLayout';
+import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -9,11 +10,13 @@ import { type ReactNode, useState } from 'react';
 function ContainerWithSideBar({
   sidebar,
   sidebarHeader,
+  floatButtons,
   children,
   className,
 }: {
   sidebar?: ReactNode;
   sidebarHeader?: ReactNode;
+  floatButtons?: ReactNode;
   children?: ReactNode;
   className?: string;
 }) {
@@ -33,12 +36,16 @@ function ContainerWithSideBar({
       )}
 
       <FloatBtns>
-        <div
-          className="bg-foreground text-primary-foreground block w-fit cursor-pointer rounded-md px-4 py-2 duration-300 hover:scale-105 md:hidden"
+        {floatButtons}
+        <Button
+          size="icon"
+          className="rounded-md shadow-md md:hidden"
           onClick={() => setDrawOpen(!drawOpen)}
+          aria-label="Open sidebar"
+          title="Open sidebar"
         >
           <Layers className="size-4" />
-        </div>
+        </Button>
       </FloatBtns>
 
       <Drawer open={drawOpen} onOpenChange={setDrawOpen}>

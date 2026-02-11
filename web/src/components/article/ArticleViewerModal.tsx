@@ -84,6 +84,7 @@ export function ArticleViewerModal({
                 variant="secondary"
                 size="icon"
                 onClick={() => setEditorOpen(true)}
+                aria-label={t('edit')}
                 title={t('edit')}
               >
                 <Pencil className="size-4" />

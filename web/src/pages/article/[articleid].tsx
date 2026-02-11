@@ -1,6 +1,5 @@
 import { ArticleEditorModal } from '@/components/article/ArticleEditorModal';
 import { VerifiedIcon } from '@/components/icons/Verified';
-import FloatBtns from '@/components/layout/FloatBtns';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import UserAvatar from '@/components/others/UserAvatar';
@@ -125,6 +124,40 @@ function ArticleDetailPage() {
             <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
           </div>
         }
+        floatButtons={
+          isAuthor ? (
+            <>
+              <Button
+                size="icon"
+                className="rounded-md shadow-md"
+                onClick={() => setEditorOpen(true)}
+                aria-label="Edit article"
+                title="Edit article"
+              >
+                <PenBox className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                className="rounded-md shadow-md"
+                onClick={handleCopyLink}
+                aria-label="Copy article link"
+                title="Copy article link"
+              >
+                <LinkIcon className="size-4" />
+              </Button>
+              <Button
+                size="icon"
+                className="rounded-md shadow-md"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                aria-label="Delete article"
+                title="Delete article"
+              >
+                <Trash2 className="size-4" />
+              </Button>
+            </>
+          ) : null
+        }
         className="pb-16"
       >
         <NavBar onNavClick={refreshData}>
@@ -147,22 +180,6 @@ function ArticleDetailPage() {
             </Link>
           )}
         </div>
-        {/* 浮动操作按钮区 */}
-        <FloatBtns>
-          {isAuthor && (
-            <>
-              <Button onClick={() => setEditorOpen(true)}>
-                <PenBox className="size-4" />
-              </Button>
-              <Button onClick={handleCopyLink}>
-                <LinkIcon className="size-4" />
-              </Button>
-              <Button onClick={handleDelete} disabled={isDeleting}>
-                <Trash2 className="size-4" />
-              </Button>
-            </>
-          )}
-        </FloatBtns>
       </ContainerWithSideBar>
       {/* 编辑弹窗，仅本人可见 */}
       {isAuthor && (
