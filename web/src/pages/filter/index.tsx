@@ -4,12 +4,14 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import SearchBar from '@/components/others/SearchBox';
 import RoteList from '@/components/rote/roteList';
+import { DatePicker } from '@/components/ui/date-picker';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
+import { format } from 'date-fns';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { ActivityIcon, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -258,12 +260,14 @@ function MineFilter() {
           }}
           isLoading={isLoading || isValidating}
         />
-        <input
-          type="date"
-          className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          value={filter.date || ''}
-          onChange={(e) => {
-            setFilter((prev) => ({ ...prev, date: e.target.value }));
+        <DatePicker
+          date={filter.date ? new Date(filter.date) : undefined}
+          className="rounded-none border-none bg-none"
+          setDate={(date) => {
+            setFilter((prev) => ({
+              ...prev,
+              date: date ? format(date, 'yyyy-MM-dd') : '',
+            }));
           }}
         />
       </div>
