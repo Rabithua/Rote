@@ -1,12 +1,10 @@
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import { useAuthState } from '@/state/profile';
+import { isTokenValid } from '@/utils/main';
 import MobileDetect from 'mobile-detect';
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export const ProtectedRoute = ({ children }: any) => {
-  const { tokenValid, isAuthPending } = useAuthState();
   const [iosSafariToastDone, setIosSafariToastDone] = useState(
     localStorage.getItem('iosSafariToastDone') === 'true'
   );
@@ -40,9 +38,5 @@ export const ProtectedRoute = ({ children }: any) => {
     }
   }, [iosSafariToastDone, setIosSafariToastDone]);
 
-  if (isAuthPending) {
-    return <LoadingPlaceholder className="h-dvh w-full" size={6} />;
-  }
-
-  return tokenValid ? children : <Navigate to="/login" />;
+  return isTokenValid() ? children : <Navigate to="/login" />;
 };

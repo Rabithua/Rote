@@ -66,8 +66,6 @@ For more deployment options and configuration instructions, please check the doc
 ### Community Projects
 
 - [Raycast Extension](https://github.com/aBER0724/rote-raycast) - Raycast extension for Rote, developed by [@aBER0724](https://github.com/aBER0724)
-- [Rerote](https://github.com/Rabithua/Rerote)
-- [RoteFeeder](https://github.com/Rabithua/RoteFeeder)
 
 ## Technology Stack
 
