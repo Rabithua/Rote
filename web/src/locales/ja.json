@@ -673,7 +673,6 @@
         "noData": "ヒートマップデータなし",
         "note": "ノート",
         "notes": "ノート",
-        "noNotesOnDate": "この日付のノートはありません",
         "daysOfWeek": {
           "Sun": "日",
           "Mon": "月",

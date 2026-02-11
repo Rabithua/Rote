@@ -5,18 +5,14 @@ import { get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { SquareDashed } from 'lucide-react';
 import moment from 'moment';
-import React from 'react';
 import { useTranslation } from 'react-i18next';
+import React from 'react';
 import LoadingPlaceholder from '../others/LoadingPlaceholder';
-
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const Heatmap: React.FC = () => {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.d3.heatmap',
   });
-  const navigate = useNavigate();
 
   const endDate = new Date();
   const startDate = new Date();
@@ -121,17 +117,6 @@ const Heatmap: React.FC = () => {
                           backgroundColor: day.notesCount
                             ? colors[Math.min(day.notesCount, colors.length - 1)]
                             : colors[0],
-                        }}
-                        onClick={() => {
-                          if (day.notesCount > 0) {
-                            navigate('/filter', {
-                              state: {
-                                date: moment(day.date).format('YYYY-MM-DD'),
-                              },
-                            });
-                          } else {
-                            toast.info(t('noNotesOnDate'));
-                          }
                         }}
                       ></div>
                     </TooltipTrigger>

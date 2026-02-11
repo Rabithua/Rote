@@ -8,13 +8,11 @@ export default function SearchBar({
   onChange,
   onSearch,
   isLoading = false,
-  className,
 }: {
   defaultValue?: string;
   onChange?: (_keyword: string) => void;
   onSearch: (_keyword: string) => void;
   isLoading?: boolean;
-  className?: string;
 }) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.sidebarSearch' });
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,7 +25,7 @@ export default function SearchBar({
 
   return (
     <form
-      className={`flex items-center gap-2 ${className || ''}`}
+      className="flex items-center gap-2"
       onSubmit={(e) => {
         e.preventDefault();
         // 如果正在加载，阻止提交
