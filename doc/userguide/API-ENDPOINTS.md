@@ -145,15 +145,16 @@
 
 ### 13) OpenKey（API Key 访问）
 
-| 路径                    | 方法 | 认证    | 描述             |
-| ----------------------- | ---- | ------- | ---------------- |
-| `/openkey/notes/create` | GET  | API Key | 创建笔记（兼容） |
-| `/openkey/notes`        | POST | API Key | 创建笔记         |
-| `/openkey/notes`        | GET  | API Key | 获取笔记列表     |
-| `/openkey/notes/search` | GET  | API Key | 搜索笔记         |
+| 路径                    | 方法 | 认证    | 描述                         |
+| ----------------------- | ---- | ------- | ---------------------------- |
+| `/openkey/notes/create` | GET  | API Key | 创建笔记（兼容）             |
+| `/openkey/notes`        | POST | API Key | 创建笔记                     |
+| `/openkey/notes`        | GET  | API Key | 获取笔记列表                 |
+| `/openkey/notes/search` | GET  | API Key | 搜索笔记                     |
 | `/openkey/articles`     | POST | API Key | 创建文章（需要 SENDARTICLE） |
 
 鉴权：通过 `openkey` 传入（推荐）
+
 - GET：`?openkey=<API_KEY>`
 - POST：请求体中包含 `{"openkey":"<API_KEY>"}`
 
@@ -270,10 +271,10 @@
 
 ```json
 // POST /v2/api/api-keys
-{ "label": "iOS 客户端", "scopes?": ["notes:read", "notes:write"] }
+{}
 
 // PUT /v2/api/api-keys/:id
-{ "label?": "重命名", "scopes?": ["notes:read"] , "enabled?": true }
+{ "permissions": ["SENDROTE", "GETROTE"] }
 ```
 
 ### 附件直传

@@ -36,7 +36,10 @@ router.get('/rss/public', async (c: HonoContext) => {
     title: 'Rote - 所有公开笔记',
     description: '这里是所有用户的公开笔记RSS订阅',
     id: 'public-notes',
-    link: `${dynamicApiUrl}/api/v2/rss/public`,
+    link: `${dynamicFrontendUrl}/explore`,
+    feedLinks: {
+      atom: `${dynamicApiUrl}/api/v2/rss/public`,
+    },
     copyright: `© ${new Date().getFullYear()} Rote`,
     author: {
       name: 'Rote',
@@ -59,7 +62,7 @@ router.get('/rss/public', async (c: HonoContext) => {
 
   // Set proper Content-Type
   c.header('Content-Type', 'application/xml');
-  return c.text(feed);
+  return c.body(feed);
 });
 
 // RSS相关路由
@@ -81,7 +84,10 @@ router.get('/rss/:username', async (c: HonoContext) => {
     title: `${user.nickname || user.username}`,
     description: user.description || `RSS feed for ${user.nickname || user.username}'s notes`,
     id: `${user.username}`,
-    link: `${dynamicApiUrl}/api/v2/rss/${user.username}`,
+    link: `${dynamicFrontendUrl}/${user.username}`,
+    feedLinks: {
+      atom: `${dynamicApiUrl}/api/v2/rss/${user.username}`,
+    },
     favicon: user.avatar,
     copyright: `© ${new Date().getFullYear()} ${user.nickname || user.username}`,
     author: {
@@ -100,7 +106,7 @@ router.get('/rss/:username', async (c: HonoContext) => {
 
   // Set proper Content-Type
   c.header('Content-Type', 'application/xml');
-  return c.text(feed);
+  return c.body(feed);
 });
 
 // 注册子路由

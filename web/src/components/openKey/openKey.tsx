@@ -15,17 +15,18 @@ import {
   EyeClosed,
   EyeIcon,
   History,
+  Loader,
   Loader2,
   Terminal,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useInView } from 'react-intersection-observer';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
-import useSWR from 'swr';
+import useSWRInfinite from 'swr/infinite';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
-import { Button } from '../ui/button';
 import { ScrollArea } from '../ui/scroll-area';
 import OpenKeyEditModel from './openKeyEditModel';
 
@@ -37,14 +38,35 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isLogDialogOpen, setIsLogDialogOpen] = useState<boolean>(false);
   const [hidekey, setHideKey] = useState(true);
-  const [logSkip, setLogSkip] = useState(0);
   const logLimit = 20;
 
-  const { data: logsData, isLoading: logsLoading } = useSWR<OpenKeyUsageLog[]>(
-    isLogDialogOpen ? `/api-keys/${openKey.id}/logs?limit=${logLimit}&skip=${logSkip}` : null,
-    (url: string) => get(url).then((res) => res.data),
-    { revalidateOnFocus: false }
-  );
+  const { ref, inView } = useInView();
+
+  const getKey = (pageIndex: number, previousPageData: OpenKeyUsageLog[]) => {
+    if (!isLogDialogOpen) return null;
+    if (previousPageData && !previousPageData.length) return null; // reached the end
+    return `/api-keys/${openKey.id}/logs?limit=${logLimit}&skip=${pageIndex * logLimit}`;
+  };
+
+  const {
+    data,
+    size,
+    setSize,
+    isLoading: logsLoading,
+  } = useSWRInfinite<OpenKeyUsageLog[]>(getKey, (url: string) => get(url).then((res) => res.data), {
+    revalidateOnFocus: false,
+  });
+
+  const logsData = data ? data.flat() : [];
+  const isLoadingMore = logsLoading || (size > 0 && data && typeof data[size - 1] === 'undefined');
+  const isEmpty = data?.[0]?.length === 0;
+  const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < logLimit);
+
+  useEffect(() => {
+    if (inView && !isReachingEnd && !isLoadingMore) {
+      setSize((prev) => prev + 1);
+    }
+  }, [inView, isReachingEnd, isLoadingMore, setSize]);
 
   function formatLastUsed(lastUsedAt: string | null | undefined): string {
     if (!lastUsedAt) return t('neverUsed');
@@ -208,11 +230,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
             <DialogTitle>{t('usageLogs')}</DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-96">
-            {logsLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="size-6 animate-spin" />
-              </div>
-            ) : logsData && logsData.length > 0 ? (
+            {logsData && logsData.length > 0 ? (
               <div className="space-y-2">
                 {logsData.map((log) => (
                   <div key={log.id} className="rounded-lg border p-3 text-sm">
@@ -239,18 +257,22 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
                     )}
                   </div>
                 ))}
-                {logsData.length >= logLimit && (
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    onClick={() => setLogSkip((prev) => prev + logLimit)}
-                  >
-                    {t('loadMore')}
-                  </Button>
+                {!isReachingEnd && (
+                  <div ref={ref} className="flex justify-center py-4">
+                    <Loader2 className="size-6 animate-spin" />
+                  </div>
                 )}
               </div>
             ) : (
-              <div className="text-muted-foreground py-8 text-center">{t('noLogs')}</div>
+              <div className="text-muted-foreground py-8 text-center">
+                {isLoadingMore ? (
+                  <div className="flex justify-center py-4">
+                    <Loader className="size-6 animate-spin" />
+                  </div>
+                ) : (
+                  t('noLogs')
+                )}
+              </div>
             )}
           </ScrollArea>
         </DialogContent>

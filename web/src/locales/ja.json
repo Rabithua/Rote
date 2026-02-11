@@ -785,7 +785,9 @@
       "linkCopied": "リンクをクリップボードにコピーしました"
     },
     "roteList": {
-      "empty": "ここには何もありません"
+      "empty": "ここには何もありません",
+      "collapsedCount": "{{name}} の他の {{count}} 件のノートを表示",
+      "collapse": "折りたたむ"
     },
     "tagMap": {
       "noTags": "まだタグがありません",

@@ -9,6 +9,9 @@ export interface RssFeedOptions {
   image?: string;
   favicon?: string;
   copyright: string;
+  feedLinks?: {
+    [key: string]: string;
+  };
   author: {
     name: string;
     email?: string;
@@ -41,6 +44,7 @@ export async function generateRssFeed(
     copyright: options.copyright,
     updated: notes.length > 0 ? new Date(notes[0].updatedAt) : new Date(),
     generator: 'Rote RSS Generator',
+    feedLinks: options.feedLinks,
     author: {
       name: options.author.name,
       email: options.author.email,

@@ -61,7 +61,12 @@ export async function getMyOpenKeysWithStats(userid: string): Promise<any> {
       .from(userOpenKeys)
       .where(eq(userOpenKeys.userid, userid))
       .orderBy(asc(userOpenKeys.createdAt));
-    return openKeys;
+
+    // Ensure lastUsedAt creates a standardized Date object for JSON serialization
+    return openKeys.map((key) => ({
+      ...key,
+      lastUsedAt: key.lastUsedAt ? new Date(key.lastUsedAt) : null,
+    }));
   } catch (error) {
     throw new DatabaseError('Failed to get user open keys with stats', error);
   }

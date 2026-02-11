@@ -243,9 +243,9 @@ export function ArticleEditorModal({
         {isEditMode ? t('editTitle') : t('title')}
       </DialogTitle>
       <DialogContent className="h-[90vh] w-screen max-w-4xl p-2 sm:max-w-5xl">
-        <div className="flex h-full flex-col gap-4 overflow-scroll">
+        <div className="noScrollBar flex h-full flex-col gap-4 overflow-scroll">
           {/* 左右布局：左侧编辑器，右侧预览 */}
-          <div className="flex flex-1 gap-4 overflow-scroll">
+          <div className="noScrollBar flex flex-1 gap-4 overflow-scroll">
             {/* 左侧：Markdown编辑器 */}
             <div className="flex w-full flex-col p-1 md:w-1/2">
               <div className="mb-2 shrink-0 text-xs">{t('editorLabel')}</div>
@@ -263,7 +263,7 @@ export function ArticleEditorModal({
             {/* 右侧：Markdown预览 */}
             <div className="hidden w-1/2 flex-col overflow-hidden p-1 md:flex">
               <div className="mb-2 shrink-0 text-xs">{t('previewLabel')}</div>
-              <div className="scrollbar-thin bg-muted/30 min-h-0 flex-1 overflow-auto rounded-md border p-4">
+              <div className="scrollbar-thin bg-muted/30 noScrollBar min-h-0 flex-1 overflow-auto rounded-md border p-4">
                 {content ? (
                   <div className="prose prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>

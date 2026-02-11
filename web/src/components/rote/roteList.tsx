@@ -13,11 +13,13 @@ function RoteList({
   loadMore,
   mutate,
   error,
+  isValidating,
 }: {
   data?: Rotes[];
   loadMore: () => void;
   mutate: SWRInfiniteKeyedMutator<Rotes>;
   error?: Error | null;
+  isValidating?: boolean;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteList',
@@ -75,14 +77,16 @@ function RoteList({
     );
   }
 
+  const renderRotes = () =>
+    rotes.map((item: any) => <RoteItem rote={item} key={item.id} mutate={mutate} />);
+
   return (
     <div className="relative flex w-full flex-col divide-y">
-      {rotes.map((item: any) => (
-        <RoteItem rote={item} key={item.id} mutate={mutate} />
-      ))}
+      {renderRotes()}
       {isReachingEnd ? null : (
-        <div ref={loaderRef}>
-          <LoadingPlaceholder className="py-8" size={6} />
+        <div className="flex w-full flex-col">
+          <div ref={loaderRef} className="h-4 w-full" />
+          {(isValidating ?? true) && <LoadingPlaceholder className="py-8" size={6} />}
         </div>
       )}
       {isReachingEnd && rotes.length === 0 ? (

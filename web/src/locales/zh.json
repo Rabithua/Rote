@@ -779,7 +779,9 @@
       "linkCopied": "链接已复制到剪贴板"
     },
     "roteList": {
-      "empty": "还没有发布任何内容"
+      "empty": "还没有发布任何内容",
+      "collapsedCount": "展开 {{name}} 的另外 {{count}} 条笔记",
+      "collapse": "收起"
     },
     "tagMap": {
       "noTags": "还没有标签",
