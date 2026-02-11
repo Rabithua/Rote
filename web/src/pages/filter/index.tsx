@@ -61,6 +61,7 @@ function MineFilter() {
       hasEvery: location.state?.tags || [],
     },
     keyword: location.state?.initialKeyword || '',
+    date: location.state?.date || '',
   });
 
   const getProps = useCallback(
@@ -78,12 +79,16 @@ function MineFilter() {
         params.keyword = filter.keyword.trim();
       }
 
+      if (filter.date) {
+        params.date = filter.date;
+      }
+
       return {
         apiType: 'mine',
         params,
       };
     },
-    [filter.tags.hasEvery, filter.keyword]
+    [filter.tags.hasEvery, filter.keyword, filter.date]
   );
 
   const { data, mutate, loadMore, isLoading, isValidating, error, setSize } = useAPIInfinite(
@@ -98,23 +103,32 @@ function MineFilter() {
   );
 
   // 当 filter 变化时，重置分页并重新验证
-  const prevFilterRef = useRef<{ tags: string[]; keyword: string } | null>(null);
+  const prevFilterRef = useRef<{ tags: string[]; keyword: string; date: string } | null>(null);
   const isInitialMount = useRef(true);
 
   useEffect(() => {
     // 跳过初始挂载
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      prevFilterRef.current = { tags: filter.tags.hasEvery, keyword: filter.keyword };
+      prevFilterRef.current = {
+        tags: filter.tags.hasEvery,
+        keyword: filter.keyword,
+        date: filter.date,
+      };
       return;
     }
 
     const currentTags = filter.tags.hasEvery;
     const currentKeyword = filter.keyword;
+    const currentDate = filter.date;
     const prevFilter = prevFilterRef.current;
 
     if (!prevFilter) {
-      prevFilterRef.current = { tags: currentTags, keyword: currentKeyword };
+      prevFilterRef.current = {
+        tags: currentTags,
+        keyword: currentKeyword,
+        date: currentDate,
+      };
       return;
     }
 
@@ -123,15 +137,20 @@ function MineFilter() {
       currentTags.length !== prevFilter.tags.length ||
       currentTags.some((tag: string, index: number) => tag !== prevFilter.tags[index]);
     const keywordChanged = currentKeyword !== prevFilter.keyword;
+    const dateChanged = currentDate !== prevFilter.date;
 
-    if (tagsChanged || keywordChanged) {
+    if (tagsChanged || keywordChanged || dateChanged) {
       // 更新引用
-      prevFilterRef.current = { tags: currentTags, keyword: currentKeyword };
+      prevFilterRef.current = {
+        tags: currentTags,
+        keyword: currentKeyword,
+        date: currentDate,
+      };
       // 重置到第一页并重新验证
       setSize(1);
       mutate();
     }
-  }, [filter.tags.hasEvery, filter.keyword, setSize, mutate]);
+  }, [filter.tags.hasEvery, filter.keyword, filter.date, setSize, mutate]);
 
   // 处理错误提示
   useEffect(() => {
@@ -226,17 +245,28 @@ function MineFilter() {
           ))}
       </NavBar>
 
-      <SearchBar
-        defaultValue={filter.keyword}
-        onSearch={(keyword) => {
-          const trimmedKeyword = keyword.trim();
-          setFilter((prevState) => ({
-            ...prevState,
-            keyword: trimmedKeyword,
-          }));
-        }}
-        isLoading={isLoading || isValidating}
-      />
+      <div className="flex w-full items-center gap-2 p-2 px-4">
+        <SearchBar
+          className="flex-1"
+          defaultValue={filter.keyword}
+          onSearch={(keyword) => {
+            const trimmedKeyword = keyword.trim();
+            setFilter((prevState) => ({
+              ...prevState,
+              keyword: trimmedKeyword,
+            }));
+          }}
+          isLoading={isLoading || isValidating}
+        />
+        <input
+          type="date"
+          className="bg-background border-input ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 rounded-md border px-3 py-2 text-sm file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          value={filter.date || ''}
+          onChange={(e) => {
+            setFilter((prev) => ({ ...prev, date: e.target.value }));
+          }}
+        />
+      </div>
       {TagsBlock}
       <RoteList data={data} loadMore={loadMore} mutate={mutate} error={error} />
     </ContainerWithSideBar>
