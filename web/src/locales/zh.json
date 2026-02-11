@@ -667,6 +667,7 @@
         "noData": "热力图暂无数据",
         "note": "笔记",
         "notes": "笔记",
+        "noNotesOnDate": "该日期暂无笔记",
         "daysOfWeek": {
           "Sun": "周日",
           "Mon": "周一",

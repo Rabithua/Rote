@@ -3,11 +3,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
-import { profileAtom } from '@/state/profile';
+import { useAuthState } from '@/state/profile';
 import { visitorIdAtom } from '@/state/visitorId';
 import type { Reaction, Rote, Rotes } from '@/types/main';
 import { del, post } from '@/utils/api';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { Loader, SmilePlus, User as UserIcon } from 'lucide-react';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -30,7 +30,7 @@ interface ReactionsPartProps {
 }
 
 export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps) {
-  const profile = useAtomValue(profileAtom);
+  const { authReady, isAuthenticated, isAuthPending, profile } = useAuthState();
   const { data: siteStatus } = useSiteStatus();
   const preReactions = siteStatus?.frontendConfig?.preReactions ?? [];
 
@@ -39,16 +39,14 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   const [isLoading, setIsLoading] = useState(false);
   const [isVisitorIdLoading, setIsVisitorIdLoading] = useState(false);
 
-  const isAuthenticated = !!profile?.id;
-
   React.useEffect(() => {
-    if (!isAuthenticated && !visitorId) {
+    if (authReady && !isAuthenticated && !visitorId) {
       setIsVisitorIdLoading(true);
       import('@/utils/deviceFingerprint')
         .then(({ generateVisitorId }) => generateVisitorId().then(setVisitorId))
         .finally(() => setIsVisitorIdLoading(false));
     }
-  }, [isAuthenticated, visitorId, setVisitorId]);
+  }, [authReady, isAuthenticated, visitorId, setVisitorId]);
 
   const groupedReactions = rote.reactions.reduce(
     (acc, reaction) => {
@@ -60,6 +58,10 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   );
 
   const handleReactionClick = async (reactionType: string) => {
+    if (isAuthPending) {
+      return;
+    }
+
     setOpen(false);
     setIsLoading(true);
 
@@ -189,7 +191,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger>
-          {isLoading || (!isAuthenticated && isVisitorIdLoading) ? (
+          {isLoading || isAuthPending || (!isAuthenticated && isVisitorIdLoading) ? (
             <Loader className="bg-foreground/5 size-6 animate-spin cursor-pointer rounded-2xl p-1 duration-300" />
           ) : (
             <SmilePlus className="bg-foreground/5 size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
