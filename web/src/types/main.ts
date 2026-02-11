@@ -213,6 +213,7 @@ export type ApiGetRotesParams = {
     archived?: boolean;
     tag?: string | string[];
     keyword?: string;
+    date?: string;
   };
 };
 

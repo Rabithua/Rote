@@ -673,6 +673,7 @@
         "noData": "No HeatMap Data",
         "note": "Note",
         "notes": "Notes",
+        "noNotesOnDate": "No notes on this date",
         "daysOfWeek": {
           "Sun": "Sun",
           "Mon": "Mon",

@@ -4,12 +4,14 @@ import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import SearchBar from '@/components/others/SearchBox';
 import RoteList from '@/components/rote/roteList';
+import { DatePicker } from '@/components/ui/date-picker';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import type { ApiGetRotesParams, Statistics } from '@/types/main';
 import { get } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
+import { format } from 'date-fns';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { ActivityIcon, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -61,6 +63,7 @@ function MineFilter() {
       hasEvery: location.state?.tags || [],
     },
     keyword: location.state?.initialKeyword || '',
+    date: location.state?.date || '',
   });
 
   const getProps = useCallback(
@@ -78,12 +81,16 @@ function MineFilter() {
         params.keyword = filter.keyword.trim();
       }
 
+      if (filter.date) {
+        params.date = filter.date;
+      }
+
       return {
         apiType: 'mine',
         params,
       };
     },
-    [filter.tags.hasEvery, filter.keyword]
+    [filter.tags.hasEvery, filter.keyword, filter.date]
   );
 
   const { data, mutate, loadMore, isLoading, isValidating, error, setSize } = useAPIInfinite(
@@ -98,23 +105,32 @@ function MineFilter() {
   );
 
   // 当 filter 变化时，重置分页并重新验证
-  const prevFilterRef = useRef<{ tags: string[]; keyword: string } | null>(null);
+  const prevFilterRef = useRef<{ tags: string[]; keyword: string; date: string } | null>(null);
   const isInitialMount = useRef(true);
 
   useEffect(() => {
     // 跳过初始挂载
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      prevFilterRef.current = { tags: filter.tags.hasEvery, keyword: filter.keyword };
+      prevFilterRef.current = {
+        tags: filter.tags.hasEvery,
+        keyword: filter.keyword,
+        date: filter.date,
+      };
       return;
     }
 
     const currentTags = filter.tags.hasEvery;
     const currentKeyword = filter.keyword;
+    const currentDate = filter.date;
     const prevFilter = prevFilterRef.current;
 
     if (!prevFilter) {
-      prevFilterRef.current = { tags: currentTags, keyword: currentKeyword };
+      prevFilterRef.current = {
+        tags: currentTags,
+        keyword: currentKeyword,
+        date: currentDate,
+      };
       return;
     }
 
@@ -123,15 +139,20 @@ function MineFilter() {
       currentTags.length !== prevFilter.tags.length ||
       currentTags.some((tag: string, index: number) => tag !== prevFilter.tags[index]);
     const keywordChanged = currentKeyword !== prevFilter.keyword;
+    const dateChanged = currentDate !== prevFilter.date;
 
-    if (tagsChanged || keywordChanged) {
+    if (tagsChanged || keywordChanged || dateChanged) {
       // 更新引用
-      prevFilterRef.current = { tags: currentTags, keyword: currentKeyword };
+      prevFilterRef.current = {
+        tags: currentTags,
+        keyword: currentKeyword,
+        date: currentDate,
+      };
       // 重置到第一页并重新验证
       setSize(1);
       mutate();
     }
-  }, [filter.tags.hasEvery, filter.keyword, setSize, mutate]);
+  }, [filter.tags.hasEvery, filter.keyword, filter.date, setSize, mutate]);
 
   // 处理错误提示
   useEffect(() => {
@@ -226,17 +247,30 @@ function MineFilter() {
           ))}
       </NavBar>
 
-      <SearchBar
-        defaultValue={filter.keyword}
-        onSearch={(keyword) => {
-          const trimmedKeyword = keyword.trim();
-          setFilter((prevState) => ({
-            ...prevState,
-            keyword: trimmedKeyword,
-          }));
-        }}
-        isLoading={isLoading || isValidating}
-      />
+      <div className="flex w-full items-center gap-2 p-2 px-4">
+        <SearchBar
+          className="flex-1"
+          defaultValue={filter.keyword}
+          onSearch={(keyword) => {
+            const trimmedKeyword = keyword.trim();
+            setFilter((prevState) => ({
+              ...prevState,
+              keyword: trimmedKeyword,
+            }));
+          }}
+          isLoading={isLoading || isValidating}
+        />
+        <DatePicker
+          date={filter.date ? new Date(filter.date) : undefined}
+          className="rounded-none border-none bg-none"
+          setDate={(date) => {
+            setFilter((prev) => ({
+              ...prev,
+              date: date ? format(date, 'yyyy-MM-dd') : '',
+            }));
+          }}
+        />
+      </div>
       {TagsBlock}
       <RoteList data={data} loadMore={loadMore} mutate={mutate} error={error} />
     </ContainerWithSideBar>

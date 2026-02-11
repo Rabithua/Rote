@@ -66,6 +66,8 @@ Dokploy 是一个开源的 Docker 部署平台，提供了可视化的应用部�
 ### 社区项目
 
 - [Raycast 插件](https://github.com/aBER0724/rote-raycast) - Rote 的 Raycast 插件，由 [@aBER0724](https://github.com/aBER0724) 开发
+- [Rerote](https://github.com/Rabithua/Rerote)
+- [RoteFeeder](https://github.com/Rabithua/RoteFeeder)
 
 ## 技术栈
 
