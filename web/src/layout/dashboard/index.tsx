@@ -7,10 +7,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { loadProfileAtom, profileAtom } from '@/state/profile';
+import { loadProfileAtom, profileAtom, useAuthState } from '@/state/profile';
 import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
-import { isTokenValid } from '@/utils/main';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { Archive, Globe2, Home, LogIn, LogOut, Shield, Snail, User } from 'lucide-react';
 import type { JSX } from 'react';
@@ -86,14 +85,15 @@ function LayoutDashboard() {
   const loadProfile = useSetAtom(loadProfileAtom);
   const setProfile = useSetAtom(profileAtom);
   const setTags = useSetAtom(tagsAtom);
+  const { authReady, tokenValid } = useAuthState();
   const profile = useAtomValue(profileAtom);
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (isTokenValid()) {
+    if (authReady && tokenValid && !profile) {
       loadProfile();
     }
-  }, [loadProfile]);
+  }, [authReady, loadProfile, profile, tokenValid]);
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
@@ -174,9 +174,11 @@ function LayoutDashboard() {
       <div className="bg-background text-primary mx-auto w-full max-w-6xl">
         <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x xl:w-[90%]">
           <div className="bg-background/90 text-primary fixed bottom-0 z-10 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 xl:w-[200px] xl:px-4">
-            {isTokenValid()
+            {tokenValid
               ? userTabs.map((icon) => IconRenderItem(icon))
-              : tabsData[1].map((icon) => IconRenderItem(icon))}
+              : authReady
+                ? tabsData[1].map((icon) => IconRenderItem(icon))
+                : null}
           </div>
 
           <div className="relative min-w-0 flex-1 overflow-visible">

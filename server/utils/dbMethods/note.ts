@@ -369,6 +369,12 @@ function buildWhereConditions(
             return;
           }
 
+          // Handle date filtering
+          if (key === 'date' && typeof filter[key] === 'string') {
+            conditions.push(sql`DATE(${rotes.createdAt}) = ${filter[key]}`);
+            return;
+          }
+
           // 跳过不存在的字段名（如 tag[]），只处理实际存在的数据库字段
           // 检查字段是否存在于 rotes schema 中
           if (!(key in rotes)) {
@@ -728,6 +734,12 @@ function buildSearchConditions(
               )}]::text[]`;
               conditions.push(tagsCondition);
             }
+            return;
+          }
+
+          // Handle date filtering
+          if (key === 'date' && typeof filter[key] === 'string') {
+            conditions.push(sql`DATE(${rotes.createdAt}) = ${filter[key]}`);
             return;
           }
 

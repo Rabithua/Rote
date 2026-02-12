@@ -1,6 +1,7 @@
 import ScrollPositionManager from '@/components/ScrollPositionManager';
 import LayoutDashboard from '@/layout/dashboard';
-import { isTokenValid } from '@/utils/main';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { useAuthState } from '@/state/profile';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
 
@@ -34,9 +35,28 @@ function RootLayout() {
   );
 }
 
-export default function GlobalRouterProvider() {
+function LoginRouteEntry() {
+  const { tokenValid, isAuthPending } = useAuthState();
   const isIosLogin = new URLSearchParams(window.location.search).get('type') === 'ioslogin';
 
+  if (isAuthPending && !isIosLogin) {
+    return <LoadingPlaceholder className="h-dvh w-full" size={6} />;
+  }
+
+  return tokenValid && !isIosLogin ? <Navigate to="/home" /> : <Login />;
+}
+
+function RootRedirectEntry() {
+  const { tokenValid, isAuthPending } = useAuthState();
+
+  if (isAuthPending) {
+    return <LoadingPlaceholder className="h-dvh w-full" size={6} />;
+  }
+
+  return tokenValid ? <Navigate to="/home" /> : <Navigate to="/landing" />;
+}
+
+export default function GlobalRouterProvider() {
   const router = createBrowserRouter([
     {
       element: <RootLayout />,
@@ -48,7 +68,7 @@ export default function GlobalRouterProvider() {
         },
         {
           path: 'login',
-          element: isTokenValid() && !isIosLogin ? <Navigate to="/home" /> : <Login />,
+          element: <LoginRouteEntry />,
         },
         {
           path: '404',
@@ -82,7 +102,7 @@ export default function GlobalRouterProvider() {
         },
         {
           path: '',
-          element: isTokenValid() ? <Navigate to="/home" /> : <Navigate to="/landing" />,
+          element: <RootRedirectEntry />,
         },
         {
           path: '/',

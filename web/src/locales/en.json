@@ -632,13 +632,10 @@
         "noUsersFound": "No matching users found",
         "verifyEmailSuccess": "Email verified successfully",
         "verifyEmailFailed": "Email verification failed: {{error}}",
-        "unverifyEmailSuccess": "Email verification cancelled successfully",
-        "unverifyEmailFailed": "Failed to cancel email verification: {{error}}",
         "deleteSuccess": "User deleted successfully",
         "deleteFailed": "User deletion failed: {{error}}",
         "table": {
           "username": "Username",
-          "avatar": "Avatar",
           "email": "Email",
           "nickname": "Nickname",
           "role": "Role",
@@ -649,7 +646,6 @@
           "unverified": "Unverified",
           "homepage": "Homepage",
           "verifyEmail": "Verify Email",
-          "unverifyEmail": "Cancel Verification",
           "delete": "Delete"
         },
         "pagination": {
@@ -677,6 +673,7 @@
         "noData": "No HeatMap Data",
         "note": "Note",
         "notes": "Notes",
+        "noNotesOnDate": "No notes on this date",
         "daysOfWeek": {
           "Sun": "Sun",
           "Mon": "Mon",
