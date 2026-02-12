@@ -632,10 +632,13 @@
         "noUsersFound": "一致するユーザーが見つかりません",
         "verifyEmailSuccess": "メールアドレスの確認に成功しました",
         "verifyEmailFailed": "メールアドレスの確認に失敗しました：{{error}}",
+        "unverifyEmailSuccess": "メール認証を解除しました",
+        "unverifyEmailFailed": "メール認証の解除に失敗しました: {{error}}",
         "deleteSuccess": "ユーザーを削除しました",
         "deleteFailed": "ユーザーの削除に失敗しました：{{error}}",
         "table": {
           "username": "ユーザー名",
+          "avatar": "アバター",
           "email": "メールアドレス",
           "nickname": "ニックネーム",
           "role": "ロール",
@@ -646,6 +649,7 @@
           "unverified": "未確認",
           "homepage": "ホームページ",
           "verifyEmail": "メールを確認",
+          "unverifyEmail": "認証解除",
           "delete": "削除"
         },
         "pagination": {

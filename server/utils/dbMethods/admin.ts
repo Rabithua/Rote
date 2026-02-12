@@ -113,6 +113,7 @@ export async function listUsers(params: {
         username: users.username,
         email: users.email,
         nickname: users.nickname,
+        avatar: users.avatar,
         role: users.role,
         emailVerified: users.emailVerified,
         createdAt: users.createdAt,
@@ -137,6 +138,7 @@ export async function getUserByIdForAdmin(userId: string) {
       email: users.email,
       nickname: users.nickname,
       description: users.description,
+      avatar: users.avatar,
       role: users.role,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
@@ -204,6 +206,21 @@ export async function verifyUserEmail(userId: string) {
   const [user] = await db
     .update(users)
     .set({ emailVerified: true, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      emailVerified: users.emailVerified,
+      updatedAt: users.updatedAt,
+    });
+  return user;
+}
+
+export async function unverifyUserEmail(userId: string) {
+  const [user] = await db
+    .update(users)
+    .set({ emailVerified: false, updatedAt: new Date() })
     .where(eq(users.id, userId))
     .returning({
       id: users.id,
