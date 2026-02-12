@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,7 @@ import { del, get, put } from '@/utils/api';
 import {
   ArrowDown,
   ArrowUp,
+  Ban,
   CheckCircle2,
   Ellipsis,
   ExternalLink,
@@ -48,6 +50,7 @@ interface User {
   username: string;
   email: string;
   nickname: string | null;
+  avatar: string | null;
   role: string;
   emailVerified: boolean;
   createdAt: string;
@@ -120,6 +123,24 @@ export default function UsersTab() {
         error?.response?.data?.error ||
         'Unknown error';
       toast.error(t('verifyEmailFailed', { error: errorMessage }));
+    } finally {
+      setVerifyingUserId(null);
+    }
+  };
+
+  const handleUnverifyEmail = async (userId: string) => {
+    setVerifyingUserId(userId);
+    try {
+      await put(`/admin/users/${userId}/unverify-email`);
+      toast.success(t('unverifyEmailSuccess'));
+      mutate();
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        error?.response?.data?.error ||
+        'Unknown error';
+      toast.error(t('unverifyEmailFailed', { error: errorMessage }));
     } finally {
       setVerifyingUserId(null);
     }
@@ -205,6 +226,7 @@ export default function UsersTab() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>{t('table.avatar')}</TableHead>
                     <TableHead
                       className="cursor-pointer select-none"
                       onClick={() => handleSort('username')}
@@ -233,6 +255,12 @@ export default function UsersTab() {
                 <TableBody>
                   {data.users.map((user) => (
                     <TableRow key={user.id}>
+                      <TableCell>
+                        <Avatar className="size-8">
+                          <AvatarImage src={user.avatar || undefined} alt={user.username} />
+                          <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      </TableCell>
                       <TableCell
                         className="cursor-pointer font-medium hover:underline"
                         onClick={() => {
@@ -276,7 +304,7 @@ export default function UsersTab() {
                               <ExternalLink className="mr-2 size-4" />
                               {t('table.homepage')}
                             </DropdownMenuItem>
-                            {!user.emailVerified && (
+                            {!user.emailVerified ? (
                               <DropdownMenuItem
                                 onClick={() => handleVerifyEmail(user.id)}
                                 disabled={verifyingUserId === user.id}
@@ -287,6 +315,18 @@ export default function UsersTab() {
                                   <CheckCircle2 className="mr-2 size-4" />
                                 )}
                                 {t('table.verifyEmail')}
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleUnverifyEmail(user.id)}
+                                disabled={verifyingUserId === user.id}
+                              >
+                                {verifyingUserId === user.id ? (
+                                  <Loader className="mr-2 size-4 animate-spin" />
+                                ) : (
+                                  <Ban className="mr-2 size-4" />
+                                )}
+                                {t('table.unverifyEmail')}
                               </DropdownMenuItem>
                             )}
                             {isSuperAdmin && (

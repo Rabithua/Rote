@@ -626,10 +626,13 @@
         "noUsersFound": "未找到匹配的用户",
         "verifyEmailSuccess": "邮箱验证成功",
         "verifyEmailFailed": "邮箱验证失败: {{error}}",
+        "unverifyEmailSuccess": "取消邮箱验证成功",
+        "unverifyEmailFailed": "取消邮箱验证失败: {{error}}",
         "deleteSuccess": "用户删除成功",
         "deleteFailed": "用户删除失败: {{error}}",
         "table": {
           "username": "用户名",
+          "avatar": "头像",
           "email": "邮箱",
           "nickname": "昵称",
           "role": "角色",
@@ -640,6 +643,7 @@
           "unverified": "未验证",
           "homepage": "主页",
           "verifyEmail": "验证邮箱",
+          "unverifyEmail": "取消验证",
           "delete": "删除"
         },
         "pagination": {
@@ -667,6 +671,7 @@
         "noData": "热力图暂无数据",
         "note": "笔记",
         "notes": "笔记",
+        "noNotesOnDate": "该日期暂无笔记",
         "daysOfWeek": {
           "Sun": "周日",
           "Mon": "周一",

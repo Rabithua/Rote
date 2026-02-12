@@ -10,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
 import type { Rote, Rotes } from '@/types/main';
 import { del, put } from '@/utils/api';
 import type { KeyedMutator } from 'swr';
@@ -136,7 +137,15 @@ export default function RoteActionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Ellipsis className="hover:bg-background/80 bg-background fixed top-2 right-2 z-10 size-8 cursor-pointer rounded-md p-2 duration-300" />
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={t('actions', 'Actions')}
+          title={t('actions', 'Actions')}
+          className="hover:bg-background/80 bg-background fixed top-2 right-2 z-10 size-8 rounded-md p-2 duration-300"
+        >
+          <Ellipsis className="size-4" />
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="z-50 min-w-[180px]">
         <DropdownMenuItem asChild>

@@ -34,6 +34,7 @@ import {
   getUserByIdForAdmin,
   hasAdminUser,
   listUsers,
+  unverifyUserEmail,
   updateUserRole,
   verifyUserEmail,
 } from '../../utils/dbMethods';
@@ -765,6 +766,24 @@ adminRouter.put(
     }
 
     return c.json(createResponse(user, 'User email verified successfully'), 200);
+  }
+);
+
+// 取消验证用户邮箱（管理员）
+adminRouter.put(
+  '/users/:userId/unverify-email',
+  authenticateJWT,
+  requireAdmin,
+  async (c: HonoContext) => {
+    const userId = c.req.param('userId');
+
+    const user = await unverifyUserEmail(userId);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return c.json(createResponse(user, 'User email unverified successfully'), 200);
   }
 );
 

@@ -25,7 +25,13 @@ export default function FloatBtns({
     <div className="animate-show fixed right-8 bottom-16 z-10 flex flex-col gap-2 self-end duration-300">
       {/* 渲染子组件 */}
       {children}
-      <Button onClick={goTop}>
+      <Button
+        size="icon"
+        className="rounded-md shadow-md"
+        onClick={goTop}
+        aria-label="Back to top"
+        title="Back to top"
+      >
         <ArrowUp className="size-4" />
       </Button>
     </div>
