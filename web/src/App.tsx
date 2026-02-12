@@ -1,10 +1,7 @@
 import { Toaster } from '@/components/ui/sonner';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
-import { bootstrapAuthAtom } from '@/state/profile';
 import { Helmet, HelmetProvider } from '@dr.pogodin/react-helmet';
-import { useSetAtom } from 'jotai';
 import React from 'react';
-import { useEffect } from 'react';
 import { SWRConfig } from 'swr';
 import { ThemeProvider } from './components/theme-provider';
 import GlobalRouterProvider from './route/main';
@@ -38,7 +35,6 @@ const AppWrapper = () => (
         }}
       >
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <AuthBootstrap />
           <GlobalRouterProvider />
         </ThemeProvider>
         <Toaster position="top-right" />
@@ -46,15 +42,5 @@ const AppWrapper = () => (
     </HelmetProvider>
   </React.StrictMode>
 );
-
-function AuthBootstrap() {
-  const bootstrapAuth = useSetAtom(bootstrapAuthAtom);
-
-  useEffect(() => {
-    bootstrapAuth();
-  }, [bootstrapAuth]);
-
-  return null;
-}
 
 export default AppWrapper;

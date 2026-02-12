@@ -1,31 +1,10 @@
 import type { Profile } from '@/types/main';
 import { get, put } from '@/utils/api';
-import { isTokenValid } from '@/utils/main';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 
 // 全局 Profile 状态（初始为 undefined，沿用现有 Profile 类型定义）
 export const profileAtom = atom<Profile>(undefined as Profile);
-export const authReadyAtom = atom(false);
-
-// 启动时预热鉴权状态，避免刷新时短暂出现游客态
-export const bootstrapAuthAtom = atom(null, async (_get, set) => {
-  if (!isTokenValid()) {
-    set(profileAtom, undefined as Profile);
-    set(authReadyAtom, true);
-    return;
-  }
-
-  try {
-    const res = await get('/users/me/profile');
-    set(profileAtom, res.data as Profile);
-  } catch {
-    // token 失效或接口异常时回落为未登录态
-    set(profileAtom, undefined as Profile);
-  } finally {
-    set(authReadyAtom, true);
-  }
-});
 
 // 用户设置（目前仅包含 allowExplore，后续可扩展）
 export interface UserSettings {
@@ -38,13 +17,9 @@ export const userSettingsAtom = atom<UserSettings>({
 
 // 加载当前用户 Profile 并写入 atom（只管基础资料）
 export const loadProfileAtom = atom(null, async (_get, set) => {
-  try {
-    const res = await get('/users/me/profile');
-    const profile = res.data as Profile;
-    set(profileAtom, profile);
-  } finally {
-    set(authReadyAtom, true);
-  }
+  const res = await get('/users/me/profile');
+  const profile = res.data as Profile;
+  set(profileAtom, profile);
 });
 
 // 加载当前用户设置
@@ -84,27 +59,3 @@ export const selectProfile = <T>(
 // 便捷 hooks（可选）
 export const useProfile = () => useAtomValue(profileAtom);
 export const useSetProfile = () => useSetAtom(profileAtom);
-
-// 统一鉴权状态，避免各页面重复拼接判断逻辑
-export const authStateAtom = atom((get) => {
-  const authReady = get(authReadyAtom);
-  const profile = get(profileAtom);
-  const isAuthenticated = !!profile?.id;
-
-  return {
-    authReady,
-    isAuthenticated,
-    profile,
-  };
-});
-
-export const useAuthState = () => {
-  const state = useAtomValue(authStateAtom);
-  const tokenValid = isTokenValid();
-
-  return {
-    ...state,
-    tokenValid,
-    isAuthPending: !state.authReady && tokenValid,
-  };
-};

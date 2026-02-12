@@ -1,7 +1,7 @@
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
-import { useAuthState } from '@/state/profile';
+import { useProfile } from '@/state/profile';
 import { get } from '@/utils/api';
 import { Database, Globe, Settings, Shield, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -16,7 +16,7 @@ import type { SystemConfig } from './types';
 
 export default function AdminDashboard() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
-  const { authReady, profile } = useAuthState();
+  const profile = useProfile();
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [activeTab, setActiveTab] = useState<'site' | 'storage' | 'ui' | 'oauth' | 'users'>('site');
@@ -72,10 +72,6 @@ export default function AdminDashboard() {
       );
     }
   }, [configs]);
-
-  if (!authReady) {
-    return <LoadingPlaceholder className="h-dvh w-full" size={6} />;
-  }
 
   // 检查用户是否有管理员权限
   if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
