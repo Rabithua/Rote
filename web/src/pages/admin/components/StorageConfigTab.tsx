@@ -70,7 +70,7 @@ export default function StorageConfigTab({
     }
     setIsSaving(true);
     try {
-      await put('/admin/settings', { storage: storageConfig });
+      await put('/admin/settings', { group: 'storage', config: storageConfig });
       await onMutate();
       toast.success(t('saveSuccess'));
     } catch (error: any) {
