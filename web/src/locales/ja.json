@@ -564,10 +564,13 @@
         "testSuccess": "ストレージ接続テスト成功！",
         "testFailed": "接続テストに失敗しました：{{error}}",
         "seeConsole": "詳細はコンソールを確認してください。",
-        "fillAllRequired": "すべての必須フィールドを入力してください",
-        "save": "保存",
-        "saving": "保存中..."
-      },
+      "fillAllRequired": "すべての必須フィールドを入力してください",
+      "required": "必須",
+      "save": "保存",
+      "saving": "保存中...",
+      "saveSuccess": "保存に成功しました",
+      "saveFailed": "保存に失敗しました：{{error}}"
+    },
       "ui": {
         "title": "UI設定",
         "description": "ユーザーインターフェース設定を構成",

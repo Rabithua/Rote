@@ -564,10 +564,13 @@
         "testSuccess": "Storage connection test successful!",
         "testFailed": "Connection test failed: {{error}}",
         "seeConsole": "See console for details.",
-        "fillAllRequired": "Please fill in all required fields",
-        "save": "Save",
-        "saving": "Saving..."
-      },
+      "fillAllRequired": "Please fill in all required fields",
+      "required": "Required",
+      "save": "Save",
+      "saving": "Saving...",
+      "saveSuccess": "Saved successfully",
+      "saveFailed": "Save failed: {{error}}"
+    },
       "ui": {
         "title": "UI Configuration",
         "description": "Configure user interface settings",
