@@ -50,6 +50,14 @@ Dokploy is an open-source Docker deployment platform that provides a visual inte
 3. Deploy Application: Click the deploy button, Dokploy will automatically pull the images and start all services
 4. Configure Domain (Optional): By default, the deployment uses Dokploy's auto-generated domain. If you need to configure a custom domain for your Rote, remember to set VITE_API_BASE in the environment variables to your domain address (e.g., http://your-domain.com or https://your-domain.com)
 
+### iOS App: Connect to Self-Hosted Backend
+
+The iOS app can connect to your self-hosted backend.
+
+1. On the login page, tap the welcome text at the top multiple times to open the config dialog.
+2. Set `API Base` to your public backend URL (or reverse-proxy URL).
+3. Continue with the normal login flow.
+
 ### Detailed Instructions
 
 For more deployment options and configuration instructions, please check the documentation in the `doc/` directory:
