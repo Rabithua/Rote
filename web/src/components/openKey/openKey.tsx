@@ -16,7 +16,6 @@ import {
   EyeIcon,
   History,
   Loader,
-  Loader2,
   Shield,
   Trash2,
 } from 'lucide-react';
@@ -258,7 +257,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
                 ))}
                 {!isReachingEnd && (
                   <div ref={ref} className="flex justify-center py-4">
-                    <Loader2 className="size-6 animate-spin" />
+                    <Loader className="size-6 animate-spin" />
                   </div>
                 )}
               </div>
