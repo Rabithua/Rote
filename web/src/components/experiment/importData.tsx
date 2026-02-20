@@ -14,7 +14,7 @@ import {
   CloudUpload,
   Download,
   HelpCircle,
-  Loader2,
+  Loader,
   PocketKnife,
   Upload,
 } from 'lucide-react';
@@ -259,7 +259,7 @@ export default function ImportData() {
               </Button>
               <Button onClick={handleImport} disabled={isImporting} variant="default">
                 {isImporting ? (
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader className="size-4 animate-spin" />
                 ) : (
                   <CloudUpload className="size-4" />
                 )}

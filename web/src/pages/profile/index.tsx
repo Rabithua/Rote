@@ -12,7 +12,7 @@ import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { isHeicFile } from '@/utils/uploadHelpers';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Stars, UserCircle2 } from 'lucide-react';
+import { ScanFace, Stars } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
@@ -207,7 +207,7 @@ function ProfilePage() {
     <ContainerWithSideBar
       sidebar={<ProfileSidebar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <Stars className="size-5" />
             {t('sideBarTitle')}
@@ -216,7 +216,7 @@ function ProfilePage() {
       }
     >
       <div className="flex flex-col divide-y pb-20">
-        <NavBar title={t('title')} icon={<UserCircle2 className="size-7" />} />
+        <NavBar title={t('title')} icon={<ScanFace className="size-5" />} />
         <ProfileHeader
           profile={profile}
           canUpload={canUpload}

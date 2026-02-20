@@ -26,12 +26,12 @@ function MainPageHeader({
 }) {
   return (
     <div
-      className="group bg-background sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 py-4.5 font-light text-gray-600"
+      className="group bg-background sticky top-0 z-10 flex cursor-pointer items-center gap-2 p-4 font-light text-gray-600"
       onClick={refreshData}
     >
-      <Logo className="h-6 w-auto" color="#07C160" />
+      <Logo className="h-5 w-auto" color="#07C160" />
       <img
-        className="text-theme mb-[2px] ml-2 h-4 opacity-0 duration-300 group-hover:opacity-100"
+        className="text-theme mb-[2px] ml-2 h-3 opacity-0 duration-300 group-hover:opacity-100"
         src={slogenImg}
         alt="slogen"
       />
@@ -97,7 +97,7 @@ function HomePage() {
     <ContainerWithSideBar
       sidebar={<SideBar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <ChartAreaIcon className="size-5" />
             {t('statistics')}

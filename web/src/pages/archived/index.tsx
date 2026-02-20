@@ -43,7 +43,7 @@ function MainPage() {
   };
   return (
     <>
-      <NavBar title={t('title')} icon={<Archive className="size-6" />} onNavClick={refreshData}>
+      <NavBar title={t('title')} icon={<Archive className="size-5" />} onNavClick={refreshData}>
         {isLoading ||
           (isValidating && (
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
@@ -61,7 +61,7 @@ function ArchivedPage() {
     <ContainerWithSideBar
       sidebar={<SideBar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <ChartAreaIcon className="size-5" />
             {t('statistics')}

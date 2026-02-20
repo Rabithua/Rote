@@ -95,7 +95,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="noScrollBar relative flex-1 divide-y overflow-x-hidden overflow-y-visible pb-20">
-      <NavBar title={t('title')} icon={<Shield className="size-6" />} />
+      <NavBar title={t('title')} icon={<Shield className="size-5" />} />
 
       <div className="flex flex-col divide-y">
         {/* Tab 导航 */}

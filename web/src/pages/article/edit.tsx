@@ -1,5 +1,6 @@
 import FloatBtns from '@/components/layout/FloatBtns';
 import NavBar from '@/components/layout/navBar';
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useArticleActions } from '@/hooks/useArticleActions';
@@ -186,7 +187,7 @@ export default function ArticleEditPage() {
   if (isInitialLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
-        <div className="border-primary size-8 animate-spin rounded-full border-2 border-t-transparent" />
+        <LoadingPlaceholder />
       </div>
     );
   }
@@ -195,7 +196,7 @@ export default function ArticleEditPage() {
     <ContainerWithSideBar
       sidebar={<MarkdownSidebar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <Heading1 className="size-5" />
             {t('markdownSyntax')}

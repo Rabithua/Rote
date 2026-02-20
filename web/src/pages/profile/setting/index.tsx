@@ -141,7 +141,7 @@ export default function SettingsPage() {
     <ContainerWithSideBar
       sidebar={<ProfileSidebar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <Stars className="size-5" />
             {t('sideBarTitle')}
@@ -150,7 +150,7 @@ export default function SettingsPage() {
       }
     >
       <div className="flex flex-col pb-20">
-        <NavBar title={t('settings.title')} icon={<Settings2 className="size-7" />} />
+        <NavBar title={t('settings.title')} icon={<Settings2 className="size-5" />} />
 
         <div className="mx-auto w-full max-w-2xl space-y-8 px-4 py-8">
           <div className="space-y-6">

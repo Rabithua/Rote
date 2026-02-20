@@ -16,8 +16,7 @@ import {
   EyeIcon,
   History,
   Loader,
-  Loader2,
-  Terminal,
+  Shield,
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -26,7 +25,6 @@ import { useInView } from 'react-intersection-observer';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
 import useSWRInfinite from 'swr/infinite';
-import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
 import OpenKeyEditModel from './openKeyEditModel';
 
@@ -125,7 +123,9 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
   }
 
   async function copyToClipboard(): Promise<void> {
-    const text = `${API_URL}/openkey/notes/create?openkey=${openKey.id}&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`;
+    const text = `${API_URL}/openkey/notes/create?openkey=${
+      openKey.id
+    }&content=${t('exampleContent')}&tag=${t('exampleTag')}&tag=${t('exampleTag2')}&state=private`;
     try {
       await navigator.clipboard.writeText(text);
       toast.success(t('copySuccess'));
@@ -184,7 +184,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
             hidekey
               ? `${openKey.id.slice(0, 4)}****************${openKey.id.slice(-4)}`
               : openKey.id
-          }&content=这是一条使用OpenKey发送的笔记。&tag=FromOpenKey&tag=标签二&state=private`}
+          }&content=${t('exampleContent')}&tag=${t('exampleTag')}&tag=${t('exampleTag2')}&state=private`}
         </span>
         <button
           type="button"
@@ -207,14 +207,12 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
 
       {/* Edit Dialog */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent>
-          <Alert>
-            <Terminal className="h-4 w-4" />
-            <AlertTitle>Still Developing!</AlertTitle>
-            <AlertDescription>
-              The OpenKey edit feature is still under development. Maybe not work well.
-            </AlertDescription>
-          </Alert>
+        <DialogContent className="gap-0 divide-y p-0">
+          <div className="flex items-center gap-2 p-4 text-lg font-bold">
+            <Shield className="size-5" />
+            {t('editPermissions')}{' '}
+          </div>
+
           <OpenKeyEditModel
             close={onModelCancel}
             openKey={openKey}
@@ -259,7 +257,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
                 ))}
                 {!isReachingEnd && (
                   <div ref={ref} className="flex justify-center py-4">
-                    <Loader2 className="size-6 animate-spin" />
+                    <Loader className="size-6 animate-spin" />
                   </div>
                 )}
               </div>
