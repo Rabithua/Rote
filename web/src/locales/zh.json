@@ -845,6 +845,7 @@
       "syntaxLinkUrl": "链接",
       "syntaxImageDesc": "描述",
       "syntaxImageLink": "图片链接",
+      "syntaxImageTip": "提示：支持在输入框直接粘贴图片自动上传",
       "syntaxList": "列表",
       "syntaxListItem": "项目一",
       "syntaxQuoteCode": "引用和代码块",

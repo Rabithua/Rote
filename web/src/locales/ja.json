@@ -851,6 +851,7 @@
       "syntaxLinkUrl": "リンク",
       "syntaxImageDesc": "説明",
       "syntaxImageLink": "画像リンク",
+      "syntaxImageTip": "ヒント：画像を直接貼り付けて自動アップロードをサポート",
       "syntaxList": "リスト",
       "syntaxListItem": "項目1",
       "syntaxQuoteCode": "引用とコードブロック",

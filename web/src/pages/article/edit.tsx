@@ -301,6 +301,7 @@ const MarkdownSidebar = () => {
           <code className="bg-muted mt-1 inline-block rounded px-1.5 py-1">
             ![{t('syntaxImageDesc')}]({t('syntaxImageLink')})
           </code>
+          <p className="mt-2 text-xs italic opacity-70">{t('syntaxImageTip')}</p>
         </div>
         <div>
           <div className="text-foreground mb-2 font-medium">{t('syntaxList')}</div>

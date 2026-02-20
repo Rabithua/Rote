@@ -851,6 +851,7 @@
       "syntaxLinkUrl": "URL",
       "syntaxImageDesc": "Desc",
       "syntaxImageLink": "Image link",
+      "syntaxImageTip": "Tip: Paste images directly to upload automatically",
       "syntaxList": "List",
       "syntaxListItem": "Item 1",
       "syntaxQuoteCode": "Quote & Code",
