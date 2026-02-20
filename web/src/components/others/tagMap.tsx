@@ -24,8 +24,9 @@ export default function TagMap() {
     setIsCollapsed(!isCollapsed);
   };
 
-  const hiddenCount = tags ? tags.filter((t) => t.count <= 1).length : 0;
-  const visibleTags = tags ? (isCollapsed ? tags.filter((t) => t.count > 1) : tags) : [];
+  const limit = 16;
+  const hasMore = tags && tags.length > limit;
+  const visibleTags = tags ? (isCollapsed ? tags.slice(0, limit) : tags) : [];
 
   return (
     <>
@@ -47,7 +48,7 @@ export default function TagMap() {
               </div>
             </Link>
           ))}
-          {hiddenCount > 0 && (
+          {hasMore && (
             <div
               className="bg-foreground/5 flex cursor-pointer items-center justify-center rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
               onClick={toggleCollapse}
