@@ -195,7 +195,7 @@ export default function ArticleEditPage() {
     <ContainerWithSideBar
       sidebar={<MarkdownSidebar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <Heading1 className="size-5" />
             {t('markdownSyntax')}

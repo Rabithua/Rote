@@ -51,25 +51,25 @@ export default function NavBar({ title, icon, children, onNavClick, onBack }: Na
     <>
       <div
         ref={navRef}
-        className={`noScrollBar bg-background/99 sticky top-0 z-10 flex w-full items-center gap-2 overflow-x-scroll px-2 py-4 text-lg font-semibold backdrop-blur-xl duration-300 ${onNavClick && 'cursor-pointer'}`}
+        className={`noScrollBar bg-background/99 sticky top-0 z-10 flex w-full items-center gap-2 overflow-x-scroll pr-4 text-lg font-semibold backdrop-blur-xl duration-300 ${onNavClick && 'cursor-pointer'}`}
         onClick={onNavClick}
       >
         <div className="flex items-center divide-x">
           {!isMainNavPage && (
             <div
-              className="hover:text-theme flex cursor-pointer items-center gap-2 pr-2 duration-300"
+              className="hover:text-theme flex cursor-pointer items-center gap-2 p-3 duration-300"
               onClick={(e) => {
                 e.stopPropagation();
                 back();
               }}
             >
-              <ArrowLeft className="size-6 p-1" />
+              <ArrowLeft className="size-6" />
               <div>{t('back')}</div>
             </div>
           )}
 
           {(icon || title) && (
-            <div className="flex items-center gap-2 px-2">
+            <div className="flex items-center gap-2 p-3">
               {icon}
               {title}
             </div>
