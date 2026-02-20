@@ -76,7 +76,10 @@ function RoteItem({
       className="animate-show bg-background/5 flex w-full gap-4 px-5 py-4 opacity-0 duration-300"
     >
       {showAvatar && (
-        <Link className="text-primary hidden shrink-0 xl:block" to={`/${rote.author.username}`}>
+        <Link
+          className="text-primary hidden shrink-0 self-start xl:block"
+          to={`/${rote.author.username}`}
+        >
           <UserAvatar avatar={rote.author.avatar} className="size-10 bg-[#00000010]" />
         </Link>
       )}
