@@ -273,6 +273,7 @@
       "sideBarTitle": "Relative Information"
     },
     "article": {
+      "title": "Article Details",
       "sideBarTitle": "Relative Information",
       "relatedNote": "Related Note"
     },
@@ -833,7 +834,29 @@
       "createSuccess": "Article created",
       "createFailed": "Failed to create",
       "updateSuccess": "Article updated",
-      "updateFailed": "Failed to update"
+      "updateFailed": "Failed to update",
+      "uploadingPlaceholder": "Uploading {{name}}...",
+      "uploadFailedPlaceholder": "Upload failed: {{name}}",
+      "editLabel": "Edit",
+      "uploadFailed": "Upload failed: {{name}}",
+      "markdownSyntax": "Markdown Syntax",
+      "syntaxBoldItalic": "Bold & Italic",
+      "syntaxBoldText": "Bold",
+      "syntaxItalicText": "Italic",
+      "syntaxHeader": "Headers",
+      "syntaxH1": "Level 1",
+      "syntaxH2": "Level 2",
+      "syntaxLinkImage": "Link & Image",
+      "syntaxLinkText": "Text",
+      "syntaxLinkUrl": "URL",
+      "syntaxImageDesc": "Desc",
+      "syntaxImageLink": "Image link",
+      "syntaxList": "List",
+      "syntaxListItem": "Item 1",
+      "syntaxQuoteCode": "Quote & Code",
+      "syntaxQuote": "Quote",
+      "syntaxCodeBlock": "Language",
+      "syntaxFullGuide": "Full Writing Guide"
     },
     "actions": {
       "copyLink": "Copy Link",

@@ -1,5 +1,5 @@
 import { ArticleCard } from '@/components/article/ArticleCard';
-import { ArticleEditorModal } from '@/components/article/ArticleEditorModal';
+
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { profileAtom } from '@/state/profile';
 import type { Article, ArticleSummary } from '@/types/main';
@@ -32,9 +32,6 @@ export function ArticleSelectionModal({
   const profile = useAtomValue(profileAtom);
   const [remoteArticles, setRemoteArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(false);
-  // 编辑文章的状态
-  const [editingArticle, setEditingArticle] = useState<Article | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
 
   const fetchArticles = () => {
     setLoading(true);
@@ -72,12 +69,7 @@ export function ArticleSelectionModal({
   };
 
   const handleEdit = (article: Article | ArticleSummary) => {
-    // 需要完整的 Article 才能编辑
-    const fullArticle = remoteArticles.find((a) => a.id === article.id);
-    if (fullArticle) {
-      setEditingArticle(fullArticle);
-      setEditorOpen(true);
-    }
+    window.open(`/article/${article.id}/edit`, '_blank');
   };
 
   const handleDeleted = () => {
@@ -150,31 +142,6 @@ export function ArticleSelectionModal({
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* 编辑文章的 Modal */}
-      {editingArticle && (
-        <ArticleEditorModal
-          open={editorOpen}
-          onOpenChange={(open) => {
-            setEditorOpen(open);
-            if (!open) {
-              setEditingArticle(null);
-              fetchArticles();
-            }
-          }}
-          article={editingArticle}
-          onUpdated={() => {
-            fetchArticles();
-            setEditorOpen(false);
-            setEditingArticle(null);
-          }}
-          onDeleted={() => {
-            fetchArticles();
-            setEditorOpen(false);
-            setEditingArticle(null);
-          }}
-        />
-      )}
     </>
   );
 }

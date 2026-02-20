@@ -22,7 +22,7 @@ import { del, put } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import i18n from 'i18next';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Github, Loader, Settings2 } from 'lucide-react';
+import { Github, Loader, Settings2, Stars } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -138,7 +138,17 @@ export default function SettingsPage() {
   const enabledOAuthProviders = siteStatus?.oauth?.providers || {};
 
   return (
-    <ContainerWithSideBar sidebar={<ProfileSidebar />}>
+    <ContainerWithSideBar
+      sidebar={<ProfileSidebar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+          <div className="flex items-center gap-2">
+            <Stars className="size-5" />
+            {t('sideBarTitle')}
+          </div>
+        </div>
+      }
+    >
       <div className="flex flex-col pb-20">
         <NavBar title={t('settings.title')} icon={<Settings2 className="size-7" />} />
 

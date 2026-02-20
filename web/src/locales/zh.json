@@ -267,6 +267,7 @@
       "sideBarTitle": "相关信息"
     },
     "article": {
+      "title": "文章详情",
       "sideBarTitle": "相关信息",
       "relatedNote": "相关笔记"
     },
@@ -827,7 +828,29 @@
       "createSuccess": "文章已创建",
       "createFailed": "创建失败",
       "updateSuccess": "文章已更新",
-      "updateFailed": "更新失败"
+      "updateFailed": "更新失败",
+      "uploadingPlaceholder": "正在上传 {{name}}...",
+      "uploadFailedPlaceholder": "上传失败: {{name}}",
+      "editLabel": "修改",
+      "uploadFailed": "上传失败：{{name}}",
+      "markdownSyntax": "Markdown 语法",
+      "syntaxBoldItalic": "加粗和斜体",
+      "syntaxBoldText": "加粗",
+      "syntaxItalicText": "斜体",
+      "syntaxHeader": "标题",
+      "syntaxH1": "一级标题",
+      "syntaxH2": "二级标题",
+      "syntaxLinkImage": "链接和图片",
+      "syntaxLinkText": "文本",
+      "syntaxLinkUrl": "链接",
+      "syntaxImageDesc": "描述",
+      "syntaxImageLink": "图片链接",
+      "syntaxList": "列表",
+      "syntaxListItem": "项目一",
+      "syntaxQuoteCode": "引用和代码块",
+      "syntaxQuote": "引用文字",
+      "syntaxCodeBlock": "语言名",
+      "syntaxFullGuide": "完整语法指南"
     },
     "actions": {
       "copyLink": "复制链接",
