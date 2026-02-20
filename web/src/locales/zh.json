@@ -711,7 +711,12 @@
       "clientIp": "IP地址",
       "statusCode": "状态码",
       "responseTime": "耗时",
-      "loadMore": "加载更多"
+      "loadMore": "加载更多",
+      "editPermissions": "编辑权限",
+      "copy": "复制",
+      "exampleContent": "这是一条使用OpenKey发送的笔记。",
+      "exampleTag": "来自OpenKey",
+      "exampleTag2": "标签二"
     },
     "openKeyEditModel": {
       "selectAll": "全选",
