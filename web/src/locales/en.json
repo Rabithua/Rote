@@ -273,6 +273,7 @@
       "sideBarTitle": "Relative Information"
     },
     "article": {
+      "title": "Article Details",
       "sideBarTitle": "Relative Information",
       "relatedNote": "Related Note"
     },
@@ -564,13 +565,13 @@
         "testSuccess": "Storage connection test successful!",
         "testFailed": "Connection test failed: {{error}}",
         "seeConsole": "See console for details.",
-      "fillAllRequired": "Please fill in all required fields",
-      "required": "Required",
-      "save": "Save",
-      "saving": "Saving...",
-      "saveSuccess": "Saved successfully",
-      "saveFailed": "Save failed: {{error}}"
-    },
+        "fillAllRequired": "Please fill in all required fields",
+        "required": "Required",
+        "save": "Save",
+        "saving": "Saving...",
+        "saveSuccess": "Saved successfully",
+        "saveFailed": "Save failed: {{error}}"
+      },
       "ui": {
         "title": "UI Configuration",
         "description": "Configure user interface settings",
@@ -799,7 +800,9 @@
     },
     "tagMap": {
       "noTags": "No tags yet",
-      "expand": "Expand"
+      "expand": "Expand",
+      "expandMore": "Expand More",
+      "collapse": "Collapse"
     },
     "tagSelector": {
       "selectTags": "Select tags...",
@@ -831,7 +834,30 @@
       "createSuccess": "Article created",
       "createFailed": "Failed to create",
       "updateSuccess": "Article updated",
-      "updateFailed": "Failed to update"
+      "updateFailed": "Failed to update",
+      "uploadingPlaceholder": "Uploading {{name}}...",
+      "uploadFailedPlaceholder": "Upload failed: {{name}}",
+      "editLabel": "Edit",
+      "uploadFailed": "Upload failed: {{name}}",
+      "markdownSyntax": "Markdown Syntax",
+      "syntaxBoldItalic": "Bold & Italic",
+      "syntaxBoldText": "Bold",
+      "syntaxItalicText": "Italic",
+      "syntaxHeader": "Headers",
+      "syntaxH1": "Level 1",
+      "syntaxH2": "Level 2",
+      "syntaxLinkImage": "Link & Image",
+      "syntaxLinkText": "Text",
+      "syntaxLinkUrl": "URL",
+      "syntaxImageDesc": "Desc",
+      "syntaxImageLink": "Image link",
+      "syntaxImageTip": "Tip: Paste images directly to upload automatically",
+      "syntaxList": "List",
+      "syntaxListItem": "Item 1",
+      "syntaxQuoteCode": "Quote & Code",
+      "syntaxQuote": "Quote",
+      "syntaxCodeBlock": "Language",
+      "syntaxFullGuide": "Full Writing Guide"
     },
     "actions": {
       "copyLink": "Copy Link",

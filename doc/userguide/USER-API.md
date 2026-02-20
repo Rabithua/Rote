@@ -272,7 +272,16 @@ curl -X GET 'https://your-domain.com/v2/api/users/me/tags' \
 {
   "code": 0,
   "message": "success",
-  "data": ["标签1", "标签2", "标签3"]
+  "data": [
+    {
+      "name": "标签1",
+      "count": 10
+    },
+    {
+      "name": "标签2",
+      "count": 5
+    }
+  ]
 }
 ```
 

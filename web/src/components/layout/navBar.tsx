@@ -9,9 +9,10 @@ interface NavHeaderProps {
   icon?: ReactNode;
   children?: ReactNode;
   onNavClick?: () => void;
+  onBack?: () => void;
 }
 
-export default function NavBar({ title, icon, children, onNavClick }: NavHeaderProps) {
+export default function NavBar({ title, icon, children, onNavClick, onBack }: NavHeaderProps) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.navBar',
   });
@@ -34,6 +35,10 @@ export default function NavBar({ title, icon, children, onNavClick }: NavHeaderP
   const isMainNavPage = mainNavPaths.includes(location.pathname);
 
   function back() {
+    if (onBack) {
+      onBack();
+      return;
+    }
     const doesAnyHistoryEntryExist = location.key !== 'default';
     if (doesAnyHistoryEntryExist) {
       navigate(-1);

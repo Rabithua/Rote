@@ -11,6 +11,7 @@ import { extractFirstImageFromMarkdown, parseMarkdownMeta } from '@/utils/markdo
 import { useAtomValue } from 'jotai';
 import { Check, Edit, Link, MoreVertical, Newspaper, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface ArticleCardProps {
   article: Article | ArticleSummary;
@@ -49,6 +50,7 @@ export function ArticleCard({
 }: ArticleCardProps) {
   const profile = useAtomValue(profileAtom);
   const resolvedArticleId = articleId ?? article.id;
+  const navigate = useNavigate();
 
   // 使用共享 hook 处理文章操作
   const { isDeleting, handleCopyLink, handleDelete, t } = useArticleActions({
@@ -72,7 +74,7 @@ export function ArticleCard({
     if (onClick) {
       onClick();
     } else if (enableViewer && resolvedArticleId) {
-      window.location.href = `/article/${resolvedArticleId}`;
+      navigate(`/article/${resolvedArticleId}`);
     }
   };
 
@@ -81,8 +83,8 @@ export function ArticleCard({
     if (onEdit) {
       onEdit(article);
     } else if (resolvedArticleId) {
-      // 如果没有 onEdit 回调，跳转到文章详情页编辑
-      window.location.href = `/article/${resolvedArticleId}`;
+      // 如果没有 onEdit 回调，跳转到文章编辑页
+      navigate(`/article/${resolvedArticleId}/edit`);
     }
   };
 

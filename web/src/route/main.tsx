@@ -1,6 +1,6 @@
+import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import ScrollPositionManager from '@/components/ScrollPositionManager';
 import LayoutDashboard from '@/layout/dashboard';
-import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { useAuthState } from '@/state/profile';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
@@ -11,6 +11,7 @@ import PrivacyPolicyPage from '@/pages/app/privacy';
 import TermsOfServicePage from '@/pages/app/terms';
 import ArchivedPage from '@/pages/archived';
 import ArticleDetailPage from '@/pages/article/[articleid]';
+import ArticleEditPage from '@/pages/article/edit';
 import SelfhostedGuidePage from '@/pages/doc/selfhosted';
 import ExperimentPage from '@/pages/experiment';
 import ExplorePage from '@/pages/explore';
@@ -19,6 +20,7 @@ import HomePage from '@/pages/home';
 import Landing from '@/pages/landing';
 import Login from '@/pages/login';
 import ProfilePage from '@/pages/profile';
+import SettingsPage from '@/pages/profile/setting';
 import SingleRotePage from '@/pages/rote/[roteid]';
 import SetupPage from '@/pages/setup';
 import UserPage from '@/pages/user/[username]';
@@ -136,6 +138,15 @@ export default function GlobalRouterProvider() {
               errorElement: <ErrorPage />,
             },
             {
+              path: 'profile/setting',
+              element: (
+                <ProtectedRoute>
+                  <SettingsPage />
+                </ProtectedRoute>
+              ),
+              errorElement: <ErrorPage />,
+            },
+            {
               path: 'explore',
               element: <ExplorePage />,
               errorElement: <ErrorPage />,
@@ -164,8 +175,24 @@ export default function GlobalRouterProvider() {
               errorElement: <ErrorPage />,
               children: [
                 {
+                  path: 'new',
+                  element: (
+                    <ProtectedRoute>
+                      <ArticleEditPage />
+                    </ProtectedRoute>
+                  ),
+                },
+                {
                   path: ':articleid',
                   element: <ArticleDetailPage />,
+                },
+                {
+                  path: ':articleid/edit',
+                  element: (
+                    <ProtectedRoute>
+                      <ArticleEditPage />
+                    </ProtectedRoute>
+                  ),
                 },
               ],
             },

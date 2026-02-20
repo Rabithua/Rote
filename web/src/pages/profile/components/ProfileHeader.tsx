@@ -16,7 +16,6 @@ interface ProfileHeaderProps {
   inputCoverRef: React.RefObject<HTMLInputElement | null>;
   inputAvatarRef: React.RefObject<HTMLInputElement | null>;
   onChangeCover: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onOpenSettings: () => void;
   onOpenEditProfile: () => void;
 }
 
@@ -27,7 +26,6 @@ export default function ProfileHeader({
   inputCoverRef,
   inputAvatarRef,
   onChangeCover,
-  onOpenSettings,
   onOpenEditProfile,
 }: ProfileHeaderProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
@@ -72,8 +70,10 @@ export default function ProfileHeader({
           }}
         />
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={onOpenSettings}>
-            <Settings2 className="size-4" />
+          <Button variant="outline" size="icon" className="h-9 w-9" asChild>
+            <Link to="/profile/setting">
+              <Settings2 className="size-4" />
+            </Link>
           </Button>
           <Button onClick={onOpenEditProfile}>
             <Edit className="size-4" />

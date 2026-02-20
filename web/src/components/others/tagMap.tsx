@@ -1,8 +1,7 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import { SoftBottom } from '@/components/others/SoftBottom';
 import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { ArrowDownLeft, CircleDashed } from 'lucide-react';
+import { CircleDashed } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
@@ -25,39 +24,37 @@ export default function TagMap() {
     setIsCollapsed(!isCollapsed);
   };
 
+  const limit = 16;
+  const hasMore = tags && tags.length > limit;
+  const visibleTags = tags ? (isCollapsed ? tags.slice(0, limit) : tags) : [];
+
   return (
     <>
       {isLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
       ) : tags && tags?.length > 0 ? (
-        <div
-          className={`animate-show flex shrink-0 flex-wrap gap-2 p-4 opacity-0 duration-300 ${
-            tags.length > 20 && isCollapsed ? 'max-h-80 overflow-hidden' : 'max-h-full'
-          }`}
-        >
-          {tags.map((item: string) => (
+        <div className="animate-show flex shrink-0 flex-wrap gap-2 p-4 opacity-0 duration-300">
+          {visibleTags.map((item) => (
             <Link
-              key={item}
+              key={item.name}
               to={'/filter'}
               state={{
-                tags: [item],
+                tags: [item.name],
               }}
             >
-              <div className="bg-foreground/5 flex-grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
-                {item}
+              <div className="bg-foreground/5 grow rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95">
+                {item.name}{' '}
+                {item.count > 0 && <span className="ml-1 opacity-50">{item.count}</span>}
               </div>
             </Link>
           ))}
-          {tags.length > 20 && isCollapsed && (
-            <SoftBottom>
-              <div
-                className="pointer-events-auto flex cursor-pointer items-center justify-center gap-1"
-                onClick={toggleCollapse}
-              >
-                <ArrowDownLeft className="size-4" />
-                {t('expand')}
-              </div>
-            </SoftBottom>
+          {hasMore && (
+            <div
+              className="bg-foreground/5 flex cursor-pointer items-center justify-center rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
+              onClick={toggleCollapse}
+            >
+              <span className="opacity-70">{isCollapsed ? t('expandMore') : t('collapse')}</span>
+            </div>
           )}
         </div>
       ) : (
