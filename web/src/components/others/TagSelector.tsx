@@ -46,7 +46,7 @@ export function TagSelector({
   };
 
   const handleAddCustomTag = () => {
-    if (inputValue.trim() && !availableTags?.includes(inputValue)) {
+    if (inputValue.trim() && !availableTags?.some((t) => t.name === inputValue)) {
       const newTag = inputValue.trim();
       handleTagSelect(newTag);
       setInputValue('');
@@ -107,24 +107,24 @@ export function TagSelector({
             <CommandGroup>
               {availableTags?.map((tag) => (
                 <CommandItem
-                  key={tag}
-                  value={tag}
-                  onSelect={() => handleTagSelect(tag)}
+                  key={tag.name}
+                  value={tag.name}
+                  onSelect={() => handleTagSelect(tag.name)}
                   className="flex flex-1"
                 >
                   <div className="inline-block max-w-40 overflow-hidden text-ellipsis whitespace-nowrap">
-                    {tag}
+                    {tag.name}
                   </div>
                   <Check
                     className={cn(
                       'ml-auto shrink-0',
-                      tags.includes(tag) ? 'opacity-100' : 'opacity-0'
+                      tags.includes(tag.name) ? 'opacity-100' : 'opacity-0'
                     )}
                   />
                 </CommandItem>
               ))}
             </CommandGroup>
-            {inputValue.trim() && !availableTags?.includes(inputValue) && (
+            {inputValue.trim() && !availableTags?.some((t) => t.name === inputValue) && (
               <>
                 <CommandSeparator />
                 <CommandGroup>

@@ -214,9 +214,10 @@ function MineFilter() {
             {t('allTags')}
             {tags && tags.length > 0
               ? tags.map((tag) => (
-                  <div key={tag} onClick={() => tagsClickHandler(tag)}>
+                  <div key={tag.name} onClick={() => tagsClickHandler(tag.name)}>
                     <div className="bg-foreground/6 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95">
-                      {tag}
+                      {tag.name}{' '}
+                      {tag.count > 0 && <span className="ml-1 opacity-50">{tag.count}</span>}
                     </div>
                   </div>
                 ))

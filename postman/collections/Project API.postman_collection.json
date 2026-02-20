@@ -613,7 +613,30 @@
             },
             "description": "Get all tags used by the current user."
           },
-          "response": []
+          "response": [
+            {
+              "name": "Success",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{access_token}}"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/v2/api/users/me/tags",
+                  "host": ["{{base_url}}"],
+                  "path": ["v2", "api", "users", "me", "tags"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "cookie": [],
+              "body": "{\n  \"code\": 0,\n  \"message\": \"success\",\n  \"data\": [\n    {\n      \"name\": \"标签1\",\n      \"count\": 10\n    }\n  ]\n}"
+            }
+          ]
         },
         {
           "name": "Get My Heatmap",
