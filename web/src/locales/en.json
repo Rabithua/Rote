@@ -564,13 +564,13 @@
         "testSuccess": "Storage connection test successful!",
         "testFailed": "Connection test failed: {{error}}",
         "seeConsole": "See console for details.",
-      "fillAllRequired": "Please fill in all required fields",
-      "required": "Required",
-      "save": "Save",
-      "saving": "Saving...",
-      "saveSuccess": "Saved successfully",
-      "saveFailed": "Save failed: {{error}}"
-    },
+        "fillAllRequired": "Please fill in all required fields",
+        "required": "Required",
+        "save": "Save",
+        "saving": "Saving...",
+        "saveSuccess": "Saved successfully",
+        "saveFailed": "Save failed: {{error}}"
+      },
       "ui": {
         "title": "UI Configuration",
         "description": "Configure user interface settings",
@@ -799,7 +799,9 @@
     },
     "tagMap": {
       "noTags": "No tags yet",
-      "expand": "Expand"
+      "expand": "Expand",
+      "expandMore": "Expand More",
+      "collapse": "Collapse"
     },
     "tagSelector": {
       "selectTags": "Select tags...",

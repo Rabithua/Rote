@@ -1,4 +1,4 @@
-import { and, count, eq, gte, lte } from 'drizzle-orm';
+import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
 import { attachments, rotes } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -81,12 +81,16 @@ export async function getHeatMap(userId: string, startDate: string, endDate: str
 
 export async function getMyTags(userid: string): Promise<any> {
   try {
-    const rotesList = await db
-      .select({ tags: rotes.tags })
+    const tagCounts = await db
+      .select({
+        name: sql<string>`unnest(${rotes.tags})`,
+        count: sql<number>`count(*)::int`,
+      })
       .from(rotes)
-      .where(eq(rotes.authorid, userid));
-    const allTags = Array.from(new Set(rotesList.flatMap((item) => item.tags || [])));
-    return allTags;
+      .where(eq(rotes.authorid, userid))
+      .groupBy(sql`unnest(${rotes.tags})`)
+      .orderBy(sql`count(*) desc`);
+    return tagCounts;
   } catch (error) {
     throw new DatabaseError('Failed to get user tags', error);
   }
