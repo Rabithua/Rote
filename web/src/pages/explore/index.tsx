@@ -67,7 +67,7 @@ function ExplorePage() {
         </div>
       }
     >
-      <NavBar title={t('title')} icon={<Globe2 className="size-6" />} onNavClick={refreshData}>
+      <NavBar title={t('title')} icon={<Globe2 className="size-5" />} onNavClick={refreshData}>
         {isLoading ||
           (isValidating && (
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />

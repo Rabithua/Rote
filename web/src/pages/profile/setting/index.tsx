@@ -150,7 +150,7 @@ export default function SettingsPage() {
       }
     >
       <div className="flex flex-col pb-20">
-        <NavBar title={t('settings.title')} icon={<Settings2 className="size-7" />} />
+        <NavBar title={t('settings.title')} icon={<Settings2 className="size-5" />} />
 
         <div className="mx-auto w-full max-w-2xl space-y-8 px-4 py-8">
           <div className="space-y-6">

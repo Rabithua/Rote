@@ -216,7 +216,7 @@ function ProfilePage() {
       }
     >
       <div className="flex flex-col divide-y pb-20">
-        <NavBar title={t('title')} icon={<ScanFace className="size-6" />} />
+        <NavBar title={t('title')} icon={<ScanFace className="size-5" />} />
         <ProfileHeader
           profile={profile}
           canUpload={canUpload}

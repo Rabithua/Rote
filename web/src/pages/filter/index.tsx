@@ -13,7 +13,7 @@ import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { format } from 'date-fns';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { ActivityIcon, RefreshCw } from 'lucide-react';
+import { ActivityIcon, Filter, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -241,7 +241,7 @@ function MineFilter() {
         </div>
       }
     >
-      <NavBar title={t('title')} onNavClick={refreshData}>
+      <NavBar title={t('title')} icon={<Filter className="size-5" />} onNavClick={refreshData}>
         {isLoading ||
           (isValidating && (
             <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
