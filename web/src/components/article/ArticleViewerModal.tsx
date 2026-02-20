@@ -8,9 +8,9 @@ import { Pencil } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 import remarkGfm from 'remark-gfm';
 import { toast } from 'sonner';
-import { ArticleEditorModal } from './ArticleEditorModal';
 
 interface Props {
   articleId: string | null;
@@ -19,21 +19,13 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   // 是否允许编辑（仅作者可编辑）
   editable?: boolean;
-  onUpdated?: (article: Article) => void;
 }
 
-export function ArticleViewerModal({
-  articleId,
-  noteId,
-  open,
-  onOpenChange,
-  editable,
-  onUpdated,
-}: Props) {
+export function ArticleViewerModal({ articleId, noteId, open, onOpenChange, editable }: Props) {
   const { t } = useTranslation('translation', { keyPrefix: 'article.viewer' });
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) {
@@ -53,11 +45,6 @@ export function ArticleViewerModal({
       })
       .finally(() => setLoading(false));
   }, [articleId, noteId, open, t]);
-
-  const handleUpdated = (updated: Article) => {
-    setArticle(updated);
-    onUpdated?.(updated);
-  };
 
   const content = loading ? (
     <div className="space-y-3">
@@ -83,7 +70,10 @@ export function ArticleViewerModal({
               <Button
                 variant="secondary"
                 size="icon"
-                onClick={() => setEditorOpen(true)}
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate(`/article/${articleId}/edit`);
+                }}
                 aria-label={t('edit')}
                 title={t('edit')}
               >
@@ -94,13 +84,6 @@ export function ArticleViewerModal({
           {content}
         </DialogContent>
       </Dialog>
-
-      <ArticleEditorModal
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        article={article}
-        onUpdated={handleUpdated}
-      />
     </>
   );
 }

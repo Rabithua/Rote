@@ -83,8 +83,8 @@ export function ArticleCard({
     if (onEdit) {
       onEdit(article);
     } else if (resolvedArticleId) {
-      // 如果没有 onEdit 回调，跳转到文章详情页编辑
-      navigate(`/article/${resolvedArticleId}`);
+      // 如果没有 onEdit 回调，跳转到文章编辑页
+      navigate(`/article/${resolvedArticleId}/edit`);
     }
   };
 

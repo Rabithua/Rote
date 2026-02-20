@@ -337,6 +337,7 @@ curl -X GET 'https://your-domain.com/v2/api/articles/by-note/<NOTE_ID>'
 - 优先使用 `articleId`，其次使用 `articleIds` 的第一个元素
 - 传入 `null` 或空数组可清除关联
 - 只能关联自己创建的文章
+- **变更记录**: 更新关联关系会触发对应笔记的 `UPDATE` 类型变更记录，可通过 `CHANGES-API` 查询
 
 请求示例（cURL）:
 

@@ -273,6 +273,7 @@
       "sideBarTitle": "関連情報"
     },
     "article": {
+      "title": "記事の詳細",
       "sideBarTitle": "関連情報",
       "relatedNote": "関連ノート"
     },
@@ -833,7 +834,30 @@
       "createSuccess": "記事を作成しました",
       "createFailed": "作成に失敗しました",
       "updateSuccess": "記事を更新しました",
-      "updateFailed": "更新に失敗しました"
+      "updateFailed": "更新に失敗しました",
+      "uploadingPlaceholder": "{{name}} をアップロード中...",
+      "uploadFailedPlaceholder": "アップロード失敗: {{name}}",
+      "editLabel": "編集",
+      "uploadFailed": "アップロードに失敗しました: {{name}}",
+      "markdownSyntax": "Markdown 構文",
+      "syntaxBoldItalic": "太字と斜体",
+      "syntaxBoldText": "太字",
+      "syntaxItalicText": "斜体",
+      "syntaxHeader": "見出し",
+      "syntaxH1": "1級見出し",
+      "syntaxH2": "2級見出し",
+      "syntaxLinkImage": "リンクと画像",
+      "syntaxLinkText": "テキスト",
+      "syntaxLinkUrl": "リンク",
+      "syntaxImageDesc": "説明",
+      "syntaxImageLink": "画像リンク",
+      "syntaxImageTip": "ヒント：画像を直接貼り付けて自動アップロードをサポート",
+      "syntaxList": "リスト",
+      "syntaxListItem": "項目1",
+      "syntaxQuoteCode": "引用とコードブロック",
+      "syntaxQuote": "引用テキスト",
+      "syntaxCodeBlock": "言語名",
+      "syntaxFullGuide": "詳細な構文ガイド"
     },
     "actions": {
       "copyLink": "リンクをコピー",

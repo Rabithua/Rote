@@ -1,4 +1,3 @@
-import { ArticleEditorModal } from '@/components/article/ArticleEditorModal';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
@@ -12,6 +11,7 @@ import { useAPIGet } from '@/utils/fetcher';
 import { useAtomValue } from 'jotai';
 import {
   ArrowUpRight,
+  BookOpen,
   Link as LinkIcon,
   Navigation,
   PenBox,
@@ -19,7 +19,6 @@ import {
   Rss,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -110,8 +109,6 @@ function ArticleDetailPage() {
       </div>
     );
 
-  const [editorOpen, setEditorOpen] = useState(false);
-
   return isLoading ? (
     <LoadingPlaceholder className="py-16" size={6} />
   ) : article ? (
@@ -130,7 +127,7 @@ function ArticleDetailPage() {
               <Button
                 size="icon"
                 className="rounded-md shadow-md"
-                onClick={() => setEditorOpen(true)}
+                onClick={() => navigate(`/article/${articleid}/edit`)}
                 aria-label="Edit article"
                 title="Edit article"
               >
@@ -160,7 +157,11 @@ function ArticleDetailPage() {
         }
         className="pb-16"
       >
-        <NavBar onNavClick={refreshData}>
+        <NavBar
+          onNavClick={refreshData}
+          title={t('title')}
+          icon={<BookOpen className="text-primary size-6" />}
+        >
           {isLoading ||
             (isValidating && (
               <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
@@ -181,24 +182,6 @@ function ArticleDetailPage() {
           )}
         </div>
       </ContainerWithSideBar>
-      {/* 编辑弹窗，仅本人可见 */}
-      {isAuthor && (
-        <ArticleEditorModal
-          open={editorOpen}
-          onOpenChange={(open) => {
-            setEditorOpen(open);
-            if (!open) refreshData();
-          }}
-          article={article}
-          onUpdated={() => {
-            refreshData();
-            setEditorOpen(false);
-          }}
-          onDeleted={() => {
-            navigate('/');
-          }}
-        />
-      )}
     </>
   ) : null;
 }

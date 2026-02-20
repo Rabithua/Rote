@@ -15,8 +15,8 @@ import { Archive, BookOpen, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'react-photo-view/dist/react-photo-view.css';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArticleEditorModal } from '../article/ArticleEditorModal';
 import { ArticleSelectionModal } from '../article/ArticleSelectionModal';
 import { Textarea } from '../ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
@@ -25,6 +25,7 @@ import AttachmentList from './AttachmentList';
 type RoteAtomType = PrimitiveAtom<Rote>;
 
 function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?: () => void }) {
+  const navigate = useNavigate();
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteInputSimple',
   });
@@ -38,7 +39,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     !!siteStatus?.storage?.r2Configured && siteStatus?.ui?.allowUploadFile !== false;
 
   const [localContent, setLocalContent] = useState(rote.content);
-  const [articleModalOpen, setArticleModalOpen] = useState(false);
   const [articleSelectionOpen, setArticleSelectionOpen] = useState(false);
 
   // 选中的文章 ID（一对一，只能有一个）
@@ -83,7 +83,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const debouncedUpdateContent = useMemo(
     () =>
       debounce((content: string) => {
-        setRote((prevRote) => ({
+        setRote((prevRote: Rote) => ({
           ...prevRote,
           content,
         }));
@@ -104,7 +104,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   // 选择文章（一对一绑定）
   const selectArticle = useCallback(
     (article: Article) => {
-      setRote((prev) => ({
+      setRote((prev: Rote) => ({
         ...prev,
         articleId: article.id,
         article: article,
@@ -115,20 +115,12 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   // 移除绑定的文章
   const removeArticle = useCallback(() => {
-    setRote((prev) => ({
+    setRote((prev: Rote) => ({
       ...prev,
       articleId: null,
       article: null,
     }));
   }, [setRote]);
-
-  const handleArticleCreated = useCallback(
-    (article: Article) => {
-      // 创建后直接选中
-      selectArticle(article);
-    },
-    [selectArticle]
-  );
 
   // 删除附件：先本地移除（乐观），再静默调用后端删除
   const deleteFile = useCallback(
@@ -635,15 +627,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         onSelect={selectArticle}
         onCreateNew={() => {
           setArticleSelectionOpen(false);
-          setArticleModalOpen(true);
-        }}
-      />
-
-      <ArticleEditorModal
-        open={articleModalOpen}
-        onOpenChange={setArticleModalOpen}
-        onCreated={(article) => {
-          handleArticleCreated(article);
+          navigate('/article/new');
         }}
       />
     </div>
