@@ -2,6 +2,7 @@ import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { type Article, articles, rotes } from '../../drizzle/schema';
 import db from '../drizzle';
 import { parseMarkdownMeta } from '../markdown';
+import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 
 export interface ArticleMeta {
@@ -31,10 +32,15 @@ export async function setNoteArticleId(
   try {
     const note = await db.query.rotes.findFirst({
       where: (tbl, { eq }) => eq(tbl.id, noteId),
-      columns: { id: true, authorid: true },
+      columns: { id: true, authorid: true, articleId: true },
     });
     if (!note || note.authorid !== authorId) {
       throw new Error('Note not found or permission denied');
+    }
+
+    // 只在 articleId 发生变化时更新和记录变更
+    if (note.articleId === articleId) {
+      return;
     }
 
     if (articleId) {
@@ -45,6 +51,18 @@ export async function setNoteArticleId(
     }
 
     await db.update(rotes).set({ articleId, updatedAt: new Date() }).where(eq(rotes.id, noteId));
+
+    // 记录变更历史
+    try {
+      await createRoteChange({
+        originid: noteId,
+        roteid: noteId,
+        action: 'UPDATE',
+        userid: authorId,
+      });
+    } catch (_error) {
+      // 记录变更失败不影响操作
+    }
   } catch (error: any) {
     throw new DatabaseError('Failed to set note article', error);
   }
