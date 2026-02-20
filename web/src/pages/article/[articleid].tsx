@@ -112,77 +112,75 @@ function ArticleDetailPage() {
   return isLoading ? (
     <LoadingPlaceholder className="py-16" size={6} />
   ) : article ? (
-    <>
-      <ContainerWithSideBar
-        sidebar={<SideBar />}
-        sidebarHeader={
-          <div className="flex items-center gap-2 p-4 text-lg font-semibold">
-            <Navigation className="size-5" />
-            <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
-          </div>
-        }
-        floatButtons={
-          isAuthor ? (
-            <>
-              <Button
-                size="icon"
-                className="rounded-md shadow-md"
-                onClick={() => navigate(`/article/${articleid}/edit`)}
-                aria-label="Edit article"
-                title="Edit article"
-              >
-                <PenBox className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                className="rounded-md shadow-md"
-                onClick={handleCopyLink}
-                aria-label="Copy article link"
-                title="Copy article link"
-              >
-                <LinkIcon className="size-4" />
-              </Button>
-              <Button
-                size="icon"
-                className="rounded-md shadow-md"
-                onClick={handleDelete}
-                disabled={isDeleting}
-                aria-label="Delete article"
-                title="Delete article"
-              >
-                <Trash2 className="size-4" />
-              </Button>
-            </>
-          ) : null
-        }
-        className="pb-16"
-      >
-        <NavBar
-          onNavClick={refreshData}
-          title={t('title')}
-          icon={<BookOpen className="text-primary size-6" />}
-        >
-          {isLoading ||
-            (isValidating && (
-              <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
-            ))}
-        </NavBar>
-        <div className="divide-y">
-          <div className="prose prose-sm dark:prose-invert max-w-full p-4">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
-          </div>
-          {article.note && (
-            <Link
-              to={`/rote/${article.note.id}`}
-              className="block p-4 text-sm font-light hover:underline"
-            >
-              {t('relatedNote')}: {article.note.content}
-              <ArrowUpRight className="inline size-4" />
-            </Link>
-          )}
+    <ContainerWithSideBar
+      sidebar={<SideBar />}
+      sidebarHeader={
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
+          <Navigation className="size-5" />
+          <div className="flex items-center gap-2">{t('sideBarTitle')}</div>
         </div>
-      </ContainerWithSideBar>
-    </>
+      }
+      floatButtons={
+        isAuthor ? (
+          <>
+            <Button
+              size="icon"
+              className="rounded-md shadow-md"
+              onClick={() => navigate(`/article/${articleid}/edit`)}
+              aria-label="Edit article"
+              title="Edit article"
+            >
+              <PenBox className="size-4" />
+            </Button>
+            <Button
+              size="icon"
+              className="rounded-md shadow-md"
+              onClick={handleCopyLink}
+              aria-label="Copy article link"
+              title="Copy article link"
+            >
+              <LinkIcon className="size-4" />
+            </Button>
+            <Button
+              size="icon"
+              className="rounded-md shadow-md"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              aria-label="Delete article"
+              title="Delete article"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          </>
+        ) : null
+      }
+      className="pb-16"
+    >
+      <NavBar
+        onNavClick={refreshData}
+        title={t('title')}
+        icon={<BookOpen className="text-primary size-6" />}
+      >
+        {isLoading ||
+          (isValidating && (
+            <RefreshCw className="text-primary ml-auto size-4 animate-spin p-4 duration-300" />
+          ))}
+      </NavBar>
+      <div className="divide-y">
+        <div className="prose prose-sm dark:prose-invert max-w-full p-4">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{article.content}</ReactMarkdown>
+        </div>
+        {article.note && (
+          <Link
+            to={`/rote/${article.note.id}`}
+            className="block p-4 text-sm font-light hover:underline"
+          >
+            {t('relatedNote')}: {article.note.content}
+            <ArrowUpRight className="inline size-4" />
+          </Link>
+        )}
+      </div>
+    </ContainerWithSideBar>
   ) : null;
 }
 

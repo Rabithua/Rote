@@ -717,7 +717,12 @@
       "clientIp": "IPアドレス",
       "statusCode": "ステータス",
       "responseTime": "応答時間",
-      "loadMore": "さらに読み込む"
+      "loadMore": "さらに読み込む",
+      "editPermissions": "利用権限の編集",
+      "copy": "コピー",
+      "exampleContent": "これはOpenKeyを使用して送信されたノートです。",
+      "exampleTag": "OpenKeyから",
+      "exampleTag2": "タグ2"
     },
     "openKeyEditModel": {
       "selectAll": "すべて選択",

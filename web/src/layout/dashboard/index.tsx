@@ -11,7 +11,7 @@ import { loadProfileAtom, profileAtom, useAuthState } from '@/state/profile';
 import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { Archive, Globe2, Home, LogIn, LogOut, Shield, Snail, User } from 'lucide-react';
+import { Archive, Globe2, Home, LogIn, LogOut, ScanFace, Shield, Snail } from 'lucide-react';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -43,7 +43,7 @@ const baseTabs: IconType[] = [
     name: 'archived',
   },
   {
-    svg: <User className="size-4" />,
+    svg: <ScanFace className="size-4" />,
     link: '/profile',
     name: 'profile',
   },

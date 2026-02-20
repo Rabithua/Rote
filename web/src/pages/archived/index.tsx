@@ -61,7 +61,7 @@ function ArchivedPage() {
     <ContainerWithSideBar
       sidebar={<SideBar />}
       sidebarHeader={
-        <div className="flex items-center gap-2 p-4 text-lg font-semibold">
+        <div className="flex items-center gap-2 p-3 text-lg font-semibold">
           <div className="flex items-center gap-2">
             <ChartAreaIcon className="size-5" />
             {t('statistics')}

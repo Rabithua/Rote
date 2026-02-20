@@ -717,7 +717,12 @@
       "clientIp": "IP Address",
       "statusCode": "Status",
       "responseTime": "Response Time",
-      "loadMore": "Load More"
+      "loadMore": "Load More",
+      "editPermissions": "Edit Permissions",
+      "copy": "Copy",
+      "exampleContent": "This is a note sent using OpenKey.",
+      "exampleTag": "FromOpenKey",
+      "exampleTag2": "Tag2"
     },
     "openKeyEditModel": {
       "selectAll": "Select All",

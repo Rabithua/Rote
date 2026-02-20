@@ -7,6 +7,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
+import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 
 interface OpenKeyEditModelProps {
@@ -83,15 +84,15 @@ function OpenKeyEditModel({ openKey, close, mutate }: OpenKeyEditModelProps) {
   }
 
   return (
-    <div>
-      <div className="flex flex-wrap gap-3">
+    <>
+      <div className="flex flex-wrap gap-3 p-4">
         {processedOptions.map((option) => {
           const checkboxId = `checkbox-${option.value}`;
           return (
             <label
               key={option.value}
               htmlFor={checkboxId}
-              className="bg-muted/60 flex w-fit cursor-pointer items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200 select-none"
+              className="bg-muted/60 flex w-fit cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-all duration-200 select-none"
             >
               <Checkbox
                 id={checkboxId}
@@ -99,29 +100,25 @@ function OpenKeyEditModel({ openKey, close, mutate }: OpenKeyEditModelProps) {
                 onCheckedChange={() => onChange(option.value)}
                 className="accent-primary scale-110"
               />
-              <span className="text-foreground text-base font-medium">{option.label}</span>
+              <span className="text-foreground text-sm">{option.label}</span>
             </label>
           );
         })}
       </div>
-      <div className="mt-8 flex items-center gap-4 border-t pt-8">
+      <div className="flex items-center gap-4 p-4">
         <Checkbox
           ref={checkboxRef}
           onCheckedChange={onCheckAllChange}
           checked={checkAll}
-          className="accent-primary ml-auto scale-110"
+          className="accent-primary ml-auto"
         />
         <span className="text-muted-foreground text-sm select-none">{t('selectAll')}</span>
-        <button
-          className="bg-primary hover:bg-primary/80 focus:ring-primary/40 flex items-center gap-2 rounded-md px-5 py-2 font-semibold text-white shadow-md transition-all duration-200 focus:ring-2 focus:outline-none active:scale-95"
-          onClick={save}
-          type="button"
-        >
+        <Button variant="default" onClick={save} type="button">
           <Save className="size-4" />
           {t('save')}
-        </button>
+        </Button>
       </div>
-    </div>
+    </>
   );
 }
 
