@@ -219,7 +219,7 @@ export default function SettingsPage() {
 
       {/* OAuth 账户关联 */}
       {Object.keys(enabledOAuthProviders).length > 0 && (
-        <div className="p-4">
+        <div className="space-y-4 p-4">
           <div>
             <div className="text-base font-semibold">{t('settings.oauth.title')}</div>
             <p className="text-muted-foreground text-sm">{t('settings.oauth.description')}</p>
