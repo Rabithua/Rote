@@ -52,11 +52,7 @@ export default function TagMap() {
               className="bg-foreground/5 flex cursor-pointer items-center justify-center rounded-md px-2 py-1 text-center text-xs duration-300 hover:scale-95"
               onClick={toggleCollapse}
             >
-              <span className="opacity-70">
-                {isCollapsed
-                  ? t('expandMore', { defaultValue: '展开' })
-                  : t('collapse', { defaultValue: '收起' })}
-              </span>
+              <span className="opacity-70">{isCollapsed ? t('expandMore') : t('collapse')}</span>
             </div>
           )}
         </div>

@@ -558,13 +558,13 @@
         "testSuccess": "存储连接测试成功！",
         "testFailed": "连接测试失败: {{error}}",
         "seeConsole": "详细信息请查看控制台。",
-      "fillAllRequired": "请填写所有必填字段",
-      "required": "必填",
-      "save": "保存",
-      "saving": "保存中...",
-      "saveSuccess": "保存成功",
-      "saveFailed": "保存失败: {{error}}"
-    },
+        "fillAllRequired": "请填写所有必填字段",
+        "required": "必填",
+        "save": "保存",
+        "saving": "保存中...",
+        "saveSuccess": "保存成功",
+        "saveFailed": "保存失败: {{error}}"
+      },
       "ui": {
         "title": "界面配置",
         "description": "配置用户界面相关设置",
@@ -793,7 +793,9 @@
     },
     "tagMap": {
       "noTags": "还没有标签",
-      "expand": "展开"
+      "expand": "展开",
+      "expandMore": "展开更多",
+      "collapse": "收起"
     },
     "tagSelector": {
       "selectTags": "选择标签...",
