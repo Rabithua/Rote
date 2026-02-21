@@ -8,15 +8,20 @@ import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { profileAtom } from '@/state/profile';
 import { API_URL, get } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
+import { formatBytes } from '@/utils/main';
+import { parseMarkdownMeta } from '@/utils/markdownParser';
 import { useAtomValue } from 'jotai';
 import {
   ArrowUpRight,
   BookOpen,
+  Download,
+  FileText,
   Link as LinkIcon,
   Navigation,
   PenBox,
   RefreshCw,
   Rss,
+  TextInitialIcon,
   Trash2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +31,7 @@ import remarkGfm from 'remark-gfm';
 
 function ArticleDetailPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.article' });
+  const { t: tEditor } = useTranslation('translation', { keyPrefix: 'article.editor' });
   const navigate = useNavigate();
   const { articleid } = useParams();
   const profile = useAtomValue(profileAtom);
@@ -62,6 +68,18 @@ function ArticleDetailPage() {
 
   // 判断是否为作者
   const isAuthor = profile && article?.author && profile.username === article.author.username;
+
+  const handleDownload = () => {
+    if (!article?.content) return;
+    const { title } = parseMarkdownMeta(article.content);
+    const blob = new Blob([article.content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = title ? `${title}.md` : 'article.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const SideBar = () =>
     isLoading ? (
@@ -161,9 +179,31 @@ function ArticleDetailPage() {
         title={t('title')}
         icon={<BookOpen className="text-primary size-6" />}
       >
+        <div className="flex-1" />
+        <div className="flex items-center divide-x font-mono text-xs font-normal">
+          <div className="flex items-center gap-2 px-2">
+            <TextInitialIcon className="size-3" />
+            {tEditor('wordsCount', {
+              defaultValue: '{{count}} Words',
+              count: article?.content?.length || 0,
+            })}
+          </div>
+          <div
+            className="group hidden cursor-pointer items-center gap-2 px-2 lg:flex"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDownload();
+            }}
+            title={tEditor('download', { defaultValue: 'Download Markdown' })}
+          >
+            <FileText className="size-3 group-hover:hidden" />
+            <Download className="hidden size-3 group-hover:block" />
+            {formatBytes(new Blob([article?.content || '']).size)}
+          </div>
+        </div>
         {isLoading ||
           (isValidating && (
-            <RefreshCw className="text-primary ml-auto size-4 animate-spin p-4 duration-300" />
+            <RefreshCw className="text-primary size-4 animate-spin p-4 duration-300" />
           ))}
       </NavBar>
       <div className="divide-y">

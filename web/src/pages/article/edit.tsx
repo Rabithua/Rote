@@ -249,7 +249,7 @@ export default function ArticleEditPage() {
           icon={<Signature className="text-primary size-6" />}
         >
           <div className="flex-1" />
-          <div className="flex items-center divide-x font-mono text-xs font-light">
+          <div className="flex items-center divide-x font-mono text-xs font-normal">
             <div className="flex items-center gap-2 px-2">
               <TextInitialIcon className="size-3" />
               {t('wordsCount', { defaultValue: '{{count}} Words', count: content.length })}
