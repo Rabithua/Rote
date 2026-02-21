@@ -2,6 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Loader, Search } from 'lucide-react';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '../ui/button';
 
 export default function SearchBar({
   defaultValue = '',
@@ -62,14 +63,15 @@ export default function SearchBar({
           }
         }}
       />
-      <button
+      <Button
         type="submit"
-        className="hover:bg-foreground/3 flex size-10 shrink-0 items-center justify-center p-3 duration-300"
+        className="rounded-none"
         aria-label={t('search')}
         disabled={isLoading}
+        variant={'ghost'}
       >
         {isLoading ? <Loader className="size-4 animate-spin duration-300" /> : <Search />}
-      </button>
+      </Button>
     </form>
   );
 }
