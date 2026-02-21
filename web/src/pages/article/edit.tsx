@@ -7,10 +7,23 @@ import { useArticleActions } from '@/hooks/useArticleActions';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { createArticle, getArticleFull, updateArticle } from '@/utils/articleApi';
 import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
+import { formatBytes } from '@/utils/main';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
-import { ArrowUpRight, Edit3, Eye, Heading1, Save, Signature, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import {
+  ArrowUpRight,
+  Download,
+  Edit3,
+  Eye,
+  FileText,
+  Heading1,
+  Save,
+  Signature,
+  TextInitialIcon,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -28,8 +41,23 @@ export default function ArticleEditPage() {
   const [loading, setLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(!!articleid);
   const [isPreview, setIsPreview] = useState(false);
+  const [showMarkdown, setShowMarkdown] = useState(false);
+  const [, startTransition] = useTransition();
 
   const isEditMode = !!articleid;
+
+  const handleTogglePreview = () => {
+    if (!isPreview) {
+      setIsPreview(true);
+      setShowMarkdown(false);
+      startTransition(() => {
+        setShowMarkdown(true);
+      });
+    } else {
+      setIsPreview(false);
+      setShowMarkdown(false);
+    }
+  };
 
   // Load article if in edit mode
   useEffect(() => {
@@ -113,6 +141,17 @@ export default function ArticleEditPage() {
         localStorage.setItem(CREATE_CACHE_KEY, val);
       } catch {}
     }
+  };
+
+  const handleDownload = () => {
+    if (!content) return;
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = title ? `${title}.md` : 'article.md';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const uploadAndInsert = async (files: FileList | File[], textarea: HTMLTextAreaElement) => {
@@ -208,7 +247,24 @@ export default function ArticleEditPage() {
         <NavBar
           title={isEditMode ? t('editTitle') : t('title')}
           icon={<Signature className="text-primary size-6" />}
-        />
+        >
+          <div className="flex-1" />
+          <div className="flex items-center divide-x font-mono text-xs font-normal">
+            <div className="flex items-center gap-2 px-2">
+              <TextInitialIcon className="size-3" />
+              {t('wordsCount', { defaultValue: '{{count}} Words', count: content.length })}
+            </div>
+            <div
+              className="group hidden cursor-pointer items-center gap-2 px-2 lg:flex"
+              onClick={handleDownload}
+              title={t('download', { defaultValue: 'Download Markdown' })}
+            >
+              <FileText className="size-3 group-hover:hidden" />
+              <Download className="hidden size-3 group-hover:block" />
+              {formatBytes(new Blob([content]).size)}
+            </div>
+          </div>
+        </NavBar>
 
         {!isPreview ? (
           <Textarea
@@ -221,10 +277,17 @@ export default function ArticleEditPage() {
             disabled={loading}
           />
         ) : (
-          <div className="noScrollBar flex-1 overflow-auto p-4">
+          <div className="relative flex-1 overflow-auto p-4">
+            {!showMarkdown && content && (
+              <div className="bg-background/50 absolute inset-0 z-10 flex items-center justify-center">
+                <LoadingPlaceholder />
+              </div>
+            )}
             {content ? (
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                {showMarkdown && (
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+                )}
               </div>
             ) : (
               <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
@@ -258,7 +321,7 @@ export default function ArticleEditPage() {
           <Button
             size="icon"
             className="rounded-md shadow-md"
-            onClick={() => setIsPreview(!isPreview)}
+            onClick={handleTogglePreview}
             title={isPreview ? t('editLabel') : t('previewLabel')}
           >
             {isPreview ? <Edit3 className="size-4" /> : <Eye className="size-4" />}
