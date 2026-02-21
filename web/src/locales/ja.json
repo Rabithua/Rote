@@ -862,7 +862,9 @@
       "syntaxQuoteCode": "引用とコードブロック",
       "syntaxQuote": "引用テキスト",
       "syntaxCodeBlock": "言語名",
-      "syntaxFullGuide": "詳細な構文ガイド"
+      "syntaxFullGuide": "詳細な構文ガイド",
+      "wordsCount": "{{count}} 文字",
+      "download": "Markdownをダウンロード"
     },
     "actions": {
       "copyLink": "リンクをコピー",

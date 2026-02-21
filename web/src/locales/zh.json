@@ -856,7 +856,9 @@
       "syntaxQuoteCode": "引用和代码块",
       "syntaxQuote": "引用文字",
       "syntaxCodeBlock": "语言名",
-      "syntaxFullGuide": "完整语法指南"
+      "syntaxFullGuide": "完整语法指南",
+      "wordsCount": "{{count}} 字",
+      "download": "下载 Markdown"
     },
     "actions": {
       "copyLink": "复制链接",
