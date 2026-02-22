@@ -1,4 +1,3 @@
-import FloatBtns from '@/components/layout/FloatBtns';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
@@ -242,62 +241,8 @@ export default function ArticleEditPage() {
           </div>
         </div>
       }
-    >
-      <div className="flex h-dvh min-h-screen flex-col divide-y overflow-hidden pb-16 sm:pb-0">
-        <NavBar
-          title={isEditMode ? t('editTitle') : t('title')}
-          icon={<Signature className="text-primary size-6" />}
-        >
-          <div className="flex-1" />
-          <div className="flex items-center divide-x font-mono text-xs font-normal">
-            <div className="flex items-center gap-2 px-2">
-              <TextInitialIcon className="size-3" />
-              {t('wordsCount', { defaultValue: '{{count}} Words', count: content.length })}
-            </div>
-            <div
-              className="group hidden cursor-pointer items-center gap-2 px-2 lg:flex"
-              onClick={handleDownload}
-              title={t('download', { defaultValue: 'Download Markdown' })}
-            >
-              <FileText className="size-3 group-hover:hidden" />
-              <Download className="hidden size-3 group-hover:block" />
-              {formatBytes(new Blob([content]).size)}
-            </div>
-          </div>
-        </NavBar>
-
-        {!isPreview ? (
-          <Textarea
-            className="flex-1 resize-none rounded-none border-none p-4 font-mono text-sm shadow-none focus-visible:ring-0"
-            value={content}
-            onChange={handleContentChange}
-            onPaste={handlePaste}
-            onDrop={handleDrop}
-            placeholder={t('contentPlaceholder')}
-            disabled={loading}
-          />
-        ) : (
-          <div className="relative flex-1 overflow-auto p-4">
-            {!showMarkdown && content && (
-              <div className="bg-background/50 absolute inset-0 z-10 flex items-center justify-center">
-                <LoadingPlaceholder />
-              </div>
-            )}
-            {content ? (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                {showMarkdown && (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-                )}
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
-                {t('previewPlaceholder')}
-              </div>
-            )}
-          </div>
-        )}
-
-        <FloatBtns>
+      floatButtons={
+        <>
           <Button
             size="icon"
             className="rounded-md shadow-md"
@@ -335,8 +280,59 @@ export default function ArticleEditPage() {
           >
             <Save className="size-4" />
           </Button>
-        </FloatBtns>
-      </div>
+        </>
+      }
+    >
+      <NavBar
+        title={isEditMode ? t('editTitle') : t('title')}
+        icon={<Signature className="text-primary size-6" />}
+      >
+        <div className="flex-1" />
+        <div className="flex items-center font-mono text-xs font-normal lg:divide-x">
+          <div className="flex items-center gap-2 px-2">
+            <TextInitialIcon className="size-3" />
+            {t('wordsCount', { defaultValue: '{{count}} Words', count: content.length })}
+          </div>
+          <div
+            className="group hidden cursor-pointer items-center gap-2 px-2 lg:flex"
+            onClick={handleDownload}
+            title={t('download', { defaultValue: 'Download Markdown' })}
+          >
+            <FileText className="size-3 group-hover:hidden" />
+            <Download className="hidden size-3 group-hover:block" />
+            {formatBytes(new Blob([content]).size)}
+          </div>
+        </div>
+      </NavBar>
+
+      {!isPreview ? (
+        <Textarea
+          className="flex-1 resize-none rounded-none border-none p-4 font-mono text-sm shadow-none focus-visible:ring-0"
+          value={content}
+          onChange={handleContentChange}
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          placeholder={t('contentPlaceholder')}
+          disabled={loading}
+        />
+      ) : (
+        <div className="relative flex-1 overflow-auto p-4">
+          {!showMarkdown && content && (
+            <div className="bg-background/50 absolute inset-0 z-10 flex items-center justify-center">
+              <LoadingPlaceholder />
+            </div>
+          )}
+          {content ? (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              {showMarkdown && <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>}
+            </div>
+          ) : (
+            <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
+              {t('previewPlaceholder')}
+            </div>
+          )}
+        </div>
+      )}
     </ContainerWithSideBar>
   );
 }

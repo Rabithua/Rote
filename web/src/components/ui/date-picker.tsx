@@ -21,13 +21,9 @@ export function DatePicker({ date, setDate, disabled, className }: DatePickerPro
         <Button
           disabled={disabled}
           variant={'ghost'}
-          className={cn(
-            'w-auto justify-start text-left font-normal',
-            !date && 'text-muted-foreground',
-            className
-          )}
+          className={cn('rounded-none', !date && 'text-muted-foreground', className)}
         >
-          <CalendarIcon className="h-4 w-4" />
+          <CalendarIcon className="size-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
