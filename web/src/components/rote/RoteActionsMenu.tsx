@@ -231,9 +231,9 @@ export default function RoteActionsMenu({
 
         <DropdownMenuItem
           onSelect={() => {
-            const imageAttachments = rote.attachments?.filter(
-              (a): a is Attachment => !(a instanceof File)
-            );
+            const imageAttachments = rote.attachments
+              ?.filter((a): a is Attachment => !(a instanceof File))
+              .sort((a, b) => (a.sortIndex > b.sortIndex ? 1 : -1));
             let articleTitle: string | undefined;
             if (rote.article?.content) {
               const match = rote.article.content.match(/^\s*#\s+([^\n]+)/);
