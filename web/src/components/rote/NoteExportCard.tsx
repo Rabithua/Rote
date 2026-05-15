@@ -61,17 +61,19 @@ export default function NoteExportCard({
         </h1>
       )}
       {title && <hr style={{ border: 'none', borderTop: '1px solid #e5e5e5', marginBottom: 24 }} />}
-      <div
-        style={{
-          fontSize: 16,
-          lineHeight: 1.75,
-          color: '#333',
-          whiteSpace: 'pre-line',
-          wordBreak: 'break-word',
-        }}
-      >
-        {content}
-      </div>
+      {content && (
+        <div
+          style={{
+            fontSize: 16,
+            lineHeight: 1.75,
+            color: '#333',
+            whiteSpace: 'pre-line',
+            wordBreak: 'break-word',
+          }}
+        >
+          {content}
+        </div>
+      )}
 
       {/* Article reference */}
       {articleTitle && (

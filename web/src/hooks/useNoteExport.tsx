@@ -46,7 +46,7 @@ export function useNoteExport() {
   }: UseNoteExportOptions) => {
     const exportId = Math.random().toString(36).slice(2, 8);
 
-    if (!content) return;
+    if (!content && (!attachments || attachments.length === 0)) return;
     if (exporting) return;
 
     setExporting(true);
