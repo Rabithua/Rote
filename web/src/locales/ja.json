@@ -870,7 +870,11 @@
         "privateNoteShareDescription": "共有する前にノートを公開に設定する必要があります",
         "setPublicAndShare": "公開にして共有"
       },
-      "linkCopied": "リンクをクリップボードにコピーしました"
+      "linkCopied": "リンクをクリップボードにコピーしました",
+      "exportImage": "画像をエクスポート",
+      "exporting": "エクスポート中...",
+      "exportSuccess": "画像をダウンロードしました",
+      "exportFailed": "エクスポート失敗"
     },
     "roteList": {
       "empty": "ここには何もありません",

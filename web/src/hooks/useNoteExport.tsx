@@ -1,4 +1,5 @@
-import ExportCard from '@/components/article/ExportCard';
+import NoteExportCard from '@/components/rote/NoteExportCard';
+import type { Attachment } from '@/types/main';
 import {
   captureElementToPng,
   cleanupOffscreenContainers,
@@ -20,17 +21,29 @@ interface Author {
   username?: string;
 }
 
-interface UseArticleExportOptions {
-  title: string;
+interface UseNoteExportOptions {
+  title?: string;
   content: string;
+  noteId?: string;
   author?: Author;
+  tags?: string[];
+  attachments?: Attachment[];
+  articleTitle?: string;
 }
 
-export function useArticleExport() {
+export function useNoteExport() {
   const [exporting, setExporting] = useState(false);
-  const { t } = useTranslation('translation', { keyPrefix: 'article.actions' });
+  const { t } = useTranslation('translation', { keyPrefix: 'components.roteItem' });
 
-  const handleExportImage = async ({ title, content, author }: UseArticleExportOptions) => {
+  const handleExportImage = async ({
+    title,
+    content,
+    noteId,
+    author,
+    tags,
+    attachments,
+    articleTitle,
+  }: UseNoteExportOptions) => {
     const exportId = Math.random().toString(36).slice(2, 8);
 
     if (!content) return;
@@ -42,6 +55,7 @@ export function useArticleExport() {
       logExport(`[${exportId}] Start`, {
         title: title?.slice(0, 40),
         contentLength: content.length,
+        tags: tags?.length,
       });
 
       let resolvedAuthor = author;
@@ -60,9 +74,13 @@ export function useArticleExport() {
       const root = createRoot(container);
       await new Promise<void>((resolve) => {
         root.render(
-          <ExportCard
-            title={title || 'Untitled'}
+          <NoteExportCard
+            title={title}
             content={content}
+            noteId={noteId}
+            tags={tags}
+            attachments={attachments}
+            articleTitle={articleTitle}
             author={resolvedAuthor}
             onReady={resolve}
           />
@@ -87,7 +105,7 @@ export function useArticleExport() {
       });
 
       const blob = await captureElementToPng(cardEl, scale);
-      downloadBlob(blob, `${title || 'article'}.png`);
+      downloadBlob(blob, `${title || 'note'}.png`);
 
       logExport(`[${exportId}] Done`, { sizeKB: (blob.size / 1024).toFixed(0) });
       toast.success(t('exportSuccess'));

@@ -1,4 +1,16 @@
-import { Bell, Edit3, Ellipsis, Layers, PinIcon, PinOff, Save, Share, Trash2 } from 'lucide-react';
+import {
+  Bell,
+  Edit3,
+  Ellipsis,
+  Image,
+  Layers,
+  Loader2,
+  PinIcon,
+  PinOff,
+  Save,
+  Share,
+  Trash2,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,7 +23,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import type { Rote, Rotes } from '@/types/main';
+import { useNoteExport } from '@/hooks/useNoteExport';
+import type { Attachment, Rote, Rotes } from '@/types/main';
 import { del, put } from '@/utils/api';
 import type { KeyedMutator } from 'swr';
 
@@ -35,6 +48,7 @@ export default function RoteActionsMenu({
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
   });
+  const { exporting, handleExportImage } = useNoteExport();
 
   /**
    * Rote 操作相关的辅助函数集合
@@ -213,6 +227,32 @@ export default function RoteActionsMenu({
         >
           <Share className="size-4" />
           {t('share')}
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onSelect={() => {
+            const imageAttachments = rote.attachments?.filter(
+              (a): a is Attachment => !(a instanceof File)
+            );
+            let articleTitle: string | undefined;
+            if (rote.article?.content) {
+              const match = rote.article.content.match(/^\s*#\s+([^\n]+)/);
+              articleTitle = match ? match[1].trim() : undefined;
+            }
+            handleExportImage({
+              title: rote.title,
+              content: rote.content,
+              noteId: rote.id,
+              author: rote.author,
+              tags: rote.tags,
+              attachments: imageAttachments,
+              articleTitle,
+            });
+          }}
+          disabled={exporting}
+        >
+          {exporting ? <Loader2 className="size-4 animate-spin" /> : <Image className="size-4" />}
+          {exporting ? t('exporting') : t('exportImage')}
         </DropdownMenuItem>
 
         <DropdownMenuItem onSelect={deleteRoteFn} className="text-red-500 focus:text-red-500">

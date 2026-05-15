@@ -860,7 +860,11 @@
         "privateNoteShareDescription": "需要将笔记设置为公开状态才能分享给他人",
         "setPublicAndShare": "设为公开并分享"
       },
-      "linkCopied": "链接已复制到剪贴板"
+      "linkCopied": "链接已复制到剪贴板",
+      "exportImage": "导出图片",
+      "exporting": "导出中...",
+      "exportSuccess": "图片已下载",
+      "exportFailed": "导出失败"
     },
     "roteList": {
       "empty": "还没有发布任何内容",
