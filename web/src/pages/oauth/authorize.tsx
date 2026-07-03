@@ -1,6 +1,7 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
 import { authService } from '@/utils/auth';
+import { getCurrentRedirectPath, getLoginPathWithRedirect } from '@/utils/loginRedirect';
 import {
   getOAuthAuthorizeSession,
   submitOAuthAuthorizeDecision,
@@ -11,10 +12,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-
-function getLoginRedirectPath() {
-  return `${window.location.pathname}${window.location.search}`;
-}
 
 function getScopeLabelKey(scope: string) {
   return scope.replaceAll(':', '_');
@@ -103,7 +100,7 @@ export default function OAuthAuthorizePage() {
     }
 
     if (!authService.hasValidAccessToken() && !authService.hasValidRefreshToken()) {
-      navigate(`/login?redirect=${encodeURIComponent(getLoginRedirectPath())}`, { replace: true });
+      navigate(getLoginPathWithRedirect(getCurrentRedirectPath()), { replace: true });
       return;
     }
 
@@ -115,9 +112,7 @@ export default function OAuthAuthorizePage() {
       })
       .catch((err: any) => {
         if (err?.response?.status === 401) {
-          navigate(`/login?redirect=${encodeURIComponent(getLoginRedirectPath())}`, {
-            replace: true,
-          });
+          navigate(getLoginPathWithRedirect(getCurrentRedirectPath()), { replace: true });
           return;
         }
         setError(err?.response?.data?.message || err?.message || t('errors.loadFailed'));

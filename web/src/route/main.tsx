@@ -2,6 +2,7 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import ScrollPositionManager from '@/components/ScrollPositionManager';
 import LayoutDashboard from '@/layout/dashboard';
 import { useAuthState } from '@/state/profile';
+import { getSafeLoginRedirect } from '@/utils/loginRedirect';
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
 
@@ -38,13 +39,6 @@ function RootLayout() {
       <Outlet />
     </>
   );
-}
-
-function getSafeLoginRedirect(search: string) {
-  const redirectTarget = new URLSearchParams(search).get('redirect');
-  return redirectTarget && redirectTarget.startsWith('/') && !redirectTarget.startsWith('//')
-    ? redirectTarget
-    : '/home';
 }
 
 function LoginRouteEntry() {
