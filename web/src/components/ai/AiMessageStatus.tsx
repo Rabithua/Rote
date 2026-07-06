@@ -17,23 +17,24 @@ function buildScopeSummary(plan: PlannerAgentDto, t: ReturnType<typeof useTransl
   const summary: string[] = [];
   const scope = plan.scope;
   if (!scope) return summary;
+  const listSeparator = t('scope.listSeparator');
 
   if (scope.timeRange) summary.push(t('scope.time', { label: scope.timeRange.label }));
 
   if (scope.tags.length) {
-    summary.push(t('scope.tags', { tags: scope.tags.map((tag) => `#${tag}`).join('、') }));
+    summary.push(t('scope.tags', { tags: scope.tags.map((tag) => `#${tag}`).join(listSeparator) }));
   }
 
   if (scope.excludeTags.length) {
     summary.push(
       t('scope.excludeTags', {
-        tags: scope.excludeTags.map((tag) => `#${tag}`).join('、'),
+        tags: scope.excludeTags.map((tag) => `#${tag}`).join(listSeparator),
       })
     );
   }
 
   if (scope.semanticScope.length) {
-    summary.push(t('scope.semanticScope', { keywords: scope.semanticScope.join('、') }));
+    summary.push(t('scope.semanticScope', { keywords: scope.semanticScope.join(listSeparator) }));
   }
 
   const sourceTypes = scope.sourceTypes;

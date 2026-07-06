@@ -646,6 +646,7 @@
         "tags": "标签：{{tags}}",
         "excludeTags": "排除标签：{{tags}}",
         "semanticScope": "关键词：{{keywords}}",
+        "listSeparator": "、",
         "sourceTypes": {
           "rote": "内容类型：笔记",
           "article": "内容类型：文章",
@@ -1165,7 +1166,7 @@
       },
       "ai": {
         "title": "AI 相关",
-        "description": "配置模型供应商、语义索引和 Rote记忆检索。",
+        "description": "配置模型供应商、语义索引和 Rote 记忆检索。",
         "enabled": "启用 AI",
         "enabledDesc": "允许 AI 接口使用已配置的对话模型。",
         "vectorEnabled": "启用向量存储",

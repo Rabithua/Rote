@@ -37,7 +37,7 @@
       "aiMemory": {
         "tagline": "メモリー",
         "title": "ノートを会話できる AGENT に",
-        "subtitle": "記録した内容をベクトル化し、エージェント設計で自分の記憶を扱えるようにします。",
+        "subtitle": "記録した内容をベクトル化し、エージェント設計で自分のメモリーを扱えるようにします。",
         "features": {
           "semantic": {
             "title": "断片から意味を見つける",
@@ -660,6 +660,7 @@
         "tags": "タグ：{{tags}}",
         "excludeTags": "除外タグ：{{tags}}",
         "semanticScope": "キーワード：{{keywords}}",
+        "listSeparator": "、",
         "sourceTypes": {
           "rote": "種類：ノート",
           "article": "種類：記事",
@@ -743,8 +744,8 @@
         "reading": "ソースを読んで生成中...",
         "interrupted": "前回の回答は中断されました",
         "askFailed": "リクエスト失敗",
-        "fallbackNoAnswerWithSources": "関連する記憶が見つかりましたが、モデルから有効な回答が返されませんでした。別の質問を試すか、範囲を絞ってみてください。",
-        "fallbackNoAnswerNoSources": "関連する記憶が見つからなかったため、現在のノートに基づいて回答することができません。",
+        "fallbackNoAnswerWithSources": "関連するメモリーが見つかりましたが、モデルから有効な回答が返されませんでした。別の質問を試すか、範囲を絞ってみてください。",
+        "fallbackNoAnswerNoSources": "関連するメモリーが見つからなかったため、現在のノートに基づいて回答することができません。",
         "clarifyUnresolvedTags": "タグ {{tags}} が見つかりませんでした。既存のタグに変更するか、タグを限定せずにキーワードで検索しますか？",
         "clarifyAmbiguousTime": "どの期間のノートを見たいですか？",
         "clarifyAmbiguousScope": "範囲が少し曖昧です。もう少し具体的に指定していただけますか？",
@@ -1179,7 +1180,7 @@
       },
       "ai": {
         "title": "AI 関連",
-        "description": "モデルプロバイダー、セマンティックインデックス、Rote メモリ検索を設定します。",
+        "description": "モデルプロバイダー、セマンティックインデックス、Rote メモリー検索を設定します。",
         "enabled": "AI を有効化",
         "enabledDesc": "設定済みのチャットモデルを AI API で使用します。",
         "vectorEnabled": "ベクトル保存を有効化",

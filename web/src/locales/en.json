@@ -656,6 +656,7 @@
         "tags": "Tags: {{tags}}",
         "excludeTags": "Exclude tags: {{tags}}",
         "semanticScope": "Keywords: {{keywords}}",
+        "listSeparator": ", ",
         "sourceTypes": {
           "rote": "Content: notes",
           "article": "Content: articles",
