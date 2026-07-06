@@ -35,7 +35,7 @@
         }
       },
       "aiMemory": {
-        "tagline": "MEMORY",
+        "tagline": "メモリー",
         "title": "ノートを会話できる AGENT に",
         "subtitle": "記録した内容をベクトル化し、エージェント設計で自分の記憶を扱えるようにします。",
         "features": {
