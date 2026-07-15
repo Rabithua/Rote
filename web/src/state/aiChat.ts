@@ -41,6 +41,7 @@ export type AiMemoryMessage = {
   pendingPlan?: PlannerAgentDto;
   clarification?: boolean;
   error?: boolean;
+  errorDetail?: string;
   saved?: boolean;
   metrics?: AiMessageMetrics;
   thinking?: {
@@ -50,6 +51,21 @@ export type AiMemoryMessage = {
   /** Transient — never persisted. */
   isStreaming?: boolean;
 };
+
+const AI_SOURCE_KEY_PATTERN = /^(rote|article):[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i;
+
+export function sanitizeAiSourceKeys(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .filter(
+          (item): item is string => typeof item === 'string' && AI_SOURCE_KEY_PATTERN.test(item)
+        )
+        .map((item) => item.toLowerCase())
+    )
+  ).slice(0, 500);
+}
 
 export function getAiSourceKey(source: AiSemanticResult): string {
   return `${source.sourceType}:${source.sourceId}`;
@@ -104,11 +120,12 @@ export function sanitizeAiChatMessages(
     if (next.isStreaming) {
       changed = true;
       const { isStreaming: _isStreaming, ...stableMessage } = next;
-      const wasInterruptedAssistant = stableMessage.role === 'assistant' && !stableMessage.content;
+      const wasInterruptedAssistant = stableMessage.role === 'assistant';
       next = {
         ...stableMessage,
-        content: wasInterruptedAssistant ? interruptedContent : stableMessage.content,
+        content: stableMessage.content,
         error: wasInterruptedAssistant ? true : stableMessage.error,
+        errorDetail: wasInterruptedAssistant ? interruptedContent : stableMessage.errorDetail,
       };
     }
 
@@ -142,7 +159,7 @@ export function getSeenSourceIdsForActiveAiPlan(messages: AiMemoryMessage[]): st
     if (message.role !== 'assistant') continue;
 
     if (message.sources?.length) {
-      ids.push(...message.sources.map(getAiSourceKey));
+      ids.push(...sanitizeAiSourceKeys(message.sources.map(getAiSourceKey)));
     }
 
     if (message.plan) {
@@ -150,7 +167,7 @@ export function getSeenSourceIdsForActiveAiPlan(messages: AiMemoryMessage[]): st
     }
   }
 
-  return Array.from(new Set(ids)).slice(0, 500);
+  return sanitizeAiSourceKeys(ids);
 }
 
 export const aiChatMessagesAtom = atomWithStorage<AiMemoryMessage[]>('aiChatMessages', []);

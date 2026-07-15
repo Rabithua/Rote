@@ -1,23 +1,17 @@
 import { authService } from './auth';
 import { get, getApiUrl, post, refreshAccessToken } from './api';
+import { readAiStreamResponse } from './aiStream';
 import type {
   AiAgentClientState,
-  AiAgentPhase,
-  AiAgentToolProgressStatus,
   AiChatPayload,
   AiChatStreamHandlers,
   AiClientRequestContext,
-  AiClarification,
   AiProviderTestProgressHandler,
   AiProviderTestResult,
   AiSemanticResult,
   AiStatus,
-  AiThinkingPhase,
-  AiTokenUsage,
-  AiUsagePhase,
   ClientAgentBootstrap,
   ClientAgentToolResult,
-  PlannerAgentDto,
   AiSourceType,
 } from './aiTypes';
 
@@ -109,6 +103,7 @@ export const executeClientAgentTool = (payload: {
   request: AiChatPayload;
   state?: AiAgentClientState | null;
   sourceKeys?: string[];
+  sourceCharsUsed?: number;
 }) => {
   const request = withAiClientRequestContext(payload.request);
   return post('/ai/client-agent/tools/execute', {
@@ -169,28 +164,13 @@ async function readResponseError(response: Response): Promise<string> {
   }
 }
 
-function parseSseEvent(block: string): { event: string; data: unknown } | null {
-  let event = 'message';
-  const dataLines: string[] = [];
-  block.split('\n').forEach((line) => {
-    if (line.startsWith('event:')) event = line.slice(6).trim();
-    else if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart());
-  });
-  if (dataLines.length === 0) return null;
-  const dataText = dataLines.join('\n');
-  try {
-    return { event, data: JSON.parse(dataText) };
-  } catch {
-    return { event, data: dataText };
-  }
-}
-
 export async function aiChatStream(
   payload: AiChatPayload,
   handlers: AiChatStreamHandlers,
   signal?: AbortSignal
 ): Promise<void> {
   const response = await createAiStreamRequest('/ai/chat/stream', payload, signal);
+  if (!response.ok) throw new Error(await readResponseError(response));
   await readAiStreamResponse(response, handlers);
 }
 
@@ -200,119 +180,8 @@ export async function aiAgentStream(
   signal?: AbortSignal
 ): Promise<void> {
   const response = await createAiStreamRequest('/ai/agent/stream', payload, signal);
-  await readAiStreamResponse(response, handlers);
-}
-
-async function readAiStreamResponse(
-  response: Response,
-  handlers: AiChatStreamHandlers
-): Promise<void> {
   if (!response.ok) throw new Error(await readResponseError(response));
-  if (!response.body) throw new Error('Streaming response is not supported in this browser');
-
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let doneReceived = false;
-
-  const dispatch = (block: string) => {
-    const parsed = parseSseEvent(block);
-    if (!parsed) return;
-
-    if (parsed.event === 'run_started') {
-      const runId = (parsed.data as { runId?: string })?.runId;
-      if (runId) handlers.onRunStarted?.(runId);
-    } else if (parsed.event === 'progress') {
-      const data = parsed.data as { phase?: AiAgentPhase };
-      if (data.phase) handlers.onProgress?.(data.phase);
-    } else if (parsed.event === 'heartbeat') {
-      const data = parsed.data as { phase?: AiAgentPhase; seq?: number; timestamp?: string };
-      if (data.phase && typeof data.seq === 'number' && typeof data.timestamp === 'string') {
-        handlers.onHeartbeat?.({ phase: data.phase, seq: data.seq, timestamp: data.timestamp });
-      }
-    } else if (parsed.event === 'tool_started') {
-      const data = parsed.data as { toolName?: string; args?: unknown };
-      if (data.toolName) handlers.onToolStarted?.(data.toolName, data.args);
-    } else if (parsed.event === 'tool_progress') {
-      const data = parsed.data as { toolName?: string; status?: AiAgentToolProgressStatus };
-      if (data.toolName && data.status) handlers.onToolProgress?.(data.toolName, data.status);
-    } else if (parsed.event === 'tool_finished') {
-      const data = parsed.data as { toolName?: string; summary?: string };
-      if (data.toolName) handlers.onToolFinished?.(data.toolName, data.summary);
-    } else if (parsed.event === 'plan') {
-      const plan = (parsed.data as { plan?: PlannerAgentDto })?.plan;
-      if (plan) handlers.onPlan?.(plan);
-    } else if (parsed.event === 'clarification') {
-      const clarification = parsed.data as AiClarification;
-      if (clarification?.question) handlers.onClarification?.(clarification);
-    } else if (parsed.event === 'sources') {
-      const sources = (parsed.data as { sources?: AiSemanticResult[] })?.sources;
-      handlers.onSources?.(Array.isArray(sources) ? sources : []);
-    } else if (parsed.event === 'thinking') {
-      const data = parsed.data as { phase?: AiThinkingPhase; text?: string };
-      if (
-        (data.phase === 'route_decision' ||
-          data.phase === 'evidence_decision' ||
-          data.phase === 'retrieval_planning' ||
-          data.phase === 'answer') &&
-        typeof data.text === 'string'
-      ) {
-        handlers.onThinking?.(data.phase, data.text);
-      }
-    } else if (parsed.event === 'delta') {
-      const text = (parsed.data as { text?: string })?.text;
-      if (typeof text === 'string') handlers.onDelta?.(text);
-    } else if (parsed.event === 'state_patch') {
-      const state = (parsed.data as { state?: Partial<AiAgentClientState> })?.state;
-      if (state) handlers.onStatePatch?.(state);
-    } else if (parsed.event === 'usage') {
-      const data = parsed.data as { phase?: AiUsagePhase; usage?: Partial<AiTokenUsage> };
-      const rawUsage = data.usage;
-      if (
-        data.phase &&
-        rawUsage &&
-        typeof rawUsage.prompt_tokens === 'number' &&
-        typeof rawUsage.completion_tokens === 'number' &&
-        typeof rawUsage.total_tokens === 'number'
-      ) {
-        handlers.onUsage?.(
-          {
-            prompt_tokens: rawUsage.prompt_tokens,
-            completion_tokens: rawUsage.completion_tokens,
-            total_tokens: rawUsage.total_tokens,
-          },
-          data.phase
-        );
-      }
-    } else if (parsed.event === 'done') {
-      doneReceived = true;
-      handlers.onDone?.();
-    } else if (parsed.event === 'error') {
-      const message = (parsed.data as { message?: string })?.message || 'AI stream failed';
-      handlers.onError?.(message);
-      throw new Error(message);
-    }
-  };
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
-      let boundary = buffer.indexOf('\n\n');
-      while (boundary !== -1) {
-        const block = buffer.slice(0, boundary);
-        buffer = buffer.slice(boundary + 2);
-        dispatch(block);
-        boundary = buffer.indexOf('\n\n');
-      }
-    }
-    const tail = buffer.trim();
-    if (tail) dispatch(tail);
-    if (!doneReceived) handlers.onDone?.();
-  } finally {
-    reader.releaseLock();
-  }
+  await readAiStreamResponse(response, handlers);
 }
 
 export const aiSearch = (payload: {

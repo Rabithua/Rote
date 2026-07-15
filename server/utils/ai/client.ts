@@ -15,6 +15,7 @@ import type {
   ChatToolDefinition,
   ToolCallingProbeResult,
 } from './clientShared';
+import { createProviderStreamControl } from './clientStreamControl';
 
 export type {
   ChatCompletionOptions,
@@ -31,6 +32,11 @@ export {
   createChatCompletionStreamParts,
   createChatCompletionWithToolsStreaming,
 } from './clientStream';
+export {
+  AiProviderStreamError,
+  isAiProviderStreamError,
+  type AiProviderStreamErrorCode,
+} from './clientStreamControl';
 
 export async function createEmbedding(
   config: AiProviderConfig & { dimensions?: number },
@@ -77,29 +83,37 @@ export async function createChatCompletion(
   usage?: ChatCompletionUsage;
 }> {
   ensureProviderConfig(config);
+  const control = createProviderStreamControl(options);
 
-  const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
-    method: 'POST',
-    headers: buildHeaders(config),
-    body: JSON.stringify(
-      buildChatRequestBody(config, {
-        messages,
-        temperature: options.temperature ?? 0.2,
-        enableThinking: options.enableThinking,
-      })
-    ),
-  });
-  const body = await readJsonResponse(response);
-  const content = body?.choices?.[0]?.message?.content;
+  try {
+    const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: buildHeaders(config),
+      body: JSON.stringify(
+        buildChatRequestBody(config, {
+          messages,
+          temperature: options.temperature ?? 0.2,
+          enableThinking: options.enableThinking,
+        })
+      ),
+      signal: control.signal,
+    });
+    const body = await readJsonResponse(response);
+    const content = body?.choices?.[0]?.message?.content;
 
-  if (typeof content !== 'string') {
-    throw new Error('Chat provider returned an invalid chat completion response');
+    if (typeof content !== 'string') {
+      throw new Error('Chat provider returned an invalid chat completion response');
+    }
+
+    return {
+      content,
+      usage: normalizeUsage(body?.usage),
+    };
+  } catch (error) {
+    throw control.normalizeError(error);
+  } finally {
+    control.cleanup();
   }
-
-  return {
-    content,
-    usage: normalizeUsage(body?.usage),
-  };
 }
 
 export async function createChatCompletionWithTools(
@@ -112,35 +126,43 @@ export async function createChatCompletionWithTools(
   usage?: ChatCompletionUsage;
 }> {
   ensureProviderConfig(config);
+  const control = createProviderStreamControl(options);
 
-  const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
-    method: 'POST',
-    headers: buildHeaders(config),
-    body: JSON.stringify(
-      buildChatRequestBody(config, {
-        messages,
-        tools,
-        toolChoice: options.toolChoice ?? 'auto',
-        temperature: options.temperature ?? 0.2,
-        enableThinking: options.enableThinking,
-      })
-    ),
-  });
-  const body = await readJsonResponse(response);
-  const message = body?.choices?.[0]?.message;
+  try {
+    const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: buildHeaders(config),
+      body: JSON.stringify(
+        buildChatRequestBody(config, {
+          messages,
+          tools,
+          toolChoice: options.toolChoice ?? 'auto',
+          temperature: options.temperature ?? 0.2,
+          enableThinking: options.enableThinking,
+        })
+      ),
+      signal: control.signal,
+    });
+    const body = await readJsonResponse(response);
+    const message = body?.choices?.[0]?.message;
 
-  if (!message || typeof message !== 'object') {
-    throw new Error('Chat provider returned an invalid tool completion response');
+    if (!message || typeof message !== 'object') {
+      throw new Error('Chat provider returned an invalid tool completion response');
+    }
+
+    return {
+      message: {
+        role: 'assistant',
+        content: typeof message.content === 'string' ? message.content : null,
+        tool_calls: normalizeToolCalls(message.tool_calls),
+      },
+      usage: normalizeUsage(body?.usage),
+    };
+  } catch (error) {
+    throw control.normalizeError(error);
+  } finally {
+    control.cleanup();
   }
-
-  return {
-    message: {
-      role: 'assistant',
-      content: typeof message.content === 'string' ? message.content : null,
-      tool_calls: normalizeToolCalls(message.tool_calls),
-    },
-    usage: normalizeUsage(body?.usage),
-  };
 }
 
 export async function testChatProvider(config: AiProviderConfig): Promise<void> {

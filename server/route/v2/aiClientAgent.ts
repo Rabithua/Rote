@@ -120,6 +120,7 @@ export function registerClientAgentRoutes(router: Hono<{ Variables: HonoVariable
       maxIterations: DEFAULT_AGENT_POLICY.maxIterations,
       maxToolCalls: DEFAULT_AGENT_POLICY.maxToolCalls,
       maxSources: DEFAULT_AGENT_POLICY.maxSources,
+      maxSourceChars: DEFAULT_AGENT_POLICY.maxSourceChars,
     };
 
     return c.json(
@@ -155,6 +156,7 @@ export function registerClientAgentRoutes(router: Hono<{ Variables: HonoVariable
         request: body?.request,
         state: body?.state,
         sourceKeys: body?.sourceKeys,
+        sourceCharsUsed: body?.sourceCharsUsed,
       });
 
       return c.json(
@@ -167,6 +169,7 @@ export function registerClientAgentRoutes(router: Hono<{ Variables: HonoVariable
           statePatch: result.statePatch,
           state: result.state,
           sourceKeys: result.sourceKeys,
+          sourceCharsUsed: result.sourceCharsUsed,
           clarification: result.clarification,
         }),
         200

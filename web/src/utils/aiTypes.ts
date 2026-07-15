@@ -160,6 +160,13 @@ export type AiTokenUsage = {
   total_tokens: number;
 };
 
+export type AiStreamFailure = {
+  code: string;
+  message: string;
+  runId?: string;
+  retryable: boolean;
+};
+
 export interface AiClientRequestContext {
   nowIso: string;
   localDate: string;
@@ -199,7 +206,7 @@ export type AiChatStreamHandlers = {
   onStatePatch?: (state: Partial<AiAgentClientState>) => void;
   onUsage?: (usage: AiTokenUsage, phase: AiUsagePhase) => void;
   onDone?: () => void;
-  onError?: (message: string) => void;
+  onError?: (failure: AiStreamFailure) => void;
 };
 
 export type ClientAgentBootstrap = {
@@ -209,7 +216,12 @@ export type ClientAgentBootstrap = {
     type: 'function';
     function: { name: string; description: string; parameters: Record<string, unknown> };
   }>;
-  policy: { maxIterations: number; maxToolCalls: number; maxSources: number };
+  policy: {
+    maxIterations: number;
+    maxToolCalls: number;
+    maxSources: number;
+    maxSourceChars: number;
+  };
 };
 
 export type ClientAgentToolResult = {
@@ -221,6 +233,7 @@ export type ClientAgentToolResult = {
   statePatch?: Partial<AiAgentClientState>;
   state: AiAgentClientState;
   sourceKeys: string[];
+  sourceCharsUsed: number;
   clarification?: AiClarification;
 };
 
