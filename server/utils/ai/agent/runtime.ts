@@ -238,7 +238,6 @@ export async function runRoteAgentStream(params: {
 
     for (let step = 0; step < policy.maxIterations; step += 1) {
       const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
-      const decisionContentChunks: string[] = [];
       let assistantMessage: ChatMessage;
       let responseUsage: Awaited<
         ReturnType<typeof createChatCompletionWithToolsStreaming>
@@ -259,9 +258,6 @@ export async function runRoteAgentStream(params: {
                   phase: step === 0 ? 'route_decision' : 'evidence_decision',
                   text,
                 }),
-              onContent: (text) => {
-                decisionContentChunks.push(text);
-              },
             }
           )
         );
@@ -282,18 +278,10 @@ export async function runRoteAgentStream(params: {
 
       const toolCalls = assistantMessage.tool_calls || [];
       if (!toolCalls.length) {
-        hasFinalAnswer = !!assistantMessage.content?.trim();
-        if (hasFinalAnswer) {
-          if (decisionContentChunks.length) {
-            for (const text of decisionContentChunks) await emit({ type: 'delta', text });
-          } else if (assistantMessage.content) {
-            await emit({ type: 'delta', text: assistantMessage.content });
-          }
-        }
         if (responseUsage) {
           await emit({
             type: 'usage',
-            phase: hasFinalAnswer ? 'answer' : step === 0 ? 'planning' : 'tool_decision',
+            phase: step === 0 ? 'planning' : 'tool_decision',
             usage: responseUsage,
           });
         }
