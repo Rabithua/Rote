@@ -68,6 +68,7 @@ export async function createDirectSiteChat(params: {
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
   clientContext?: RetrievalTimeContext | null;
   enableThinking?: boolean;
+  signal?: AbortSignal;
 }) {
   const config = await getStoredAiConfig();
   const result = await createChatCompletion(
@@ -75,6 +76,7 @@ export async function createDirectSiteChat(params: {
     buildMessages(params.message, params.history, params.clientContext),
     {
       enableThinking: params.enableThinking,
+      signal: params.signal,
     }
   );
   if (result.usage) await logUsage(params.userId, config.chat.model, result.usage);
@@ -87,6 +89,7 @@ export async function streamDirectSiteChat(params: {
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
   clientContext?: RetrievalTimeContext | null;
   enableThinking?: boolean;
+  signal?: AbortSignal;
   onReasoning: (text: string) => Promise<void>;
   onContent: (text: string) => Promise<void>;
   onUsage: (usage: ChatCompletionUsage) => Promise<void>;
@@ -96,7 +99,7 @@ export async function streamDirectSiteChat(params: {
   for await (const part of createChatCompletionStreamParts(
     config.chat,
     buildMessages(params.message, params.history, params.clientContext),
-    { enableThinking: params.enableThinking }
+    { enableThinking: params.enableThinking, signal: params.signal }
   )) {
     if (part.type === 'reasoning') await params.onReasoning(part.text);
     if (part.type === 'content') await params.onContent(part.text);

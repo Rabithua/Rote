@@ -40,6 +40,9 @@ export type ChatCompletionOptions = {
   temperature?: number;
   enableThinking?: boolean;
   toolChoice?: ChatToolChoice;
+  signal?: AbortSignal;
+  requestTimeoutMs?: number;
+  idleTimeoutMs?: number;
 };
 
 export type ToolCallingProbeResult = {

@@ -91,13 +91,29 @@ export type RoteAgentStreamEvent =
   | { type: 'state_patch'; state: Partial<RoteAgentClientState> }
   | { type: 'usage'; phase: RoteAgentUsagePhase; usage: ChatCompletionUsage }
   | { type: 'done' }
-  | { type: 'error'; message: string };
+  | {
+      type: 'error';
+      message: string;
+      code?: string;
+      runId?: string;
+      retryable?: boolean;
+    };
 
 export type RoteAgentEmitter = (event: RoteAgentStreamEvent) => Promise<void> | void;
 
 export type RoteAgentSourceRegistration = {
   index: number;
   source: SemanticSearchResult;
+  isNew: boolean;
+};
+
+export type RoteAgentSourceBudgetSnapshot = {
+  sourceCount: number;
+  maxSources: number;
+  sourceCharsUsed: number;
+  maxSourceChars: number;
+  remainingSources: number;
+  remainingSourceChars: number;
 };
 
 export type RoteAgentContext = {
@@ -110,6 +126,8 @@ export type RoteAgentContext = {
   state: RoteAgentClientState;
   emit: RoteAgentEmitter;
   registerSources: (sources: SemanticSearchResult[]) => RoteAgentSourceRegistration[];
+  consumeSourceText: (value: string, requestedChars?: number) => string;
+  getSourceBudget: () => RoteAgentSourceBudgetSnapshot;
   getSources: () => SemanticSearchResult[];
 };
 

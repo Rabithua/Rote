@@ -86,7 +86,7 @@ describe('local AI agent', () => {
           function: { name: 'rote_get_tags', description: 'tags', parameters: {} },
         },
       ],
-      policy: { maxIterations: 2, maxToolCalls: 2, maxSources: 20 },
+      policy: { maxIterations: 2, maxToolCalls: 2, maxSources: 20, maxSourceChars: 12_000 },
     });
     mocks.complete
       .mockResolvedValueOnce({
@@ -111,6 +111,7 @@ describe('local AI agent', () => {
       sources: [],
       state: { stateVersion: 1, seenSourceIds: [] },
       sourceKeys: [],
+      sourceCharsUsed: 250,
     });
     const onDelta = vi.fn();
 
@@ -135,6 +136,7 @@ describe('local AI agent', () => {
         toolName: 'rote_get_tags',
         arguments: {},
         request: expect.objectContaining({ clientContext: mocks.clientContext }),
+        sourceCharsUsed: 0,
       })
     );
     expect(onDelta).toHaveBeenCalledWith('final answer');
@@ -154,7 +156,7 @@ describe('local AI agent', () => {
           function: { name: 'rote_search_notes', description: 'search', parameters: {} },
         },
       ],
-      policy: { maxIterations: 2, maxToolCalls: 1, maxSources: 20 },
+      policy: { maxIterations: 2, maxToolCalls: 1, maxSources: 20, maxSourceChars: 12_000 },
     });
     mocks.complete
       .mockResolvedValueOnce({
@@ -199,6 +201,7 @@ describe('local AI agent', () => {
       sources: [],
       state: { stateVersion: 1, seenSourceIds: [] },
       sourceKeys: [],
+      sourceCharsUsed: 250,
     });
 
     await localAiAgentStream({

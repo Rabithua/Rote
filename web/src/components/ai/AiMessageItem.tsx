@@ -101,7 +101,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
             </div>
           </div>
         )}
-        {message.role === 'assistant' && !message.error ? (
+        {message.role === 'assistant' && (!message.error || message.errorDetail) ? (
           message.content ? (
             <AiStreamingMarkdown
               content={message.content}
@@ -109,6 +109,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
               sources={message.sources}
             />
           ) : (
+            !message.error &&
             !hasAssistantStatus && (
               <div className="text-info flex items-center gap-2">
                 <Loader className="size-4 animate-spin" />
@@ -127,6 +128,11 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
             }`}
           >
             {message.content}
+          </div>
+        )}
+        {message.error && message.errorDetail && (
+          <div className="text-destructive text-xs wrap-break-word whitespace-pre-line">
+            {message.errorDetail}
           </div>
         )}
         {!message.error && message.metrics && !message.isStreaming && (

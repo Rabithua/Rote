@@ -9,7 +9,7 @@ const config = {
   temperature: 0.2,
 };
 
-function sseResponse(events: unknown[]) {
+function sseResponse(events: unknown[], options: { includeDone?: boolean } = {}) {
   const encoder = new TextEncoder();
   return new Response(
     new ReadableStream({
@@ -17,7 +17,9 @@ function sseResponse(events: unknown[]) {
         events.forEach((event) =>
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
         );
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        if (options.includeDone !== false) {
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        }
         controller.close();
       },
     }),
@@ -144,5 +146,37 @@ describe('local AI client', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
       chat_template_kwargs: { enable_thinking: true },
     });
+  });
+
+  it('rejects personal model EOF without a terminal marker', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      sseResponse([{ choices: [{ delta: { content: 'partial' } }] }], {
+        includeDone: false,
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      streamLocalChatCompletion({
+        config,
+        messages: [{ role: 'user', content: 'Answer' }],
+      })
+    ).rejects.toMatchObject({ code: 'ai_provider_stream_incomplete' });
+  });
+
+  it('rejects truncated personal model output', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        sseResponse([{ choices: [{ delta: { content: 'partial' }, finish_reason: 'length' }] }])
+      );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      streamLocalChatCompletion({
+        config,
+        messages: [{ role: 'user', content: 'Answer' }],
+      })
+    ).rejects.toMatchObject({ code: 'ai_provider_output_truncated' });
   });
 });

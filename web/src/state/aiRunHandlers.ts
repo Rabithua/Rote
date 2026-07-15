@@ -21,6 +21,9 @@ export type AiRunLabels = {
   toolFinished: (toolName: string) => string;
   sourcesFound: (count: number) => string;
   askFailed: string;
+  streamInterrupted: string;
+  streamTimeout: string;
+  streamTruncated: string;
   fallbackNoAnswerWithSources: string;
   fallbackNoAnswerNoSources: string;
 };

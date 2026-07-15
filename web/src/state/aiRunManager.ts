@@ -1,6 +1,7 @@
 import { getDefaultStore } from 'jotai';
 import { toast } from 'sonner';
 import { aiAgentStream, aiChatStream, type AiAgentClientState } from '@/utils/aiApi';
+import { isAiStreamError } from '@/utils/aiStream';
 import type { PersonalAiProviderConfig, PersonalAiMode } from '@/state/localAi';
 import { localAiAgentStream } from '@/utils/localAiAgent';
 import {
@@ -13,6 +14,7 @@ import {
   aiRunStateAtom,
   getLatestAiAssistantPlan,
   getSeenSourceIdsForActiveAiPlan,
+  sanitizeAiSourceKeys,
   settleAiMessageTimeline,
   type AiMemoryMessage,
 } from '@/state/aiChat';
@@ -168,9 +170,10 @@ function mergeAgentState(
   options: { replaceSeenSourceIds?: boolean } = {}
 ) {
   const previous = agentState;
+  const incomingSeenSourceIds = sanitizeAiSourceKeys(state.seenSourceIds);
   const nextSeenSourceIds = options.replaceSeenSourceIds
-    ? new Set(state.seenSourceIds || [])
-    : new Set([...(previous.seenSourceIds || []), ...(state.seenSourceIds || [])]);
+    ? new Set(incomingSeenSourceIds)
+    : new Set([...sanitizeAiSourceKeys(previous.seenSourceIds), ...incomingSeenSourceIds]);
   agentState = {
     ...previous,
     ...state,
@@ -205,6 +208,24 @@ export function clearAiRun() {
   };
   setRunState({ isSending: false });
   store.set(aiChatMessagesAtom, []);
+}
+
+export function getAiRunFailureMessage(error: unknown, labels: AiRunLabels): string {
+  const code = isAiStreamError(error) ? error.code : undefined;
+  if (code === 'error_no_answer_with_sources') return labels.fallbackNoAnswerWithSources;
+  if (code === 'error_no_answer_no_sources') return labels.fallbackNoAnswerNoSources;
+  if (code === 'ai_stream_timeout' || code === 'ai_provider_timeout') {
+    return labels.streamTimeout;
+  }
+  if (code === 'ai_provider_output_truncated') return labels.streamTruncated;
+  if (code === 'ai_stream_incomplete' || code === 'ai_provider_stream_incomplete') {
+    return labels.streamInterrupted;
+  }
+
+  const message = error instanceof Error ? error.message : '';
+  if (message === 'error_no_answer_with_sources') return labels.fallbackNoAnswerWithSources;
+  if (message === 'error_no_answer_no_sources') return labels.fallbackNoAnswerNoSources;
+  return labels.askFailed;
 }
 
 export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
@@ -328,14 +349,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
     const aborted = controller.signal.aborted || error?.name === 'AbortError';
     if (aborted) return true;
 
-    let fallbackMessage =
-      error?.response?.data?.message || error?.message || params.labels.askFailed;
-
-    if (fallbackMessage === 'error_no_answer_with_sources') {
-      fallbackMessage = params.labels.fallbackNoAnswerWithSources;
-    } else if (fallbackMessage === 'error_no_answer_no_sources') {
-      fallbackMessage = params.labels.fallbackNoAnswerNoSources;
-    }
+    const fallbackMessage = getAiRunFailureMessage(error, params.labels);
     const streamContent = activeStream?.targetContent || activeStream?.content || '';
     flushStreamContent(assistantId, { force: true });
     setMessagesForActiveRun(assistantId, (prev) =>
@@ -344,9 +358,14 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
           ? settleAiMessageTimeline(
               {
                 ...message,
-                content: streamContent || fallbackMessage,
-                error: streamContent ? message.error : true,
+                content: streamContent,
+                error: true,
+                errorDetail: fallbackMessage,
                 isStreaming: false,
+                metrics: {
+                  ...message.metrics,
+                  totalTime: performance.now() - start,
+                },
               },
               'error'
             )

@@ -40,6 +40,7 @@ describe('sanitizeExcludeIds', () => {
     expect(
       sanitizeExcludeIds([
         `rote:${roteId}`,
+        `rote:${roteId}`,
         'rote:not-a-uuid',
         `article:${articleId}`,
         'unknown:4c67fd19-1961-4942-a2ef-f61e203be40f',

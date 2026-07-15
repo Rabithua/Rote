@@ -250,6 +250,7 @@ export async function prepareRoteChatContext(params: {
   onPlanThinkingDelta?: (text: string) => Promise<void> | void;
   enableThinking?: boolean;
   clientContext?: RetrievalTimeContext | null;
+  signal?: AbortSignal;
 }): Promise<{
   config: AiConfig;
   messages: ChatMessage[];
@@ -272,6 +273,7 @@ export async function prepareRoteChatContext(params: {
     enableThinking: params.enableThinking === true,
     timeContext: params.clientContext,
     onThinkingDelta: params.onPlanThinkingDelta,
+    signal: params.signal,
     onUsage: (usage) => logChatTokenUsage(params.ownerId, config.chat.model, usage),
   });
   const plan = toPlannerAgentDto(internalPlan);

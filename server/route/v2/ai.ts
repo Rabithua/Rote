@@ -16,7 +16,12 @@ import {
   testChatProvider,
 } from '../../utils/ai/client';
 import { createDirectSiteChat, streamDirectSiteChat } from '../../utils/ai/directChat';
-import { runRoteAgentStream, type RoteAgentStreamEvent } from '../../utils/ai/agent/runtime';
+import { runRoteAgentStream } from '../../utils/ai/agent/runtime';
+import {
+  classifyAiStreamError,
+  createAiRunId,
+  logAiStreamLifecycle,
+} from '../../utils/ai/agent/observability';
 import {
   type AiSourceType,
   chatWithRoteContext,
@@ -25,11 +30,12 @@ import {
   getOwnerAiMemoryStats,
   getPgvectorStatus,
   getStoredAiConfig,
+  logAiTokenUsage,
   prepareRoteChatContext,
   searchMemory,
-  logAiTokenUsage,
 } from '../../utils/dbMethods';
 import { bodyTypeCheck, createResponse } from '../../utils/main';
+import { type AiSseStream, writeAgentSseEvent, writeSseEvent } from './aiAgentSse';
 import { registerAdminAiRoutes } from './aiAdmin';
 import { registerClientAgentRoutes } from './aiClientAgent';
 
@@ -40,67 +46,12 @@ function getAiMemoryErrorStatus(message: string): 403 | 503 {
   return message === AI_MEMORY_UNAVAILABLE_MESSAGE ? 503 : 403;
 }
 
-async function writeSseEvent(
-  stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
-  event: string,
-  data: unknown
-): Promise<void> {
-  await stream.writeSSE({
-    event,
-    data: JSON.stringify(data),
-  });
-}
-
-function normalizeSourcePreview(text: unknown): string {
-  return String(text || '')
-    .replace(/^(Title:[^\n]*\n)?(Tags:[^\n]*\n)?/i, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 180);
-}
-
-function toClientSource(source: any) {
-  const metadata = source?.metadata || {};
-  const tags = Array.isArray(metadata.tags)
-    ? metadata.tags.filter((tag: unknown) => typeof tag === 'string').slice(0, 8)
-    : [];
-
-  return {
-    sourceType: source.sourceType,
-    sourceId: source.sourceId,
-    similarity: Number(source.similarity) || 0,
-    retrievalMode: source.retrievalMode || metadata.retrievalMode || 'relevance',
-    preview: normalizeSourcePreview(source.text),
-    metadata: {
-      title: typeof metadata.title === 'string' ? metadata.title : '',
-      tags,
-      state: typeof metadata.state === 'string' ? metadata.state : undefined,
-      archived: typeof metadata.archived === 'boolean' ? metadata.archived : undefined,
-      createdAt: metadata.createdAt,
-      updatedAt: metadata.updatedAt,
-      retrievalMode: source.retrievalMode || metadata.retrievalMode || 'relevance',
-      retrievalDateField: metadata.retrievalDateField,
-    },
-  };
-}
-
-async function writeAgentSseEvent(
-  stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
-  event: RoteAgentStreamEvent
-): Promise<void> {
-  const data = { ...(event as any) };
-  delete data.type;
-  if (event.type === 'sources') {
-    data.sources = Array.isArray(event.sources) ? event.sources.map(toClientSource) : [];
-  }
-  await writeSseEvent(stream, event.type, data);
-}
-
 async function streamToolPlannedChatResponse(
-  stream: Parameters<Parameters<typeof streamSSE>[1]>[0],
+  stream: AiSseStream,
   user: User,
   body: any,
-  message: string
+  message: string,
+  signal: AbortSignal
 ): Promise<void> {
   const { config, messages, sources, clarification } = await prepareRoteChatContext({
     ownerId: user.id,
@@ -110,6 +61,7 @@ async function streamToolPlannedChatResponse(
     history: body?.history,
     clientContext: body?.clientContext,
     enableThinking: body?.enableThinking === true,
+    signal,
     onPlanThinkingDelta: async (text) => {
       await writeSseEvent(stream, 'thinking', { phase: 'retrieval_planning', text });
     },
@@ -130,6 +82,7 @@ async function streamToolPlannedChatResponse(
   let lastUsage: any = null;
   for await (const part of createChatCompletionStreamParts(config.chat, messages, {
     enableThinking: body?.enableThinking === true,
+    signal,
   })) {
     if (part.type === 'reasoning') {
       await writeSseEvent(stream, 'thinking', { phase: 'answer', text: part.text });
@@ -412,6 +365,8 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
   }
 
   return streamSSE(c, async (stream) => {
+    const runId = createAiRunId('agent');
+    let runtimeStarted = false;
     try {
       await stream.write(': connected\n\n');
       const config = await getStoredAiConfig();
@@ -419,8 +374,10 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
         throw new Error('AI is disabled');
       }
 
+      runtimeStarted = true;
       await runRoteAgentStream({
         userId: user.id,
+        runId,
         request: {
           message,
           mode: body?.mode,
@@ -438,12 +395,23 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
         },
         config,
         emit: (event) => writeAgentSseEvent(stream, event),
+        signal: c.req.raw.signal,
       });
-    } catch (error: any) {
-      console.error('AI agent stream failed:', error);
-      await writeSseEvent(stream, 'error', {
-        message: 'AI agent stream failed',
-      });
+    } catch (error) {
+      const failure = classifyAiStreamError(error);
+      if (!runtimeStarted) {
+        logAiStreamLifecycle('error', 'failed', {
+          runId,
+          endpoint: 'agent',
+          userId: user.id,
+          durationMs: 0,
+          errorCode: failure.code,
+          errorName: error instanceof Error ? error.name : typeof error,
+        });
+      }
+      if (!c.req.raw.signal.aborted) {
+        await writeSseEvent(stream, 'error', { ...failure, runId });
+      }
     }
   });
 });
@@ -464,11 +432,22 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
   }
 
   return streamSSE(c, async (stream) => {
+    const runId = createAiRunId('chat');
+    const startedAt = Date.now();
+    let model: string | undefined;
     try {
       await stream.write(': connected\n\n');
+      await writeSseEvent(stream, 'run_started', { runId });
       const [config, vectorStatus] = await Promise.all([getStoredAiConfig(), getPgvectorStatus()]);
+      model = config.chat.model;
+      logAiStreamLifecycle('info', 'started', {
+        runId,
+        endpoint: 'chat',
+        userId: user.id,
+        model,
+      });
       if (isAiMemoryAvailableForAccess({ access, config, vectorStatus })) {
-        await streamToolPlannedChatResponse(stream, user, body, message);
+        await streamToolPlannedChatResponse(stream, user, body, message, c.req.raw.signal);
       } else {
         await streamDirectSiteChat({
           userId: user.id,
@@ -476,17 +455,34 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
           history: body?.history,
           clientContext: body?.clientContext,
           enableThinking: body?.enableThinking === true,
+          signal: c.req.raw.signal,
           onReasoning: (text) => writeSseEvent(stream, 'thinking', { phase: 'answer', text }),
           onContent: (text) => writeSseEvent(stream, 'delta', { text }),
           onUsage: (usage) => writeSseEvent(stream, 'usage', { phase: 'answer', usage }),
         });
         await writeSseEvent(stream, 'done', {});
       }
-    } catch (error: any) {
-      console.error('AI stream failed:', error);
-      await writeSseEvent(stream, 'error', {
-        message: 'AI stream failed',
+      logAiStreamLifecycle('info', 'completed', {
+        runId,
+        endpoint: 'chat',
+        userId: user.id,
+        model,
+        durationMs: Date.now() - startedAt,
       });
+    } catch (error) {
+      const failure = classifyAiStreamError(error);
+      logAiStreamLifecycle('error', 'failed', {
+        runId,
+        endpoint: 'chat',
+        userId: user.id,
+        model,
+        durationMs: Date.now() - startedAt,
+        errorCode: failure.code,
+        errorName: error instanceof Error ? error.name : typeof error,
+      });
+      if (!c.req.raw.signal.aborted) {
+        await writeSseEvent(stream, 'error', { ...failure, runId });
+      }
     }
   });
 });
