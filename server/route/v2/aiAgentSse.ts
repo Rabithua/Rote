@@ -3,6 +3,32 @@ import type { RoteAgentStreamEvent } from '../../utils/ai/agent/runtime';
 
 export type AiSseStream = Parameters<Parameters<typeof streamSSE>[1]>[0];
 
+export type AiSseAbortControl = {
+  signal: AbortSignal;
+  cleanup: () => void;
+};
+
+export function createAiSseAbortControl(
+  stream: AiSseStream,
+  requestSignal: AbortSignal
+): AiSseAbortControl {
+  const controller = new AbortController();
+  const abort = (reason: unknown) => {
+    if (!controller.signal.aborted) controller.abort(reason);
+  };
+  const onRequestAbort = () => abort(requestSignal.reason);
+
+  if (requestSignal.aborted) onRequestAbort();
+  else requestSignal.addEventListener('abort', onRequestAbort, { once: true });
+
+  stream.onAbort(() => abort(new DOMException('', 'AbortError')));
+
+  return {
+    signal: controller.signal,
+    cleanup: () => requestSignal.removeEventListener('abort', onRequestAbort),
+  };
+}
+
 export async function writeSseEvent(
   stream: AiSseStream,
   event: string,

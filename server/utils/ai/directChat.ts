@@ -109,4 +109,5 @@ export async function streamDirectSiteChat(params: {
     await logUsage(params.userId, config.chat.model, usage);
     await params.onUsage(usage);
   }
+  return usage;
 }

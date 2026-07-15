@@ -27,7 +27,6 @@ import {
   chatWithRoteContext,
   findArticleById,
   findRoteById,
-  getOwnerAiMemoryStats,
   getPgvectorStatus,
   getStoredAiConfig,
   logAiTokenUsage,
@@ -35,9 +34,20 @@ import {
   searchMemory,
 } from '../../utils/dbMethods';
 import { bodyTypeCheck, createResponse } from '../../utils/main';
-import { type AiSseStream, writeAgentSseEvent, writeSseEvent } from './aiAgentSse';
+import {
+  createAiSseAbortControl,
+  type AiSseStream,
+  writeAgentSseEvent,
+  writeSseEvent,
+} from './aiAgentSse';
+import {
+  addAiChatStreamUsage,
+  createAiChatStreamMetrics,
+  type AiChatStreamMetrics,
+} from './aiStreamMetrics';
 import { registerAdminAiRoutes } from './aiAdmin';
 import { registerClientAgentRoutes } from './aiClientAgent';
+import { registerAiStatusRoute } from './aiStatus';
 
 const aiRouter = new Hono<{ Variables: HonoVariables }>();
 const VALID_AI_SOURCE_TYPES = new Set<AiSourceType>(['rote', 'article']);
@@ -51,9 +61,11 @@ async function streamToolPlannedChatResponse(
   user: User,
   body: any,
   message: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  metrics: AiChatStreamMetrics
 ): Promise<void> {
-  const { config, messages, sources, clarification } = await prepareRoteChatContext({
+  metrics.phase = 'planning';
+  const { config, messages, sources, plan, clarification } = await prepareRoteChatContext({
     ownerId: user.id,
     message,
     limit: body?.limit,
@@ -62,6 +74,7 @@ async function streamToolPlannedChatResponse(
     clientContext: body?.clientContext,
     enableThinking: body?.enableThinking === true,
     signal,
+    onPlanUsage: (usage) => addAiChatStreamUsage(metrics, usage),
     onPlanThinkingDelta: async (text) => {
       await writeSseEvent(stream, 'thinking', { phase: 'retrieval_planning', text });
     },
@@ -69,6 +82,8 @@ async function streamToolPlannedChatResponse(
       await writeSseEvent(stream, 'plan', { plan: generatedPlan });
     },
   });
+  metrics.toolCallCount = plan.debugTrace.toolCalls.length;
+  metrics.sourceCount = sources.length;
 
   if (clarification) {
     await writeSseEvent(stream, 'clarification', clarification);
@@ -77,6 +92,7 @@ async function streamToolPlannedChatResponse(
   }
 
   await writeSseEvent(stream, 'sources', { sources });
+  metrics.phase = 'answering';
 
   let emittedText = false;
   let lastUsage: any = null;
@@ -95,6 +111,7 @@ async function streamToolPlannedChatResponse(
   }
 
   if (lastUsage) {
+    addAiChatStreamUsage(metrics, lastUsage);
     await logAiTokenUsage({
       userid: user.id,
       model: config.chat.model,
@@ -118,45 +135,7 @@ async function streamToolPlannedChatResponse(
 }
 
 registerAdminAiRoutes(aiRouter);
-
-aiRouter.get('/status', authenticateJWT, async (c: HonoContext) => {
-  const user = c.get('user') as User;
-  const config = await getStoredAiConfig();
-  const vectorStatus = await getPgvectorStatus();
-  const access = await getUserAiAccess(user);
-  const eligible = Boolean(
-    user.emailVerified || (user as User & { certified?: boolean }).certified
-  );
-  const memoryStats = await getOwnerAiMemoryStats(user.id);
-  const chatBaseUrl = config.chat?.baseUrl || '';
-  const isLocalChat =
-    /(^https?:\/\/)?(127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\])(:|\/|$)/i.test(chatBaseUrl) ||
-    ['ollama', 'llama-cpp'].includes(config.chat?.providerId || '');
-  const chatAvailable =
-    config.enabled === true &&
-    Boolean(config.chat?.baseUrl?.trim()) &&
-    Boolean(config.chat?.model?.trim());
-  const memoryAvailable = isAiMemoryAvailableForAccess({ access, config, vectorStatus });
-  const available = access.chatAllowed && chatAvailable;
-  return c.json(
-    createResponse({
-      enabled: config.enabled,
-      vectorEnabled: config.vectorEnabled,
-      publicExploreVectorEnabled: config.publicExploreVectorEnabled,
-      eligible,
-      chatAllowed: access.chatAllowed,
-      chatAvailable,
-      chatProviderId: config.chat?.providerId || '',
-      chatModel: config.chat?.model || '',
-      chatMode: config.enabled ? (isLocalChat ? 'local' : 'site') : 'disabled',
-      available,
-      memoryAvailable,
-      memoryStats,
-    }),
-    200
-  );
-});
-
+registerAiStatusRoute(aiRouter);
 registerClientAgentRoutes(aiRouter);
 
 aiRouter.post('/site/test', authenticateJWT, async (c: HonoContext) => {
@@ -366,6 +345,7 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
 
   return streamSSE(c, async (stream) => {
     const runId = createAiRunId('agent');
+    const abortControl = createAiSseAbortControl(stream, c.req.raw.signal);
     let runtimeStarted = false;
     try {
       await stream.write(': connected\n\n');
@@ -395,7 +375,7 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
         },
         config,
         emit: (event) => writeAgentSseEvent(stream, event),
-        signal: c.req.raw.signal,
+        signal: abortControl.signal,
       });
     } catch (error) {
       const failure = classifyAiStreamError(error);
@@ -409,9 +389,11 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
           errorName: error instanceof Error ? error.name : typeof error,
         });
       }
-      if (!c.req.raw.signal.aborted) {
+      if (!abortControl.signal.aborted) {
         await writeSseEvent(stream, 'error', { ...failure, runId });
       }
+    } finally {
+      abortControl.cleanup();
     }
   });
 });
@@ -433,6 +415,8 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
 
   return streamSSE(c, async (stream) => {
     const runId = createAiRunId('chat');
+    const abortControl = createAiSseAbortControl(stream, c.req.raw.signal);
+    const metrics = createAiChatStreamMetrics();
     const startedAt = Date.now();
     let model: string | undefined;
     try {
@@ -445,21 +429,31 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
         endpoint: 'chat',
         userId: user.id,
         model,
+        ...metrics,
       });
       if (isAiMemoryAvailableForAccess({ access, config, vectorStatus })) {
-        await streamToolPlannedChatResponse(stream, user, body, message, c.req.raw.signal);
+        await streamToolPlannedChatResponse(
+          stream,
+          user,
+          body,
+          message,
+          abortControl.signal,
+          metrics
+        );
       } else {
-        await streamDirectSiteChat({
+        metrics.phase = 'answering';
+        const usage = await streamDirectSiteChat({
           userId: user.id,
           message,
           history: body?.history,
           clientContext: body?.clientContext,
           enableThinking: body?.enableThinking === true,
-          signal: c.req.raw.signal,
+          signal: abortControl.signal,
           onReasoning: (text) => writeSseEvent(stream, 'thinking', { phase: 'answer', text }),
           onContent: (text) => writeSseEvent(stream, 'delta', { text }),
           onUsage: (usage) => writeSseEvent(stream, 'usage', { phase: 'answer', usage }),
         });
+        addAiChatStreamUsage(metrics, usage);
         await writeSseEvent(stream, 'done', {});
       }
       logAiStreamLifecycle('info', 'completed', {
@@ -468,6 +462,7 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
         userId: user.id,
         model,
         durationMs: Date.now() - startedAt,
+        ...metrics,
       });
     } catch (error) {
       const failure = classifyAiStreamError(error);
@@ -479,10 +474,13 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
         durationMs: Date.now() - startedAt,
         errorCode: failure.code,
         errorName: error instanceof Error ? error.name : typeof error,
+        ...metrics,
       });
-      if (!c.req.raw.signal.aborted) {
+      if (!abortControl.signal.aborted) {
         await writeSseEvent(stream, 'error', { ...failure, runId });
       }
+    } finally {
+      abortControl.cleanup();
     }
   });
 });

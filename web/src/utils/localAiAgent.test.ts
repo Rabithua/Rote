@@ -92,7 +92,7 @@ describe('local AI agent', () => {
       .mockResolvedValueOnce({
         message: {
           role: 'assistant',
-          content: null,
+          content: 'I will inspect the tags first.',
           tool_calls: [
             {
               id: 'call_1',
@@ -139,6 +139,10 @@ describe('local AI agent', () => {
         sourceCharsUsed: 0,
       })
     );
+    const secondRequest = mocks.complete.mock.calls[1][0] as {
+      messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>;
+    };
+    expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBeNull();
     expect(onDelta).toHaveBeenCalledWith('final answer');
   });
 

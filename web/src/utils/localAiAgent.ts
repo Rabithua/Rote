@@ -128,7 +128,7 @@ export async function localAiAgentStream(params: {
     if (response.usage) {
       params.handlers.onUsage?.(response.usage, step === 0 ? 'planning' : 'tool_decision');
     }
-    messages.push({ ...response.message, tool_calls: validCalls });
+    messages.push({ role: 'assistant', content: null, tool_calls: validCalls });
 
     for (const call of validCalls) {
       if (toolCallCount >= bootstrap.policy.maxToolCalls) {

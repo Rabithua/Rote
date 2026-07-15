@@ -402,6 +402,7 @@ async function executeFindRelatedNotes(
   const registrations = ctx.registerSources(foundSources);
   const acceptedSources = registrations.map((registration) => registration.source);
   const newlyRegistered = registrations.filter((registration) => registration.isNew);
+  const registeredSources = formatRegisteredSources(newlyRegistered, ctx);
   const budget = ctx.getSourceBudget();
   const budgetExhausted =
     (foundSources.length > acceptedSources.length && budget.remainingSources === 0) ||
@@ -418,7 +419,7 @@ async function executeFindRelatedNotes(
     },
     modelContent: toModelContent({
       status: budgetExhausted ? 'budget_exhausted' : 'ok',
-      sources: formatRegisteredSources(newlyRegistered, ctx),
+      sources: registeredSources,
       budget,
     }),
   };

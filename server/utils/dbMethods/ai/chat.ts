@@ -248,6 +248,7 @@ export async function prepareRoteChatContext(params: {
   history?: { role: 'user' | 'assistant'; content: string }[];
   onPlanGenerated?: (plan: PlannerAgentDto) => Promise<void> | void;
   onPlanThinkingDelta?: (text: string) => Promise<void> | void;
+  onPlanUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
   enableThinking?: boolean;
   clientContext?: RetrievalTimeContext | null;
   signal?: AbortSignal;
@@ -274,7 +275,10 @@ export async function prepareRoteChatContext(params: {
     timeContext: params.clientContext,
     onThinkingDelta: params.onPlanThinkingDelta,
     signal: params.signal,
-    onUsage: (usage) => logChatTokenUsage(params.ownerId, config.chat.model, usage),
+    onUsage: async (usage) => {
+      await logChatTokenUsage(params.ownerId, config.chat.model, usage);
+      await params.onPlanUsage?.(usage);
+    },
   });
   const plan = toPlannerAgentDto(internalPlan);
 
