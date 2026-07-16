@@ -178,33 +178,35 @@ export default function ImportPreviewDialog({
             </div>
           </div>
 
-          <div className="bg-muted/40 flex flex-col gap-3 rounded-md p-3">
-            <div className="flex items-start gap-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1">
+            <div className="flex items-center gap-2">
               <Checkbox
                 id="preserve-visibility"
                 checked={preserveVisibility}
                 onCheckedChange={(checked) => onPreserveVisibilityChange(checked === true)}
                 disabled={isImporting}
               />
-              <Label htmlFor="preserve-visibility" className="flex flex-col gap-1">
-                <span>{t('preserveVisibility')}</span>
-                <span className="text-muted-foreground text-xs font-normal">
-                  {t('preserveVisibilityHint')}
-                </span>
+              <Label
+                htmlFor="preserve-visibility"
+                className="cursor-pointer leading-normal"
+                title={t('preserveVisibilityHint')}
+              >
+                {t('preserveVisibility')}
               </Label>
             </div>
-            <div className="flex items-start gap-2">
+            <div className="flex items-center gap-2">
               <Checkbox
                 id="overwrite-existing"
                 checked={overwriteExisting}
                 onCheckedChange={(checked) => onOverwriteExistingChange(checked === true)}
                 disabled={isImporting || preview.smartImportCount === 0}
               />
-              <Label htmlFor="overwrite-existing" className="flex flex-col gap-1">
-                <span>{t('overwriteExisting')}</span>
-                <span className="text-muted-foreground text-xs font-normal">
-                  {t('overwriteExistingHint')}
-                </span>
+              <Label
+                htmlFor="overwrite-existing"
+                className="cursor-pointer leading-normal"
+                title={t('overwriteExistingHint')}
+              >
+                {t('overwriteExisting')}
               </Label>
             </div>
           </div>
