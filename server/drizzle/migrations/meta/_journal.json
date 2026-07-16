@@ -134,6 +134,13 @@
       "when": 1783494313000,
       "tag": "0018_ai_chat_capability",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784182877469,
+      "tag": "0019_sparkling_martin_li",
+      "breakpoints": true
     }
   ]
 }

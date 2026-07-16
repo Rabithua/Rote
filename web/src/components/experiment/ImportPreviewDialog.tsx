@@ -15,6 +15,8 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import { Label } from '../ui/label';
 
 export type ImportPreview = {
   fileName: string;
@@ -24,6 +26,7 @@ export type ImportPreview = {
   publicCount: number;
   privateCount: number;
   tagCount: number;
+  smartImportCount: number;
   rotes: Rotes;
 };
 
@@ -34,7 +37,11 @@ type ImportPreviewDialogProps = {
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
   onToggleExclude: (index: number) => void;
+  onOverwriteExistingChange: (value: boolean) => void;
+  onPreserveVisibilityChange: (value: boolean) => void;
   open: boolean;
+  overwriteExisting: boolean;
+  preserveVisibility: boolean;
   preview: ImportPreview;
 };
 
@@ -47,7 +54,11 @@ export default function ImportPreviewDialog({
   onConfirm,
   onOpenChange,
   onToggleExclude,
+  onOverwriteExistingChange,
+  onPreserveVisibilityChange,
   open,
+  overwriteExisting,
+  preserveVisibility,
   preview,
 }: ImportPreviewDialogProps) {
   const { t } = useTranslation('translation', {
@@ -167,7 +178,44 @@ export default function ImportPreviewDialog({
             </div>
           </div>
 
-          <div className="text-muted-foreground text-xs leading-relaxed">{t('previewWarning')}</div>
+          <div className="bg-muted/40 flex flex-col gap-3 rounded-md p-3">
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="preserve-visibility"
+                checked={preserveVisibility}
+                onCheckedChange={(checked) => onPreserveVisibilityChange(checked === true)}
+                disabled={isImporting}
+              />
+              <Label htmlFor="preserve-visibility" className="flex flex-col gap-1">
+                <span>{t('preserveVisibility')}</span>
+                <span className="text-muted-foreground text-xs font-normal">
+                  {t('preserveVisibilityHint')}
+                </span>
+              </Label>
+            </div>
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="overwrite-existing"
+                checked={overwriteExisting}
+                onCheckedChange={(checked) => onOverwriteExistingChange(checked === true)}
+                disabled={isImporting || preview.smartImportCount === 0}
+              />
+              <Label htmlFor="overwrite-existing" className="flex flex-col gap-1">
+                <span>{t('overwriteExisting')}</span>
+                <span className="text-muted-foreground text-xs font-normal">
+                  {t('overwriteExistingHint')}
+                </span>
+              </Label>
+            </div>
+          </div>
+
+          <div className="text-muted-foreground text-xs leading-relaxed">
+            {preview.smartImportCount === preview.roteCount
+              ? t('smartImportReady')
+              : t('legacyImportWarning', {
+                  count: preview.roteCount - preview.smartImportCount,
+                })}
+          </div>
         </div>
 
         <DialogFooter>

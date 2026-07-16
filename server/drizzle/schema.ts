@@ -315,6 +315,46 @@ export const attachments = pgTable(
   })
 );
 
+// External import identity for idempotent, owner-scoped imports.
+// The source key is scoped to the destination owner so the same export can be
+// imported safely by different Rote users.
+export const noteImportSources = pgTable(
+  'note_import_sources',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('ownerId').notNull(),
+    roteId: uuid('roteId').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull(),
+    accountId: varchar('accountId', { length: 100 }).notNull(),
+    externalId: varchar('externalId', { length: 100 }).notNull(),
+    attachmentMap: jsonb('attachmentMap').notNull().default({}),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index('note_import_sources_owner_idx').on(table.ownerId),
+    roteIdUnique: unique('note_import_sources_rote_id_unique').on(table.roteId),
+    ownerSourceUnique: unique('note_import_sources_owner_source_unique').on(
+      table.ownerId,
+      table.provider,
+      table.accountId,
+      table.externalId
+    ),
+    ownerFk: foreignKey({
+      columns: [table.ownerId],
+      foreignColumns: [users.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    roteFk: foreignKey({
+      columns: [table.roteId],
+      foreignColumns: [rotes.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+  })
+);
+
 // Rote Link Previews 表
 export const roteLinkPreviews = pgTable(
   'rote_link_previews',
@@ -729,6 +769,8 @@ export type Rote = typeof rotes.$inferSelect;
 export type NewRote = typeof rotes.$inferInsert;
 export type Attachment = typeof attachments.$inferSelect;
 export type NewAttachment = typeof attachments.$inferInsert;
+export type NoteImportSource = typeof noteImportSources.$inferSelect;
+export type NewNoteImportSource = typeof noteImportSources.$inferInsert;
 export type RoteLinkPreview = typeof roteLinkPreviews.$inferSelect;
 export type NewRoteLinkPreview = typeof roteLinkPreviews.$inferInsert;
 export type Reaction = typeof reactions.$inferSelect;
