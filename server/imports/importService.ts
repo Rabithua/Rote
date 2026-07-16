@@ -1,4 +1,4 @@
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import {
   articles,
@@ -9,14 +9,11 @@ import {
   type NewAttachment,
   type NewNoteImportSource,
   type NewRote,
-  type NoteImportSource,
-  type Rote,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
 import { trackBackgroundTask } from '../utils/backgroundTask';
 import { enqueueEmbeddingJobs } from '../utils/dbMethods/ai';
 import { DatabaseError } from '../utils/dbMethods/common';
-import { fallbackAttachmentExternalId, hashImportedSource, hashManagedNote } from './importHash';
 import {
   parseImportPayload,
   type ImportAttachment,
@@ -33,8 +30,6 @@ interface ImportCounts {
   created: number;
   updated: number;
   unchanged: number;
-  conflicts: number;
-  stale: number;
 }
 
 export interface ImportResult {
@@ -42,8 +37,6 @@ export interface ImportResult {
   created: number;
   updated: number;
   unchanged: number;
-  conflicts: number;
-  stale: number;
   notes: ImportCounts & { total: number };
   articles: { total: number; created: number; updated: number };
   attachments: { total: number; created: number; updated: number; deleted: number };
@@ -54,7 +47,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
   const payload = parseImportPayload(rawData);
   const articleResult = await importArticles(userId, payload);
   const ownedArticleIds = await getOwnedArticleIds(userId, payload.notes);
-  const counts: ImportCounts = { created: 0, updated: 0, unchanged: 0, conflicts: 0, stale: 0 };
+  const counts: ImportCounts = { created: 0, updated: 0, unchanged: 0 };
   const attachmentCounts = {
     total: payload.notes.reduce((total, note) => total + (note.attachments?.length ?? 0), 0),
     created: 0,
@@ -112,33 +105,12 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
             throw new Error(`Security violation: Cannot update note ${targetId}`);
           }
 
-          const noteData = buildNoteData(note, targetId, userId, ownedArticleIds, payload);
-          const desiredHash = hashManagedNote(toManagedHashInput(noteData));
-          const sourceHash = hashImportedSource(note);
-
-          if (mapping && existing && note.source) {
-            if (isStaleSource(note.source, mapping)) {
-              counts.stale += 1;
-              continue;
-            }
-
-            const currentHash = hashManagedNote(toManagedHashInput(existing));
-            const hasLocalChanges = currentHash !== mapping.importedHash;
-            if (hasLocalChanges && payload.importOptions.conflictStrategy === 'preserve') {
-              counts.conflicts += 1;
-              continue;
-            }
-
-            if (
-              !hasLocalChanges &&
-              sourceHash === mapping.sourceHash &&
-              desiredHash === mapping.importedHash
-            ) {
-              counts.unchanged += 1;
-              continue;
-            }
+          if (existing && payload.importOptions.existingStrategy === 'skip') {
+            counts.unchanged += 1;
+            continue;
           }
 
+          const noteData = buildNoteData(note, targetId, userId, ownedArticleIds, payload);
           noteRows.push(noteData);
           changes.push({ id: targetId, action: existing ? 'UPDATE' : 'CREATE' });
           changedNoteIds.push(targetId);
@@ -181,9 +153,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
               provider: note.source.provider,
               accountId: note.source.accountId,
               externalId: note.source.externalId,
-              sourceUpdatedAt: parseOptionalDate(note.source.sourceUpdatedAt),
-              sourceHash,
-              importedHash: desiredHash,
               attachmentMap: nextAttachmentMap,
               updatedAt: new Date(),
             });
@@ -277,9 +246,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
               ],
               set: {
                 roteId: sql`excluded."roteId"`,
-                sourceUpdatedAt: sql`excluded."sourceUpdatedAt"`,
-                sourceHash: sql`excluded."sourceHash"`,
-                importedHash: sql`excluded."importedHash"`,
                 attachmentMap: sql`excluded."attachmentMap"`,
                 updatedAt: sql`now()`,
               },
@@ -308,8 +274,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
       created: counts.created,
       updated: counts.updated,
       unchanged: counts.unchanged,
-      conflicts: counts.conflicts,
-      stale: counts.stale,
       notes: { total: payload.notes.length, ...counts },
       articles: articleResult,
       attachments: attachmentCounts,
@@ -432,31 +396,12 @@ function buildAttachmentData(
   };
 }
 
-function toManagedHashInput(note: NewRote | Rote) {
-  return {
-    title: note.title ?? '',
-    type: note.type ?? 'Rote',
-    tags: note.tags,
-    content: note.content,
-    state: note.state,
-    archived: note.archived,
-    pin: note.pin,
-    editor: note.editor ?? 'normal',
-    createdAt: note.createdAt instanceof Date ? note.createdAt.toISOString() : note.createdAt,
-  };
-}
-
 function hasImportSource(note: ImportNote): note is ImportNote & { source: ImportSource } {
   return Boolean(note.source);
 }
 
 function sourceKey(source: Pick<ImportSource, 'accountId' | 'externalId' | 'provider'>): string {
   return JSON.stringify([source.provider, source.accountId, source.externalId]);
-}
-
-function isStaleSource(source: ImportSource, mapping: NoteImportSource): boolean {
-  if (!source.sourceUpdatedAt || !mapping.sourceUpdatedAt) return false;
-  return new Date(source.sourceUpdatedAt).getTime() < mapping.sourceUpdatedAt.getTime();
 }
 
 function readAttachmentMap(value: unknown): AttachmentMap {
@@ -468,6 +413,27 @@ function readAttachmentMap(value: unknown): AttachmentMap {
 
 function parseOptionalDate(value: string | undefined): Date | undefined {
   return value ? new Date(value) : undefined;
+}
+
+function fallbackAttachmentExternalId(attachment: ImportAttachment, index: number): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        index,
+        url: attachment.url,
+        compressUrl: attachment.compressUrl ?? '',
+        posterUrl: attachment.posterUrl ?? '',
+        storage: attachment.storage,
+        details: {
+          key: attachment.details.key ?? null,
+          size: attachment.details.size ?? null,
+          mimetype: attachment.details.mimetype ?? null,
+          compressKey: attachment.details.compressKey ?? null,
+        },
+        sortIndex: attachment.sortIndex ?? 0,
+      })
+    )
+    .digest('hex');
 }
 
 function chunkValues<T>(values: T[], size: number): T[][] {

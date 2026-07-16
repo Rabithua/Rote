@@ -37,10 +37,10 @@ type ImportPreviewDialogProps = {
   onConfirm: () => void;
   onOpenChange: (open: boolean) => void;
   onToggleExclude: (index: number) => void;
-  onOverwriteConflictsChange: (value: boolean) => void;
+  onOverwriteExistingChange: (value: boolean) => void;
   onPreserveVisibilityChange: (value: boolean) => void;
   open: boolean;
-  overwriteConflicts: boolean;
+  overwriteExisting: boolean;
   preserveVisibility: boolean;
   preview: ImportPreview;
 };
@@ -54,10 +54,10 @@ export default function ImportPreviewDialog({
   onConfirm,
   onOpenChange,
   onToggleExclude,
-  onOverwriteConflictsChange,
+  onOverwriteExistingChange,
   onPreserveVisibilityChange,
   open,
-  overwriteConflicts,
+  overwriteExisting,
   preserveVisibility,
   preview,
 }: ImportPreviewDialogProps) {
@@ -195,15 +195,15 @@ export default function ImportPreviewDialog({
             </div>
             <div className="flex items-start gap-2">
               <Checkbox
-                id="overwrite-conflicts"
-                checked={overwriteConflicts}
-                onCheckedChange={(checked) => onOverwriteConflictsChange(checked === true)}
+                id="overwrite-existing"
+                checked={overwriteExisting}
+                onCheckedChange={(checked) => onOverwriteExistingChange(checked === true)}
                 disabled={isImporting || preview.smartImportCount === 0}
               />
-              <Label htmlFor="overwrite-conflicts" className="flex flex-col gap-1">
-                <span>{t('overwriteConflicts')}</span>
+              <Label htmlFor="overwrite-existing" className="flex flex-col gap-1">
+                <span>{t('overwriteExisting')}</span>
                 <span className="text-muted-foreground text-xs font-normal">
-                  {t('overwriteConflictsHint')}
+                  {t('overwriteExistingHint')}
                 </span>
               </Label>
             </div>

@@ -315,7 +315,7 @@ export const attachments = pgTable(
   })
 );
 
-// External import identity and conflict-detection state.
+// External import identity for idempotent, owner-scoped imports.
 // The source key is scoped to the destination owner so the same export can be
 // imported safely by different Rote users.
 export const noteImportSources = pgTable(
@@ -327,9 +327,6 @@ export const noteImportSources = pgTable(
     provider: varchar('provider', { length: 50 }).notNull(),
     accountId: varchar('accountId', { length: 100 }).notNull(),
     externalId: varchar('externalId', { length: 100 }).notNull(),
-    sourceUpdatedAt: timestamp('sourceUpdatedAt', { withTimezone: true, precision: 6 }),
-    sourceHash: varchar('sourceHash', { length: 64 }).notNull(),
-    importedHash: varchar('importedHash', { length: 64 }).notNull(),
     attachmentMap: jsonb('attachmentMap').notNull().default({}),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),

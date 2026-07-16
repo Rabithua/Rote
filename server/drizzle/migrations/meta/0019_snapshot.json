@@ -751,24 +751,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "sourceUpdatedAt": {
-          "name": "sourceUpdatedAt",
-          "type": "timestamp (6) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "sourceHash": {
-          "name": "sourceHash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "importedHash": {
-          "name": "importedHash",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true
-        },
         "attachmentMap": {
           "name": "attachmentMap",
           "type": "jsonb",

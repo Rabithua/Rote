@@ -31,15 +31,11 @@ type ImportResult = {
   created: number;
   updated: number;
   unchanged: number;
-  conflicts: number;
-  stale: number;
   notes: {
     total: number;
     created: number;
     updated: number;
     unchanged: number;
-    conflicts: number;
-    stale: number;
   };
   articles: {
     total: number;
@@ -64,7 +60,7 @@ export default function ImportData() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [fileData, setFileData] = useState<any | null>(null);
   const [excludedIndexes, setExcludedIndexes] = useState<Set<number>>(new Set());
-  const [overwriteConflicts, setOverwriteConflicts] = useState(false);
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [preserveVisibility, setPreserveVisibility] = useState(false);
   const profile = useAtomValue(profileAtom);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,7 +180,7 @@ export default function ImportData() {
     setPreview(null);
     setFileData(null);
     setExcludedIndexes(new Set());
-    setOverwriteConflicts(false);
+    setOverwriteExisting(false);
     setPreserveVisibility(false);
   };
 
@@ -225,7 +221,7 @@ export default function ImportData() {
           setPreviewVersion((version) => version + 1);
           setFileData(json);
           setExcludedIndexes(new Set());
-          setOverwriteConflicts(false);
+          setOverwriteExisting(false);
           setPreserveVisibility(false);
           setIsPreviewOpen(true);
           toast.success(t('fileParsed', { count: json.notes.length }));
@@ -255,7 +251,7 @@ export default function ImportData() {
         {
           ...payload,
           importOptions: {
-            conflictStrategy: overwriteConflicts ? 'overwrite' : 'preserve',
+            existingStrategy: overwriteExisting ? 'overwrite' : 'skip',
             visibilityStrategy: preserveVisibility ? 'preserve' : 'private',
           },
         },
@@ -274,8 +270,6 @@ export default function ImportData() {
             created: data.notes.created,
             updated: data.notes.updated,
             unchanged: data.notes.unchanged,
-            conflicts: data.notes.conflicts,
-            stale: data.notes.stale,
           }),
           { duration: 5000 }
         );
@@ -427,11 +421,11 @@ export default function ImportData() {
             onOpenChange={setIsPreviewOpen}
             open={isPreviewOpen}
             preview={preview}
-            overwriteConflicts={overwriteConflicts}
+            overwriteExisting={overwriteExisting}
             preserveVisibility={preserveVisibility}
             excludedIndexes={excludedIndexes}
             onToggleExclude={toggleExcludedIndex}
-            onOverwriteConflictsChange={setOverwriteConflicts}
+            onOverwriteExistingChange={setOverwriteExisting}
             onPreserveVisibilityChange={setPreserveVisibility}
           />
         )}

@@ -57,11 +57,11 @@ export const importPayloadSchema = z
     articles: z.array(articleSchema).max(5_000).optional().default([]),
     importOptions: z
       .object({
-        conflictStrategy: z.enum(['preserve', 'overwrite']).optional().default('preserve'),
+        existingStrategy: z.enum(['skip', 'overwrite']).optional().default('skip'),
         visibilityStrategy: z.enum(['private', 'preserve']).optional().default('preserve'),
       })
       .optional()
-      .default({ conflictStrategy: 'preserve', visibilityStrategy: 'preserve' }),
+      .default({ existingStrategy: 'skip', visibilityStrategy: 'preserve' }),
   })
   .superRefine((payload, context) => {
     const noteIds = new Set<string>();

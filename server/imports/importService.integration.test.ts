@@ -36,7 +36,7 @@ describe('batched import service', () => {
   });
 
   integrationTest(
-    'imports 2,500 notes idempotently and protects local edits',
+    'imports 2,500 notes idempotently and overwrites only when requested',
     async () => {
       const { noteImportSources, rotes } = await import('../drizzle/schema');
       const { default: db } = await import('../utils/drizzle');
@@ -60,13 +60,12 @@ describe('batched import service', () => {
           ? {
               ...note,
               content: 'source edit',
-              source: { ...note.source, sourceUpdatedAt: '2026-07-17T00:00:00.000Z' },
             }
           : note
       );
       const sourceUpdate = await importUserData(userId, v2Payload(changed));
-      expect(sourceUpdate.notes.updated).toBe(1);
-      expect(sourceUpdate.notes.unchanged).toBe(2_499);
+      expect(sourceUpdate.notes.updated).toBe(0);
+      expect(sourceUpdate.notes.unchanged).toBe(2_500);
 
       const [mapping] = await db
         .select({ roteId: noteImportSources.roteId })
@@ -75,32 +74,25 @@ describe('batched import service', () => {
         .limit(1);
       await db.update(rotes).set({ content: 'local edit' }).where(eq(rotes.id, mapping.roteId));
 
-      const changedAgain = changed.map((note, index) =>
-        index === 0
-          ? {
-              ...note,
-              content: 'newer source edit',
-              source: { ...note.source, sourceUpdatedAt: '2026-07-18T00:00:00.000Z' },
-            }
-          : note
-      );
-      const conflict = await importUserData(userId, v2Payload(changedAgain));
-      expect(conflict.notes.conflicts).toBe(1);
+      const skippedLocalEdit = await importUserData(userId, v2Payload([changed[0]]));
+      expect(skippedLocalEdit.notes.unchanged).toBe(1);
+      const [preserved] = await db
+        .select({ content: rotes.content })
+        .from(rotes)
+        .where(eq(rotes.id, mapping.roteId));
+      expect(preserved.content).toBe('local edit');
 
       const overwrite = await importUserData(userId, {
         formatVersion: 2,
-        notes: changedAgain,
-        importOptions: { conflictStrategy: 'overwrite', visibilityStrategy: 'private' },
+        notes: [changed[0]],
+        importOptions: { existingStrategy: 'overwrite', visibilityStrategy: 'private' },
       });
       expect(overwrite.notes.updated).toBe(1);
       const [overwritten] = await db
         .select({ content: rotes.content })
         .from(rotes)
         .where(eq(rotes.id, mapping.roteId));
-      expect(overwritten.content).toBe('newer source edit');
-
-      const stale = await importUserData(userId, v2Payload(changed));
-      expect(stale.notes.stale).toBe(1);
+      expect(overwritten.content).toBe('source edit');
 
       const attachmentNote = {
         ...createNote(3_000),
@@ -150,12 +142,15 @@ describe('batched import service', () => {
       const withoutAttachment = {
         ...attachmentNote,
         attachments: [],
-        source: {
-          ...attachmentNote.source,
-          sourceUpdatedAt: '2026-07-17T00:00:00.000Z',
-        },
       };
-      const attachmentRemoval = await importUserData(userId, v2Payload([withoutAttachment]));
+      const skippedAttachmentRemoval = await importUserData(userId, v2Payload([withoutAttachment]));
+      expect(skippedAttachmentRemoval.notes.unchanged).toBe(1);
+      expect(skippedAttachmentRemoval.attachments.deleted).toBe(0);
+      const attachmentRemoval = await importUserData(userId, {
+        formatVersion: 2,
+        notes: [withoutAttachment],
+        importOptions: { existingStrategy: 'overwrite', visibilityStrategy: 'private' },
+      });
       expect(attachmentRemoval.attachments.deleted).toBe(2);
 
       const secondUserImport = await importUserData(secondUserId, v2Payload([attachmentNote]));
@@ -200,7 +195,7 @@ function v2Payload(notes: ReturnType<typeof createNote>[]) {
     formatVersion: 2 as const,
     notes,
     importOptions: {
-      conflictStrategy: 'preserve' as const,
+      existingStrategy: 'skip' as const,
       visibilityStrategy: 'private' as const,
     },
   };

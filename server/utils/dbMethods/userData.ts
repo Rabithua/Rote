@@ -73,9 +73,6 @@ export async function exportData(authorid: string): Promise<any> {
           provider: importSource.provider,
           accountId: importSource.accountId,
           externalId: importSource.externalId,
-          ...(importSource.sourceUpdatedAt
-            ? { sourceUpdatedAt: importSource.sourceUpdatedAt.toISOString() }
-            : {}),
         },
         attachments: note.attachments.map((attachment) => {
           const source = sourceByAttachmentId.get(attachment.id);

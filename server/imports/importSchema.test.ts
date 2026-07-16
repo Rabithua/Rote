@@ -17,7 +17,7 @@ describe('import payload validation', () => {
     const payload = parseImportPayload({ formatVersion: 2, notes: [note] });
 
     expect(payload.importOptions).toEqual({
-      conflictStrategy: 'preserve',
+      existingStrategy: 'skip',
       visibilityStrategy: 'preserve',
     });
   });
