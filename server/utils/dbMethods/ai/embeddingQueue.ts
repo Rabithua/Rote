@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { articles, documentEmbeddings, embeddingJobs, rotes } from '../../../drizzle/schema';
 import db from '../../drizzle';
 import { DatabaseError } from '../common';
@@ -52,6 +52,70 @@ export async function enqueueEmbeddingJob(
   } catch (error: any) {
     throw new DatabaseError('Failed to enqueue embedding job', error);
   }
+}
+
+export async function enqueueEmbeddingJobs(
+  sourceType: AiSourceType,
+  sourceIds: string[],
+  ownerId: string
+): Promise<void> {
+  const uniqueIds = [...new Set(sourceIds)];
+  if (uniqueIds.length === 0 || !VALID_SOURCE_TYPES.has(sourceType)) return;
+
+  try {
+    if (!(await isAiEligibleUser(ownerId))) {
+      for (const sourceIdChunk of chunkValues(uniqueIds, 500)) {
+        await db
+          .delete(documentEmbeddings)
+          .where(
+            and(
+              eq(documentEmbeddings.sourceType, sourceType),
+              inArray(documentEmbeddings.sourceId, sourceIdChunk)
+            )
+          );
+      }
+      return;
+    }
+    if (!shouldAutoIndex()) return;
+
+    for (const sourceIdChunk of chunkValues(uniqueIds, 500)) {
+      const existing = await db
+        .select({ sourceId: embeddingJobs.sourceId })
+        .from(embeddingJobs)
+        .where(
+          and(
+            eq(embeddingJobs.sourceType, sourceType),
+            eq(embeddingJobs.status, 'pending'),
+            inArray(embeddingJobs.sourceId, sourceIdChunk)
+          )
+        );
+      const pendingIds = new Set(existing.map((row) => row.sourceId));
+      const rows = sourceIdChunk
+        .filter((sourceId) => !pendingIds.has(sourceId))
+        .map((sourceId) => ({
+          ownerId,
+          sourceType,
+          sourceId,
+          action: 'upsert' as const,
+          status: 'pending' as const,
+          attempts: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }));
+
+      if (rows.length > 0) await db.insert(embeddingJobs).values(rows);
+    }
+  } catch (error: any) {
+    throw new DatabaseError('Failed to enqueue embedding jobs', error);
+  }
+}
+
+function chunkValues<T>(values: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let offset = 0; offset < values.length; offset += size) {
+    chunks.push(values.slice(offset, offset + size));
+  }
+  return chunks;
 }
 
 export async function deleteEmbeddingsForSource(

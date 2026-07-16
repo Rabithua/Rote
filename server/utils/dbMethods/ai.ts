@@ -25,6 +25,7 @@ export {
   enqueueBackfillEmbeddingJobs,
   enqueueBackfillEmbeddingJobsForOwner,
   enqueueEmbeddingJob,
+  enqueueEmbeddingJobs,
   ensurePgvectorReady,
   getEmbeddingJobStats,
   getPgvectorStatus,

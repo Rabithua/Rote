@@ -30,10 +30,16 @@ type ImportResult = {
   count: number;
   created: number;
   updated: number;
+  unchanged: number;
+  conflicts: number;
+  stale: number;
   notes: {
     total: number;
     created: number;
     updated: number;
+    unchanged: number;
+    conflicts: number;
+    stale: number;
   };
   articles: {
     total: number;
@@ -44,6 +50,7 @@ type ImportResult = {
     total: number;
     created: number;
     updated: number;
+    deleted: number;
   };
 };
 
@@ -57,6 +64,8 @@ export default function ImportData() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [fileData, setFileData] = useState<any | null>(null);
   const [excludedIndexes, setExcludedIndexes] = useState<Set<number>>(new Set());
+  const [overwriteConflicts, setOverwriteConflicts] = useState(false);
+  const [preserveVisibility, setPreserveVisibility] = useState(false);
   const profile = useAtomValue(profileAtom);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const exampleData = {
@@ -150,6 +159,12 @@ export default function ImportData() {
       publicCount,
       privateCount,
       tagCount: tags.size,
+      smartImportCount: json.notes.filter(
+        (note: any) =>
+          typeof note?.source?.provider === 'string' &&
+          typeof note?.source?.accountId === 'string' &&
+          typeof note?.source?.externalId === 'string'
+      ).length,
       rotes: json.notes.map((note: Rote) => ({
         ...note,
         authorid: profile?.id,
@@ -169,6 +184,8 @@ export default function ImportData() {
     setPreview(null);
     setFileData(null);
     setExcludedIndexes(new Set());
+    setOverwriteConflicts(false);
+    setPreserveVisibility(false);
   };
 
   const toggleExcludedIndex = (index: number) => {
@@ -208,6 +225,8 @@ export default function ImportData() {
           setPreviewVersion((version) => version + 1);
           setFileData(json);
           setExcludedIndexes(new Set());
+          setOverwriteConflicts(false);
+          setPreserveVisibility(false);
           setIsPreviewOpen(true);
           toast.success(t('fileParsed', { count: json.notes.length }));
         } else {
@@ -230,7 +249,18 @@ export default function ImportData() {
 
     try {
       setIsImporting(true);
-      const res = await post<ApiResponse<ImportResult>>('/users/me/import', buildImportPayload());
+      const payload = buildImportPayload();
+      const res = await post<ApiResponse<ImportResult>>(
+        '/users/me/import',
+        {
+          ...payload,
+          importOptions: {
+            conflictStrategy: overwriteConflicts ? 'overwrite' : 'preserve',
+            visibilityStrategy: preserveVisibility ? 'preserve' : 'private',
+          },
+        },
+        { timeout: 300_000 }
+      );
       if (res) {
         const data = res.data;
 
@@ -243,6 +273,9 @@ export default function ImportData() {
             total: data.notes.total,
             created: data.notes.created,
             updated: data.notes.updated,
+            unchanged: data.notes.unchanged,
+            conflicts: data.notes.conflicts,
+            stale: data.notes.stale,
           }),
           { duration: 5000 }
         );
@@ -259,6 +292,7 @@ export default function ImportData() {
             total: data.attachments.total,
             created: data.attachments.created,
             updated: data.attachments.updated,
+            deleted: data.attachments.deleted,
           }),
           { duration: 5000 }
         );
@@ -393,8 +427,12 @@ export default function ImportData() {
             onOpenChange={setIsPreviewOpen}
             open={isPreviewOpen}
             preview={preview}
+            overwriteConflicts={overwriteConflicts}
+            preserveVisibility={preserveVisibility}
             excludedIndexes={excludedIndexes}
             onToggleExclude={toggleExcludedIndex}
+            onOverwriteConflictsChange={setOverwriteConflicts}
+            onPreserveVisibilityChange={setPreserveVisibility}
           />
         )}
 
