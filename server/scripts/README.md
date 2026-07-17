@@ -270,3 +270,8 @@ bun run backfill:live-photo-covers -- --note-id e2e94867-c998-42d5-92b2-017c8117
 
 The output key is always `users/<userId>/compressed/<uploadUuid>.jpg`. Existing valid JPEG covers
 at that key are reused, so retries do not create duplicate objects.
+
+The server also starts this repair automatically after the HTTP listener is ready. Automatic runs
+use a PostgreSQL advisory lock so only one server instance works at a time, and scan in batches of
+20 without blocking startup. A failed item remains eligible for a retry on the next server start;
+the commands above remain available for dry runs and targeted operational repairs.

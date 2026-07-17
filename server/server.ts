@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { runAutomaticLivePhotoCoverBackfill } from './attachments/livePhotoCoverBackfillWorker';
 import { rateLimiterMiddleware } from './middleware/limiter';
 import { recorderIpAndTime } from './middleware/recorder';
 import oauthMetadataRouter from './route/oauthMetadata';
@@ -153,6 +154,10 @@ subscribeConfigChange('site', (_group, newConfig) => {
     }
 
     console.log(`Rote Node backend server listening on port ${port}!`);
+
+    void runAutomaticLivePhotoCoverBackfill().catch((error) => {
+      console.error('[live-photo-backfill] status=automatic-failed', error);
+    });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);
