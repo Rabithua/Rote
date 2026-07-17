@@ -195,7 +195,7 @@ export function isHeicLikeAttachment(attachment: File | Attachment) {
 
 export function getAttachmentImageThumbnailSrc(attachment: Attachment) {
   const compatibleStill = attachment.compressUrl || attachment.posterUrl || '';
-  if (getAttachmentMediaKind(attachment) === 'livePhoto' || isHeicLikeAttachment(attachment)) {
+  if (isHeicLikeAttachment(attachment)) {
     return compatibleStill;
   }
   return compatibleStill || attachment.url || '';

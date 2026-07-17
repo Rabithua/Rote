@@ -131,6 +131,97 @@ describe('attachment upload flow', () => {
     expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
   });
 
+  it('reuses a browser-compatible JPEG Live Photo still without HEIC decoding', async () => {
+    const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
+    const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
+    let coverCalls = 0;
+
+    const result = await finalizeAttachmentUploads(
+      {
+        attachments: [
+          {
+            mimetype: 'image/jpeg',
+            mediaKind: 'livePhoto',
+            originalKey,
+            pairedVideoKey,
+            pairedVideoMimetype: 'video/quicktime',
+            pairedVideoSize: 2048,
+            size: 1024,
+            uuid: LIVE_UUID,
+          },
+        ],
+        scopes: ['video:upload'],
+        userId: USER_ID,
+      },
+      {
+        checkObjectExists: async () => true,
+        ensureLivePhotoCover: async () => {
+          coverCalls++;
+          throw new Error('JPEG still must not be sent to the HEIC decoder');
+        },
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        requireStorageAvailable: () => storageConfig,
+        upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
+      }
+    );
+
+    expect(coverCalls).toBe(0);
+    expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
+    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${originalKey}`);
+    expect(result[0].details.compressKey).toBe(originalKey);
+    expect(result[0].details.pairedVideoKey).toBe(pairedVideoKey);
+  });
+
+  it('validates note attachment limits before generating a Live Photo cover', async () => {
+    const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
+    const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
+    let coverCalls = 0;
+
+    await expect(
+      finalizeAttachmentUploads(
+        {
+          attachments: [
+            {
+              mimetype: 'image/heic',
+              mediaKind: 'livePhoto',
+              originalKey,
+              pairedVideoKey,
+              pairedVideoMimetype: 'video/quicktime',
+              pairedVideoSize: 2048,
+              size: 1024,
+              uuid: LIVE_UUID,
+            },
+          ],
+          noteId: 'note-at-image-limit',
+          scopes: ['video:upload'],
+          userId: USER_ID,
+        },
+        {
+          checkObjectExists: async () => true,
+          ensureLivePhotoCover: async () => {
+            coverCalls++;
+            throw new Error('cover generation should not run');
+          },
+          getAttachmentDetailsByRoteId: async () =>
+            Array.from({ length: 9 }, (_, index) => ({
+              details: {
+                key: `users/${USER_ID}/uploads/existing-${index}.jpg`,
+                mediaKind: 'image' as const,
+                mimetype: 'image/jpeg',
+              },
+            })),
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          requireStorageAvailable: () => storageConfig,
+          upsertAttachmentsByOriginalKey: async () => {
+            throw new Error('invalid note attachments must not be persisted');
+          },
+        }
+      )
+    ).rejects.toThrow('Maximum 9 images');
+
+    expect(coverCalls).toBe(0);
+  });
+
   it('preserves JPEG, PNG, GIF, and video attachment behavior', async () => {
     const inputs = [
       {

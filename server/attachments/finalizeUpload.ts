@@ -22,7 +22,7 @@ import type { FinalizeAttachmentInput } from './types';
 import { requireStorageAvailable } from './types';
 import attachmentErrors from './errorCodes.json';
 import { assertLivePhotoFinalizeBatch, ensureLivePhotoCover } from './livePhotoCover';
-import { finalizeInputIncludesVideo } from './uploadMedia';
+import { finalizeInputIncludesVideo, isHeicLikeUpload } from './uploadMedia';
 
 export type FinalizeAttachmentDependencies = {
   checkObjectExists: typeof checkObjectExists;
@@ -244,18 +244,6 @@ export async function finalizeAttachmentUploads(
     input.attachments,
     dependencies.checkObjectExists
   );
-  for (const item of validAttachments) {
-    const mediaKind = inferAttachmentMediaKind({
-      mediaKind: item.mediaKind,
-      mimetype: item.mimetype,
-      pairedVideoKey: item.pairedVideoKey,
-      key: item.originalKey,
-    });
-    if (mediaKind === 'livePhoto') {
-      const cover = await dependencies.ensureLivePhotoCover(item.originalKey);
-      item.compressedKey = cover.key;
-    }
-  }
   if (input.noteId) {
     const currentAttachments = await dependencies.getAttachmentDetailsByRoteId(input.noteId);
     const pendingAttachments = validAttachments.map((item) => ({
@@ -277,6 +265,23 @@ export async function finalizeAttachmentUploads(
     validateRoteAttachmentDetails(
       mergeUniqueRoteAttachmentDetails(currentAttachments, pendingAttachments)
     );
+  }
+
+  for (const item of validAttachments) {
+    const mediaKind = inferAttachmentMediaKind({
+      mediaKind: item.mediaKind,
+      mimetype: item.mimetype,
+      pairedVideoKey: item.pairedVideoKey,
+      key: item.originalKey,
+    });
+    if (mediaKind === 'livePhoto') {
+      if (isHeicLikeUpload(item)) {
+        const cover = await dependencies.ensureLivePhotoCover(item.originalKey);
+        item.compressedKey = cover.key;
+      } else {
+        item.compressedKey = item.originalKey;
+      }
+    }
   }
 
   const uploads = validAttachments.map((item) => toUploadResult(storageConfig.urlPrefix, item));

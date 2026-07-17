@@ -8,8 +8,24 @@ import type {
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
 const { LIVE_PHOTO_BACKFILL_BATCH_SIZE, runAutomaticLivePhotoCoverBackfill } =
   await import('./livePhotoCoverBackfillWorker');
+const { isOwnedLivePhotoOriginalKey } = await import('./livePhotoCoverBackfill');
 
 describe('automatic Live Photo cover backfill', () => {
+  it('only accepts original keys owned by the attachment user', () => {
+    expect(
+      isOwnedLivePhotoOriginalKey(
+        'user-1',
+        'users/user-1/uploads/11111111-1111-4111-8111-111111111111.heic'
+      )
+    ).toBe(true);
+    expect(
+      isOwnedLivePhotoOriginalKey(
+        'user-1',
+        'users/user-2/uploads/11111111-1111-4111-8111-111111111111.heic'
+      )
+    ).toBe(false);
+  });
+
   it('processes candidates in cursor batches while holding one advisory lock', async () => {
     const calls: LivePhotoCoverBackfillOptions[] = [];
     const results: LivePhotoCoverBackfillResult[] = [

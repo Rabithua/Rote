@@ -22,3 +22,12 @@ export function finalizeInputIncludesVideo(attachments: FinalizeAttachmentInput[
       Boolean(attachment.pairedVideoKey)
   );
 }
+
+export function isHeicLikeUpload(attachment: FinalizeAttachmentInput): boolean {
+  const mimetype = attachment.mimetype?.toLowerCase();
+  return (
+    mimetype === 'image/heic' ||
+    mimetype === 'image/heif' ||
+    /\.(?:heic|heif)$/i.test(attachment.originalKey)
+  );
+}

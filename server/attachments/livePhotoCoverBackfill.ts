@@ -20,6 +20,10 @@ export type LivePhotoCoverBackfillResult = {
   updated: number;
 };
 
+export function isOwnedLivePhotoOriginalKey(userId: string, originalKey: string): boolean {
+  return originalKey.startsWith(`users/${userId}/uploads/`);
+}
+
 function getCandidateFilters(options: LivePhotoCoverBackfillOptions): SQL[] {
   const filters: SQL[] = [
     sql`${attachments.details}->>'mediaKind' = 'livePhoto'`,
@@ -43,6 +47,7 @@ export async function backfillLivePhotoCovers(
       details: attachments.details,
       id: attachments.id,
       url: attachments.url,
+      userId: attachments.userid,
     })
     .from(attachments)
     .where(and(...getCandidateFilters(options)))
@@ -65,6 +70,14 @@ export async function backfillLivePhotoCovers(
       // eslint-disable-next-line no-console
       console.error(
         `[live-photo-backfill] status=failed attachmentId=${candidate.id} originalKey=missing reason=details.key-is-empty`
+      );
+      continue;
+    }
+    if (!candidate.userId || !isOwnedLivePhotoOriginalKey(candidate.userId, originalKey)) {
+      skipped++;
+      // eslint-disable-next-line no-console
+      console.error(
+        `[live-photo-backfill] status=skipped attachmentId=${candidate.id} originalKey=${originalKey} reason=ownership-mismatch`
       );
       continue;
     }

@@ -140,6 +140,24 @@ describe('attachment image display sources', () => {
     expect(getAttachmentImageThumbnailSrc(attachment)).toBe('');
   });
 
+  it('falls back to a browser-compatible Live Photo JPEG original', () => {
+    const url = 'https://cdn.example.com/users/u/uploads/live.jpg';
+    const attachment = makeAttachment({
+      url,
+      compressUrl: '',
+      posterUrl: '',
+      details: {
+        mimetype: 'image/jpeg',
+        mediaKind: 'livePhoto',
+        key: 'users/u/uploads/live.jpg',
+        pairedVideoKey: 'users/u/paired-videos/live.mov',
+      },
+    });
+
+    expect(getAttachmentImagePreviewSrc(attachment)).toBe(url);
+    expect(getAttachmentImageThumbnailSrc(attachment)).toBe(url);
+  });
+
   it.each([
     ['image/jpeg', 'photo.jpg'],
     ['image/png', 'photo.png'],
