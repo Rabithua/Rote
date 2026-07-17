@@ -12,6 +12,7 @@ import useSWR, { useSWRConfig } from 'swr';
 import type { AiProviderConfig, AiProviderPreset, SystemConfig } from '../types';
 import AIConfigAdvancedSettings from './AIConfigAdvancedSettings';
 import AIConfigProviderForm from './AIConfigProviderForm';
+import type { EmbeddingJobStats, VectorStatus } from './AIIndexingStatus';
 
 const DEFAULT_AI_CONFIG: NonNullable<SystemConfig['ai']> = {
   enabled: false,
@@ -105,19 +106,22 @@ export default function AIConfigTab({
     const res = await get('/ai/providers');
     return res.data as AiProviderPreset[];
   });
-  const { data: vectorStatus, mutate: mutateVectorStatus } = useSWR<any>(
+  const { data: vectorStatus, mutate: mutateVectorStatus } = useSWR<VectorStatus>(
     '/ai/vector/status',
     async () => {
       const res = await get('/ai/vector/status');
       return res.data;
     }
   );
-  const { data: jobStats, mutate: mutateJobStats } = useSWR<Record<string, number>>(
+  const { data: jobStats, mutate: mutateJobStats } = useSWR<EmbeddingJobStats>(
     '/ai/index/stats',
     async () => {
       const res = await get('/ai/index/stats');
       return res.data;
     }
+  );
+  const isVectorReady = Boolean(
+    vectorStatus?.available && vectorStatus.installed && vectorStatus.indexName
   );
 
   const updateConfig = (next: Partial<NonNullable<SystemConfig['ai']>>) => {
@@ -221,8 +225,14 @@ export default function AIConfigTab({
               text={config.enabled ? t('ai.enabledStatus') : t('ai.disabledStatus')}
             />
             <StatusPill
-              active={vectorStatus?.installed === true}
-              text={vectorStatus?.installed ? t('ai.vectorReady') : t('ai.vectorNotReady')}
+              active={isVectorReady}
+              text={
+                !vectorStatus
+                  ? t('ai.vectorChecking')
+                  : isVectorReady
+                    ? t('ai.vectorReady')
+                    : t('ai.vectorNotReady')
+              }
             />
           </div>
         </div>
