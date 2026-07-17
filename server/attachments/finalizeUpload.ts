@@ -21,6 +21,26 @@ import { checkObjectExists } from '../utils/r2';
 import type { FinalizeAttachmentInput } from './types';
 import { requireStorageAvailable } from './types';
 import attachmentErrors from './errorCodes.json';
+import { assertLivePhotoFinalizeBatch, ensureLivePhotoCover } from './livePhotoCover';
+import { finalizeInputIncludesVideo } from './uploadMedia';
+
+export type FinalizeAttachmentDependencies = {
+  checkObjectExists: typeof checkObjectExists;
+  ensureLivePhotoCover: typeof ensureLivePhotoCover;
+  getAttachmentDetailsByRoteId: typeof getAttachmentDetailsByRoteId;
+  getAttachmentUploadPolicy: typeof getAttachmentUploadPolicy;
+  requireStorageAvailable: typeof requireStorageAvailable;
+  upsertAttachmentsByOriginalKey: typeof upsertAttachmentsByOriginalKey;
+};
+
+const defaultDependencies: FinalizeAttachmentDependencies = {
+  checkObjectExists,
+  ensureLivePhotoCover,
+  getAttachmentDetailsByRoteId,
+  getAttachmentUploadPolicy,
+  requireStorageAvailable,
+  upsertAttachmentsByOriginalKey,
+};
 
 function assertFinalizeInput(
   attachments: FinalizeAttachmentInput[] | undefined
@@ -48,7 +68,10 @@ function validateAttachmentPayload(item: FinalizeAttachmentInput, maxVideoUpload
   }
 }
 
-async function collectValidAttachments(attachments: FinalizeAttachmentInput[]) {
+async function collectValidAttachments(
+  attachments: FinalizeAttachmentInput[],
+  objectExists: typeof checkObjectExists
+) {
   const validationErrors: string[] = [];
   const validAttachments: FinalizeAttachmentInput[] = [];
   for (const item of attachments) {
@@ -61,7 +84,7 @@ async function collectValidAttachments(attachments: FinalizeAttachmentInput[]) {
       key: item.originalKey,
     });
     const normalizedAttachment = { ...item };
-    const originalExists = await checkObjectExists(item.originalKey);
+    const originalExists = await objectExists(item.originalKey);
     if (!originalExists) {
       validationErrors.push(
         attachmentErrors.originalFileNotFoundPrefix + item.originalKey + ':' + item.uuid
@@ -81,11 +104,13 @@ async function collectValidAttachments(attachments: FinalizeAttachmentInput[]) {
     if ((mediaKind === 'image' || mediaKind === 'livePhoto') && normalizedAttachment.posterKey) {
       normalizedAttachment.posterKey = undefined;
     }
-    if (
-      (mediaKind === 'image' || mediaKind === 'livePhoto') &&
-      normalizedAttachment.compressedKey
-    ) {
-      const compressedExists = await checkObjectExists(normalizedAttachment.compressedKey);
+    // Live Photo covers are always generated and verified by the server. Ignore
+    // legacy client-provided .webp keys, which may contain JPEG bytes.
+    if (mediaKind === 'livePhoto') {
+      normalizedAttachment.compressedKey = undefined;
+    }
+    if (mediaKind === 'image' && normalizedAttachment.compressedKey) {
+      const compressedExists = await objectExists(normalizedAttachment.compressedKey);
       const compressedUuid = extractCompressedUuid(normalizedAttachment.compressedKey);
       if (!compressedExists || !compressedUuid || originalUuid !== compressedUuid) {
         validationErrors.push(
@@ -101,7 +126,7 @@ async function collectValidAttachments(attachments: FinalizeAttachmentInput[]) {
         );
         continue;
       }
-      const pairedVideoExists = await checkObjectExists(normalizedAttachment.pairedVideoKey);
+      const pairedVideoExists = await objectExists(normalizedAttachment.pairedVideoKey);
       const pairedVideoUuid = extractPairedVideoUuid(normalizedAttachment.pairedVideoKey);
       if (!pairedVideoExists || !pairedVideoUuid || originalUuid !== pairedVideoUuid) {
         validationErrors.push(
@@ -114,7 +139,7 @@ async function collectValidAttachments(attachments: FinalizeAttachmentInput[]) {
       continue;
     }
     if (mediaKind === 'video' && normalizedAttachment.posterKey) {
-      const posterExists = await checkObjectExists(normalizedAttachment.posterKey);
+      const posterExists = await objectExists(normalizedAttachment.posterKey);
       const posterUuid = extractPosterUuid(normalizedAttachment.posterKey);
       if (!posterExists || !posterUuid || originalUuid !== posterUuid) {
         validationErrors.push(
@@ -179,18 +204,23 @@ function toUploadResult(urlPrefix: string, item: FinalizeAttachmentInput): Uploa
   };
 }
 
-export async function finalizeAttachmentUploads(input: {
-  userId: string;
-  scopes: string[];
-  noteId?: string;
-  attachments?: FinalizeAttachmentInput[];
-}) {
-  const storageConfig = requireStorageAvailable();
-  const uploadPolicy = await getAttachmentUploadPolicy(input.userId);
+export async function finalizeAttachmentUploads(
+  input: {
+    userId: string;
+    scopes: string[];
+    noteId?: string;
+    attachments?: FinalizeAttachmentInput[];
+  },
+  dependencyOverrides: Partial<FinalizeAttachmentDependencies> = {}
+) {
+  const dependencies = { ...defaultDependencies, ...dependencyOverrides };
+  const storageConfig = dependencies.requireStorageAvailable();
+  const uploadPolicy = await dependencies.getAttachmentUploadPolicy(input.userId);
   if (!uploadPolicy.canUploadAttachments)
     throw new Error(attachmentErrors.capabilityAttachmentUpload);
 
   assertFinalizeInput(input.attachments);
+  assertLivePhotoFinalizeBatch(input.attachments);
   const prefix = 'users/' + input.userId + '/';
   const invalid = input.attachments.find(
     (item) =>
@@ -204,27 +234,30 @@ export async function finalizeAttachmentUploads(input: {
     validateAttachmentPayload(item, uploadPolicy.maxVideoUploadSizeMB)
   );
 
-  const hasVideo = input.attachments.some(
-    (item) =>
-      inferAttachmentMediaKind({
-        mediaKind: item.mediaKind,
-        mimetype: item.mimetype,
-        compressedKey: item.compressedKey,
-        posterKey: item.posterKey,
-        pairedVideoKey: item.pairedVideoKey,
-        key: item.originalKey,
-      }) === 'video' ||
-      item.mediaKind === 'livePhoto' ||
-      !!item.pairedVideoKey
-  );
+  const hasVideo = finalizeInputIncludesVideo(input.attachments);
   if (hasVideo && !input.scopes.includes('video:upload'))
     throw new Error(attachmentErrors.insufficientVideoUpload);
   if (hasVideo && !uploadPolicy.canUploadVideo)
     throw new Error(attachmentErrors.capabilityVideoUpload);
 
-  const validAttachments = await collectValidAttachments(input.attachments);
+  const validAttachments = await collectValidAttachments(
+    input.attachments,
+    dependencies.checkObjectExists
+  );
+  for (const item of validAttachments) {
+    const mediaKind = inferAttachmentMediaKind({
+      mediaKind: item.mediaKind,
+      mimetype: item.mimetype,
+      pairedVideoKey: item.pairedVideoKey,
+      key: item.originalKey,
+    });
+    if (mediaKind === 'livePhoto') {
+      const cover = await dependencies.ensureLivePhotoCover(item.originalKey);
+      item.compressedKey = cover.key;
+    }
+  }
   if (input.noteId) {
-    const currentAttachments = await getAttachmentDetailsByRoteId(input.noteId);
+    const currentAttachments = await dependencies.getAttachmentDetailsByRoteId(input.noteId);
     const pendingAttachments = validAttachments.map((item) => ({
       details: {
         key: item.originalKey,
@@ -247,5 +280,18 @@ export async function finalizeAttachmentUploads(input: {
   }
 
   const uploads = validAttachments.map((item) => toUploadResult(storageConfig.urlPrefix, item));
-  return await upsertAttachmentsByOriginalKey(input.userId, input.noteId, uploads);
+  const finalized = await dependencies.upsertAttachmentsByOriginalKey(
+    input.userId,
+    input.noteId,
+    uploads
+  );
+  validAttachments.forEach((item, index) => {
+    if (item.mediaKind !== 'livePhoto') return;
+    const stored = finalized[index] as { id?: string; compressUrl?: string } | undefined;
+    // eslint-disable-next-line no-console
+    console.info(
+      `[live-photo-cover] status=writeback originalKey=${item.originalKey} outputKey=${item.compressedKey} attachmentId=${stored?.id ?? 'unknown'} result=${stored?.compressUrl ? 'updated' : 'missing-compress-url'}`
+    );
+  });
+  return finalized;
 }

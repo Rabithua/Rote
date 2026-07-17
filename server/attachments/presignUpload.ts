@@ -11,8 +11,23 @@ import {
 } from '../utils/fileValidation';
 import { presignPutUrl } from '../utils/r2';
 import type { PresignFileInput } from './types';
+import { presignInputIncludesVideo } from './uploadMedia';
 import { requireStorageAvailable } from './types';
 import attachmentErrors from './errorCodes.json';
+
+export type PresignAttachmentDependencies = {
+  getAttachmentUploadPolicy: typeof getAttachmentUploadPolicy;
+  presignPutUrl: typeof presignPutUrl;
+  randomUUID: typeof randomUUID;
+  requireStorageAvailable: typeof requireStorageAvailable;
+};
+
+const defaultDependencies: PresignAttachmentDependencies = {
+  getAttachmentUploadPolicy,
+  presignPutUrl,
+  randomUUID,
+  requireStorageAvailable,
+};
 
 function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: number) {
   validateContentType(file.contentType);
@@ -35,13 +50,17 @@ function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: numbe
   validateFileSize(file.pairedVideo.size, file.pairedVideo.contentType, maxVideoUploadSizeMB);
 }
 
-export async function presignAttachmentUploads(input: {
-  userId: string;
-  scopes: string[];
-  files: PresignFileInput[];
-}) {
-  requireStorageAvailable();
-  const uploadPolicy = await getAttachmentUploadPolicy(input.userId);
+export async function presignAttachmentUploads(
+  input: {
+    userId: string;
+    scopes: string[];
+    files: PresignFileInput[];
+  },
+  dependencyOverrides: Partial<PresignAttachmentDependencies> = {}
+) {
+  const dependencies = { ...defaultDependencies, ...dependencyOverrides };
+  dependencies.requireStorageAvailable();
+  const uploadPolicy = await dependencies.getAttachmentUploadPolicy(input.userId);
   if (!uploadPolicy.canUploadAttachments) {
     throw new Error(attachmentErrors.capabilityAttachmentUpload);
   }
@@ -49,9 +68,7 @@ export async function presignAttachmentUploads(input: {
     throw new Error(attachmentErrors.fileCountExceeded);
   }
 
-  const hasVideo = input.files.some(
-    (file) => isVideoContentType(file.contentType) || file.mediaKind === 'livePhoto'
-  );
+  const hasVideo = presignInputIncludesVideo(input.files);
   if (hasVideo && !input.scopes.includes('video:upload')) {
     throw new Error(attachmentErrors.insufficientVideoUpload);
   }
@@ -63,14 +80,18 @@ export async function presignAttachmentUploads(input: {
 
   const items = await Promise.all(
     input.files.map(async (file) => {
-      const uuid = randomUUID();
+      const uuid = dependencies.randomUUID();
       const ext = getUploadExtension(file.filename, file.contentType);
       const originalKey = 'users/' + input.userId + '/uploads/' + uuid + ext;
       const mediaKind =
         file.mediaKind === 'livePhoto'
           ? 'livePhoto'
           : getMediaKindFromContentType(file.contentType);
-      const original = await presignPutUrl(originalKey, file.contentType || undefined, 15 * 60);
+      const original = await dependencies.presignPutUrl(
+        originalKey,
+        file.contentType || undefined,
+        15 * 60
+      );
       const result: Record<string, any> = {
         uuid,
         original: {
@@ -81,9 +102,11 @@ export async function presignAttachmentUploads(input: {
         },
       };
 
-      if (mediaKind === 'image' || mediaKind === 'livePhoto') {
+      // Live Photo stills are generated server-side during finalize. Do not ask
+      // clients to encode WebP, because iOS cannot reliably produce it.
+      if (mediaKind === 'image') {
         const compressedKey = 'users/' + input.userId + '/compressed/' + uuid + '.webp';
-        const compressed = await presignPutUrl(compressedKey, 'image/webp', 15 * 60);
+        const compressed = await dependencies.presignPutUrl(compressedKey, 'image/webp', 15 * 60);
         result.compressed = {
           key: compressedKey,
           putUrl: compressed.putUrl,
@@ -97,7 +120,7 @@ export async function presignAttachmentUploads(input: {
         if (!pairedVideo) throw new Error(attachmentErrors.livePhotoPairedVideoRequired);
         const pairedVideoExt = getUploadExtension(pairedVideo.filename, pairedVideo.contentType);
         const pairedVideoKey = 'users/' + input.userId + '/paired-videos/' + uuid + pairedVideoExt;
-        const pairedVideoUpload = await presignPutUrl(
+        const pairedVideoUpload = await dependencies.presignPutUrl(
           pairedVideoKey,
           pairedVideo.contentType || undefined,
           15 * 60
@@ -112,7 +135,7 @@ export async function presignAttachmentUploads(input: {
 
       if (mediaKind === 'video') {
         const posterKey = 'users/' + input.userId + '/posters/' + uuid + '.jpg';
-        const poster = await presignPutUrl(posterKey, 'image/jpeg', 15 * 60);
+        const poster = await dependencies.presignPutUrl(posterKey, 'image/jpeg', 15 * 60);
         result.poster = {
           key: posterKey,
           putUrl: poster.putUrl,

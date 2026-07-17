@@ -93,7 +93,7 @@ describe('attachment image display sources', () => {
     );
   });
 
-  it('keeps the original source for browser-renderable images', () => {
+  it('uses compressUrl before posterUrl and the original URL', () => {
     const attachment = makeAttachment({
       url: 'https://cdn.example.com/users/u/uploads/photo.jpg',
       compressUrl: 'https://cdn.example.com/users/u/compressed/photo.webp',
@@ -105,10 +105,54 @@ describe('attachment image display sources', () => {
     });
 
     expect(getAttachmentImagePreviewSrc(attachment)).toBe(
-      'https://cdn.example.com/users/u/uploads/photo.jpg'
+      'https://cdn.example.com/users/u/compressed/photo.webp'
     );
     expect(getAttachmentImageThumbnailSrc(attachment)).toBe(
       'https://cdn.example.com/users/u/compressed/photo.webp'
     );
+  });
+
+  it('uses posterUrl when compressUrl is empty', () => {
+    const attachment = makeAttachment({
+      compressUrl: '',
+      posterUrl: 'https://cdn.example.com/users/u/posters/photo.jpg',
+    });
+
+    expect(getAttachmentImagePreviewSrc(attachment)).toBe(
+      'https://cdn.example.com/users/u/posters/photo.jpg'
+    );
+  });
+
+  it('does not pass a Live Photo HEIC original to an img when its cover is missing', () => {
+    const attachment = makeAttachment({
+      url: 'https://cdn.example.com/users/u/uploads/live.heic',
+      compressUrl: '',
+      posterUrl: '',
+      details: {
+        mimetype: 'image/heic',
+        mediaKind: 'livePhoto',
+        key: 'users/u/uploads/live.heic',
+        pairedVideoKey: 'users/u/paired-videos/live.mov',
+      },
+    });
+
+    expect(getAttachmentImagePreviewSrc(attachment)).toBe('');
+    expect(getAttachmentImageThumbnailSrc(attachment)).toBe('');
+  });
+
+  it.each([
+    ['image/jpeg', 'photo.jpg'],
+    ['image/png', 'photo.png'],
+    ['image/gif', 'photo.gif'],
+  ])('falls back to the original %s URL', (mimetype, filename) => {
+    const url = `https://cdn.example.com/users/u/uploads/${filename}`;
+    const attachment = makeAttachment({
+      url,
+      compressUrl: '',
+      posterUrl: '',
+      details: { key: `users/u/uploads/${filename}`, mediaKind: 'image', mimetype },
+    });
+
+    expect(getAttachmentImageThumbnailSrc(attachment)).toBe(url);
   });
 });

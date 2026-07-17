@@ -9,6 +9,7 @@ import {
   type MouseEvent,
   type TouchEvent,
 } from 'react';
+import { AttachmentImage } from './AttachmentImage';
 
 export type LivePhotoRenderAttrs = Partial<HTMLAttributes<HTMLElement>>;
 
@@ -62,7 +63,7 @@ export function LivePhotoStillViewer({
 
   return (
     <div {...frameAttrs} className={className} style={style}>
-      <img
+      <AttachmentImage
         className="h-full w-full object-contain select-none"
         src={previewSrc}
         alt=""
@@ -208,7 +209,7 @@ export function LivePhotoMotionViewer({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchCancel}
     >
-      <img
+      <AttachmentImage
         className="h-full w-full object-contain select-none"
         src={previewSrc}
         alt=""

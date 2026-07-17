@@ -1,4 +1,5 @@
 import type { Attachment } from '@/types/main';
+import { AttachmentPhotoPreview } from '@/components/rote/AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from '@/components/rote/LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from '@/components/rote/VideoAttachmentPreview';
 import {
@@ -8,7 +9,6 @@ import {
 } from '@/utils/directUpload';
 import { generateVideoPoster } from '@/utils/generateVideoPoster';
 import { X } from 'lucide-react';
-import { PhotoView } from 'react-photo-view';
 import { useEffect, useMemo, useState } from 'react';
 
 interface AttachmentItemProps {
@@ -122,17 +122,15 @@ function AttachmentItem({
           thumbnailSrc={thumbSrc}
         />
       ) : (
-        <PhotoView src={previewSrc}>
-          <div className="relative h-full w-full">
-            <img
-              className={`h-full w-full object-cover ${isUploading ? 'opacity-80' : ''}`}
-              height={80}
-              width={80}
-              src={thumbSrc}
-              alt="uploaded"
-            />
-          </div>
-        </PhotoView>
+        <AttachmentPhotoPreview
+          alt="uploaded"
+          containerClassName="relative h-full w-full"
+          height={80}
+          imageClassName={`h-full w-full object-cover ${isUploading ? 'opacity-80' : ''}`}
+          previewSrc={previewSrc}
+          src={thumbSrc}
+          width={80}
+        />
       )}
 
       {isUploading && mediaKind !== 'video' && (

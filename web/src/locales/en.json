@@ -1689,6 +1689,7 @@
       "tooltip": "Certified"
     },
     "attachments": {
+      "imageUnavailable": "Image unavailable",
       "livePhoto": {
         "badge": "LIVE",
         "open": "Open Live Photo",

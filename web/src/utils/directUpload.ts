@@ -14,7 +14,12 @@ export type PresignFile = {
 export type PresignItem = {
   uuid: string;
   original: { key: string; putUrl: string; url: string; contentType?: string };
-  compressed?: { key: string; putUrl: string; url: string; contentType: 'image/webp' };
+  compressed?: {
+    key: string;
+    putUrl: string;
+    url: string;
+    contentType: 'image/jpeg' | 'image/webp';
+  };
   poster?: { key: string; putUrl: string; url: string; contentType: 'image/jpeg' };
   pairedVideo?: { key: string; putUrl: string; url: string; contentType?: string };
 };
@@ -189,18 +194,15 @@ export function isHeicLikeAttachment(attachment: File | Attachment) {
 }
 
 export function getAttachmentImageThumbnailSrc(attachment: Attachment) {
-  return attachment.compressUrl || attachment.url || '';
+  const compatibleStill = attachment.compressUrl || attachment.posterUrl || '';
+  if (getAttachmentMediaKind(attachment) === 'livePhoto' || isHeicLikeAttachment(attachment)) {
+    return compatibleStill;
+  }
+  return compatibleStill || attachment.url || '';
 }
 
 export function getAttachmentImagePreviewSrc(attachment: Attachment) {
-  const mediaKind = getAttachmentMediaKind(attachment);
-  const shouldUseWebSafeStill = mediaKind === 'livePhoto' || isHeicLikeAttachment(attachment);
-
-  if (shouldUseWebSafeStill) {
-    return attachment.compressUrl || attachment.url || '';
-  }
-
-  return attachment.url || attachment.compressUrl || '';
+  return getAttachmentImageThumbnailSrc(attachment);
 }
 
 export function getAttachmentLivePhotoPlaybackSrc(attachment: Attachment) {

@@ -1679,6 +1679,7 @@
       "tooltip": "已认证"
     },
     "attachments": {
+      "imageUnavailable": "图片暂不可用",
       "livePhoto": {
         "badge": "LIVE",
         "open": "打开 Live Photo",
