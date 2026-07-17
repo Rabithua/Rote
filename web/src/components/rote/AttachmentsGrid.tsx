@@ -27,7 +27,7 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
 
   return (
     attachments.length > 0 && (
-      <div className="my-2 flex w-fit flex-wrap gap-1 overflow-hidden rounded-2xl">
+      <div className="my-2 flex w-full max-w-[500px] flex-wrap gap-1 overflow-hidden rounded-2xl">
         {hasVideo ? (
           sortedAttachments.map((file, index) => (
             <VideoAttachmentPreview
