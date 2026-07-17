@@ -12,7 +12,10 @@ import {
   extractPosterUuid,
   getUploadExtension,
 } from '../../attachments/uploadKeys';
-import { ensureLivePhotoCover } from '../../attachments/livePhotoCover';
+import {
+  assertLivePhotoFinalizeBatch,
+  ensureLivePhotoCover,
+} from '../../attachments/livePhotoCover';
 import { isHeicLikeUpload } from '../../attachments/uploadMedia';
 import { getAttachmentUploadPolicy } from '../../attachments/uploadPolicy';
 import { requireStorageConfig } from '../../middleware/configCheck';
@@ -1151,6 +1154,7 @@ router.post(
     if (attachments.length > MAX_BATCH_SIZE) {
       throw new Error(`Maximum ${MAX_BATCH_SIZE} attachments can be finalized at once`);
     }
+    assertLivePhotoFinalizeBatch(attachments);
 
     // Ownership check: keys must stay under the current user's prefix
     const prefix = `users/${openKey.userid}/`;
