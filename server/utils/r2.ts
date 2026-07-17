@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -10,6 +11,11 @@ import { StorageConfig } from '../types/config';
 import { getGlobalConfig } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
+
+export type StoredObjectInfo = {
+  contentLength: number | null;
+  contentType: string | null;
+};
 
 type StorageClientConfig = {
   s3: S3Client;
@@ -126,13 +132,16 @@ async function presignPutUrlWithClient(
     Bucket: bucketName,
     Key: key,
     ContentType: contentType || undefined,
-    cacheControl,
+    CacheControl: cacheControl,
     // 明确不设置校验和算法，避免 AWS SDK 自动添加校验和参数
     // Garage 等 S3 兼容服务可能不支持或不正确支持 AWS SDK 自动添加的校验和
   } as any);
 
   const putUrl = await getSignedUrl(s3, command, {
     expiresIn,
+    // Bind the declared object media type into the signature so the key
+    // extension, presign metadata, and actual upload header cannot diverge.
+    signableHeaders: contentType ? new Set(['content-type']) : undefined,
   });
 
   const url = `${urlPrefix}/${key}`;
@@ -224,4 +233,69 @@ export async function checkObjectExists(key: string): Promise<boolean> {
     console.warn(`Error checking object existence for ${key}:`, error.message || error);
     return false;
   }
+}
+
+export async function getObjectInfo(key: string): Promise<StoredObjectInfo | null> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  try {
+    const result = await r2Config.s3.send(
+      new HeadObjectCommand({ Bucket: r2Config.bucketName, Key: key })
+    );
+    return {
+      contentLength: result.ContentLength ?? null,
+      contentType: result.ContentType ?? null,
+    };
+  } catch (error: any) {
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function getObjectBytes(key: string): Promise<Uint8Array> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const result = await r2Config.s3.send(
+    new GetObjectCommand({ Bucket: r2Config.bucketName, Key: key })
+  );
+  if (!result.Body) {
+    throw new Error(`Storage object has no body: ${key}`);
+  }
+  return result.Body.transformToByteArray();
+}
+
+export async function putObjectBytes(
+  key: string,
+  bytes: Uint8Array,
+  contentType: string
+): Promise<void> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  await r2Config.s3.send(
+    new PutObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      Body: bytes,
+      ContentLength: bytes.byteLength,
+      ContentType: contentType,
+      CacheControl: cacheControl,
+    })
+  );
 }

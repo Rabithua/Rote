@@ -4,7 +4,8 @@ import {
   getAttachmentImageThumbnailSrc,
   getAttachmentMediaKind,
 } from '@/utils/directUpload';
-import { PhotoProvider, PhotoView } from 'react-photo-view';
+import { PhotoProvider } from 'react-photo-view';
+import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from './LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from './VideoAttachmentPreview';
 import 'react-photo-view/dist/react-photo-view.css';
@@ -67,16 +68,15 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
                   crossOrigin={withTimeStamp ? 'anonymous' : undefined}
                 />
               ) : (
-                <PhotoView key={`files_${index}`} src={previewSrc}>
-                  <div className={`${imageClassName} relative grow overflow-hidden`}>
-                    <img
-                      className={renderedImageClassName}
-                      src={thumbSrc}
-                      crossOrigin={withTimeStamp ? 'anonymous' : undefined}
-                      alt=""
-                    />
-                  </div>
-                </PhotoView>
+                <AttachmentPhotoPreview
+                  key={`files_${index}`}
+                  alt=""
+                  containerClassName={`${imageClassName} relative grow overflow-hidden`}
+                  crossOrigin={withTimeStamp ? 'anonymous' : undefined}
+                  imageClassName={renderedImageClassName}
+                  previewSrc={previewSrc}
+                  src={thumbSrc}
+                />
               );
             })}
           </PhotoProvider>

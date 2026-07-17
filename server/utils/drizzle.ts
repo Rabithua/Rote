@@ -24,6 +24,34 @@ const queryClient = postgres(connectionString, {
 // 创建 Drizzle 实例（同时支持 SQL-like API 和 Relational Query API）
 export const db = drizzle(queryClient, { schema });
 
+export type DatabaseAdvisoryLockResult<T> = { acquired: false } | { acquired: true; result: T };
+
+export async function withDatabaseAdvisoryLock<T>(
+  lockName: string,
+  task: () => Promise<T>
+): Promise<DatabaseAdvisoryLockResult<T>> {
+  const connection = await queryClient.reserve();
+  let acquired = false;
+  try {
+    const rows = await connection`
+      SELECT pg_try_advisory_lock(hashtext(${lockName})) AS acquired
+    `;
+    acquired = rows[0]?.acquired === true;
+    if (!acquired) return { acquired: false };
+    return { acquired: true, result: await task() };
+  } finally {
+    try {
+      if (acquired) {
+        await connection`
+          SELECT pg_advisory_unlock(hashtext(${lockName}))
+        `;
+      }
+    } finally {
+      connection.release();
+    }
+  }
+}
+
 // 为了兼容性，默认导出
 export default db;
 

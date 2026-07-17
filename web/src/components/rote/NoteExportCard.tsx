@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import type { Attachment } from '@/types/main';
+import { getAttachmentImageThumbnailSrc } from '@/utils/directUpload';
+import { AttachmentImage } from './AttachmentImage';
 
 interface NoteExportCardProps {
   title?: string;
@@ -127,7 +129,14 @@ export default function NoteExportCard({
                 aspectRatio: '1 / 1',
               });
             }
-            return <img key={att.id} src={att.compressUrl || att.url} alt="" style={imgStyle} />;
+            return (
+              <AttachmentImage
+                key={att.id}
+                src={getAttachmentImageThumbnailSrc(att)}
+                alt=""
+                style={imgStyle}
+              />
+            );
           })}
         </div>
       )}

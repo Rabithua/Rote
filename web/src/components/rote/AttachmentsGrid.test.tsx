@@ -126,7 +126,7 @@ describe('AttachmentsGrid Live Photo mix', () => {
     );
     expect(within(screen.getByTestId('photo-provider')).getByText('badge')).toBeVisible();
     expect(
-      photoViews.some((view) => view.getAttribute('data-src') === mockAttachments[1].url)
+      photoViews.some((view) => view.getAttribute('data-src') === mockAttachments[1].compressUrl)
     ).toBe(true);
     expect(container.querySelectorAll('video')).toHaveLength(1);
   });

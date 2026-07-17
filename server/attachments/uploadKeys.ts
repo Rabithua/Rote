@@ -1,7 +1,4 @@
 export function getUploadExtension(filename?: string, contentType?: string) {
-  if (filename && filename.includes('.')) return `.${filename.split('.').pop()}`;
-  if (!contentType) return '';
-
   const extensions: Record<string, string> = {
     'image/jpeg': '.jpg',
     'image/jpg': '.jpg',
@@ -17,14 +14,20 @@ export function getUploadExtension(filename?: string, contentType?: string) {
     'video/quicktime': '.mov',
   };
 
-  return extensions[contentType] || '';
+  const normalizedContentType = contentType?.split(';', 1)[0].trim().toLowerCase();
+  if (normalizedContentType && extensions[normalizedContentType]) {
+    return extensions[normalizedContentType];
+  }
+
+  const filenameExtension = filename?.match(/\.([a-z0-9]+)$/i)?.[1];
+  return filenameExtension ? `.${filenameExtension.toLowerCase()}` : '';
 }
 
 export const extractOriginalUploadUuid = (key?: string) =>
   key?.match(/\/uploads\/([^/.]+)(\.[^.]+)?$/)?.[1] ?? null;
 
 export const extractCompressedUuid = (key?: string) =>
-  key?.match(/\/compressed\/([^/.]+)\.webp$/)?.[1] ?? null;
+  key?.match(/\/compressed\/([^/.]+)\.(?:webp|jpe?g)$/i)?.[1] ?? null;
 
 export const extractPosterUuid = (key?: string) =>
   key?.match(/\/posters\/([^/.]+)\.[^.]+$/)?.[1] ?? null;
