@@ -12,6 +12,11 @@ import {
   extractPosterUuid,
   getUploadExtension,
 } from '../../attachments/uploadKeys';
+import {
+  assertLivePhotoFinalizeBatch,
+  ensureLivePhotoCover,
+} from '../../attachments/livePhotoCover';
+import { isHeicLikeUpload } from '../../attachments/uploadMedia';
 import { getAttachmentUploadPolicy } from '../../attachments/uploadPolicy';
 import { requireStorageConfig } from '../../middleware/configCheck';
 import type { StorageConfig } from '../../types/config';
@@ -1074,7 +1079,7 @@ router.post(
           },
         };
 
-        if (mediaKind === 'image' || mediaKind === 'livePhoto') {
+        if (mediaKind === 'image') {
           const compressedKey = `users/${openKey.userid}/compressed/${uuid}.webp`;
           const compressed = await presignPutUrl(compressedKey, 'image/webp', 15 * 60);
           result.compressed = {
@@ -1149,6 +1154,7 @@ router.post(
     if (attachments.length > MAX_BATCH_SIZE) {
       throw new Error(`Maximum ${MAX_BATCH_SIZE} attachments can be finalized at once`);
     }
+    assertLivePhotoFinalizeBatch(attachments);
 
     // Ownership check: keys must stay under the current user's prefix
     const prefix = `users/${openKey.userid}/`;
@@ -1255,10 +1261,13 @@ router.post(
         normalizedAttachment.posterKey = undefined;
       }
 
-      if (
-        (mediaKind === 'image' || mediaKind === 'livePhoto') &&
-        normalizedAttachment.compressedKey
-      ) {
+      // Live Photo covers are generated and verified by the server. Never
+      // trust legacy client-provided WebP keys, which may contain JPEG bytes.
+      if (mediaKind === 'livePhoto') {
+        normalizedAttachment.compressedKey = undefined;
+      }
+
+      if (mediaKind === 'image' && normalizedAttachment.compressedKey) {
         const compressedExists = await checkObjectExists(normalizedAttachment.compressedKey);
         if (!compressedExists) {
           validationErrors.push(
@@ -1391,6 +1400,23 @@ router.post(
       validateRoteAttachmentDetails(
         mergeUniqueRoteAttachmentDetails(currentAttachments, pendingAttachments)
       );
+    }
+
+    for (const attachment of validAttachments) {
+      const mediaKind = inferAttachmentMediaKind({
+        mediaKind: attachment.mediaKind,
+        mimetype: attachment.mimetype,
+        pairedVideoKey: attachment.pairedVideoKey,
+        key: attachment.originalKey,
+      });
+      if (mediaKind !== 'livePhoto') continue;
+
+      if (isHeicLikeUpload(attachment)) {
+        const cover = await ensureLivePhotoCover(attachment.originalKey);
+        attachment.compressedKey = cover.key;
+      } else {
+        attachment.compressedKey = attachment.originalKey;
+      }
     }
 
     const uploads: UploadResult[] = validAttachments.map((a) => {
