@@ -43,8 +43,9 @@ export default function AIIndexingActions({
   const showRetry = isVectorReady && failedJobs > 0;
   const showProcess = isVectorReady && !paused && pendingJobs > 0;
   const showRecommendedActions = showSetup || showResume || showRetry || showProcess;
+  const showMaintenanceActions = isVectorReady || totalJobs > 0;
 
-  if (!showRecommendedActions && !isVectorReady) return null;
+  if (!showRecommendedActions && !showMaintenanceActions) return null;
 
   return (
     <div className="space-y-4">
@@ -114,25 +115,27 @@ export default function AIIndexingActions({
         </section>
       )}
 
-      {isVectorReady && (
+      {showMaintenanceActions && (
         <section className="space-y-2">
           <h3 className="text-sm font-medium">{t('maintenanceActions')}</h3>
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() =>
-                runAction('backfill', () => post('/ai/index/backfill'), t('backfillQueued'))
-              }
-              disabled={isBusy}
-            >
-              <ActionIcon active={busyAction === 'backfill'}>
-                <RefreshCw className="size-4" />
-              </ActionIcon>
-              {t('backfill')}
-            </Button>
+            {isVectorReady && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  runAction('backfill', () => post('/ai/index/backfill'), t('backfillQueued'))
+                }
+                disabled={isBusy}
+              >
+                <ActionIcon active={busyAction === 'backfill'}>
+                  <RefreshCw className="size-4" />
+                </ActionIcon>
+                {t('backfill')}
+              </Button>
+            )}
 
-            {!paused && (
+            {isVectorReady && !paused && (
               <Button
                 type="button"
                 variant="outline"

@@ -87,4 +87,16 @@ describe('AIIndexingActions', () => {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('keeps stale vector data clearable when pgvector is unavailable', () => {
+    renderActions({
+      jobStats: { failed: 2, pending: 3, running: 0, succeeded: 12 },
+      vectorStatus: { ...readyVector, available: false, indexName: null, installed: false },
+    });
+
+    expect(screen.getByText('maintenanceActions')).toBeVisible();
+    expect(screen.getByText('clearIndex')).toBeVisible();
+    expect(screen.queryByText('backfill')).not.toBeInTheDocument();
+    expect(screen.queryByText('pause')).not.toBeInTheDocument();
+  });
 });
