@@ -21,6 +21,7 @@ import {
   type ImportPayload,
   type ImportSource,
 } from './importSchema';
+import { migrateRemoteAttachments } from './remoteAttachmentService';
 
 const IMPORT_CHUNK_SIZE = 200;
 
@@ -44,7 +45,9 @@ export interface ImportResult {
 }
 
 export async function importUserData(userId: string, rawData: unknown): Promise<ImportResult> {
-  const payload = parseImportPayload(rawData);
+  const parsedPayload = parseImportPayload(rawData);
+  const noteIndexes = await getNoteIndexesRequiringImport(userId, parsedPayload);
+  const payload = await migrateRemoteAttachments(userId, parsedPayload, noteIndexes);
   const articleResult = await importArticles(userId, payload);
   const ownedArticleIds = await getOwnedArticleIds(userId, payload.notes);
   const counts: ImportCounts = { created: 0, updated: 0, unchanged: 0 };
@@ -285,6 +288,65 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
     }
     throw new DatabaseError('Failed to import user data', error);
   }
+}
+
+async function getNoteIndexesRequiringImport(
+  userId: string,
+  payload: ImportPayload
+): Promise<Set<number>> {
+  if (payload.importOptions.existingStrategy === 'overwrite') {
+    return new Set(payload.notes.map((_, index) => index));
+  }
+
+  const existingSourceKeys = new Set<string>();
+  const sourceNotes = payload.notes.filter(hasImportSource);
+  for (const chunk of chunkValues(sourceNotes, IMPORT_CHUNK_SIZE)) {
+    const conditions = chunk.map((note) =>
+      and(
+        eq(noteImportSources.provider, note.source.provider),
+        eq(noteImportSources.accountId, note.source.accountId),
+        eq(noteImportSources.externalId, note.source.externalId)
+      )
+    );
+    if (conditions.length === 0) continue;
+    const rows = await db
+      .select({
+        accountId: noteImportSources.accountId,
+        externalId: noteImportSources.externalId,
+        provider: noteImportSources.provider,
+      })
+      .from(noteImportSources)
+      .where(and(eq(noteImportSources.ownerId, userId), or(...conditions)));
+    rows.forEach((row) => existingSourceKeys.add(sourceKey(row)));
+  }
+
+  const legacyNotes = payload.notes.filter((note) => !note.source);
+  const existingLegacyIds = new Set<string>();
+  for (const chunk of chunkValues(legacyNotes, 500)) {
+    if (chunk.length === 0) continue;
+    const rows = await db
+      .select({ id: rotes.id })
+      .from(rotes)
+      .where(
+        and(
+          eq(rotes.authorid, userId),
+          inArray(
+            rotes.id,
+            chunk.map((note) => note.id)
+          )
+        )
+      );
+    rows.forEach((row) => existingLegacyIds.add(row.id));
+  }
+
+  return new Set(
+    payload.notes.flatMap((note, index) => {
+      const exists = note.source
+        ? existingSourceKeys.has(sourceKey(note.source))
+        : existingLegacyIds.has(note.id);
+      return exists ? [] : [index];
+    })
+  );
 }
 
 async function importArticles(userId: string, payload: ImportPayload) {

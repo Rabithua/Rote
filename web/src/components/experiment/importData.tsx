@@ -292,8 +292,12 @@ export default function ImportData() {
         clearPreview();
       }
     } catch (_error: any) {
-      // console.error('Import error:', error);
-      toast.error(_error.message || t('importFailed'));
+      const serverMessage = _error.response?.data?.message ?? _error.message;
+      const message =
+        serverMessage === 'remote_attachment_migration_failed'
+          ? t('migration.errors.remoteAttachmentMigration')
+          : serverMessage || t('importFailed');
+      toast.error(message);
     } finally {
       setIsImporting(false);
     }

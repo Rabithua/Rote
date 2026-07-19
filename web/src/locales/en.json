@@ -907,6 +907,7 @@
           },
           "errors": {
             "prepare": "Failed to prepare the import",
+            "remoteAttachmentMigration": "Failed to migrate remote attachments. Check the attachment URLs, storage configuration, and upload permissions, then try again.",
             "fileRequired": "Choose a file first",
             "invalidRoteFile": "This is not a valid Rote import file",
             "noConvertedNotes": "No notes are available to import",

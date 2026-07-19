@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import ImportSourceForm from './ImportSourceForm';
@@ -34,6 +34,29 @@ describe('ImportSourceForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'close' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByText('sources.rote')).toBeInTheDocument();
+  });
+
+  it('closes platform configuration after preparing an import', async () => {
+    const onPrepared = vi.fn();
+    render(<ImportSourceForm onPrepared={onPrepared} onError={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('sources.rote').closest('button')!);
+    const file = new File(
+      [
+        JSON.stringify({
+          notes: [{ id: '550e8400-e29b-41d4-a716-446655440000', content: 'note' }],
+        }),
+      ],
+      'rote.json',
+      { type: 'application/json' }
+    );
+    fireEvent.change(document.querySelector('input[type="file"]')!, {
+      target: { files: [file] },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'prepare' }));
+
+    await waitFor(() => expect(onPrepared).toHaveBeenCalledOnce());
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
 

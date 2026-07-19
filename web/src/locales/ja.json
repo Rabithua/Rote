@@ -911,6 +911,7 @@
           },
           "errors": {
             "prepare": "インポートデータを準備できませんでした",
+            "remoteAttachmentMigration": "リモート添付ファイルを移行できませんでした。添付 URL、ストレージ設定、アップロード権限を確認して再試行してください。",
             "fileRequired": "先にファイルを選択してください",
             "invalidRoteFile": "有効な Rote インポートファイルではありません",
             "noConvertedNotes": "インポート可能なノートがありません",

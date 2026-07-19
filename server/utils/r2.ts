@@ -205,6 +205,32 @@ export async function presignPutUrlForConfig(
   return presignPutUrlWithClient(createStorageClient(config), key, contentType, expiresIn);
 }
 
+export async function storeObject(
+  key: string,
+  body: Uint8Array,
+  contentType: string
+): Promise<{ url: string }> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  await r2Config.s3.send(
+    new PutObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      Body: body,
+      ContentLength: body.byteLength,
+      ContentType: contentType,
+      CacheControl: cacheControl,
+    })
+  );
+
+  return { url: `${r2Config.urlPrefix}/${key}` };
+}
+
 // 检查 R2 中的对象是否存在
 export async function checkObjectExists(key: string): Promise<boolean> {
   const r2Config = getR2Client();

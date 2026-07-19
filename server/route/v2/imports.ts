@@ -15,7 +15,10 @@ importsRouter.post('/weread', authenticateJWT, async (c: HonoContext) => {
     return c.json(createResponse(data), 200);
   } catch (error) {
     if (error instanceof WereadGatewayError) {
-      return c.json(createResponse(null, error.code, 1), error.status as 400 | 403 | 502 | 504);
+      return c.json(
+        createResponse(null, error.code, 1),
+        error.status as 400 | 401 | 403 | 502 | 504
+      );
     }
     throw error;
   }

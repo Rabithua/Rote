@@ -65,6 +65,12 @@ export async function requestWereadGateway({
   if (!responseBody || typeof responseBody !== 'object') {
     throw new WereadGatewayError('weread_invalid_response', 502);
   }
+  if (response.status === 401 || response.status === 403) {
+    throw new WereadGatewayError('weread_invalid_key', 401);
+  }
+  if (!response.ok) {
+    throw new WereadGatewayError('weread_invalid_response', 502);
+  }
 
   return responseBody;
 }

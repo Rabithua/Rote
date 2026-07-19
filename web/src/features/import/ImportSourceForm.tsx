@@ -131,6 +131,7 @@ export default function ImportSourceForm({
       }
 
       onPrepared(result.payload, result.displayName, result.warnings);
+      handleBackToPlatforms();
     } catch (error) {
       onError(error instanceof Error ? error.message : t('errors.prepare'));
     } finally {
@@ -138,6 +139,7 @@ export default function ImportSourceForm({
     }
   }, [
     file,
+    handleBackToPlatforms,
     memosBaseUrl,
     memosSelection,
     memosToken,

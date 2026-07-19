@@ -897,6 +897,7 @@
           },
           "errors": {
             "prepare": "准备导入数据失败",
+            "remoteAttachmentMigration": "远程附件迁移失败，请检查附件链接、存储配置或上传权限后重试",
             "fileRequired": "请先选择文件",
             "invalidRoteFile": "这不是有效的 Rote 导入文件",
             "noConvertedNotes": "没有可导入的笔记",

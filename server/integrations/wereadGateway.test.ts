@@ -93,4 +93,17 @@ describe('requestWereadGateway', () => {
       })
     ).rejects.toMatchObject<WereadGatewayError>({ code: 'weread_timeout' });
   });
+
+  it('maps upstream authentication failures without exposing the response body', async () => {
+    await expect(
+      requestWereadGateway({
+        apiKey: 'wrk-secret',
+        body: { api_name: '/user/notebooks' },
+        fetcher: (() =>
+          Promise.resolve(
+            Response.json({ message: 'sensitive upstream detail' }, { status: 401 })
+          )) as typeof fetch,
+      })
+    ).rejects.toMatchObject<WereadGatewayError>({ code: 'weread_invalid_key', status: 401 });
+  });
 });
