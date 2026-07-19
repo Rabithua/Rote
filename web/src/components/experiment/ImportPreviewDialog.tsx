@@ -1,5 +1,12 @@
 import RoteList from '@/components/rote/roteList';
-import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { Rotes } from '@/types/main';
 import {
   ChevronLeft,
@@ -90,11 +97,19 @@ export default function ImportPreviewDialog({
         if (!isImporting) onOpenChange(nextOpen);
       }}
     >
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
-        <div className="flex items-center gap-2">
-          <FileJson className="size-4" />
-          <div className="truncate font-serif font-bold">{preview.fileName}</div>
-        </div>
+      <DialogContent
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg"
+        closeLabel={t('cancel')}
+      >
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileJson className="size-4" />
+            <span className="truncate font-serif">{preview.fileName}</span>
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('previewDialogDescription', { count: preview.roteCount })}
+          </DialogDescription>
+        </DialogHeader>
         <div>
           <div className="flex flex-wrap gap-1.5">
             <SummaryBadge label={t('notesFound')} value={stats.roteCount} />
@@ -118,6 +133,7 @@ export default function ImportPreviewDialog({
                   onClick={() => setPage((value) => Math.max(1, value - 1))}
                   disabled={currentPage === 1}
                   title={t('prevPage')}
+                  aria-label={t('prevPage')}
                 >
                   <ChevronLeft className="size-4" />
                 </Button>
@@ -141,6 +157,7 @@ export default function ImportPreviewDialog({
                   onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
                   disabled={currentPage === totalPages}
                   title={t('nextPage')}
+                  aria-label={t('nextPage')}
                 >
                   <ChevronRight className="size-4" />
                 </Button>
@@ -168,6 +185,7 @@ export default function ImportPreviewDialog({
                         className="size-7"
                         onClick={() => onToggleExclude(originalIndex)}
                         title={excluded ? t('restoreNote') : t('excludeNote')}
+                        aria-label={excluded ? t('restoreNote') : t('excludeNote')}
                       >
                         {excluded ? <RotateCcw className="size-4" /> : <X className="size-4" />}
                       </Button>
