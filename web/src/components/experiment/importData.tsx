@@ -283,40 +283,6 @@ export default function ImportData() {
         migrationAuth,
       });
       setTaskResult(data);
-
-      toast.success(t('importSuccessTitle'), {
-        description: t('importSuccessSummary', { count: data.notes.total }),
-        duration: 5000,
-      });
-      toast.info(
-        t('importSuccessNotes', {
-          total: data.notes.total,
-          created: data.notes.created,
-          updated: data.notes.updated,
-          unchanged: data.notes.unchanged,
-        }),
-        { duration: 5000 }
-      );
-      toast.info(
-        t('importSuccessArticles', {
-          total: data.articles.total,
-          created: data.articles.created,
-          updated: data.articles.updated,
-        }),
-        { duration: 5000 }
-      );
-      toast.info(
-        t('importSuccessAttachments', {
-          total: data.attachments.total,
-          created: data.attachments.created,
-          updated: data.attachments.updated,
-          deleted: data.attachments.deleted,
-        }),
-        { duration: 5000 }
-      );
-      if (data.attachments.failed > 0) {
-        toast.warning(t('importTask.failedSummary', { count: data.attachments.failed }));
-      }
     } catch (_error: any) {
       if (_error?.name === 'CanceledError' || _error?.name === 'AbortError') {
         toast.info(t('importTask.interrupted'));
