@@ -146,4 +146,23 @@ describe('single remote attachment migration', () => {
     expect(peak).toBe(3);
     expect(order).toHaveLength(12);
   });
+
+  test('removes aborted work from the queue and immediately admits the next task', async () => {
+    const limiter = createRemoteAttachmentLimiter(1, 20);
+    let releaseFirst!: () => void;
+    const first = limiter(() => new Promise<void>((resolve) => (releaseFirst = resolve)));
+    const controller = new AbortController();
+    const canceled = limiter(async () => {}, controller.signal);
+    const order: string[] = [];
+    const next = limiter(async () => {
+      order.push('next');
+    });
+
+    controller.abort();
+    await expect(canceled).rejects.toMatchObject({ name: 'AbortError' });
+    releaseFirst();
+    await Promise.all([first, next]);
+
+    expect(order).toEqual(['next']);
+  });
 });

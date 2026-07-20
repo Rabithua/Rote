@@ -54,6 +54,7 @@ importsRouter.post('/attachments/migrate', authenticateJWT, async (c: HonoContex
       parsed.data,
       {},
       {
+        signal: c.req.raw.signal,
         auth: migrationAuth.data
           ? {
               baseUrl: migrationAuth.data.baseUrl,

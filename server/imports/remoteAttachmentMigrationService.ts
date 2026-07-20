@@ -52,6 +52,7 @@ type MigrationDependencies = {
 };
 
 type MigrationOptions = {
+  signal?: AbortSignal;
   auth?: {
     baseUrl: string;
     bearerToken?: string;
@@ -114,6 +115,7 @@ export async function migrateOneRemoteAttachment(
       canUploadVideo: policy.canUploadVideo,
       dependencies,
       auth: options.auth,
+      signal: options.signal,
     });
     const mediaKind = isImageContentType(original.contentType)
       ? 'image'
@@ -141,6 +143,7 @@ export async function migrateOneRemoteAttachment(
             canUploadVideo: policy.canUploadVideo,
             dependencies,
             auth: options.auth,
+            signal: options.signal,
           })
         : undefined,
       posterUrl
@@ -156,6 +159,7 @@ export async function migrateOneRemoteAttachment(
             canUploadVideo: policy.canUploadVideo,
             dependencies,
             auth: options.auth,
+            signal: options.signal,
           })
         : undefined,
       isRemoteUrl(pairedVideoUrl)
@@ -172,6 +176,7 @@ export async function migrateOneRemoteAttachment(
             canUploadVideo: policy.canUploadVideo,
             dependencies,
             auth: options.auth,
+            signal: options.signal,
           })
         : undefined,
     ]);
@@ -228,6 +233,7 @@ async function migrateAsset({
   canUploadVideo,
   dependencies,
   auth,
+  signal,
 }: {
   userId: string;
   uuid: string;
@@ -241,9 +247,10 @@ async function migrateAsset({
   canUploadVideo: boolean;
   dependencies: MigrationDependencies;
   auth?: MigrationOptions['auth'];
+  signal?: AbortSignal;
 }) {
   return globalTransferLimiter(async () => {
-    const response = await fetchSafe(sourceUrl, dependencies, auth);
+    const response = await fetchSafe(sourceUrl, dependencies, auth, signal);
     const contentType = normalizeContentType(response.headers.get('content-type') || declaredType);
     if (!contentType)
       throw new RemoteAttachmentMigrationError('remote_attachment_unsupported', 422);
@@ -285,16 +292,18 @@ async function migrateAsset({
     uploadedKeys.push(key);
     if (size === 0) throw new RemoteAttachmentMigrationError('remote_attachment_invalid', 422);
     return { key, size, contentType };
-  });
+  }, signal);
 }
 
 async function fetchSafe(
   initialUrl: string,
   dependencies: MigrationDependencies,
-  auth?: MigrationOptions['auth']
+  auth?: MigrationOptions['auth'],
+  signal?: AbortSignal
 ) {
   let currentUrl = initialUrl;
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
+    signal?.throwIfAborted();
     await dependencies.assertSafeOutboundUrl(currentUrl, 'Remote attachment URL');
     let response: Response;
     try {
@@ -305,7 +314,9 @@ async function fetchSafe(
       response = await dependencies.fetcher(currentUrl, {
         headers,
         redirect: 'manual',
-        signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+        signal: signal
+          ? AbortSignal.any([signal, AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS)])
+          : AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
       });
     } catch {
       throw new RemoteAttachmentMigrationError('remote_attachment_download_failed', 502);
@@ -346,20 +357,40 @@ function validateRole(role: AssetRole, contentType: string) {
 
 export function createRemoteAttachmentLimiter(limit: number, maxQueue: number) {
   let active = 0;
-  const queue: Array<() => void> = [];
-  return async <T>(task: () => Promise<T>): Promise<T> => {
+  const queue: Array<{
+    resolve: () => void;
+    reject: (reason?: unknown) => void;
+    signal?: AbortSignal;
+    onAbort?: () => void;
+  }> = [];
+  return async <T>(task: () => Promise<T>, signal?: AbortSignal): Promise<T> => {
+    signal?.throwIfAborted();
     if (active >= limit) {
       if (queue.length >= maxQueue) {
         throw new RemoteAttachmentMigrationError('remote_attachment_busy', 429);
       }
-      await new Promise<void>((resolve) => queue.push(resolve));
+      await new Promise<void>((resolve, reject) => {
+        const entry = { resolve, reject, signal, onAbort: undefined as (() => void) | undefined };
+        entry.onAbort = () => {
+          const index = queue.indexOf(entry);
+          if (index >= 0) queue.splice(index, 1);
+          reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'));
+        };
+        signal?.addEventListener('abort', entry.onAbort, { once: true });
+        queue.push(entry);
+      });
     }
+    signal?.throwIfAborted();
     active += 1;
     try {
       return await task();
     } finally {
       active -= 1;
-      queue.shift()?.();
+      const next = queue.shift();
+      if (next) {
+        if (next.onAbort) next.signal?.removeEventListener('abort', next.onAbort);
+        next.resolve();
+      }
     }
   };
 }

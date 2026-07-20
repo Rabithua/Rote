@@ -51,13 +51,11 @@ describe('ImportPreviewDialog progress', () => {
   test('shows real attachment progress and requests explicit cancellation', () => {
     const { onRequestCancel } = renderDialog();
 
-    const progressbars = screen.getAllByRole('progressbar');
-    expect(progressbars).toHaveLength(2);
-    expect(progressbars.map((progressbar) => progressbar.getAttribute('aria-valuenow'))).toEqual([
-      '33',
-      '0',
-    ]);
-    expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText('attachments 1/3')).toBeInTheDocument();
+    expect(screen.getByText('active')).toBeInTheDocument();
+    expect(screen.getByText('failed')).toBeInTheDocument();
+    expect(screen.getByText('notes 0/1')).toBeInTheDocument();
     expect(screen.getByText('stayOnPage')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'cancel' }));
     expect(onRequestCancel).toHaveBeenCalledOnce();
