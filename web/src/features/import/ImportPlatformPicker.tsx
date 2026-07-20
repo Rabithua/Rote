@@ -57,7 +57,7 @@ export default function ImportPlatformPicker({
   });
 
   return (
-    <div className="grid w-full max-w-xl grid-cols-2 gap-0 sm:grid-cols-4">
+    <div className="grid w-full max-w-xl grid-cols-3 gap-0">
       {IMPORT_PLATFORMS.map((platform) => {
         const platformName = t(platform.nameKey);
 
@@ -76,7 +76,7 @@ export default function ImportPlatformPicker({
               alt=""
               width={56}
               height={56}
-              className="aspect-square size-14 rounded-md object-cover drop-shadow-sm"
+              className="aspect-square size-14 rounded-md object-cover drop-shadow-[0_8px_12px_rgb(0_0_0/0.12)]"
               aria-hidden="true"
             />
             <span className="text-sm font-medium">{platformName}</span>
