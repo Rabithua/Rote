@@ -30,6 +30,7 @@ interface SiteStatusData {
       content: string;
       link?: string;
     };
+    customHeadScripts?: string;
   };
   system: {
     version: string;

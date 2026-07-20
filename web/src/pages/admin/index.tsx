@@ -218,6 +218,7 @@ export default function AdminDashboard() {
             isSaving={isSaving}
             setIsSaving={setIsSaving}
             onMutate={mutate}
+            isSuperAdmin={profile.role === 'super_admin'}
           />
         )}
 

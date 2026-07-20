@@ -1231,6 +1231,13 @@
         "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds",
         "icpRecord": "ICP Record Number",
         "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号",
+        "customHeadScripts": {
+          "title": "Custom Head Scripts",
+          "description": "Supports one or more script tags. Refresh the page after saving to apply changes.",
+          "warning": "Warning: these scripts can read page data and login state. Only paste code you fully trust, and never enter server-side secrets.",
+          "placeholder": "<script defer src=\"https://your-umami-domain.com/script.js\" data-website-id=\"YOUR_WEBSITE_ID\"></script>",
+          "tooLarge": "Custom head scripts must not exceed 64 KiB"
+        },
         "announcement": {
           "title": "Site Announcement",
           "description": "Announcement displayed at the top of the Explore page.",

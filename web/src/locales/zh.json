@@ -1221,6 +1221,13 @@
         "frontendUrlDescription": "前端访问地址，用于生成 RSS Feed 中的笔记链接",
         "icpRecord": "ICP 备案号",
         "icpRecordDescription": "网站备案号，如：京ICP备12345678号",
+        "customHeadScripts": {
+          "title": "自定义 Head 脚本",
+          "description": "支持一个或多个 script 标签，保存后刷新页面生效。",
+          "warning": "警告：这些脚本可读取页面数据和登录状态。仅粘贴你完全信任的代码，且不要填写服务端密钥。",
+          "placeholder": "<script defer src=\"https://your-umami-domain.com/script.js\" data-website-id=\"YOUR_WEBSITE_ID\"></script>",
+          "tooLarge": "自定义 Head 脚本不能超过 64 KiB"
+        },
         "announcement": {
           "title": "站点公告",
           "description": "在探索页面顶部显示的站点公告",

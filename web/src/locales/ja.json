@@ -1235,6 +1235,13 @@
         "frontendUrlDescription": "フロントエンドアクセスURL、RSSフィードでノートリンクを生成するために使用",
         "icpRecord": "ICP記録番号",
         "icpRecordDescription": "ウェブサイトICP記録番号、例：京ICP备12345678号",
+        "customHeadScripts": {
+          "title": "カスタム Head スクリプト",
+          "description": "1つ以上の script タグを設定できます。保存後、ページを再読み込みすると反映されます。",
+          "warning": "警告：これらのスクリプトはページデータとログイン状態を読み取れます。完全に信頼できるコードのみを貼り付け、サーバー側の秘密情報は入力しないでください。",
+          "placeholder": "<script defer src=\"https://your-umami-domain.com/script.js\" data-website-id=\"YOUR_WEBSITE_ID\"></script>",
+          "tooLarge": "カスタム Head スクリプトは 64 KiB 以下にしてください"
+        },
         "announcement": {
           "title": "サイトのお知らせ",
           "description": "探索ページの上部に表示されるお知らせ",
