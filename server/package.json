@@ -13,7 +13,7 @@
     "test:all": "bun run test:quick",
     "test": "bun run tests/index.ts",
     "test:full": "bun run tests/index.ts",
-    "backfill:live-photo-covers": "bun run scripts/backfillLivePhotoCovers.ts",
+    "backfill:heic-browser-covers": "bun run scripts/backfillHeicBrowserCovers.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "db:generate": "drizzle-kit generate",
