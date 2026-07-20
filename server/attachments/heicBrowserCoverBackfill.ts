@@ -48,6 +48,7 @@ export async function backfillHeicBrowserCovers(
   const urlPrefix = storageConfig.urlPrefix.replace(/\/+$/, '');
   const query = db
     .select({
+      compressUrl: attachments.compressUrl,
       details: attachments.details,
       id: attachments.id,
       url: attachments.url,
@@ -108,7 +109,9 @@ export async function backfillHeicBrowserCovers(
         .where(
           and(
             eq(attachments.id, candidate.id),
-            or(isNull(attachments.compressUrl), eq(attachments.compressUrl, '')),
+            candidate.compressUrl
+              ? eq(attachments.compressUrl, candidate.compressUrl)
+              : or(isNull(attachments.compressUrl), eq(attachments.compressUrl, '')),
             or(isNull(attachments.posterUrl), eq(attachments.posterUrl, ''))
           )
         )
