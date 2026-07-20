@@ -179,7 +179,7 @@ export default function ImportSourceForm({
                     alt=""
                     width={28}
                     height={28}
-                    className="size-7 shrink-0"
+                    className="border-border/70 size-7 shrink-0 border"
                     aria-hidden="true"
                   />
                   <span className="truncate">{platformName}</span>
@@ -282,10 +282,14 @@ export default function ImportSourceForm({
                 </div>
               )}
 
-              <p className="text-muted-foreground text-xs leading-relaxed">
-                <span aria-hidden="true">* </span>
-                {t(limitationKey)}
-              </p>
+              <div className="text-muted-foreground flex flex-col gap-1 text-xs leading-relaxed">
+                {[1, 2].map((index) => (
+                  <p key={index}>
+                    <span aria-hidden="true">* </span>
+                    {t(`${limitationKey}.${index}`)}
+                  </p>
+                ))}
+              </div>
 
               {memosSelection && (
                 <div className="flex flex-col gap-2">

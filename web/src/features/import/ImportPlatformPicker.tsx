@@ -76,7 +76,7 @@ export default function ImportPlatformPicker({
               alt=""
               width={56}
               height={56}
-              className="size-14"
+              className="border-border/70 size-14 border"
               aria-hidden="true"
             />
             <span className="text-sm font-medium">{platformName}</span>
