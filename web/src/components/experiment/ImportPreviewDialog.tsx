@@ -24,6 +24,8 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Label } from '../ui/label';
+import type { ImportTaskProgress, ImportTaskResult } from '@/features/import/importTask';
+import { ImportTaskView } from './ImportTaskView';
 
 export type ImportPreview = {
   fileName: string;
@@ -50,6 +52,9 @@ type ImportPreviewDialogProps = {
   overwriteExisting: boolean;
   preserveVisibility: boolean;
   preview: ImportPreview;
+  taskProgress: ImportTaskProgress | null;
+  taskResult: ImportTaskResult | null;
+  onRequestCancel: () => void;
 };
 
 const PREVIEW_PAGE_SIZE = 10;
@@ -67,6 +72,9 @@ export default function ImportPreviewDialog({
   overwriteExisting,
   preserveVisibility,
   preview,
+  taskProgress,
+  taskResult,
+  onRequestCancel,
 }: ImportPreviewDialogProps) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'pages.experiment.importData',
@@ -100,162 +108,174 @@ export default function ImportPreviewDialog({
       <DialogContent
         className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg"
         closeLabel={t('cancel')}
+        showCloseButton={!isImporting}
       >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileJson className="size-4" />
-            <span className="truncate font-serif">{preview.fileName}</span>
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {t('previewDialogDescription', { count: preview.roteCount })}
-          </DialogDescription>
-        </DialogHeader>
-        <div>
-          <div className="flex flex-wrap gap-1.5">
-            <SummaryBadge label={t('notesFound')} value={stats.roteCount} />
-            <SummaryBadge label={t('articlesFound')} value={stats.articleCount} />
-            <SummaryBadge label={t('attachmentsFound')} value={stats.attachmentCount} />
-            <SummaryBadge label={t('publicNotes')} value={stats.publicCount} />
-            <SummaryBadge label={t('privateNotes')} value={stats.privateCount} />
-            <SummaryBadge label={t('tagsFound')} value={stats.tagCount} />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <div className="space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="text-sm font-medium">{t('previewSamples')}</div>
-              <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => setPage((value) => Math.max(1, value - 1))}
-                  disabled={currentPage === 1}
-                  title={t('prevPage')}
-                  aria-label={t('prevPage')}
-                >
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <div className="text-muted-foreground flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-xs tabular-nums">
-                  <span>
-                    {pageStart}-{pageEnd} / {preview.rotes.length}
-                  </span>
-                  <span className="text-muted-foreground/50">·</span>
-                  <span>
-                    {t('notesFound')}: {includedRotes.length}
-                  </span>
-                  <span className="text-muted-foreground/50">·</span>
-                  <span>
-                    {t('excludeNote')}: {excludedIndexes.size}
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-                  disabled={currentPage === totalPages}
-                  title={t('nextPage')}
-                  aria-label={t('nextPage')}
-                >
-                  <ChevronRight className="size-4" />
-                </Button>
+        {taskProgress && (isImporting || taskResult) ? (
+          <ImportTaskView
+            progress={taskProgress}
+            result={taskResult}
+            onCancel={onRequestCancel}
+            onDone={() => onOpenChange(false)}
+          />
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <FileJson className="size-4" />
+                <span className="truncate font-serif">{preview.fileName}</span>
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                {t('previewDialogDescription', { count: preview.roteCount })}
+              </DialogDescription>
+            </DialogHeader>
+            <div>
+              <div className="flex flex-wrap gap-1.5">
+                <SummaryBadge label={t('notesFound')} value={stats.roteCount} />
+                <SummaryBadge label={t('articlesFound')} value={stats.articleCount} />
+                <SummaryBadge label={t('attachmentsFound')} value={stats.attachmentCount} />
+                <SummaryBadge label={t('publicNotes')} value={stats.publicCount} />
+                <SummaryBadge label={t('privateNotes')} value={stats.privateCount} />
+                <SummaryBadge label={t('tagsFound')} value={stats.tagCount} />
               </div>
             </div>
-            <div className="max-h-72 overflow-y-auto border">
-              {preview.rotes.length === 0 && (
-                <div className="text-muted-foreground p-4 text-center text-sm">
-                  {t('sampleEmpty')}
+
+            <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="text-sm font-medium">{t('previewSamples')}</div>
+                  <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setPage((value) => Math.max(1, value - 1))}
+                      disabled={currentPage === 1}
+                      title={t('prevPage')}
+                      aria-label={t('prevPage')}
+                    >
+                      <ChevronLeft className="size-4" />
+                    </Button>
+                    <div className="text-muted-foreground flex min-w-0 flex-wrap items-center justify-end gap-x-1.5 gap-y-0.5 text-xs tabular-nums">
+                      <span>
+                        {pageStart}-{pageEnd} / {preview.rotes.length}
+                      </span>
+                      <span className="text-muted-foreground/50">·</span>
+                      <span>
+                        {t('notesFound')}: {includedRotes.length}
+                      </span>
+                      <span className="text-muted-foreground/50">·</span>
+                      <span>
+                        {t('excludeNote')}: {excludedIndexes.size}
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                      disabled={currentPage === totalPages}
+                      title={t('nextPage')}
+                      aria-label={t('nextPage')}
+                    >
+                      <ChevronRight className="size-4" />
+                    </Button>
+                  </div>
                 </div>
-              )}
-              {visibleRotes.length > 0 && (
-                <RoteList
-                  data={[visibleRotes]}
-                  isValidating={false}
-                  isItemMuted={(_, index) => excludedIndexes.has(visibleEntries[index].index)}
-                  itemActions={(_, index) => {
-                    const originalIndex = visibleEntries[index].index;
-                    const excluded = excludedIndexes.has(originalIndex);
+                <div className="max-h-72 overflow-y-auto border">
+                  {preview.rotes.length === 0 && (
+                    <div className="text-muted-foreground p-4 text-center text-sm">
+                      {t('sampleEmpty')}
+                    </div>
+                  )}
+                  {visibleRotes.length > 0 && (
+                    <RoteList
+                      data={[visibleRotes]}
+                      isValidating={false}
+                      isItemMuted={(_, index) => excludedIndexes.has(visibleEntries[index].index)}
+                      itemActions={(_, index) => {
+                        const originalIndex = visibleEntries[index].index;
+                        const excluded = excludedIndexes.has(originalIndex);
 
-                    return (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7"
-                        onClick={() => onToggleExclude(originalIndex)}
-                        title={excluded ? t('restoreNote') : t('excludeNote')}
-                        aria-label={excluded ? t('restoreNote') : t('excludeNote')}
-                      >
-                        {excluded ? <RotateCcw className="size-4" /> : <X className="size-4" />}
-                      </Button>
-                    );
-                  }}
-                />
-              )}
+                        return (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7"
+                            onClick={() => onToggleExclude(originalIndex)}
+                            title={excluded ? t('restoreNote') : t('excludeNote')}
+                            aria-label={excluded ? t('restoreNote') : t('excludeNote')}
+                          >
+                            {excluded ? <RotateCcw className="size-4" /> : <X className="size-4" />}
+                          </Button>
+                        );
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="preserve-visibility"
+                    checked={preserveVisibility}
+                    onCheckedChange={(checked) => onPreserveVisibilityChange(checked === true)}
+                    disabled={isImporting}
+                  />
+                  <Label
+                    htmlFor="preserve-visibility"
+                    className="cursor-pointer leading-normal"
+                    title={t('preserveVisibilityHint')}
+                  >
+                    {t('preserveVisibility')}
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="overwrite-existing"
+                    checked={overwriteExisting}
+                    onCheckedChange={(checked) => onOverwriteExistingChange(checked === true)}
+                    disabled={isImporting || preview.smartImportCount === 0}
+                  />
+                  <Label
+                    htmlFor="overwrite-existing"
+                    className="cursor-pointer leading-normal"
+                    title={t('overwriteExistingHint')}
+                  >
+                    {t('overwriteExisting')}
+                  </Label>
+                </div>
+              </div>
+
+              <div className="text-muted-foreground text-xs leading-relaxed">
+                {preview.smartImportCount === preview.roteCount
+                  ? t('smartImportReady')
+                  : t('legacyImportWarning', {
+                      count: preview.roteCount - preview.smartImportCount,
+                    })}
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 py-1">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="preserve-visibility"
-                checked={preserveVisibility}
-                onCheckedChange={(checked) => onPreserveVisibilityChange(checked === true)}
-                disabled={isImporting}
-              />
-              <Label
-                htmlFor="preserve-visibility"
-                className="cursor-pointer leading-normal"
-                title={t('preserveVisibilityHint')}
+            <DialogFooter>
+              <Button onClick={onChooseAnother} variant="outline" disabled={isImporting}>
+                <Upload className="size-4" />
+                {t('chooseAnotherFile')}
+              </Button>
+              <Button
+                onClick={onConfirm}
+                disabled={isImporting || includedRotes.length === 0}
+                variant="default"
               >
-                {t('preserveVisibility')}
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="overwrite-existing"
-                checked={overwriteExisting}
-                onCheckedChange={(checked) => onOverwriteExistingChange(checked === true)}
-                disabled={isImporting || preview.smartImportCount === 0}
-              />
-              <Label
-                htmlFor="overwrite-existing"
-                className="cursor-pointer leading-normal"
-                title={t('overwriteExistingHint')}
-              >
-                {t('overwriteExisting')}
-              </Label>
-            </div>
-          </div>
-
-          <div className="text-muted-foreground text-xs leading-relaxed">
-            {preview.smartImportCount === preview.roteCount
-              ? t('smartImportReady')
-              : t('legacyImportWarning', {
-                  count: preview.roteCount - preview.smartImportCount,
-                })}
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button onClick={onChooseAnother} variant="outline" disabled={isImporting}>
-            <Upload className="size-4" />
-            {t('chooseAnotherFile')}
-          </Button>
-          <Button
-            onClick={onConfirm}
-            disabled={isImporting || includedRotes.length === 0}
-            variant="default"
-          >
-            {isImporting ? (
-              <Loader className="size-4 animate-spin" />
-            ) : (
-              <CloudUpload className="size-4" />
-            )}
-            {isImporting ? t('importing') : t('confirmImport')}
-          </Button>
-        </DialogFooter>
+                {isImporting ? (
+                  <Loader className="size-4 animate-spin" />
+                ) : (
+                  <CloudUpload className="size-4" />
+                )}
+                {isImporting ? t('importing') : t('confirmImport')}
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );

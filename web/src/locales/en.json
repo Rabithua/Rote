@@ -857,6 +857,46 @@
         "cancel": "Cancel",
         "importing": "Importing...",
         "confirmImport": "Confirm Import",
+        "importTask": {
+          "stages": {
+            "planning": "Checking importable content",
+            "migrating": "Migrating attachments",
+            "importing": "Writing notes",
+            "cleaning": "Cleaning unfinished attachments",
+            "completed": "Import completed",
+            "interrupted": "Import interrupted"
+          },
+          "stayOnPage": "Do not refresh, close, or leave this page while the import is running.",
+          "attachments": "Attachment migration",
+          "notes": "Note import",
+          "active": "{{count}} active",
+          "failed": "{{count}} discarded",
+          "cancel": "Cancel import",
+          "leaveTitle": "Stop this import?",
+          "leaveDescription": "Unbound attachments will be removed. Notes already completed will be kept.",
+          "continue": "Continue import",
+          "stop": "Stop and clean up",
+          "completeTitle": "Import completed",
+          "completeDescription": "Data was written successfully. Failed attachments were not saved.",
+          "resultNotes": "Notes: {{created}} created, {{updated}} updated, {{unchanged}} skipped",
+          "resultAttachments": "Attachments: {{success}} migrated, {{failed}} discarded",
+          "resultSkippedNotes": "{{count}} attachment-only notes were skipped because every attachment failed",
+          "failureItem": "{{provider}} · {{noteTitle}} · {{attachmentName}}: {{reason}}",
+          "done": "Done",
+          "interrupted": "Import interrupted; unbound attachments were removed",
+          "recovered": "Cleaned {{count}} unbound attachments from an interrupted import",
+          "recoveryFailed": "Could not clean attachments from the interrupted import. Reopen this page later to retry.",
+          "failedSummary": "{{count}} attachments failed to migrate and were discarded",
+          "errors": {
+            "remote_attachment_busy": "Server busy",
+            "remote_attachment_download_failed": "Source attachment could not be downloaded",
+            "remote_attachment_forbidden": "This account cannot migrate attachments",
+            "remote_attachment_invalid": "Invalid attachment data",
+            "remote_attachment_storage_unavailable": "Object storage is unavailable",
+            "remote_attachment_too_large": "Attachment exceeds the size limit",
+            "remote_attachment_unsupported": "Unsupported attachment type"
+          }
+        },
         "migration": {
           "sources": {
             "rote": "Rote",

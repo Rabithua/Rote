@@ -7,7 +7,7 @@ const importSourceSchema = z.object({
   sourceUpdatedAt: z.iso.datetime().optional(),
 });
 
-const attachmentSchema = z
+export const attachmentSchema = z
   .object({
     id: z.uuid().optional(),
     url: z.string().min(1),

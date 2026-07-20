@@ -9,10 +9,9 @@ import {
 import { Divider } from '@/components/ui/divider';
 import ImportSourceForm from '@/features/import/ImportSourceForm';
 import type { ImportPayload } from '@/features/import/sourceLoader';
-import { post } from '@/utils/api';
 import saveAs from 'file-saver';
 import { Download, FileJson, HelpCircle, X } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useAtomValue } from 'jotai';
@@ -21,36 +20,14 @@ import type { Rote, Rotes } from '@/types/main';
 import { SoftBottom } from '../others/SoftBottom';
 import { Button } from '../ui/button';
 import ImportPreviewDialog, { type ImportPreview } from './ImportPreviewDialog';
-
-type ApiResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
-
-type ImportResult = {
-  count: number;
-  created: number;
-  updated: number;
-  unchanged: number;
-  notes: {
-    total: number;
-    created: number;
-    updated: number;
-    unchanged: number;
-  };
-  articles: {
-    total: number;
-    created: number;
-    updated: number;
-  };
-  attachments: {
-    total: number;
-    created: number;
-    updated: number;
-    deleted: number;
-  };
-};
+import { ImportCancelDialog } from './ImportCancelDialog';
+import {
+  cleanupInterruptedImport,
+  runImportTask,
+  type ImportTaskProgress,
+  type ImportTaskResult,
+} from '@/features/import/importTask';
+import { useBlocker } from 'react-router-dom';
 
 export default function ImportData() {
   const { t } = useTranslation('translation', {
@@ -64,6 +41,13 @@ export default function ImportData() {
   const [excludedIndexes, setExcludedIndexes] = useState<Set<number>>(new Set());
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [preserveVisibility, setPreserveVisibility] = useState(false);
+  const [taskProgress, setTaskProgress] = useState<ImportTaskProgress | null>(null);
+  const [taskResult, setTaskResult] = useState<ImportTaskResult | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const leaveAfterCancelRef = useRef(false);
+  const recoveryStartedRef = useRef(false);
+  const blocker = useBlocker(isImporting);
   const profile = useAtomValue(profileAtom);
   const exampleData = {
     articles: [
@@ -186,7 +170,40 @@ export default function ImportData() {
     setExcludedIndexes(new Set());
     setOverwriteExisting(false);
     setPreserveVisibility(false);
+    setTaskProgress(null);
+    setTaskResult(null);
   }, []);
+
+  useEffect(() => {
+    if (recoveryStartedRef.current) return;
+    recoveryStartedRef.current = true;
+    cleanupInterruptedImport()
+      .then((count) => {
+        if (count > 0) toast.info(t('importTask.recovered', { count }));
+      })
+      .catch(() => toast.error(t('importTask.recoveryFailed')));
+  }, [t]);
+
+  useEffect(() => {
+    if (!isImporting) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isImporting]);
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') setCancelDialogOpen(true);
+  }, [blocker.state]);
+
+  useEffect(() => {
+    if (!isImporting && leaveAfterCancelRef.current && blocker.state === 'blocked') {
+      leaveAfterCancelRef.current = false;
+      blocker.proceed();
+    }
+  }, [blocker, isImporting]);
 
   const toggleExcludedIndex = (index: number) => {
     setExcludedIndexes((current) => {
@@ -244,63 +261,85 @@ export default function ImportData() {
 
     try {
       setIsImporting(true);
+      setTaskResult(null);
       const payload = buildImportPayload();
-      const res = await post<ApiResponse<ImportResult>>(
-        '/users/me/import',
-        {
-          ...payload,
-          importOptions: {
-            existingStrategy: overwriteExisting ? 'overwrite' : 'skip',
-            visibilityStrategy: preserveVisibility ? 'preserve' : 'private',
-          },
-        },
-        { timeout: 300_000 }
-      );
-      if (res) {
-        const data = res.data;
+      if (!payload) return;
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      const data = await runImportTask({
+        payload,
+        overwriteExisting,
+        preserveVisibility,
+        signal: controller.signal,
+        onProgress: setTaskProgress,
+      });
+      setTaskResult(data);
 
-        toast.success(t('importSuccessTitle'), {
-          description: t('importSuccessSummary', { count: data.notes.total }),
-          duration: 5000,
-        });
-        toast.info(
-          t('importSuccessNotes', {
-            total: data.notes.total,
-            created: data.notes.created,
-            updated: data.notes.updated,
-            unchanged: data.notes.unchanged,
-          }),
-          { duration: 5000 }
-        );
-        toast.info(
-          t('importSuccessArticles', {
-            total: data.articles.total,
-            created: data.articles.created,
-            updated: data.articles.updated,
-          }),
-          { duration: 5000 }
-        );
-        toast.info(
-          t('importSuccessAttachments', {
-            total: data.attachments.total,
-            created: data.attachments.created,
-            updated: data.attachments.updated,
-            deleted: data.attachments.deleted,
-          }),
-          { duration: 5000 }
-        );
-        clearPreview();
+      toast.success(t('importSuccessTitle'), {
+        description: t('importSuccessSummary', { count: data.notes.total }),
+        duration: 5000,
+      });
+      toast.info(
+        t('importSuccessNotes', {
+          total: data.notes.total,
+          created: data.notes.created,
+          updated: data.notes.updated,
+          unchanged: data.notes.unchanged,
+        }),
+        { duration: 5000 }
+      );
+      toast.info(
+        t('importSuccessArticles', {
+          total: data.articles.total,
+          created: data.articles.created,
+          updated: data.articles.updated,
+        }),
+        { duration: 5000 }
+      );
+      toast.info(
+        t('importSuccessAttachments', {
+          total: data.attachments.total,
+          created: data.attachments.created,
+          updated: data.attachments.updated,
+          deleted: data.attachments.deleted,
+        }),
+        { duration: 5000 }
+      );
+      if (data.attachments.failed > 0) {
+        toast.warning(t('importTask.failedSummary', { count: data.attachments.failed }));
       }
     } catch (_error: any) {
+      if (_error?.name === 'CanceledError' || _error?.name === 'AbortError') {
+        toast.info(t('importTask.interrupted'));
+        return;
+      }
       const serverMessage = _error.response?.data?.message ?? _error.message;
-      const message =
-        serverMessage === 'remote_attachment_migration_failed'
-          ? t('migration.errors.remoteAttachmentMigration')
-          : serverMessage || t('importFailed');
-      toast.error(message);
+      toast.error(serverMessage || t('importFailed'));
     } finally {
+      abortControllerRef.current = null;
       setIsImporting(false);
     }
+  };
+
+  const handleRequestCancel = () => setCancelDialogOpen(true);
+
+  const handleContinueImport = () => {
+    setCancelDialogOpen(false);
+    if (blocker.state === 'blocked') blocker.reset();
+  };
+
+  const handleStopImport = () => {
+    leaveAfterCancelRef.current = blocker.state === 'blocked';
+    setCancelDialogOpen(false);
+    abortControllerRef.current?.abort();
+  };
+
+  const handlePreviewOpenChange = (open: boolean) => {
+    if (!open && taskResult) {
+      clearPreview();
+      return;
+    }
+    setIsPreviewOpen(open);
   };
 
   const handleDownloadExample = () => {
@@ -410,7 +449,7 @@ export default function ImportData() {
             isImporting={isImporting}
             onChooseAnother={clearPreview}
             onConfirm={handleImport}
-            onOpenChange={setIsPreviewOpen}
+            onOpenChange={handlePreviewOpenChange}
             open={isPreviewOpen}
             preview={preview}
             overwriteExisting={overwriteExisting}
@@ -419,9 +458,18 @@ export default function ImportData() {
             onToggleExclude={toggleExcludedIndex}
             onOverwriteExistingChange={setOverwriteExisting}
             onPreserveVisibilityChange={setPreserveVisibility}
+            taskProgress={taskProgress}
+            taskResult={taskResult}
+            onRequestCancel={handleRequestCancel}
           />
         )}
       </div>
+
+      <ImportCancelDialog
+        open={cancelDialogOpen}
+        onContinue={handleContinueImport}
+        onStop={handleStopImport}
+      />
 
       <SoftBottom className="translate-y-4" spacer />
     </div>

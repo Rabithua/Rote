@@ -861,6 +861,46 @@
         "cancel": "キャンセル",
         "importing": "インポート中...",
         "confirmImport": "インポートを確認",
+        "importTask": {
+          "stages": {
+            "planning": "インポート可能な内容を確認中",
+            "migrating": "添付ファイルを移行中",
+            "importing": "ノートを書き込み中",
+            "cleaning": "未完了の添付ファイルを削除中",
+            "completed": "インポート完了",
+            "interrupted": "インポート中断"
+          },
+          "stayOnPage": "インポート中はページを更新、閉じる、または移動しないでください。",
+          "attachments": "添付ファイルの移行",
+          "notes": "ノートのインポート",
+          "active": "{{count}} 件を処理中",
+          "failed": "{{count}} 件を破棄",
+          "cancel": "インポートをキャンセル",
+          "leaveTitle": "インポートを停止しますか？",
+          "leaveDescription": "未割り当ての添付ファイルを削除します。完了済みのノートは保持されます。",
+          "continue": "インポートを続ける",
+          "stop": "停止して削除",
+          "completeTitle": "インポート完了",
+          "completeDescription": "データの書き込みが完了しました。失敗した添付ファイルは保存されていません。",
+          "resultNotes": "ノート：新規 {{created}}、更新 {{updated}}、スキップ {{unchanged}}",
+          "resultAttachments": "添付ファイル：成功 {{success}}、破棄 {{failed}}",
+          "resultSkippedNotes": "添付ファイルがすべて失敗したため {{count}} 件のノートをスキップしました",
+          "failureItem": "{{provider}} · {{noteTitle}} · {{attachmentName}}：{{reason}}",
+          "done": "完了",
+          "interrupted": "インポートを中断し、未割り当ての添付ファイルを削除しました",
+          "recovered": "前回中断したインポートの未割り当て添付ファイル {{count}} 件を削除しました",
+          "recoveryFailed": "前回の未完了添付ファイルを削除できませんでした。後でもう一度このページを開いてください。",
+          "failedSummary": "{{count}} 件の添付ファイルを移行できず破棄しました",
+          "errors": {
+            "remote_attachment_busy": "サーバーが混雑しています",
+            "remote_attachment_download_failed": "元の添付ファイルを取得できません",
+            "remote_attachment_forbidden": "このアカウントには添付ファイルを移行する権限がありません",
+            "remote_attachment_invalid": "添付ファイルのデータが無効です",
+            "remote_attachment_storage_unavailable": "オブジェクトストレージを利用できません",
+            "remote_attachment_too_large": "添付ファイルがサイズ上限を超えています",
+            "remote_attachment_unsupported": "対応していない添付ファイル形式です"
+          }
+        },
         "migration": {
           "sources": {
             "rote": "Rote",

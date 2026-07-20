@@ -5,6 +5,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
+import type { Readable } from 'node:stream';
 import { RequestChecksumCalculation } from '@aws-sdk/middleware-flexible-checksums';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageConfig } from '../types/config';
@@ -205,9 +206,9 @@ export async function presignPutUrlForConfig(
   return presignPutUrlWithClient(createStorageClient(config), key, contentType, expiresIn);
 }
 
-export async function storeObject(
+export async function storeObjectStream(
   key: string,
-  body: Uint8Array,
+  body: Readable,
   contentType: string
 ): Promise<{ url: string }> {
   const r2Config = getR2Client();
@@ -222,12 +223,10 @@ export async function storeObject(
       Bucket: r2Config.bucketName,
       Key: key,
       Body: body,
-      ContentLength: body.byteLength,
       ContentType: contentType,
       CacheControl: cacheControl,
     })
   );
-
   return { url: `${r2Config.urlPrefix}/${key}` };
 }
 

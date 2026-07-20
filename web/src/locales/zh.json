@@ -847,6 +847,46 @@
         "cancel": "取消",
         "importing": "导入中...",
         "confirmImport": "确认导入",
+        "importTask": {
+          "stages": {
+            "planning": "正在检查可导入内容",
+            "migrating": "正在迁移附件",
+            "importing": "正在写入笔记",
+            "cleaning": "正在清理未完成附件",
+            "completed": "导入完成",
+            "interrupted": "导入已中断"
+          },
+          "stayOnPage": "请勿刷新、关闭或切换页面，否则当前导入会中断。",
+          "attachments": "附件迁移",
+          "notes": "笔记导入",
+          "active": "正在处理 {{count}} 个",
+          "failed": "已舍弃 {{count}} 个",
+          "cancel": "取消导入",
+          "leaveTitle": "停止当前导入？",
+          "leaveDescription": "停止后会清理尚未写入笔记的附件；已经完成的笔记会保留。",
+          "continue": "继续导入",
+          "stop": "停止并清理",
+          "completeTitle": "导入完成",
+          "completeDescription": "已完成数据写入，迁移失败的附件未保存。",
+          "resultNotes": "笔记：新增 {{created}}，更新 {{updated}}，跳过 {{unchanged}}",
+          "resultAttachments": "附件：成功 {{success}}，舍弃 {{failed}}",
+          "resultSkippedNotes": "有 {{count}} 条纯附件笔记因附件全部失败而未导入",
+          "failureItem": "{{provider}} · {{noteTitle}} · {{attachmentName}}：{{reason}}",
+          "done": "完成",
+          "interrupted": "导入已中断，未绑定附件已清理",
+          "recovered": "检测到上次中断的导入，已清理 {{count}} 个未绑定附件",
+          "recoveryFailed": "无法清理上次中断遗留的附件，请稍后重新进入此页面",
+          "failedSummary": "有 {{count}} 个附件迁移失败并已舍弃",
+          "errors": {
+            "remote_attachment_busy": "服务器繁忙",
+            "remote_attachment_download_failed": "无法下载源附件",
+            "remote_attachment_forbidden": "当前账户没有迁移附件的权限",
+            "remote_attachment_invalid": "附件数据无效",
+            "remote_attachment_storage_unavailable": "当前对象存储不可用",
+            "remote_attachment_too_large": "附件超过大小限制",
+            "remote_attachment_unsupported": "不支持的附件类型"
+          }
+        },
         "migration": {
           "sources": {
             "rote": "Rote",

@@ -1,0 +1,113 @@
+import { describe, expect, test, vi } from 'vitest';
+import { migrateWithRetry, runAttachmentQueue, runImportTask } from './importTask';
+
+const { postMock, deleteMock } = vi.hoisted(() => ({
+  postMock: vi.fn(),
+  deleteMock: vi.fn(),
+}));
+
+vi.mock('@/utils/api', () => ({ post: postMock, del: deleteMock }));
+
+describe('import attachment queue', () => {
+  test('uses eight total slots, no more than two videos, and refills immediately', async () => {
+    const tasks = Array.from({ length: 30 }, (_, index) => ({
+      index,
+      video: index % 3 === 0,
+    }));
+    let active = 0;
+    let activeVideos = 0;
+    let peak = 0;
+    let videoPeak = 0;
+    let completed = 0;
+
+    await runAttachmentQueue(tasks, new AbortController().signal, async (task) => {
+      active += 1;
+      if (task.video) activeVideos += 1;
+      peak = Math.max(peak, active);
+      videoPeak = Math.max(videoPeak, activeVideos);
+      await Promise.resolve();
+      completed += 1;
+      active -= 1;
+      if (task.video) activeVideos -= 1;
+    });
+
+    expect(peak).toBe(8);
+    expect(videoPeak).toBe(2);
+    expect(completed).toBe(30);
+  });
+
+  test('degrades the queue to four slots after a transient failure', async () => {
+    const tasks = Array.from({ length: 16 }, (_, index) => ({ index, video: false }));
+    const releases: Array<() => void> = [];
+    let active = 0;
+    let peakAfterDegrade = 0;
+
+    const queue = runAttachmentQueue(tasks, new AbortController().signal, async (task, degrade) => {
+      active += 1;
+      await new Promise<void>((resolve) => releases.push(resolve));
+      if (task.index === 0) {
+        degrade();
+      }
+      active -= 1;
+      if (task.index >= 8) peakAfterDegrade = Math.max(peakAfterDegrade, active + 1);
+    });
+
+    await vi.waitFor(() => expect(releases).toHaveLength(8));
+    releases.splice(0, 8).forEach((release) => release());
+    await vi.waitFor(() => expect(releases).toHaveLength(4));
+    releases.splice(0, 4).forEach((release) => release());
+    await vi.waitFor(() => expect(releases).toHaveLength(4));
+    releases.splice(0, 4).forEach((release) => release());
+    await queue;
+
+    expect(peakAfterDegrade).toBeLessThanOrEqual(4);
+  });
+
+  test('retries one transient failure and does not retry permanent failures', async () => {
+    const transient = vi
+      .fn()
+      .mockRejectedValueOnce({ response: { status: 503 } })
+      .mockResolvedValueOnce({ id: 'migrated' });
+    const degrade = vi.fn();
+    await expect(
+      migrateWithRetry({}, new AbortController().signal, degrade, transient)
+    ).resolves.toEqual({ id: 'migrated' });
+    expect(transient).toHaveBeenCalledTimes(2);
+    expect(degrade).toHaveBeenCalledOnce();
+
+    const permanent = vi.fn().mockRejectedValue({ response: { status: 404 } });
+    await expect(
+      migrateWithRetry({}, new AbortController().signal, vi.fn(), permanent)
+    ).rejects.toEqual({ response: { status: 404 } });
+    expect(permanent).toHaveBeenCalledOnce();
+  });
+
+  test('still imports articles when every note is skipped by preflight', async () => {
+    postMock.mockResolvedValueOnce({ data: { noteIndexes: [] } }).mockResolvedValueOnce({
+      data: {
+        notes: { total: 0, created: 0, updated: 0, unchanged: 0 },
+        articles: { total: 1, created: 1, updated: 0 },
+        attachments: { total: 0, created: 0, updated: 0, deleted: 0 },
+      },
+    });
+
+    const result = await runImportTask({
+      payload: {
+        formatVersion: 2,
+        notes: [],
+        articles: [{ id: crypto.randomUUID(), content: 'article' }],
+      },
+      overwriteExisting: false,
+      preserveVisibility: false,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+    });
+
+    expect(postMock).toHaveBeenCalledTimes(2);
+    expect(postMock.mock.calls[1][1]).toMatchObject({
+      notes: [],
+      articles: [{ content: 'article' }],
+    });
+    expect(result.articles.created).toBe(1);
+  });
+});
