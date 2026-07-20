@@ -83,6 +83,34 @@ describe('single remote attachment migration', () => {
     expect(deps.removed).toEqual([]);
   });
 
+  test('sends source authorization only to the configured Memos origin', async () => {
+    const deps = dependencies();
+    const seen: Array<{ url: string; authorization?: string }> = [];
+    deps.values.fetcher = async (url: string | URL | Request, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      seen.push({ url: String(url), authorization: headers.get('authorization') ?? undefined });
+      return new Response(new Uint8Array([1, 2, 3]), {
+        headers: { 'content-type': 'image/png', 'content-length': '3' },
+      });
+    };
+
+    await migrateOneRemoteAttachment('user-1', attachment(), deps.values as never, {
+      auth: { baseUrl: 'https://source.example', bearerToken: 'private-token' },
+    });
+    expect(seen).toEqual([
+      { url: 'https://source.example/image.png', authorization: 'Bearer private-token' },
+    ]);
+
+    seen.length = 0;
+    await migrateOneRemoteAttachment(
+      'user-1',
+      attachment({ url: 'https://cdn.example/image.png' }),
+      deps.values as never,
+      { auth: { baseUrl: 'https://source.example', bearerToken: 'private-token' } }
+    );
+    expect(seen).toEqual([{ url: 'https://cdn.example/image.png', authorization: undefined }]);
+  });
+
   test('rejects an image used as a Live Photo paired video and cleans the original', async () => {
     const pairedUrl = 'https://source.example/paired.jpg';
     const deps = dependencies(new Map([[pairedUrl, 'image/jpeg']]));

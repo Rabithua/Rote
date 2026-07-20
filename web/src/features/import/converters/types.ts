@@ -132,6 +132,7 @@ export interface Memo {
     tags?: Array<string>;
   };
   snippet: string;
+  location?: unknown;
 }
 
 export interface RoteArticle {

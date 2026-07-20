@@ -1,5 +1,5 @@
 import { del, post } from '@/utils/api';
-import type { ImportPayload } from './sourceLoader';
+import type { ImportMigrationAuth, ImportPayload } from './sourceLoader';
 
 const IMPORT_CHUNK_SIZE = 50;
 const DEFAULT_CONCURRENCY = 8;
@@ -49,12 +49,14 @@ export async function runImportTask({
   preserveVisibility,
   signal,
   onProgress,
+  migrationAuth,
 }: {
   payload: ImportPayload;
   overwriteExisting: boolean;
   preserveVisibility: boolean;
   signal: AbortSignal;
   onProgress: (progress: ImportTaskProgress) => void;
+  migrationAuth?: ImportMigrationAuth;
 }): Promise<ImportTaskResult> {
   const importOptions = {
     existingStrategy: overwriteExisting ? 'overwrite' : 'skip',
@@ -102,13 +104,20 @@ export async function runImportTask({
     if (noteChunks.length === 0 && (payload.articles?.length ?? 0) > 0) noteChunks.push([]);
     for (const chunk of noteChunks) {
       throwIfAborted(signal);
-      const migratedNotes = await migrateChunk(chunk, signal, session, failures, (delta) => {
-        update({
-          attachmentsActive: progress.attachmentsActive + delta.active,
-          attachmentsCompleted: progress.attachmentsCompleted + delta.completed,
-          attachmentsFailed: progress.attachmentsFailed + delta.failed,
-        });
-      });
+      const migratedNotes = await migrateChunk(
+        chunk,
+        signal,
+        session,
+        failures,
+        migrationAuth,
+        (delta) => {
+          update({
+            attachmentsActive: progress.attachmentsActive + delta.active,
+            attachmentsCompleted: progress.attachmentsCompleted + delta.completed,
+            attachmentsFailed: progress.attachmentsFailed + delta.failed,
+          });
+        }
+      );
       const importableNotes = migratedNotes.filter((note) => {
         const importable = hasContent(note) || (note.attachments?.length ?? 0) > 0;
         if (!importable) skippedAfterAttachmentFailure += 1;
@@ -172,6 +181,7 @@ async function migrateChunk(
   signal: AbortSignal,
   session: InterruptedSession,
   failures: ImportAttachmentFailure[],
+  migrationAuth: ImportMigrationAuth | undefined,
   onDelta: (delta: { active: number; completed: number; failed: number }) => void
 ) {
   const output = notes.map((note) => ({ ...note, attachments: [] as ImportRecord[] }));
@@ -190,7 +200,13 @@ async function migrateChunk(
   await runAttachmentQueue(tasks, signal, async (task, degrade) => {
     onDelta({ active: 1, completed: 0, failed: 0 });
     try {
-      const migrated = await migrateWithRetry(task.attachment, signal, degrade);
+      const migrated = await migrateWithRetry(
+        task.attachment,
+        signal,
+        degrade,
+        undefined,
+        migrationAuth
+      );
       output[task.noteIndex].attachments.push({
         ...migrated,
         sortIndex: task.attachment.sortIndex ?? task.attachmentIndex,
@@ -222,23 +238,38 @@ export async function migrateWithRetry(
   degrade: () => void,
   migrate: (
     attachment: ImportRecord,
-    signal: AbortSignal
-  ) => Promise<ImportRecord> = migrateAttachment
+    signal: AbortSignal,
+    migrationAuth?: ImportMigrationAuth
+  ) => Promise<ImportRecord> = migrateAttachment,
+  migrationAuth?: ImportMigrationAuth
 ) {
   try {
-    return await migrate(attachment, signal);
+    return await migrate(attachment, signal, migrationAuth);
   } catch (error) {
     if (!isTransient(error)) throw error;
     degrade();
-    return migrate(attachment, signal);
+    return migrate(attachment, signal, migrationAuth);
   }
 }
 
-async function migrateAttachment(attachment: ImportRecord, signal: AbortSignal) {
+async function migrateAttachment(
+  attachment: ImportRecord,
+  signal: AbortSignal,
+  migrationAuth?: ImportMigrationAuth
+) {
   const response = await post<ApiResponse<ImportRecord>>(
     '/imports/attachments/migrate',
-    { attachment },
-    { signal, timeout: 300_000 }
+    {
+      attachment,
+      migrationAuth: migrationAuth
+        ? { provider: migrationAuth.provider, baseUrl: migrationAuth.baseUrl }
+        : undefined,
+    },
+    {
+      signal,
+      timeout: 300_000,
+      headers: migrationAuth ? { 'x-memos-access-token': migrationAuth.token } : undefined,
+    }
   );
   return response.data;
 }

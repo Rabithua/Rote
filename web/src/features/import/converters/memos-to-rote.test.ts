@@ -86,6 +86,56 @@ describe('Memos converter', () => {
     });
   });
 
+  it('uses display time and does not flatten comments into unrelated notes', () => {
+    const comment = {
+      ...baseMemo,
+      name: 'memos/comment-1',
+      content: 'A comment',
+    };
+    const parent = {
+      ...baseMemo,
+      displayTime: '2023-12-01T00:00:00Z',
+      relations: [
+        {
+          memo: { name: comment.name },
+          relatedMemo: { name: baseMemo.name },
+          type: 'COMMENT',
+        },
+      ],
+      reactions: [{ reactionType: '👍' }],
+      location: { placeholder: 'redacted' },
+    };
+
+    const result = convertMemosToRote({ memos: [parent, comment], nextPageToken: '' });
+
+    expect(result.data?.notes).toHaveLength(1);
+    expect(result.data?.notes[0].createdAt).toBe('2023-12-01T00:00:00Z');
+    expect(result.warnings).toHaveLength(3);
+  });
+
+  it('reports unsupported API attachments instead of silently dropping them', () => {
+    const result = convertMemosToRote({
+      memos: [
+        {
+          ...baseMemo,
+          attachments: [
+            {
+              name: 'attachments/audio-id',
+              filename: 'voice.webm',
+              type: 'audio/webm',
+              externalLink: 'https://cdn.example/voice.webm',
+            },
+          ],
+        },
+      ],
+      nextPageToken: '',
+    });
+
+    expect(result.data?.notes[0].attachments).toEqual([]);
+    expect(result.stats.localAttachmentsSkipped).toBe(1);
+    expect(result.warnings).toHaveLength(1);
+  });
+
   it('filters SQLite notes by the selected user', () => {
     const data: SQLiteSourceData = {
       users: [createUser(1, 'alice'), createUser(2, 'bob')],

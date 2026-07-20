@@ -28,6 +28,7 @@ import ImportPlatformPicker, { getImportPlatform } from './ImportPlatformPicker'
 import {
   prepareImport,
   type ImportMode,
+  type ImportMigrationAuth,
   type ImportPayload,
   type ImportSource,
   type MemosUserSelection,
@@ -35,7 +36,12 @@ import {
 
 interface ImportSourceFormProps {
   disabled?: boolean;
-  onPrepared: (payload: ImportPayload, displayName: string, warnings: Array<string>) => void;
+  onPrepared: (
+    payload: ImportPayload,
+    displayName: string,
+    warnings: Array<string>,
+    migrationAuth?: ImportMigrationAuth
+  ) => void;
   onError: (message: string) => void;
 }
 
@@ -130,7 +136,7 @@ export default function ImportSourceForm({
         return;
       }
 
-      onPrepared(result.payload, result.displayName, result.warnings);
+      onPrepared(result.payload, result.displayName, result.warnings, result.migrationAuth);
       handleBackToPlatforms();
     } catch (error) {
       onError(error instanceof Error ? error.message : t('errors.prepare'));

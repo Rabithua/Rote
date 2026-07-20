@@ -22,6 +22,13 @@ export const attachmentSchema = z
   })
   .passthrough();
 
+export const attachmentMigrationAuthSchema = z
+  .object({
+    provider: z.literal('memos'),
+    baseUrl: z.url(),
+  })
+  .optional();
+
 const noteSchema = z
   .object({
     id: z.uuid(),

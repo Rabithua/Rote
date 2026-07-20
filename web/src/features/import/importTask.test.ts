@@ -110,4 +110,57 @@ describe('import attachment queue', () => {
     });
     expect(result.articles.created).toBe(1);
   });
+
+  test('keeps Memos credentials in memory and sends them only with attachment migration', async () => {
+    postMock.mockReset();
+    deleteMock.mockReset();
+    const noteId = crypto.randomUUID();
+    postMock
+      .mockResolvedValueOnce({ data: { noteIndexes: [0] } })
+      .mockResolvedValueOnce({ data: { id: 'migrated-attachment' } })
+      .mockResolvedValueOnce({
+        data: {
+          notes: { total: 1, created: 1, updated: 0, unchanged: 0 },
+          articles: { total: 0, created: 0, updated: 0 },
+          attachments: { total: 1, created: 1, updated: 0, deleted: 0 },
+        },
+      });
+
+    await runImportTask({
+      payload: {
+        notes: [
+          {
+            id: noteId,
+            content: 'memo',
+            attachments: [
+              {
+                url: 'https://memos.example.com/file/attachments/a/photo.png',
+                storage: 'REMOTE',
+                details: { mimetype: 'image/png' },
+              },
+            ],
+          },
+        ],
+      },
+      overwriteExisting: false,
+      preserveVisibility: false,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      migrationAuth: {
+        provider: 'memos',
+        baseUrl: 'https://memos.example.com',
+        token: 'private-token',
+      },
+    });
+
+    expect(postMock.mock.calls[1]).toMatchObject([
+      '/imports/attachments/migrate',
+      {
+        migrationAuth: { provider: 'memos', baseUrl: 'https://memos.example.com' },
+      },
+      { headers: { 'x-memos-access-token': 'private-token' } },
+    ]);
+    expect(postMock.mock.calls[0][1]).not.toHaveProperty('migrationAuth');
+    expect(postMock.mock.calls[2][1]).not.toHaveProperty('migrationAuth');
+  });
 });

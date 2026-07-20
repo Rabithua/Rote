@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { requestWereadGateway, WereadGatewayError } from '../../integrations/wereadGateway';
 import { MemosGatewayError, requestMemosPage } from '../../integrations/memosGateway';
-import { attachmentSchema } from '../../imports/importSchema';
+import { attachmentMigrationAuthSchema, attachmentSchema } from '../../imports/importSchema';
 import {
   migrateOneRemoteAttachment,
   RemoteAttachmentMigrationError,
@@ -40,8 +40,28 @@ importsRouter.post('/attachments/migrate', authenticateJWT, async (c: HonoContex
   if (!parsed.success) {
     return c.json(createResponse(null, 'remote_attachment_invalid', 1), 422);
   }
+  const migrationAuth = attachmentMigrationAuthSchema.safeParse(
+    body && typeof body === 'object'
+      ? (body as { migrationAuth?: unknown }).migrationAuth
+      : undefined
+  );
+  if (!migrationAuth.success) {
+    return c.json(createResponse(null, 'remote_attachment_invalid', 1), 422);
+  }
   try {
-    const attachment = await migrateOneRemoteAttachment(user.id, parsed.data);
+    const attachment = await migrateOneRemoteAttachment(
+      user.id,
+      parsed.data,
+      {},
+      {
+        auth: migrationAuth.data
+          ? {
+              baseUrl: migrationAuth.data.baseUrl,
+              bearerToken: c.req.header('x-memos-access-token')?.trim(),
+            }
+          : undefined,
+      }
+    );
     return c.json(createResponse(attachment), 201);
   } catch (error) {
     if (error instanceof RemoteAttachmentMigrationError) {

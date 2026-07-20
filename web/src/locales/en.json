@@ -932,8 +932,8 @@
                 "2": "Only attachments with reachable URLs in the export can be migrated."
               },
               "api": {
-                "1": "Attachment URLs must be directly reachable by the Rote server.",
-                "2": "Localhost, private-network, or separately authenticated URLs cannot be migrated."
+                "1": "Images and videos protected by the Memos access token are migrated securely by the Rote server.",
+                "2": "Audio, documents, comment threads, references, reactions, and location data are not migrated yet."
               }
             },
             "flomo": {
@@ -963,7 +963,11 @@
             "wereadComplete": "Fetched notes from {{count}} WeRead books"
           },
           "warnings": {
-            "memosLocalAttachments": "Skipped {{count}} local Memos attachments because the export does not contain transferable URLs.",
+            "memosLocalAttachments": "Skipped {{count}} Memos attachments because Rote does not support their type or they have no transferable URL.",
+            "memosComments": "Skipped {{count}} Memos comments instead of importing them as unrelated notes because Rote cannot preserve their discussion threads.",
+            "memosReferences": "Could not migrate {{count}} Memos note references.",
+            "memosReactions": "Skipped {{count}} Memos reactions because their user ownership cannot be mapped safely.",
+            "memosLocations": "Could not migrate location data from {{count}} Memos notes because Rote does not support it yet.",
             "emptyNotes": "{{count}} empty notes have no attachments and will be imported with empty content.",
             "flomoLocalAttachments": "Skipped {{count}} local flomo attachments because they cannot be transferred from the export.",
             "flomoIdentity": "flomo exports do not include stable source IDs. Re-importing the same export is deduplicated, but edited source notes may be treated as new notes.",

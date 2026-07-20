@@ -51,6 +51,13 @@ type MigrationDependencies = {
   storeObjectStream: typeof storeObjectStream;
 };
 
+type MigrationOptions = {
+  auth?: {
+    baseUrl: string;
+    bearerToken?: string;
+  };
+};
+
 const defaultDependencies: MigrationDependencies = {
   assertSafeOutboundUrl,
   fetcher: fetch,
@@ -70,7 +77,8 @@ const globalTransferLimiter = createRemoteAttachmentLimiter(
 export async function migrateOneRemoteAttachment(
   userId: string,
   attachment: ImportAttachment,
-  dependencyOverrides: Partial<MigrationDependencies> = {}
+  dependencyOverrides: Partial<MigrationDependencies> = {},
+  options: MigrationOptions = {}
 ) {
   const dependencies = { ...defaultDependencies, ...dependencyOverrides };
   if (!isRemoteUrl(attachment.url)) {
@@ -105,6 +113,7 @@ export async function migrateOneRemoteAttachment(
       maxVideoUploadSizeMB: policy.maxVideoUploadSizeMB,
       canUploadVideo: policy.canUploadVideo,
       dependencies,
+      auth: options.auth,
     });
     const mediaKind = isImageContentType(original.contentType)
       ? 'image'
@@ -131,6 +140,7 @@ export async function migrateOneRemoteAttachment(
             maxVideoUploadSizeMB: policy.maxVideoUploadSizeMB,
             canUploadVideo: policy.canUploadVideo,
             dependencies,
+            auth: options.auth,
           })
         : undefined,
       posterUrl
@@ -145,6 +155,7 @@ export async function migrateOneRemoteAttachment(
             maxVideoUploadSizeMB: policy.maxVideoUploadSizeMB,
             canUploadVideo: policy.canUploadVideo,
             dependencies,
+            auth: options.auth,
           })
         : undefined,
       isRemoteUrl(pairedVideoUrl)
@@ -160,6 +171,7 @@ export async function migrateOneRemoteAttachment(
             maxVideoUploadSizeMB: policy.maxVideoUploadSizeMB,
             canUploadVideo: policy.canUploadVideo,
             dependencies,
+            auth: options.auth,
           })
         : undefined,
     ]);
@@ -215,6 +227,7 @@ async function migrateAsset({
   maxVideoUploadSizeMB,
   canUploadVideo,
   dependencies,
+  auth,
 }: {
   userId: string;
   uuid: string;
@@ -227,9 +240,10 @@ async function migrateAsset({
   maxVideoUploadSizeMB: number;
   canUploadVideo: boolean;
   dependencies: MigrationDependencies;
+  auth?: MigrationOptions['auth'];
 }) {
   return globalTransferLimiter(async () => {
-    const response = await fetchSafe(sourceUrl, dependencies);
+    const response = await fetchSafe(sourceUrl, dependencies, auth);
     const contentType = normalizeContentType(response.headers.get('content-type') || declaredType);
     if (!contentType)
       throw new RemoteAttachmentMigrationError('remote_attachment_unsupported', 422);
@@ -274,14 +288,22 @@ async function migrateAsset({
   });
 }
 
-async function fetchSafe(initialUrl: string, dependencies: MigrationDependencies) {
+async function fetchSafe(
+  initialUrl: string,
+  dependencies: MigrationDependencies,
+  auth?: MigrationOptions['auth']
+) {
   let currentUrl = initialUrl;
   for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
     await dependencies.assertSafeOutboundUrl(currentUrl, 'Remote attachment URL');
     let response: Response;
     try {
+      const headers: Record<string, string> = { Accept: 'image/*,video/*' };
+      if (auth?.bearerToken && sameOrigin(currentUrl, auth.baseUrl)) {
+        headers.Authorization = `Bearer ${auth.bearerToken}`;
+      }
       response = await dependencies.fetcher(currentUrl, {
-        headers: { Accept: 'image/*,video/*' },
+        headers,
         redirect: 'manual',
         signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
       });
@@ -303,6 +325,14 @@ async function fetchSafe(initialUrl: string, dependencies: MigrationDependencies
     return response;
   }
   throw new RemoteAttachmentMigrationError('remote_attachment_download_failed', 502);
+}
+
+function sameOrigin(value: string, baseUrl: string) {
+  try {
+    return new URL(value).origin === new URL(baseUrl).origin;
+  } catch {
+    return false;
+  }
 }
 
 function validateRole(role: AssetRole, contentType: string) {

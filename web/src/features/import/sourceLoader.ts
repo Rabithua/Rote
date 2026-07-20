@@ -27,7 +27,14 @@ export interface ReadyImport {
   payload: ImportPayload;
   displayName: string;
   warnings: Array<string>;
+  migrationAuth?: ImportMigrationAuth;
 }
+
+export type ImportMigrationAuth = {
+  provider: 'memos';
+  baseUrl: string;
+  token: string;
+};
 
 export interface MemosUserSelection {
   kind: 'select-memos-user';
@@ -87,12 +94,20 @@ async function prepareMemos(input: PrepareImportInput): Promise<PreparedImport> 
     }
   }
 
-  return conversionReady(
+  const ready = conversionReady(
     convertMemosToRote(sourceData, input.selectedMemosUserId, {
       preserveVisibility: true,
     }),
     displayName
   );
+  if (input.mode === 'api' && input.memosBaseUrl && input.memosToken) {
+    ready.migrationAuth = {
+      provider: 'memos',
+      baseUrl: input.memosBaseUrl.trim().replace(/\/+$/u, ''),
+      token: input.memosToken.trim(),
+    };
+  }
+  return ready;
 }
 
 async function loadMemosSource(

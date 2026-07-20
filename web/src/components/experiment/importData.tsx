@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Divider } from '@/components/ui/divider';
 import ImportSourceForm from '@/features/import/ImportSourceForm';
-import type { ImportPayload } from '@/features/import/sourceLoader';
+import type { ImportMigrationAuth, ImportPayload } from '@/features/import/sourceLoader';
 import saveAs from 'file-saver';
 import { Download, FileJson, HelpCircle, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -38,6 +38,7 @@ export default function ImportData() {
   const [previewVersion, setPreviewVersion] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [fileData, setFileData] = useState<ImportPayload | null>(null);
+  const [migrationAuth, setMigrationAuth] = useState<ImportMigrationAuth>();
   const [excludedIndexes, setExcludedIndexes] = useState<Set<number>>(new Set());
   const [overwriteExisting, setOverwriteExisting] = useState(false);
   const [preserveVisibility, setPreserveVisibility] = useState(false);
@@ -167,6 +168,7 @@ export default function ImportData() {
     setIsPreviewOpen(false);
     setPreview(null);
     setFileData(null);
+    setMigrationAuth(undefined);
     setExcludedIndexes(new Set());
     setOverwriteExisting(false);
     setPreserveVisibility(false);
@@ -230,10 +232,16 @@ export default function ImportData() {
   };
 
   const handlePrepared = useCallback(
-    (payload: ImportPayload, displayName: string, warnings: Array<string>) => {
+    (
+      payload: ImportPayload,
+      displayName: string,
+      warnings: Array<string>,
+      nextMigrationAuth?: ImportMigrationAuth
+    ) => {
       setPreview(buildPreview(payload, displayName));
       setPreviewVersion((version) => version + 1);
       setFileData(payload);
+      setMigrationAuth(nextMigrationAuth);
       setExcludedIndexes(new Set());
       setOverwriteExisting(false);
       setPreserveVisibility(false);
@@ -272,6 +280,7 @@ export default function ImportData() {
         preserveVisibility,
         signal: controller.signal,
         onProgress: setTaskProgress,
+        migrationAuth,
       });
       setTaskResult(data);
 

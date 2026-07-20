@@ -48,8 +48,16 @@ function convertFromJSON(data: MemoSourceData, options: ConversionOptions): Conv
   const notes: Array<RoteNote> = [];
   let localAttachmentsSkipped = 0;
   let emptyContentWithoutAttachmentsCount = 0;
+  const commentMemoNames = collectCommentMemoNames(data.memos);
+  const memos = data.memos.filter((memo) => !commentMemoNames.has(memo.name));
+  const relationCount = countRelations(memos, 'REFERENCE');
+  const reactionCount = memos.reduce(
+    (count, memo) => count + (Array.isArray(memo.reactions) ? memo.reactions.length : 0),
+    0
+  );
+  const locationCount = memos.filter((memo) => memo.location != null).length;
 
-  data.memos.forEach((memo, index) => {
+  memos.forEach((memo, index) => {
     try {
       const { note, skippedLocalAttachments } = convertSingleMemo(
         memo,
@@ -90,6 +98,18 @@ function convertFromJSON(data: MemoSourceData, options: ConversionOptions): Conv
       })
     );
   }
+  if (commentMemoNames.size > 0) {
+    warnings.push(importMessage('warnings.memosComments', { count: commentMemoNames.size }));
+  }
+  if (relationCount > 0) {
+    warnings.push(importMessage('warnings.memosReferences', { count: relationCount }));
+  }
+  if (reactionCount > 0) {
+    warnings.push(importMessage('warnings.memosReactions', { count: reactionCount }));
+  }
+  if (locationCount > 0) {
+    warnings.push(importMessage('warnings.memosLocations', { count: locationCount }));
+  }
 
   const uniqueNotes = dedupeNotesBySource(notes);
 
@@ -99,7 +119,7 @@ function convertFromJSON(data: MemoSourceData, options: ConversionOptions): Conv
     errors,
     warnings,
     stats: {
-      total: data.memos.length,
+      total: memos.length,
       converted: uniqueNotes.length,
       failed: errors.length,
       localAttachmentsSkipped,
@@ -364,7 +384,7 @@ function convertSingleMemo(
     articleId: null,
     pin: memo.pinned,
     editor: 'normal',
-    createdAt: memo.createTime,
+    createdAt: validDate(memo.displayTime) ?? memo.createTime,
     updatedAt: memo.updateTime,
     author: {
       username: `user_${extractUserId(memo.creator)}`,
@@ -377,6 +397,37 @@ function convertSingleMemo(
   };
 
   return { note, skippedLocalAttachments: skippedCount };
+}
+
+function collectCommentMemoNames(memos: Array<Memo>) {
+  const names = new Set<string>();
+  memos.forEach((memo) => {
+    (Array.isArray(memo.relations) ? memo.relations : []).forEach((relation) => {
+      if (relation?.type === 'COMMENT' && typeof relation?.memo?.name === 'string') {
+        names.add(relation.memo.name);
+      }
+    });
+  });
+  return names;
+}
+
+function countRelations(memos: Array<Memo>, type: string) {
+  const relations = new Set<string>();
+  memos.forEach((memo) => {
+    (Array.isArray(memo.relations) ? memo.relations : []).forEach((relation) => {
+      if (relation?.type !== type) return;
+      const source = relation?.memo?.name;
+      const target = relation?.relatedMemo?.name;
+      if (typeof source === 'string' && typeof target === 'string') {
+        relations.add(`${type}:${source}:${target}`);
+      }
+    });
+  });
+  return relations.size;
+}
+
+function validDate(value: unknown) {
+  return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : undefined;
 }
 
 function convertVisibility(visibility: string): string {
