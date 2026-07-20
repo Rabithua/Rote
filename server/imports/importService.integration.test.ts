@@ -98,8 +98,8 @@ describe('batched import service', () => {
         ...createNote(3_000),
         attachments: [
           {
-            url: 'https://example.com/image.png',
-            storage: 'REMOTE',
+            url: 'import-fixtures/image.png',
+            storage: 'R2',
             details: { key: 'image.png', size: 10, mimetype: 'image/png' },
             source: {
               provider: 'memos',
@@ -108,8 +108,8 @@ describe('batched import service', () => {
             },
           },
           {
-            url: 'https://example.com/image-2.png',
-            storage: 'REMOTE',
+            url: 'import-fixtures/image-2.png',
+            storage: 'R2',
             details: { key: 'image-2.png', size: 20, mimetype: 'image/png' },
             source: {
               provider: 'memos',

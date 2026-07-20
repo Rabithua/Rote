@@ -7,7 +7,7 @@ const importSourceSchema = z.object({
   sourceUpdatedAt: z.iso.datetime().optional(),
 });
 
-const attachmentSchema = z
+export const attachmentSchema = z
   .object({
     id: z.uuid().optional(),
     url: z.string().min(1),
@@ -21,6 +21,13 @@ const attachmentSchema = z
     source: importSourceSchema.optional(),
   })
   .passthrough();
+
+export const attachmentMigrationAuthSchema = z
+  .object({
+    provider: z.literal('memos'),
+    baseUrl: z.url(),
+  })
+  .optional();
 
 const noteSchema = z
   .object({

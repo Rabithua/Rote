@@ -78,7 +78,13 @@ app.use(
     },
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+    allowHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-API-Key',
+      'X-WeRead-API-Key',
+      'X-Memos-Access-Token',
+    ],
   })
 );
 

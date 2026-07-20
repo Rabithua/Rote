@@ -810,9 +810,9 @@
         "notesFound": "笔记数量",
         "attachmentsFound": "附件数量",
         "dialogTitle": "使用说明",
-        "dialogDescription": "请上传符合以下 JSON 格式的文件，支持文章、笔记及附件一并导入。",
+        "dialogDescription": "选择 Rote、Memos、flomo 或微信读书，可直接连接 API 或上传对应的导出文件。Rote JSON 仍支持文章、笔记及附件一并导入。",
         "dialogExample": "JSON 示例",
-        "dialogNote": "系统会优先导入文章，再根据 Note ID 匹配并导入笔记。如果 ID 已存在且属于您，将更新内容；如果 ID 不存在，将创建新记录。同时也会处理嵌套的 article 与 attachments 数据。",
+        "dialogNote": "转换后会先进入预览。同一来源的笔记再次导入时默认跳过；只有手动开启“覆盖已导入笔记”才会更新已有内容。旧版 Rote JSON 仍按 Note ID 匹配。",
         "convertToolHint": "如果您想迁移其他平台的数据，可以使用我们的数据转换工具：",
         "convertToolLinkName": "Rerote - Rote 数据转换工具",
         "fileParsed": "已解析 {{count}} 条笔记",
@@ -820,6 +820,7 @@
         "privateNotes": "私密笔记",
         "tagsFound": "标签数量",
         "previewSamples": "数据预览",
+        "previewDialogDescription": "预览并选择要导入的 {{count}} 条笔记",
         "prevPage": "上一页",
         "nextPage": "下一页",
         "sampleEmpty": "这个文件里没有可预览的笔记",
@@ -836,16 +837,172 @@
         "restoreNote": "恢复",
         "invalidFormat": "文件格式无效，请上传有效的 JSON 文件",
         "parseError": "JSON 文件解析失败",
-        "importSuccessTitle": "导入完成",
-        "importSuccessSummary": "已处理 {{count}} 条笔记",
-        "importSuccessNotes": "笔记：共 {{total}} 条，新增 {{created}}，更新 {{updated}}，已跳过 {{unchanged}}",
-        "importSuccessArticles": "文章：共 {{total}} 篇，新增 {{created}}，更新 {{updated}}",
-        "importSuccessAttachments": "附件：共 {{total}} 个，新增 {{created}}，更新 {{updated}}，清理 {{deleted}}",
         "importFailed": "导入失败",
         "clickToUpload": "点击上传文件",
         "cancel": "取消",
         "importing": "导入中...",
-        "confirmImport": "确认导入"
+        "confirmImport": "确认导入",
+        "importTask": {
+          "stages": {
+            "planning": "正在检查可导入内容",
+            "migrating": "正在迁移附件",
+            "importing": "正在写入笔记",
+            "cleaning": "正在清理未完成附件",
+            "completed": "导入完成",
+            "interrupted": "导入已中断"
+          },
+          "stayOnPage": "请勿刷新、关闭或切换页面，否则当前导入会中断。",
+          "attachments": "附件迁移",
+          "notes": "笔记导入",
+          "active": "正在处理 {{count}} 个",
+          "failed": "已舍弃 {{count}} 个",
+          "cancel": "取消导入",
+          "leaveTitle": "停止当前导入？",
+          "leaveDescription": "停止后会清理尚未写入笔记的附件；已经完成的笔记会保留。",
+          "continue": "继续导入",
+          "stop": "停止并清理",
+          "completeTitle": "导入完成",
+          "completeDescription": "已完成数据写入，迁移失败的附件未保存。",
+          "resultNotes": "笔记：新增 {{created}}，更新 {{updated}}，跳过 {{unchanged}}",
+          "resultAttachments": "附件：成功 {{success}}，舍弃 {{failed}}",
+          "resultSkippedNotes": "有 {{count}} 条纯附件笔记因附件全部失败而未导入",
+          "failureItem": "{{provider}} · {{noteTitle}} · {{attachmentName}}：{{reason}}",
+          "done": "完成",
+          "interrupted": "导入已中断，未绑定附件已清理",
+          "recovered": "检测到上次中断的导入，已清理 {{count}} 个未绑定附件",
+          "recoveryFailed": "无法清理上次中断遗留的附件，请稍后重新进入此页面",
+          "errors": {
+            "remote_attachment_busy": "服务器繁忙",
+            "remote_attachment_download_failed": "无法下载源附件",
+            "remote_attachment_forbidden": "当前账户没有迁移附件的权限",
+            "remote_attachment_invalid": "附件数据无效",
+            "remote_attachment_storage_unavailable": "当前对象存储不可用",
+            "remote_attachment_too_large": "附件超过大小限制",
+            "remote_attachment_unsupported": "不支持的附件类型"
+          }
+        },
+        "migration": {
+          "sources": {
+            "rote": "Rote",
+            "memos": "Memos",
+            "flomo": "flomo",
+            "weread": "微信读书"
+          },
+          "platformCardLabel": "选择 {{platform}}",
+          "dialogDescription": "配置从 {{platform}} 导入数据",
+          "close": "关闭",
+          "modes": {
+            "file": "上传文件",
+            "api": "连接 API"
+          },
+          "chooseFile": "选择导出文件",
+          "memosBaseUrl": "Memos 地址",
+          "accessToken": "访问令牌",
+          "wereadApiKey": "微信读书 API Key",
+          "wereadKeyLink": "微信读书官方 Skill 页面获取",
+          "memosUser": "选择 Memos 用户",
+          "memosUserPlaceholder": "请选择要导入的用户",
+          "prepare": "转换并预览",
+          "preparing": "正在准备…",
+          "warningTitle": "转换完成，部分内容需要留意",
+          "limitations": {
+            "rote": {
+              "1": "仅支持 Rote 导出的 JSON。",
+              "2": "附件会从导出数据中的地址重新迁移，导入时来源地址必须仍可访问。"
+            },
+            "memos": {
+              "file": {
+                "1": "Memos 的 JSON 或数据库导出通常不包含本地附件文件。",
+                "2": "只有导出数据中带有可访问地址的附件可以迁移。"
+              },
+              "api": {
+                "1": "Memos 实例内受访问令牌保护的图片和视频会由 Rote 后端安全迁移。",
+                "2": "音频、文档、评论关系、引用和表情反应暂不支持迁移。"
+              }
+            },
+            "flomo": {
+              "1": "flomo 官方导出不包含附件原文件，因此图片和其他附件无法迁移。",
+              "2": "导出没有稳定的原始笔记 ID，编辑后再次导入可能产生新笔记。"
+            },
+            "weread": {
+              "1": "微信读书导出和当前接口不会提供笔记中的原始图片。",
+              "2": "只能导入划线与想法文字，纯图片笔记会被跳过。"
+            }
+          },
+          "labels": {
+            "memosApi": "Memos API",
+            "wereadApi": "微信读书 API"
+          },
+          "states": {
+            "normal": "普通",
+            "archived": "已归档"
+          },
+          "progress": {
+            "memosConnecting": "正在连接 Memos…",
+            "memosPage": "正在获取{{state}}笔记，第 {{page}} 页…",
+            "memosFetched": "已获取 {{count}} 条笔记",
+            "memosComplete": "Memos 获取完成，共 {{count}} 条",
+            "wereadNotebooks": "正在获取微信读书笔记本…",
+            "wereadBook": "正在获取《{{title}}》的笔记…",
+            "wereadComplete": "微信读书获取完成，共 {{count}} 本书"
+          },
+          "warnings": {
+            "memosLocalAttachments": "有 {{count}} 个 Memos 附件不受 Rote 支持或没有可迁移地址，已跳过。",
+            "memosComments": "有 {{count}} 条 Memos 评论无法保留原有讨论关系，未作为独立笔记导入。",
+            "memosReferences": "有 {{count}} 条 Memos 笔记引用关系暂时无法迁移。",
+            "memosReactions": "有 {{count}} 个 Memos 表情反应因用户归属无法对应，未迁移。",
+            "emptyNotes": "有 {{count}} 条空笔记没有附件，将以空内容导入。",
+            "flomoLocalAttachments": "有 {{count}} 个 flomo 本地附件无法从导出文件中迁移，已跳过。",
+            "flomoIdentity": "flomo 导出不含稳定的原始 ID；同一导出内容可去重，但编辑原笔记后再次导入可能被识别为新笔记。",
+            "wereadImages": "微信读书接口只提供了 {{count}} 个图片占位符，无法取得原图；已移除占位符并跳过 {{skipped}} 条纯图片笔记。"
+          },
+          "errors": {
+            "prepare": "准备导入数据失败",
+            "remoteAttachmentMigration": "远程附件迁移失败，请检查附件链接、存储配置或上传权限后重试",
+            "fileRequired": "请先选择文件",
+            "invalidRoteFile": "这不是有效的 Rote 导入文件",
+            "noConvertedNotes": "没有可导入的笔记",
+            "parseJson": "JSON 文件解析失败",
+            "readFile": "文件读取失败",
+            "unsupportedMemosFile": "Memos 仅支持 JSON、DB 或 SQLite 文件",
+            "unsupportedFlomoFile": "flomo 仅支持 HTML 或 ZIP 文件",
+            "noFlomoHtml": "ZIP 中没有找到 flomo HTML 文件",
+            "unsupportedWereadFile": "微信读书仅支持 JSON 或 TXT 文件",
+            "parseSqlite": "SQLite 数据库解析失败：{{error}}",
+            "memosCredentialsRequired": "请填写 Memos 地址和访问令牌",
+            "wereadKeyRequired": "请填写微信读书 API Key",
+            "invalidData": "数据格式无效",
+            "noMemos": "Memos 数据中没有笔记",
+            "noMemosUsers": "Memos 数据中没有用户信息",
+            "noSelectedMemos": "所选用户没有可导入的笔记",
+            "memosMissingFields": "第 {{index}} 条 Memos 笔记缺少必要字段",
+            "memosConvert": "第 {{index}} 条 Memos 笔记转换失败：{{error}}",
+            "memosUnauthorized": "Memos 访问令牌无效",
+            "memosForbidden": "没有权限读取 Memos 数据",
+            "memosNotFound": "找不到 Memos API，请检查实例地址",
+            "memosUnreachable": "暂时无法通过 Rote 后端连接 Memos，请检查实例地址后重试",
+            "requestFailed": "请求失败（{{status}} {{message}}）",
+            "invalidApiData": "API 返回了无效数据",
+            "invalidFlomo": "这不是有效的 flomo 导出数据",
+            "noFlomoMemos": "没有找到可导入的 flomo 笔记",
+            "flomoConvert": "第 {{index}} 条 flomo 笔记转换失败：{{error}}",
+            "invalidWeread": "这不是有效的微信读书导出数据",
+            "noWereadNotes": "没有找到可导入的微信读书笔记",
+            "noWereadExportableNotes": "微信读书中没有可导出的划线或想法",
+            "noWereadNotebooks": "没有获取到微信读书笔记本",
+            "wereadNotebookCursor": "微信读书笔记本分页数据异常",
+            "wereadReviewCursor": "微信读书想法分页数据异常",
+            "wereadConvert": "《{{title}}》第 {{index}} 条笔记转换失败：{{error}}",
+            "emptyNote": "笔记内容为空",
+            "wereadImageOnly": "微信读书只返回了图片占位符，无法取得原图，因此没有可导入的文字内容",
+            "wereadUnauthorized": "微信读书 API Key 无效或已过期",
+            "wereadTimeout": "微信读书请求超时，请稍后重试",
+            "wereadApiForbidden": "请求了不受支持的微信读书接口",
+            "wereadUnreachable": "暂时无法连接微信读书，请稍后重试",
+            "wereadUpgrade": "微信读书接口需要更新，请稍后再试",
+            "wereadApiError": "微信读书接口返回错误（{{code}}）"
+          }
+        }
       },
       "serviceWorker": {
         "title": "ServiceWoker通知",
@@ -1680,6 +1837,7 @@
     },
     "attachments": {
       "imageUnavailable": "图片暂不可用",
+      "sourcePreviewUnavailable": "来源限制，无法预览",
       "livePhoto": {
         "badge": "LIVE",
         "open": "打开 Live Photo",

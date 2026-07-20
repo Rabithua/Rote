@@ -1,6 +1,6 @@
 import { and, count, eq, gte, lte, sql } from 'drizzle-orm';
 import { articles, attachments, noteImportSources, rotes } from '../../drizzle/schema';
-import { importUserData } from '../../imports/importService';
+import { importUserData, planUserImport } from '../../imports/importService';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 
@@ -164,4 +164,8 @@ export async function getMyTags(userid: string): Promise<any> {
 
 export async function importData(userId: string, data: unknown): Promise<any> {
   return importUserData(userId, data);
+}
+
+export async function planImportData(userId: string, data: unknown): Promise<any> {
+  return planUserImport(userId, data);
 }

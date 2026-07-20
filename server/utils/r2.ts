@@ -1,16 +1,22 @@
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
+import type { Readable } from 'node:stream';
 import { RequestChecksumCalculation } from '@aws-sdk/middleware-flexible-checksums';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageConfig } from '../types/config';
 import { getGlobalConfig } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
+const STREAM_UPLOAD_PART_SIZE = 8 * 1024 * 1024;
 
 export type StoredObjectInfo = {
   contentLength: number | null;
@@ -203,6 +209,84 @@ export async function presignPutUrlForConfig(
   expiresIn: number = 3600
 ): Promise<{ putUrl: string; url: string }> {
   return presignPutUrlWithClient(createStorageClient(config), key, contentType, expiresIn);
+}
+
+export async function storeObjectStream(
+  key: string,
+  body: Readable,
+  contentType: string
+): Promise<{ url: string }> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const created = await r2Config.s3.send(
+    new CreateMultipartUploadCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      ContentType: contentType,
+      CacheControl: cacheControl,
+    })
+  );
+  if (!created.UploadId) throw new Error('Failed to start multipart upload');
+
+  const parts: Array<{ ETag: string; PartNumber: number }> = [];
+  let buffered: Buffer[] = [];
+  let bufferedBytes = 0;
+  let partNumber = 1;
+  const uploadPart = async (bytes: Buffer) => {
+    const uploaded = await r2Config.s3.send(
+      new UploadPartCommand({
+        Bucket: r2Config.bucketName,
+        Key: key,
+        UploadId: created.UploadId,
+        PartNumber: partNumber,
+        Body: bytes,
+      })
+    );
+    if (!uploaded.ETag) throw new Error('Multipart upload part is missing an ETag');
+    parts.push({ ETag: uploaded.ETag, PartNumber: partNumber });
+    partNumber += 1;
+  };
+
+  try {
+    for await (const chunk of body) {
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      buffered.push(bytes);
+      bufferedBytes += bytes.byteLength;
+      if (bufferedBytes < STREAM_UPLOAD_PART_SIZE) continue;
+      const combined = Buffer.concat(buffered, bufferedBytes);
+      await uploadPart(combined.subarray(0, STREAM_UPLOAD_PART_SIZE));
+      const remainder = combined.subarray(STREAM_UPLOAD_PART_SIZE);
+      buffered = remainder.byteLength > 0 ? [remainder] : [];
+      bufferedBytes = remainder.byteLength;
+    }
+    if (bufferedBytes > 0) await uploadPart(Buffer.concat(buffered, bufferedBytes));
+    if (parts.length === 0) throw new Error('Cannot upload an empty stream');
+    await r2Config.s3.send(
+      new CompleteMultipartUploadCommand({
+        Bucket: r2Config.bucketName,
+        Key: key,
+        UploadId: created.UploadId,
+        MultipartUpload: { Parts: parts },
+      })
+    );
+  } catch (error) {
+    await r2Config.s3
+      .send(
+        new AbortMultipartUploadCommand({
+          Bucket: r2Config.bucketName,
+          Key: key,
+          UploadId: created.UploadId,
+        })
+      )
+      .catch(() => undefined);
+    throw error;
+  }
+  return { url: `${r2Config.urlPrefix}/${key}` };
 }
 
 // 检查 R2 中的对象是否存在

@@ -11,6 +11,7 @@ import articlesRouter from './article';
 import attachmentsRouter from './attachment';
 import authRouter from './auth';
 import changeRouter from './change';
+import importsRouter from './imports';
 import notesRouter from './note';
 import notificationsRouter from './notification';
 import oauthRouter from './oauth';
@@ -138,5 +139,6 @@ router.route('/admin/permissions', adminPermissionsRouter);
 router.route('/permissions', permissionsRouter);
 router.route('/ai', aiRouter);
 router.route('/changes', changeRouter);
+router.route('/imports', importsRouter);
 
 export default router;

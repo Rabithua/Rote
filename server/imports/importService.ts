@@ -14,6 +14,8 @@ import db from '../utils/drizzle';
 import { trackBackgroundTask } from '../utils/backgroundTask';
 import { enqueueEmbeddingJobs } from '../utils/dbMethods/ai';
 import { DatabaseError } from '../utils/dbMethods/common';
+import { validateRoteAttachmentDetails } from '../utils/fileValidation';
+import { r2deletehandler } from '../utils/r2';
 import {
   parseImportPayload,
   type ImportAttachment,
@@ -44,7 +46,9 @@ export interface ImportResult {
 }
 
 export async function importUserData(userId: string, rawData: unknown): Promise<ImportResult> {
-  const payload = parseImportPayload(rawData);
+  const parsedPayload = parseImportPayload(rawData);
+  parsedPayload.notes.forEach((note) => validateRoteAttachmentDetails(note.attachments ?? []));
+  const payload = parsedPayload;
   const articleResult = await importArticles(userId, payload);
   const ownedArticleIds = await getOwnedArticleIds(userId, payload.notes);
   const counts: ImportCounts = { created: 0, updated: 0, unchanged: 0 };
@@ -59,6 +63,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
   try {
     for (let offset = 0; offset < payload.notes.length; offset += IMPORT_CHUNK_SIZE) {
       const chunk = payload.notes.slice(offset, offset + IMPORT_CHUNK_SIZE);
+      const objectKeysToDelete: string[] = [];
 
       await db.transaction(async (tx) => {
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`import:${userId}`}))`);
@@ -89,6 +94,19 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
                 .where(inArray(rotes.id, [...existingIds]))
             : [];
         const existingById = new Map(existingNotes.map((note) => [note.id, note]));
+        const incomingAttachmentIds = chunk.flatMap((note) =>
+          (note.attachments ?? []).flatMap((attachment) => (attachment.id ? [attachment.id] : []))
+        );
+        const incomingAttachmentRows =
+          incomingAttachmentIds.length > 0
+            ? await tx
+                .select()
+                .from(attachments)
+                .where(inArray(attachments.id, incomingAttachmentIds))
+            : [];
+        const incomingAttachmentsById = new Map(
+          incomingAttachmentRows.map((attachment) => [attachment.id, attachment])
+        );
 
         const noteRows: NewRote[] = [];
         const mappingRows: NewNoteImportSource[] = [];
@@ -107,6 +125,14 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
 
           if (existing && payload.importOptions.existingStrategy === 'skip') {
             counts.unchanged += 1;
+            (note.attachments ?? []).forEach((attachment) => {
+              const pending = attachment.id
+                ? incomingAttachmentsById.get(attachment.id)
+                : undefined;
+              if (pending?.userid === userId && !pending.roteid) {
+                managedAttachmentIdsToDelete.add(pending.id);
+              }
+            });
             continue;
           }
 
@@ -133,11 +159,39 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
             const attachmentKey = attachmentSource
               ? sourceKey(attachmentSource)
               : fallbackAttachmentExternalId(attachment, index);
-            const attachmentId =
-              attachmentMap[attachmentKey] ??
-              (note.source ? randomUUID() : (attachment.id ?? randomUUID()));
+            const pendingAttachment = attachment.id
+              ? incomingAttachmentsById.get(attachment.id)
+              : undefined;
+            if (
+              pendingAttachment &&
+              (pendingAttachment.userid !== userId ||
+                (pendingAttachment.roteid && pendingAttachment.roteid !== targetId))
+            ) {
+              throw new Error(`Security violation: Cannot bind attachment ${attachment.id}`);
+            }
+            const attachmentId = pendingAttachment
+              ? pendingAttachment.id
+              : (attachmentMap[attachmentKey] ??
+                (note.source ? randomUUID() : (attachment.id ?? randomUUID())));
+            const replacedAttachmentId = attachmentMap[attachmentKey];
+            if (replacedAttachmentId && replacedAttachmentId !== attachmentId) {
+              managedAttachmentIdsToDelete.add(replacedAttachmentId);
+            }
             nextAttachmentMap[attachmentKey] = attachmentId;
-            attachmentRows.push(buildAttachmentData(attachment, attachmentId, targetId, userId));
+            const canonicalAttachment = pendingAttachment
+              ? {
+                  ...attachment,
+                  url: pendingAttachment.url,
+                  compressUrl: pendingAttachment.compressUrl ?? '',
+                  posterUrl: pendingAttachment.posterUrl ?? '',
+                  storage: pendingAttachment.storage,
+                  details: pendingAttachment.details as Record<string, unknown>,
+                  createdAt: pendingAttachment.createdAt.toISOString(),
+                }
+              : attachment;
+            attachmentRows.push(
+              buildAttachmentData(canonicalAttachment, attachmentId, targetId, userId)
+            );
           });
 
           Object.entries(attachmentMap).forEach(([attachmentKey, attachmentId]) => {
@@ -159,36 +213,45 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
           }
         }
 
-        if (noteRows.length === 0) return;
-
-        await tx
-          .insert(rotes)
-          .values(noteRows)
-          .onConflictDoUpdate({
-            target: rotes.id,
-            set: {
-              title: sql`excluded."title"`,
-              type: sql`excluded."type"`,
-              tags: sql`excluded."tags"`,
-              content: sql`excluded."content"`,
-              state: sql`excluded."state"`,
-              archived: sql`excluded."archived"`,
-              authorid: sql`excluded."authorid"`,
-              articleId: sql`excluded."articleId"`,
-              pin: sql`excluded."pin"`,
-              editor: sql`excluded."editor"`,
-              createdAt: sql`excluded."createdAt"`,
-              updatedAt: sql`excluded."updatedAt"`,
-            },
-          });
+        if (noteRows.length > 0) {
+          await tx
+            .insert(rotes)
+            .values(noteRows)
+            .onConflictDoUpdate({
+              target: rotes.id,
+              set: {
+                title: sql`excluded."title"`,
+                type: sql`excluded."type"`,
+                tags: sql`excluded."tags"`,
+                content: sql`excluded."content"`,
+                state: sql`excluded."state"`,
+                archived: sql`excluded."archived"`,
+                authorid: sql`excluded."authorid"`,
+                articleId: sql`excluded."articleId"`,
+                pin: sql`excluded."pin"`,
+                editor: sql`excluded."editor"`,
+                createdAt: sql`excluded."createdAt"`,
+                updatedAt: sql`excluded."updatedAt"`,
+              },
+            });
+        }
 
         if (managedAttachmentIdsToDelete.size > 0) {
           for (const ids of chunkValues([...managedAttachmentIdsToDelete], 500)) {
             const deleted = await tx
               .delete(attachments)
               .where(and(eq(attachments.userid, userId), inArray(attachments.id, ids)))
-              .returning({ id: attachments.id });
+              .returning({
+                id: attachments.id,
+                details: attachments.details,
+                storage: attachments.storage,
+              });
             attachmentCounts.deleted += deleted.length;
+            deleted.forEach((attachment) => {
+              if (attachment.storage === 'R2') {
+                objectKeysToDelete.push(...collectAttachmentObjectKeys(attachment.details, userId));
+              }
+            });
           }
         }
 
@@ -252,15 +315,24 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
             });
         }
 
-        await tx.insert(roteChanges).values(
-          changes.map((change) => ({
-            originid: change.id,
-            roteid: change.id,
-            action: change.action,
-            userid: userId,
-            createdAt: new Date(),
-          }))
-        );
+        if (changes.length > 0) {
+          await tx.insert(roteChanges).values(
+            changes.map((change) => ({
+              originid: change.id,
+              roteid: change.id,
+              action: change.action,
+              userid: userId,
+              createdAt: new Date(),
+            }))
+          );
+        }
+      });
+
+      objectKeysToDelete.forEach((key) => {
+        r2deletehandler(key).catch((error) => {
+          // eslint-disable-next-line no-console -- committed imports must not fail if stale-object cleanup is unavailable
+          console.error(`[import] failed to delete replaced attachment object: ${key}`, error);
+        });
       });
     }
 
@@ -285,6 +357,71 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
     }
     throw new DatabaseError('Failed to import user data', error);
   }
+}
+
+export async function planUserImport(userId: string, rawData: unknown) {
+  const payload = parseImportPayload(rawData);
+  const noteIndexes = await getNoteIndexesRequiringImport(userId, payload);
+  return { noteIndexes: [...noteIndexes].sort((a, b) => a - b) };
+}
+
+async function getNoteIndexesRequiringImport(
+  userId: string,
+  payload: ImportPayload
+): Promise<Set<number>> {
+  if (payload.importOptions.existingStrategy === 'overwrite') {
+    return new Set(payload.notes.map((_, index) => index));
+  }
+
+  const existingSourceKeys = new Set<string>();
+  const sourceNotes = payload.notes.filter(hasImportSource);
+  for (const chunk of chunkValues(sourceNotes, IMPORT_CHUNK_SIZE)) {
+    const conditions = chunk.map((note) =>
+      and(
+        eq(noteImportSources.provider, note.source.provider),
+        eq(noteImportSources.accountId, note.source.accountId),
+        eq(noteImportSources.externalId, note.source.externalId)
+      )
+    );
+    if (conditions.length === 0) continue;
+    const rows = await db
+      .select({
+        accountId: noteImportSources.accountId,
+        externalId: noteImportSources.externalId,
+        provider: noteImportSources.provider,
+      })
+      .from(noteImportSources)
+      .where(and(eq(noteImportSources.ownerId, userId), or(...conditions)));
+    rows.forEach((row) => existingSourceKeys.add(sourceKey(row)));
+  }
+
+  const legacyNotes = payload.notes.filter((note) => !note.source);
+  const existingLegacyIds = new Set<string>();
+  for (const chunk of chunkValues(legacyNotes, 500)) {
+    if (chunk.length === 0) continue;
+    const rows = await db
+      .select({ id: rotes.id })
+      .from(rotes)
+      .where(
+        and(
+          eq(rotes.authorid, userId),
+          inArray(
+            rotes.id,
+            chunk.map((note) => note.id)
+          )
+        )
+      );
+    rows.forEach((row) => existingLegacyIds.add(row.id));
+  }
+
+  return new Set(
+    payload.notes.flatMap((note, index) => {
+      const exists = note.source
+        ? existingSourceKeys.has(sourceKey(note.source))
+        : existingLegacyIds.has(note.id);
+      return exists ? [] : [index];
+    })
+  );
 }
 
 async function importArticles(userId: string, payload: ImportPayload) {
@@ -442,4 +579,17 @@ function chunkValues<T>(values: T[], size: number): T[][] {
     chunks.push(values.slice(offset, offset + size));
   }
   return chunks;
+}
+
+function collectAttachmentObjectKeys(details: unknown, userId: string): string[] {
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return [];
+  const record = details as Record<string, unknown>;
+  const prefix = `users/${userId}/`;
+  return Array.from(
+    new Set(
+      ['key', 'compressKey', 'posterKey', 'pairedVideoKey']
+        .map((key) => record[key])
+        .filter((value): value is string => typeof value === 'string' && value.startsWith(prefix))
+    )
+  );
 }

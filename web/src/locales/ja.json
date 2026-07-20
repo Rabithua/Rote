@@ -824,9 +824,9 @@
         "notesFound": "ノートが見つかりました",
         "attachmentsFound": "添付ファイルが見つかりました",
         "dialogTitle": "使用手順",
-        "dialogDescription": "以下の JSON 形式に一致するファイルをアップロードしてください。記事、ノート、添付ファイルをまとめてインポートできます。",
+        "dialogDescription": "Rote、Memos、flomo、WeRead を選び、API に接続するか対応するエクスポートをアップロードします。Rote JSON では記事、ノート、添付ファイルをまとめてインポートできます。",
         "dialogExample": "JSONの例",
-        "dialogNote": "システムは先に記事をインポートし、その後ノート ID に基づいてノートを照合します。ID が存在してあなたのものであれば内容を更新し、存在しなければ新規作成します。ネストされた article と attachments のデータも処理されます。",
+        "dialogNote": "変換後にプレビューが表示されます。同じ参照元のノートは再インポート時に既定でスキップされ、「インポート済みノートを上書き」を手動で有効にした場合だけ更新されます。旧形式の Rote JSON は引き続き Note ID で照合されます。",
         "convertToolHint": "他のプラットフォームからデータを移行したい場合は、当社のデータ変換ツールを使用できます：",
         "convertToolLinkName": "Rerote - Rote データ変換ツール",
         "fileParsed": "{{count}} 件のノートを解析しました",
@@ -834,6 +834,7 @@
         "privateNotes": "非公開ノート",
         "tagsFound": "タグ数",
         "previewSamples": "データプレビュー",
+        "previewDialogDescription": "インポートする {{count}} 件のノートをプレビューして選択します",
         "prevPage": "前のページ",
         "nextPage": "次のページ",
         "sampleEmpty": "このファイルにはプレビューできるノートがありません。",
@@ -850,16 +851,172 @@
         "restoreNote": "戻す",
         "invalidFormat": "無効なファイル形式です。有効な JSON ファイルをアップロードしてください。",
         "parseError": "JSON ファイルの解析に失敗しました",
-        "importSuccessTitle": "インポート完了",
-        "importSuccessSummary": "{{count}} 件のノートを処理しました",
-        "importSuccessNotes": "ノート: 合計 {{total}} 件、新規 {{created}} 件、更新 {{updated}} 件、スキップ {{unchanged}} 件",
-        "importSuccessArticles": "記事: 合計 {{total}} 件、新規 {{created}} 件、更新 {{updated}} 件",
-        "importSuccessAttachments": "添付ファイル: 合計 {{total}} 件、新規 {{created}} 件、更新 {{updated}} 件、削除 {{deleted}} 件",
         "importFailed": "インポートに失敗しました",
         "clickToUpload": "クリックしてファイルをアップロード",
         "cancel": "キャンセル",
         "importing": "インポート中...",
-        "confirmImport": "インポートを確認"
+        "confirmImport": "インポートを確認",
+        "importTask": {
+          "stages": {
+            "planning": "インポート可能な内容を確認中",
+            "migrating": "添付ファイルを移行中",
+            "importing": "ノートを書き込み中",
+            "cleaning": "未完了の添付ファイルを削除中",
+            "completed": "インポート完了",
+            "interrupted": "インポート中断"
+          },
+          "stayOnPage": "インポート中はページを更新、閉じる、または移動しないでください。",
+          "attachments": "添付ファイルの移行",
+          "notes": "ノートのインポート",
+          "active": "{{count}} 件を処理中",
+          "failed": "{{count}} 件を破棄",
+          "cancel": "インポートをキャンセル",
+          "leaveTitle": "インポートを停止しますか？",
+          "leaveDescription": "未割り当ての添付ファイルを削除します。完了済みのノートは保持されます。",
+          "continue": "インポートを続ける",
+          "stop": "停止して削除",
+          "completeTitle": "インポート完了",
+          "completeDescription": "データの書き込みが完了しました。失敗した添付ファイルは保存されていません。",
+          "resultNotes": "ノート：新規 {{created}}、更新 {{updated}}、スキップ {{unchanged}}",
+          "resultAttachments": "添付ファイル：成功 {{success}}、破棄 {{failed}}",
+          "resultSkippedNotes": "添付ファイルがすべて失敗したため {{count}} 件のノートをスキップしました",
+          "failureItem": "{{provider}} · {{noteTitle}} · {{attachmentName}}：{{reason}}",
+          "done": "完了",
+          "interrupted": "インポートを中断し、未割り当ての添付ファイルを削除しました",
+          "recovered": "前回中断したインポートの未割り当て添付ファイル {{count}} 件を削除しました",
+          "recoveryFailed": "前回の未完了添付ファイルを削除できませんでした。後でもう一度このページを開いてください。",
+          "errors": {
+            "remote_attachment_busy": "サーバーが混雑しています",
+            "remote_attachment_download_failed": "元の添付ファイルを取得できません",
+            "remote_attachment_forbidden": "このアカウントには添付ファイルを移行する権限がありません",
+            "remote_attachment_invalid": "添付ファイルのデータが無効です",
+            "remote_attachment_storage_unavailable": "オブジェクトストレージを利用できません",
+            "remote_attachment_too_large": "添付ファイルがサイズ上限を超えています",
+            "remote_attachment_unsupported": "対応していない添付ファイル形式です"
+          }
+        },
+        "migration": {
+          "sources": {
+            "rote": "Rote",
+            "memos": "Memos",
+            "flomo": "flomo",
+            "weread": "WeRead"
+          },
+          "platformCardLabel": "{{platform}} を選択",
+          "dialogDescription": "{{platform}} からのデータインポートを設定します",
+          "close": "閉じる",
+          "modes": {
+            "file": "ファイル",
+            "api": "API 接続"
+          },
+          "chooseFile": "エクスポートファイルを選択",
+          "memosBaseUrl": "Memos URL",
+          "accessToken": "アクセストークン",
+          "wereadApiKey": "WeRead API Key",
+          "wereadKeyLink": "WeRead 公式 Skill ページで取得",
+          "memosUser": "Memos ユーザー",
+          "memosUserPlaceholder": "インポートするユーザーを選択",
+          "prepare": "変換してプレビュー",
+          "preparing": "準備中…",
+          "warningTitle": "変換が完了しました。注意事項があります",
+          "limitations": {
+            "rote": {
+              "1": "Rote からエクスポートした JSON のみ対応しています。",
+              "2": "添付ファイルは記録された URL から再移行するため、インポート時にもその URL へアクセスできる必要があります。"
+            },
+            "memos": {
+              "file": {
+                "1": "Memos の JSON やデータベースのエクスポートには通常、ローカル添付ファイル自体が含まれません。",
+                "2": "アクセス可能な URL が記録された添付ファイルだけを移行できます。"
+              },
+              "api": {
+                "1": "Memos のアクセストークンで保護された画像と動画は、Rote サーバーが安全に移行します。",
+                "2": "音声、文書、コメントスレッド、参照、リアクションはまだ移行できません。"
+              }
+            },
+            "flomo": {
+              "1": "flomo の公式エクスポートには添付ファイル本体が含まれないため、画像などは移行できません。",
+              "2": "安定した元ノート ID がないため、編集後の再インポートでは新規ノートとして扱われる場合があります。"
+            },
+            "weread": {
+              "1": "WeRead のエクスポートと現在の API はノート内の元画像を提供しません。",
+              "2": "ハイライトと感想のテキストのみインポートでき、画像だけのノートはスキップされます。"
+            }
+          },
+          "labels": {
+            "memosApi": "Memos API",
+            "wereadApi": "WeRead API"
+          },
+          "states": {
+            "normal": "通常",
+            "archived": "アーカイブ済み"
+          },
+          "progress": {
+            "memosConnecting": "Memos に接続中…",
+            "memosPage": "{{state}}ノートの {{page}} ページを取得中…",
+            "memosFetched": "{{count}} 件のノートを取得しました",
+            "memosComplete": "Memos から {{count}} 件を取得しました",
+            "wereadNotebooks": "WeRead ノートブックを取得中…",
+            "wereadBook": "「{{title}}」のノートを取得中…",
+            "wereadComplete": "WeRead の {{count}} 冊から取得しました"
+          },
+          "warnings": {
+            "memosLocalAttachments": "Rote が対応していない形式、または移行可能な URL がない Memos 添付ファイル {{count}} 件をスキップしました。",
+            "memosComments": "元のスレッド関係を保持できないため、Memos コメント {{count}} 件を独立したノートとしては移行しませんでした。",
+            "memosReferences": "Memos のノート参照 {{count}} 件は移行できませんでした。",
+            "memosReactions": "ユーザーの対応付けができないため、Memos のリアクション {{count}} 件をスキップしました。",
+            "emptyNotes": "添付ファイルのない空ノート {{count}} 件は空のままインポートされます。",
+            "flomoLocalAttachments": "エクスポートから移行できない flomo のローカル添付ファイル {{count}} 件をスキップしました。",
+            "flomoIdentity": "flomo のエクスポートには安定した元 ID がありません。同じエクスポートは重複排除されますが、元ノートを編集すると新しいノートとして扱われる場合があります。",
+            "wereadImages": "WeRead は元画像なしの画像プレースホルダーを {{count}} 件返しました。プレースホルダーを削除し、画像だけのノート {{skipped}} 件をスキップしました。"
+          },
+          "errors": {
+            "prepare": "インポートデータを準備できませんでした",
+            "remoteAttachmentMigration": "リモート添付ファイルを移行できませんでした。添付 URL、ストレージ設定、アップロード権限を確認して再試行してください。",
+            "fileRequired": "先にファイルを選択してください",
+            "invalidRoteFile": "有効な Rote インポートファイルではありません",
+            "noConvertedNotes": "インポート可能なノートがありません",
+            "parseJson": "JSON ファイルを解析できませんでした",
+            "readFile": "ファイルを読み込めませんでした",
+            "unsupportedMemosFile": "Memos は JSON、DB、SQLite に対応しています",
+            "unsupportedFlomoFile": "flomo は HTML と ZIP に対応しています",
+            "noFlomoHtml": "ZIP 内に flomo HTML が見つかりません",
+            "unsupportedWereadFile": "WeRead は JSON と TXT に対応しています",
+            "parseSqlite": "SQLite データベースの解析に失敗しました: {{error}}",
+            "memosCredentialsRequired": "Memos URL とアクセストークンを入力してください",
+            "wereadKeyRequired": "WeRead API Key を入力してください",
+            "invalidData": "データ形式が無効です",
+            "noMemos": "Memos データにノートがありません",
+            "noMemosUsers": "Memos データにユーザーがありません",
+            "noSelectedMemos": "選択したユーザーにインポート可能なノートがありません",
+            "memosMissingFields": "Memos ノート {{index}} に必須項目がありません",
+            "memosConvert": "Memos ノート {{index}} の変換に失敗しました: {{error}}",
+            "memosUnauthorized": "Memos アクセストークンが無効です",
+            "memosForbidden": "この Memos を読み取る権限がありません",
+            "memosNotFound": "Memos API が見つかりません。URL を確認してください",
+            "memosUnreachable": "Rote から Memos に接続できません。インスタンス URL を確認して再試行してください",
+            "requestFailed": "リクエストに失敗しました ({{status}} {{message}})",
+            "invalidApiData": "API が無効なデータを返しました",
+            "invalidFlomo": "有効な flomo エクスポートではありません",
+            "noFlomoMemos": "flomo ノートが見つかりません",
+            "flomoConvert": "flomo ノート {{index}} の変換に失敗しました: {{error}}",
+            "invalidWeread": "有効な WeRead エクスポートではありません",
+            "noWereadNotes": "WeRead ノートが見つかりません",
+            "noWereadExportableNotes": "WeRead にエクスポート可能なハイライトや感想がありません",
+            "noWereadNotebooks": "WeRead ノートブックを取得できませんでした",
+            "wereadNotebookCursor": "WeRead ノートブックのページ情報が無効です",
+            "wereadReviewCursor": "WeRead 感想のページ情報が無効です",
+            "wereadConvert": "「{{title}}」のノート {{index}} の変換に失敗しました: {{error}}",
+            "emptyNote": "ノートの内容が空です",
+            "wereadImageOnly": "WeRead が元画像なしの画像プレースホルダーだけを返したため、インポートできるテキストがありません",
+            "wereadUnauthorized": "WeRead API Key が無効または期限切れです",
+            "wereadTimeout": "WeRead リクエストがタイムアウトしました。後でもう一度お試しください",
+            "wereadApiForbidden": "要求された WeRead API はサポートされていません",
+            "wereadUnreachable": "WeRead に接続できません。後でもう一度お試しください",
+            "wereadUpgrade": "WeRead API の更新が必要です。後でもう一度お試しください",
+            "wereadApiError": "WeRead API エラー ({{code}})"
+          }
+        }
       },
       "serviceWorker": {
         "title": "ServiceWorker 通知",
@@ -1694,6 +1851,7 @@
     },
     "attachments": {
       "imageUnavailable": "画像を表示できません",
+      "sourcePreviewUnavailable": "取得元の制限によりプレビューできません",
       "livePhoto": {
         "badge": "LIVE",
         "open": "Live Photo を開く",

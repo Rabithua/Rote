@@ -11,6 +11,7 @@ interface AttachmentPhotoPreviewProps {
   previewSrc: string;
   src: string;
   width?: number;
+  unavailableLabel?: string;
 }
 
 export function AttachmentPhotoPreview({
@@ -22,6 +23,7 @@ export function AttachmentPhotoPreview({
   previewSrc,
   src,
   width,
+  unavailableLabel,
 }: AttachmentPhotoPreviewProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const unavailable = !previewSrc || !src || failedSrc === src;
@@ -35,6 +37,7 @@ export function AttachmentPhotoPreview({
         src={unavailable ? '' : src}
         alt={alt}
         onUnavailable={() => setFailedSrc(src)}
+        unavailableLabel={unavailableLabel}
       />
     </div>
   );
