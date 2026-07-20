@@ -158,7 +158,7 @@ export default function SubList() {
       {isLoading ? (
         <LoadingPlaceholder className="py-8" size={6} />
       ) : error ? (
-        <div className="py-4 text-center text-gray-500">
+        <div className="text-info py-4 text-center">
           {error.response?.status === 404 || error.response?.status === 401
             ? t('noSubscriptions')
             : t('messages.loadFailed', {
@@ -240,7 +240,7 @@ export default function SubList() {
                 </div>
               ))
             ) : (
-              <div className="py-4 text-center text-gray-500">{t('noSubscriptions')}</div>
+              <div className="text-info py-4 text-center">{t('noSubscriptions')}</div>
             )}
           </div>
         </div>
