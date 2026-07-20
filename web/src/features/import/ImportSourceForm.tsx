@@ -1,9 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileUp, Info, LoaderCircle } from 'lucide-react';
+import { FileUp, LoaderCircle } from 'lucide-react';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -202,12 +201,6 @@ export default function ImportSourceForm({
                 </Tabs>
               )}
 
-              <Alert>
-                <Info />
-                <AlertTitle>{t('limitations.title')}</AlertTitle>
-                <AlertDescription>{t(limitationKey)}</AlertDescription>
-              </Alert>
-
               {mode === 'file' && (
                 <div className="flex flex-col gap-2">
                   <input
@@ -288,6 +281,11 @@ export default function ImportSourceForm({
                   </Button>
                 </div>
               )}
+
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                <span aria-hidden="true">* </span>
+                {t(limitationKey)}
+              </p>
 
               {memosSelection && (
                 <div className="flex flex-col gap-2">

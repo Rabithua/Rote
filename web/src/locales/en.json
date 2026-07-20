@@ -922,7 +922,6 @@
           "preparing": "Preparing…",
           "warningTitle": "Conversion completed with notes",
           "limitations": {
-            "title": "Import limitations",
             "rote": "Only Rote-exported JSON is supported. Attachments are migrated again from their exported URLs, which must still be reachable during import.",
             "memos": {
               "file": "Memos JSON and database exports usually do not contain local attachment files. Only attachments with reachable URLs in the export can be migrated.",

@@ -24,7 +24,6 @@ describe('ImportSourceForm', () => {
     expect(screen.getByRole('heading', { name: 'sources.weread' })).toBeInTheDocument();
     expect(screen.getByText('modes.file')).toBeInTheDocument();
     expect(screen.getByText('modes.api')).toBeInTheDocument();
-    expect(screen.getByText('limitations.title')).toBeInTheDocument();
     expect(screen.getByText('limitations.weread')).toBeInTheDocument();
 
     fireEvent.mouseDown(screen.getByRole('tab', { name: 'modes.api' }), {
