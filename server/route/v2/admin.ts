@@ -24,6 +24,7 @@ import {
   validateNotificationConfig,
 } from '../../utils/adminHooks';
 import { ConfigTester } from '../../utils/configTester';
+import { resolveCustomHeadScriptsUpdate } from '../../utils/customHeadScripts';
 import { createResponse, getApiUrl } from '../../utils/main';
 import {
   getStorageFriendlyError,
@@ -139,6 +140,27 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
     const user = c.get('user') as any;
     if (group === 'system' && user?.role !== 'super_admin') {
       return c.json(createResponse(null, 'Only super admin can modify system configuration'), 403);
+    }
+
+    if (group === 'site') {
+      try {
+        const existingSiteConfig = (await getConfig('site')) as Record<string, any> | null;
+        const incomingScripts = resolveCustomHeadScriptsUpdate(
+          existingSiteConfig?.customHeadScripts,
+          config.customHeadScripts,
+          user?.role === 'super_admin'
+        );
+
+        config = { ...config };
+        if (incomingScripts === undefined) delete config.customHeadScripts;
+        else config.customHeadScripts = incomingScripts;
+      } catch (error: any) {
+        const message = error instanceof Error ? error.message : String(error ?? '');
+        return c.json(
+          createResponse(null, message),
+          message === 'Only super admin can modify custom head scripts' ? 403 : 400
+        );
+      }
     }
 
     // 如果是存储配置，需要先验证配置是否可用

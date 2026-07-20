@@ -8,6 +8,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import { SWRConfig } from 'swr';
 import { ThemeProvider } from './components/theme-provider';
+import CustomHeadScripts from './components/CustomHeadScripts';
 import GlobalRouterProvider from './route/main';
 
 const AppHelmet = () => {
@@ -28,7 +29,6 @@ const AppHelmet = () => {
 const AppWrapper = () => (
   <React.StrictMode>
     <HelmetProvider>
-      <AppHelmet />
       <SWRConfig
         value={{
           onErrorRetry: (error, key, _config, _revalidate, { retryCount }) => {
@@ -39,6 +39,8 @@ const AppWrapper = () => (
           },
         }}
       >
+        <AppHelmet />
+        <CustomHeadScripts />
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
           <AuthBootstrap />
           <GlobalRouterProvider />
