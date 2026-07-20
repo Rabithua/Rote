@@ -179,7 +179,7 @@ export default function ImportSourceForm({
                     alt=""
                     width={28}
                     height={28}
-                    className="border-border/70 size-7 shrink-0 border"
+                    className="aspect-square size-7 shrink-0 rounded-md object-cover drop-shadow-sm"
                     aria-hidden="true"
                   />
                   <span className="truncate">{platformName}</span>
