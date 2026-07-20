@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { requestWereadGateway, WereadGatewayError } from '../../integrations/wereadGateway';
+import { MemosGatewayError, requestMemosPage } from '../../integrations/memosGateway';
 import { attachmentSchema } from '../../imports/importSchema';
 import {
   migrateOneRemoteAttachment,
@@ -11,6 +12,24 @@ import type { User } from '../../drizzle/schema';
 import { createResponse } from '../../utils/main';
 
 const importsRouter = new Hono<{ Variables: HonoVariables }>();
+
+importsRouter.post('/memos', authenticateJWT, async (c: HonoContext) => {
+  try {
+    const data = await requestMemosPage({
+      accessToken: c.req.header('x-memos-access-token')?.trim(),
+      body: await c.req.json().catch(() => null),
+    });
+    return c.json(createResponse(data), 200);
+  } catch (error) {
+    if (error instanceof MemosGatewayError) {
+      return c.json(
+        createResponse(null, error.code, 1),
+        error.status as 400 | 401 | 403 | 502 | 504
+      );
+    }
+    throw error;
+  }
+});
 
 importsRouter.post('/attachments/migrate', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;

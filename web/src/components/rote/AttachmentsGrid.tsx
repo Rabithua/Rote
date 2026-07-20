@@ -9,6 +9,7 @@ import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from './LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from './VideoAttachmentPreview';
 import 'react-photo-view/dist/react-photo-view.css';
+import { useTranslation } from 'react-i18next';
 
 interface AttachmentsGridProps {
   attachments: Attachment[];
@@ -20,6 +21,7 @@ interface AttachmentsGridProps {
  * 支持1-9张图片的自适应布局
  */
 export default function AttachmentsGrid({ attachments, withTimeStamp }: AttachmentsGridProps) {
+  const { t } = useTranslation('translation', { keyPrefix: 'components.attachments' });
   const sortedAttachments = [...attachments].sort((a, b) => (a.sortIndex > b.sortIndex ? 1 : -1));
   const hasVideo = sortedAttachments.some(
     (attachment) => getAttachmentMediaKind(attachment) === 'video'
@@ -76,6 +78,12 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
                   imageClassName={renderedImageClassName}
                   previewSrc={previewSrc}
                   src={thumbSrc}
+                  unavailableLabel={
+                    (file.details as Record<string, unknown> | undefined)
+                      ?.previewRequiresAuthorization
+                      ? t('sourcePreviewUnavailable')
+                      : undefined
+                  }
                 />
               );
             })}

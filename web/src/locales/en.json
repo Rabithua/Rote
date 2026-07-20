@@ -993,6 +993,7 @@
             "memosUnauthorized": "The Memos access token is invalid",
             "memosForbidden": "You do not have permission to read this Memos instance",
             "memosNotFound": "The Memos API was not found. Check the instance URL",
+            "memosUnreachable": "Rote could not reach the Memos instance. Check its URL and try again",
             "requestFailed": "Request failed ({{status}} {{message}})",
             "invalidApiData": "The API returned invalid data",
             "invalidFlomo": "This is not valid flomo export data",
@@ -1849,6 +1850,7 @@
     },
     "attachments": {
       "imageUnavailable": "Image unavailable",
+      "sourcePreviewUnavailable": "Source access prevents preview",
       "livePhoto": {
         "badge": "LIVE",
         "open": "Open Live Photo",

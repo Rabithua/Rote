@@ -1,5 +1,8 @@
 import type { Memo, MemoSourceData } from './types';
 import { importMessage } from '../messages';
+import { post } from '@/utils/api';
+
+type ApiResponse<T> = { code: number; message: string; data: T };
 
 export interface MemosApiConfig {
   baseUrl: string;
@@ -84,13 +87,6 @@ async function fetchMemosByState({
   do {
     pageCount++;
 
-    const url = new URL(`${normalizedUrl}/api/v1/memos`);
-    url.searchParams.set('pageSize', String(pageSize));
-    url.searchParams.set('state', state);
-    if (pageToken) {
-      url.searchParams.set('pageToken', pageToken);
-    }
-
     onProgress?.({
       current: memoMap.size,
       total: null,
@@ -100,33 +96,21 @@ async function fetchMemosByState({
       }),
     });
 
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error(importMessage('errors.memosUnauthorized'));
-      }
-      if (response.status === 403) {
-        throw new Error(importMessage('errors.memosForbidden'));
-      }
-      if (response.status === 404) {
-        throw new Error(importMessage('errors.memosNotFound'));
-      }
-      throw new Error(
-        importMessage('errors.requestFailed', {
-          status: response.status,
-          message: response.statusText,
-        })
+    let data: MemoSourceData;
+    try {
+      const response = await post<ApiResponse<MemoSourceData>>(
+        '/imports/memos',
+        { baseUrl: normalizedUrl, state, pageToken, pageSize },
+        { headers: { 'x-memos-access-token': token } }
       );
+      data = response.data;
+    } catch (error) {
+      const code = (error as { response?: { data?: { message?: string } } }).response?.data
+        ?.message;
+      if (code === 'memos_unauthorized') throw new Error(importMessage('errors.memosUnauthorized'));
+      if (code === 'memos_forbidden') throw new Error(importMessage('errors.memosForbidden'));
+      throw new Error(importMessage('errors.memosUnreachable'));
     }
-
-    const data = (await response.json()) as MemoSourceData;
 
     if (!Array.isArray(data.memos)) {
       throw new Error(importMessage('errors.invalidApiData'));
@@ -151,19 +135,9 @@ async function fetchMemosByState({
  * 验证 Memos API 配置是否有效
  */
 export async function validateMemosApiConfig(config: MemosApiConfig): Promise<boolean> {
-  const { baseUrl, token } = config;
-  const normalizedUrl = baseUrl.replace(/\/+$/, '');
-
   try {
-    const response = await fetch(`${normalizedUrl}/api/v1/memos?pageSize=1`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    return response.ok;
+    await fetchMemosFromApi(config);
+    return true;
   } catch {
     return false;
   }

@@ -997,6 +997,7 @@
             "memosUnauthorized": "Memos アクセストークンが無効です",
             "memosForbidden": "この Memos を読み取る権限がありません",
             "memosNotFound": "Memos API が見つかりません。URL を確認してください",
+            "memosUnreachable": "Rote から Memos に接続できません。インスタンス URL を確認して再試行してください",
             "requestFailed": "リクエストに失敗しました ({{status}} {{message}})",
             "invalidApiData": "API が無効なデータを返しました",
             "invalidFlomo": "有効な flomo エクスポートではありません",
@@ -1853,6 +1854,7 @@
     },
     "attachments": {
       "imageUnavailable": "画像を表示できません",
+      "sourcePreviewUnavailable": "取得元の制限によりプレビューできません",
       "livePhoto": {
         "badge": "LIVE",
         "open": "Live Photo を開く",

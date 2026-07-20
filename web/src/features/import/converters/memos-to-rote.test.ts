@@ -60,6 +60,32 @@ describe('Memos converter', () => {
     expect(first.data?.notes[0].id).not.toBe(second.data?.notes[0].id);
   });
 
+  it('keeps protected API images for an explicit preview placeholder', () => {
+    const result = convertMemosToRote({
+      memos: [
+        {
+          ...baseMemo,
+          attachments: [
+            {
+              name: 'attachments/image-id',
+              filename: 'photo one.png',
+              type: 'image/png',
+              size: '123',
+              externalLink: '',
+            },
+          ],
+        },
+      ],
+      nextPageToken: '',
+      sourceAccount: 'https://memos.example.com',
+    });
+
+    expect(result.data?.notes[0].attachments[0]).toMatchObject({
+      url: 'https://memos.example.com/file/attachments/image-id/photo%20one.png',
+      details: { previewRequiresAuthorization: true },
+    });
+  });
+
   it('filters SQLite notes by the selected user', () => {
     const data: SQLiteSourceData = {
       users: [createUser(1, 'alice'), createUser(2, 'bob')],

@@ -346,7 +346,11 @@ function convertSingleMemo(
     externalKey: memo.name,
     sourceUpdatedAt: memo.updateTime,
   });
-  const { attachments, skippedCount } = convertAttachments(memo.attachments, noteSource);
+  const { attachments, skippedCount } = convertAttachments(
+    memo.attachments,
+    noteSource,
+    sourceAccount
+  );
 
   const note: RoteNote = {
     id: uuidv4(),
@@ -399,26 +403,20 @@ interface ConvertAttachmentsResult {
   skippedCount: number;
 }
 
-function isLocalStorageAttachment(att: any): boolean {
-  // 本地存储的附件通常是以 / 开头的相对路径，或者没有 http/https 协议
-  const url = att.externalLink || att.url || '';
-  if (!url) return true;
-  return !url.startsWith('http://') && !url.startsWith('https://');
-}
-
 function convertAttachments(
   attachments: Array<any>,
-  noteSource: RoteNote['source']
+  noteSource: RoteNote['source'],
+  sourceAccount?: string
 ): ConvertAttachmentsResult {
-  // 确保 attachments 是数组
   const safeAttachments = Array.isArray(attachments) ? attachments : [];
-
-  // 过滤掉本地存储的附件
-  const localAttachments = safeAttachments.filter(isLocalStorageAttachment);
-  const remoteAttachments = safeAttachments.filter((att) => !isLocalStorageAttachment(att));
-
-  const converted = remoteAttachments.map((att, index) => {
-    const url = att.externalLink || att.url || '';
+  const supportedAttachments = safeAttachments.filter((attachment) =>
+    /^(image|video)\//iu.test(String(attachment.type || attachment.mimetype || ''))
+  );
+  const converted = supportedAttachments.flatMap((att, index) => {
+    const externalUrl = remoteUrl(att.externalLink || att.url);
+    const protectedUrl = externalUrl ? undefined : memosFileUrl(sourceAccount, att);
+    const url = externalUrl ?? protectedUrl;
+    if (!url) return [];
     return {
       id: uuidv4(),
       url,
@@ -432,6 +430,7 @@ function convertAttachments(
         mtime: new Date().toISOString(),
         mimetype: att.type || att.mimetype || 'application/octet-stream',
         compressKey: '',
+        previewRequiresAuthorization: Boolean(protectedUrl),
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -442,6 +441,24 @@ function convertAttachments(
 
   return {
     attachments: converted,
-    skippedCount: localAttachments.length,
+    skippedCount: safeAttachments.length - converted.length,
   };
+}
+
+function remoteUrl(value: unknown) {
+  return typeof value === 'string' && /^https?:\/\//iu.test(value) ? value : undefined;
+}
+
+function memosFileUrl(sourceAccount: string | undefined, attachment: any) {
+  if (
+    !sourceAccount ||
+    typeof attachment.name !== 'string' ||
+    !/^attachments\/[A-Za-z0-9_-]+$/u.test(attachment.name) ||
+    typeof attachment.filename !== 'string' ||
+    !attachment.filename
+  ) {
+    return undefined;
+  }
+  const attachmentPath = attachment.name.split('/').map(encodeURIComponent).join('/');
+  return `${sourceAccount.replace(/\/+$/u, '')}/file/${attachmentPath}/${encodeURIComponent(attachment.filename)}`;
 }

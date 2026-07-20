@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 type AttachmentImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
   onUnavailable?: () => void;
   src?: null | string;
+  unavailableLabel?: string;
 };
 
 export function AttachmentImage({
@@ -14,6 +15,7 @@ export function AttachmentImage({
   onUnavailable,
   src,
   style,
+  unavailableLabel,
   ...props
 }: AttachmentImageProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.attachments' });
@@ -26,13 +28,14 @@ export function AttachmentImage({
         className={cn(
           'bg-foreground/5 text-muted-foreground min-h-20',
           className,
-          'flex items-center justify-center'
+          'flex flex-col items-center justify-center gap-1.5 p-3 text-center'
         )}
         role="img"
-        aria-label={t('imageUnavailable')}
+        aria-label={unavailableLabel ?? t('imageUnavailable')}
         style={style}
       >
         <ImageOff className="size-6" aria-hidden="true" />
+        {unavailableLabel && <span className="text-xs leading-relaxed">{unavailableLabel}</span>}
       </div>
     );
   }

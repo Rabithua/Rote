@@ -983,6 +983,7 @@
             "memosUnauthorized": "Memos 访问令牌无效",
             "memosForbidden": "没有权限读取 Memos 数据",
             "memosNotFound": "找不到 Memos API，请检查实例地址",
+            "memosUnreachable": "暂时无法通过 Rote 后端连接 Memos，请检查实例地址后重试",
             "requestFailed": "请求失败（{{status}} {{message}}）",
             "invalidApiData": "API 返回了无效数据",
             "invalidFlomo": "这不是有效的 flomo 导出数据",
@@ -1839,6 +1840,7 @@
     },
     "attachments": {
       "imageUnavailable": "图片暂不可用",
+      "sourcePreviewUnavailable": "来源限制，无法预览",
       "livePhoto": {
         "badge": "LIVE",
         "open": "打开 Live Photo",
