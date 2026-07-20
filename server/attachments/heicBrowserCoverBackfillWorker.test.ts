@@ -1,25 +1,25 @@
 import { describe, expect, it } from 'bun:test';
 import type { DatabaseAdvisoryLockResult } from '../utils/drizzle';
 import type {
-  LivePhotoCoverBackfillOptions,
-  LivePhotoCoverBackfillResult,
-} from './livePhotoCoverBackfill';
+  HeicBrowserCoverBackfillOptions,
+  HeicBrowserCoverBackfillResult,
+} from './heicBrowserCoverBackfill';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
-const { LIVE_PHOTO_BACKFILL_BATCH_SIZE, runAutomaticLivePhotoCoverBackfill } =
-  await import('./livePhotoCoverBackfillWorker');
-const { isOwnedLivePhotoOriginalKey } = await import('./livePhotoCoverBackfill');
+const { HEIC_COVER_BACKFILL_BATCH_SIZE, runAutomaticHeicBrowserCoverBackfill } =
+  await import('./heicBrowserCoverBackfillWorker');
+const { isOwnedAttachmentOriginalKey } = await import('./heicBrowserCoverBackfill');
 
-describe('automatic Live Photo cover backfill', () => {
+describe('automatic HEIC browser cover backfill', () => {
   it('only accepts original keys owned by the attachment user', () => {
     expect(
-      isOwnedLivePhotoOriginalKey(
+      isOwnedAttachmentOriginalKey(
         'user-1',
         'users/user-1/uploads/11111111-1111-4111-8111-111111111111.heic'
       )
     ).toBe(true);
     expect(
-      isOwnedLivePhotoOriginalKey(
+      isOwnedAttachmentOriginalKey(
         'user-1',
         'users/user-2/uploads/11111111-1111-4111-8111-111111111111.heic'
       )
@@ -27,12 +27,12 @@ describe('automatic Live Photo cover backfill', () => {
   });
 
   it('processes candidates in cursor batches while holding one advisory lock', async () => {
-    const calls: LivePhotoCoverBackfillOptions[] = [];
-    const results: LivePhotoCoverBackfillResult[] = [
+    const calls: HeicBrowserCoverBackfillOptions[] = [];
+    const results: HeicBrowserCoverBackfillResult[] = [
       {
         failed: 2,
         lastAttachmentId: 'attachment-020',
-        scanned: LIVE_PHOTO_BACKFILL_BATCH_SIZE,
+        scanned: HEIC_COVER_BACKFILL_BATCH_SIZE,
         skipped: 0,
         updated: 18,
       },
@@ -49,7 +49,7 @@ describe('automatic Live Photo cover backfill', () => {
       task: () => Promise<T>
     ): Promise<DatabaseAdvisoryLockResult<T>> => ({ acquired: true, result: await task() });
 
-    const result = await runAutomaticLivePhotoCoverBackfill({
+    const result = await runAutomaticHeicBrowserCoverBackfill({
       backfill: async (options) => {
         calls.push(options);
         const next = results.shift();
@@ -60,8 +60,8 @@ describe('automatic Live Photo cover backfill', () => {
     });
 
     expect(calls).toEqual([
-      { afterAttachmentId: undefined, limit: LIVE_PHOTO_BACKFILL_BATCH_SIZE },
-      { afterAttachmentId: 'attachment-020', limit: LIVE_PHOTO_BACKFILL_BATCH_SIZE },
+      { afterAttachmentId: undefined, limit: HEIC_COVER_BACKFILL_BATCH_SIZE },
+      { afterAttachmentId: 'attachment-020', limit: HEIC_COVER_BACKFILL_BATCH_SIZE },
     ]);
     expect(result).toEqual({
       acquiredLock: true,
@@ -78,7 +78,7 @@ describe('automatic Live Photo cover backfill', () => {
       acquired: false,
     });
 
-    const result = await runAutomaticLivePhotoCoverBackfill({
+    const result = await runAutomaticHeicBrowserCoverBackfill({
       backfill: async () => {
         called = true;
         throw new Error('backfill should not run');

@@ -85,7 +85,7 @@ describe('attachment upload flow', () => {
   it('finalizes HEIC and MOV with a browser-compatible cover URL', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
     const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
-    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.jpg`;
+    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.v2.jpg`;
     let persisted: UploadResult[] = [];
 
     const result = await finalizeAttachmentUploads(
@@ -107,7 +107,7 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async (key) => key === originalKey || key === pairedVideoKey,
-        ensureLivePhotoCover: async () => ({
+        ensureHeicBrowserCover: async () => ({
           contentType: 'image/jpeg',
           key: coverKey,
           size: 512,
@@ -129,6 +129,48 @@ describe('attachment upload flow', () => {
     expect(persisted[0].details.pairedVideoKey).toBe(pairedVideoKey);
     expect(persisted[0].details.pairedVideoUrl).toBe(`${URL_PREFIX}/${pairedVideoKey}`);
     expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+  });
+
+  it('generates a browser-compatible cover when a standalone HEIC has no compressed upload', async () => {
+    const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
+    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.v2.jpg`;
+    let coverCalls = 0;
+
+    const result = await finalizeAttachmentUploads(
+      {
+        attachments: [
+          {
+            mimetype: 'image/heic',
+            mediaKind: 'image',
+            originalKey,
+            size: 1024,
+            uuid: LIVE_UUID,
+          },
+        ],
+        scopes: [],
+        userId: USER_ID,
+      },
+      {
+        checkObjectExists: async (key) => key === originalKey,
+        ensureHeicBrowserCover: async () => {
+          coverCalls++;
+          return {
+            contentType: 'image/jpeg',
+            key: coverKey,
+            size: 512,
+            status: 'generated',
+          };
+        },
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        requireStorageAvailable: () => storageConfig,
+        upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
+      }
+    );
+
+    expect(coverCalls).toBe(1);
+    expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
+    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+    expect(result[0].details.compressKey).toBe(coverKey);
   });
 
   it('reuses a browser-compatible JPEG Live Photo still without HEIC decoding', async () => {
@@ -155,7 +197,7 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async () => true,
-        ensureLivePhotoCover: async () => {
+        ensureHeicBrowserCover: async () => {
           coverCalls++;
           throw new Error('JPEG still must not be sent to the HEIC decoder');
         },
@@ -172,7 +214,7 @@ describe('attachment upload flow', () => {
     expect(result[0].details.pairedVideoKey).toBe(pairedVideoKey);
   });
 
-  it('validates note attachment limits before generating a Live Photo cover', async () => {
+  it('validates note attachment limits before generating a HEIC browser cover', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
     const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
     let coverCalls = 0;
@@ -198,7 +240,7 @@ describe('attachment upload flow', () => {
         },
         {
           checkObjectExists: async () => true,
-          ensureLivePhotoCover: async () => {
+          ensureHeicBrowserCover: async () => {
             coverCalls++;
             throw new Error('cover generation should not run');
           },

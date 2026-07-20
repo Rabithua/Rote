@@ -1,42 +1,44 @@
 import { withDatabaseAdvisoryLock } from '../utils/drizzle';
 import {
-  backfillLivePhotoCovers,
-  type LivePhotoCoverBackfillOptions,
-  type LivePhotoCoverBackfillResult,
-} from './livePhotoCoverBackfill';
+  backfillHeicBrowserCovers,
+  type HeicBrowserCoverBackfillOptions,
+  type HeicBrowserCoverBackfillResult,
+} from './heicBrowserCoverBackfill';
 
-const LIVE_PHOTO_BACKFILL_LOCK = 'rote:live-photo-cover-backfill:v1';
-export const LIVE_PHOTO_BACKFILL_BATCH_SIZE = 20;
+// Keep this identifier stable across the module rename so old and new server
+// versions remain mutually exclusive during rolling deployments.
+const HEIC_COVER_BACKFILL_LOCK = 'rote:live-photo-cover-backfill:v1';
+export const HEIC_COVER_BACKFILL_BATCH_SIZE = 20;
 
 type BackfillRunner = (
-  _options: LivePhotoCoverBackfillOptions
-) => Promise<LivePhotoCoverBackfillResult>;
+  _options: HeicBrowserCoverBackfillOptions
+) => Promise<HeicBrowserCoverBackfillResult>;
 
 type AdvisoryLockRunner = typeof withDatabaseAdvisoryLock;
 
-export type AutomaticLivePhotoBackfillResult = Omit<
-  LivePhotoCoverBackfillResult,
+export type AutomaticHeicCoverBackfillResult = Omit<
+  HeicBrowserCoverBackfillResult,
   'lastAttachmentId'
 > & {
   acquiredLock: boolean;
 };
 
-export async function runAutomaticLivePhotoCoverBackfill(
+export async function runAutomaticHeicBrowserCoverBackfill(
   dependencyOverrides: {
     backfill?: BackfillRunner;
     withLock?: AdvisoryLockRunner;
   } = {}
-): Promise<AutomaticLivePhotoBackfillResult> {
-  const runBackfill = dependencyOverrides.backfill ?? backfillLivePhotoCovers;
+): Promise<AutomaticHeicCoverBackfillResult> {
+  const runBackfill = dependencyOverrides.backfill ?? backfillHeicBrowserCovers;
   const withLock = dependencyOverrides.withLock ?? withDatabaseAdvisoryLock;
-  const locked = await withLock(LIVE_PHOTO_BACKFILL_LOCK, async () => {
+  const locked = await withLock(HEIC_COVER_BACKFILL_LOCK, async () => {
     let afterAttachmentId: string | undefined;
     const aggregate = { failed: 0, scanned: 0, skipped: 0, updated: 0 };
 
     while (true) {
       const batch = await runBackfill({
         afterAttachmentId,
-        limit: LIVE_PHOTO_BACKFILL_BATCH_SIZE,
+        limit: HEIC_COVER_BACKFILL_BATCH_SIZE,
       });
       aggregate.failed += batch.failed;
       aggregate.scanned += batch.scanned;
@@ -44,7 +46,7 @@ export async function runAutomaticLivePhotoCoverBackfill(
       aggregate.updated += batch.updated;
 
       if (
-        batch.scanned < LIVE_PHOTO_BACKFILL_BATCH_SIZE ||
+        batch.scanned < HEIC_COVER_BACKFILL_BATCH_SIZE ||
         !batch.lastAttachmentId ||
         batch.lastAttachmentId === afterAttachmentId
       ) {
@@ -58,13 +60,13 @@ export async function runAutomaticLivePhotoCoverBackfill(
 
   if (!locked.acquired) {
     // eslint-disable-next-line no-console
-    console.info('[live-photo-backfill] status=skipped reason=lock-held-by-another-instance');
+    console.info('[heic-cover-backfill] status=skipped reason=lock-held-by-another-instance');
     return { acquiredLock: false, failed: 0, scanned: 0, skipped: 0, updated: 0 };
   }
 
   // eslint-disable-next-line no-console
   console.info(
-    `[live-photo-backfill] status=automatic-completed scanned=${locked.result.scanned} updated=${locked.result.updated} skipped=${locked.result.skipped} failed=${locked.result.failed}`
+    `[heic-cover-backfill] status=automatic-completed scanned=${locked.result.scanned} updated=${locked.result.updated} skipped=${locked.result.skipped} failed=${locked.result.failed}`
   );
   return { acquiredLock: true, ...locked.result };
 }

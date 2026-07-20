@@ -1,9 +1,9 @@
 import { parentPort } from 'node:worker_threads';
-import { encodeHeicToJpegInProcess } from './livePhotoCoverCodec';
+import { encodeHeicToJpegInProcess } from './heicBrowserCoverCodec';
 
 const workerPort = parentPort;
 if (!workerPort) {
-  throw new Error('Live Photo cover worker requires a parent port');
+  throw new Error('HEIC browser cover worker requires a parent port');
 }
 
 workerPort.once('message', async (input: Uint8Array) => {

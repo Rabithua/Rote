@@ -1,10 +1,10 @@
 import { and, asc, eq, gt, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { attachments } from '../drizzle/schema';
 import db from '../utils/drizzle';
-import { ensureLivePhotoCover } from './livePhotoCover';
+import { ensureHeicBrowserCover } from './heicBrowserCover';
 import { requireStorageAvailable } from './types';
 
-export type LivePhotoCoverBackfillOptions = {
+export type HeicBrowserCoverBackfillOptions = {
   afterAttachmentId?: string;
   attachmentId?: string;
   dryRun?: boolean;
@@ -12,7 +12,7 @@ export type LivePhotoCoverBackfillOptions = {
   noteId?: string;
 };
 
-export type LivePhotoCoverBackfillResult = {
+export type HeicBrowserCoverBackfillResult = {
   failed: number;
   lastAttachmentId: string | null;
   scanned: number;
@@ -20,15 +20,19 @@ export type LivePhotoCoverBackfillResult = {
   updated: number;
 };
 
-export function isOwnedLivePhotoOriginalKey(userId: string, originalKey: string): boolean {
+export function isOwnedAttachmentOriginalKey(userId: string, originalKey: string): boolean {
   return originalKey.startsWith(`users/${userId}/uploads/`);
 }
 
-function getCandidateFilters(options: LivePhotoCoverBackfillOptions): SQL[] {
+function getCandidateFilters(options: HeicBrowserCoverBackfillOptions): SQL[] {
   const filters: SQL[] = [
-    sql`${attachments.details}->>'mediaKind' = 'livePhoto'`,
+    sql`${attachments.details}->>'mediaKind' IN ('image', 'livePhoto')`,
     sql`${attachments.url} ~* ${'\\.(heic|heif)(\\?.*)?$'}`,
-    or(isNull(attachments.compressUrl), eq(attachments.compressUrl, ''))!,
+    or(
+      isNull(attachments.compressUrl),
+      eq(attachments.compressUrl, ''),
+      sql`(${attachments.compressUrl} ~* ${'/compressed/[^/?]+\\.jpg(\\?.*)?$'} AND ${attachments.compressUrl} !~* ${'\\.v2\\.jpg(\\?.*)?$'})`
+    )!,
     or(isNull(attachments.posterUrl), eq(attachments.posterUrl, ''))!,
   ];
   if (options.afterAttachmentId) filters.push(gt(attachments.id, options.afterAttachmentId));
@@ -37,9 +41,9 @@ function getCandidateFilters(options: LivePhotoCoverBackfillOptions): SQL[] {
   return filters;
 }
 
-export async function backfillLivePhotoCovers(
-  options: LivePhotoCoverBackfillOptions = {}
-): Promise<LivePhotoCoverBackfillResult> {
+export async function backfillHeicBrowserCovers(
+  options: HeicBrowserCoverBackfillOptions = {}
+): Promise<HeicBrowserCoverBackfillResult> {
   const storageConfig = requireStorageAvailable();
   const urlPrefix = storageConfig.urlPrefix.replace(/\/+$/, '');
   const query = db
@@ -56,7 +60,7 @@ export async function backfillLivePhotoCovers(
 
   // eslint-disable-next-line no-console
   console.info(
-    `[live-photo-backfill] status=started candidates=${candidates.length} dryRun=${Boolean(options.dryRun)} attachmentId=${options.attachmentId ?? 'all'} noteId=${options.noteId ?? 'all'} afterAttachmentId=${options.afterAttachmentId ?? 'start'} limit=${options.limit ?? 'all'}`
+    `[heic-cover-backfill] status=started candidates=${candidates.length} dryRun=${Boolean(options.dryRun)} attachmentId=${options.attachmentId ?? 'all'} noteId=${options.noteId ?? 'all'} afterAttachmentId=${options.afterAttachmentId ?? 'start'} limit=${options.limit ?? 'all'}`
   );
 
   let failed = 0;
@@ -69,15 +73,15 @@ export async function backfillLivePhotoCovers(
       failed++;
       // eslint-disable-next-line no-console
       console.error(
-        `[live-photo-backfill] status=failed attachmentId=${candidate.id} originalKey=missing reason=details.key-is-empty`
+        `[heic-cover-backfill] status=failed attachmentId=${candidate.id} originalKey=missing reason=details.key-is-empty`
       );
       continue;
     }
-    if (!candidate.userId || !isOwnedLivePhotoOriginalKey(candidate.userId, originalKey)) {
+    if (!candidate.userId || !isOwnedAttachmentOriginalKey(candidate.userId, originalKey)) {
       skipped++;
       // eslint-disable-next-line no-console
       console.error(
-        `[live-photo-backfill] status=skipped attachmentId=${candidate.id} originalKey=${originalKey} reason=ownership-mismatch`
+        `[heic-cover-backfill] status=skipped attachmentId=${candidate.id} originalKey=${originalKey} reason=ownership-mismatch`
       );
       continue;
     }
@@ -86,13 +90,13 @@ export async function backfillLivePhotoCovers(
       skipped++;
       // eslint-disable-next-line no-console
       console.info(
-        `[live-photo-backfill] status=dry-run attachmentId=${candidate.id} originalKey=${originalKey} writeback=skipped`
+        `[heic-cover-backfill] status=dry-run attachmentId=${candidate.id} originalKey=${originalKey} writeback=skipped`
       );
       continue;
     }
 
     try {
-      const cover = await ensureLivePhotoCover(originalKey);
+      const cover = await ensureHeicBrowserCover(originalKey);
       const compressUrl = `${urlPrefix}/${cover.key}`;
       const writeback = await db
         .update(attachments)
@@ -114,7 +118,7 @@ export async function backfillLivePhotoCovers(
         skipped++;
         // eslint-disable-next-line no-console
         console.info(
-          `[live-photo-backfill] status=skipped attachmentId=${candidate.id} originalKey=${originalKey} format=jpeg outputKey=${cover.key} outputBytes=${cover.size} writeback=already-updated`
+          `[heic-cover-backfill] status=skipped attachmentId=${candidate.id} originalKey=${originalKey} format=jpeg outputKey=${cover.key} outputBytes=${cover.size} writeback=already-updated`
         );
         continue;
       }
@@ -122,14 +126,14 @@ export async function backfillLivePhotoCovers(
       updated++;
       // eslint-disable-next-line no-console
       console.info(
-        `[live-photo-backfill] status=updated attachmentId=${candidate.id} originalKey=${originalKey} format=jpeg outputKey=${cover.key} outputBytes=${cover.size} writeback=success`
+        `[heic-cover-backfill] status=updated attachmentId=${candidate.id} originalKey=${originalKey} format=jpeg outputKey=${cover.key} outputBytes=${cover.size} writeback=success`
       );
     } catch (error) {
       failed++;
       const reason = error instanceof Error ? error.message : String(error);
       // eslint-disable-next-line no-console
       console.error(
-        `[live-photo-backfill] status=failed attachmentId=${candidate.id} originalKey=${originalKey} reason=${reason}`
+        `[heic-cover-backfill] status=failed attachmentId=${candidate.id} originalKey=${originalKey} reason=${reason}`
       );
     }
   }
@@ -143,7 +147,7 @@ export async function backfillLivePhotoCovers(
   };
   // eslint-disable-next-line no-console
   console.info(
-    `[live-photo-backfill] status=completed scanned=${result.scanned} updated=${updated} skipped=${skipped} failed=${failed} lastAttachmentId=${result.lastAttachmentId ?? 'none'}`
+    `[heic-cover-backfill] status=completed scanned=${result.scanned} updated=${updated} skipped=${skipped} failed=${failed} lastAttachmentId=${result.lastAttachmentId ?? 'none'}`
   );
   return result;
 }

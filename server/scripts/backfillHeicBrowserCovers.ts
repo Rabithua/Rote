@@ -1,4 +1,4 @@
-import { backfillLivePhotoCovers } from '../attachments/livePhotoCoverBackfill';
+import { backfillHeicBrowserCovers } from '../attachments/heicBrowserCoverBackfill';
 import { initializeConfig } from '../utils/config';
 import { closeDatabase } from '../utils/drizzle';
 
@@ -10,7 +10,7 @@ function getOption(name: string): string | undefined {
 if (require.main === module) {
   initializeConfig()
     .then(() =>
-      backfillLivePhotoCovers({
+      backfillHeicBrowserCovers({
         attachmentId: getOption('--attachment-id'),
         dryRun: process.argv.includes('--dry-run'),
         noteId: getOption('--note-id'),
@@ -20,7 +20,7 @@ if (require.main === module) {
       await closeDatabase();
     })
     .catch(async (error) => {
-      console.error('[live-photo-backfill] status=fatal', error);
+      console.error('[heic-cover-backfill] status=fatal', error);
       await closeDatabase();
       process.exitCode = 1;
     });
