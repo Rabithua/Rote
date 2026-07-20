@@ -923,7 +923,7 @@
               },
               "api": {
                 "1": "Memos 实例内受访问令牌保护的图片和视频会由 Rote 后端安全迁移。",
-                "2": "音频、文档、评论关系、引用、表情反应和位置数据暂不支持迁移。"
+                "2": "音频、文档、评论关系、引用和表情反应暂不支持迁移。"
               }
             },
             "flomo": {
@@ -957,7 +957,6 @@
             "memosComments": "有 {{count}} 条 Memos 评论无法保留原有讨论关系，未作为独立笔记导入。",
             "memosReferences": "有 {{count}} 条 Memos 笔记引用关系暂时无法迁移。",
             "memosReactions": "有 {{count}} 个 Memos 表情反应因用户归属无法对应，未迁移。",
-            "memosLocations": "有 {{count}} 条 Memos 笔记包含位置数据，Rote 暂不支持迁移。",
             "emptyNotes": "有 {{count}} 条空笔记没有附件，将以空内容导入。",
             "flomoLocalAttachments": "有 {{count}} 个 flomo 本地附件无法从导出文件中迁移，已跳过。",
             "flomoIdentity": "flomo 导出不含稳定的原始 ID；同一导出内容可去重，但编辑原笔记后再次导入可能被识别为新笔记。",

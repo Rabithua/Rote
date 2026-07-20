@@ -55,7 +55,6 @@ function convertFromJSON(data: MemoSourceData, options: ConversionOptions): Conv
     (count, memo) => count + (Array.isArray(memo.reactions) ? memo.reactions.length : 0),
     0
   );
-  const locationCount = memos.filter((memo) => memo.location != null).length;
 
   memos.forEach((memo, index) => {
     try {
@@ -106,9 +105,6 @@ function convertFromJSON(data: MemoSourceData, options: ConversionOptions): Conv
   }
   if (reactionCount > 0) {
     warnings.push(importMessage('warnings.memosReactions', { count: reactionCount }));
-  }
-  if (locationCount > 0) {
-    warnings.push(importMessage('warnings.memosLocations', { count: locationCount }));
   }
 
   const uniqueNotes = dedupeNotesBySource(notes);
@@ -377,7 +373,7 @@ function convertSingleMemo(
     title: '',
     type: 'Rote',
     tags: normalizeTags([...(memo.tags ?? []), ...(memo.property?.tags ?? [])], memo.content),
-    content: normalizeContent(memo.content, options),
+    content: appendLocation(normalizeContent(memo.content, options), memo.location),
     state,
     archived: memo.state !== 'NORMAL',
     authorid: extractUserId(memo.creator),
@@ -428,6 +424,33 @@ function countRelations(memos: Array<Memo>, type: string) {
 
 function validDate(value: unknown) {
   return typeof value === 'string' && Number.isFinite(Date.parse(value)) ? value : undefined;
+}
+
+function appendLocation(content: string, location: Memo['location']) {
+  if (!location || typeof location !== 'object') return content;
+  const name = typeof location.placeholder === 'string' ? location.placeholder.trim() : '';
+  const latitude = location.latitude;
+  const longitude = location.longitude;
+  const hasCoordinates =
+    typeof latitude === 'number' &&
+    Number.isFinite(latitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    typeof longitude === 'number' &&
+    Number.isFinite(longitude) &&
+    longitude >= -180 &&
+    longitude <= 180;
+  if (!name && !hasCoordinates) return content;
+
+  const label = escapeMarkdownLabel(name || `${latitude}, ${longitude}`);
+  const locationLine = hasCoordinates
+    ? `📍 [${label}](https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=15/${latitude}/${longitude})`
+    : `📍 ${label}`;
+  return content.trim() ? `${content.trimEnd()}\n\n${locationLine}` : locationLine;
+}
+
+function escapeMarkdownLabel(value: string) {
+  return value.replace(/([\\[\]])/gu, '\\$1');
 }
 
 function convertVisibility(visibility: string): string {

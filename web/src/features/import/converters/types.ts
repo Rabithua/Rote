@@ -132,7 +132,11 @@ export interface Memo {
     tags?: Array<string>;
   };
   snippet: string;
-  location?: unknown;
+  location?: {
+    placeholder?: string;
+    latitude?: number;
+    longitude?: number;
+  };
 }
 
 export interface RoteArticle {

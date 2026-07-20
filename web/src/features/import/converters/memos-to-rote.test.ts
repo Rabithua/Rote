@@ -103,14 +103,17 @@ describe('Memos converter', () => {
         },
       ],
       reactions: [{ reactionType: '👍' }],
-      location: { placeholder: 'redacted' },
+      location: { placeholder: 'redacted', latitude: 37.7726, longitude: -122.4099 },
     };
 
     const result = convertMemosToRote({ memos: [parent, comment], nextPageToken: '' });
 
     expect(result.data?.notes).toHaveLength(1);
     expect(result.data?.notes[0].createdAt).toBe('2023-12-01T00:00:00Z');
-    expect(result.warnings).toHaveLength(3);
+    expect(result.data?.notes[0].content).toContain(
+      '📍 [redacted](https://www.openstreetmap.org/?mlat='
+    );
+    expect(result.warnings).toHaveLength(2);
   });
 
   it('reports unsupported API attachments instead of silently dropping them', () => {
