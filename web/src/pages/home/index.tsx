@@ -27,7 +27,7 @@ function MainPageHeader({
   const navigate = useNavigate();
 
   return (
-    <div className="bg-background sticky top-0 z-10 flex items-center justify-between p-4 font-light text-gray-600">
+    <div className="bg-background text-info sticky top-0 z-10 flex items-center justify-between p-4 font-light">
       <div className="group flex cursor-pointer items-center gap-2" onClick={refreshData}>
         <Logo className="h-5 w-auto" color="#3ECF4A" />
         <img
