@@ -1,8 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Progress } from '@/components/ui/progress';
 import type { ImportTaskProgress, ImportTaskResult } from '@/features/import/importTask';
-import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ImportTaskViewProps {
@@ -16,40 +14,35 @@ export function ImportTaskView({ progress, result, onCancel, onDone }: ImportTas
   const { t } = useTranslation('translation', {
     keyPrefix: 'pages.experiment.importData.importTask',
   });
-  const attachmentPercent = progress.attachmentsTotal
-    ? Math.round((progress.attachmentsCompleted / progress.attachmentsTotal) * 100)
-    : progress.stage === 'planning'
-      ? 0
-      : 100;
-  const notePercent = progress.notesTotal
-    ? Math.round((progress.notesCompleted / progress.notesTotal) * 100)
-    : 0;
-
   return (
     <>
       <DialogHeader>
         <DialogTitle>{result ? t('completeTitle') : t(`stages.${progress.stage}`)}</DialogTitle>
         <DialogDescription>{result ? t('completeDescription') : t('stayOnPage')}</DialogDescription>
       </DialogHeader>
-      <div className="space-y-5">
-        <ProgressSection
-          label={t('attachments')}
-          completed={progress.attachmentsCompleted}
-          total={progress.attachmentsTotal}
-          value={attachmentPercent}
-          footer={
-            <div className="text-muted-foreground flex justify-between text-xs">
-              <span>{t('active', { count: progress.attachmentsActive })}</span>
-              <span>{t('failed', { count: progress.attachmentsFailed })}</span>
-            </div>
-          }
-        />
-        <ProgressSection
-          label={t('notes')}
-          completed={progress.notesCompleted}
-          total={progress.notesTotal}
-          value={notePercent}
-        />
+      <div className="space-y-3">
+        {!result && (
+          <div
+            className="text-muted-foreground flex flex-wrap gap-x-2 gap-y-1 text-xs tabular-nums"
+            aria-live="polite"
+          >
+            <span>
+              {t('attachments')} {progress.attachmentsCompleted}/{progress.attachmentsTotal}
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>{t('active', { count: progress.attachmentsActive })}</span>
+            {progress.attachmentsFailed > 0 && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{t('failed', { count: progress.attachmentsFailed })}</span>
+              </>
+            )}
+            <span aria-hidden="true">·</span>
+            <span>
+              {t('notes')} {progress.notesCompleted}/{progress.notesTotal}
+            </span>
+          </div>
+        )}
         {result && <ImportResultSummary result={result} />}
       </div>
       <DialogFooter>
@@ -62,33 +55,6 @@ export function ImportTaskView({ progress, result, onCancel, onDone }: ImportTas
         )}
       </DialogFooter>
     </>
-  );
-}
-
-function ProgressSection({
-  label,
-  completed,
-  total,
-  value,
-  footer,
-}: {
-  label: string;
-  completed: number;
-  total: number;
-  value: number;
-  footer?: ReactNode;
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-sm">
-        <span>{label}</span>
-        <span className="text-muted-foreground tabular-nums">
-          {completed} / {total}
-        </span>
-      </div>
-      <Progress value={value} />
-      {footer}
-    </div>
   );
 }
 
