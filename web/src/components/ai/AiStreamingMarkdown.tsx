@@ -22,11 +22,26 @@ interface AiStreamingMarkdownProps {
 export function linkifyCitations(content: string, sources: AiSemanticResult[]): string {
   if (sources.length === 0) return content;
 
+  const codePattern = /(`+|~{3,})[\s\S]*?\1/g;
+  let result = '';
+  let lastIndex = 0;
+
+  for (const match of content.matchAll(codePattern)) {
+    const matchIndex = match.index;
+    result += linkifyCitationText(content.slice(lastIndex, matchIndex), sources);
+    result += match[0];
+    lastIndex = matchIndex + match[0].length;
+  }
+
+  return result + linkifyCitationText(content.slice(lastIndex), sources);
+}
+
+function linkifyCitationText(content: string, sources: AiSemanticResult[]): string {
   // Match [N] or comma-separated groups such as [N,M], but not markers
-  // preceded by [ or followed by ( or ].
+  // preceded by [ or followed by (, [, or ].
   // This avoids matching inside existing markdown links like [text](url)
-  // or reference-style [^1] footnotes
-  return content.replace(/(?<!\[)\[(\d+(?:\s*[,，]\s*\d+)*)\](?!\(|\])/g, (_, group) =>
+  // or [text][label], and reference-style [^1] footnotes.
+  return content.replace(/(?<!\[)\[(\d+(?:\s*[,，]\s*\d+)*)\](?![([\]])/g, (_, group) =>
     group
       .split(/(\s*[,，]\s*)/)
       .map((part: string) => {
@@ -45,8 +60,9 @@ function linkifyCitation(numStr: string, sources: AiSemanticResult[]): string | 
   const source = sources[index];
   const path = getAiSourcePath(source);
   const cleanText = source.preview || cleanSourceText(source.text || '');
-  const title = source.metadata?.title || cleanText.slice(0, 30).replace(/\s+/g, ' ').trim();
-  return `[\\[${numStr}\\]](${path} "${title}")`;
+  const title = (source.metadata?.title || cleanText.slice(0, 30)).replace(/\s+/g, ' ').trim();
+  const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `[\\[${numStr}\\]](${path} "${escapedTitle}")`;
 }
 
 function AiStreamingMarkdown({
