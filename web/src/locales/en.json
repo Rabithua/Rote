@@ -921,6 +921,16 @@
           "prepare": "Convert and preview",
           "preparing": "Preparing…",
           "warningTitle": "Conversion completed with notes",
+          "limitations": {
+            "title": "Import limitations",
+            "rote": "Only Rote-exported JSON is supported. Attachments are migrated again from their exported URLs, which must still be reachable during import.",
+            "memos": {
+              "file": "Memos JSON and database exports usually do not contain local attachment files. Only attachments with reachable URLs in the export can be migrated.",
+              "api": "Attachment URLs must be directly reachable by the Rote server. Localhost, private-network, or separately authenticated URLs cannot be migrated."
+            },
+            "flomo": "Official flomo exports do not include the original attachment files, so images and other attachments cannot be migrated. They also lack stable note IDs, so edited notes may be imported as new notes later.",
+            "weread": "WeRead exports and the current API do not provide original images embedded in notes. Only highlight and review text can be imported; image-only notes are skipped."
+          },
           "labels": {
             "memosApi": "Memos API",
             "wereadApi": "WeRead API"

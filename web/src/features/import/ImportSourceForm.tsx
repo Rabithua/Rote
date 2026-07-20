@@ -1,8 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileUp, LoaderCircle } from 'lucide-react';
+import { FileUp, Info, LoaderCircle } from 'lucide-react';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -156,6 +157,7 @@ export default function ImportSourceForm({
   const platform = source ? getImportPlatform(source) : undefined;
   const platformName = platform ? t(platform.nameKey) : '';
   const supportsApi = source === 'memos' || source === 'weread';
+  const limitationKey = source === 'memos' ? `limitations.memos.${mode}` : `limitations.${source}`;
   const handleDialogOpenChange = useCallback(
     (open: boolean) => {
       if (!open && !isBusy) handleBackToPlatforms();
@@ -199,6 +201,12 @@ export default function ImportSourceForm({
                   </TabsList>
                 </Tabs>
               )}
+
+              <Alert>
+                <Info />
+                <AlertTitle>{t('limitations.title')}</AlertTitle>
+                <AlertDescription>{t(limitationKey)}</AlertDescription>
+              </Alert>
 
               {mode === 'file' && (
                 <div className="flex flex-col gap-2">
