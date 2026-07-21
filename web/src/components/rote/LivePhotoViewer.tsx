@@ -19,7 +19,6 @@ const DEFAULT_VIEWPORT_SIZE = {
 };
 const VIEWER_HORIZONTAL_PADDING = 32;
 const VIEWER_VERTICAL_PADDING = 64;
-const LIVE_PHOTO_PRESS_DELAY_MS = 180;
 
 export function getLivePhotoPreviewSize(
   width: number,
@@ -87,15 +86,8 @@ export function LivePhotoMotionViewer({
   onVideoError: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const pressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const { className, style, frameAttrs } = getPhotoViewFrameProps(attrs);
-
-  const clearPressTimer = useCallback(() => {
-    if (!pressTimerRef.current) return;
-    clearTimeout(pressTimerRef.current);
-    pressTimerRef.current = null;
-  }, []);
 
   const resetVideo = useCallback(() => {
     const video = videoRef.current;
@@ -108,10 +100,9 @@ export function LivePhotoMotionViewer({
   }, []);
 
   const stopMotion = useCallback(() => {
-    clearPressTimer();
     resetVideo();
     setIsPlaying(false);
-  }, [clearPressTimer, resetVideo]);
+  }, [resetVideo]);
 
   const startMotion = useCallback(() => {
     const video = videoRef.current;
@@ -124,22 +115,11 @@ export function LivePhotoMotionViewer({
     });
   }, []);
 
-  const queueMotionStart = useCallback(() => {
-    clearPressTimer();
-    pressTimerRef.current = setTimeout(startMotion, LIVE_PHOTO_PRESS_DELAY_MS);
-  }, [clearPressTimer, startMotion]);
-
   useEffect(() => {
     stopMotion();
   }, [playbackSrc, previewSrc, stopMotion]);
 
-  useEffect(
-    () => () => {
-      clearPressTimer();
-      resetVideo();
-    },
-    [clearPressTimer, resetVideo]
-  );
+  useEffect(() => () => resetVideo(), [resetVideo]);
 
   useEffect(() => {
     const handleRelease = () => stopMotion();
@@ -167,7 +147,7 @@ export function LivePhotoMotionViewer({
   const handleMouseDown = (event: MouseEvent<HTMLElement>) => {
     frameAttrs.onMouseDown?.(event);
     if (event.defaultPrevented || event.button !== 0) return;
-    queueMotionStart();
+    startMotion();
   };
 
   const handleMouseUp = (event: MouseEvent<HTMLElement>) => {
@@ -183,7 +163,7 @@ export function LivePhotoMotionViewer({
   const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
     frameAttrs.onTouchStart?.(event);
     if (event.defaultPrevented || event.touches.length !== 1) return;
-    queueMotionStart();
+    startMotion();
   };
 
   const handleTouchEnd = (event: TouchEvent<HTMLElement>) => {

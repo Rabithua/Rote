@@ -92,6 +92,28 @@ describe('LivePhotoAttachmentPreview', () => {
     expect(video).toHaveAttribute('preload', 'metadata');
   });
 
+  it('starts audible playback directly from the press gesture and stops on release', () => {
+    const { container } = render(
+      <LivePhotoAttachmentPreview
+        attachment={makeLivePhotoAttachment()}
+        previewSrc="https://cdn.example.com/users/u/compressed/live.webp"
+        thumbnailSrc="https://cdn.example.com/users/u/compressed/live.webp"
+      />
+    );
+
+    const frame = screen.getByLabelText('videoLabel');
+    const video = container.querySelector('video');
+
+    fireEvent.mouseDown(frame, { button: 0 });
+
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    expect(video).toHaveClass('opacity-100');
+
+    fireEvent.mouseUp(frame);
+
+    expect(video).toHaveClass('opacity-0');
+  });
+
   it('bounds the registered preview dimensions while preserving the still aspect ratio', () => {
     const { container } = render(
       <LivePhotoAttachmentPreview
