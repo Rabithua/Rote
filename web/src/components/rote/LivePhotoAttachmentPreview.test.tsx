@@ -88,6 +88,7 @@ describe('LivePhotoAttachmentPreview', () => {
     expect(video).toHaveClass('object-contain');
     expect(video).not.toHaveAttribute('autoplay');
     expect(video).not.toHaveAttribute('loop');
+    expect(video).not.toHaveAttribute('muted');
     expect(video).toHaveAttribute('preload', 'metadata');
   });
 

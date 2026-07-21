@@ -223,7 +223,6 @@ export function LivePhotoMotionViewer({
         )}
         src={playbackSrc}
         poster={previewSrc || undefined}
-        muted
         playsInline
         preload="metadata"
         aria-hidden={!isPlaying}
