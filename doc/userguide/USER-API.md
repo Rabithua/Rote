@@ -5,7 +5,8 @@
 
 ## 基础信息
 
-- 基础路径：`/v2/api/users`
+- 用户接口基础路径：`/v2/api/users`
+- 远程附件迁移使用相关接口：`/v2/api/imports/attachments/migrate`
 - 鉴权方式：需要登录的接口使用 `Authorization: Bearer <accessToken>`
 - JSON 请求需使用 `Content-Type: application/json`
 - 除数据导出接口外，成功响应统一为：
@@ -42,6 +43,7 @@
 | `GET` | `/v2/api/users/me/statistics` | 是 | 获取当前用户内容统计 |
 | `GET` | `/v2/api/users/me/export` | 是 | 导出用户数据 |
 | `POST` | `/v2/api/users/me/import/plan` | 是 | 预检需要导入的笔记 |
+| `POST` | `/v2/api/imports/attachments/migrate` | 是 | 将一个远程附件迁移到当前用户的对象存储 |
 | `POST` | `/v2/api/users/me/import` | 是 | 导入用户数据 |
 | `DELETE` | `/v2/api/users/me` | 是 | 删除当前用户账户 |
 
@@ -411,7 +413,10 @@ Content-Disposition: attachment; filename=demo-2026-07-23-12-00-00.json
 - `formatVersion` 当前为 `2`。
 - `source` 只会出现在具有外部导入来源的笔记或附件上。
 - 每条笔记还可能包含内联的 `article`、附件详情和反应详情。
-- 导出的 v2 文件可直接作为导入接口的请求体。
+- 导出文件的顶层结构与 v2 导入请求兼容，但只有恢复到原账户、且其中的附件 ID 仍归当前用户所有时，
+  才能原样作为导入请求。对同一实例中的其他账户执行恢复，或在原账户已删除后恢复时，不得复用导出的
+  附件 ID；应先将附件迁移或上传到目标账户，并用目标账户拥有的附件记录替换导出数据中的附件。
+- 导入接口不会仅凭导出文件中的附件 URL 复制对象存储内容。
 
 ## 10. 预检用户数据导入
 
@@ -446,11 +451,95 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import/plan' \
 - `existingStrategy: "overwrite"` 时，所有笔记索引都会返回。
 - 带 `source` 的笔记按 `provider + accountId + externalId` 判断是否存在；不带 `source` 的旧格式笔记按 `id` 判断。
 
-## 11. 执行用户数据导入
+## 11. 迁移远程附件
+
+`POST /v2/api/imports/attachments/migrate`
+
+此相关接口用于把一个 HTTP/HTTPS 远程附件下载到当前用户的对象存储，并创建一条尚未绑定笔记的附件记录。
+直接将远程 URL 提交给 `/users/me/import` 只会保存该 URL，不会下载或迁移文件。
+
+请求体：
+
+| 字段 | 是否必填 | 说明 |
+| --- | --- | --- |
+| `attachment` | 是 | 一个符合下文附件结构的对象；`url` 必须是可访问的 HTTP/HTTPS URL |
+| `migrationAuth` | 否 | 目前仅支持 `{ "provider": "memos", "baseUrl": "https://memos.example.com" }` |
+
+迁移公开远程附件时可省略 `migrationAuth`。迁移需要认证的 Memos 附件时，还必须通过
+`x-memos-access-token` 请求头传递 Memos 访问令牌；服务端只会向与 `baseUrl` 同源的地址发送该令牌。
+
+Memos 请求示例：
+
+```bash
+curl -X POST 'https://your-domain.com/v2/api/imports/attachments/migrate' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>' \
+  -H 'Content-Type: application/json' \
+  -H 'x-memos-access-token: <MEMOS_ACCESS_TOKEN>' \
+  -d '{
+    "attachment": {
+      "url": "https://memos.example.com/file/attachments/a/photo.png",
+      "storage": "REMOTE",
+      "details": {
+        "mimetype": "image/png",
+        "originalname": "photo.png"
+      }
+    },
+    "migrationAuth": {
+      "provider": "memos",
+      "baseUrl": "https://memos.example.com"
+    }
+  }'
+```
+
+成功时返回 `201`，`data` 是由当前用户拥有的新附件记录：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "id": "770e8400-e29b-41d4-a716-446655440000",
+    "url": "https://storage.example.com/users/10000000-0000-4000-8000-000000000001/uploads/attachment.png",
+    "compressUrl": "",
+    "posterUrl": "",
+    "userid": "10000000-0000-4000-8000-000000000001",
+    "roteid": null,
+    "storage": "R2",
+    "details": {
+      "key": "users/10000000-0000-4000-8000-000000000001/uploads/attachment.png",
+      "size": 1024,
+      "mimetype": "image/png",
+      "mediaKind": "image",
+      "mtime": "2026-07-23T00:00:00.000Z"
+    },
+    "createdAt": "2026-07-23T00:00:00.000Z",
+    "updatedAt": "2026-07-23T00:00:00.000Z",
+    "sortIndex": 0
+  }
+}
+```
+
+客户端应使用返回的 `data` 替换原远程附件，然后再调用 `/users/me/import`。推荐顺序为：
+
+1. 调用 `/users/me/import/plan` 找出需要处理的笔记。
+2. 对这些笔记中的每个远程附件调用本接口，并替换为返回的附件记录。
+3. 将迁移后的笔记分批提交给 `/users/me/import`。
+
+可能的错误包括：
+
+- `401`：Rote 登录令牌无效。
+- `403 remote_attachment_forbidden`：当前用户不允许上传附件。
+- `413 remote_attachment_too_large`：远程附件超过大小限制。
+- `422 remote_attachment_invalid` 或 `remote_attachment_unsupported`：请求或媒体类型无效。
+- `429 remote_attachment_busy`：服务器迁移队列已满。
+- `502 remote_attachment_download_failed`：无法下载远程附件。
+- `503 remote_attachment_storage_unavailable`：对象存储不可用。
+
+## 12. 执行用户数据导入
 
 `POST /v2/api/users/me/import`
 
-### 11.1 顶层请求结构
+### 12.1 顶层请求结构
 
 ```json
 {
@@ -476,7 +565,7 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import/plan' \
 `private` 会强制导入笔记为私有，`preserve` 会保留请求中的 `state`，缺省时仍为私有。
 `existingStrategy` 只控制笔记；同 ID 的已有文章会更新为本次请求中的内容。
 
-### 11.2 笔记、文章和附件结构
+### 12.2 笔记、文章和附件结构
 
 最小笔记：
 
@@ -492,7 +581,8 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import/plan' \
 - 必填：`id`（UUID）、`content`（string）。
 - 可选：`title`、`type`、`tags`、`state`、`archived`、`articleId`、`pin`、`editor`、`createdAt`、`updatedAt`、`attachments`、`source`。
 - 单条笔记最多包含 100 个标签和 500 个附件。
-- `createdAt`、`updatedAt` 和 `source.sourceUpdatedAt` 使用 ISO 8601 日期时间字符串。
+- `createdAt`、`updatedAt` 和 `source.sourceUpdatedAt` 使用 ISO 8601 日期时间字符串。笔记的 `createdAt`
+  会保留；`updatedAt` 会被忽略并写为本次导入时间；`sourceUpdatedAt` 当前只参与格式校验，不会持久化或用于冲突判断。
 
 最小文章：
 
@@ -520,7 +610,8 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import/plan' \
 ```
 
 附件还可包含 `id`、`compressUrl`、`posterUrl`、`createdAt`、`updatedAt`、`sortIndex` 和 `source`。
-`details` 必须是对象，并需符合对应存储类型的附件校验规则。
+附件的 `createdAt` 会保留，`updatedAt` 会被忽略并写为本次导入时间。`details` 必须是对象，并需符合对应
+存储类型的附件校验规则。
 
 来源标识结构：
 
@@ -533,9 +624,11 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import/plan' \
 }
 ```
 
-同一请求中不能包含重复的笔记来源标识，也不能在同一笔记内包含重复的附件来源标识。
+同一请求中不能包含重复的笔记来源标识，也不能在同一笔记内包含重复的附件来源标识。附件来源映射只会在
+父笔记也包含 `source` 时持久化并用于后续幂等导入；只有 `attachments[].source` 而没有 `note.source` 时，
+重复执行 `overwrite` 导入可能创建新的附件记录。
 
-### 11.3 请求与响应示例
+### 12.3 请求与响应示例
 
 ```bash
 curl -X POST 'https://your-domain.com/v2/api/users/me/import' \
@@ -583,7 +676,7 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import' \
 - `401`：未认证或令牌无效。
 - 导入内容引用了其他用户拥有的笔记、文章或附件时，请求会失败，不会取得其所有权。
 
-## 12. 删除当前用户账户
+## 13. 删除当前用户账户
 
 `DELETE /v2/api/users/me`
 
@@ -629,7 +722,8 @@ curl -X DELETE 'https://your-domain.com/v2/api/users/me' \
 ## 客户端使用建议
 
 - 不要从旧字段 `authProvider` 推断登录方式，使用 `hasPassword` 和 `oauthBindings`。
-- 导入前先调用 `/me/import/plan`，再迁移所需附件并分批调用 `/me/import`。
-- 使用 `source` 标识外部数据，才能在重复导入时稳定识别同一条笔记或附件。
+- 导入前先调用 `/me/import/plan`，通过 `/v2/api/imports/attachments/migrate` 迁移所需远程附件，再分批调用
+  `/me/import`。
+- 使用 `source` 标识外部数据；附件要获得稳定的重复导入身份，其父笔记也必须包含 `source`。
 - 导出接口返回原始文件，其他接口返回统一响应对象，客户端解析时需区分。
 - 删除账户不可恢复，应在客户端二次确认，并优先提示用户导出备份。
