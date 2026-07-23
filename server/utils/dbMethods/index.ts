@@ -9,7 +9,7 @@ export * from './change';
 export * from './common';
 export * from './linkPreview';
 export * from './note';
-export { createRote } from './noteHooks';
+export { createRote, editRote } from './noteHooks';
 export * from './oauthMcpAuthorization';
 export * from './oauthMcpClients';
 export * from './oauthMcpGrants';
