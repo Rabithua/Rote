@@ -220,7 +220,13 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
   }
 }
 
-export async function editRote(data: any): Promise<any> {
+export interface EditRoteWithStateResult {
+  nextState: string;
+  note: any;
+  previousState: string;
+}
+
+export async function editRoteWithState(data: any): Promise<EditRoteWithStateResult> {
   try {
     const {
       id: _id,
@@ -236,15 +242,36 @@ export async function editRote(data: any): Promise<any> {
     // 确保 updatedAt 是 Date 对象，且由服务器端控制
     cleanData.updatedAt = new Date();
 
-    const [rote] = await db
-      .update(rotes)
-      .set(cleanData)
-      .where(and(eq(rotes.id, data.id), eq(rotes.authorid, data.authorid)))
-      .returning();
+    const result = await db.transaction(async (tx) => {
+      const [previousRote] = await tx
+        .select({ state: rotes.state })
+        .from(rotes)
+        .where(and(eq(rotes.id, data.id), eq(rotes.authorid, data.authorid)))
+        .for('update');
+
+      if (!previousRote) {
+        throw new Error('Failed to update note: no matching note found');
+      }
+
+      const [rote] = await tx
+        .update(rotes)
+        .set(cleanData)
+        .where(and(eq(rotes.id, data.id), eq(rotes.authorid, data.authorid)))
+        .returning();
+
+      if (!rote) {
+        throw new Error('Failed to update note: no data returned');
+      }
+
+      return {
+        previousState: previousRote.state,
+        rote,
+      };
+    });
 
     // 使用 relational query API 获取关联数据
     const roteWithRelations = await db.query.rotes.findFirst({
-      where: (rotes, { eq }) => eq(rotes.id, rote.id),
+      where: (rotes, { eq }) => eq(rotes.id, result.rote.id),
       with: {
         author: AUTHOR_QUERY,
         attachments: {
@@ -271,19 +298,28 @@ export async function editRote(data: any): Promise<any> {
     // 记录变更历史
     try {
       await createRoteChange({
-        originid: rote.id,
-        roteid: rote.id,
+        originid: result.rote.id,
+        roteid: result.rote.id,
         action: 'UPDATE',
-        userid: rote.authorid,
+        userid: result.rote.authorid,
       });
     } catch (_error) {
       // 记录变更失败不影响更新操作，静默处理
     }
 
-    return roteWithRelations;
+    return {
+      nextState: result.rote.state,
+      note: roteWithRelations || result.rote,
+      previousState: result.previousState,
+    };
   } catch (error) {
     throw new DatabaseError(`Failed to update rote: ${data.id}`, error);
   }
+}
+
+export async function editRote(data: any): Promise<any> {
+  const result = await editRoteWithState(data);
+  return result.note;
 }
 
 export async function deleteRote(data: any): Promise<any> {

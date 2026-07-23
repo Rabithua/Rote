@@ -1,6 +1,18 @@
 import { notifyPublicNoteCreated } from '../adminHooks';
 import { trackBackgroundTask } from '../backgroundTask';
-import { createRote as createBaseRote, editRote as editBaseRote, findRoteById } from './note';
+import {
+  createRote as createBaseRote,
+  editRoteWithState as editBaseRoteWithState,
+  type EditRoteWithStateResult,
+  findRoteById,
+} from './note';
+
+type EditRoteOperation = (data: any) => Promise<EditRoteWithStateResult>;
+
+interface PublicTransitionEditResult {
+  becamePublic: boolean;
+  note: any;
+}
 
 export function becamePublic(previousState: unknown, nextState: unknown): boolean {
   return previousState !== 'public' && nextState === 'public';
@@ -19,13 +31,23 @@ export async function createRote(data: any): Promise<any> {
   return rote;
 }
 
-export async function editRote(data: any): Promise<any> {
-  const previousNote = data?.state === 'public' ? await findRoteById(data.id) : null;
-  const rote = await editBaseRote(data);
+export async function editRoteWithPublicTransition(
+  data: any,
+  edit: EditRoteOperation = editBaseRoteWithState
+): Promise<PublicTransitionEditResult> {
+  const result = await edit(data);
+  return {
+    becamePublic: becamePublic(result.previousState, result.nextState),
+    note: result.note,
+  };
+}
 
-  if (becamePublic(previousNote?.state, rote?.state)) {
-    await notifyPublicNote(rote);
+export async function editRote(data: any): Promise<any> {
+  const result = await editRoteWithPublicTransition(data);
+
+  if (result.becamePublic) {
+    await notifyPublicNote(result.note);
   }
 
-  return rote;
+  return result.note;
 }
