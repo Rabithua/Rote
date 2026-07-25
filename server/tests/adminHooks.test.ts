@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { titleForEnvelope, urlForEnvelope } from '../utils/adminHooks/envelope';
+import { titleForEnvelope, urlForEnvelope } from '../utils/adminHooks/presentation';
 import type { AdminHookEnvelope } from '../utils/adminHooks/types';
 
 function createUserRegisteredEnvelope(
