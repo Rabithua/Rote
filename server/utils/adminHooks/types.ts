@@ -29,6 +29,7 @@ export interface AdminHookEnvelope {
   };
   occurredAt: string;
   site: {
+    defaultLanguage?: string;
     frontendUrl?: string;
     name: string;
   };

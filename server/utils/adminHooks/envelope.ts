@@ -6,6 +6,7 @@ import type { AdminHookActor, AdminHookEnvelope } from './types';
 function getSiteInfo() {
   const siteConfig = getGlobalConfig<SiteConfig>('site');
   return {
+    defaultLanguage: siteConfig?.defaultLanguage,
     frontendUrl: siteConfig?.frontendUrl,
     name: siteConfig?.name || 'Rote',
   };
@@ -31,27 +32,6 @@ function toActor(user: Partial<User> | null | undefined): AdminHookActor {
 function previewText(value: string, maxLength = 160) {
   const normalized = value.replace(/\s+/g, ' ').trim();
   return normalized.length > maxLength ? `${normalized.slice(0, maxLength)}...` : normalized;
-}
-
-export function titleForEnvelope(envelope: AdminHookEnvelope) {
-  return `${envelope.site.name}: ${envelope.event}`;
-}
-
-export function bodyForEnvelope(envelope: AdminHookEnvelope) {
-  if (envelope.event === 'user.registered') {
-    return [envelope.user?.username, envelope.user?.nickname].filter(Boolean).join(' / ');
-  }
-  return [
-    envelope.note?.author?.username || envelope.actor.username,
-    envelope.note?.title,
-    envelope.note?.contentPreview,
-  ]
-    .filter(Boolean)
-    .join(' / ');
-}
-
-export function urlForEnvelope(envelope: AdminHookEnvelope) {
-  return envelope.note?.url || envelope.site.frontendUrl;
 }
 
 export function buildUserRegisteredEnvelope(user: Partial<User>): AdminHookEnvelope {
