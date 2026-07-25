@@ -1,11 +1,13 @@
 import type { User } from '../../drizzle/schema';
 import type { SiteConfig } from '../../types/config';
 import { getGlobalConfig } from '../config';
+import { labelForAdminHookEvent } from './localization';
 import type { AdminHookActor, AdminHookEnvelope } from './types';
 
 function getSiteInfo() {
   const siteConfig = getGlobalConfig<SiteConfig>('site');
   return {
+    defaultLanguage: siteConfig?.defaultLanguage,
     frontendUrl: siteConfig?.frontendUrl,
     name: siteConfig?.name || 'Rote',
   };
@@ -34,7 +36,10 @@ function previewText(value: string, maxLength = 160) {
 }
 
 export function titleForEnvelope(envelope: AdminHookEnvelope) {
-  return `${envelope.site.name}: ${envelope.event}`;
+  return `${envelope.site.name}: ${labelForAdminHookEvent(
+    envelope.event,
+    envelope.site.defaultLanguage
+  )}`;
 }
 
 export function bodyForEnvelope(envelope: AdminHookEnvelope) {
@@ -51,7 +56,19 @@ export function bodyForEnvelope(envelope: AdminHookEnvelope) {
 }
 
 export function urlForEnvelope(envelope: AdminHookEnvelope) {
-  return envelope.note?.url || envelope.site.frontendUrl;
+  if (envelope.note?.url) return envelope.note.url;
+
+  if (
+    envelope.event === 'user.registered' &&
+    envelope.user?.username &&
+    envelope.site.frontendUrl
+  ) {
+    return `${envelope.site.frontendUrl.replace(/\/+$/, '')}/${encodeURIComponent(
+      envelope.user.username
+    )}`;
+  }
+
+  return envelope.site.frontendUrl;
 }
 
 export function buildUserRegisteredEnvelope(user: Partial<User>): AdminHookEnvelope {

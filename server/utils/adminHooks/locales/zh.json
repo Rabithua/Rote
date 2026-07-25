@@ -1,0 +1,6 @@
+{
+  "events": {
+    "user.registered": "新用户注册",
+    "note.public.created": "创建公开笔记"
+  }
+}
