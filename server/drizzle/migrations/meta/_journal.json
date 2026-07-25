@@ -141,6 +141,13 @@
       "when": 1784182877469,
       "tag": "0019_sparkling_martin_li",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784981710926,
+      "tag": "0020_extend_jwt_expiry",
+      "breakpoints": true
     }
   ]
 }

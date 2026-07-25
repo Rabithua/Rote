@@ -378,8 +378,8 @@ export class ConfigManager {
         {
           jwtSecret,
           jwtRefreshSecret,
-          jwtAccessExpiry: '15m',
-          jwtRefreshExpiry: '7d',
+          jwtAccessExpiry: '7d',
+          jwtRefreshExpiry: '30d',
           sessionSecret,
         },
         { isRequired: true, isSystem: false }
