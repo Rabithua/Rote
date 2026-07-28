@@ -1,12 +1,14 @@
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  check,
   customType,
   foreignKey,
   index,
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -48,6 +50,39 @@ export const users = pgTable(
     emailIdx: index('users_email_idx').on(table.email),
     usernameIdx: index('users_username_idx').on(table.username),
     // 注意：authProvider 相关索引已移除，OAuth 绑定信息存储在 user_oauth_bindings 表中
+  })
+);
+
+// Account-level user block relationships.
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    blockerId: uuid('blockerId').notNull(),
+    blockedId: uuid('blockedId').notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    primaryKey: primaryKey({
+      columns: [table.blockerId, table.blockedId],
+      name: 'user_blocks_blocker_blocked_pk',
+    }),
+    blockerIdx: index('user_blocks_blocker_id_idx').on(table.blockerId),
+    blockedIdx: index('user_blocks_blocked_id_idx').on(table.blockedId),
+    blockerFk: foreignKey({
+      columns: [table.blockerId],
+      foreignColumns: [users.id],
+      name: 'user_blocks_blocker_id_users_id_fk',
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    blockedFk: foreignKey({
+      columns: [table.blockedId],
+      foreignColumns: [users.id],
+      name: 'user_blocks_blocked_id_users_id_fk',
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    noSelfBlock: check('user_blocks_no_self_block', sql`${table.blockerId} <> ${table.blockedId}`),
   })
 );
 
@@ -609,6 +644,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   userreaction: many(reactions),
   rotes: many(rotes),
   articles: many(articles),
+  blocksCreated: many(userBlocks, { relationName: 'blocker' }),
+  blocksReceived: many(userBlocks, { relationName: 'blocked' }),
   openkey: many(userOpenKeys),
   usersetting: one(userSettings, {
     fields: [users.id],
@@ -620,6 +657,19 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   permissionOverrides: many(userPermissionOverrides),
   documentEmbeddings: many(documentEmbeddings),
   embeddingJobs: many(embeddingJobs),
+}));
+
+export const userBlocksRelations = relations(userBlocks, ({ one }) => ({
+  blocker: one(users, {
+    fields: [userBlocks.blockerId],
+    references: [users.id],
+    relationName: 'blocker',
+  }),
+  blocked: one(users, {
+    fields: [userBlocks.blockedId],
+    references: [users.id],
+    relationName: 'blocked',
+  }),
 }));
 
 export const userSettingsRelations = relations(userSettings, ({ one }) => ({
@@ -759,6 +809,8 @@ export const aiTokenUsageLogsRelations = relations(aiTokenUsageLogs, ({ one }) =
 // 导出类型
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type UserBlock = typeof userBlocks.$inferSelect;
+export type NewUserBlock = typeof userBlocks.$inferInsert;
 export type UserSetting = typeof userSettings.$inferSelect;
 export type NewUserSetting = typeof userSettings.$inferInsert;
 export type UserOpenKey = typeof userOpenKeys.$inferSelect;

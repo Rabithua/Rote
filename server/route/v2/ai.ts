@@ -226,6 +226,7 @@ aiRouter.post('/search', authenticateJWT, bodyTypeCheck, async (c: HonoContext) 
   const { sources: results } = await searchMemory({
     query,
     ownerId: body?.scope === 'public' ? undefined : user.id,
+    viewerId: user.id,
     scope: body?.scope === 'public' ? 'public' : 'mine',
     sourceTypes: body?.sourceTypes,
     timeRange: body?.timeRange,

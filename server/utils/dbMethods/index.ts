@@ -19,6 +19,7 @@ export * from './site';
 export * from './subscription';
 export * from './user';
 export * from './userAccount';
+export * from './userBlock';
 export * from './userData';
 export * from './userOAuth';
 export * from './userPasskey';

@@ -5,6 +5,7 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import PageRequestError from '@/components/others/PageRequestError';
 import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
+import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import { useArticleActions } from '@/hooks/useArticleActions';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { profileAtom } from '@/state/profile';
@@ -41,7 +42,7 @@ function ArticleDetailPage() {
     mutate,
     isValidating,
   } = useAPIGet<any>(
-    articleid ? `/articles/${articleid}` : null,
+    articleid ? viewerAwareCacheKey(`/articles/${articleid}`, profile?.id) : null,
     () => get('/articles/' + articleid).then((res) => res.data),
     {
       revalidateOnFocus: false,

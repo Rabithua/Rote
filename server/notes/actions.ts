@@ -83,7 +83,7 @@ export async function updateUserNote(userId: string, id: string, input: UpdateUs
     await setNoteArticleId(id, articleIdToSet, userId);
   }
 
-  const data = await findRoteById(id);
+  const data = await findRoteById(id, userId);
   const hasArticle = Boolean(data?.articleId || data?.article);
   const contentProvided = Object.prototype.hasOwnProperty.call(input, 'content');
   const contentForPreview = contentProvided ? input.content : data?.content;

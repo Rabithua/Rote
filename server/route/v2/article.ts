@@ -105,12 +105,15 @@ articlesRouter.get('/by-note/:noteId', optionalJWT, async (c: HonoContext) => {
     throw new Error('Invalid or missing noteId');
   }
 
-  const note = await findRoteById(noteId);
+  const note = await findRoteById(noteId, user?.id);
+  if (!note) {
+    throw new Error('Note not found');
+  }
   if (!isNoteAccessible(note, user)) {
     throw new Error('Access denied: note is private');
   }
 
-  const article = await getNoteArticleCard(noteId);
+  const article = await getNoteArticleCard(noteId, user?.id);
   return c.json(createResponse(article), 200);
 });
 
@@ -123,13 +126,13 @@ articlesRouter.get('/:id', optionalJWT, async (c: HonoContext) => {
     throw new Error('Invalid or missing ID');
   }
 
-  const article = await findArticleById(id);
+  const article = await findArticleById(id, user?.id);
 
   if (!article) {
     throw new Error('Article not found');
   }
 
-  const note = await getNoteByArticleId(id);
+  const note = await getNoteByArticleId(id, user?.id);
 
   // 作者可直接访问，返回文章和其关联的笔记（如有）
   if (user && article.authorId === user.id) {

@@ -4,6 +4,7 @@ import { createEmbedding, vectorToLiteral } from '../../ai/client';
 import { getGlobalConfig } from '../../config';
 import db from '../../drizzle';
 import { logAiTokenUsage } from '../aiToken';
+import { subjectIsVisibleToViewer } from '../userBlock';
 import { getStoredAiConfig, isVectorUsable } from './config';
 import {
   buildTextArraySql,
@@ -22,6 +23,7 @@ import type {
 export async function semanticSearch(params: {
   query: string;
   ownerId?: string;
+  viewerId?: string;
   scope?: 'mine' | 'public';
   sourceTypes?: AiSourceType[];
   timeRange?: NormalizedTimeRange | null;
@@ -145,6 +147,10 @@ export async function semanticSearch(params: {
       (de."sourceType" = 'article' AND a."id" IS NOT NULL)
     )
   `;
+  const viewerVisibilitySql =
+    params.scope === 'public'
+      ? subjectIsVisibleToViewer(sql`de."ownerId"`, params.viewerId)
+      : undefined;
   const permissionSql =
     params.scope === 'public'
       ? sql`
@@ -152,6 +158,7 @@ export async function semanticSearch(params: {
         AND r."authorid" = de."ownerId"
         AND r."state" = 'public'
         AND r."archived" = false
+        ${viewerVisibilitySql ? sql`AND ${viewerVisibilitySql}` : sql``}
         AND NOT EXISTS (
           SELECT 1 FROM "user_settings" us
           WHERE us."userid" = r."authorid" AND us."allowExplore" = false

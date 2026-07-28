@@ -5,6 +5,7 @@ import { getGlobalConfig } from '../config';
 import db from '../drizzle';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
+import { reactionIsVisibleToViewer, subjectIsVisibleToViewer } from './userBlock';
 
 // 文章查询配置常量
 const ARTICLE_QUERY = {
@@ -26,6 +27,26 @@ const AUTHOR_QUERY = {
     emailVerified: true,
   },
 };
+
+function reactionsQuery(viewerId?: string) {
+  const query: any = {
+    with: {
+      user: {
+        columns: {
+          username: true,
+          nickname: true,
+          avatar: true,
+        },
+      },
+    },
+  };
+
+  if (viewerId) {
+    query.where = (reactionTable: any) => reactionIsVisibleToViewer(reactionTable.userid, viewerId);
+  }
+
+  return query;
+}
 
 // 笔记相关方法
 export async function createRote(data: any): Promise<any> {
@@ -110,17 +131,7 @@ export async function createRote(data: any): Promise<any> {
           linkPreviews: {
             orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
           },
-          reactions: {
-            with: {
-              user: {
-                columns: {
-                  username: true,
-                  nickname: true,
-                  avatar: true,
-                },
-              },
-            },
-          },
+          reactions: reactionsQuery(data.authorid),
         },
       });
     } catch (_queryError) {
@@ -146,10 +157,13 @@ export async function createRote(data: any): Promise<any> {
   }
 }
 
-export async function findRoteById(id: string): Promise<any> {
+export async function findRoteById(id: string, viewerId?: string): Promise<any> {
   try {
     const rote = await db.query.rotes.findFirst({
-      where: (rotes, { eq }) => eq(rotes.id, id),
+      where: (roteTable, { and, eq }) => {
+        const visible = subjectIsVisibleToViewer(roteTable.authorid, viewerId);
+        return visible ? and(eq(roteTable.id, id), visible) : eq(roteTable.id, id);
+      },
       with: {
         author: AUTHOR_QUERY,
         attachments: {
@@ -161,17 +175,7 @@ export async function findRoteById(id: string): Promise<any> {
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(viewerId),
         article: ARTICLE_QUERY,
       },
     });
@@ -181,14 +185,17 @@ export async function findRoteById(id: string): Promise<any> {
   }
 }
 
-export async function findRotesByIds(ids: string[]): Promise<any[]> {
+export async function findRotesByIds(ids: string[], viewerId?: string): Promise<any[]> {
   try {
     if (!ids || ids.length === 0) {
       return [];
     }
 
     const rotesList = await db.query.rotes.findMany({
-      where: (rotes, { inArray }) => inArray(rotes.id, ids),
+      where: (roteTable, { and, inArray }) => {
+        const visible = subjectIsVisibleToViewer(roteTable.authorid, viewerId);
+        return visible ? and(inArray(roteTable.id, ids), visible) : inArray(roteTable.id, ids);
+      },
       with: {
         author: AUTHOR_QUERY,
         attachments: {
@@ -200,17 +207,7 @@ export async function findRotesByIds(ids: string[]): Promise<any[]> {
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(viewerId),
         article: ARTICLE_QUERY,
       },
     });
@@ -280,17 +277,7 @@ export async function editRoteWithState(data: any): Promise<EditRoteWithStateRes
             asc(attachments.createdAt),
           ],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(data.authorid),
         article: ARTICLE_QUERY,
       },
     });
@@ -351,7 +338,8 @@ function buildWhereConditions(
   authorid: string | undefined,
   archived: any,
   state: string | undefined,
-  filter: any
+  filter: any,
+  viewerId?: string
 ) {
   return (rotes: any, { eq, and, sql }: any) => {
     const conditions = [];
@@ -366,6 +354,11 @@ function buildWhereConditions(
 
     if (state) {
       conditions.push(eq(rotes.state, state));
+    }
+
+    const visible = subjectIsVisibleToViewer(rotes.authorid, viewerId);
+    if (visible) {
+      conditions.push(visible);
     }
 
     // 处理额外的过滤条件
@@ -434,17 +427,7 @@ export async function findMyRote(
         linkPreviews: {
           orderBy: (linkPreviews: any, { asc }: any) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(authorid),
         article: ARTICLE_QUERY,
       },
     };
@@ -461,10 +444,11 @@ export async function findUserPublicRote(
   skip: number | undefined,
   limit: number | undefined,
   filter: any,
-  archived: any
+  archived: any,
+  viewerId?: string
 ): Promise<any> {
   try {
-    const whereCondition = buildWhereConditions(userid, archived, 'public', filter);
+    const whereCondition = buildWhereConditions(userid, archived, 'public', filter, viewerId);
 
     const rotesList = await db.query.rotes.findMany({
       where: whereCondition,
@@ -477,17 +461,7 @@ export async function findUserPublicRote(
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(viewerId),
         article: ARTICLE_QUERY,
       },
     });
@@ -500,7 +474,8 @@ export async function findUserPublicRote(
 export async function findPublicRote(
   skip: number | undefined,
   limit: number | undefined,
-  filter: any
+  filter: any,
+  viewerId?: string
 ): Promise<any> {
   try {
     const securityConfig = getGlobalConfig<SecurityConfig>('security');
@@ -511,6 +486,10 @@ export async function findPublicRote(
     // 仅公开且未归档的笔记
     conditions.push(eq(rotes.state, 'public'));
     conditions.push(eq(rotes.archived, false));
+    const visible = subjectIsVisibleToViewer(rotes.authorid, viewerId);
+    if (visible) {
+      conditions.push(visible);
+    }
 
     // 处理额外的过滤条件（与 buildWhereConditions 中逻辑保持一致）
     if (filter && typeof filter === 'object') {
@@ -577,7 +556,7 @@ export async function findPublicRote(
     }
 
     const ids = rows.map((row) => row.id);
-    const rotesList = await findRotesByIds(ids);
+    const rotesList = await findRotesByIds(ids, viewerId);
 
     // 按照查询到的 ID 顺序返回结果，保持与分页顺序一致
     const roteMap = new Map<string, any>(rotesList.map((rote) => [rote.id, rote]));
@@ -612,17 +591,7 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(authorid),
         article: ARTICLE_QUERY,
       },
     });
@@ -633,7 +602,7 @@ export async function findMyRandomRote(authorid: string): Promise<any> {
   }
 }
 
-export async function findRandomPublicRote(): Promise<any> {
+export async function findRandomPublicRote(viewerId?: string): Promise<any> {
   try {
     const securityConfig = getGlobalConfig<SecurityConfig>('security');
     const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
@@ -643,6 +612,10 @@ export async function findRandomPublicRote(): Promise<any> {
     // 仅公开且未归档的笔记
     conditions.push(eq(rotes.state, 'public'));
     conditions.push(eq(rotes.archived, false));
+    const visible = subjectIsVisibleToViewer(rotes.authorid, viewerId);
+    if (visible) {
+      conditions.push(visible);
+    }
 
     // 探索页策略：用户设置 + 邮箱验证（与 findPublicRote 保持一致）
     conditions.push(
@@ -677,7 +650,7 @@ export async function findRandomPublicRote(): Promise<any> {
       throw new DatabaseError('No public rotes found');
     }
 
-    const [rote] = await findRotesByIds([row.id]);
+    const [rote] = await findRotesByIds([row.id], viewerId);
     if (!rote) {
       throw new DatabaseError('No public rotes found');
     }
@@ -697,7 +670,8 @@ function buildSearchConditions(
   authorid: string | undefined,
   archived: any,
   state: string | undefined,
-  filter: any
+  filter: any,
+  viewerId?: string
 ) {
   return (rotes: any, { eq, and, or, ilike, sql }: any) => {
     // ilike() 使用参数化查询，会自动处理转义，所以使用原始 keyword
@@ -714,6 +688,8 @@ function buildSearchConditions(
     if (authorid) conditions.push(eq(rotes.authorid, authorid));
     if (archived !== undefined) conditions.push(eq(rotes.archived, archived));
     if (state) conditions.push(eq(rotes.state, state));
+    const visible = subjectIsVisibleToViewer(rotes.authorid, viewerId);
+    if (visible) conditions.push(visible);
 
     // 处理额外的过滤条件
     if (filter && typeof filter === 'object') {
@@ -777,17 +753,7 @@ export async function searchMyRotes(
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(authorid),
         article: ARTICLE_QUERY,
       },
     });
@@ -801,10 +767,18 @@ export async function searchPublicRotes(
   keyword: string,
   skip: number | undefined,
   limit: number | undefined,
-  filter: any = {}
+  filter: any = {},
+  viewerId?: string
 ): Promise<any> {
   try {
-    const whereCondition = buildSearchConditions(keyword, undefined, false, 'public', filter);
+    const whereCondition = buildSearchConditions(
+      keyword,
+      undefined,
+      false,
+      'public',
+      filter,
+      viewerId
+    );
 
     const rotesList = await db.query.rotes.findMany({
       where: whereCondition,
@@ -817,17 +791,7 @@ export async function searchPublicRotes(
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(viewerId),
         article: ARTICLE_QUERY,
       },
     });
@@ -843,10 +807,18 @@ export async function searchUserPublicRotes(
   skip: number | undefined,
   limit: number | undefined,
   filter: any = {},
-  archived: any = false
+  archived: any = false,
+  viewerId?: string
 ): Promise<any> {
   try {
-    const whereCondition = buildSearchConditions(keyword, userid, archived, 'public', filter);
+    const whereCondition = buildSearchConditions(
+      keyword,
+      userid,
+      archived,
+      'public',
+      filter,
+      viewerId
+    );
 
     const rotesList = await db.query.rotes.findMany({
       where: whereCondition,
@@ -859,17 +831,7 @@ export async function searchUserPublicRotes(
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(viewerId),
         article: ARTICLE_QUERY,
       },
     });
@@ -940,12 +902,17 @@ export async function getAllPublicRssData(limit = 20): Promise<{ notes: any[] }>
 }
 
 // 根据文章ID查找关联的笔记（用于文章公开访问权限检查）
-export async function getNoteByArticleId(articleId: string): Promise<any> {
+export async function getNoteByArticleId(articleId: string, viewerId?: string): Promise<any> {
   try {
     if (!articleId) return null;
     // 查找 articleId 匹配的笔记，优先返回公开笔记（不过滤归档状态）
     const note = await db.query.rotes.findFirst({
-      where: (rotes, { eq }) => eq(rotes.articleId, articleId),
+      where: (roteTable, { and, eq }) => {
+        const visible = subjectIsVisibleToViewer(roteTable.authorid, viewerId);
+        return visible
+          ? and(eq(roteTable.articleId, articleId), visible)
+          : eq(roteTable.articleId, articleId);
+      },
       // 优先返回公开笔记，避免私有笔记先被匹配导致误拒访问
       orderBy: (rotes, { desc, sql }) => [
         desc(sql`CASE WHEN ${rotes.state} = 'public' THEN 1 ELSE 0 END`),
@@ -961,17 +928,7 @@ export async function getNoteByArticleId(articleId: string): Promise<any> {
         linkPreviews: {
           orderBy: (linkPreviews, { asc }) => [asc(linkPreviews.createdAt)],
         },
-        reactions: {
-          with: {
-            user: {
-              columns: {
-                username: true,
-                nickname: true,
-                avatar: true,
-              },
-            },
-          },
-        },
+        reactions: reactionsQuery(viewerId),
         article: ARTICLE_QUERY,
       },
     });

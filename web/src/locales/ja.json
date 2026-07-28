@@ -369,6 +369,11 @@
         "saving": "保存中…",
         "saveSuccess": "設定を保存しました",
         "saveFailed": "保存に失敗しました：{{error}}",
+        "blockedUsers": {
+          "title": "ブロックしたユーザー",
+          "description": "ブロックしたアカウントを確認し、解除できます。",
+          "open": "ブロックしたユーザーを管理"
+        },
         "passkey": {
           "title": "パスキー",
           "description": "パスワードレスログイン用のパスキーを管理します。",
@@ -1937,6 +1942,35 @@
       "loadFailed": "記事の読み込みに失敗しました",
       "notFound": "記事コンテンツが見つかりません",
       "edit": "記事を編集"
+    }
+  },
+  "userBlocks": {
+    "block": "ブロック",
+    "blocking": "ブロック中…",
+    "unblock": "ブロック解除",
+    "unblocking": "解除中…",
+    "confirm": "ブロックする",
+    "cancel": "キャンセル",
+    "confirmTitle": "{{user}} をブロックしますか？",
+    "confirmDescription": "ログイン中はお互いのコンテンツが表示されず、リアクションもできなくなります。",
+    "blockSuccess": "ユーザーをブロックしました",
+    "unblockSuccess": "ブロックを解除しました",
+    "notesHidden": {
+      "title": "このユーザーの公開ノートは非表示です",
+      "description": "ブロックを解除すると、再び表示できます。"
+    },
+    "mutationFailed": "リクエストに失敗しました",
+    "mutationFailedWithReason": "ブロック状態を更新できませんでした：{{error}}",
+    "refreshFailed": "ブロック状態は保存されましたが、一部の画面表示を更新できませんでした。ページを再読み込みしてください。",
+    "menuAria": "{{user}} の操作",
+    "blockAria": "{{user}} をブロック",
+    "unblockAria": "{{user}} のブロックを解除",
+    "management": {
+      "title": "ブロックしたユーザー",
+      "sidebarTitle": "アカウント管理",
+      "description": "この一覧は現在のサーバーアカウントから読み込まれ、端末間で同期されます。",
+      "publicContentNotice": "ブロックはログイン中に適用されます。どちらの公開コンテンツも非公開にはなりません。",
+      "empty": "ブロックしたユーザーはいません。"
     }
   },
   "common": {

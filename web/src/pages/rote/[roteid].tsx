@@ -1,5 +1,6 @@
 import { VerifiedIcon } from '@/components/icons/Verified';
 import { RelatedNotesBlock } from '@/components/ai/RelatedNotesBlock';
+import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import PageRequestError from '@/components/others/PageRequestError';
@@ -35,7 +36,7 @@ function SingleRotePage() {
     mutate,
     isValidating,
   } = useAPIGet<Rote>(
-    roteid ? `/notes/${roteid}` : null,
+    roteid ? viewerAwareCacheKey(`/notes/${roteid}`, profile?.id) : null,
     () => get('/notes/' + roteid).then((res) => res.data),
     {
       onError: (err: unknown) => {
