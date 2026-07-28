@@ -148,6 +148,13 @@
       "when": 1784981710926,
       "tag": "0020_extend_jwt_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1785222667914,
+      "tag": "0021_friendly_dazzler",
+      "breakpoints": true
     }
   ]
 }

@@ -365,6 +365,11 @@
         "saving": "Saving…",
         "saveSuccess": "Settings saved",
         "saveFailed": "Failed to save: {{error}}",
+        "blockedUsers": {
+          "title": "Blocked users",
+          "description": "Review accounts you have blocked and unblock them.",
+          "open": "Manage blocked users"
+        },
         "passkey": {
           "title": "Passkeys",
           "description": "Manage your passkeys for passwordless login.",
@@ -1933,6 +1938,31 @@
       "loadFailed": "Failed to load article",
       "notFound": "Article content not found",
       "edit": "Edit article"
+    }
+  },
+  "userBlocks": {
+    "block": "Block",
+    "blocking": "Blocking…",
+    "unblock": "Unblock",
+    "unblocking": "Unblocking…",
+    "confirm": "Block user",
+    "cancel": "Cancel",
+    "confirmTitle": "Block {{user}}?",
+    "confirmDescription": "You will stop seeing each other's content and cannot interact while signed in.",
+    "publicContentNotice": "Blocking does not make public content private. Signed-out visitors may still access public Rotes and articles.",
+    "blockSuccess": "User blocked",
+    "unblockSuccess": "User unblocked",
+    "mutationFailed": "Request failed",
+    "mutationFailedWithReason": "Could not update block: {{error}}",
+    "refreshFailed": "The block was saved, but some on-screen content could not be refreshed. Reload the page to update it.",
+    "blockAria": "Block {{user}}",
+    "unblockAria": "Unblock {{user}}",
+    "management": {
+      "title": "Blocked users",
+      "sidebarTitle": "Account controls",
+      "description": "This list comes from your server account and stays consistent across devices.",
+      "publicContentNotice": "Blocking applies when you are signed in. It does not make either person's public content private.",
+      "empty": "You have not blocked anyone."
     }
   },
   "common": {

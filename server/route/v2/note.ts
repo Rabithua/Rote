@@ -91,7 +91,7 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
   }
 
   // 重新查询以获取最新关联数据（附件/文章等）
-  const fullRote = await findRoteById(rote.id);
+  const fullRote = await findRoteById(rote.id, user.id);
   void enqueueEmbeddingJob('rote', rote.id, user.id).catch((error) => {
     console.error('Failed to enqueue rote embedding job:', error);
   });
@@ -172,7 +172,8 @@ notesRouter.get('/search', authenticateJWT, async (c: HonoContext) => {
 });
 
 // 搜索公开笔记
-notesRouter.get('/search/public', async (c: HonoContext) => {
+notesRouter.get('/search/public', optionalJWT, async (c: HonoContext) => {
+  const viewer = c.get('user') as User | undefined;
   const keyword = c.req.query('keyword');
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
@@ -216,13 +217,14 @@ notesRouter.get('/search/public', async (c: HonoContext) => {
   const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
   const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
-  const rotes = await searchPublicRotes(keyword, parsedSkip, parsedLimit, filter);
+  const rotes = await searchPublicRotes(keyword, parsedSkip, parsedLimit, filter, viewer?.id);
 
   return c.json(createResponse(rotes), 200);
 });
 
 // 搜索指定用户的公开笔记
-notesRouter.get('/search/users/:username', async (c: HonoContext) => {
+notesRouter.get('/search/users/:username', optionalJWT, async (c: HonoContext) => {
+  const viewer = c.get('user') as User | undefined;
   const username = c.req.param('username');
   const keyword = c.req.query('keyword');
   const skip = c.req.query('skip');
@@ -283,7 +285,8 @@ notesRouter.get('/search/users/:username', async (c: HonoContext) => {
     parsedSkip,
     parsedLimit,
     filter,
-    archived ? (archived === 'true' ? true : false) : undefined
+    archived ? (archived === 'true' ? true : false) : undefined,
+    viewer?.id
   );
 
   return c.json(createResponse(rotes), 200);
@@ -340,7 +343,8 @@ notesRouter.get('/', authenticateJWT, async (c: HonoContext) => {
 });
 
 // 获取用户公开笔记
-notesRouter.get('/users/:username', async (c: HonoContext) => {
+notesRouter.get('/users/:username', optionalJWT, async (c: HonoContext) => {
+  const viewer = c.get('user') as User | undefined;
   const username = c.req.param('username');
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
@@ -393,14 +397,16 @@ notesRouter.get('/users/:username', async (c: HonoContext) => {
     parsedSkip,
     parsedLimit,
     filter,
-    archived ? (archived === 'true' ? true : false) : undefined
+    archived ? (archived === 'true' ? true : false) : undefined,
+    viewer?.id
   );
 
   return c.json(createResponse(rote), 200);
 });
 
 // 获取所有公开笔记
-notesRouter.get('/public', async (c: HonoContext) => {
+notesRouter.get('/public', optionalJWT, async (c: HonoContext) => {
+  const viewer = c.get('user') as User | undefined;
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
 
@@ -428,7 +434,7 @@ notesRouter.get('/public', async (c: HonoContext) => {
   const parsedSkip = typeof skip === 'string' ? parseInt(skip) : undefined;
   const parsedLimit = typeof limit === 'string' ? parseInt(limit) : undefined;
 
-  const rote = await findPublicRote(parsedSkip, parsedLimit, filter);
+  const rote = await findPublicRote(parsedSkip, parsedLimit, filter, viewer?.id);
 
   return c.json(createResponse(rote), 200);
 });
@@ -457,7 +463,7 @@ notesRouter.post('/batch', optionalJWT, bodyTypeCheck, async (c: HonoContext) =>
   }
 
   // 批量获取笔记
-  const rotes = await findRotesByIds(uniqueIds);
+  const rotes = await findRotesByIds(uniqueIds, user?.id);
 
   // 权限过滤：只返回用户有权限访问的笔记
   const accessibleRotes = rotes.filter((rote) => {
@@ -492,7 +498,7 @@ notesRouter.get('/:id', optionalJWT, async (c: HonoContext) => {
     throw new Error('Invalid or missing ID');
   }
 
-  const rote = await findRoteById(id);
+  const rote = await findRoteById(id, user?.id);
   if (!rote) {
     throw new Error('Note not found');
   }
@@ -539,7 +545,7 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
   }
 
   // 重新获取最新数据（包含更新后的 article）
-  const data = await findRoteById(id);
+  const data = await findRoteById(id, user.id);
   void enqueueEmbeddingJob('rote', id, user.id).catch((error) => {
     console.error('Failed to enqueue rote embedding job:', error);
   });

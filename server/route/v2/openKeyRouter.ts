@@ -20,6 +20,7 @@ import { requireStorageConfig } from '../../middleware/configCheck';
 import type { StorageConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import type { UploadResult } from '../../types/main';
+import { assertUsersMayInteract } from '../../userBlocks/service';
 import { getGlobalConfig } from '../../utils/config';
 import {
   addReaction,
@@ -209,7 +210,7 @@ router.get('/articles/by-note/:noteId', isOpenKeyOk, async (c: HonoContext) => {
   }
 
   // Check if user has access to the note
-  const note = await findRoteById(noteId);
+  const note = await findRoteById(noteId, openKey.userid);
   if (!note) {
     throw new Error('Note not found');
   }
@@ -219,7 +220,7 @@ router.get('/articles/by-note/:noteId', isOpenKeyOk, async (c: HonoContext) => {
     throw new Error('Access denied: note is private');
   }
 
-  const article = await getNoteArticleCard(noteId);
+  const article = await getNoteArticleCard(noteId, openKey.userid);
   if (!article) {
     return c.json(createResponse(null), 200);
   }
@@ -236,13 +237,13 @@ router.get('/articles/:id', isOpenKeyOk, async (c: HonoContext) => {
     throw new Error('Invalid or missing ID');
   }
 
-  const article = await findArticleById(id);
+  const article = await findArticleById(id, openKey.userid);
 
   if (!article) {
     throw new Error('Article not found');
   }
 
-  const note = await getNoteByArticleId(id);
+  const note = await getNoteByArticleId(id, openKey.userid);
 
   if (article.authorId === openKey.userid) {
     return c.json(createResponse({ ...article, note }), 200);
@@ -609,7 +610,7 @@ router.post('/notes/batch', isOpenKeyOk, requireOpenKeyPerm('GETROTE'), async (c
     }
   }
 
-  const notes = await findRotesByIds(ids);
+  const notes = await findRotesByIds(ids, openKey.userid);
 
   // Filter notes: only return public notes or notes owned by the user
   const accessibleNotes = notes.filter(
@@ -628,7 +629,7 @@ router.get('/notes/:id', isOpenKeyOk, requireOpenKeyPerm('GETROTE'), async (c: H
     throw new Error('Invalid or missing ID');
   }
 
-  const rote = await findRoteById(id);
+  const rote = await findRoteById(id, openKey.userid);
   if (!rote) {
     throw new Error('Note not found');
   }
@@ -670,7 +671,7 @@ router.put('/notes/:id', isOpenKeyOk, requireOpenKeyPerm('EDITROTE'), async (c: 
     await setNoteArticleId(id, articleIdToSet, openKey.userid);
   }
 
-  const data = await findRoteById(id);
+  const data = await findRoteById(id, openKey.userid);
   const hasArticle = Boolean(data?.articleId || data?.article);
   const contentProvided = Object.prototype.hasOwnProperty.call(body, 'content');
   const contentForPreview = contentProvided ? (body as any).content : data?.content;
@@ -760,6 +761,7 @@ router.post(
     }
 
     const openKey = c.get('openKey')!;
+    await assertUsersMayInteract(openKey.userid, rote.authorid);
 
     // Build reaction data with OpenKey user
     const reactionData = {
@@ -985,7 +987,7 @@ router.put(
     }
 
     // Verify the note belongs to the user
-    const note = await findRoteById(noteId);
+    const note = await findRoteById(noteId, openKey.userid);
     if (!note) {
       throw new Error('Note not found');
     }

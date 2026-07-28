@@ -33,7 +33,7 @@
 
 | 方法 | 路径 | 鉴权 | 用途 |
 | --- | --- | --- | --- |
-| `GET` | `/v2/api/users/:username` | 否 | 获取公开用户信息 |
+| `GET` | `/v2/api/users/:username` | 可选 | 获取 viewer-aware 的公开用户信息 |
 | `GET` | `/v2/api/users/me/profile` | 是 | 获取当前用户资料和登录方式 |
 | `PUT` | `/v2/api/users/me/profile` | 是 | 更新当前用户资料 |
 | `GET` | `/v2/api/users/me/settings` | 是 | 获取当前用户设置 |
@@ -42,6 +42,9 @@
 | `GET` | `/v2/api/users/me/heatmap` | 是 | 获取当前用户笔记热力图 |
 | `GET` | `/v2/api/users/me/statistics` | 是 | 获取当前用户内容统计 |
 | `GET` | `/v2/api/users/me/export` | 是 | 导出用户数据 |
+| `GET` | `/v2/api/users/me/blocks` | 是 | 获取当前账户的完整屏蔽列表 |
+| `PUT` | `/v2/api/users/me/blocks/:targetUserId` | 是 | 幂等屏蔽目标账户 |
+| `DELETE` | `/v2/api/users/me/blocks/:targetUserId` | 是 | 幂等解除屏蔽 |
 | `POST` | `/v2/api/users/me/import/plan` | 是 | 预检需要导入的笔记 |
 | `POST` | `/v2/api/imports/attachments/migrate` | 是 | 将一个远程附件迁移到当前用户的对象存储 |
 | `POST` | `/v2/api/users/me/import` | 是 | 导入用户数据 |
@@ -75,12 +78,16 @@ curl 'https://your-domain.com/v2/api/users/demo'
     "cover": "https://example.com/cover.jpg",
     "description": "用户简介",
     "createdAt": "2026-01-01T00:00:00.000Z",
-    "certified": true
+    "certified": true,
+    "viewerHasBlocked": false
   }
 }
 ```
 
 `nickname`、`avatar`、`cover` 和 `description` 可能为 `null`。`certified` 表示用户是否已认证。
+登录请求还会返回 `viewerHasBlocked`：当前 viewer 屏蔽该用户时为 `true`，以便资料页提供解除操作；
+如果目标用户屏蔽了 viewer，则统一返回 `404`，不会泄露屏蔽关系。匿名请求的
+`viewerHasBlocked` 始终为 `false`。
 
 可能的错误：
 
@@ -676,7 +683,67 @@ curl -X POST 'https://your-domain.com/v2/api/users/me/import' \
 - `401`：未认证或令牌无效。
 - 导入内容引用了其他用户拥有的笔记、文章或附件时，请求会失败，不会取得其所有权。
 
-## 13. 删除当前用户账户
+## 13. 管理已屏蔽用户
+
+屏蔽关系由 Server 按账户持久化，跨 Web、iOS、重装和多设备保持一致。
+
+### 获取完整屏蔽列表
+
+`GET /v2/api/users/me/blocks`
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "username": "blocked-user",
+      "nickname": "Blocked User",
+      "avatar": null,
+      "description": null,
+      "certified": false,
+      "blockedAt": "2026-07-28T08:00:00.000Z"
+    }
+  ]
+}
+```
+
+列表按 `blockedAt` 降序、目标用户 ID 升序稳定排列。
+
+### 屏蔽与解除
+
+```bash
+curl -X PUT \
+  'https://your-domain.com/v2/api/users/me/blocks/550e8400-e29b-41d4-a716-446655440000' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+
+curl -X DELETE \
+  'https://your-domain.com/v2/api/users/me/blocks/550e8400-e29b-41d4-a716-446655440000' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
+```
+
+成功数据分别为：
+
+```json
+{ "blocked": true, "targetUserId": "550e8400-e29b-41d4-a716-446655440000" }
+```
+
+```json
+{ "blocked": false, "targetUserId": "550e8400-e29b-41d4-a716-446655440000" }
+```
+
+重复调用是幂等的。不能屏蔽自己；屏蔽不存在的目标返回 `404`。解除不存在的关系仍成功返回
+`blocked: false`。
+
+登录用户的公开列表、搜索、随机、详情、batch、用户公开笔记和文章查询会在数据库分页前排除
+双方任一方向存在屏蔽的作者；具名 reaction 也对相关 viewer 隐藏。双方不能新增 reaction。
+RSS、sitemap 和真正匿名请求保持公开语义。
+
+屏蔽不是内容隐私或访问控制保证：公开 Rote 和 Article 仍是公开资源，退出登录后 Server
+无法把匿名请求与账户屏蔽关系绑定。客户端不得把屏蔽描述成“将公开内容设为私密”。
+
+## 14. 删除当前用户账户
 
 `DELETE /v2/api/users/me`
 

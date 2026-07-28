@@ -6,7 +6,11 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import PageRequestError from '@/components/others/PageRequestError';
 import UserAvatar from '@/components/others/UserAvatar';
 import RoteList from '@/components/rote/roteList';
+import BlockUserButton from '@/features/user-blocks/BlockUserButton';
+import { removeUserContentFromPages } from '@/features/user-blocks/cache';
+import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { profileAtom } from '@/state/profile';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
 import { isNotFoundError } from '@/utils/error';
@@ -18,18 +22,20 @@ import { Globe2, RefreshCw, Stars } from 'lucide-react';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAtomValue } from 'jotai';
 
 function UserPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.user' });
   const navigate = useNavigate();
   const { username }: any = useParams();
+  const currentProfile = useAtomValue(profileAtom);
   const {
     data: userInfo,
     isLoading,
     error,
     mutate: mutateUser,
   } = useAPIGet<Profile>(
-    username ? `/users/${username}` : null,
+    username ? viewerAwareCacheKey(`/users/${username}`, currentProfile?.id) : null,
     () => get('/users/' + username).then((res) => res.data),
     {
       onError: (err: unknown) => {
@@ -75,6 +81,23 @@ function UserPage() {
       return;
     }
     mutate();
+  };
+
+  const handleBlockChanged = async (blocked: boolean) => {
+    if (!userInfo) return;
+    await mutateUser({ ...userInfo, viewerHasBlocked: blocked }, { revalidate: false });
+
+    if (blocked) {
+      await mutate(
+        removeUserContentFromPages(data, {
+          id: userInfo.id,
+          username: userInfo.username,
+        }),
+        { revalidate: false }
+      );
+    } else {
+      await mutate();
+    }
   };
 
   if (hasLoadFailure) {
@@ -155,6 +178,16 @@ function UserPage() {
             />
           </div>
           <div className="mx-4 flex flex-col gap-1">
+            {currentProfile?.id && userInfo?.id && currentProfile.id !== userInfo.id && (
+              <div className="mb-2 flex justify-end">
+                <BlockUserButton
+                  blocked={userInfo.viewerHasBlocked === true}
+                  targetDisplayName={userInfo.nickname || userInfo.username}
+                  targetUserId={userInfo.id}
+                  onChanged={handleBlockChanged}
+                />
+              </div>
+            )}
             <div className="inline-flex items-center gap-1 text-2xl font-semibold">
               {userInfo?.nickname}
               {userInfo?.certified && <VerifiedIcon className="text-theme size-5 shrink-0" />}

@@ -5,6 +5,7 @@ import { parseMarkdownMeta } from '../markdown';
 import { deleteEmbeddingsForSource, enqueueEmbeddingJob } from './ai';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
+import { subjectIsVisibleToViewer } from './userBlock';
 
 export interface ArticleMeta {
   title: string;
@@ -199,10 +200,16 @@ export async function deleteArticle(data: {
 }
 
 // 获取单篇文章（包含作者基础字段）
-export async function findArticleById(id: string): Promise<ArticleWithAuthor | null> {
+export async function findArticleById(
+  id: string,
+  viewerId?: string
+): Promise<ArticleWithAuthor | null> {
   try {
     const article = await db.query.articles.findFirst({
-      where: (tbl, { eq }) => eq(tbl.id, id),
+      where: (tbl, { and, eq }) => {
+        const visible = subjectIsVisibleToViewer(tbl.authorId, viewerId);
+        return visible ? and(eq(tbl.id, id), visible) : eq(tbl.id, id);
+      },
       with: {
         author: {
           columns: {
@@ -278,7 +285,10 @@ export async function replaceNoteArticleRefs(
 }
 
 // 获取某个笔记下的文章引用（简略字段）
-export async function getNoteArticleCard(noteId: string): Promise<ArticleWithAuthor | null> {
+export async function getNoteArticleCard(
+  noteId: string,
+  viewerId?: string
+): Promise<ArticleWithAuthor | null> {
   try {
     const note = await db.query.rotes.findFirst({
       where: (tbl, { eq }) => eq(tbl.id, noteId),
@@ -287,7 +297,12 @@ export async function getNoteArticleCard(noteId: string): Promise<ArticleWithAut
     if (!note?.articleId) return null;
 
     const article = await db.query.articles.findFirst({
-      where: (tbl, { eq }) => eq(tbl.id, note.articleId as any),
+      where: (tbl, { and, eq }) => {
+        const visible = subjectIsVisibleToViewer(tbl.authorId, viewerId);
+        return visible
+          ? and(eq(tbl.id, note.articleId as any), visible)
+          : eq(tbl.id, note.articleId as any);
+      },
       columns: {
         id: true,
         content: true,
@@ -318,7 +333,8 @@ export async function getNoteArticleCard(noteId: string): Promise<ArticleWithAut
 // 获取某个笔记上下文中的文章全文（必须存在引用）
 export async function getArticleInNoteContext(
   articleId: string,
-  noteId: string
+  noteId: string,
+  viewerId?: string
 ): Promise<ArticleWithAuthor | null> {
   try {
     const note = await db.query.rotes.findFirst({
@@ -329,7 +345,10 @@ export async function getArticleInNoteContext(
     if (note.articleId !== articleId) return null;
 
     const article = await db.query.articles.findFirst({
-      where: (tbl, { eq }) => eq(tbl.id, articleId),
+      where: (tbl, { and, eq }) => {
+        const visible = subjectIsVisibleToViewer(tbl.authorId, viewerId);
+        return visible ? and(eq(tbl.id, articleId), visible) : eq(tbl.id, articleId);
+      },
       with: {
         author: {
           columns: {

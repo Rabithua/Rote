@@ -24,6 +24,7 @@ import Landing from '@/pages/landing';
 import Login from '@/pages/login';
 import OAuthAuthorizePage from '@/pages/oauth/authorize';
 import ProfilePage from '@/pages/profile';
+import BlockedUsersPage from '@/pages/profile/blocked';
 import SettingsPage from '@/pages/profile/setting';
 import SingleRotePage from '@/pages/rote/[roteid]';
 import SetupPage from '@/pages/setup';
@@ -168,6 +169,15 @@ export default function GlobalRouterProvider() {
               element: (
                 <ProtectedRoute>
                   <SettingsPage />
+                </ProtectedRoute>
+              ),
+              errorElement: <RouteErrorPage />,
+            },
+            {
+              path: 'profile/blocked',
+              element: (
+                <ProtectedRoute>
+                  <BlockedUsersPage />
                 </ProtectedRoute>
               ),
               errorElement: <RouteErrorPage />,

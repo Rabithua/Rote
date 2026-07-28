@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { optionalJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
+import { assertUsersMayInteract } from '../../userBlocks/service';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { ReactionCreateZod } from '../../utils/zod';
@@ -35,6 +36,9 @@ reactionsRouter.post('/', async (c: HonoContext) => {
   const rote = await findRoteById(roteid);
   if (!rote) {
     throw new Error('Rote not found');
+  }
+  if (user) {
+    await assertUsersMayInteract(user.id, rote.authorid);
   }
 
   // 构建反应数据

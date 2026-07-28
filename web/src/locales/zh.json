@@ -355,6 +355,11 @@
         "saving": "保存中…",
         "saveSuccess": "设置已保存",
         "saveFailed": "保存失败：{{error}}",
+        "blockedUsers": {
+          "title": "已屏蔽用户",
+          "description": "查看你屏蔽的账户并随时解除。",
+          "open": "管理已屏蔽用户"
+        },
         "passkey": {
           "title": "通行密钥",
           "description": "管理您的通行密钥，用于免密码登录。",
@@ -1923,6 +1928,31 @@
       "loadFailed": "加载文章失败",
       "notFound": "未找到文章内容",
       "edit": "编辑文章"
+    }
+  },
+  "userBlocks": {
+    "block": "屏蔽",
+    "blocking": "屏蔽中…",
+    "unblock": "取消屏蔽",
+    "unblocking": "取消中…",
+    "confirm": "确认屏蔽",
+    "cancel": "取消",
+    "confirmTitle": "屏蔽 {{user}}？",
+    "confirmDescription": "登录状态下，双方将看不到彼此的内容，也无法互动。",
+    "publicContentNotice": "屏蔽不会把公开内容变为私密。退出登录的访客仍可能访问公开 Rote 和文章。",
+    "blockSuccess": "已屏蔽用户",
+    "unblockSuccess": "已取消屏蔽",
+    "mutationFailed": "请求失败",
+    "mutationFailedWithReason": "更新屏蔽状态失败：{{error}}",
+    "refreshFailed": "屏蔽状态已保存，但部分当前页面内容未能刷新。请重新加载页面以更新。",
+    "blockAria": "屏蔽 {{user}}",
+    "unblockAria": "取消屏蔽 {{user}}",
+    "management": {
+      "title": "已屏蔽用户",
+      "sidebarTitle": "账户管理",
+      "description": "此列表直接来自当前服务器账户，并会在不同设备间保持一致。",
+      "publicContentNotice": "屏蔽仅在登录状态下生效，不会将任何一方的公开内容变为私密。",
+      "empty": "你还没有屏蔽任何用户。"
     }
   },
   "common": {

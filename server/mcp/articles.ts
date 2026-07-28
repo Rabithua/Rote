@@ -31,21 +31,21 @@ export const articleTools: McpTool[] = [
   defineMcpTool('articles_get', async (c, args) => {
     const auth = requireAuth(c);
     const id = assertUuid(args.id, 'article_id');
-    const article = await findArticleById(id);
+    const article = await findArticleById(id, auth.userId);
     if (!article) throw new Error(mcpErrors.articleNotFound);
-    const note = await getNoteByArticleId(id);
+    const note = await getNoteByArticleId(id, auth.userId);
     if (article.authorId === auth.userId || note?.state === 'public') return { ...article, note };
     throw new Error(mcpErrors.articleAccessDenied);
   }),
   defineMcpTool('articles_get_by_note', async (c, args) => {
     const auth = requireAuth(c);
     const noteId = assertUuid(args.noteId, 'note_id');
-    const note = await findRoteById(noteId);
+    const note = await findRoteById(noteId, auth.userId);
     if (!note) throw new Error(mcpErrors.noteNotFound);
     if (note.state !== 'public' && note.authorid !== auth.userId) {
       throw new Error(mcpErrors.notePrivate);
     }
-    return await getNoteArticleCard(noteId);
+    return await getNoteArticleCard(noteId, auth.userId);
   }),
   defineMcpTool('articles_update', async (c, args) => {
     const auth = requireAuth(c);

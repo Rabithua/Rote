@@ -127,6 +127,7 @@ function getResultDate(result: SemanticSearchResult, dateField: RetrievalDateFie
 export async function textSearchMemory(params: {
   query: string;
   ownerId?: string;
+  viewerId?: string;
   sourceTypes?: AiSourceType[];
   timeRange?: NormalizedTimeRange | null;
   selection?: RetrievalSelection;
@@ -268,6 +269,7 @@ export async function textSearchMemory(params: {
 export async function searchMemory(params: {
   query: string;
   ownerId?: string;
+  viewerId?: string;
   scope?: 'mine' | 'public';
   sourceTypes?: AiSourceType[];
   timeRange?: NormalizedTimeRange | null;

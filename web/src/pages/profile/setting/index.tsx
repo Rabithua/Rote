@@ -33,10 +33,12 @@ import {
   RefreshCw,
   RotateCcw,
   Key,
+  ShieldX,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 import DeleteAccountDialog from '../components/DeleteAccountDialog';
 import MergeAccountDialog from '../components/MergeAccountDialog';
 import ProfileSidebar from '../components/ProfileSidebar';
@@ -254,6 +256,19 @@ export default function SettingsPage() {
         >
           {settingsSaving && <Loader className="mr-2 size-4 animate-spin" />}
           {settingsSaving ? t('settings.saving') : t('settings.save')}
+        </Button>
+      </div>
+
+      <div className="space-y-4 p-4">
+        <div>
+          <div className="text-base font-semibold">{t('settings.blockedUsers.title')}</div>
+          <p className="text-muted-foreground text-sm">{t('settings.blockedUsers.description')}</p>
+        </div>
+        <Button variant="outline" className="w-full" asChild>
+          <Link to="/profile/blocked">
+            <ShieldX className="size-4" />
+            {t('settings.blockedUsers.open')}
+          </Link>
         </Button>
       </div>
 
