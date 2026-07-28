@@ -6,8 +6,9 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import PageRequestError from '@/components/others/PageRequestError';
 import UserAvatar from '@/components/others/UserAvatar';
 import RoteList from '@/components/rote/roteList';
-import BlockUserButton from '@/features/user-blocks/BlockUserButton';
+import BlockedUserNotesState from '@/features/user-blocks/BlockedUserNotesState';
 import { removeUserContentFromPages } from '@/features/user-blocks/cache';
+import UserBlockMenu from '@/features/user-blocks/UserBlockMenu';
 import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { profileAtom } from '@/state/profile';
@@ -85,9 +86,9 @@ function UserPage() {
 
   const handleBlockChanged = async (blocked: boolean) => {
     if (!userInfo) return;
-    await mutateUser({ ...userInfo, viewerHasBlocked: blocked }, { revalidate: false });
 
     if (blocked) {
+      await mutateUser({ ...userInfo, viewerHasBlocked: true }, { revalidate: false });
       await mutate(
         removeUserContentFromPages(data, {
           id: userInfo.id,
@@ -95,9 +96,11 @@ function UserPage() {
         }),
         { revalidate: false }
       );
-    } else {
-      await mutate();
+      return;
     }
+
+    await mutate();
+    await mutateUser({ ...userInfo, viewerHasBlocked: false }, { revalidate: false });
   };
 
   if (hasLoadFailure) {
@@ -169,18 +172,16 @@ function UserPage() {
               alt=""
             />
           </div>
-          <div className="mx-4 flex h-16">
+          <div className="mx-4 flex h-16 items-center">
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}
             <UserAvatar
               avatar={userInfo?.avatar}
               className="bg-background size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block"
               fallbackClassName="bg-muted/80"
             />
-          </div>
-          <div className="mx-4 flex flex-col gap-1">
             {currentProfile?.id && userInfo?.id && currentProfile.id !== userInfo.id && (
-              <div className="mb-2 flex justify-end">
-                <BlockUserButton
+              <div className="ml-auto flex items-center gap-2">
+                <UserBlockMenu
                   blocked={userInfo.viewerHasBlocked === true}
                   targetDisplayName={userInfo.nickname || userInfo.username}
                   targetUserId={userInfo.id}
@@ -188,6 +189,8 @@ function UserPage() {
                 />
               </div>
             )}
+          </div>
+          <div className="mx-4 flex flex-col gap-1">
             <div className="inline-flex items-center gap-1 text-2xl font-semibold">
               {userInfo?.nickname}
               {userInfo?.certified && <VerifiedIcon className="text-theme size-5 shrink-0" />}
@@ -209,7 +212,13 @@ function UserPage() {
           {t('publicNotes')}
         </div>
 
-        {userInfo && <RoteList data={data} loadMore={loadMore} mutate={mutate} />}
+        {userInfo ? (
+          userInfo.viewerHasBlocked ? (
+            <BlockedUserNotesState />
+          ) : (
+            <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+          )
+        ) : null}
       </ContainerWithSideBar>
     </>
   );

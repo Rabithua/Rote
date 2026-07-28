@@ -47,6 +47,7 @@ function RoteItem({
   showAvatar = true,
   enableContentCollapse = true,
   showReactions = true,
+  showAuthorActions = false,
 }: {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
@@ -54,6 +55,7 @@ function RoteItem({
   showAvatar?: boolean;
   enableContentCollapse?: boolean;
   showReactions?: boolean;
+  showAuthorActions?: boolean;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteItem',
@@ -65,11 +67,33 @@ function RoteItem({
   const profile = useAtomValue(profileAtom);
 
   const isOwner = profile?.username === rote.author.username;
+  const blockTarget =
+    showAuthorActions && profile?.id && !isOwner && rote.authorid
+      ? {
+          displayName: rote.author.nickname || rote.author.username,
+          id: rote.authorid,
+        }
+      : undefined;
 
   const onEdit = useCallback(() => {
     setRote(rote);
     setModalType('edit');
   }, [rote]);
+
+  const onBlockChanged = useCallback(
+    async (blocked: boolean) => {
+      if (!blocked) return;
+
+      if (mutate) {
+        await mutate();
+      }
+
+      if (mutateSingle) {
+        await mutateSingle();
+      }
+    },
+    [mutate, mutateSingle]
+  );
 
   return (
     <div
@@ -175,11 +199,14 @@ function RoteItem({
             )}
           </span>
 
-          {isOwner && inView && (mutate || mutateSingle) && (
+          {inView && ((isOwner && (mutate || mutateSingle)) || blockTarget) && (
             <RoteActionsMenu
               rote={rote}
               mutate={mutate}
               mutateSingle={mutateSingle}
+              isOwner={isOwner}
+              blockTarget={blockTarget}
+              onBlockChanged={onBlockChanged}
               onEdit={onEdit}
               onShare={() => {
                 const url = `${window.location.origin}/rote/${rote.id}`;

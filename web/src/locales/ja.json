@@ -1953,12 +1953,16 @@
     "cancel": "キャンセル",
     "confirmTitle": "{{user}} をブロックしますか？",
     "confirmDescription": "ログイン中はお互いのコンテンツが表示されず、リアクションもできなくなります。",
-    "publicContentNotice": "ブロックしても公開コンテンツは非公開になりません。ログアウトした訪問者は公開 Rote や記事にアクセスできます。",
     "blockSuccess": "ユーザーをブロックしました",
     "unblockSuccess": "ブロックを解除しました",
+    "notesHidden": {
+      "title": "このユーザーの公開ノートは非表示です",
+      "description": "ブロックを解除すると、再び表示できます。"
+    },
     "mutationFailed": "リクエストに失敗しました",
     "mutationFailedWithReason": "ブロック状態を更新できませんでした：{{error}}",
     "refreshFailed": "ブロック状態は保存されましたが、一部の画面表示を更新できませんでした。ページを再読み込みしてください。",
+    "menuAria": "{{user}} の操作",
     "blockAria": "{{user}} をブロック",
     "unblockAria": "{{user}} のブロックを解除",
     "management": {

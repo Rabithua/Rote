@@ -1949,12 +1949,16 @@
     "cancel": "Cancel",
     "confirmTitle": "Block {{user}}?",
     "confirmDescription": "You will stop seeing each other's content and cannot interact while signed in.",
-    "publicContentNotice": "Blocking does not make public content private. Signed-out visitors may still access public Rotes and articles.",
     "blockSuccess": "User blocked",
     "unblockSuccess": "User unblocked",
+    "notesHidden": {
+      "title": "This user's public notes are hidden",
+      "description": "Unblock this user to view them again."
+    },
     "mutationFailed": "Request failed",
     "mutationFailedWithReason": "Could not update block: {{error}}",
     "refreshFailed": "The block was saved, but some on-screen content could not be refreshed. Reload the page to update it.",
+    "menuAria": "Actions for {{user}}",
     "blockAria": "Block {{user}}",
     "unblockAria": "Unblock {{user}}",
     "management": {

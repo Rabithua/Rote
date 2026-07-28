@@ -20,13 +20,14 @@ export function isBlockAffectedCacheKey(key: unknown): boolean {
       key.startsWith('/notes') ||
       key.startsWith('/articles') ||
       key.startsWith('/users/') ||
-      key === '/users/me/blocks'
+      key === '/users/me/blocks' ||
+      key === 'randomRote'
     );
   }
 
   if (!key || typeof key !== 'object') return false;
   const apiType = (key as { apiType?: unknown }).apiType;
-  return apiType === 'public' || apiType === 'userPublic';
+  return apiType === 'mine' || apiType === 'public' || apiType === 'userPublic';
 }
 
 export async function refreshBlockAffectedCaches() {

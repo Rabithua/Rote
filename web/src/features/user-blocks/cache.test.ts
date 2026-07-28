@@ -24,6 +24,7 @@ describe('user block cache helpers', () => {
     expect(isBlockAffectedCacheKey('/notes/public')).toBe(true);
     expect(isBlockAffectedCacheKey('/users/me/blocks')).toBe(true);
     expect(isBlockAffectedCacheKey({ apiType: 'public' })).toBe(true);
+    expect(isBlockAffectedCacheKey({ apiType: 'mine' })).toBe(true);
     expect(
       isBlockAffectedCacheKey([
         'viewer-aware',
@@ -31,7 +32,9 @@ describe('user block cache helpers', () => {
         '/articles/article-id',
       ])
     ).toBe(true);
-    expect(isBlockAffectedCacheKey({ apiType: 'mine' })).toBe(false);
+    expect(
+      isBlockAffectedCacheKey(['viewer-aware', 'https://rote.example|account-id', 'randomRote'])
+    ).toBe(true);
     expect(isBlockAffectedCacheKey('https://api.github.com/repo')).toBe(false);
   });
 });

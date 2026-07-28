@@ -1939,12 +1939,16 @@
     "cancel": "取消",
     "confirmTitle": "屏蔽 {{user}}？",
     "confirmDescription": "登录状态下，双方将看不到彼此的内容，也无法互动。",
-    "publicContentNotice": "屏蔽不会把公开内容变为私密。退出登录的访客仍可能访问公开 Rote 和文章。",
     "blockSuccess": "已屏蔽用户",
     "unblockSuccess": "已取消屏蔽",
+    "notesHidden": {
+      "title": "已隐藏该用户的公开笔记",
+      "description": "取消屏蔽后即可重新查看。"
+    },
     "mutationFailed": "请求失败",
     "mutationFailedWithReason": "更新屏蔽状态失败：{{error}}",
     "refreshFailed": "屏蔽状态已保存，但部分当前页面内容未能刷新。请重新加载页面以更新。",
+    "menuAria": "{{user}} 的操作",
     "blockAria": "屏蔽 {{user}}",
     "unblockAria": "取消屏蔽 {{user}}",
     "management": {

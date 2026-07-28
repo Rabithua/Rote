@@ -41,6 +41,7 @@ const ids = {
 };
 
 const allUserIds = [ids.viewer, ids.blocked, ids.visibleOne, ids.visibleTwo, ids.cascade];
+const visibilityFixtureTag = 'user-block-visibility-fixture';
 
 describe.serial('server-authoritative user blocks', () => {
   beforeAll(async () => {
@@ -91,6 +92,7 @@ describe.serial('server-authoritative user blocks', () => {
         authorid: ids.blocked,
         content: 'shared visibility keyword blocked',
         state: 'public',
+        tags: [visibilityFixtureTag],
         articleId: ids.blockedArticle,
         createdAt: new Date('2026-07-28T05:00:00Z'),
         updatedAt: new Date('2026-07-28T05:00:00Z'),
@@ -100,6 +102,7 @@ describe.serial('server-authoritative user blocks', () => {
         authorid: ids.visibleOne,
         content: 'shared visibility keyword visible one',
         state: 'public',
+        tags: [visibilityFixtureTag],
         articleId: ids.visibleArticle,
         createdAt: new Date('2026-07-28T04:00:00Z'),
         updatedAt: new Date('2026-07-28T04:00:00Z'),
@@ -109,6 +112,7 @@ describe.serial('server-authoritative user blocks', () => {
         authorid: ids.visibleTwo,
         content: 'shared visibility keyword visible two',
         state: 'public',
+        tags: [visibilityFixtureTag],
         createdAt: new Date('2026-07-28T03:00:00Z'),
         updatedAt: new Date('2026-07-28T03:00:00Z'),
       },
@@ -197,10 +201,11 @@ describe.serial('server-authoritative user blocks', () => {
   });
 
   it('filters public list and search before pagination', async () => {
-    const page = await findPublicRote(0, 2, {}, ids.viewer);
+    const filter = { tags: { hasEvery: [visibilityFixtureTag] } };
+    const page = await findPublicRote(0, 2, filter, ids.viewer);
     expect(page.map((note: any) => note.id)).toEqual([ids.visibleNoteOne, ids.visibleNoteTwo]);
 
-    const search = await searchPublicRotes('visibility keyword', 0, 2, {}, ids.viewer);
+    const search = await searchPublicRotes('visibility keyword', 0, 2, filter, ids.viewer);
     expect(search.map((note: any) => note.id)).toEqual([ids.visibleNoteOne, ids.visibleNoteTwo]);
   });
 

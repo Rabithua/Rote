@@ -17,6 +17,7 @@ function RoteList({
   isItemMuted,
   isValidating,
   itemActions,
+  showAuthorActions = false,
 }: {
   data?: Rotes[];
   loadMore?: () => void;
@@ -25,6 +26,7 @@ function RoteList({
   isItemMuted?: (rote: Rote, index: number) => boolean;
   isValidating?: boolean;
   itemActions?: (rote: Rote, index: number) => ReactNode;
+  showAuthorActions?: boolean;
 }) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.roteList',
@@ -91,7 +93,14 @@ function RoteList({
     rotes.map((item: Rote, index) => {
       const actions = itemActions?.(item, index);
       const muted = isItemMuted?.(item, index);
-      const roteItem = <RoteItem rote={item} mutate={mutate} showReactions={!isStaticList} />;
+      const roteItem = (
+        <RoteItem
+          rote={item}
+          mutate={mutate}
+          showReactions={!isStaticList}
+          showAuthorActions={showAuthorActions}
+        />
+      );
 
       if (!actions && !muted) {
         return (
@@ -100,6 +109,7 @@ function RoteList({
             key={item.id || index}
             mutate={mutate}
             showReactions={!isStaticList}
+            showAuthorActions={showAuthorActions}
           />
         );
       }
