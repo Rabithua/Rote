@@ -1,4 +1,5 @@
 import ArticleNavBarActions from '@/components/article/ArticleNavBarActions';
+import { ArticleDeleteConfirmDialog } from '@/components/article/ArticleDeleteConfirmDialog';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
@@ -62,7 +63,14 @@ function ArticleDetailPage() {
   };
 
   // 使用共享 hook 处理复制链接和删除操作
-  const { isDeleting, handleCopyLink, handleDelete } = useArticleActions({
+  const {
+    isDeleting,
+    isDeleteConfirmOpen,
+    handleCopyLink,
+    handleDelete,
+    confirmDelete,
+    setDeleteConfirmOpen,
+  } = useArticleActions({
     articleId: articleid,
     onDeleted: () => {
       navigate('/');
@@ -216,6 +224,12 @@ function ArticleDetailPage() {
           </Link>
         )}
       </div>
+      <ArticleDeleteConfirmDialog
+        open={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+        onOpenChange={setDeleteConfirmOpen}
+      />
     </ContainerWithSideBar>
   ) : null;
 }
