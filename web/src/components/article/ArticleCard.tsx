@@ -4,6 +4,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ArticleDeleteConfirmDialog } from '@/components/article/ArticleDeleteConfirmDialog';
 import { useArticleActions } from '@/hooks/useArticleActions';
 import { profileAtom } from '@/state/profile';
 import type { Article, ArticleSummary } from '@/types/main';
@@ -53,7 +54,15 @@ export function ArticleCard({
   const navigate = useNavigate();
 
   // 使用共享 hook 处理文章操作
-  const { isDeleting, handleCopyLink, handleDelete, t } = useArticleActions({
+  const {
+    isDeleting,
+    isDeleteConfirmOpen,
+    handleCopyLink,
+    handleDelete,
+    confirmDelete,
+    setDeleteConfirmOpen,
+    t,
+  } = useArticleActions({
     articleId: resolvedArticleId,
     onDeleted,
     onEdit: onEdit ? () => onEdit(article) : undefined,
@@ -157,6 +166,12 @@ export function ArticleCard({
           </div>
         )}
       </div>
+      <ArticleDeleteConfirmDialog
+        open={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+        onOpenChange={setDeleteConfirmOpen}
+      />
     </>
   );
 }

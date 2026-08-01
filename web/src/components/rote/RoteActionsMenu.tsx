@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import type { SWRInfiniteKeyedMutator } from 'swr/infinite';
 
 import { Button } from '@/components/ui/button';
+import { DeleteConfirmDialog } from '@/components/ui/delete-confirm-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,6 +30,7 @@ import { useUserBlockAction } from '@/features/user-blocks/useUserBlockAction';
 import { useNoteExport } from '@/hooks/useNoteExport';
 import type { Attachment, Rote, Rotes } from '@/types/main';
 import { del, put } from '@/utils/api';
+import { useState } from 'react';
 import type { KeyedMutator } from 'swr';
 
 interface RoteActionsMenuProps {
@@ -65,6 +67,8 @@ export default function RoteActionsMenu({
     keyPrefix: 'userBlocks',
   });
   const { exporting, handleExportImage } = useNoteExport();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const blockAction = useUserBlockAction({
     blocked: blockTarget?.blocked === true,
     targetUserId: blockTarget?.id || '',
@@ -129,14 +133,20 @@ export default function RoteActionsMenu({
     },
   };
 
-  function deleteRoteFn() {
-    roteHelpers.executeRoteAction(
-      () => del('/notes/' + rote.id),
-      () => roteHelpers.updateLocalRoteDelete(),
-      t('messages.deleting'),
-      t('messages.deleteSuccess'),
-      t('messages.deleteFailed')
-    );
+  async function deleteRoteFn() {
+    if (isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      await del('/notes/' + rote.id);
+      toast.success(t('messages.deleteSuccess'));
+      setIsDeleteConfirmOpen(false);
+      roteHelpers.updateLocalRoteDelete();
+    } catch {
+      toast.error(t('messages.deleteFailed'));
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   function editRotePin() {
@@ -283,7 +293,10 @@ export default function RoteActionsMenu({
                 {exporting ? t('exporting') : t('exportImage')}
               </DropdownMenuItem>
 
-              <DropdownMenuItem onSelect={deleteRoteFn} className="text-red-500 focus:text-red-500">
+              <DropdownMenuItem
+                onSelect={() => setIsDeleteConfirmOpen(true)}
+                className="text-red-500 focus:text-red-500"
+              >
                 <Trash2 className="size-4 text-red-500" />
                 {t('delete')}
               </DropdownMenuItem>
@@ -302,6 +315,18 @@ export default function RoteActionsMenu({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <DeleteConfirmDialog
+        open={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        title={t('messages.deleteConfirmTitle')}
+        description={t('messages.deleteConfirmDescription')}
+        cancelLabel={t('messages.cancelDelete')}
+        confirmLabel={t('messages.confirmDelete')}
+        deletingLabel={t('messages.deleting')}
+        onConfirm={deleteRoteFn}
+        onOpenChange={setIsDeleteConfirmOpen}
+      />
 
       {blockTarget && (
         <BlockUserConfirmDialog

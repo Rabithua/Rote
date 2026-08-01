@@ -16,6 +16,7 @@ interface UseArticleActionsOptions {
 export function useArticleActions({ articleId, onDeleted, onEdit }: UseArticleActionsOptions) {
   const { t } = useTranslation('translation', { keyPrefix: 'article.actions' });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   const handleCopyLink = useCallback(
     (e?: React.MouseEvent) => {
@@ -38,34 +39,46 @@ export function useArticleActions({ articleId, onDeleted, onEdit }: UseArticleAc
   );
 
   const handleDelete = useCallback(
-    async (e?: React.MouseEvent) => {
+    (e?: React.MouseEvent) => {
       e?.stopPropagation();
       if (!articleId) return;
-
-      if (!confirm(t('deleteConfirm'))) {
-        return;
-      }
-
-      setIsDeleting(true);
-      try {
-        await deleteArticle(articleId);
-        toast.success(t('deleteSuccess'));
-        onDeleted?.();
-      } catch (error: any) {
-        const message = error?.response?.data?.message || t('deleteFailed');
-        toast.error(message);
-      } finally {
-        setIsDeleting(false);
-      }
+      setIsDeleteConfirmOpen(true);
     },
-    [articleId, onDeleted, t]
+    [articleId]
+  );
+
+  const confirmDelete = useCallback(async () => {
+    if (!articleId || isDeleting) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteArticle(articleId);
+      toast.success(t('deleteSuccess'));
+      setIsDeleteConfirmOpen(false);
+      setIsDeleting(false);
+      onDeleted?.();
+    } catch (error: any) {
+      const message = error?.response?.data?.message || t('deleteFailed');
+      toast.error(message);
+      setIsDeleting(false);
+    }
+  }, [articleId, isDeleting, onDeleted, t]);
+
+  const setDeleteConfirmOpen = useCallback(
+    (open: boolean) => {
+      if (!isDeleting) setIsDeleteConfirmOpen(open);
+    },
+    [isDeleting]
   );
 
   return {
     isDeleting,
+    isDeleteConfirmOpen,
     handleCopyLink,
     handleEdit,
     handleDelete,
+    confirmDelete,
+    setDeleteConfirmOpen,
     t,
   };
 }
