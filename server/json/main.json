@@ -37,6 +37,20 @@
     "🌚",
     "🌝"
   ],
+  "anonymousPreReactions": [
+    "❤️",
+    "👍",
+    "🎉",
+    "👏",
+    "✨",
+    "💡",
+    "🚀",
+    "🙏",
+    "💪",
+    "🤝",
+    "🔥",
+    "🌟"
+  ],
   "roteMaxLetter": 10000,
   "roteContentExpandedLetter": 600,
   "safeRoutes": [

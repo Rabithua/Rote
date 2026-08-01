@@ -17,13 +17,13 @@ export interface Reaction {
   id: string;
   type: string; // 支持任意 Emoji 或反应类型字符串
   roteid: string;
-  userid?: string;
+  userid?: string | null;
   user?: {
     username: string;
     nickname: string | null;
     avatar: string | null;
   };
-  visitorId?: string;
+  visitorId?: string | null;
   visitorInfo?: any; // 存储访客的额外信息（IP、User-Agent等）
   metadata?: any; // 可以存储额外的反应数据
   createdAt: string;
