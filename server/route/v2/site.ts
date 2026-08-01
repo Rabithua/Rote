@@ -222,6 +222,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
       // 前端通用配置（来自 main.json）
       frontendConfig: {
         preReactions: mainJson.preReactions,
+        anonymousPreReactions: mainJson.anonymousPreReactions,
         permissionKeys: mainJson.openkeyPermissions,
         roteMaxLetter: mainJson.roteMaxLetter,
         roteContentExpandedLetter: mainJson.roteContentExpandedLetter,

@@ -2,6 +2,12 @@ import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  availablePreReactions,
+  defaultAnonymousPreReactions,
+  mayCreateCustomReaction,
+  mayToggleReaction,
+} from '@/features/reactions/policy';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { useAuthState } from '@/state/profile';
 import { visitorIdAtom } from '@/state/visitorId';
@@ -38,9 +44,18 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
     keyPrefix: 'components.reactions',
   });
   const preReactions = siteStatus?.frontendConfig?.preReactions ?? [];
+  const anonymousPreReactions: readonly string[] =
+    siteStatus?.frontendConfig?.anonymousPreReactions ?? defaultAnonymousPreReactions;
+  const pickerReactions = availablePreReactions(
+    isAuthenticated,
+    preReactions,
+    siteStatus?.frontendConfig?.anonymousPreReactions
+  );
+  const hasReactionPicker = isAuthenticated || pickerReactions.length > 0;
 
   const [open, setOpen] = useState(false);
   const [visitorId, setVisitorId] = useAtom(visitorIdAtom);
+  const isReactionIdentityReady = isAuthenticated || Boolean(visitorId);
   const [isLoading, setIsLoading] = useState(false);
   const [isVisitorIdLoading, setIsVisitorIdLoading] = useState(false);
 
@@ -51,6 +66,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   const isLongPressRef = React.useRef(false);
 
   const startLongPress = (e: React.PointerEvent) => {
+    if (!mayCreateCustomReaction(isAuthenticated)) return;
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
     isLongPressRef.current = false;
@@ -108,7 +124,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
 
   const handleInlineSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLoading || !customReaction.trim()) {
+    if (!mayCreateCustomReaction(isAuthenticated) || isLoading || !customReaction.trim()) {
       setShowInlineInput(false);
       setCustomReaction('');
       return;
@@ -130,6 +146,13 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
     }
   }, [authReady, isAuthenticated, visitorId, setVisitorId]);
 
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      setShowInlineInput(false);
+      setCustomReaction('');
+    }
+  }, [isAuthenticated]);
+
   const groupedReactions = rote.reactions.reduce(
     (acc, reaction) => {
       acc[reaction.type] = acc[reaction.type] || [];
@@ -140,7 +163,23 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   );
 
   const handleReactionClick = async (reactionType: string) => {
-    if (isAuthPending) {
+    if (isAuthPending || !isReactionIdentityReady) {
+      return;
+    }
+
+    const existingReaction = isAuthenticated
+      ? rote.reactions.find((r) => r.type === reactionType && r.userid === profile?.id)
+      : visitorId
+        ? rote.reactions.find((r) => r.type === reactionType && r.visitorId === visitorId)
+        : undefined;
+
+    if (
+      !mayToggleReaction({
+        isAuthenticated,
+        isAllowedAnonymousType: anonymousPreReactions.includes(reactionType),
+        hasOwnReaction: Boolean(existingReaction),
+      })
+    ) {
       return;
     }
 
@@ -148,10 +187,6 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
     setIsLoading(true);
 
     try {
-      const existingReaction = isAuthenticated
-        ? rote.reactions.find((r) => r.type === reactionType && r.userid === profile?.id)
-        : rote.reactions.find((r) => r.type === reactionType && r.visitorId === visitorId);
-
       if (existingReaction) {
         await del(
           isAuthenticated
@@ -214,23 +249,35 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
           const hasUserReactions = reactionGroup.some((r) => r.user);
           const isCustomReaction = !preReactions.includes(type);
           const firstUser = isCustomReaction ? reactionGroup.find((r) => r.user)?.user : null;
+          const hasOwnReaction = isAuthenticated
+            ? reactionGroup.some((reaction) => reaction.userid === profile?.id)
+            : Boolean(visitorId) &&
+              reactionGroup.some((reaction) => reaction.visitorId === visitorId);
+          const isInteractive =
+            isReactionIdentityReady &&
+            mayToggleReaction({
+              isAuthenticated,
+              isAllowedAnonymousType: anonymousPreReactions.includes(type),
+              hasOwnReaction,
+            });
 
           const ReactionButton = (
             <div
               className={`flex h-6 ${
-                isLoading ? 'cursor-not-allowed' : 'cursor-pointer'
+                isLoading || !isInteractive ? 'cursor-not-allowed' : 'cursor-pointer'
               } items-center gap-1.5 rounded-full ${
                 firstUser ? 'pr-2.5 pl-1' : 'px-2 pr-3'
               } text-xs duration-300 ${
                 (
                   isAuthenticated
                     ? rote.reactions.some((r) => r.type === type && r.userid === profile?.id)
-                    : rote.reactions.some((r) => r.type === type && r.visitorId === visitorId)
+                    : Boolean(visitorId) &&
+                      rote.reactions.some((r) => r.type === type && r.visitorId === visitorId)
                 )
                   ? 'border-theme/30 bg-theme/10 text-theme hover:bg-theme/30 border-[0.5px]'
                   : 'bg-foreground/5 hover:bg-foreground/5'
               }`}
-              onClick={() => (isLoading ? undefined : handleReactionClick(type))}
+              onClick={() => (isLoading || !isInteractive ? undefined : handleReactionClick(type))}
             >
               {firstUser && (
                 <Link
@@ -291,7 +338,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
         })}
       </div>
 
-      {showInlineInput ? (
+      {mayCreateCustomReaction(isAuthenticated) && showInlineInput ? (
         <form
           onSubmit={handleInlineSubmit}
           className="bg-foreground/5 flex h-6 w-32 items-center rounded-2xl px-1.5 transition-all duration-300 focus-within:w-36"
@@ -308,11 +355,12 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
             autoFocus
           />
         </form>
-      ) : (
+      ) : hasReactionPicker ? (
         <Popover open={open} onOpenChange={handleOpenChange}>
           <PopoverTrigger asChild>
             <button
               type="button"
+              disabled={!isReactionIdentityReady}
               className="transition-transform select-none focus:outline-none active:scale-95"
               style={{
                 WebkitUserSelect: 'none',
@@ -335,7 +383,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
           </PopoverTrigger>
           <PopoverContent side="bottom" className="bg-background/90 w-fit p-0 backdrop-blur-sm">
             <div className="grid grid-cols-6 divide-x divide-y">
-              {preReactions.map((reaction) => (
+              {pickerReactions.map((reaction) => (
                 <div
                   className="flex size-10 cursor-pointer items-center justify-center"
                   key={reaction}
@@ -351,7 +399,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
             </div>
           </PopoverContent>
         </Popover>
-      )}
+      ) : null}
     </div>
   );
 }
