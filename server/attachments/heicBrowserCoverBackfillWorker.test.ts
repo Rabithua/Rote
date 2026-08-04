@@ -30,6 +30,7 @@ describe('automatic HEIC browser cover backfill', () => {
     const calls: HeicBrowserCoverBackfillOptions[] = [];
     const results: HeicBrowserCoverBackfillResult[] = [
       {
+        detectedHeic: 18,
         failed: 2,
         lastAttachmentId: 'attachment-020',
         scanned: HEIC_COVER_BACKFILL_BATCH_SIZE,
@@ -37,6 +38,7 @@ describe('automatic HEIC browser cover backfill', () => {
         updated: 18,
       },
       {
+        detectedHeic: 2,
         failed: 0,
         lastAttachmentId: 'attachment-023',
         scanned: 3,
@@ -65,6 +67,7 @@ describe('automatic HEIC browser cover backfill', () => {
     ]);
     expect(result).toEqual({
       acquiredLock: true,
+      detectedHeic: 20,
       failed: 2,
       scanned: 23,
       skipped: 1,
@@ -89,6 +92,7 @@ describe('automatic HEIC browser cover backfill', () => {
     expect(called).toBe(false);
     expect(result).toEqual({
       acquiredLock: false,
+      detectedHeic: 0,
       failed: 0,
       scanned: 0,
       skipped: 0,

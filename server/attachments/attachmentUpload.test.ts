@@ -26,6 +26,12 @@ const uploadPolicy = {
   maxVideoUploadSizeMB: 300,
 };
 
+const detectedContentTypeForKey = async (key: string) => {
+  if (key.includes('mislabelled') || /\.(heic|heif)$/i.test(key)) return 'image/heic' as const;
+  if (/\.jpe?g$/i.test(key)) return 'image/jpeg' as const;
+  return null;
+};
+
 describe('attachment upload flow', () => {
   it('uses the signed Content-Type to choose the key extension', () => {
     expect(getUploadExtension('photo.webp', 'image/jpeg')).toBe('.jpg');
@@ -107,6 +113,7 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async (key) => key === originalKey || key === pairedVideoKey,
+        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
         ensureHeicBrowserCover: async () => ({
           contentType: 'image/jpeg',
           key: coverKey,
@@ -152,6 +159,7 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async (key) => key === originalKey,
+        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
         ensureHeicBrowserCover: async () => {
           coverCalls++;
           return {
@@ -171,6 +179,44 @@ describe('attachment upload flow', () => {
     expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
     expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
     expect(result[0].details.compressKey).toBe(coverKey);
+  });
+
+  it('corrects a mislabelled standalone HEIC and generates a JPEG cover', async () => {
+    const originalKey = `users/${USER_ID}/uploads/mislabelled-standalone.jpg`;
+    const coverKey = `users/${USER_ID}/compressed/mislabelled-standalone.v2.jpg`;
+
+    const result = await finalizeAttachmentUploads(
+      {
+        attachments: [
+          {
+            mimetype: 'image/jpeg',
+            mediaKind: 'image',
+            originalKey,
+            size: 1024,
+            uuid: 'mislabelled-standalone',
+          },
+        ],
+        scopes: [],
+        userId: USER_ID,
+      },
+      {
+        checkObjectExists: async (key) => key === originalKey,
+        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
+        ensureHeicBrowserCover: async () => ({
+          contentType: 'image/jpeg',
+          key: coverKey,
+          size: 512,
+          status: 'generated',
+        }),
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        requireStorageAvailable: () => storageConfig,
+        upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
+      }
+    );
+
+    expect(result[0].details.mimetype).toBe('image/heic');
+    expect(result[0].details.compressKey).toBe(coverKey);
+    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
   });
 
   it('reuses a browser-compatible JPEG Live Photo still without HEIC decoding', async () => {
@@ -197,6 +243,7 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async () => true,
+        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
         ensureHeicBrowserCover: async () => {
           coverCalls++;
           throw new Error('JPEG still must not be sent to the HEIC decoder');
@@ -212,6 +259,89 @@ describe('attachment upload flow', () => {
     expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${originalKey}`);
     expect(result[0].details.compressKey).toBe(originalKey);
     expect(result[0].details.pairedVideoKey).toBe(pairedVideoKey);
+  });
+
+  it('corrects a mislabelled HEIC Live Photo and generates a JPEG cover', async () => {
+    const originalKey = `users/${USER_ID}/uploads/mislabelled.jpg`;
+    const pairedVideoKey = `users/${USER_ID}/paired-videos/mislabelled.mov`;
+    const coverKey = `users/${USER_ID}/compressed/mislabelled.v2.jpg`;
+
+    const result = await finalizeAttachmentUploads(
+      {
+        attachments: [
+          {
+            mimetype: 'image/jpeg',
+            mediaKind: 'livePhoto',
+            originalKey,
+            pairedVideoKey,
+            pairedVideoMimetype: 'video/quicktime',
+            pairedVideoSize: 2048,
+            size: 1024,
+            uuid: 'mislabelled',
+          },
+        ],
+        scopes: ['video:upload'],
+        userId: USER_ID,
+      },
+      {
+        checkObjectExists: async () => true,
+        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
+        ensureHeicBrowserCover: async () => ({
+          contentType: 'image/jpeg',
+          key: coverKey,
+          size: 512,
+          status: 'generated',
+        }),
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        requireStorageAvailable: () => storageConfig,
+        upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
+      }
+    );
+
+    expect(result[0].details.mimetype).toBe('image/heic');
+    expect(result[0].details.compressKey).toBe(coverKey);
+    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+  });
+
+  it('rejects finalize when an uploaded image signature cannot be read', async () => {
+    const originalKey = `users/${USER_ID}/uploads/unreadable.jpg`;
+    const pairedVideoKey = `users/${USER_ID}/paired-videos/unreadable.mov`;
+    let persisted = false;
+
+    await expect(
+      finalizeAttachmentUploads(
+        {
+          attachments: [
+            {
+              mimetype: 'image/jpeg',
+              mediaKind: 'livePhoto',
+              originalKey,
+              pairedVideoKey,
+              pairedVideoMimetype: 'video/quicktime',
+              pairedVideoSize: 2048,
+              size: 1024,
+              uuid: 'unreadable',
+            },
+          ],
+          scopes: ['video:upload'],
+          userId: USER_ID,
+        },
+        {
+          checkObjectExists: async () => true,
+          detectStoredImageContentTypeByKey: async () => {
+            throw new Error('range read failed');
+          },
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          requireStorageAvailable: () => storageConfig,
+          upsertAttachmentsByOriginalKey: async () => {
+            persisted = true;
+            return [];
+          },
+        }
+      )
+    ).rejects.toThrow(`Failed to inspect uploaded image ${originalKey}: range read failed`);
+
+    expect(persisted).toBe(false);
   });
 
   it('validates note attachment limits before generating a HEIC browser cover', async () => {
@@ -298,6 +428,7 @@ describe('attachment upload flow', () => {
       { attachments: inputs, scopes: ['video:upload'], userId: USER_ID },
       {
         checkObjectExists: async () => true,
+        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
         getAttachmentUploadPolicy: async () => uploadPolicy,
         requireStorageAvailable: () => storageConfig,
         upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => {
