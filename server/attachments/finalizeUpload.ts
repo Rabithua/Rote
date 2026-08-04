@@ -24,9 +24,11 @@ import attachmentErrors from './errorCodes.json';
 import { ensureHeicBrowserCover } from './heicBrowserCover';
 import { assertLivePhotoFinalizeBatch } from './livePhotoFinalize';
 import { finalizeInputIncludesVideo, isHeicLikeUpload } from './uploadMedia';
+import { detectStoredImageContentTypeByKey } from './storedImageContent';
 
 export type FinalizeAttachmentDependencies = {
   checkObjectExists: typeof checkObjectExists;
+  detectStoredImageContentTypeByKey: typeof detectStoredImageContentTypeByKey;
   ensureHeicBrowserCover: typeof ensureHeicBrowserCover;
   getAttachmentDetailsByRoteId: typeof getAttachmentDetailsByRoteId;
   getAttachmentUploadPolicy: typeof getAttachmentUploadPolicy;
@@ -36,6 +38,7 @@ export type FinalizeAttachmentDependencies = {
 
 const defaultDependencies: FinalizeAttachmentDependencies = {
   checkObjectExists,
+  detectStoredImageContentTypeByKey,
   ensureHeicBrowserCover,
   getAttachmentDetailsByRoteId,
   getAttachmentUploadPolicy,
@@ -275,14 +278,37 @@ export async function finalizeAttachmentUploads(
       pairedVideoKey: item.pairedVideoKey,
       key: item.originalKey,
     });
+    let detectedContentType: Awaited<ReturnType<typeof detectStoredImageContentTypeByKey>> = null;
+    if (mediaKind === 'image' || mediaKind === 'livePhoto') {
+      try {
+        detectedContentType = await dependencies.detectStoredImageContentTypeByKey(
+          item.originalKey
+        );
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to inspect uploaded image ${item.originalKey}: ${reason}`);
+      }
+
+      if (detectedContentType && detectedContentType !== item.mimetype?.toLowerCase()) {
+        // eslint-disable-next-line no-console
+        console.info(
+          `[attachment-content-type] status=corrected originalKey=${item.originalKey} declared=${item.mimetype ?? 'missing'} detected=${detectedContentType}`
+        );
+        item.mimetype = detectedContentType;
+      }
+    }
+
+    const requiresHeicBrowserCover =
+      detectedContentType === 'image/heic' ||
+      (detectedContentType === null && isHeicLikeUpload(item));
     if (mediaKind === 'livePhoto') {
-      if (isHeicLikeUpload(item)) {
+      if (requiresHeicBrowserCover) {
         const cover = await dependencies.ensureHeicBrowserCover(item.originalKey);
         item.compressedKey = cover.key;
       } else {
         item.compressedKey = item.originalKey;
       }
-    } else if (mediaKind === 'image' && isHeicLikeUpload(item) && !item.compressedKey) {
+    } else if (mediaKind === 'image' && requiresHeicBrowserCover && !item.compressedKey) {
       const cover = await dependencies.ensureHeicBrowserCover(item.originalKey);
       item.compressedKey = cover.key;
     }

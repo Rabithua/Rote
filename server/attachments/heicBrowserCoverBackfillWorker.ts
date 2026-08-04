@@ -33,13 +33,14 @@ export async function runAutomaticHeicBrowserCoverBackfill(
   const withLock = dependencyOverrides.withLock ?? withDatabaseAdvisoryLock;
   const locked = await withLock(HEIC_COVER_BACKFILL_LOCK, async () => {
     let afterAttachmentId: string | undefined;
-    const aggregate = { failed: 0, scanned: 0, skipped: 0, updated: 0 };
+    const aggregate = { detectedHeic: 0, failed: 0, scanned: 0, skipped: 0, updated: 0 };
 
     while (true) {
       const batch = await runBackfill({
         afterAttachmentId,
         limit: HEIC_COVER_BACKFILL_BATCH_SIZE,
       });
+      aggregate.detectedHeic += batch.detectedHeic;
       aggregate.failed += batch.failed;
       aggregate.scanned += batch.scanned;
       aggregate.skipped += batch.skipped;
@@ -61,12 +62,19 @@ export async function runAutomaticHeicBrowserCoverBackfill(
   if (!locked.acquired) {
     // eslint-disable-next-line no-console
     console.info('[heic-cover-backfill] status=skipped reason=lock-held-by-another-instance');
-    return { acquiredLock: false, failed: 0, scanned: 0, skipped: 0, updated: 0 };
+    return {
+      acquiredLock: false,
+      detectedHeic: 0,
+      failed: 0,
+      scanned: 0,
+      skipped: 0,
+      updated: 0,
+    };
   }
 
   // eslint-disable-next-line no-console
   console.info(
-    `[heic-cover-backfill] status=automatic-completed scanned=${locked.result.scanned} updated=${locked.result.updated} skipped=${locked.result.skipped} failed=${locked.result.failed}`
+    `[heic-cover-backfill] status=automatic-completed scanned=${locked.result.scanned} detectedHeic=${locked.result.detectedHeic} updated=${locked.result.updated} skipped=${locked.result.skipped} failed=${locked.result.failed}`
   );
   return { acquiredLock: true, ...locked.result };
 }

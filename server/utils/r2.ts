@@ -360,6 +360,39 @@ export async function getObjectBytes(key: string): Promise<Uint8Array> {
   return result.Body.transformToByteArray();
 }
 
+export async function getObjectPrefix(key: string, maxBytes: number): Promise<Uint8Array> {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 4096) {
+    throw new Error(`Invalid storage prefix length: ${maxBytes}`);
+  }
+
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const result = await r2Config.s3.send(
+    new GetObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      Range: `bytes=0-${maxBytes - 1}`,
+    })
+  );
+  if (!result.Body) {
+    throw new Error(`Storage object has no body: ${key}`);
+  }
+  if (result.ContentLength && result.ContentLength > maxBytes) {
+    throw new Error(`Storage endpoint ignored byte range for object: ${key}`);
+  }
+
+  const bytes = await result.Body.transformToByteArray();
+  if (bytes.byteLength === 0) {
+    throw new Error(`Storage object prefix is empty: ${key}`);
+  }
+  return bytes.subarray(0, maxBytes);
+}
+
 export async function putObjectBytes(
   key: string,
   bytes: Uint8Array,
