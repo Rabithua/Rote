@@ -9,4 +9,6 @@ duplicate keys, and encode spaces as `%20`. Canonical request lines are joined b
 trailing newline. Snapshot hashes exclude `deliveryId`, normalize revisions to decimal strings
 and dates to millisecond UTC ISO strings, and sort capability keys.
 
+The v1 billing capability allowlist contains only `ai.chat` and `attachment.video.upload`.
+
 The fixture secret is public test material and must never be deployed.

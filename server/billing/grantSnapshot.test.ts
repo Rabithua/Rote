@@ -35,6 +35,10 @@ describe('billing grant validation', () => {
     ).toThrow('leaseExpiresAt must not exceed entitlementExpiresAt');
   });
 
+  it('rejects globally known capabilities outside the v1 billing allowlist', () => {
+    expect(() => parse({ ...base, capabilities: ['attachment.upload'] })).toThrow();
+  });
+
   it('requires an empty, expiry-free snapshot for status none', () => {
     expect(() =>
       parse({

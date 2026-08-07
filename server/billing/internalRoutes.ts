@@ -10,6 +10,7 @@ import {
   type BillingHttpResponse,
 } from './delivery';
 import { hashBillingGrantSnapshot, parseBillingGrantDelivery } from './grantSnapshot';
+import { BillingBodyTooLargeError, readBillingRequestBody } from './requestBody';
 import {
   BILLING_SIGNATURE_HEADERS,
   BillingSignatureError,
@@ -34,9 +35,14 @@ export function createInternalBillingRouter(params: {
       return jsonResponse(c, billingHttpResponse(403, 'billing_not_configured'));
     }
 
-    const rawBody = new Uint8Array(await c.req.arrayBuffer());
-    if (rawBody.byteLength > MAX_GRANT_BODY_BYTES) {
-      return jsonResponse(c, billingHttpResponse(413, 'billing_invalid_grant'));
+    let rawBody: Uint8Array;
+    try {
+      rawBody = await readBillingRequestBody(c.req.raw, MAX_GRANT_BODY_BYTES);
+    } catch (error) {
+      if (error instanceof BillingBodyTooLargeError) {
+        return jsonResponse(c, billingHttpResponse(413, 'billing_invalid_grant'));
+      }
+      throw error;
     }
 
     let verified;

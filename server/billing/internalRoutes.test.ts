@@ -105,6 +105,34 @@ describe('internal billing grant route', () => {
     expect(store.deliveries).toHaveLength(0);
   });
 
+  it('stops streaming an unauthenticated oversized body before fully buffering it', async () => {
+    const store = new StubGrantStore();
+    const totalChunks = 256;
+    let chunksRead = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        chunksRead += 1;
+        controller.enqueue(new Uint8Array(1024));
+        if (chunksRead === totalChunks) controller.close();
+      },
+    });
+    const request = new Request(
+      `https://api.rote.ink/internal/billing/grants/${fixture.hmacCase.userId}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body,
+        duplex: 'half',
+      } as RequestInit & { duplex: 'half' }
+    );
+
+    const response = await createApp(enabledConfig, store).request(request);
+
+    expect(response.status).toBe(413);
+    expect(chunksRead).toBeLessThan(totalChunks);
+    expect(store.deliveries).toHaveLength(0);
+  });
+
   it('verifies and parses an active-key grant before handing it to the store', async () => {
     const store = new StubGrantStore();
     const response = await createApp(enabledConfig, store).request(signedRequest());

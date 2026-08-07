@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CAPABILITY_KEYS, type CapabilityKey } from '../authz/capabilities';
+import type { CapabilityKey } from '../authz/capabilities';
 import { BILLING_ALLOWED_PRODUCT_IDS, BILLING_ISSUER, type BillingProductId } from './config';
 import { isBillingRequestId, sha256Hex } from './signature';
 
@@ -7,8 +7,13 @@ export const BILLING_GRANT_STATUSES = ['active', 'grace_period', 'none'] as cons
 export const BILLING_PLAN_ID = 'rote_pro';
 export const BILLING_MAX_REVISION = BigInt('9223372036854775807');
 export const BILLING_MAX_LEASE_SECONDS = 24 * 60 * 60;
+export const BILLING_GRANT_CAPABILITY_KEYS = [
+  'ai.chat',
+  'attachment.video.upload',
+] as const satisfies readonly CapabilityKey[];
 
 export type BillingGrantStatus = (typeof BILLING_GRANT_STATUSES)[number];
+export type BillingGrantCapability = (typeof BILLING_GRANT_CAPABILITY_KEYS)[number];
 
 export type BillingGrantSnapshot = {
   issuer: typeof BILLING_ISSUER;
@@ -19,7 +24,7 @@ export type BillingGrantSnapshot = {
   productId: BillingProductId | null;
   entitlementExpiresAt: Date | null;
   leaseExpiresAt: Date | null;
-  capabilities: CapabilityKey[];
+  capabilities: BillingGrantCapability[];
 };
 
 export type BillingGrantDelivery = BillingGrantSnapshot & {
@@ -41,8 +46,8 @@ const grantDeliverySchema = z
     entitlementExpiresAt: z.iso.datetime({ offset: true }).nullable(),
     leaseExpiresAt: z.iso.datetime({ offset: true }).nullable(),
     capabilities: z
-      .array(z.enum(CAPABILITY_KEYS))
-      .max(CAPABILITY_KEYS.length)
+      .array(z.enum(BILLING_GRANT_CAPABILITY_KEYS))
+      .max(BILLING_GRANT_CAPABILITY_KEYS.length)
       .refine(
         (capabilities) => new Set(capabilities).size === capabilities.length,
         'capabilities must be unique'
