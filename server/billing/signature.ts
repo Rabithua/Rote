@@ -93,7 +93,7 @@ export function buildBillingCanonicalRequest(params: {
 }
 
 export function signBillingRequest(params: {
-  key: BillingSigningKey;
+  key: Omit<BillingSigningKey, 'secret'> & { secret: string | Uint8Array };
   method: string;
   pathAndQuery: string | URL;
   timestamp: string;

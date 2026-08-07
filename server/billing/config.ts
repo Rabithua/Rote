@@ -3,12 +3,16 @@ import { z } from 'zod';
 export const BILLING_ALLOWED_PRODUCT_IDS = ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'] as const;
 
 export const BILLING_ISSUER = 'rote-paid-server';
+export const BILLING_OFFICIAL_INSTANCE_ID = 'rote-official';
+export const BILLING_OFFICIAL_ORIGIN = 'https://api.rote.ink';
+export const BILLING_DEFAULT_CONNECT_TIMEOUT_MS = 3_000;
+export const BILLING_DEFAULT_TOTAL_TIMEOUT_MS = 10_000;
 
 export type BillingProductId = (typeof BILLING_ALLOWED_PRODUCT_IDS)[number];
 
 export type BillingSigningKey = {
   keyId: string;
-  secret: string;
+  secret: string | Uint8Array;
 };
 
 export type BillingSigningKeys = {
@@ -24,6 +28,8 @@ export type BillingConfig =
       officialOrigin: string;
       paidServerUrl: string;
       productIds: BillingProductId[];
+      connectTimeoutMs: number;
+      totalTimeoutMs: number;
       roteToPaid: BillingSigningKeys;
       paidToRote: BillingSigningKeys;
     };
@@ -33,6 +39,8 @@ const enabledConfigSchema = z.object({
   BILLING_OFFICIAL_ORIGIN: z.string().trim().min(1),
   BILLING_PAID_SERVER_URL: z.string().trim().min(1),
   BILLING_PRODUCT_IDS: z.string().trim().min(1),
+  BILLING_PAID_CONNECT_TIMEOUT_MS: z.string().trim().min(1).optional(),
+  BILLING_PAID_TOTAL_TIMEOUT_MS: z.string().trim().min(1).optional(),
   BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID: z.string().trim().min(1),
   BILLING_ROTE_TO_PAID_ACTIVE_SECRET: z.string().min(32),
   BILLING_ROTE_TO_PAID_PREVIOUS_KEY_ID: z.string().trim().min(1).optional(),
@@ -94,6 +102,18 @@ function parseProducts(value: string): BillingProductId[] {
   return productIds as BillingProductId[];
 }
 
+function parseTimeout(value: string | undefined, fallback: number, environmentKey: string): number {
+  if (value === undefined) return fallback;
+  if (!/^[1-9][0-9]*$/.test(value)) {
+    throw new Error(`${environmentKey} must be a positive integer`);
+  }
+  const milliseconds = Number(value);
+  if (!Number.isSafeInteger(milliseconds)) {
+    throw new Error(`${environmentKey} must be a safe integer`);
+  }
+  return milliseconds;
+}
+
 function parseSigningKeys(params: {
   activeKeyId: string;
   activeSecret: string;
@@ -122,9 +142,22 @@ function assertDirectionSecretsDiffer(
   roteToPaid: BillingSigningKeys,
   paidToRote: BillingSigningKeys
 ): void {
-  const outboundSecrets = [roteToPaid.active.secret, roteToPaid.previous?.secret].filter(Boolean);
-  const inboundSecrets = [paidToRote.active.secret, paidToRote.previous?.secret].filter(Boolean);
-  if (outboundSecrets.some((secret) => inboundSecrets.includes(secret))) {
+  const isConfiguredSecret = (
+    secret: string | Uint8Array | undefined
+  ): secret is string | Uint8Array => secret !== undefined;
+  const outboundSecrets = [roteToPaid.active.secret, roteToPaid.previous?.secret].filter(
+    isConfiguredSecret
+  );
+  const inboundSecrets = [paidToRote.active.secret, paidToRote.previous?.secret].filter(
+    isConfiguredSecret
+  );
+  const asBytes = (secret: string | Uint8Array) =>
+    typeof secret === 'string' ? Buffer.from(secret, 'utf8') : Buffer.from(secret);
+  if (
+    outboundSecrets.some((outboundSecret) =>
+      inboundSecrets.some((inboundSecret) => asBytes(outboundSecret).equals(asBytes(inboundSecret)))
+    )
+  ) {
     throw new Error('Rote-to-Paid and Paid-to-Rote secrets must be different');
   }
 }
@@ -137,6 +170,12 @@ export function loadBillingConfig(environment: NodeJS.ProcessEnv = process.env):
     BILLING_OFFICIAL_ORIGIN: environment.BILLING_OFFICIAL_ORIGIN,
     BILLING_PAID_SERVER_URL: environment.BILLING_PAID_SERVER_URL,
     BILLING_PRODUCT_IDS: environment.BILLING_PRODUCT_IDS,
+    BILLING_PAID_CONNECT_TIMEOUT_MS: optionalEnvironmentValue(
+      environment.BILLING_PAID_CONNECT_TIMEOUT_MS
+    ),
+    BILLING_PAID_TOTAL_TIMEOUT_MS: optionalEnvironmentValue(
+      environment.BILLING_PAID_TOTAL_TIMEOUT_MS
+    ),
     BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID: environment.BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID,
     BILLING_ROTE_TO_PAID_ACTIVE_SECRET: environment.BILLING_ROTE_TO_PAID_ACTIVE_SECRET,
     BILLING_ROTE_TO_PAID_PREVIOUS_KEY_ID: optionalEnvironmentValue(
@@ -154,6 +193,27 @@ export function loadBillingConfig(environment: NodeJS.ProcessEnv = process.env):
       environment.BILLING_PAID_TO_ROTE_PREVIOUS_SECRET
     ),
   });
+
+  if (raw.BILLING_INSTANCE_ID !== BILLING_OFFICIAL_INSTANCE_ID) {
+    throw new Error(`BILLING_INSTANCE_ID must be ${BILLING_OFFICIAL_INSTANCE_ID}`);
+  }
+  const officialOrigin = parseHttpsOrigin(raw.BILLING_OFFICIAL_ORIGIN, 'BILLING_OFFICIAL_ORIGIN');
+  if (officialOrigin !== BILLING_OFFICIAL_ORIGIN) {
+    throw new Error(`BILLING_OFFICIAL_ORIGIN must be ${BILLING_OFFICIAL_ORIGIN}`);
+  }
+  const connectTimeoutMs = parseTimeout(
+    raw.BILLING_PAID_CONNECT_TIMEOUT_MS,
+    BILLING_DEFAULT_CONNECT_TIMEOUT_MS,
+    'BILLING_PAID_CONNECT_TIMEOUT_MS'
+  );
+  const totalTimeoutMs = parseTimeout(
+    raw.BILLING_PAID_TOTAL_TIMEOUT_MS,
+    BILLING_DEFAULT_TOTAL_TIMEOUT_MS,
+    'BILLING_PAID_TOTAL_TIMEOUT_MS'
+  );
+  if (connectTimeoutMs > totalTimeoutMs) {
+    throw new Error('BILLING_PAID_CONNECT_TIMEOUT_MS must not exceed total timeout');
+  }
 
   const roteToPaid = parseSigningKeys({
     activeKeyId: raw.BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID,
@@ -174,9 +234,11 @@ export function loadBillingConfig(environment: NodeJS.ProcessEnv = process.env):
   return {
     enabled: true,
     instanceId: raw.BILLING_INSTANCE_ID,
-    officialOrigin: parseHttpsOrigin(raw.BILLING_OFFICIAL_ORIGIN, 'BILLING_OFFICIAL_ORIGIN'),
+    officialOrigin,
     paidServerUrl: parseHttpsOrigin(raw.BILLING_PAID_SERVER_URL, 'BILLING_PAID_SERVER_URL'),
     productIds: parseProducts(raw.BILLING_PRODUCT_IDS),
+    connectTimeoutMs,
+    totalTimeoutMs,
     roteToPaid,
     paidToRote,
   };

@@ -44,6 +44,11 @@ export interface BillingGrantStore {
   findGrantForUser(userId: string): Promise<BillingGrant | null>;
 }
 
+export interface BillingGrantProjectionStore {
+  findGrantForUser(userId: string): Promise<BillingGrant | null>;
+  applyGrantSnapshot(userId: string, grant: BillingGrantDelivery): Promise<BillingHttpResponse>;
+}
+
 export type GrantRevisionDecision = BillingCallbackResult | 'conflict';
 
 export function classifyGrantRevision(

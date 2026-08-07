@@ -36,10 +36,37 @@ describe('billing configuration', () => {
     expect(config.enabled).toBe(true);
     if (!config.enabled) throw new Error('Expected enabled billing configuration');
     expect(config.productIds).toEqual(['ink.rote.pro.monthly', 'ink.rote.pro.yearly']);
+    expect(config.connectTimeoutMs).toBe(3_000);
+    expect(config.totalTimeoutMs).toBe(10_000);
     expect(config.paidToRote.previous?.keyId).toBe('paid-previous');
   });
 
-  it('rejects unknown products, non-origin URLs, partial rotations, and shared secrets', () => {
+  it('parses bounded Paid connection and total timeouts', () => {
+    const config = loadBillingConfig({
+      ...enabledEnvironment(),
+      BILLING_PAID_CONNECT_TIMEOUT_MS: '1200',
+      BILLING_PAID_TOTAL_TIMEOUT_MS: '4500',
+    });
+    expect(config.enabled && config.connectTimeoutMs).toBe(1_200);
+    expect(config.enabled && config.totalTimeoutMs).toBe(4_500);
+  });
+
+  it('rejects non-official instances and lookalike origins', () => {
+    expect(() =>
+      loadBillingConfig({
+        ...enabledEnvironment(),
+        BILLING_INSTANCE_ID: 'rote-self-hosted',
+      })
+    ).toThrow('must be rote-official');
+    expect(() =>
+      loadBillingConfig({
+        ...enabledEnvironment(),
+        BILLING_OFFICIAL_ORIGIN: 'https://api.rote.ink.evil.example',
+      })
+    ).toThrow('must be https://api.rote.ink');
+  });
+
+  it('rejects unknown products, invalid URLs, timeouts, partial rotations, and shared secrets', () => {
     expect(() =>
       loadBillingConfig({
         ...enabledEnvironment(),
@@ -52,6 +79,13 @@ describe('billing configuration', () => {
         BILLING_OFFICIAL_ORIGIN: 'https://api.rote.ink/path',
       })
     ).toThrow('exact HTTPS origin');
+    expect(() =>
+      loadBillingConfig({
+        ...enabledEnvironment(),
+        BILLING_PAID_CONNECT_TIMEOUT_MS: '5000',
+        BILLING_PAID_TOTAL_TIMEOUT_MS: '1000',
+      })
+    ).toThrow('must not exceed total timeout');
     expect(() =>
       loadBillingConfig({
         ...enabledEnvironment(),

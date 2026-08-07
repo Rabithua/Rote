@@ -12,3 +12,8 @@ and dates to millisecond UTC ISO strings, and sort capability keys.
 The v1 billing capability allowlist contains only `ai.chat` and `attachment.video.upload`.
 
 The fixture secret is public test material and must never be deployed.
+
+`rote-to-paid-v1.json` is copied byte-for-byte from the Paid-owned canonical fixture. Its
+`secretHex` is public test bytes used only by contract tests. Deployed outbound secrets remain
+exact UTF-8 environment values and are never implicitly decoded. The fixture freezes session and
+activation request bytes/signatures, success and duplicate envelopes, and all App-facing errors.

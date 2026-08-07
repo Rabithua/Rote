@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import fixture from './fixtures/provisional-v1.json';
-import { parseBillingGrantDelivery } from './grantSnapshot';
+import { parseBillingGrantDelivery, parseBillingGrantSnapshot } from './grantSnapshot';
 
 const requestId = fixture.hmacCase.requestId;
 const base = JSON.parse(fixture.hmacCase.body);
@@ -39,6 +39,18 @@ describe('billing grant validation', () => {
     expect(() => parse({ ...base, capabilities: ['attachment.upload'] })).toThrow();
   });
 
+  it('can enforce the narrower Paid activation capability contract', () => {
+    expect(() =>
+      parseBillingGrantSnapshot({
+        value: { ...base, capabilities: ['ai.chat'] },
+        instanceId: 'rote-official',
+        productIds: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
+        issuedAt: new Date(Number(fixture.hmacCase.timestamp) * 1000),
+        requireCanonicalCapabilities: true,
+      })
+    ).toThrow('canonical v1 capability order');
+  });
+
   it('requires an empty, expiry-free snapshot for status none', () => {
     expect(() =>
       parse({
@@ -46,6 +58,11 @@ describe('billing grant validation', () => {
         status: 'none',
       })
     ).toThrow('status none requires');
+  });
+
+  it('requires Paid canonical positive revisions and a stable plan ID', () => {
+    expect(() => parse({ ...base, revision: '0' })).toThrow();
+    expect(() => parse({ ...base, planId: null })).toThrow();
   });
 
   it('rejects leases beyond the 24 hour signed-request horizon', () => {

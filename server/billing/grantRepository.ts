@@ -11,11 +11,13 @@ import {
   billingHttpResponse,
   classifyGrantRevision,
   type AuthenticatedInboundDelivery,
+  type BillingGrantProjectionStore,
   type BillingGrantStore,
   type BillingHttpResponse,
 } from './delivery';
+import { hashBillingGrantSnapshot, type BillingGrantDelivery } from './grantSnapshot';
 
-export class BillingGrantRepository implements BillingGrantStore {
+export class BillingGrantRepository implements BillingGrantStore, BillingGrantProjectionStore {
   async findGrantForUser(userId: string): Promise<BillingGrant | null> {
     const [grant] = await db
       .select()
@@ -94,6 +96,20 @@ export class BillingGrantRepository implements BillingGrantStore {
 
       return response;
     });
+  }
+
+  async applyGrantSnapshot(
+    userId: string,
+    grant: BillingGrantDelivery
+  ): Promise<BillingHttpResponse> {
+    return db.transaction((transaction) =>
+      this.applyGrant(transaction, {
+        kind: 'grant',
+        userId,
+        grant,
+        snapshotHash: hashBillingGrantSnapshot(grant),
+      })
+    );
   }
 
   private async applyGrant(

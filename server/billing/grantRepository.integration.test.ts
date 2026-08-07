@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { randomUUID } from 'node:crypto';
-import type { BillingGrantStore } from './delivery';
+import type { BillingGrantProjectionStore, BillingGrantStore } from './delivery';
 import { PAID_TO_ROTE_DIRECTION } from './delivery';
 import fixture from './fixtures/provisional-v1.json';
 import {
@@ -13,10 +13,11 @@ const databaseUrl = process.env.BILLING_TEST_DATABASE_URL;
 const databaseDescribe = databaseUrl ? describe : describe.skip;
 
 databaseDescribe('billing grant repository integration', () => {
-  let store: BillingGrantStore;
+  let store: BillingGrantStore & BillingGrantProjectionStore;
   let database: typeof import('../utils/drizzle').default;
   let schema: typeof import('../drizzle/schema');
   const userId = randomUUID();
+  const activationUserId = randomUUID();
   const deliveryIds = [
     '018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f80',
     '018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f81',
@@ -37,6 +38,11 @@ databaseDescribe('billing grant repository integration', () => {
       email: `billing-${userId}@example.test`,
       username: `billing-${userId}`,
     });
+    await database.insert(schema.users).values({
+      id: activationUserId,
+      email: `billing-${activationUserId}@example.test`,
+      username: `billing-${activationUserId}`,
+    });
   });
 
   afterAll(async () => {
@@ -49,7 +55,7 @@ databaseDescribe('billing grant repository integration', () => {
           inArray(schema.billingInboundDeliveries.deliveryId, deliveryIds)
         )
       );
-    await database.delete(schema.users).where(eq(schema.users.id, userId));
+    await database.delete(schema.users).where(inArray(schema.users.id, [userId, activationUserId]));
     const { closeDatabase } = await import('../utils/drizzle');
     await closeDatabase();
   });
@@ -139,6 +145,25 @@ databaseDescribe('billing grant repository integration', () => {
     });
     expect(conflict.status).toBe(409);
     expect(conflict.body.message).toBe('billing_delivery_conflict');
+  });
+
+  it('atomically applies activation snapshots with the same revision semantics', async () => {
+    const revisionTwo = grant(2);
+    expect((await store.applyGrantSnapshot(activationUserId, revisionTwo)).body.data).toEqual({
+      result: 'applied',
+      revision: '2',
+    });
+    expect((await store.applyGrantSnapshot(activationUserId, revisionTwo)).body.data).toEqual({
+      result: 'duplicate',
+      revision: '2',
+    });
+    expect((await store.applyGrantSnapshot(activationUserId, grant(1))).body.data).toEqual({
+      result: 'ignored',
+      revision: '2',
+    });
+    expect(
+      (await store.applyGrantSnapshot(activationUserId, grant(2, 'ink.rote.pro.monthly'))).status
+    ).toBe(409);
   });
 
   it('returns a stable missing-user 404 and cascades grants on user deletion', async () => {

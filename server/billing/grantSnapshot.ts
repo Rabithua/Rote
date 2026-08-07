@@ -19,7 +19,7 @@ export type BillingGrantSnapshot = {
   issuer: typeof BILLING_ISSUER;
   instanceId: string;
   revision: bigint;
-  planId: typeof BILLING_PLAN_ID | null;
+  planId: typeof BILLING_PLAN_ID;
   status: BillingGrantStatus;
   productId: BillingProductId | null;
   entitlementExpiresAt: Date | null;
@@ -38,9 +38,9 @@ const grantDeliverySchema = z
     instanceId: z.string().min(1),
     revision: z
       .string()
-      .regex(/^(0|[1-9][0-9]*)$/)
+      .regex(/^[1-9][0-9]*$/)
       .refine((revision) => BigInt(revision) <= BILLING_MAX_REVISION, 'revision is too large'),
-    planId: z.literal(BILLING_PLAN_ID).nullable(),
+    planId: z.literal(BILLING_PLAN_ID),
     status: z.enum(BILLING_GRANT_STATUSES),
     productId: z.enum(BILLING_ALLOWED_PRODUCT_IDS).nullable(),
     entitlementExpiresAt: z.iso.datetime({ offset: true }).nullable(),
@@ -91,15 +91,16 @@ const grantDeliverySchema = z
     }
   });
 
-export function parseBillingGrantDelivery(params: {
+export function parseBillingGrantSnapshot(params: {
   value: unknown;
-  requestId: string;
   instanceId: string;
   productIds: readonly BillingProductId[];
   issuedAt: Date;
+  expectedDeliveryId?: string;
+  requireCanonicalCapabilities?: boolean;
 }): BillingGrantDelivery {
   const parsed = grantDeliverySchema.parse(params.value);
-  if (parsed.deliveryId !== params.requestId) {
+  if (params.expectedDeliveryId !== undefined && parsed.deliveryId !== params.expectedDeliveryId) {
     throw new z.ZodError([
       {
         code: 'custom',
@@ -116,6 +117,22 @@ export function parseBillingGrantDelivery(params: {
   if (parsed.productId !== null && !params.productIds.includes(parsed.productId)) {
     throw new z.ZodError([
       { code: 'custom', path: ['productId'], message: 'productId is not enabled on this Rote' },
+    ]);
+  }
+  if (
+    params.requireCanonicalCapabilities &&
+    parsed.status !== 'none' &&
+    (parsed.capabilities.length !== BILLING_GRANT_CAPABILITY_KEYS.length ||
+      BILLING_GRANT_CAPABILITY_KEYS.some(
+        (capability, index) => parsed.capabilities[index] !== capability
+      ))
+  ) {
+    throw new z.ZodError([
+      {
+        code: 'custom',
+        path: ['capabilities'],
+        message: 'granting snapshots require the canonical v1 capability order',
+      },
     ]);
   }
   if (
@@ -145,6 +162,22 @@ export function parseBillingGrantDelivery(params: {
     leaseExpiresAt: parsed.leaseExpiresAt ? new Date(parsed.leaseExpiresAt) : null,
     capabilities: [...parsed.capabilities].sort(),
   };
+}
+
+export function parseBillingGrantDelivery(params: {
+  value: unknown;
+  requestId: string;
+  instanceId: string;
+  productIds: readonly BillingProductId[];
+  issuedAt: Date;
+}): BillingGrantDelivery {
+  return parseBillingGrantSnapshot({
+    value: params.value,
+    instanceId: params.instanceId,
+    productIds: params.productIds,
+    issuedAt: params.issuedAt,
+    expectedDeliveryId: params.requestId,
+  });
 }
 
 export function canonicalizeBillingGrantSnapshot(snapshot: BillingGrantSnapshot): string {

@@ -31,4 +31,34 @@ describe('request recorder path privacy', () => {
       log.mockRestore();
     }
   });
+
+  it('records activation metadata without logging the signed transaction JWS', async () => {
+    const signedTransactionInfo = 'private.header.payload.signature';
+    const messages: string[] = [];
+    const log = spyOn(console, 'log').mockImplementation((message) => {
+      messages.push(String(message));
+    });
+    const app = new Hono<{ Variables: HonoVariables }>();
+    app.use('*', recorderIpAndTime);
+    app.post('/v2/api/billing/app-store/activate', async (c) => {
+      await c.req.json();
+      return c.text('ok');
+    });
+
+    try {
+      const response = await app.request('/v2/api/billing/app-store/activate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ signedTransactionInfo }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toContain('Path: /v2/api/billing/app-store/activate');
+      expect(messages[0]).not.toContain(signedTransactionInfo);
+      expect(messages[0]).not.toContain('signedTransactionInfo');
+    } finally {
+      log.mockRestore();
+    }
+  });
 });
