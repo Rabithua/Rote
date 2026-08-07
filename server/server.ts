@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { runAutomaticHeicBrowserCoverBackfill } from './attachments/heicBrowserCoverBackfillWorker';
+import internalBillingRouter from './billing';
 import { rateLimiterMiddleware } from './middleware/limiter';
 import { recorderIpAndTime } from './middleware/recorder';
 import oauthMetadataRouter from './route/oauthMetadata';
@@ -91,6 +92,7 @@ app.use(
 // RESTful API routes
 app.route('/.well-known', oauthMetadataRouter);
 app.route('/v2/api', routerV2);
+app.route('/internal/billing', internalBillingRouter);
 
 // 404 handler
 app.notFound((c) =>

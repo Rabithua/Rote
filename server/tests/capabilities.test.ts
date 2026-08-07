@@ -52,4 +52,83 @@ describe('capability resolution', () => {
 
     expect(Object.values(capabilities).every((capability) => capability.allowed)).toBe(true);
   });
+
+  it('uses a valid subscription before role policy and includes its lease', () => {
+    const capabilities = resolveEffectiveCapabilities({
+      role: UserRole.USER,
+      rolePolicies: { 'ai.chat': 'deny' },
+      subscription: {
+        status: 'active',
+        capabilities: ['ai.chat'],
+        validUntil: '2026-08-08T00:00:00.000Z',
+      },
+      now: new Date('2026-08-07T00:00:00.000Z'),
+    });
+
+    expect(capabilities['ai.chat']).toEqual({
+      allowed: true,
+      source: 'subscription',
+      role: UserRole.USER,
+      validUntil: '2026-08-08T00:00:00.000Z',
+    });
+  });
+
+  it('keeps user override deny above subscription and dependency above video subscription', () => {
+    const subscription = {
+      status: 'grace_period',
+      capabilities: ['ai.chat', 'attachment.video.upload'],
+      validUntil: '2026-08-08T00:00:00.000Z',
+    };
+    const capabilities = resolveEffectiveCapabilities({
+      role: UserRole.USER,
+      userOverrides: { 'ai.chat': 'deny', 'attachment.upload': 'deny' },
+      subscription,
+      now: new Date('2026-08-07T00:00:00.000Z'),
+    });
+
+    expect(capabilities['ai.chat']).toEqual({
+      allowed: false,
+      source: 'user_override',
+      role: UserRole.USER,
+    });
+    expect(capabilities['attachment.video.upload']).toEqual({
+      allowed: false,
+      source: 'dependency',
+      role: UserRole.USER,
+    });
+  });
+
+  it('fails closed for missing, invalid, or expired subscription leases', () => {
+    for (const validUntil of [undefined, 'invalid', '2026-08-07T00:00:00.000Z']) {
+      const capabilities = resolveEffectiveCapabilities({
+        role: UserRole.USER,
+        subscription: {
+          status: 'active',
+          capabilities: ['ai.chat'],
+          validUntil,
+        },
+        now: new Date('2026-08-07T00:00:00.000Z'),
+      });
+      expect(capabilities['ai.chat']).toEqual({
+        allowed: false,
+        source: 'role_default',
+        role: UserRole.USER,
+      });
+    }
+  });
+
+  it('keeps non-subscription permission DTO fields backward-compatible', () => {
+    const capabilities = resolveEffectiveCapabilities({
+      role: UserRole.ADMIN,
+      userOverrides: { 'ai.chat': 'allow' },
+    });
+    const permissionsMeData = JSON.parse(JSON.stringify({ role: UserRole.ADMIN, capabilities }));
+
+    expect(permissionsMeData.capabilities['ai.chat']).toEqual({
+      allowed: true,
+      source: 'user_override',
+      role: UserRole.ADMIN,
+    });
+    expect('validUntil' in permissionsMeData.capabilities['ai.chat']).toBe(false);
+  });
 });

@@ -1,5 +1,6 @@
 import { relations, sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   customType,
@@ -153,6 +154,67 @@ export const userPermissionOverrides = pgTable(
     })
       .onDelete('set null')
       .onUpdate('cascade'),
+  })
+);
+
+// Paid Server projected subscription grants. The user ID is the aggregate key so
+// every user has at most one complete billing snapshot.
+export const billingGrants = pgTable(
+  'billing_grants',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    issuer: varchar('issuer', { length: 100 }).notNull(),
+    instanceId: varchar('instance_id', { length: 100 }).notNull(),
+    revision: bigint('revision', { mode: 'bigint' }).notNull(),
+    planId: varchar('plan_id', { length: 50 }),
+    status: varchar('status', { length: 32 }).notNull(),
+    productId: varchar('product_id', { length: 255 }),
+    entitlementExpiresAt: timestamp('entitlement_expires_at', {
+      withTimezone: true,
+      precision: 6,
+    }),
+    leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true, precision: 6 }),
+    capabilities: jsonb('capabilities').$type<string[]>().notNull().default([]),
+    snapshotHash: varchar('snapshot_hash', { length: 64 }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    leaseExpiresAtIdx: index('billing_grants_lease_expires_at_idx').on(table.leaseExpiresAt),
+    revisionNonNegative: check('billing_grants_revision_non_negative', sql`${table.revision} >= 0`),
+    validStatus: check(
+      'billing_grants_valid_status',
+      sql`${table.status} IN ('active', 'grace_period', 'none')`
+    ),
+  })
+);
+
+// Authenticated inbound request ledger. Its composite key intentionally omits
+// key_id so rotating a signing key cannot cause a delivery to execute twice.
+export const billingInboundDeliveries = pgTable(
+  'billing_inbound_deliveries',
+  {
+    direction: varchar('direction', { length: 32 }).notNull(),
+    deliveryId: uuid('delivery_id').notNull(),
+    keyId: varchar('key_id', { length: 100 }).notNull(),
+    bodyHash: varchar('body_hash', { length: 64 }).notNull(),
+    responseStatus: integer('response_status'),
+    responseBody: jsonb('response_body').$type<{
+      code: number;
+      message: string;
+      data: unknown;
+    }>(),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, precision: 6 }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.direction, table.deliveryId] }),
+    createdAtIdx: index('billing_inbound_deliveries_created_at_idx').on(table.createdAt),
+    paidToRoteDirection: check(
+      'billing_inbound_deliveries_paid_to_rote_direction',
+      sql`${table.direction} = 'paid_to_rote'`
+    ),
   })
 );
 
@@ -655,6 +717,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   oauthBindings: many(userOAuthBindings),
   passkeys: many(userPasskeys),
   permissionOverrides: many(userPermissionOverrides),
+  billingGrant: one(billingGrants, {
+    fields: [users.id],
+    references: [billingGrants.userId],
+  }),
   documentEmbeddings: many(documentEmbeddings),
   embeddingJobs: many(embeddingJobs),
 }));
@@ -686,6 +752,13 @@ export const userPermissionOverridesRelations = relations(userPermissionOverride
   }),
   updatedByUser: one(users, {
     fields: [userPermissionOverrides.updatedBy],
+    references: [users.id],
+  }),
+}));
+
+export const billingGrantsRelations = relations(billingGrants, ({ one }) => ({
+  user: one(users, {
+    fields: [billingGrants.userId],
     references: [users.id],
   }),
 }));
@@ -845,3 +918,7 @@ export type UserPasskey = typeof userPasskeys.$inferSelect;
 export type NewUserPasskey = typeof userPasskeys.$inferInsert;
 export type AiTokenUsageLog = typeof aiTokenUsageLogs.$inferSelect;
 export type NewAiTokenUsageLog = typeof aiTokenUsageLogs.$inferInsert;
+export type BillingGrant = typeof billingGrants.$inferSelect;
+export type NewBillingGrant = typeof billingGrants.$inferInsert;
+export type BillingInboundDelivery = typeof billingInboundDeliveries.$inferSelect;
+export type NewBillingInboundDelivery = typeof billingInboundDeliveries.$inferInsert;
