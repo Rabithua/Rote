@@ -9,7 +9,11 @@ import {
   type BillingHttpResponse,
 } from './delivery';
 import type { BillingGrantDelivery } from './grantSnapshot';
-import { PaidBillingApiError, type PaidBillingProvider } from './paidClient';
+import {
+  PaidBillingApiError,
+  PaidBillingInternalContractError,
+  type PaidBillingProvider,
+} from './paidClient';
 import { BILLING_ACTIVATION_BODY_LIMIT_BYTES, createPublicBillingRouter } from './publicRoutes';
 
 const user: SafeUser = {
@@ -391,6 +395,30 @@ describe('public billing routes', () => {
     );
     expect(response.status).toBe(503);
     expect((await response.json()).message).toBe('billing_provider_unavailable');
+  });
+
+  it('never exposes an internal Paid idempotency conflict to session or activation clients', async () => {
+    const provider = new StubProvider();
+    provider.error = new PaidBillingApiError(
+      503,
+      'billing_provider_unavailable',
+      new PaidBillingInternalContractError(409, 'billing_idempotency_conflict')
+    );
+    const { app } = createApp({ provider });
+
+    for (const [path, body] of [
+      ['/app-store/session', '{}'],
+      ['/app-store/activate', JSON.stringify({ signedTransactionInfo: 'private-jws' })],
+    ]) {
+      const response = await app.request(`https://api.rote.ink/v2/api/billing${path}`, {
+        method: 'POST',
+        body,
+      });
+      expect(response.status).toBe(503);
+      const responseBody = await response.json();
+      expect(responseBody.message).toBe('billing_provider_unavailable');
+      expect(JSON.stringify(responseBody)).not.toContain('billing_idempotency_conflict');
+    }
   });
 
   it('stops an oversized activation body before buffering or forwarding its JWS', async () => {

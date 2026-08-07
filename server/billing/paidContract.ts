@@ -15,6 +15,14 @@ export const PAID_APP_ERROR_STATUSES = {
 
 export type PaidAppErrorMessage = keyof typeof PAID_APP_ERROR_STATUSES;
 
+export const PAID_INTERNAL_ERROR_STATUSES = {
+  ...PAID_APP_ERROR_STATUSES,
+  billing_idempotency_conflict: 409,
+} as const;
+
+export type PaidContractErrorMessage = keyof typeof PAID_INTERNAL_ERROR_STATUSES;
+export type PaidInternalErrorMessage = Exclude<PaidContractErrorMessage, PaidAppErrorMessage>;
+
 const accountSessionResponseSchema = z
   .object({
     code: z.literal(0),
@@ -34,7 +42,7 @@ const activationResponseSchema = z
 const paidErrorResponseSchema = z
   .object({
     code: z.number().int(),
-    message: z.enum(Object.keys(PAID_APP_ERROR_STATUSES) as [PaidAppErrorMessage]),
+    message: z.enum(Object.keys(PAID_INTERNAL_ERROR_STATUSES) as [PaidContractErrorMessage]),
     data: z.record(z.string(), z.unknown()).nullable(),
   })
   .strict();
@@ -102,11 +110,11 @@ export function parsePaidActivationResponse(params: {
 
 export function parsePaidErrorResponse(params: { status: number; value: unknown }): {
   status: number;
-  message: PaidAppErrorMessage;
+  message: PaidContractErrorMessage;
 } {
   try {
     const response = paidErrorResponseSchema.parse(params.value);
-    const expectedStatus = PAID_APP_ERROR_STATUSES[response.message];
+    const expectedStatus = PAID_INTERNAL_ERROR_STATUSES[response.message];
     if (params.status !== expectedStatus || response.code !== params.status) {
       throw new Error('Paid error status and envelope code do not match the stable message');
     }

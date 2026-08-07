@@ -94,6 +94,10 @@
       "httpStatus": 409,
       "body": { "code": 409, "message": "billing_subscription_owned_by_another_account", "data": null }
     },
+    "idempotencyConflict": {
+      "httpStatus": 409,
+      "body": { "code": 409, "message": "billing_idempotency_conflict", "data": null }
+    },
     "providerUnavailable": {
       "httpStatus": 503,
       "body": { "code": 503, "message": "billing_provider_unavailable", "data": null }

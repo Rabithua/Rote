@@ -77,6 +77,18 @@ describe('centralized Rote-to-Paid contract', () => {
     expect(() => parsePaidErrorResponse({ status: 503, value: fixture.errorResponse })).toThrow(
       PaidContractError
     );
+    expect(() =>
+      parsePaidErrorResponse({
+        status: 409,
+        value: fixture.standardErrorResponses.invalidTransaction.body,
+      })
+    ).toThrow(PaidContractError);
+    expect(() =>
+      parsePaidErrorResponse({
+        status: 400,
+        value: fixture.standardErrorResponses.ownershipConflict.body,
+      })
+    ).toThrow(PaidContractError);
   });
 
   it('requires positive revision, rote_pro, and canonical granting capabilities', () => {

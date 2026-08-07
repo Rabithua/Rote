@@ -10,6 +10,7 @@ import {
   serializePaidActivationRequest,
   serializePaidSessionRequest,
   type PaidAppErrorMessage,
+  type PaidInternalErrorMessage,
 } from './paidContract';
 import {
   PaidBillingTransport,
@@ -28,15 +29,28 @@ export type PaidBillingProvider = {
 export class PaidBillingApiError extends Error {
   constructor(
     public readonly status: number,
-    public readonly billingMessage: PaidAppErrorMessage
+    public readonly billingMessage: PaidAppErrorMessage,
+    public readonly internalCause?: PaidBillingInternalContractError
   ) {
     super(billingMessage);
     this.name = 'PaidBillingApiError';
   }
 }
 
-function providerUnavailable(): PaidBillingApiError {
-  return new PaidBillingApiError(503, 'billing_provider_unavailable');
+export class PaidBillingInternalContractError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly billingMessage: PaidInternalErrorMessage
+  ) {
+    super(billingMessage);
+    this.name = 'PaidBillingInternalContractError';
+  }
+}
+
+function providerUnavailable(
+  internalCause?: PaidBillingInternalContractError
+): PaidBillingApiError {
+  return new PaidBillingApiError(503, 'billing_provider_unavailable', internalCause);
 }
 
 function parseSuccessOrThrow<T>(
@@ -52,13 +66,16 @@ function parseSuccessOrThrow<T>(
     }
   }
 
+  let failure: ReturnType<typeof parsePaidErrorResponse>;
   try {
-    const failure = parsePaidErrorResponse({ status: response.status, value: response.body });
-    throw new PaidBillingApiError(failure.status, failure.message);
-  } catch (error) {
-    if (error instanceof PaidBillingApiError) throw error;
+    failure = parsePaidErrorResponse({ status: response.status, value: response.body });
+  } catch {
     throw providerUnavailable();
   }
+  if (failure.message === 'billing_idempotency_conflict') {
+    throw new PaidBillingInternalContractError(failure.status, failure.message);
+  }
+  throw new PaidBillingApiError(failure.status, failure.message);
 }
 
 export class PaidBillingClient implements PaidBillingProvider {
@@ -92,6 +109,7 @@ export class PaidBillingClient implements PaidBillingProvider {
       return parseSuccessOrThrow(response, parsePaidSessionResponse);
     } catch (error) {
       if (error instanceof PaidBillingApiError) throw error;
+      if (error instanceof PaidBillingInternalContractError) throw providerUnavailable(error);
       if (error instanceof PaidTransportError) throw providerUnavailable();
       throw error;
     }
@@ -117,6 +135,7 @@ export class PaidBillingClient implements PaidBillingProvider {
       );
     } catch (error) {
       if (error instanceof PaidBillingApiError) throw error;
+      if (error instanceof PaidBillingInternalContractError) throw providerUnavailable(error);
       if (error instanceof PaidTransportError) throw providerUnavailable();
       throw error;
     }

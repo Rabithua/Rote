@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import type { BillingConfig } from './config';
 import outboundFixture from './fixtures/rote-to-paid-v1.json';
-import { PaidBillingApiError, PaidBillingClient } from './paidClient';
+import {
+  PaidBillingApiError,
+  PaidBillingClient,
+  PaidBillingInternalContractError,
+} from './paidClient';
 import type { BillingFetch } from './paidTransport';
 
 const config = {
@@ -26,8 +30,10 @@ async function expectApiError(operation: Promise<unknown>, status: number, messa
     throw new Error('Expected Paid API error');
   } catch (error) {
     expect(error).toBeInstanceOf(PaidBillingApiError);
-    expect((error as PaidBillingApiError).status).toBe(status);
-    expect((error as PaidBillingApiError).billingMessage).toBe(message);
+    const apiError = error as PaidBillingApiError;
+    expect(apiError.status).toBe(status);
+    expect(apiError.billingMessage).toBe(message);
+    return apiError;
   }
 }
 
@@ -55,7 +61,8 @@ describe('Paid billing client error mapping', () => {
   });
 
   it('forwards only exact stable Paid errors and fails closed on malformed envelopes', async () => {
-    for (const errorCase of Object.values(outboundFixture.standardErrorResponses)) {
+    for (const [name, errorCase] of Object.entries(outboundFixture.standardErrorResponses)) {
+      if (name === 'idempotencyConflict') continue;
       await expectApiError(
         new PaidBillingClient(config, {
           fetch: async () => Response.json(errorCase.body, { status: errorCase.httpStatus }),
@@ -64,6 +71,21 @@ describe('Paid billing client error mapping', () => {
         errorCase.body.message
       );
     }
+
+    const idempotencyConflict = outboundFixture.standardErrorResponses.idempotencyConflict;
+    const translated = await expectApiError(
+      new PaidBillingClient(config, {
+        fetch: async () =>
+          Response.json(idempotencyConflict.body, {
+            status: idempotencyConflict.httpStatus,
+          }),
+      }).createSession('11111111-2222-4333-8444-555555555555'),
+      503,
+      'billing_provider_unavailable'
+    );
+    expect(translated.internalCause).toBeInstanceOf(PaidBillingInternalContractError);
+    expect(translated.internalCause?.status).toBe(409);
+    expect(translated.internalCause?.billingMessage).toBe('billing_idempotency_conflict');
 
     await expectApiError(
       new PaidBillingClient(config, {
