@@ -1,6 +1,6 @@
 # Rote Server：Rote Pro 实施计划
 
-本文是 Rote 开源仓库的实施清单，只覆盖服务端投影、权限解析和安全限额。Apple 业务状态机在私有 Paid Server 实现。
+本文是 Rote 开源仓库的实施清单，只覆盖服务端投影、权限解析和 v1 最小安全保护。Apple 业务状态机在私有 Paid Server 实现。
 
 ## 阶段 1：配置、schema 与 contract fixtures
 
@@ -42,26 +42,27 @@
 ## 阶段 5：AI 限额
 
 - 在 capability 检查后识别 subscription source，只对该来源执行 Pro 限额。
-- 使用共享存储实现滚动 60 秒请求数、带 lease 的 2 并发槽和滚动 24 小时 token ledger。
-- 在 provider 调用前完成检查/占位；所有退出路径 finally 释放；usage 可得时写实际 token。
-- 429 响应返回稳定 `limitKind`、`retryAfterSeconds` 或 `windowEndsAt`。
-- 明确输入、历史和最大输出 token 上限，使最多两个在途请求的超量有界。
+- 使用共享存储实现滚动 60 秒最多 10 次、带 lease 的 2 并发槽和 UTC 自然日最多 100 次 provider dispatch。
+- 在 provider 调用前完成检查；只有即将实际 dispatch 的请求才占用日计数，所有退出路径 finally 释放并发 lease。
+- 429 响应返回稳定 `limitKind`、`retryAfterSeconds` 或 `resetAt`。
+- 复用现有模型上下文和最大输出限制，不实现 token ledger、token reservation 或用户用量仪表盘。
+- 增加全局 AI 紧急关闭开关；provider 预算/告警和服务指标负责发现成本异常。
 
 验收：多实例并发、边界时间、provider timeout/cancel/error 和槽位回收测试通过。
 
-## 阶段 6：视频 reservation 与容量
+## 阶段 6：视频最小保护与观测
 
-- 扩展 presign contract，要求每个逻辑视频附件具有稳定 clientUploadId、类型和预估大小。
-- 原子检查 UTC 日 20 次和 10GB committed+reserved，重复 clientUploadId 返回原 reservation。
-- finalize 读取对象元数据，用实际字节提交；过期 reservation 和孤儿对象由 worker 清理。
-- 定义 batch/Live Photo 计数，以及 original/poster/paired video/static image 分类。
-- 只对 subscription source 使用这些保护限额；其他授权来源保持现有管理员语义。
+- 不增加订阅专用日次数、用户容量、reservation 表、计费分类或客户端上传字段。
+- 沿用现有单文件大小、类型、对象存在性和附件安全校验，不改变 batch/Live Photo 正常上传体验。
+- 基于现有 finalized 附件记录输出视频数量、字节和存储增长的低基数指标。
+- 增加视频全局紧急停用开关和存储告警；停用不映射为 paywall 或“再次购买”提示。
+- 将精细用户配额列为数据触发的后续设计，不进入 v1 完成条件。
 
-验收：批量、Live Photo、并发 presign、重复/过期 reservation、超预估 actual bytes、删除对象和 UTC 日切通过。
+验收：现有 batch/Live Photo/重试行为无回归；finalized 指标可观测；紧急停用不会误导购买。
 
 ## 阶段 7：联调、可观测性与发布
 
-- 增加 route latency/error、outbox backlog、签名失败、grant lease horizon、AI/video 限额指标；标签不包含用户或交易高基数字段。
+- 增加 route latency/error、outbox backlog、签名失败、grant lease horizon、AI 限额和视频存储增长指标；标签不包含用户或交易高基数字段。
 - 与 Paid contract suite 联调高/低 revision、callback retry、删除后 404/orphaned、多订阅聚合和 HMAC 轮换。
 - 与 iOS 联调 session、activate 503 后重试、restore、Offer Code 和 transaction finish 时序。
 - 先部署 schema/callback（billing disabled），再部署 Paid，最后只对 sandbox allowlist 开启官方实例。
@@ -75,5 +76,5 @@
 - 授权不会越过 24 小时 lease，旧 revision 不覆盖新状态。
 - App 激活只有在本地 grant 已提交后成功。
 - 有效订阅不会被自动合并到其他账号；删除不依赖 Paid 且本地 grant 不残留。
-- AI/video 限额在多实例和重试下不可绕过。
+- AI 基础限额在多实例和重试下不可绕过；视频不引入订阅专用 quota 状态机。
 - 日志、错误和指标不包含完整 JWS、transaction ID、email、JWT 或 HMAC secret。

@@ -67,9 +67,9 @@ grant 表应随本地用户删除而删除；Paid 不参与删除事务，并在
 
 ### 安全限额数据
 
-- AI 使用分布式速率计数、并发 lease 和滚动 token ledger；多实例部署不得使用纯内存计数。
-- 视频使用 `(user_id, client_upload_id)` 唯一 reservation，包含逻辑视频数、预估字节、过期时间和 committed 状态。
-- finalized 附件的计费字段必须能区分视频原件、poster、Live Photo 配对视频和静态图。
+- AI 使用共享存储保存滚动分钟请求计数、UTC 日请求计数和带过期时间的并发 lease；多实例部署不得使用纯内存计数。
+- v1 不创建 token ledger、视频 quota/reservation 表，也不为了订阅限额扩展客户端上传协议。
+- 视频数量和存储增长从现有 finalized 附件数据聚合为运维指标，不作为 v1 用户级计费账本。
 
 ## 4. HMAC 协议
 
@@ -214,35 +214,27 @@ Rote Pro 直接授予 `ai.chat`、`attachment.video.upload`；视频最终仍要
 
 - 10 次请求/滚动 60 秒。
 - 2 个同时执行的模型生成。
-- 200,000 token/滚动 24 小时。
+- 每个 UTC 自然日最多 100 次实际发送给模型 provider 的请求。
 
 开始模型调用前按以下顺序原子执行：
 
-1. 检查并占用一分钟请求计数。
-2. 清理过期并发 lease，获取一个最长覆盖请求 timeout 的槽。
-3. 汇总 token ledger；已达到 200,000 时拒绝。
-4. 对输入、历史和最大输出使用服务端硬上限。
-5. 在 finally 释放并发槽；成功/已得到 provider usage 的失败请求写实际 token。
+1. 清理过期并发 lease，获取一个最长覆盖请求 timeout 的槽。
+2. 在共享存储中检查分钟和 UTC 日计数；只有即将实际 dispatch 的请求才递增日计数。
+3. 继续应用现有模型上下文、输入和最大输出限制，不另建订阅 token 预算。
+4. 在 finally 释放并发槽；provider timeout、取消和异常退出同样释放。
 
-达到限制返回 HTTP 429、`billing_safety_limit_reached`，data 包含 `limitKind`、`retryAfterSeconds`/`windowEndsAt`。两个已开始的请求可以造成有限超量，除此之外不能先放行再异步统计。
+达到限制返回 HTTP 429、`billing_safety_limit_reached`，data 包含稳定 `limitKind` 和适用的 `retryAfterSeconds`/`resetAt`。不提供 token 余额或用量仪表盘。服务端另保留全局 AI 紧急关闭开关，成本通过 provider 预算/告警和低基数服务指标监控。
 
-## 9. 视频安全限额
+## 9. 视频 v1 最小保护
 
-同样仅对 subscription 来源应用：
+v1 不实现订阅专用的 20 次/日、10GB 用户容量、presign reservation、Live Photo 计费分类或新的 `clientUploadId` 协议。视频上传：
 
-- 视频相关已提交对象总计 10GB。
-- UTC 自然日最多 20 个逻辑视频附件。
-- 一个 Live Photo 配对视频计 1；批量请求按逻辑视频元素数计，不按 HTTP 次数计。
+- 继续服从现有单文件大小、文件类型、对象存在性和附件安全校验。
+- 从现有 finalized 附件记录采集视频数量、字节和存储增长指标，不新增用户配额账本。
+- 配置全局紧急停用能力，并对存储增长和对象存储成本设置运维告警。
+- 停用或存储故障使用现有服务可用性错误语义，不返回暗示用户需要再次购买的限额/paywall 错误。
 
-presign 流程：
-
-1. 客户端为每个逻辑附件发送稳定 `clientUploadId`、类型和预估字节。
-2. Rote 在事务中计算 committed + 未过期 reserved 次数/容量，创建短期 reservation。
-3. 相同 `(userId, clientUploadId)` 重试返回同一 reservation，不重复占额。
-4. finalize 验证对象元数据，原子将 reservation committed，并以实际字节更新用量。
-5. 未 finalize reservation 到期释放；对象清理任务处理已上传但未提交的孤儿。
-
-10GB 包含视频原件、视频 poster、Live Photo 配对视频；Live Photo 静态图片按普通附件存储，不计视频容量。失败返回 429 同一错误码和 `limitKind`、`resetAt`/支持信息，不实现额度 dashboard。
+先观察真实用量、成本和滥用分布；只有数据证明现有保护不足时，才另行设计用户级次数/容量限制。该延期决策不得被实现阶段自行替换为临时 quota 表。
 
 ## 10. 账号生命周期
 
@@ -261,7 +253,7 @@ presign 流程：
 | 403 | `billing_environment_not_allowed` | Sandbox 非 allowlist |
 | 409 | `billing_subscription_owned_by_another_account` | 展示账号归属提示 |
 | 409 | `billing_account_operation_requires_support` | 有有效订阅的账号不支持自动合并 |
-| 429 | `billing_safety_limit_reached` | 按返回时间重试 |
+| 429 | `billing_safety_limit_reached` | AI 基础防滥用触发，按返回时间重试 |
 
 内部 callback 的 `billing_grant_user_not_found` 不返回给 App。
 
@@ -274,6 +266,6 @@ presign 流程：
 - `/billing/me` 在 lease 到期时本地失效，Paid 故障不阻塞读取。
 - 激活本地写失败返回 503，后续 callback 可恢复。
 - override deny 高于 subscription；dependency 能关闭 video；subscription validUntil 缺失/损坏/过期 fail closed。
-- AI 多实例速率、并发、token 边界和异常 finally 释放。
-- 视频 batch、Live Photo、重复 presign、放弃 reservation、actual bytes 和 UTC 日切。
+- AI 多实例分钟/日计数、并发 lease、异常 finally 释放和紧急开关。
+- 视频沿用现有上传校验，finalized 用量指标和全局停用不会引导用户再次购买。
 - 有 active/grace 订阅的账号 merge 被阻止；账号删除不调用 Paid，grant cascade 删除，下一次 callback 404。
