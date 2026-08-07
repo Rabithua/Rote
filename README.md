@@ -119,6 +119,8 @@ For more deployment options and configuration instructions, please check the doc
 - [API Key Guide](doc/userguide/API-KEY-GUIDE.md) - How to use API Key
 - [AI Vector Migration Guide](doc/userguide/AI-VECTOR-MIGRATION.zh.md) - Upgrade an existing self-hosted database to Memory and pgvector support (Chinese)
 - [User-local AI Guide](doc/userguide/LOCAL-AI.zh.md) - Run Gemma on the user's own computer without sending model requests through the Rote server (Chinese)
+- [Rote Pro Billing Integration](doc/paid-subscription-integration.zh.md) - Optional official-instance subscription projection design (Chinese)
+- [Rote Pro Server Plan](doc/paid-subscription-plan.zh.md) - Server-side implementation phases and acceptance criteria (Chinese)
 
 ### Video Tutorials (Bilibili)
 

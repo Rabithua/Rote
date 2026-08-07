@@ -115,10 +115,12 @@ iOS App 支持连接到你自部署的后端。
 更多部署选项和配置说明，请查看 `doc/` 目录下的文档：
 
 - [自托管部署指南](https://rote.ink/doc/selfhosted) - 完整的部署和配置说明
-- [API 文档](doc/userguide/API-ENDPOINTS.md) - API 接口使用指南
-- [API Key 指南](doc/userguide/API-KEY-GUIDE.md) - 如何使用 API Key
-- [AI Vector 迁移指南](doc/userguide/AI-VECTOR-MIGRATION.zh.md) - 旧版线上数据库升级到记忆与 pgvector 的操作说明
+- [API 文档](userguide/API-ENDPOINTS.md) - API 接口使用指南
+- [API Key 指南](userguide/API-KEY-GUIDE.md) - 如何使用 API Key
+- [AI Vector 迁移指南](userguide/AI-VECTOR-MIGRATION.zh.md) - 旧版线上数据库升级到记忆与 pgvector 的操作说明
 - [用户本地 AI 指南](userguide/LOCAL-AI.zh.md) - 在用户自己的电脑运行 Gemma，模型请求不经过 Rote 服务端
+- [Rote Pro 订阅接入设计](paid-subscription-integration.zh.md) - 官方实例的可选订阅授权投影方案
+- [Rote Pro 服务端实施计划](paid-subscription-plan.zh.md) - 服务端分阶段任务与验收标准
 
 ### 视频教程（B 站）
 
