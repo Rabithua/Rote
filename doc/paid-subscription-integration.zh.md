@@ -59,20 +59,11 @@ callback 应在数据库事务中比较 revision 并完整 upsert：
 - 相同 revision/相同 hash：200 duplicate。
 - 相同 revision/不同 hash：409 并告警。
 
-grant 表可以引用用户，但删除流程不能依靠 cascade 撤销 Paid 状态。
+grant 表应随本地用户删除而删除；Paid 不参与删除事务，并在下一次 lease refresh callback 收到 404 后自行转为 orphaned。
 
 ### `billing_inbound_deliveries`
 
 保存 HMAC `deliveryId`、keyId、body hash 和最终响应，用于重放防护。相同 ID/相同 body 返回保存的响应；相同 ID/不同 body 返回 409。记录至少保留 24 小时，grant revision 继续提供永久顺序保护。
-
-### `billing_account_event_outbox`
-
-账号 merge/delete 需要 Rote→Paid 的 durable outbox，不能在用户事务后 fire-and-forget：
-
-- 保存不可变 `eventId`、event type、source/target userId、occurredAt、payload、attempt 和 nextAttemptAt。
-- 不使用随 `users` 删除而 cascade 的外键。
-- 账号事务内先写 outbox，再完成 delete；worker 使用 HMAC 投递 `account-events`。
-- 重试直到 Paid 返回 2xx/幂等成功；401/403 立即告警。
 
 ### 安全限额数据
 
@@ -102,7 +93,7 @@ v1
 <lowercase-hex-sha256-of-exact-body-bytes>
 ```
 
-Rote 发送请求和接收 callback 必须复用同一经过 fixture 验证的 canonicalization 实现。时间偏差最大 300 秒。body 的 `requestId`、`eventId` 或 `deliveryId` 必须等于 header request ID。比较签名使用 constant-time API。
+Rote 发送请求和接收 callback 必须复用同一经过 fixture 验证的 canonicalization 实现。时间偏差最大 300 秒。body 的 `requestId` 或 `deliveryId` 必须等于 header request ID。比较签名使用 constant-time API。幂等唯一键是方向 + request/delivery ID，不能包含 keyId；keyId 只作审计，避免轮换时重复执行。
 
 轮换时接收端同时接受 active/previous keyId，发送端只使用 active；排空后移除 previous。日志不得包含 secret、签名、Authorization、完整 JWS 或完整交易 ID。
 
@@ -182,7 +173,7 @@ disabled 时仍返回 200 和 `enabled: false`。不得返回 Paid URL、keyId �
 
 验证 issuer/instance、revision 格式、ISO 日期、`leaseExpiresAt <= entitlementExpiresAt` 和 capability allowlist。撤销 snapshot 使用 `status: none`、null product/expiry、空 capabilities。
 
-用户在 merge/delete 后不存在时，只有空 snapshot callback 才返回 404；非空 snapshot 返回 409 并告警，防止授权投向未知用户。
+目标用户不存在时，无论 snapshot 是否为空都返回标准 JSON 404，message 固定为 `billing_grant_user_not_found`。Paid 只把该结构化错误解释为账号已删除；反向代理/未知格式 404 不得触发 orphaned。Rote 不发送专用删除事件。
 
 ## 7. capability 解析
 
@@ -255,11 +246,10 @@ presign 流程：
 
 ## 10. 账号生命周期
 
-- merge 用户事务写入 `account.merged` outbox，包含 source/target；Paid 回调空 source grant 和聚合 target grant。
-- delete 在用户记录消失前写 `account.deleted` outbox；事件记录不得被 cascade。
-- worker 重试使用同一 eventId，Paid 幂等处理。
-- 删除后 source 的空 grant callback 404 是预期终态；非空授权 404 不是成功。
-- Rote 不自行解释 Apple transaction，也不直接移动订阅归属。
+- v1 不实现 Paid account event outbox、订阅账号 alias、自动转移或删除后的自动重新认领。
+- 账号 merge 开始前只读 source/target 的本地 billing grant；任一账号最后状态为 active、grace_period 或 lease-expired `unavailable` 时返回 409 `billing_account_operation_requires_support`，不执行自动合并。只有明确 `none` 时沿用现有 merge。
+- 账号删除不依赖 Paid 可用性：正常删除用户，本地 billing grant 随用户删除。下一次 Paid 定期续租 callback 得到 404 后会把映射标记 orphaned。
+- Rote 不自行解释 Apple transaction，也不直接移动订阅归属；orphaned 订阅不迁移，支持只提供原账号、取消或退款指引。
 
 ## 11. 错误与故障语义
 
@@ -270,7 +260,10 @@ presign 流程：
 | 400 | `billing_invalid_transaction` | 停止自动重试并展示支持入口 |
 | 403 | `billing_environment_not_allowed` | Sandbox 非 allowlist |
 | 409 | `billing_subscription_owned_by_another_account` | 展示账号归属提示 |
+| 409 | `billing_account_operation_requires_support` | 有有效订阅的账号不支持自动合并 |
 | 429 | `billing_safety_limit_reached` | 按返回时间重试 |
+
+内部 callback 的 `billing_grant_user_not_found` 不返回给 App。
 
 原有能力不足错误继续为 `capability_required:<capability>`。
 
@@ -283,4 +276,4 @@ presign 流程：
 - override deny 高于 subscription；dependency 能关闭 video；subscription validUntil 缺失/损坏/过期 fail closed。
 - AI 多实例速率、并发、token 边界和异常 finally 释放。
 - 视频 batch、Live Photo、重复 presign、放弃 reservation、actual bytes 和 UTC 日切。
-- merge/delete outbox 在用户删除和 worker 重启后仍可送达。
+- 有 active/grace 订阅的账号 merge 被阻止；账号删除不调用 Paid，grant cascade 删除，下一次 callback 404。

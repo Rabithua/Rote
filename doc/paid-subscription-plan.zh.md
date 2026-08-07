@@ -5,9 +5,9 @@
 ## 阶段 1：配置、schema 与 contract fixtures
 
 - 增加 billing 类型安全配置；默认 disabled，缺少配置不得影响自托管启动。
-- 增加 grant、inbound delivery 和 account event outbox migration；event outbox 不使用删除级联外键。
+- 增加 grant 和 inbound delivery migration；grant 随本地用户删除，不增加 account event outbox。
 - 从 Paid 主规范复制无秘密的 HMAC/request/snapshot fixtures，建立双仓 contract tests。
-- 建立 billing domain 模块，隔离 route、Paid client、grant repository、signature 和 account-event worker，避免把逻辑塞进通用 utils。
+- 建立 billing domain 模块，隔离 route、Paid client、grant repository 和 signature，避免把逻辑塞进通用 utils。
 
 验收：迁移从空库和现有库成功；disabled 配置运行全部现有测试；HMAC fixture 与 Paid 一致。
 
@@ -30,14 +30,14 @@
 
 验收：官方/自托管配置、鉴权、错误映射、Paid timeout、本地事务失败和幂等激活均覆盖。
 
-## 阶段 4：账号生命周期 outbox
+## 阶段 4：最小账号生命周期
 
-- 在现有账号 merge/delete 事务中写不可变 outbox，不直接同步 HTTP 调用 Paid。
-- worker 多副本安全领取，使用 eventId 作为 HMAC request ID，指数退避并持久化响应。
-- delete 确保 outbox 不随用户记录删除；merge source/target 顺序固定并防止空 ID。
-- 添加运维查询/重试入口，但不提供绕过签名或删除失败任务的快捷路径。
+- 不实现 Rote→Paid account event、merge outbox、alias 或自动订阅迁移。
+- merge 前检查 source/target 本地 grant；状态为 active、grace_period 或 lease-expired unavailable 时返回 `billing_account_operation_requires_support`，只有明确 none 才沿用现有流程。
+- delete 保持现有可用性，不同步调用 Paid；用户和本地 grant 正常删除。
+- callback 对不存在用户统一返回结构化 404 `billing_grant_user_not_found`，由 Paid 进入 orphaned 终态；普通代理 404 不得使用该 message。
 
-验收：重复事件、网络中断、worker crash、用户已删除、Paid 401/5xx 和终态 2xx 测试通过。
+验收：无订阅 merge 不受影响；有订阅 merge 被阻止；Paid 不可用不阻止立即删除；删除后 callback 稳定返回 404。
 
 ## 阶段 5：AI 限额
 
@@ -62,7 +62,7 @@
 ## 阶段 7：联调、可观测性与发布
 
 - 增加 route latency/error、outbox backlog、签名失败、grant lease horizon、AI/video 限额指标；标签不包含用户或交易高基数字段。
-- 与 Paid contract suite 联调高/低 revision、callback retry、merge/delete、多订阅聚合和 HMAC 轮换。
+- 与 Paid contract suite 联调高/低 revision、callback retry、删除后 404/orphaned、多订阅聚合和 HMAC 轮换。
 - 与 iOS 联调 session、activate 503 后重试、restore、Offer Code 和 transaction finish 时序。
 - 先部署 schema/callback（billing disabled），再部署 Paid，最后只对 sandbox allowlist 开启官方实例。
 
@@ -74,6 +74,6 @@
 - Paid 故障不进入 AI/视频/permissions 正常请求路径。
 - 授权不会越过 24 小时 lease，旧 revision 不覆盖新状态。
 - App 激活只有在本地 grant 已提交后成功。
-- merge/delete 事件不会因用户删除或进程退出丢失。
+- 有效订阅不会被自动合并到其他账号；删除不依赖 Paid 且本地 grant 不残留。
 - AI/video 限额在多实例和重试下不可绕过。
 - 日志、错误和指标不包含完整 JWS、transaction ID、email、JWT 或 HMAC secret。
