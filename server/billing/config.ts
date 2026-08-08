@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-export const BILLING_ALLOWED_PRODUCT_IDS = ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'] as const;
+export const BILLING_ALLOWED_PRODUCT_IDS = [
+  'ink.rote.pro.monthly',
+  'ink.rote.pro.quarterly',
+  'ink.rote.pro.yearly',
+] as const;
 
 export const BILLING_ISSUER = 'rote-paid-server';
 export const BILLING_OFFICIAL_INSTANCE_ID = 'rote-official';

@@ -196,7 +196,7 @@ describe('public billing routes', () => {
       expect((await (await app.request(url)).json()).data).toEqual({
         enabled: false,
         officialOrigin: 'https://api.rote.ink',
-        products: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
+        products: ['ink.rote.pro.monthly', 'ink.rote.pro.quarterly', 'ink.rote.pro.yearly'],
         features: { offerCode: true, promotedPurchases: false },
       });
     }
@@ -223,7 +223,7 @@ describe('public billing routes', () => {
     ).toEqual({
       enabled: false,
       officialOrigin: 'https://api.rote.ink',
-      products: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
+      products: ['ink.rote.pro.monthly', 'ink.rote.pro.quarterly', 'ink.rote.pro.yearly'],
       features: { offerCode: true, promotedPurchases: false },
     });
     expect(

@@ -7,7 +7,7 @@ function enabledEnvironment(): NodeJS.ProcessEnv {
     BILLING_INSTANCE_ID: 'rote-official',
     BILLING_OFFICIAL_ORIGIN: 'https://api.rote.ink',
     BILLING_PAID_SERVER_URL: 'https://billing.rote.ink',
-    BILLING_PRODUCT_IDS: 'ink.rote.pro.monthly,ink.rote.pro.yearly',
+    BILLING_PRODUCT_IDS: 'ink.rote.pro.monthly,ink.rote.pro.quarterly,ink.rote.pro.yearly',
     BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID: 'rote-active',
     BILLING_ROTE_TO_PAID_ACTIVE_SECRET: 'rote-to-paid-active-secret-00000001',
     BILLING_PAID_TO_ROTE_ACTIVE_KEY_ID: 'paid-active',
@@ -35,7 +35,11 @@ describe('billing configuration', () => {
 
     expect(config.enabled).toBe(true);
     if (!config.enabled) throw new Error('Expected enabled billing configuration');
-    expect(config.productIds).toEqual(['ink.rote.pro.monthly', 'ink.rote.pro.yearly']);
+    expect(config.productIds).toEqual([
+      'ink.rote.pro.monthly',
+      'ink.rote.pro.quarterly',
+      'ink.rote.pro.yearly',
+    ]);
     expect(config.connectTimeoutMs).toBe(3_000);
     expect(config.totalTimeoutMs).toBe(10_000);
     expect(config.paidToRote.previous?.keyId).toBe('paid-previous');
