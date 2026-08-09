@@ -1,15 +1,27 @@
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
+  UploadPartCommand,
 } from '@aws-sdk/client-s3';
+import type { Readable } from 'node:stream';
 import { RequestChecksumCalculation } from '@aws-sdk/middleware-flexible-checksums';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageConfig } from '../types/config';
 import { getGlobalConfig } from './config';
 
 const cacheControl = 'public, max-age=31536000'; // 1 year cache
+const STREAM_UPLOAD_PART_SIZE = 8 * 1024 * 1024;
+
+export type StoredObjectInfo = {
+  contentLength: number | null;
+  contentType: string | null;
+};
 
 type StorageClientConfig = {
   s3: S3Client;
@@ -126,13 +138,16 @@ async function presignPutUrlWithClient(
     Bucket: bucketName,
     Key: key,
     ContentType: contentType || undefined,
-    cacheControl,
+    CacheControl: cacheControl,
     // 明确不设置校验和算法，避免 AWS SDK 自动添加校验和参数
     // Garage 等 S3 兼容服务可能不支持或不正确支持 AWS SDK 自动添加的校验和
   } as any);
 
   const putUrl = await getSignedUrl(s3, command, {
     expiresIn,
+    // Bind the declared object media type into the signature so the key
+    // extension, presign metadata, and actual upload header cannot diverge.
+    signableHeaders: contentType ? new Set(['content-type']) : undefined,
   });
 
   const url = `${urlPrefix}/${key}`;
@@ -196,6 +211,84 @@ export async function presignPutUrlForConfig(
   return presignPutUrlWithClient(createStorageClient(config), key, contentType, expiresIn);
 }
 
+export async function storeObjectStream(
+  key: string,
+  body: Readable,
+  contentType: string
+): Promise<{ url: string }> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const created = await r2Config.s3.send(
+    new CreateMultipartUploadCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      ContentType: contentType,
+      CacheControl: cacheControl,
+    })
+  );
+  if (!created.UploadId) throw new Error('Failed to start multipart upload');
+
+  const parts: Array<{ ETag: string; PartNumber: number }> = [];
+  let buffered: Buffer[] = [];
+  let bufferedBytes = 0;
+  let partNumber = 1;
+  const uploadPart = async (bytes: Buffer) => {
+    const uploaded = await r2Config.s3.send(
+      new UploadPartCommand({
+        Bucket: r2Config.bucketName,
+        Key: key,
+        UploadId: created.UploadId,
+        PartNumber: partNumber,
+        Body: bytes,
+      })
+    );
+    if (!uploaded.ETag) throw new Error('Multipart upload part is missing an ETag');
+    parts.push({ ETag: uploaded.ETag, PartNumber: partNumber });
+    partNumber += 1;
+  };
+
+  try {
+    for await (const chunk of body) {
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      buffered.push(bytes);
+      bufferedBytes += bytes.byteLength;
+      if (bufferedBytes < STREAM_UPLOAD_PART_SIZE) continue;
+      const combined = Buffer.concat(buffered, bufferedBytes);
+      await uploadPart(combined.subarray(0, STREAM_UPLOAD_PART_SIZE));
+      const remainder = combined.subarray(STREAM_UPLOAD_PART_SIZE);
+      buffered = remainder.byteLength > 0 ? [remainder] : [];
+      bufferedBytes = remainder.byteLength;
+    }
+    if (bufferedBytes > 0) await uploadPart(Buffer.concat(buffered, bufferedBytes));
+    if (parts.length === 0) throw new Error('Cannot upload an empty stream');
+    await r2Config.s3.send(
+      new CompleteMultipartUploadCommand({
+        Bucket: r2Config.bucketName,
+        Key: key,
+        UploadId: created.UploadId,
+        MultipartUpload: { Parts: parts },
+      })
+    );
+  } catch (error) {
+    await r2Config.s3
+      .send(
+        new AbortMultipartUploadCommand({
+          Bucket: r2Config.bucketName,
+          Key: key,
+          UploadId: created.UploadId,
+        })
+      )
+      .catch(() => undefined);
+    throw error;
+  }
+  return { url: `${r2Config.urlPrefix}/${key}` };
+}
+
 // 检查 R2 中的对象是否存在
 export async function checkObjectExists(key: string): Promise<boolean> {
   const r2Config = getR2Client();
@@ -224,4 +317,102 @@ export async function checkObjectExists(key: string): Promise<boolean> {
     console.warn(`Error checking object existence for ${key}:`, error.message || error);
     return false;
   }
+}
+
+export async function getObjectInfo(key: string): Promise<StoredObjectInfo | null> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  try {
+    const result = await r2Config.s3.send(
+      new HeadObjectCommand({ Bucket: r2Config.bucketName, Key: key })
+    );
+    return {
+      contentLength: result.ContentLength ?? null,
+      contentType: result.ContentType ?? null,
+    };
+  } catch (error: any) {
+    if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function getObjectBytes(key: string): Promise<Uint8Array> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const result = await r2Config.s3.send(
+    new GetObjectCommand({ Bucket: r2Config.bucketName, Key: key })
+  );
+  if (!result.Body) {
+    throw new Error(`Storage object has no body: ${key}`);
+  }
+  return result.Body.transformToByteArray();
+}
+
+export async function getObjectPrefix(key: string, maxBytes: number): Promise<Uint8Array> {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 4096) {
+    throw new Error(`Invalid storage prefix length: ${maxBytes}`);
+  }
+
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  const result = await r2Config.s3.send(
+    new GetObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      Range: `bytes=0-${maxBytes - 1}`,
+    })
+  );
+  if (!result.Body) {
+    throw new Error(`Storage object has no body: ${key}`);
+  }
+  if (result.ContentLength && result.ContentLength > maxBytes) {
+    throw new Error(`Storage endpoint ignored byte range for object: ${key}`);
+  }
+
+  const bytes = await result.Body.transformToByteArray();
+  if (bytes.byteLength === 0) {
+    throw new Error(`Storage object prefix is empty: ${key}`);
+  }
+  return bytes.subarray(0, maxBytes);
+}
+
+export async function putObjectBytes(
+  key: string,
+  bytes: Uint8Array,
+  contentType: string
+): Promise<void> {
+  const r2Config = getR2Client();
+  if (!r2Config) {
+    throw new Error(
+      'R2 storage is not configured. Please complete the storage configuration first.'
+    );
+  }
+
+  await r2Config.s3.send(
+    new PutObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+      Body: bytes,
+      ContentLength: bytes.byteLength,
+      ContentType: contentType,
+      CacheControl: cacheControl,
+    })
+  );
 }

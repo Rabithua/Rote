@@ -7,10 +7,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Divider } from '@/components/ui/divider';
-import { post } from '@/utils/api';
+import ImportSourceForm from '@/features/import/ImportSourceForm';
+import type { ImportMigrationAuth, ImportPayload } from '@/features/import/sourceLoader';
 import saveAs from 'file-saver';
-import { ArrowUpRight, Download, FileJson, HelpCircle, PocketKnife, Upload, X } from 'lucide-react';
-import { type ChangeEvent, useRef, useState } from 'react';
+import { Download, FileJson, HelpCircle, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useAtomValue } from 'jotai';
@@ -19,33 +20,14 @@ import type { Rote, Rotes } from '@/types/main';
 import { SoftBottom } from '../others/SoftBottom';
 import { Button } from '../ui/button';
 import ImportPreviewDialog, { type ImportPreview } from './ImportPreviewDialog';
-
-type ApiResponse<T> = {
-  code: number;
-  message: string;
-  data: T;
-};
-
-type ImportResult = {
-  count: number;
-  created: number;
-  updated: number;
-  notes: {
-    total: number;
-    created: number;
-    updated: number;
-  };
-  articles: {
-    total: number;
-    created: number;
-    updated: number;
-  };
-  attachments: {
-    total: number;
-    created: number;
-    updated: number;
-  };
-};
+import { ImportCancelDialog } from './ImportCancelDialog';
+import {
+  cleanupInterruptedImport,
+  runImportTask,
+  type ImportTaskProgress,
+  type ImportTaskResult,
+} from '@/features/import/importTask';
+import { useBlocker } from 'react-router-dom';
 
 export default function ImportData() {
   const { t } = useTranslation('translation', {
@@ -55,10 +37,19 @@ export default function ImportData() {
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [previewVersion, setPreviewVersion] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [fileData, setFileData] = useState<any | null>(null);
+  const [fileData, setFileData] = useState<ImportPayload | null>(null);
+  const [migrationAuth, setMigrationAuth] = useState<ImportMigrationAuth>();
   const [excludedIndexes, setExcludedIndexes] = useState<Set<number>>(new Set());
+  const [overwriteExisting, setOverwriteExisting] = useState(false);
+  const [preserveVisibility, setPreserveVisibility] = useState(false);
+  const [taskProgress, setTaskProgress] = useState<ImportTaskProgress | null>(null);
+  const [taskResult, setTaskResult] = useState<ImportTaskResult | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const leaveAfterCancelRef = useRef(false);
+  const recoveryStartedRef = useRef(false);
+  const blocker = useBlocker(isImporting);
   const profile = useAtomValue(profileAtom);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const exampleData = {
     articles: [
       {
@@ -101,75 +92,120 @@ export default function ImportData() {
     ],
   };
 
-  const buildPreview = (json: any, fileName: string): ImportPreview => {
-    const uniqueArticles = Array.from(
-      new Map(
-        [
-          ...(Array.isArray(json.articles) ? json.articles : []),
-          ...json.notes
-            .map((note: any) => note?.article)
-            .filter((article: unknown): article is Record<string, any> => !!article),
-        ]
-          .filter((article: any) => typeof article?.id === 'string')
-          .map((article: any) => [article.id, article])
-      ).values()
-    );
-    const articleIds = new Set<string>(uniqueArticles.map((article: any) => article.id));
-    const tags = new Set<string>();
-    let attachmentCount = 0;
-    let publicCount = 0;
-    let privateCount = 0;
+  const buildPreview = useCallback(
+    (json: ImportPayload, fileName: string): ImportPreview => {
+      const uniqueArticles = Array.from(
+        new Map(
+          [
+            ...(Array.isArray(json.articles) ? json.articles : []),
+            ...json.notes
+              .map((note: any) => note?.article)
+              .filter((article: unknown): article is Record<string, any> => !!article),
+          ]
+            .filter((article: any) => typeof article?.id === 'string')
+            .map((article: any) => [article.id, article])
+        ).values()
+      );
+      const articleIds = new Set<string>(uniqueArticles.map((article: any) => article.id));
+      const tags = new Set<string>();
+      let attachmentCount = 0;
+      let publicCount = 0;
+      let privateCount = 0;
 
-    json.notes.forEach((note: any) => {
-      if (typeof note?.articleId === 'string') {
-        articleIds.add(note.articleId);
-      }
-      if (typeof note?.article?.id === 'string') {
-        articleIds.add(note.article.id);
-      }
-      if (Array.isArray(note?.attachments)) {
-        attachmentCount += note.attachments.length;
-      }
-      if (Array.isArray(note?.tags)) {
-        note.tags.forEach((tag: unknown) => {
-          if (typeof tag === 'string' && tag.trim()) tags.add(tag.trim());
-        });
-      }
-      if (note?.state === 'public') {
-        publicCount++;
-      } else {
-        privateCount++;
-      }
-    });
+      json.notes.forEach((note: any) => {
+        if (typeof note?.articleId === 'string') {
+          articleIds.add(note.articleId);
+        }
+        if (typeof note?.article?.id === 'string') {
+          articleIds.add(note.article.id);
+        }
+        if (Array.isArray(note?.attachments)) {
+          attachmentCount += note.attachments.length;
+        }
+        if (Array.isArray(note?.tags)) {
+          note.tags.forEach((tag: unknown) => {
+            if (typeof tag === 'string' && tag.trim()) tags.add(tag.trim());
+          });
+        }
+        if (note?.state === 'public') {
+          publicCount++;
+        } else {
+          privateCount++;
+        }
+      });
 
-    return {
-      fileName,
-      articleCount: articleIds.size,
-      roteCount: json.notes.length,
-      attachmentCount,
-      publicCount,
-      privateCount,
-      tagCount: tags.size,
-      rotes: json.notes.map((note: Rote) => ({
-        ...note,
-        authorid: profile?.id,
-        author: {
-          username: profile?.username || '',
-          nickname: profile?.nickname || '',
-          avatar: profile?.avatar || '',
-          certified: profile?.certified ?? false,
-        },
-        reactions: [],
-      })) as Rotes,
-    };
-  };
+      return {
+        fileName,
+        articleCount: articleIds.size,
+        roteCount: json.notes.length,
+        attachmentCount,
+        publicCount,
+        privateCount,
+        tagCount: tags.size,
+        smartImportCount: json.notes.filter(
+          (note: any) =>
+            typeof note?.source?.provider === 'string' &&
+            typeof note?.source?.accountId === 'string' &&
+            typeof note?.source?.externalId === 'string'
+        ).length,
+        rotes: json.notes.map((note) => ({
+          ...(note as Rote),
+          authorid: profile?.id,
+          author: {
+            username: profile?.username || '',
+            nickname: profile?.nickname || '',
+            avatar: profile?.avatar || '',
+            certified: profile?.certified ?? false,
+          },
+          reactions: [],
+        })) as Rotes,
+      };
+    },
+    [profile]
+  );
 
-  const clearPreview = () => {
+  const clearPreview = useCallback(() => {
     setIsPreviewOpen(false);
     setPreview(null);
     setFileData(null);
+    setMigrationAuth(undefined);
     setExcludedIndexes(new Set());
-  };
+    setOverwriteExisting(false);
+    setPreserveVisibility(false);
+    setTaskProgress(null);
+    setTaskResult(null);
+  }, []);
+
+  useEffect(() => {
+    if (recoveryStartedRef.current) return;
+    recoveryStartedRef.current = true;
+    cleanupInterruptedImport()
+      .then((count) => {
+        if (count > 0) toast.info(t('importTask.recovered', { count }));
+      })
+      .catch(() => toast.error(t('importTask.recoveryFailed')));
+  }, [t]);
+
+  useEffect(() => {
+    if (!isImporting) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isImporting]);
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') setCancelDialogOpen(true);
+  }, [blocker.state]);
+
+  useEffect(() => {
+    if (!isImporting && leaveAfterCancelRef.current && blocker.state === 'blocked') {
+      leaveAfterCancelRef.current = false;
+      blocker.proceed();
+    }
+  }, [blocker, isImporting]);
 
   const toggleExcludedIndex = (index: number) => {
     setExcludedIndexes((current) => {
@@ -195,85 +231,90 @@ export default function ImportData() {
     };
   };
 
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const json = JSON.parse(event.target?.result as string);
-        if (json.notes && Array.isArray(json.notes)) {
-          setPreview(buildPreview(json, file.name));
-          setPreviewVersion((version) => version + 1);
-          setFileData(json);
-          setExcludedIndexes(new Set());
-          setIsPreviewOpen(true);
-          toast.success(t('fileParsed', { count: json.notes.length }));
-        } else {
-          clearPreview();
-          toast.error(t('invalidFormat'));
-        }
-      } catch (_error) {
-        // console.error('JSON Parse error:', error);
-        clearPreview();
-        toast.error(t('parseError'));
+  const handlePrepared = useCallback(
+    (
+      payload: ImportPayload,
+      displayName: string,
+      warnings: Array<string>,
+      nextMigrationAuth?: ImportMigrationAuth
+    ) => {
+      setPreview(buildPreview(payload, displayName));
+      setPreviewVersion((version) => version + 1);
+      setFileData(payload);
+      setMigrationAuth(nextMigrationAuth);
+      setExcludedIndexes(new Set());
+      setOverwriteExisting(false);
+      setPreserveVisibility(false);
+      setIsPreviewOpen(true);
+      toast.success(t('fileParsed', { count: payload.notes.length }));
+      if (warnings.length > 0) {
+        toast.warning(t('migration.warningTitle'), {
+          description: warnings.join('\n'),
+          duration: 8000,
+        });
       }
-    };
-    reader.readAsText(file);
-    // Reset input value so same file can be selected again if needed
-    e.target.value = '';
-  };
+    },
+    [buildPreview, t]
+  );
+
+  const handlePrepareError = useCallback(
+    (message: string) => {
+      toast.error(message || t('migration.errors.prepare'));
+    },
+    [t]
+  );
 
   const handleImport = async () => {
     if (!fileData) return;
 
     try {
       setIsImporting(true);
-      const res = await post<ApiResponse<ImportResult>>('/users/me/import', buildImportPayload());
-      if (res) {
-        const data = res.data;
-
-        toast.success(t('importSuccessTitle'), {
-          description: t('importSuccessSummary', { count: data.notes.total }),
-          duration: 5000,
-        });
-        toast.info(
-          t('importSuccessNotes', {
-            total: data.notes.total,
-            created: data.notes.created,
-            updated: data.notes.updated,
-          }),
-          { duration: 5000 }
-        );
-        toast.info(
-          t('importSuccessArticles', {
-            total: data.articles.total,
-            created: data.articles.created,
-            updated: data.articles.updated,
-          }),
-          { duration: 5000 }
-        );
-        toast.info(
-          t('importSuccessAttachments', {
-            total: data.attachments.total,
-            created: data.attachments.created,
-            updated: data.attachments.updated,
-          }),
-          { duration: 5000 }
-        );
-        clearPreview();
-      }
+      setTaskResult(null);
+      const payload = buildImportPayload();
+      if (!payload) return;
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      const data = await runImportTask({
+        payload,
+        overwriteExisting,
+        preserveVisibility,
+        signal: controller.signal,
+        onProgress: setTaskProgress,
+        migrationAuth,
+      });
+      setTaskResult(data);
     } catch (_error: any) {
-      // console.error('Import error:', error);
-      toast.error(_error.message || t('importFailed'));
+      if (_error?.name === 'CanceledError' || _error?.name === 'AbortError') {
+        toast.info(t('importTask.interrupted'));
+        return;
+      }
+      const serverMessage = _error.response?.data?.message ?? _error.message;
+      toast.error(serverMessage || t('importFailed'));
     } finally {
+      abortControllerRef.current = null;
       setIsImporting(false);
     }
   };
 
-  const triggerFileSelect = () => {
-    fileInputRef.current?.click();
+  const handleRequestCancel = () => setCancelDialogOpen(true);
+
+  const handleContinueImport = () => {
+    setCancelDialogOpen(false);
+    if (blocker.state === 'blocked') blocker.reset();
+  };
+
+  const handleStopImport = () => {
+    leaveAfterCancelRef.current = blocker.state === 'blocked';
+    setCancelDialogOpen(false);
+    abortControllerRef.current?.abort();
+  };
+
+  const handlePreviewOpenChange = (open: boolean) => {
+    if (!open && taskResult) {
+      clearPreview();
+      return;
+    }
+    setIsPreviewOpen(open);
   };
 
   const handleDownloadExample = () => {
@@ -291,9 +332,16 @@ export default function ImportData() {
             {t('title')}
             <Dialog>
               <DialogTrigger asChild>
-                <HelpCircle className="ml-2 inline-block size-6 cursor-pointer" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-1 size-8"
+                  aria-label={t('dialogTitle')}
+                >
+                  <HelpCircle className="size-5" />
+                </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="sm:max-w-md" closeLabel={t('cancel')}>
                 <DialogHeader>
                   <DialogTitle>{t('dialogTitle')}</DialogTitle>
                   <DialogDescription className="font-light">
@@ -326,23 +374,13 @@ export default function ImportData() {
       </div>
       <Divider></Divider>
 
-      <div className="flex flex-col items-center justify-center gap-6 py-8">
-        <input
-          type="file"
-          ref={fileInputRef}
-          className="hidden"
-          accept=".json"
-          onChange={handleFileChange}
-        />
-
+      <div className="flex flex-col items-center justify-center gap-6 pb-8">
         {!preview ? (
-          <div
-            onClick={triggerFileSelect}
-            className="border-border hover:bg-accent/50 flex w-full max-w-sm cursor-pointer flex-col items-center justify-center gap-4 border border-dashed p-10 transition-colors"
-          >
-            <Upload className="text-muted-foreground size-6" />
-            <div className="text-muted-foreground text-center text-sm">{t('clickToUpload')}</div>
-          </div>
+          <ImportSourceForm
+            disabled={isImporting}
+            onPrepared={handlePrepared}
+            onError={handlePrepareError}
+          />
         ) : (
           <div className="flex w-full max-w-sm flex-col items-center gap-4">
             <div className="border-border bg-muted/30 flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2">
@@ -373,12 +411,8 @@ export default function ImportData() {
                 <FileJson className="size-4" />
                 {t('openPreview')}
               </Button>
-              <Button onClick={triggerFileSelect} variant="outline" disabled={isImporting}>
-                <Upload className="size-4" />
+              <Button onClick={clearPreview} variant="outline" disabled={isImporting}>
                 {t('chooseAnotherFile')}
-              </Button>
-              <Button onClick={clearPreview} variant="secondary" disabled={isImporting}>
-                {t('cancel')}
               </Button>
             </div>
           </div>
@@ -388,32 +422,29 @@ export default function ImportData() {
           <ImportPreviewDialog
             key={previewVersion}
             isImporting={isImporting}
-            onChooseAnother={triggerFileSelect}
+            onChooseAnother={clearPreview}
             onConfirm={handleImport}
-            onOpenChange={setIsPreviewOpen}
+            onOpenChange={handlePreviewOpenChange}
             open={isPreviewOpen}
             preview={preview}
+            overwriteExisting={overwriteExisting}
+            preserveVisibility={preserveVisibility}
             excludedIndexes={excludedIndexes}
             onToggleExclude={toggleExcludedIndex}
+            onOverwriteExistingChange={setOverwriteExisting}
+            onPreserveVisibilityChange={setPreserveVisibility}
+            taskProgress={taskProgress}
+            taskResult={taskResult}
+            onRequestCancel={handleRequestCancel}
           />
         )}
-
-        <div className="bg-muted/50 rounded-lg p-3">
-          <div className="text-xs leading-relaxed font-light">
-            <PocketKnife className="mr-1 mb-[2px] inline-block size-3" />
-            {t('convertToolHint')}
-            <a
-              href="https://rerote.vercel.app/"
-              target="_blank"
-              rel="noreferrer"
-              className="text-primary ml-1 underline"
-            >
-              {t('convertToolLinkName')}
-            </a>
-            <ArrowUpRight className="ml-1 inline-block size-3" />
-          </div>
-        </div>
       </div>
+
+      <ImportCancelDialog
+        open={cancelDialogOpen}
+        onContinue={handleContinueImport}
+        onStop={handleStopImport}
+      />
 
       <SoftBottom className="translate-y-4" spacer />
     </div>

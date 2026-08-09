@@ -2,7 +2,7 @@
 
 > Welcome to Rote (hereinafter referred to as "the App"). This Terms of Service ("Agreement") is a legally binding agreement between you and the developer(s) of Rote ("we" or "us") regarding your use of the App. Please read this Agreement carefully, especially the sections on limitation of liability and dispute resolution. By using the App, you acknowledge that you have read, understood, and agree to be bound by all of its terms.
 
-**Effective Date: December 2, 2025**
+**Effective Date: August 9, 2026**
 
 ---
 
@@ -14,8 +14,14 @@
 2. **Personal Use**  
    The App is provided for your personal, non-commercial use only. Unless permitted by law or with our prior written consent, you may not rent, lend, transfer, sell, or otherwise make your account available to any third party.
 
-3. **Fees**  
-   The App is currently offered primarily as a free service. If we introduce paid features in the future, we will provide prior notice and clearly explain the pricing, and we will only charge you after you have been fully informed and have agreed.
+3. **Rote Pro Subscriptions**
+   Rote offers optional Rote Pro monthly, quarterly, and yearly auto-renewable subscriptions through Apple's App Store. The price, billing period, and any applicable taxes shown in the App Store purchase sheet at the time you confirm the purchase control the transaction. Payment is charged to your Apple Account when you confirm the purchase. Your subscription renews automatically unless you cancel it through your Apple Account subscription settings before the renewal date; deleting the App or your Rote account does not cancel an Apple subscription.
+
+4. **Introductory Offers**
+   Apple determines eligibility for introductory offers. If you are eligible, the exact offer price, duration, payment mode, and post-offer renewal price will be shown by the App Store before you confirm. An introductory offer converts to the standard auto-renewing subscription shown in the purchase sheet unless you cancel before renewal.
+
+5. **Restore, Manage, Cancel, and Refunds**
+   You may use **Restore Purchases** in Rote to restore eligible Rote Pro access associated with your Apple Account. You can manage or cancel a subscription in your Apple Account's Subscriptions settings. Apple processes payments and refund requests; to request a refund or report a purchase problem, use Apple's official purchase support at <https://reportaproblem.apple.com/>. Restoring a purchase or receiving a refund remains subject to Apple's verification and policies.
 
 ---
 

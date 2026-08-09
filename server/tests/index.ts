@@ -176,8 +176,8 @@ class TestRunner {
                     config: {
                       jwtSecret,
                       jwtRefreshSecret,
-                      jwtAccessExpiry: '15m',
-                      jwtRefreshExpiry: '7d',
+                      jwtAccessExpiry: '7d',
+                      jwtRefreshExpiry: '30d',
                       sessionSecret,
                     } as any,
                     isRequired: true,
@@ -194,8 +194,8 @@ class TestRunner {
                   VALUES (gen_random_uuid(), 'security', ${JSON.stringify({
                     jwtSecret,
                     jwtRefreshSecret,
-                    jwtAccessExpiry: '15m',
-                    jwtRefreshExpiry: '7d',
+                    jwtAccessExpiry: '7d',
+                    jwtRefreshExpiry: '30d',
                     sessionSecret,
                   })}::jsonb, true, true, false, NOW(), NOW())
                 `);

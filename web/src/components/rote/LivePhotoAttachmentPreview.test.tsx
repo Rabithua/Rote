@@ -88,7 +88,30 @@ describe('LivePhotoAttachmentPreview', () => {
     expect(video).toHaveClass('object-contain');
     expect(video).not.toHaveAttribute('autoplay');
     expect(video).not.toHaveAttribute('loop');
+    expect(video).not.toHaveAttribute('muted');
     expect(video).toHaveAttribute('preload', 'metadata');
+  });
+
+  it('starts audible playback directly from the press gesture and stops on release', () => {
+    const { container } = render(
+      <LivePhotoAttachmentPreview
+        attachment={makeLivePhotoAttachment()}
+        previewSrc="https://cdn.example.com/users/u/compressed/live.webp"
+        thumbnailSrc="https://cdn.example.com/users/u/compressed/live.webp"
+      />
+    );
+
+    const frame = screen.getByLabelText('videoLabel');
+    const video = container.querySelector('video');
+
+    fireEvent.mouseDown(frame, { button: 0 });
+
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    expect(video).toHaveClass('opacity-100');
+
+    fireEvent.mouseUp(frame);
+
+    expect(video).toHaveClass('opacity-0');
   });
 
   it('bounds the registered preview dimensions while preserving the still aspect ratio', () => {
@@ -111,5 +134,41 @@ describe('LivePhotoAttachmentPreview', () => {
 
     expect(screen.getByTestId('photo-view')).toHaveAttribute('data-width', '939');
     expect(screen.getByTestId('photo-view')).toHaveAttribute('data-height', '704');
+  });
+
+  it('shows a placeholder and no broken img when the compatible still is missing', () => {
+    const { container } = render(
+      <LivePhotoAttachmentPreview
+        attachment={{
+          ...makeLivePhotoAttachment(),
+          compressUrl: '',
+          posterUrl: '',
+        }}
+        previewSrc=""
+        thumbnailSrc=""
+      />
+    );
+
+    expect(container.querySelector('img')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
+    expect(screen.queryByTestId('photo-view')).not.toBeInTheDocument();
+  });
+
+  it('removes the invalid PhotoView target after the compatible still fails to load', () => {
+    const { container } = render(
+      <LivePhotoAttachmentPreview
+        attachment={makeLivePhotoAttachment()}
+        previewSrc="https://cdn.example.com/users/u/compressed/missing.jpg"
+        thumbnailSrc="https://cdn.example.com/users/u/compressed/missing.jpg"
+      />
+    );
+    const thumbnail = container.querySelector('img');
+
+    expect(screen.getByTestId('photo-view')).toBeInTheDocument();
+    fireEvent.error(thumbnail!);
+
+    expect(container.querySelector('img')).not.toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
+    expect(screen.queryByTestId('photo-view')).not.toBeInTheDocument();
   });
 });

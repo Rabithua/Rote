@@ -37,6 +37,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       strategies: 'injectManifest',
+      injectManifest: {
+        globIgnores: ['**/jszip.min-*.js', '**/sql-wasm-browser-*.js', '**/sql-wasm-*.wasm'],
+      },
       srcDir: 'src',
       filename: 'sw.js',
       devOptions: { enabled: true, type: 'module' },

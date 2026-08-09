@@ -67,7 +67,7 @@ export const noteTools: McpTool[] = [
   defineMcpTool('notes_get', async (c, args) => {
     const auth = requireAuth(c);
     const id = assertUuid(args.id, 'note_id');
-    const note = await findRoteById(id);
+    const note = await findRoteById(id, auth.userId);
     if (!note) throw new Error(mcpErrors.noteNotFound);
     if (note.state === 'public' || note.authorid === auth.userId) return note;
     throw new Error(mcpErrors.notePrivate);
@@ -78,7 +78,7 @@ export const noteTools: McpTool[] = [
     if (!Array.isArray(ids) || ids.length === 0) throw new Error(mcpErrors.idsRequired);
     if (ids.length > MAX_BATCH_SIZE) throw new Error(mcpErrors.batchLimitExceeded);
     ids.forEach((id) => assertUuid(id, 'note_id'));
-    const notes = await findRotesByIds(ids);
+    const notes = await findRotesByIds(ids, auth.userId);
     return notes.filter((note) => note.state === 'public' || note.authorid === auth.userId);
   }),
   defineMcpTool('notes_update', updateNote),

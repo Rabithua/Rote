@@ -3,8 +3,8 @@ import { getGlobalConfig } from '../config';
 import db from '../drizzle';
 import { updateSubScription } from '../dbMethods/subscription';
 import webpush from '../webpush';
-import { bodyForEnvelope, titleForEnvelope, urlForEnvelope } from './envelope';
 import { assertSafeOutboundUrl, normalizeUrlBase } from './network';
+import { bodyForEnvelope, titleForEnvelope, urlForEnvelope } from './presentation';
 import {
   DEFAULT_BARK_SERVER_URL,
   REQUEST_TIMEOUT_MS,

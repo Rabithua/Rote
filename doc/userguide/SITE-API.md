@@ -123,6 +123,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
     },
     "frontendConfig": {
       "preReactions": ["❤️", "👍", "..."],
+      "anonymousPreReactions": ["❤️", "👍", "🎉", "..."],
       "permissionKeys": ["SENDROTE", "GETROTE", "EDITROTE"],
       "roteMaxLetter": 10000,
       "roteContentExpandedLetter": 600,
@@ -165,6 +166,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
       - `enabled`: boolean - 该提供商是否已启用
 - `frontendConfig`: object - 前端通用配置（从 main.json 统一下发）
   - `preReactions`: string[] - 预置表情列表（用于反应组件）
+  - `anonymousPreReactions`: string[] - 匿名用户允许新增的预置表情白名单
   - `permissionKeys`: string[] - OpenKey 权限 key 列表（如 `SENDROTE`、`GETROTE`、`EDITROTE`），前端自行映射展示文案
   - `roteMaxLetter`: number - 单条笔记最大字数限制
   - `roteContentExpandedLetter`: number - 内容展开阈值

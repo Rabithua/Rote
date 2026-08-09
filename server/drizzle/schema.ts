@@ -1,12 +1,15 @@
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
+  check,
   customType,
   foreignKey,
   index,
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -48,6 +51,39 @@ export const users = pgTable(
     emailIdx: index('users_email_idx').on(table.email),
     usernameIdx: index('users_username_idx').on(table.username),
     // 注意：authProvider 相关索引已移除，OAuth 绑定信息存储在 user_oauth_bindings 表中
+  })
+);
+
+// Account-level user block relationships.
+export const userBlocks = pgTable(
+  'user_blocks',
+  {
+    blockerId: uuid('blockerId').notNull(),
+    blockedId: uuid('blockedId').notNull(),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    primaryKey: primaryKey({
+      columns: [table.blockerId, table.blockedId],
+      name: 'user_blocks_blocker_blocked_pk',
+    }),
+    blockerIdx: index('user_blocks_blocker_id_idx').on(table.blockerId),
+    blockedIdx: index('user_blocks_blocked_id_idx').on(table.blockedId),
+    blockerFk: foreignKey({
+      columns: [table.blockerId],
+      foreignColumns: [users.id],
+      name: 'user_blocks_blocker_id_users_id_fk',
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    blockedFk: foreignKey({
+      columns: [table.blockedId],
+      foreignColumns: [users.id],
+      name: 'user_blocks_blocked_id_users_id_fk',
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    noSelfBlock: check('user_blocks_no_self_block', sql`${table.blockerId} <> ${table.blockedId}`),
   })
 );
 
@@ -118,6 +154,67 @@ export const userPermissionOverrides = pgTable(
     })
       .onDelete('set null')
       .onUpdate('cascade'),
+  })
+);
+
+// Paid Server projected subscription grants. The user ID is the aggregate key so
+// every user has at most one complete billing snapshot.
+export const billingGrants = pgTable(
+  'billing_grants',
+  {
+    userId: uuid('user_id')
+      .primaryKey()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    issuer: varchar('issuer', { length: 100 }).notNull(),
+    instanceId: varchar('instance_id', { length: 100 }).notNull(),
+    revision: bigint('revision', { mode: 'bigint' }).notNull(),
+    planId: varchar('plan_id', { length: 50 }),
+    status: varchar('status', { length: 32 }).notNull(),
+    productId: varchar('product_id', { length: 255 }),
+    entitlementExpiresAt: timestamp('entitlement_expires_at', {
+      withTimezone: true,
+      precision: 6,
+    }),
+    leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true, precision: 6 }),
+    capabilities: jsonb('capabilities').$type<string[]>().notNull().default([]),
+    snapshotHash: varchar('snapshot_hash', { length: 64 }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    leaseExpiresAtIdx: index('billing_grants_lease_expires_at_idx').on(table.leaseExpiresAt),
+    revisionNonNegative: check('billing_grants_revision_non_negative', sql`${table.revision} >= 0`),
+    validStatus: check(
+      'billing_grants_valid_status',
+      sql`${table.status} IN ('active', 'grace_period', 'none')`
+    ),
+  })
+);
+
+// Authenticated inbound request ledger. Its composite key intentionally omits
+// key_id so rotating a signing key cannot cause a delivery to execute twice.
+export const billingInboundDeliveries = pgTable(
+  'billing_inbound_deliveries',
+  {
+    direction: varchar('direction', { length: 32 }).notNull(),
+    deliveryId: uuid('delivery_id').notNull(),
+    keyId: varchar('key_id', { length: 100 }).notNull(),
+    bodyHash: varchar('body_hash', { length: 64 }).notNull(),
+    responseStatus: integer('response_status'),
+    responseBody: jsonb('response_body').$type<{
+      code: number;
+      message: string;
+      data: unknown;
+    }>(),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, precision: 6 }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.direction, table.deliveryId] }),
+    createdAtIdx: index('billing_inbound_deliveries_created_at_idx').on(table.createdAt),
+    paidToRoteDirection: check(
+      'billing_inbound_deliveries_paid_to_rote_direction',
+      sql`${table.direction} = 'paid_to_rote'`
+    ),
   })
 );
 
@@ -311,6 +408,46 @@ export const attachments = pgTable(
       foreignColumns: [rotes.id],
     })
       .onDelete('set null')
+      .onUpdate('cascade'),
+  })
+);
+
+// External import identity for idempotent, owner-scoped imports.
+// The source key is scoped to the destination owner so the same export can be
+// imported safely by different Rote users.
+export const noteImportSources = pgTable(
+  'note_import_sources',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('ownerId').notNull(),
+    roteId: uuid('roteId').notNull(),
+    provider: varchar('provider', { length: 50 }).notNull(),
+    accountId: varchar('accountId', { length: 100 }).notNull(),
+    externalId: varchar('externalId', { length: 100 }).notNull(),
+    attachmentMap: jsonb('attachmentMap').notNull().default({}),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    ownerIdx: index('note_import_sources_owner_idx').on(table.ownerId),
+    roteIdUnique: unique('note_import_sources_rote_id_unique').on(table.roteId),
+    ownerSourceUnique: unique('note_import_sources_owner_source_unique').on(
+      table.ownerId,
+      table.provider,
+      table.accountId,
+      table.externalId
+    ),
+    ownerFk: foreignKey({
+      columns: [table.ownerId],
+      foreignColumns: [users.id],
+    })
+      .onDelete('cascade')
+      .onUpdate('cascade'),
+    roteFk: foreignKey({
+      columns: [table.roteId],
+      foreignColumns: [rotes.id],
+    })
+      .onDelete('cascade')
       .onUpdate('cascade'),
   })
 );
@@ -569,6 +706,8 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   userreaction: many(reactions),
   rotes: many(rotes),
   articles: many(articles),
+  blocksCreated: many(userBlocks, { relationName: 'blocker' }),
+  blocksReceived: many(userBlocks, { relationName: 'blocked' }),
   openkey: many(userOpenKeys),
   usersetting: one(userSettings, {
     fields: [users.id],
@@ -578,8 +717,25 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   oauthBindings: many(userOAuthBindings),
   passkeys: many(userPasskeys),
   permissionOverrides: many(userPermissionOverrides),
+  billingGrant: one(billingGrants, {
+    fields: [users.id],
+    references: [billingGrants.userId],
+  }),
   documentEmbeddings: many(documentEmbeddings),
   embeddingJobs: many(embeddingJobs),
+}));
+
+export const userBlocksRelations = relations(userBlocks, ({ one }) => ({
+  blocker: one(users, {
+    fields: [userBlocks.blockerId],
+    references: [users.id],
+    relationName: 'blocker',
+  }),
+  blocked: one(users, {
+    fields: [userBlocks.blockedId],
+    references: [users.id],
+    relationName: 'blocked',
+  }),
 }));
 
 export const userSettingsRelations = relations(userSettings, ({ one }) => ({
@@ -596,6 +752,13 @@ export const userPermissionOverridesRelations = relations(userPermissionOverride
   }),
   updatedByUser: one(users, {
     fields: [userPermissionOverrides.updatedBy],
+    references: [users.id],
+  }),
+}));
+
+export const billingGrantsRelations = relations(billingGrants, ({ one }) => ({
+  user: one(users, {
+    fields: [billingGrants.userId],
     references: [users.id],
   }),
 }));
@@ -719,6 +882,8 @@ export const aiTokenUsageLogsRelations = relations(aiTokenUsageLogs, ({ one }) =
 // 导出类型
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type UserBlock = typeof userBlocks.$inferSelect;
+export type NewUserBlock = typeof userBlocks.$inferInsert;
 export type UserSetting = typeof userSettings.$inferSelect;
 export type NewUserSetting = typeof userSettings.$inferInsert;
 export type UserOpenKey = typeof userOpenKeys.$inferSelect;
@@ -729,6 +894,8 @@ export type Rote = typeof rotes.$inferSelect;
 export type NewRote = typeof rotes.$inferInsert;
 export type Attachment = typeof attachments.$inferSelect;
 export type NewAttachment = typeof attachments.$inferInsert;
+export type NoteImportSource = typeof noteImportSources.$inferSelect;
+export type NewNoteImportSource = typeof noteImportSources.$inferInsert;
 export type RoteLinkPreview = typeof roteLinkPreviews.$inferSelect;
 export type NewRoteLinkPreview = typeof roteLinkPreviews.$inferInsert;
 export type Reaction = typeof reactions.$inferSelect;
@@ -751,3 +918,7 @@ export type UserPasskey = typeof userPasskeys.$inferSelect;
 export type NewUserPasskey = typeof userPasskeys.$inferInsert;
 export type AiTokenUsageLog = typeof aiTokenUsageLogs.$inferSelect;
 export type NewAiTokenUsageLog = typeof aiTokenUsageLogs.$inferInsert;
+export type BillingGrant = typeof billingGrants.$inferSelect;
+export type NewBillingGrant = typeof billingGrants.$inferInsert;
+export type BillingInboundDelivery = typeof billingInboundDeliveries.$inferSelect;
+export type NewBillingInboundDelivery = typeof billingInboundDeliveries.$inferInsert;

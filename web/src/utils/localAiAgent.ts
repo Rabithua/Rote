@@ -58,6 +58,7 @@ export async function localAiAgentStream(params: {
   ];
   const sourceMap = new Map<string, AiSemanticResult>();
   let sourceKeys: string[] = [];
+  let sourceCharsUsed = 0;
   let state: AiAgentClientState = payload.state || { stateVersion: 1, seenSourceIds: [] };
   let toolCallCount = 0;
   let hasAnswer = false;
@@ -127,7 +128,7 @@ export async function localAiAgentStream(params: {
     if (response.usage) {
       params.handlers.onUsage?.(response.usage, step === 0 ? 'planning' : 'tool_decision');
     }
-    messages.push({ ...response.message, tool_calls: validCalls });
+    messages.push({ role: 'assistant', content: null, tool_calls: validCalls });
 
     for (const call of validCalls) {
       if (toolCallCount >= bootstrap.policy.maxToolCalls) {
@@ -152,9 +153,13 @@ export async function localAiAgentStream(params: {
         request: payload,
         state,
         sourceKeys,
+        sourceCharsUsed,
       });
       state = result.state;
       sourceKeys = result.sourceKeys;
+      sourceCharsUsed = Number.isFinite(result.sourceCharsUsed)
+        ? Math.min(Math.max(Math.floor(result.sourceCharsUsed), 0), bootstrap.policy.maxSourceChars)
+        : sourceCharsUsed;
       if (result.plan) params.handlers.onPlan?.(result.plan);
       if (result.statePatch) params.handlers.onStatePatch?.(result.statePatch);
       if (result.sources.length) {

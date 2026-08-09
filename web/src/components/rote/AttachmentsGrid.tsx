@@ -4,10 +4,12 @@ import {
   getAttachmentImageThumbnailSrc,
   getAttachmentMediaKind,
 } from '@/utils/directUpload';
-import { PhotoProvider, PhotoView } from 'react-photo-view';
+import { PhotoProvider } from 'react-photo-view';
+import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from './LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from './VideoAttachmentPreview';
 import 'react-photo-view/dist/react-photo-view.css';
+import { useTranslation } from 'react-i18next';
 
 interface AttachmentsGridProps {
   attachments: Attachment[];
@@ -19,6 +21,7 @@ interface AttachmentsGridProps {
  * 支持1-9张图片的自适应布局
  */
 export default function AttachmentsGrid({ attachments, withTimeStamp }: AttachmentsGridProps) {
+  const { t } = useTranslation('translation', { keyPrefix: 'components.attachments' });
   const sortedAttachments = [...attachments].sort((a, b) => (a.sortIndex > b.sortIndex ? 1 : -1));
   const hasVideo = sortedAttachments.some(
     (attachment) => getAttachmentMediaKind(attachment) === 'video'
@@ -26,7 +29,7 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
 
   return (
     attachments.length > 0 && (
-      <div className="my-2 flex w-fit flex-wrap gap-1 overflow-hidden rounded-2xl">
+      <div className="my-2 flex w-full max-w-[500px] flex-wrap gap-1 overflow-hidden rounded-2xl">
         {hasVideo ? (
           sortedAttachments.map((file, index) => (
             <VideoAttachmentPreview
@@ -67,16 +70,21 @@ export default function AttachmentsGrid({ attachments, withTimeStamp }: Attachme
                   crossOrigin={withTimeStamp ? 'anonymous' : undefined}
                 />
               ) : (
-                <PhotoView key={`files_${index}`} src={previewSrc}>
-                  <div className={`${imageClassName} relative grow overflow-hidden`}>
-                    <img
-                      className={renderedImageClassName}
-                      src={thumbSrc}
-                      crossOrigin={withTimeStamp ? 'anonymous' : undefined}
-                      alt=""
-                    />
-                  </div>
-                </PhotoView>
+                <AttachmentPhotoPreview
+                  key={`files_${index}`}
+                  alt=""
+                  containerClassName={`${imageClassName} relative grow overflow-hidden`}
+                  crossOrigin={withTimeStamp ? 'anonymous' : undefined}
+                  imageClassName={renderedImageClassName}
+                  previewSrc={previewSrc}
+                  src={thumbSrc}
+                  unavailableLabel={
+                    (file.details as Record<string, unknown> | undefined)
+                      ?.previewRequiresAuthorization
+                      ? t('sourcePreviewUnavailable')
+                      : undefined
+                  }
+                />
               );
             })}
           </PhotoProvider>

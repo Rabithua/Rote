@@ -11,12 +11,15 @@ import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 import type { SystemConfig } from '../types';
 
+const CUSTOM_HEAD_SCRIPTS_MAX_BYTES = 64 * 1024;
+
 interface SiteConfigTabProps {
   siteConfig: SystemConfig['site'] | undefined;
   setSiteConfig: (config: SystemConfig['site'] | undefined) => void;
   isSaving: boolean;
   setIsSaving: (saving: boolean) => void;
   onMutate: () => void;
+  isSuperAdmin: boolean;
 }
 
 export default function SiteConfigTab({
@@ -25,6 +28,7 @@ export default function SiteConfigTab({
   isSaving,
   setIsSaving,
   onMutate,
+  isSuperAdmin,
 }: SiteConfigTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const { mutate: globalMutate } = useSWRConfig();
@@ -32,6 +36,13 @@ export default function SiteConfigTab({
   const handleSave = async () => {
     if (!siteConfig || !siteConfig.name || !siteConfig.frontendUrl) {
       toast.error(t('saveFailed', { error: 'Site name and frontend URL are required' }));
+      return;
+    }
+    if (
+      new TextEncoder().encode(siteConfig.customHeadScripts || '').byteLength >
+      CUSTOM_HEAD_SCRIPTS_MAX_BYTES
+    ) {
+      toast.error(t('site.customHeadScripts.tooLarge'));
       return;
     }
     setIsSaving(true);
@@ -201,6 +212,36 @@ export default function SiteConfigTab({
           />
           <p className="text-muted-foreground text-xs">{t('site.icpRecordDescription')}</p>
         </div>
+
+        {isSuperAdmin && (
+          <div className="space-y-2">
+            <Label htmlFor="customHeadScripts">{t('site.customHeadScripts.title')}</Label>
+            <p className="text-destructive text-sm">{t('site.customHeadScripts.warning')}</p>
+            <Textarea
+              id="customHeadScripts"
+              value={siteConfig?.customHeadScripts || ''}
+              onChange={(e) =>
+                setSiteConfig({
+                  ...(siteConfig || {}),
+                  name: siteConfig?.name || '',
+                  frontendUrl: siteConfig?.frontendUrl || '',
+                  customHeadScripts: e.target.value,
+                })
+              }
+              placeholder={t('site.customHeadScripts.placeholder')}
+              rows={9}
+              className="font-mono text-xs"
+              spellCheck={false}
+            />
+            <div className="text-muted-foreground flex justify-between text-xs">
+              <span>{t('site.customHeadScripts.description')}</span>
+              <span>
+                {new TextEncoder().encode(siteConfig?.customHeadScripts || '').byteLength} /{' '}
+                {CUSTOM_HEAD_SCRIPTS_MAX_BYTES}
+              </span>
+            </div>
+          </div>
+        )}
 
         <Button onClick={handleSave} disabled={isSaving} className="w-full">
           {isSaving ? t('saving') : t('save')}

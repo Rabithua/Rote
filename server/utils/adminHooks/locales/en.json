@@ -1,0 +1,6 @@
+{
+  "events": {
+    "user.registered": "New User Registration",
+    "note.public.created": "Public Note Created"
+  }
+}

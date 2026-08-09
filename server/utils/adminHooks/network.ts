@@ -25,6 +25,11 @@ function isUnsafeIPv4(address: string) {
   return false;
 }
 
+function isSyntheticProxyIPv4(address: string) {
+  const octets = parseIPv4Octets(address);
+  return Boolean(octets && octets[0] === 198 && (octets[1] === 18 || octets[1] === 19));
+}
+
 function parseIPv4Octets(address: string) {
   const octets = address.split('.').map((part) => Number(part));
   if (
@@ -139,7 +144,15 @@ export async function assertSafeOutboundUrl(value: string, label: string) {
   if (isIP(hostname)) return;
 
   const addresses = await lookup(hostname, { all: true, verbatim: true });
-  if (addresses.length === 0 || addresses.some((address) => isUnsafeIpAddress(address.address))) {
+  const allowSyntheticProxyDns = process.env.ALLOW_SYNTHETIC_PROXY_DNS === 'true';
+  if (
+    addresses.length === 0 ||
+    addresses.some(
+      (address) =>
+        isUnsafeIpAddress(address.address) &&
+        !(allowSyntheticProxyDns && isSyntheticProxyIPv4(address.address))
+    )
+  ) {
     throw new Error(`${label} must not resolve to local or private network addresses`);
   }
 }

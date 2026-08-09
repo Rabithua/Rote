@@ -10,6 +10,7 @@ import {
   LivePhotoMotionViewer,
   LivePhotoStillViewer,
 } from './LivePhotoViewer';
+import { AttachmentImage } from './AttachmentImage';
 
 type PhotoRenderParams = Parameters<NonNullable<ComponentProps<typeof PhotoView>['render']>>[0];
 
@@ -50,22 +51,25 @@ function LivePhotoStill({
   crossOrigin,
   badgeLabel,
   onLoad,
+  onUnavailable,
 }: Pick<
   LivePhotoAttachmentPreviewProps,
   'thumbnailSrc' | 'imageClassName' | 'badgeClassName' | 'crossOrigin'
 > & {
   badgeLabel: string;
   onLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
+  onUnavailable?: () => void;
 }) {
   return (
     <>
-      <img
+      <AttachmentImage
         className={imageClassName}
         src={thumbnailSrc}
         crossOrigin={crossOrigin}
         alt=""
         draggable={false}
         onLoad={onLoad}
+        onUnavailable={onUnavailable}
       />
       <span
         className={cn(
@@ -91,6 +95,7 @@ export function LivePhotoAttachmentPreview({
 }: LivePhotoAttachmentPreviewProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.attachments.livePhoto' });
   const [stillSize, setStillSize] = useState(DEFAULT_PREVIEW_SIZE);
+  const [failedStillSrc, setFailedStillSrc] = useState<string | null>(null);
   const [viewportSize, setViewportSize] = useState(getViewportSize);
   const [videoFailed, setVideoFailed] = useState(false);
   const playbackSrc = getAttachmentLivePhotoPlaybackSrc(attachment);
@@ -98,6 +103,7 @@ export function LivePhotoAttachmentPreview({
     () => getLivePhotoPreviewSize(stillSize.width, stillSize.height, viewportSize),
     [stillSize.height, stillSize.width, viewportSize]
   );
+  const stillUnavailable = !previewSrc || !thumbnailSrc || failedStillSrc === thumbnailSrc;
 
   useEffect(() => {
     setVideoFailed(false);
@@ -144,6 +150,20 @@ export function LivePhotoAttachmentPreview({
     );
   };
 
+  if (stillUnavailable) {
+    return (
+      <div className={cn('relative grow overflow-hidden', className)}>
+        <LivePhotoStill
+          thumbnailSrc=""
+          imageClassName={imageClassName}
+          badgeClassName={badgeClassName}
+          crossOrigin={crossOrigin}
+          badgeLabel={t('badge')}
+        />
+      </div>
+    );
+  }
+
   if (!playbackSrc) {
     return (
       <PhotoView src={previewSrc}>
@@ -155,6 +175,7 @@ export function LivePhotoAttachmentPreview({
             crossOrigin={crossOrigin}
             badgeLabel={t('badge')}
             onLoad={handleStillLoad}
+            onUnavailable={() => setFailedStillSrc(thumbnailSrc)}
           />
         </div>
       </PhotoView>
@@ -182,6 +203,7 @@ export function LivePhotoAttachmentPreview({
           crossOrigin={crossOrigin}
           badgeLabel={t('badge')}
           onLoad={handleStillLoad}
+          onUnavailable={() => setFailedStillSrc(thumbnailSrc)}
         />
       </div>
     </PhotoView>

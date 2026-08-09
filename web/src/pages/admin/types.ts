@@ -11,6 +11,7 @@ export interface SystemConfig {
       content: string;
       link?: string;
     };
+    customHeadScripts?: string;
   };
   storage?: {
     endpoint: string;

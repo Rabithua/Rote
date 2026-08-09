@@ -250,3 +250,29 @@ These tests can be integrated into CI/CD pipelines:
 - [Admin API Routes](../route/v2/admin.ts)
 - [Configuration Middleware](../middleware/configCheck.ts)
 - [Database Schema](../drizzle/schema.ts)
+
+# Backfill HEIC browser covers
+
+Generate deterministic JPEG covers for historical standalone images and Live Photos whose original
+URL is HEIC/HEIF and whose `compressUrl` and `posterUrl` are both empty:
+
+```bash
+bun run backfill:heic-browser-covers -- --dry-run
+bun run backfill:heic-browser-covers
+```
+
+Limit a run to one attachment or note when validating a repair:
+
+```bash
+bun run backfill:heic-browser-covers -- --attachment-id 6e2968e8-5acb-4a78-bc0d-3bda7ac36c78
+bun run backfill:heic-browser-covers -- --note-id e2e94867-c998-42d5-92b2-017c8117459a
+```
+
+The output key is versioned as `users/<userId>/compressed/<uploadUuid>.v2.jpg`. Existing covers for
+the current encoder version are reused, while older server-generated JPEG covers are upgraded by
+the backfill. Client-generated WebP attachments are left unchanged.
+
+The server also starts this repair automatically after the HTTP listener is ready. Automatic runs
+use a PostgreSQL advisory lock so only one server instance works at a time, and scan in batches of
+20 without blocking startup. A failed item remains eligible for a retry on the next server start;
+the commands above remain available for dry runs and targeted operational repairs.

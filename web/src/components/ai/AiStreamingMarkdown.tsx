@@ -12,28 +12,57 @@ interface AiStreamingMarkdownProps {
 }
 
 /**
- * Replace bare `[N]` citation markers with markdown links that point to the
- * referenced source.  Only markers whose index falls within the sources array
- * are converted — others are left untouched.
+ * Replace bare citation markers such as `[N]` and `[N,M]` with markdown links
+ * that point to the referenced sources. Only markers whose index falls within
+ * the sources array are converted — others are left untouched.
  *
  * We deliberately skip `[N]` that are already part of a markdown link (e.g.
  * `[text](url)` or `[^N]`) to avoid double-linking.
  */
-function linkifyCitations(content: string, sources: AiSemanticResult[]): string {
+export function linkifyCitations(content: string, sources: AiSemanticResult[]): string {
   if (sources.length === 0) return content;
 
-  // Match [N] not preceded by [ or followed by ( or ]
+  const codePattern = /(`+|~{3,})[\s\S]*?\1/g;
+  let result = '';
+  let lastIndex = 0;
+
+  for (const match of content.matchAll(codePattern)) {
+    const matchIndex = match.index;
+    result += linkifyCitationText(content.slice(lastIndex, matchIndex), sources);
+    result += match[0];
+    lastIndex = matchIndex + match[0].length;
+  }
+
+  return result + linkifyCitationText(content.slice(lastIndex), sources);
+}
+
+function linkifyCitationText(content: string, sources: AiSemanticResult[]): string {
+  // Match [N] or comma-separated groups such as [N,M], but not markers
+  // preceded by [ or followed by (, [, or ].
   // This avoids matching inside existing markdown links like [text](url)
-  // or reference-style [^1] footnotes
-  return content.replace(/(?<!\[)\[(\d+)\](?!\(|\])/g, (match, numStr) => {
-    const index = parseInt(numStr, 10) - 1; // AI uses 1-indexed
-    if (index < 0 || index >= sources.length) return match;
-    const source = sources[index];
-    const path = getAiSourcePath(source);
-    const cleanText = source.preview || cleanSourceText(source.text || '');
-    const title = source.metadata?.title || cleanText.slice(0, 30).replace(/\s+/g, ' ').trim();
-    return `[\\[${numStr}\\]](${path} "${title}")`;
-  });
+  // or [text][label], and reference-style [^1] footnotes.
+  return content.replace(/(?<!\[)\[(\d+(?:\s*[,，]\s*\d+)*)\](?![([\]])/g, (_, group) =>
+    group
+      .split(/(\s*[,，]\s*)/)
+      .map((part: string) => {
+        if (!/^\d+$/.test(part)) return part;
+
+        const citation = linkifyCitation(part, sources);
+        return citation || `[${part}]`;
+      })
+      .join('')
+  );
+}
+
+function linkifyCitation(numStr: string, sources: AiSemanticResult[]): string | null {
+  const index = parseInt(numStr, 10) - 1; // AI uses 1-indexed
+  if (index < 0 || index >= sources.length) return null;
+  const source = sources[index];
+  const path = getAiSourcePath(source);
+  const cleanText = source.preview || cleanSourceText(source.text || '');
+  const title = (source.metadata?.title || cleanText.slice(0, 30)).replace(/\s+/g, ' ').trim();
+  const escapedTitle = title.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `[\\[${numStr}\\]](${path} "${escapedTitle}")`;
 }
 
 function AiStreamingMarkdown({

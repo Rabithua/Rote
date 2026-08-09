@@ -1,7 +1,9 @@
 import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { optionalJWT } from '../../middleware/jwtAuth';
+import { mayAddReaction } from '../../reactions/policy';
 import type { HonoContext, HonoVariables } from '../../types/hono';
+import { assertUsersMayInteract } from '../../userBlocks/service';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { ReactionCreateZod } from '../../utils/zod';
@@ -26,6 +28,10 @@ reactionsRouter.post('/', async (c: HonoContext) => {
   // 验证输入长度和格式
   ReactionCreateZod.parse(body);
 
+  if (!mayAddReaction(Boolean(user), type)) {
+    return c.json(createResponse(null, 'anonymous_reaction_not_allowed', 403), 403);
+  }
+
   // 验证 roteid 格式（zod 已经验证了 UUID 格式，但保留双重检查）
   if (!isValidUUID(roteid)) {
     throw new Error('Invalid rote ID format');
@@ -35,6 +41,9 @@ reactionsRouter.post('/', async (c: HonoContext) => {
   const rote = await findRoteById(roteid);
   if (!rote) {
     throw new Error('Rote not found');
+  }
+  if (user) {
+    await assertUsersMayInteract(user.id, rote.authorid);
   }
 
   // 构建反应数据

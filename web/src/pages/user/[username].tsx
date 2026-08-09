@@ -6,7 +6,12 @@ import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import PageRequestError from '@/components/others/PageRequestError';
 import UserAvatar from '@/components/others/UserAvatar';
 import RoteList from '@/components/rote/roteList';
+import BlockedUserNotesState from '@/features/user-blocks/BlockedUserNotesState';
+import { removeUserContentFromPages } from '@/features/user-blocks/cache';
+import UserBlockMenu from '@/features/user-blocks/UserBlockMenu';
+import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
+import { profileAtom } from '@/state/profile';
 import type { ApiGetRotesParams, Profile, Rotes } from '@/types/main';
 import { API_URL, get } from '@/utils/api';
 import { isNotFoundError } from '@/utils/error';
@@ -18,18 +23,20 @@ import { Globe2, RefreshCw, Stars } from 'lucide-react';
 import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useAtomValue } from 'jotai';
 
 function UserPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.user' });
   const navigate = useNavigate();
   const { username }: any = useParams();
+  const currentProfile = useAtomValue(profileAtom);
   const {
     data: userInfo,
     isLoading,
     error,
     mutate: mutateUser,
   } = useAPIGet<Profile>(
-    username ? `/users/${username}` : null,
+    username ? viewerAwareCacheKey(`/users/${username}`, currentProfile?.id) : null,
     () => get('/users/' + username).then((res) => res.data),
     {
       onError: (err: unknown) => {
@@ -75,6 +82,25 @@ function UserPage() {
       return;
     }
     mutate();
+  };
+
+  const handleBlockChanged = async (blocked: boolean) => {
+    if (!userInfo) return;
+
+    if (blocked) {
+      await mutateUser({ ...userInfo, viewerHasBlocked: true }, { revalidate: false });
+      await mutate(
+        removeUserContentFromPages(data, {
+          id: userInfo.id,
+          username: userInfo.username,
+        }),
+        { revalidate: false }
+      );
+      return;
+    }
+
+    await mutate();
+    await mutateUser({ ...userInfo, viewerHasBlocked: false }, { revalidate: false });
   };
 
   if (hasLoadFailure) {
@@ -146,13 +172,23 @@ function UserPage() {
               alt=""
             />
           </div>
-          <div className="mx-4 flex h-16">
+          <div className="mx-4 flex h-16 items-center">
             {/* 主页顶部头像展示，shadcn Avatar 不支持 size 属性，直接用 className 控制尺寸 */}
             <UserAvatar
               avatar={userInfo?.avatar}
               className="bg-background size-20 shrink-0 translate-y-[-50%] border-[4px] sm:block"
               fallbackClassName="bg-muted/80"
             />
+            {currentProfile?.id && userInfo?.id && currentProfile.id !== userInfo.id && (
+              <div className="ml-auto flex items-center gap-2">
+                <UserBlockMenu
+                  blocked={userInfo.viewerHasBlocked === true}
+                  targetDisplayName={userInfo.nickname || userInfo.username}
+                  targetUserId={userInfo.id}
+                  onChanged={handleBlockChanged}
+                />
+              </div>
+            )}
           </div>
           <div className="mx-4 flex flex-col gap-1">
             <div className="inline-flex items-center gap-1 text-2xl font-semibold">
@@ -176,7 +212,13 @@ function UserPage() {
           {t('publicNotes')}
         </div>
 
-        {userInfo && <RoteList data={data} loadMore={loadMore} mutate={mutate} />}
+        {userInfo ? (
+          userInfo.viewerHasBlocked ? (
+            <BlockedUserNotesState />
+          ) : (
+            <RoteList data={data} loadMore={loadMore} mutate={mutate} />
+          )
+        ) : null}
       </ContainerWithSideBar>
     </>
   );

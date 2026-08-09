@@ -1,10 +1,12 @@
 import ArticleNavBarActions from '@/components/article/ArticleNavBarActions';
+import { ArticleDeleteConfirmDialog } from '@/components/article/ArticleDeleteConfirmDialog';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import PageRequestError from '@/components/others/PageRequestError';
 import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
+import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import { useArticleActions } from '@/hooks/useArticleActions';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { profileAtom } from '@/state/profile';
@@ -41,7 +43,7 @@ function ArticleDetailPage() {
     mutate,
     isValidating,
   } = useAPIGet<any>(
-    articleid ? `/articles/${articleid}` : null,
+    articleid ? viewerAwareCacheKey(`/articles/${articleid}`, profile?.id) : null,
     () => get('/articles/' + articleid).then((res) => res.data),
     {
       revalidateOnFocus: false,
@@ -61,7 +63,14 @@ function ArticleDetailPage() {
   };
 
   // 使用共享 hook 处理复制链接和删除操作
-  const { isDeleting, handleCopyLink, handleDelete } = useArticleActions({
+  const {
+    isDeleting,
+    isDeleteConfirmOpen,
+    handleCopyLink,
+    handleDelete,
+    confirmDelete,
+    setDeleteConfirmOpen,
+  } = useArticleActions({
     articleId: articleid,
     onDeleted: () => {
       navigate('/');
@@ -215,6 +224,12 @@ function ArticleDetailPage() {
           </Link>
         )}
       </div>
+      <ArticleDeleteConfirmDialog
+        open={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+        onOpenChange={setDeleteConfirmOpen}
+      />
     </ContainerWithSideBar>
   ) : null;
 }

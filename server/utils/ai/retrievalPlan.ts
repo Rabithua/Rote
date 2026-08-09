@@ -1,6 +1,7 @@
 import type { AiConfig } from '../../types/config';
 import {
   createChatCompletionWithToolsStreaming,
+  isAiProviderStreamError,
   type ChatCompletionUsage,
   type ChatMessage,
   type ChatToolCall,
@@ -256,6 +257,7 @@ export async function createRetrievalPlan(params: {
   timeContext?: RetrievalTimeContext | null;
   onThinkingDelta?: (text: string) => Promise<void> | void;
   onUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
+  signal?: AbortSignal;
 }): Promise<PlannerAgentResult> {
   const trace = createEmptyTrace();
   const availableTags = params.availableTags || (await getUserRoteTags(params.ownerId));
@@ -281,8 +283,10 @@ export async function createRetrievalPlan(params: {
         temperature: 0,
         enableThinking: params.enableThinking === true,
         onReasoning: params.onThinkingDelta,
+        signal: params.signal,
       });
     } catch (error: any) {
+      if (isAiProviderStreamError(error) || error?.name === 'AbortError') throw error;
       trace.providerError = error?.message || String(error);
       trace.fallbackReason = 'provider_error';
       return noRetrievalResult(params.message, trace, 'provider_error');

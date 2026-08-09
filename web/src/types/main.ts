@@ -17,13 +17,13 @@ export interface Reaction {
   id: string;
   type: string; // 支持任意 Emoji 或反应类型字符串
   roteid: string;
-  userid?: string;
+  userid?: string | null;
   user?: {
     username: string;
     nickname: string | null;
     avatar: string | null;
   };
-  visitorId?: string;
+  visitorId?: string | null;
   visitorInfo?: any; // 存储访客的额外信息（IP、User-Agent等）
   metadata?: any; // 可以存储额外的反应数据
   createdAt: string;
@@ -157,6 +157,7 @@ export type Profile =
       createdAt: string;
       updatedAt: string;
       certified?: boolean;
+      viewerHasBlocked?: boolean;
       allowExplore?: boolean;
       hasPassword?: boolean;
       // 注意：authProvider 已移除，主登录方式可以通过 passwordhash 和 oauthBindings 推断
@@ -169,6 +170,16 @@ export type Profile =
       }>; // 新增：完整的绑定信息数组
     }
   | undefined;
+
+export type BlockedUserSummary = {
+  id: string;
+  username: string;
+  nickname: string | null;
+  avatar: string | null;
+  description: string | null;
+  certified: boolean;
+  blockedAt: string;
+};
 
 export type ProfileAction =
   | { type: 'updateProfile'; profile: Profile }
@@ -222,6 +233,7 @@ export type TempState = {
 export type ApiGetRotesParams = {
   archived?: boolean;
   apiType?: 'mine' | 'public' | 'userPublic';
+  viewerScope?: string;
   params?: {
     username?: string;
     limit?: number;

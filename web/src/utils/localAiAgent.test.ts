@@ -86,13 +86,13 @@ describe('local AI agent', () => {
           function: { name: 'rote_get_tags', description: 'tags', parameters: {} },
         },
       ],
-      policy: { maxIterations: 2, maxToolCalls: 2, maxSources: 20 },
+      policy: { maxIterations: 2, maxToolCalls: 2, maxSources: 20, maxSourceChars: 12_000 },
     });
     mocks.complete
       .mockResolvedValueOnce({
         message: {
           role: 'assistant',
-          content: null,
+          content: 'I will inspect the tags first.',
           tool_calls: [
             {
               id: 'call_1',
@@ -111,6 +111,7 @@ describe('local AI agent', () => {
       sources: [],
       state: { stateVersion: 1, seenSourceIds: [] },
       sourceKeys: [],
+      sourceCharsUsed: 250,
     });
     const onDelta = vi.fn();
 
@@ -135,8 +136,13 @@ describe('local AI agent', () => {
         toolName: 'rote_get_tags',
         arguments: {},
         request: expect.objectContaining({ clientContext: mocks.clientContext }),
+        sourceCharsUsed: 0,
       })
     );
+    const secondRequest = mocks.complete.mock.calls[1][0] as {
+      messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>;
+    };
+    expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBeNull();
     expect(onDelta).toHaveBeenCalledWith('final answer');
   });
 
@@ -154,7 +160,7 @@ describe('local AI agent', () => {
           function: { name: 'rote_search_notes', description: 'search', parameters: {} },
         },
       ],
-      policy: { maxIterations: 2, maxToolCalls: 1, maxSources: 20 },
+      policy: { maxIterations: 2, maxToolCalls: 1, maxSources: 20, maxSourceChars: 12_000 },
     });
     mocks.complete
       .mockResolvedValueOnce({
@@ -199,6 +205,7 @@ describe('local AI agent', () => {
       sources: [],
       state: { stateVersion: 1, seenSourceIds: [] },
       sourceKeys: [],
+      sourceCharsUsed: 250,
     });
 
     await localAiAgentStream({

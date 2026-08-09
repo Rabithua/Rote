@@ -1,4 +1,5 @@
 import type { ApiGetRotesParams } from '@/types/main';
+import { getViewerCacheScope } from '@/features/user-blocks/viewerCacheScope';
 import axios, { type AxiosResponse } from 'axios';
 import { useCallback } from 'react';
 import useSWR, { type SWRConfiguration } from 'swr';
@@ -42,9 +43,7 @@ export const swrMutationFetcher = async <TResponse, TData = unknown>(
   return fetcher<TResponse, TData>(method, url, data);
 };
 
-interface APIGetProps {
-  [key: string]: unknown;
-}
+type APIGetProps = Record<string, unknown> | readonly unknown[];
 
 export function useAPIGet<TData>(
   props: APIGetProps | string | null,
@@ -67,8 +66,15 @@ export function useAPIInfinite<TData = unknown>(
   fetcher: (_data: ApiGetRotesParams) => Promise<TData>,
   options?: SWRInfiniteConfiguration
 ) {
+  const getScopedKey = useCallback(
+    (pageIndex: number, previousPageData: TData | null) => {
+      const key = getKey(pageIndex, previousPageData);
+      return key ? { ...key, viewerScope: getViewerCacheScope() } : null;
+    },
+    [getKey]
+  );
   const { data, size, setSize, isLoading, isValidating, mutate, error } = useSWRInfinite(
-    getKey,
+    getScopedKey,
     fetcher,
     options
   );

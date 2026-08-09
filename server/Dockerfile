@@ -61,6 +61,11 @@ RUN if [ ! -d "./drizzle/migrations" ]; then \
       echo "💡 This indicates migrations were not copied correctly during build." && \
       exit 1; \
     fi && \
+    if [ ! -f "./dist/scripts/backfillHeicBrowserCovers.js" ]; then \
+      echo "❌ ERROR: HEIC browser cover backfill CLI not found!" && \
+      echo "💡 This indicates the operations CLI was excluded from the runtime image." && \
+      exit 1; \
+    fi && \
     echo "✅ Migration files verified successfully"
 
 # 🔥 终极清理：删除所有不必要的文件以减小镜像大小

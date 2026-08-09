@@ -1,4 +1,5 @@
 import { addReaction, findRoteById, removeReaction } from '../utils/dbMethods';
+import { assertUsersMayInteract } from '../userBlocks/service';
 import { ReactionCreateZod } from '../utils/zod';
 import mcpErrors from './errorCodes.json';
 import { defineMcpTool } from './registry';
@@ -11,6 +12,7 @@ export const reactionTools: McpTool[] = [
     ReactionCreateZod.parse({ type: args.type, roteid: args.roteid, metadata: args.metadata });
     const note = await findRoteById(args.roteid);
     if (!note) throw new Error(mcpErrors.roteNotFound);
+    await assertUsersMayInteract(auth.userId, note.authorid);
     return await addReaction({
       type: args.type,
       roteid: args.roteid,

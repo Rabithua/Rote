@@ -15,6 +15,8 @@ function isSourceKey(value: unknown): value is string {
 
 export function sanitizeExcludeIds(ids: unknown): string[] | undefined {
   if (!Array.isArray(ids)) return undefined;
-  const sanitized = ids.filter(isSourceKey).slice(0, 500);
+  const sanitized = Array.from(
+    new Set(ids.filter(isSourceKey).map((id) => id.toLowerCase()))
+  ).slice(0, 500);
   return sanitized.length > 0 ? sanitized : undefined;
 }

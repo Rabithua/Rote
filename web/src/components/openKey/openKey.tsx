@@ -135,7 +135,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
   }
 
   function getStatusColor(statusCode: number | null): string {
-    if (!statusCode) return 'text-gray-400';
+    if (!statusCode) return 'text-info';
     if (statusCode >= 200 && statusCode < 300) return 'text-green-500';
     if (statusCode >= 400) return 'text-red-500';
     return 'text-yellow-500';

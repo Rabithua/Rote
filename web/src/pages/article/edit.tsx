@@ -2,6 +2,7 @@ import ArticleNavBarActions from '@/components/article/ArticleNavBarActions';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
+import { ArticleDeleteConfirmDialog } from '@/components/article/ArticleDeleteConfirmDialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useArticleActions } from '@/hooks/useArticleActions';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
@@ -92,12 +93,13 @@ export default function ArticleEditPage() {
     }
   }, [articleid, t]);
 
-  const { isDeleting, handleDelete } = useArticleActions({
-    articleId: articleid,
-    onDeleted: () => {
-      navigate(-1);
-    },
-  });
+  const { isDeleting, isDeleteConfirmOpen, handleDelete, confirmDelete, setDeleteConfirmOpen } =
+    useArticleActions({
+      articleId: articleid,
+      onDeleted: () => {
+        navigate(-1);
+      },
+    });
 
   const { title } = useMemo(() => parseMarkdownMeta(content), [content]);
 
@@ -345,6 +347,12 @@ export default function ArticleEditPage() {
           )}
         </div>
       )}
+      <ArticleDeleteConfirmDialog
+        open={isDeleteConfirmOpen}
+        isDeleting={isDeleting}
+        onConfirm={confirmDelete}
+        onOpenChange={setDeleteConfirmOpen}
+      />
     </ContainerWithSideBar>
   );
 }

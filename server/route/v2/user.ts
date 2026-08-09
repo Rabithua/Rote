@@ -1,8 +1,14 @@
 import { Hono } from 'hono';
 import moment from 'moment';
 import type { User } from '../../drizzle/schema';
-import { authenticateJWT } from '../../middleware/jwtAuth';
+import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
+import {
+  blockUser,
+  getBlockedUsers,
+  getViewerAwarePublicUserProfile,
+  unblockUser,
+} from '../../userBlocks/service';
 import {
   deleteUserAccount,
   editMyProfile,
@@ -11,28 +17,17 @@ import {
   getMyProfile,
   getMySettings,
   getMyTags,
-  getUserInfoByUsername,
   importData,
   oneUser,
+  planImportData,
   statistics,
   updateMySettings,
 } from '../../utils/dbMethods';
-import { createResponse } from '../../utils/main';
+import { createResponse, isValidUUID } from '../../utils/main';
 import { UsernameUpdateZod } from '../../utils/zod';
 
 // 用户相关路由
 const usersRouter = new Hono<{ Variables: HonoVariables }>();
-
-// 获取用户信息
-usersRouter.get('/:username', async (c: HonoContext) => {
-  const username = c.req.param('username');
-  if (!username) {
-    throw new Error('Username is required');
-  }
-
-  const data = await getUserInfoByUsername(username);
-  return c.json(createResponse(data), 200);
-});
 
 // 获取当前用户个人资料
 usersRouter.get('/me/profile', authenticateJWT, async (c: HonoContext) => {
@@ -121,12 +116,46 @@ usersRouter.get('/me/export', authenticateJWT, async (c: HonoContext) => {
   return c.text(jsonData);
 });
 
+usersRouter.get('/me/blocks', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const blocks = await getBlockedUsers(user.id);
+  return c.json(createResponse(blocks), 200);
+});
+
+usersRouter.put('/me/blocks/:targetUserId', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const targetUserId = c.req.param('targetUserId');
+  if (!targetUserId || !isValidUUID(targetUserId)) {
+    throw new Error('Invalid target user ID');
+  }
+
+  const result = await blockUser(user.id, targetUserId);
+  return c.json(createResponse(result), 200);
+});
+
+usersRouter.delete('/me/blocks/:targetUserId', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const targetUserId = c.req.param('targetUserId');
+  if (!targetUserId || !isValidUUID(targetUserId)) {
+    throw new Error('Invalid target user ID');
+  }
+
+  const result = await unblockUser(user.id, targetUserId);
+  return c.json(createResponse(result), 200);
+});
+
 // 导入用户数据
 usersRouter.post('/me/import', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const body = await c.req.json();
 
   const result = await importData(user.id, body);
+  return c.json(createResponse(result), 200);
+});
+
+usersRouter.post('/me/import/plan', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const result = await planImportData(user.id, await c.req.json());
   return c.json(createResponse(result), 200);
 });
 
@@ -152,6 +181,18 @@ usersRouter.delete('/me', authenticateJWT, async (c: HonoContext) => {
   const passwordToVerify = password || 'oauth_user_placeholder';
 
   const data = await deleteUserAccount(user.id, passwordToVerify);
+  return c.json(createResponse(data), 200);
+});
+
+// 获取公开用户信息。屏蔽者仍可看到目标资料以便解除屏蔽；反向屏蔽不泄露。
+usersRouter.get('/:username', optionalJWT, async (c: HonoContext) => {
+  const username = c.req.param('username');
+  if (!username) {
+    throw new Error('Username is required');
+  }
+
+  const viewer = c.get('user') as User | undefined;
+  const data = await getViewerAwarePublicUserProfile(username, viewer?.id);
   return c.json(createResponse(data), 200);
 });
 

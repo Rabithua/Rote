@@ -18,7 +18,7 @@ export async function generateAccessToken(payload: CustomJWTPayload): Promise<st
   }
 
   const secret = new TextEncoder().encode(config.jwtSecret);
-  const expiry = config.jwtAccessExpiry || '15m';
+  const expiry = config.jwtAccessExpiry || '7d';
 
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
@@ -37,7 +37,7 @@ export async function generateRefreshToken(payload: CustomJWTPayload): Promise<s
   }
 
   const refreshSecret = new TextEncoder().encode(config.jwtRefreshSecret);
-  const expiry = config.jwtRefreshExpiry || '7d';
+  const expiry = config.jwtRefreshExpiry || '30d';
 
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })

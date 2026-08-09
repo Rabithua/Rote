@@ -5,6 +5,7 @@ export {
   enqueueBackfillEmbeddingJobs,
   enqueueBackfillEmbeddingJobsForOwner,
   enqueueEmbeddingJob,
+  enqueueEmbeddingJobs,
   getEmbeddingJobStats,
 } from './embeddingQueue';
 export {

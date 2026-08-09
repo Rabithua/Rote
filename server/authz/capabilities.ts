@@ -5,12 +5,18 @@ export const CAPABILITY_KEYS = ['attachment.upload', 'attachment.video.upload', 
 export type CapabilityKey = (typeof CAPABILITY_KEYS)[number];
 export type CapabilityEffect = 'allow' | 'deny';
 export type CapabilityOverride = CapabilityEffect | 'inherit';
-export type CapabilitySource = 'user_override' | 'role_policy' | 'role_default' | 'dependency';
+export type CapabilitySource =
+  | 'user_override'
+  | 'subscription'
+  | 'role_policy'
+  | 'role_default'
+  | 'dependency';
 
 export type EffectiveCapability = {
   allowed: boolean;
   source: CapabilitySource;
   role: string;
+  validUntil?: string;
 };
 
 export type EffectiveCapabilities = Record<CapabilityKey, EffectiveCapability>;
@@ -58,8 +64,20 @@ export function resolveEffectiveCapabilities(params: {
   role: string;
   rolePolicies?: Partial<Record<CapabilityKey, CapabilityEffect>>;
   userOverrides?: Partial<Record<CapabilityKey, CapabilityEffect>>;
+  subscription?: {
+    status?: unknown;
+    capabilities?: unknown;
+    validUntil?: unknown;
+  };
+  now?: Date;
 }): EffectiveCapabilities {
   const { role, rolePolicies = {}, userOverrides = {} } = params;
+  const subscriptionValidUntil = getSubscriptionValidUntil(params.subscription, params.now);
+  const subscriptionCapabilities = new Set(
+    subscriptionValidUntil && Array.isArray(params.subscription?.capabilities)
+      ? params.subscription.capabilities.filter(isCapabilityKey)
+      : []
+  );
   const capabilities = Object.fromEntries(
     CAPABILITY_KEYS.map((capability) => {
       if (role === UserRole.SUPER_ADMIN) {
@@ -69,6 +87,18 @@ export function resolveEffectiveCapabilities(params: {
       const userEffect = userOverrides[capability];
       if (userEffect) {
         return [capability, { allowed: userEffect === 'allow', source: 'user_override', role }];
+      }
+
+      if (subscriptionValidUntil && subscriptionCapabilities.has(capability)) {
+        return [
+          capability,
+          {
+            allowed: true,
+            source: 'subscription',
+            role,
+            validUntil: subscriptionValidUntil,
+          },
+        ];
       }
 
       const roleEffect = rolePolicies[capability];
@@ -102,4 +132,24 @@ export function resolveEffectiveCapabilities(params: {
   }
 
   return capabilities;
+}
+
+function getSubscriptionValidUntil(
+  subscription:
+    | {
+        status?: unknown;
+        validUntil?: unknown;
+      }
+    | undefined,
+  now: Date = new Date()
+): string | null {
+  if (
+    (subscription?.status !== 'active' && subscription?.status !== 'grace_period') ||
+    typeof subscription.validUntil !== 'string'
+  ) {
+    return null;
+  }
+  const validUntil = new Date(subscription.validUntil);
+  if (Number.isNaN(validUntil.getTime()) || validUntil.getTime() <= now.getTime()) return null;
+  return validUntil.toISOString();
 }

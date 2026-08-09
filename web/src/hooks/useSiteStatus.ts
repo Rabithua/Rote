@@ -9,6 +9,7 @@ interface SiteStatusResponse<T = any> {
 
 interface FrontendConfig {
   preReactions: string[];
+  anonymousPreReactions?: string[];
   permissionKeys: string[];
   roteMaxLetter: number;
   roteContentExpandedLetter: number;
@@ -30,6 +31,7 @@ interface SiteStatusData {
       content: string;
       link?: string;
     };
+    customHeadScripts?: string;
   };
   system: {
     version: string;

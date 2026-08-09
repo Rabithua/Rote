@@ -33,6 +33,7 @@ describe('client agent tool runtime', () => {
   });
 
   it('executes a stateless built-in tool and preserves source numbering state', async () => {
+    const existingSourceKey = 'rote:00000000-0000-4000-8000-000000000001';
     const result = await executeClientRoteTool({
       userId: 'user',
       config,
@@ -40,11 +41,13 @@ describe('client agent tool runtime', () => {
       arguments: {},
       request: { message: 'help me review notes' },
       state: { stateVersion: 1, seenSourceIds: [] },
-      sourceKeys: ['rote:existing'],
+      sourceKeys: [existingSourceKey],
+      sourceCharsUsed: 200,
     });
 
     expect(result.modelContent).toContain('"skill"');
-    expect(result.sourceKeys).toEqual(['rote:existing']);
+    expect(result.sourceKeys).toEqual([existingSourceKey]);
+    expect(result.sourceCharsUsed).toBe(200);
     expect(result.state.stateVersion).toBe(1);
   });
 });

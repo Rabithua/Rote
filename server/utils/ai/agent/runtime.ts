@@ -10,106 +10,16 @@ import { getNativeRoteTools } from './tools';
 import {
   AgentToolCallingUnavailableError,
   DEFAULT_AGENT_POLICY,
-  type RoteAgentClientContext,
   type RoteAgentClientState,
   type RoteAgentContext,
   type RoteAgentEmitter,
   type RoteAgentPhase,
   type RoteAgentPolicy,
   type RoteAgentRequest,
-  type RoteAgentSourceRegistration,
 } from './types';
-import type { SemanticSearchResult } from '../../dbMethods/ai';
-
-function createRunId(): string {
-  return `agent_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-}
-
-function sourceKey(source: SemanticSearchResult): string {
-  return `${source.sourceType}:${source.sourceId}`;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function sanitizeString(value: unknown, maxLength: number): string | undefined {
-  if (typeof value !== 'string') return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed.slice(0, maxLength) : undefined;
-}
-
-function sanitizeUtcOffsetMinutes(value: unknown): number | undefined {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return undefined;
-  const minutes = Math.trunc(numeric);
-  return minutes >= -14 * 60 && minutes <= 14 * 60 ? minutes : undefined;
-}
-
-function sanitizeClientContext(value: unknown): RoteAgentClientContext | null {
-  const raw = asRecord(value);
-  if (!Object.keys(raw).length) return null;
-
-  const context: RoteAgentClientContext = {
-    nowIso: sanitizeString(raw.nowIso, 64),
-    localDate: sanitizeString(raw.localDate, 32),
-    localDateTime: sanitizeString(raw.localDateTime, 64),
-    timeZone: sanitizeString(raw.timeZone, 80),
-    utcOffsetMinutes: sanitizeUtcOffsetMinutes(raw.utcOffsetMinutes),
-    locale: sanitizeString(raw.locale, 32),
-    calendar: sanitizeString(raw.calendar, 32),
-  };
-
-  return Object.values(context).some((item) => item !== undefined) ? context : null;
-}
-
-class SourceCollector {
-  private sources: SemanticSearchResult[] = [];
-  private indexByKey = new Map<string, number>();
-
-  register(sources: SemanticSearchResult[]): RoteAgentSourceRegistration[] {
-    const registrations: RoteAgentSourceRegistration[] = [];
-    sources.forEach((source) => {
-      const key = sourceKey(source);
-      let index = this.indexByKey.get(key);
-      if (!index) {
-        this.sources.push(source);
-        index = this.sources.length;
-        this.indexByKey.set(key, index);
-      } else {
-        const existing = this.sources[index - 1];
-        if (existing && source.similarity > existing.similarity) {
-          this.sources[index - 1] = source;
-        }
-      }
-      registrations.push({ index, source: this.sources[index - 1] || source });
-    });
-    return registrations;
-  }
-
-  list(): SemanticSearchResult[] {
-    return this.sources;
-  }
-}
-
-function sanitizeAgentState(request: RoteAgentRequest): RoteAgentClientState {
-  const state = request.state && typeof request.state === 'object' ? request.state : {};
-  const seenSourceIds = Array.isArray(state.seenSourceIds)
-    ? state.seenSourceIds.filter((id) => typeof id === 'string').slice(0, 500)
-    : request.excludeIds?.filter((id) => typeof id === 'string').slice(0, 500) || [];
-
-  return {
-    conversationId: typeof state.conversationId === 'string' ? state.conversationId : undefined,
-    previousPlan: state.previousPlan || request.previousPlan || null,
-    seenSourceIds,
-    selectedContext: state.selectedContext || request.selectedContext || null,
-    clientContext:
-      sanitizeClientContext(state.clientContext) || sanitizeClientContext(request.clientContext),
-    stateVersion: Number.isFinite(state.stateVersion) ? state.stateVersion : 1,
-  };
-}
+import { classifyAiStreamError, createAiRunId, logAiStreamLifecycle } from './observability';
+import { AgentSourceBudget } from './sourceBudget';
+import { sanitizeAgentState } from './state';
 
 function parseToolArguments(call: ChatToolCall): unknown {
   try {
@@ -234,13 +144,18 @@ function buildInitialMessages(
   return messages;
 }
 
-async function streamFinalAnswer(ctx: RoteAgentContext, messages: ChatMessage[]): Promise<boolean> {
+async function streamFinalAnswer(
+  ctx: RoteAgentContext,
+  messages: ChatMessage[],
+  signal?: AbortSignal
+): Promise<{ emittedText: boolean; usage: any }> {
   await ctx.emit({ type: 'progress', phase: 'answering' });
   let emittedText = false;
   let lastUsage: any = null;
 
   for await (const part of createChatCompletionStreamParts(ctx.config.chat, messages, {
     enableThinking: ctx.request.enableThinking === true,
+    signal,
   })) {
     if (part.type === 'reasoning') {
       await ctx.emit({ type: 'thinking', phase: 'answer', text: part.text });
@@ -257,7 +172,7 @@ async function streamFinalAnswer(ctx: RoteAgentContext, messages: ChatMessage[])
     await ctx.emit({ type: 'usage', phase: 'answer', usage: lastUsage });
   }
 
-  return emittedText;
+  return { emittedText, usage: lastUsage };
 }
 
 export async function runRoteAgentStream(params: {
@@ -266,15 +181,25 @@ export async function runRoteAgentStream(params: {
   config: RoteAgentContext['config'];
   emit: RoteAgentEmitter;
   policy?: Partial<RoteAgentPolicy>;
+  runId?: string;
+  signal?: AbortSignal;
 }): Promise<void> {
   const request = params.request;
-  const runId = createRunId();
+  const runId = params.runId || createAiRunId('agent');
   const policy = { ...DEFAULT_AGENT_POLICY, ...(params.policy || {}) };
   const tools = getNativeRoteTools();
   const toolByName = new Map(tools.map((tool) => [tool.definition.function.name, tool]));
-  const sourceCollector = new SourceCollector();
+  const sourceBudget = new AgentSourceBudget({
+    maxSources: policy.maxSources,
+    maxSourceChars: policy.maxSourceChars,
+  });
   const state = sanitizeAgentState(request);
   const mode = request.mode || 'chat';
+  let currentPhase: RoteAgentPhase = 'understanding';
+  const emit: RoteAgentEmitter = async (event) => {
+    if (event.type === 'progress') currentPhase = event.phase;
+    await params.emit(event);
+  };
   const ctx: RoteAgentContext = {
     userId: params.userId,
     requestId: runId,
@@ -283,181 +208,263 @@ export async function runRoteAgentStream(params: {
     mode,
     policy,
     state,
-    emit: params.emit,
-    registerSources: (sources) => sourceCollector.register(sources),
-    getSources: () => sourceCollector.list(),
+    emit,
+    registerSources: (sources) => sourceBudget.register(sources),
+    consumeSourceText: (value, requestedChars) => sourceBudget.consumeText(value, requestedChars),
+    getSourceBudget: () => sourceBudget.snapshot(),
+    getSources: () => sourceBudget.list(),
   };
 
   const messages = buildInitialMessages(request, state);
   let toolCallCount = 0;
   let hasFinalAnswer = false;
+  let totalTokens = 0;
+  const startedAt = Date.now();
+  const recordUsage = (usage: any) => {
+    if (usage && Number.isFinite(usage.total_tokens)) totalTokens += usage.total_tokens;
+  };
 
-  await params.emit({ type: 'run_started', runId });
-  await params.emit({ type: 'progress', phase: 'understanding' });
+  logAiStreamLifecycle('info', 'started', {
+    runId,
+    endpoint: 'agent',
+    userId: params.userId,
+    model: params.config.chat.model,
+    phase: currentPhase,
+  });
 
-  for (let step = 0; step < policy.maxIterations; step += 1) {
-    const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
-    let assistantMessage: ChatMessage;
-    let responseUsage: Awaited<ReturnType<typeof createChatCompletionWithToolsStreaming>>['usage'];
-    try {
-      const response = await emitWithHeartbeat(params.emit, policy, phase, () =>
-        createChatCompletionWithToolsStreaming(
-          params.config.chat,
-          messages,
-          tools.map((tool) => tool.definition),
-          {
-            temperature: 0.2,
-            enableThinking: request.enableThinking === true,
-            onReasoning: (text) =>
-              params.emit({
-                type: 'thinking',
-                phase: step === 0 ? 'route_decision' : 'evidence_decision',
-                text,
-              }),
-            onContent: async (text) => {
-              await params.emit({ type: 'delta', text });
-            },
-          }
-        )
-      );
-      assistantMessage = response.message;
-      responseUsage = response.usage;
-      if (response.usage) {
-        await logChatUsage(params.userId, params.config.chat.model, response.usage);
+  try {
+    await emit({ type: 'run_started', runId });
+    await emit({ type: 'progress', phase: 'understanding' });
+
+    for (let step = 0; step < policy.maxIterations; step += 1) {
+      const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
+      let assistantMessage: ChatMessage;
+      let responseUsage: Awaited<
+        ReturnType<typeof createChatCompletionWithToolsStreaming>
+      >['usage'];
+      try {
+        const response = await emitWithHeartbeat(emit, policy, phase, () =>
+          createChatCompletionWithToolsStreaming(
+            params.config.chat,
+            messages,
+            tools.map((tool) => tool.definition),
+            {
+              temperature: 0.2,
+              enableThinking: request.enableThinking === true,
+              signal: params.signal,
+              onReasoning: (text) =>
+                emit({
+                  type: 'thinking',
+                  phase: step === 0 ? 'route_decision' : 'evidence_decision',
+                  text,
+                }),
+            }
+          )
+        );
+        assistantMessage = response.message;
+        responseUsage = response.usage;
+        if (response.usage) {
+          recordUsage(response.usage);
+          await logChatUsage(params.userId, params.config.chat.model, response.usage);
+        }
+      } catch (error: any) {
+        if (step === 0 && isLikelyToolUnsupportedError(error)) {
+          throw new AgentToolCallingUnavailableError(
+            error.message || 'Tool calling is unavailable'
+          );
+        }
+        throw error;
       }
-    } catch (error: any) {
-      if (step === 0 && isLikelyToolUnsupportedError(error)) {
-        throw new AgentToolCallingUnavailableError(error.message || 'Tool calling is unavailable');
-      }
-      throw error;
-    }
 
-    const toolCalls = assistantMessage.tool_calls || [];
-    if (!toolCalls.length) {
-      hasFinalAnswer = !!assistantMessage.content?.trim();
+      const toolCalls = assistantMessage.tool_calls || [];
+      if (!toolCalls.length) {
+        if (responseUsage) {
+          await emit({
+            type: 'usage',
+            phase: step === 0 ? 'planning' : 'tool_decision',
+            usage: responseUsage,
+          });
+        }
+        break;
+      }
+
       if (responseUsage) {
-        await params.emit({
+        await emit({
           type: 'usage',
-          phase: hasFinalAnswer ? 'answer' : step === 0 ? 'planning' : 'tool_decision',
+          phase: step === 0 ? 'planning' : 'tool_decision',
           usage: responseUsage,
         });
       }
-      break;
-    }
 
-    if (responseUsage) {
-      await params.emit({
-        type: 'usage',
-        phase: step === 0 ? 'planning' : 'tool_decision',
-        usage: responseUsage,
-      });
-    }
+      const validToolCalls = toolCalls.filter((toolCall) => toolByName.has(toolCall.function.name));
+      const unknownToolNames = Array.from(
+        new Set(
+          toolCalls
+            .map((toolCall) => toolCall.function.name)
+            .filter((toolName) => !toolByName.has(toolName))
+        )
+      );
 
-    const validToolCalls = toolCalls.filter((toolCall) => toolByName.has(toolCall.function.name));
-    const unknownToolNames = Array.from(
-      new Set(
-        toolCalls
-          .map((toolCall) => toolCall.function.name)
-          .filter((toolName) => !toolByName.has(toolName))
-      )
-    );
+      if (unknownToolNames.length > 0) {
+        messages.push({
+          role: 'system',
+          content: buildToolRegistryCorrection(unknownToolNames, Array.from(toolByName.keys())),
+        });
+      }
 
-    if (unknownToolNames.length > 0) {
+      if (validToolCalls.length === 0) continue;
+
       messages.push({
-        role: 'system',
-        content: buildToolRegistryCorrection(unknownToolNames, Array.from(toolByName.keys())),
+        role: 'assistant',
+        content: null,
+        tool_calls: validToolCalls,
       });
-    }
 
-    if (validToolCalls.length === 0) {
-      continue;
-    }
+      for (const toolCall of validToolCalls) {
+        if (toolCallCount >= policy.maxToolCalls) {
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: JSON.stringify({
+              status: 'skipped',
+              reason: 'tool_budget_exceeded',
+              message: `Tool call ${toolCall.function.name} was skipped because the agent reached the maximum tool call budget.`,
+            }),
+          });
+          await emit({
+            type: 'tool_finished',
+            toolName: toolCall.function.name,
+            summary: 'Skipped: tool budget exceeded',
+          });
+          continue;
+        }
+        toolCallCount += 1;
 
-    messages.push({
-      role: 'assistant',
-      content: assistantMessage.content || null,
-      tool_calls: validToolCalls,
-    });
+        const tool = toolByName.get(toolCall.function.name);
+        const args = parseToolArguments(toolCall);
+        await emit({ type: 'tool_started', toolName: toolCall.function.name, args });
 
-    for (const toolCall of validToolCalls) {
-      if (toolCallCount >= policy.maxToolCalls) {
+        const result = await emitWithHeartbeat(emit, policy, 'tool_calling', () =>
+          tool!.execute(args, ctx, toolCall)
+        );
+
+        if (result.plan) await emit({ type: 'plan', plan: result.plan });
+        if (result.sources) await emit({ type: 'sources', sources: ctx.getSources() });
+        if (result.statePatch) {
+          Object.assign(ctx.state, result.statePatch);
+          await emit({ type: 'state_patch', state: result.statePatch });
+        }
+        await emit({
+          type: 'tool_finished',
+          toolName: toolCall.function.name,
+          summary: result.displaySummary || result.observations.join(' '),
+        });
+
         messages.push({
           role: 'tool',
           tool_call_id: toolCall.id,
-          content: JSON.stringify({
-            status: 'skipped',
-            reason: 'tool_budget_exceeded',
-            message: `Tool call ${toolCall.function.name} was skipped because the agent reached the maximum tool call budget.`,
-          }),
+          content: result.modelContent,
         });
-        await params.emit({
-          type: 'tool_finished',
-          toolName: toolCall.function.name,
-          summary: 'Skipped: tool budget exceeded',
-        });
-        continue;
+
+        if (result.clarification) {
+          await emit({
+            type: 'clarification',
+            question: result.clarification.question,
+            pendingPlan: result.clarification.pendingPlan,
+          });
+          await emit({ type: 'done' });
+          logAiStreamLifecycle('info', 'completed', {
+            runId,
+            endpoint: 'agent',
+            userId: params.userId,
+            model: params.config.chat.model,
+            phase: currentPhase,
+            durationMs: Date.now() - startedAt,
+            toolCallCount,
+            sourceCount: sourceBudget.snapshot().sourceCount,
+            sourceCharsUsed: sourceBudget.snapshot().sourceCharsUsed,
+            totalTokens,
+            outcome: 'clarification',
+          });
+          return;
+        }
       }
-      toolCallCount += 1;
 
-      const tool = toolByName.get(toolCall.function.name);
-      const args = parseToolArguments(toolCall);
-      await params.emit({ type: 'tool_started', toolName: toolCall.function.name, args });
-
-      const result = await emitWithHeartbeat(params.emit, policy, 'tool_calling', () =>
-        tool!.execute(args, ctx, toolCall)
-      );
-
-      if (result.plan) await params.emit({ type: 'plan', plan: result.plan });
-      if (result.sources) await params.emit({ type: 'sources', sources: ctx.getSources() });
-      if (result.statePatch) {
-        Object.assign(ctx.state, result.statePatch);
-        await params.emit({ type: 'state_patch', state: result.statePatch });
-      }
-      await params.emit({
-        type: 'tool_finished',
-        toolName: toolCall.function.name,
-        summary: result.displaySummary || result.observations.join(' '),
-      });
-
-      messages.push({
-        role: 'tool',
-        tool_call_id: toolCall.id,
-        content: result.modelContent,
-      });
-
-      if (result.clarification) {
-        await params.emit({
-          type: 'clarification',
-          question: result.clarification.question,
-          pendingPlan: result.clarification.pendingPlan,
-        });
-        await params.emit({ type: 'done' });
-        return;
-      }
+      if (toolCallCount >= policy.maxToolCalls) break;
     }
 
-    if (toolCallCount >= policy.maxToolCalls) break;
-  }
+    if (!hasFinalAnswer) {
+      messages.push({ role: 'user', content: buildFinalAnswerInstruction() });
+      const finalAnswer = await streamFinalAnswer(ctx, messages, params.signal);
+      hasFinalAnswer = finalAnswer.emittedText;
+      recordUsage(finalAnswer.usage);
+    }
 
-  if (!hasFinalAnswer) {
-    messages.push({ role: 'user', content: buildFinalAnswerInstruction() });
-    hasFinalAnswer = await streamFinalAnswer(ctx, messages);
-  }
+    if (!hasFinalAnswer) {
+      const errorCode =
+        ctx.getSources().length > 0 ? 'error_no_answer_with_sources' : 'error_no_answer_no_sources';
+      await emit({
+        type: 'error',
+        message: errorCode,
+        code: errorCode,
+        runId,
+        retryable: true,
+      });
+      logAiStreamLifecycle('error', 'failed', {
+        runId,
+        endpoint: 'agent',
+        userId: params.userId,
+        model: params.config.chat.model,
+        phase: currentPhase,
+        durationMs: Date.now() - startedAt,
+        toolCallCount,
+        sourceCount: sourceBudget.snapshot().sourceCount,
+        sourceCharsUsed: sourceBudget.snapshot().sourceCharsUsed,
+        totalTokens,
+        errorCode,
+      });
+      return;
+    }
 
-  if (!hasFinalAnswer) {
-    const errorCode =
-      ctx.getSources().length > 0 ? 'error_no_answer_with_sources' : 'error_no_answer_no_sources';
-    await params.emit({ type: 'error', message: errorCode });
+    await emit({
+      type: 'state_patch',
+      state: {
+        seenSourceIds: ctx.state.seenSourceIds,
+        previousPlan: ctx.state.previousPlan,
+      },
+    });
+    await emit({ type: 'done' });
+    logAiStreamLifecycle('info', 'completed', {
+      runId,
+      endpoint: 'agent',
+      userId: params.userId,
+      model: params.config.chat.model,
+      phase: currentPhase,
+      durationMs: Date.now() - startedAt,
+      toolCallCount,
+      sourceCount: sourceBudget.snapshot().sourceCount,
+      sourceCharsUsed: sourceBudget.snapshot().sourceCharsUsed,
+      totalTokens,
+      outcome: 'answer',
+    });
+  } catch (error) {
+    const failure = classifyAiStreamError(error);
+    logAiStreamLifecycle('error', 'failed', {
+      runId,
+      endpoint: 'agent',
+      userId: params.userId,
+      model: params.config.chat.model,
+      phase: currentPhase,
+      durationMs: Date.now() - startedAt,
+      toolCallCount,
+      sourceCount: sourceBudget.snapshot().sourceCount,
+      sourceCharsUsed: sourceBudget.snapshot().sourceCharsUsed,
+      totalTokens,
+      errorCode: failure.code,
+      errorName: error instanceof Error ? error.name : typeof error,
+    });
+    throw error;
   }
-
-  await params.emit({
-    type: 'state_patch',
-    state: {
-      seenSourceIds: ctx.state.seenSourceIds,
-      previousPlan: ctx.state.previousPlan,
-    },
-  });
-  await params.emit({ type: 'done' });
 }
 
 export { isAgentToolCallingUnavailableError, type RoteAgentStreamEvent } from './types';

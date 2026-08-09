@@ -7,8 +7,8 @@ describe('setup security', () => {
       {
         jwtSecret: 'jwt-secret',
         jwtRefreshSecret: 'refresh-secret',
-        jwtAccessExpiry: '15m',
-        jwtRefreshExpiry: '7d',
+        jwtAccessExpiry: '7d',
+        jwtRefreshExpiry: '30d',
         sessionSecret: 'session-secret',
       },
       {

@@ -1,5 +1,6 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import RoteItem from '@/components/rote/roteItem';
+import { viewerAwareCacheKey } from '@/features/user-blocks/viewerCacheScope';
 import { profileAtom } from '@/state/profile';
 import { type Rote } from '@/types/main';
 import { get } from '@/utils/api';
@@ -21,7 +22,9 @@ export default function RandomRote() {
     isValidating,
     mutate,
     error,
-  } = useAPIGet<Rote>('randomRote', () => get('/notes/random').then((res) => res.data));
+  } = useAPIGet<Rote>(viewerAwareCacheKey('randomRote', profile?.id), () =>
+    get('/notes/random').then((res) => res.data)
+  );
 
   return isLoading ? (
     <LoadingPlaceholder size={6} className="py-8" error={error} />
