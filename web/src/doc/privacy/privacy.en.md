@@ -2,7 +2,7 @@
 
 > Welcome to Rote (hereinafter referred to as "the App"). We take your privacy very seriously. This privacy policy explains how we collect, use, store, and share your personal information, as well as the rights you have. Please read this policy carefully before using the App.
 
-**Effective Date: December 2, 2025**
+**Effective Date: August 9, 2026**
 
 ---
 
@@ -15,6 +15,7 @@ To provide you with our services, we may collect the following types of informat
 - **Account Information**: Username, securely encrypted password, and email address you provide during registration, used for creating your account, login verification, password recovery, and sending important service-related notices.
 - **User Content**: Notes, images, tags, comments, and other content you create, upload, or store while using the App, used only to provide you with note-taking, storage, synchronization, and (when you choose to make content public) sharing features.
 - **Profile Information**: Nickname, bio, avatar, and similar information you fill in on your profile page, used for in-app identity display and basic social interaction.
+- **Purchase Records**: When you purchase or restore Rote Pro, we receive and process App Store transaction and original transaction identifiers, product identifier, subscription status and expiration, StoreKit environment, and an app account token linked to your Rote account. We use these records to verify and restore Rote Pro access, prevent fraud, and reconcile subscription state. Apple processes your payment details; Rote does not receive your full card or bank-account information.
 
 ### 1.2 Automatically Collected Information (Anonymized)
 
@@ -27,6 +28,7 @@ To provide you with our services, we may collect the following types of informat
 We use the collected information for the following purposes and will not go beyond the scope described in this policy:
 
 - **Provide Core Services**: To provide you with core features such as note creation, storage, synchronization, and sharing (when you choose to make content public).
+- **Provide Rote Pro**: To validate purchases, associate eligible subscriptions with your signed-in Rote account, activate and restore paid capabilities, and keep subscription status consistent across devices and app restarts.
 - **Security and Maintenance**: To monitor abnormal behavior, prevent fraud and abuse, protect the security of your account and data, and analyze crash reports and error logs to improve and optimize the App.
 - **Communication**: To send you important service-related notifications (such as security alerts and feature updates) and to respond to your inquiries.
 
@@ -38,13 +40,15 @@ We will not sell your personal information to any third party. We may share your
 
 - **With Your Explicit Consent**: We will share your information with third parties only after obtaining your explicit, informed consent.
 - **Legal and Regulatory Requirements**: We may disclose your information in accordance with applicable laws, regulations, court orders, or compulsory requirements of competent authorities, under the principles of legality, necessity, and minimal disclosure.
-- **Service Providers**: We may use third-party service providers such as cloud service providers or email delivery services to help us operate the App. These providers may access only the minimum necessary information to perform their services and are contractually required to protect your data and not use it for any unrelated purposes.
+- **Service Providers**: We may use third-party service providers such as cloud service providers or email delivery services to help us operate the App. Apple processes App Store payments and provides signed transaction data used for purchase verification. These providers may access only the information needed to perform their services and must handle it under their own applicable terms and privacy obligations.
 
 ---
 
 ## 4. Tracking Technologies and User Consent
 
 Rote does not currently use third-party ad networks, does not conduct cross-app or cross-website behavioral tracking, and does not use advertising identifiers (such as IDFA) for personalized advertising or user profiling.
+
+Purchase records are linked to your Rote account only for App functionality, subscription verification, security, and reconciliation. They are not used to track you across apps or websites and are not used for advertising.
 
 If we ever need to use Apple's App Tracking Transparency (ATT) framework in the future for cross-app/website tracking, we will clearly explain the purposes in advance and will only proceed after obtaining your explicit authorization through the system prompt. If you refuse or later revoke permission, we will not perform such tracking or display personalized ads.
 
@@ -54,7 +58,7 @@ If we ever need to use Apple's App Tracking Transparency (ATT) framework in the 
 
 - **Data Storage Location**: By default, your data is stored on servers operated by us and hosted in trusted cloud providers' data centers. If you run a self-hosted deployment, your data will be stored on the servers or cloud environment you configure. In either case, we recommend choosing data center locations that comply with the data protection laws applicable to you.
 - **Security Measures**: We design the backend with reasonable security measures such as TLS/SSL encrypted transmission, access control, and encrypted password storage to help prevent unauthorized access, disclosure, or tampering. If you self-host the backend, you are also responsible for configuring appropriate security protections for your servers, such as firewalls and access control policies.
-- **Data Retention**: We retain your personal information only for as long as necessary to provide the services (i.e., for as long as your account remains active). When you delete data or request account deletion, we will delete or anonymize your related data within a reasonable period, unless a longer retention period is required by applicable law.
+- **Data Retention**: We retain personal information only for as long as necessary to provide the services. Purchase records may be retained for the period reasonably needed to verify entitlements, restore purchases, reconcile Apple subscription events, prevent fraud, and meet legal or accounting obligations. When you delete data or request account deletion, we will delete or anonymize related data within a reasonable period unless continued retention is required for those purposes or by applicable law.
 
 ---
 
