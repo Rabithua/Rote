@@ -3,6 +3,7 @@ import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getAllPublicRssData, getRssData } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
 import { generateRssFeed, type RssFeedOptions } from '../../utils/rss';
+import billingRouter from '../../billing/public';
 import adminRouter from './admin';
 import adminPermissionsRouter from './adminPermissions';
 import aiRouter from './ai';
@@ -140,5 +141,6 @@ router.route('/permissions', permissionsRouter);
 router.route('/ai', aiRouter);
 router.route('/changes', changeRouter);
 router.route('/imports', importsRouter);
+router.route('/billing', billingRouter);
 
 export default router;

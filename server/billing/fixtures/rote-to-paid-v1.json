@@ -1,0 +1,111 @@
+{
+  "contract": "rote-to-paid-v1",
+  "status": "canonical",
+  "encoding": "UTF-8",
+  "lineSeparator": "LF",
+  "fixtureKey": {
+    "keyId": "fixture-rote-to-paid-v1",
+    "secretHex": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+    "secretIsProductionCredential": false
+  },
+  "hmacCase": {
+    "method": "POST",
+    "pathAndQuery": "/v1/rote/accounts/session",
+    "timestamp": "1735689600",
+    "requestId": "018f22e2-7d00-7abc-8def-1234567890ab",
+    "body": "{\"requestId\":\"018f22e2-7d00-7abc-8def-1234567890ab\",\"instanceId\":\"rote-official\",\"userId\":\"11111111-2222-4333-8444-555555555555\"}",
+    "expected": {
+      "bodyByteLength": 129,
+      "bodySha256": "36676f90ca960b6b84584f0cc68230ed6ae2e1b84f6996eff8dc701cfacbb287",
+      "canonicalRequest": "v1\nPOST\n/v1/rote/accounts/session\n1735689600\n018f22e2-7d00-7abc-8def-1234567890ab\n36676f90ca960b6b84584f0cc68230ed6ae2e1b84f6996eff8dc701cfacbb287",
+      "canonicalRequestBase64": "djEKUE9TVAovdjEvcm90ZS9hY2NvdW50cy9zZXNzaW9uCjE3MzU2ODk2MDAKMDE4ZjIyZTItN2QwMC03YWJjLThkZWYtMTIzNDU2Nzg5MGFiCjM2Njc2ZjkwY2E5NjBiNmI4NDU4NGYwY2M2ODIzMGVkNmFlMmUxYjg0ZjY5OTZlZmY4ZGM3MDFjZmFjYmIyODc=",
+      "signature": "v1=2af0bdd6dc37c5185ef3a110ac93cc7e423dd7f564bba9f27166a86f6593ddd8"
+    }
+  },
+  "activationHmacCase": {
+    "method": "POST",
+    "pathAndQuery": "/v1/rote/app-store/activate",
+    "timestamp": "1735689601",
+    "requestId": "018f22e2-7d01-7abc-8def-1234567890ab",
+    "body": "{\"requestId\":\"018f22e2-7d01-7abc-8def-1234567890ab\",\"instanceId\":\"rote-official\",\"userId\":\"11111111-2222-4333-8444-555555555555\",\"signedTransactionInfo\":\"PUBLIC.TEST.FIXTURE-NOT-A-REAL-JWS\"}",
+    "expected": {
+      "bodyByteLength": 190,
+      "bodySha256": "01e862395db2db38d8164f94120b108f4a1f6f9760f41e725a220b3af43dbcf3",
+      "canonicalRequest": "v1\nPOST\n/v1/rote/app-store/activate\n1735689601\n018f22e2-7d01-7abc-8def-1234567890ab\n01e862395db2db38d8164f94120b108f4a1f6f9760f41e725a220b3af43dbcf3",
+      "canonicalRequestBase64": "djEKUE9TVAovdjEvcm90ZS9hcHAtc3RvcmUvYWN0aXZhdGUKMTczNTY4OTYwMQowMThmMjJlMi03ZDAxLTdhYmMtOGRlZi0xMjM0NTY3ODkwYWIKMDFlODYyMzk1ZGIyZGIzOGQ4MTY0Zjk0MTIwYjEwOGY0YTFmNmY5NzYwZjQxZTcyNWEyMjBiM2FmNDNkYmNmMw==",
+      "signature": "v1=6e1156ebf5d89b04dd708ca687ac35494ab67e0a611841a1038905c0d8d4e08a"
+    }
+  },
+  "activationRequest": {
+    "requestId": "018f22e2-7d01-7abc-8def-1234567890ab",
+    "instanceId": "rote-official",
+    "userId": "11111111-2222-4333-8444-555555555555",
+    "signedTransactionInfo": "PUBLIC.TEST.FIXTURE-NOT-A-REAL-JWS"
+  },
+  "sessionSuccessResponse": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "appAccountToken": "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
+    }
+  },
+  "activationSuccessResponse": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "deliveryId": "018f22e2-7d02-7abc-8def-1234567890ab",
+      "issuer": "rote-paid-server",
+      "instanceId": "rote-official",
+      "revision": "42",
+      "planId": "rote_pro",
+      "status": "active",
+      "productId": "ink.rote.pro.yearly",
+      "entitlementExpiresAt": "2027-08-07T00:00:00.000Z",
+      "leaseExpiresAt": "2026-08-08T00:00:00.000Z",
+      "capabilities": ["ai.chat", "attachment.video.upload"]
+    }
+  },
+  "duplicateActivationResponse": {
+    "code": 0,
+    "message": "success",
+    "data": {
+      "deliveryId": "018f22e2-7d02-7abc-8def-1234567890ab",
+      "issuer": "rote-paid-server",
+      "instanceId": "rote-official",
+      "revision": "42",
+      "planId": "rote_pro",
+      "status": "active",
+      "productId": "ink.rote.pro.yearly",
+      "entitlementExpiresAt": "2027-08-07T00:00:00.000Z",
+      "leaseExpiresAt": "2026-08-08T00:00:00.000Z",
+      "capabilities": ["ai.chat", "attachment.video.upload"]
+    }
+  },
+  "standardErrorResponses": {
+    "invalidTransaction": {
+      "httpStatus": 400,
+      "body": { "code": 400, "message": "billing_invalid_transaction", "data": null }
+    },
+    "environmentNotAllowed": {
+      "httpStatus": 403,
+      "body": { "code": 403, "message": "billing_environment_not_allowed", "data": null }
+    },
+    "ownershipConflict": {
+      "httpStatus": 409,
+      "body": { "code": 409, "message": "billing_subscription_owned_by_another_account", "data": null }
+    },
+    "idempotencyConflict": {
+      "httpStatus": 409,
+      "body": { "code": 409, "message": "billing_idempotency_conflict", "data": null }
+    },
+    "providerUnavailable": {
+      "httpStatus": 503,
+      "body": { "code": 503, "message": "billing_provider_unavailable", "data": null }
+    }
+  },
+  "errorResponse": {
+    "code": 409,
+    "message": "billing_subscription_owned_by_another_account",
+    "data": null
+  }
+}

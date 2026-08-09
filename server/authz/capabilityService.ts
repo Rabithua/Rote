@@ -1,5 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { rolePermissionPolicies, userPermissionOverrides, users } from '../drizzle/schema';
+import { billingGrantRepository } from '../billing/grantRepository';
+import { billingConfig } from '../billing/runtimeConfig';
 import { UserRole } from '../types/main';
 import db from '../utils/drizzle';
 import {
@@ -27,7 +29,7 @@ export async function getEffectiveCapabilitiesForUser(userId: string): Promise<{
     .limit(1);
   if (!user) throw new Error('User not found');
 
-  const [rolePolicies, userOverrides] = await Promise.all([
+  const [rolePolicies, userOverrides, billingGrant] = await Promise.all([
     db
       .select({
         permission: rolePermissionPolicies.permission,
@@ -43,6 +45,7 @@ export async function getEffectiveCapabilitiesForUser(userId: string): Promise<{
       })
       .from(userPermissionOverrides)
       .where(eq(userPermissionOverrides.userid, userId)),
+    billingConfig.enabled ? billingGrantRepository.findGrantForUser(userId) : Promise.resolve(null),
   ]);
 
   const rolePolicyMap = new Map(rolePolicies.map((policy) => [policy.permission, policy.effect]));
@@ -60,6 +63,15 @@ export async function getEffectiveCapabilitiesForUser(userId: string): Promise<{
     userOverrides: Object.fromEntries(userOverrideMap) as Partial<
       Record<CapabilityKey, CapabilityEffect>
     >,
+    ...(billingGrant
+      ? {
+          subscription: {
+            status: billingGrant.status,
+            capabilities: billingGrant.capabilities,
+            validUntil: billingGrant.leaseExpiresAt?.toISOString(),
+          },
+        }
+      : {}),
   });
 
   return { role: user.role, capabilities };

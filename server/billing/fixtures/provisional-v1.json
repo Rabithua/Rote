@@ -1,0 +1,43 @@
+{
+  "contract": "rote-paid-to-rote-provisional-v1",
+  "status": "provisional",
+  "encoding": "UTF-8",
+  "lineSeparator": "LF",
+  "fixtureKey": {
+    "keyId": "paid-active-2026-08",
+    "secret": "paid-to-rote-fixture-secret-v1-0001",
+    "secretIsProductionCredential": false
+  },
+  "hmacCase": {
+    "method": "put",
+    "rawPathAndQuery": "/internal/billing/grants/3d594650-3436-4a2e-905c-438b5a93992a?tag=b&mode=full&note=pro+grant&tag=a",
+    "canonicalPathAndQuery": "/internal/billing/grants/3d594650-3436-4a2e-905c-438b5a93992a?mode=full&note=pro%20grant&tag=a&tag=b",
+    "timestamp": "1786095000",
+    "requestId": "018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f71",
+    "userId": "3d594650-3436-4a2e-905c-438b5a93992a",
+    "body": "{\"deliveryId\":\"018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f71\",\"issuer\":\"rote-paid-server\",\"instanceId\":\"rote-official\",\"revision\":\"42\",\"planId\":\"rote_pro\",\"status\":\"active\",\"productId\":\"ink.rote.pro.yearly\",\"entitlementExpiresAt\":\"2026-08-08T12:00:00.000Z\",\"leaseExpiresAt\":\"2026-08-08T00:00:00.000Z\",\"capabilities\":[\"ai.chat\",\"attachment.video.upload\"]}",
+    "expected": {
+      "bodySha256": "1ffac0e66f57356dc1ad55f733f332c7767feb4ce5d2ae5a06462dd284a6bf61",
+      "bodyUtf8Hex": "7b2264656c69766572794964223a2230313866336635612d376232632d376434652d386139312d326233633464356536663731222c22697373756572223a22726f74652d706169642d736572766572222c22696e7374616e63654964223a22726f74652d6f6666696369616c222c227265766973696f6e223a223432222c22706c616e4964223a22726f74655f70726f222c22737461747573223a22616374697665222c2270726f647563744964223a22696e6b2e726f74652e70726f2e796561726c79222c22656e7469746c656d656e74457870697265734174223a22323032362d30382d30385431323a30303a30302e3030305a222c226c65617365457870697265734174223a22323032362d30382d30385430303a30303a30302e3030305a222c226361706162696c6974696573223a5b2261692e63686174222c226174746163686d656e742e766964656f2e75706c6f6164225d7d",
+      "canonicalRequest": "v1\nPUT\n/internal/billing/grants/3d594650-3436-4a2e-905c-438b5a93992a?mode=full&note=pro%20grant&tag=a&tag=b\n1786095000\n018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f71\n1ffac0e66f57356dc1ad55f733f332c7767feb4ce5d2ae5a06462dd284a6bf61",
+      "canonicalRequestUtf8Hex": "76310a5055540a2f696e7465726e616c2f62696c6c696e672f6772616e74732f33643539343635302d333433362d346132652d393035632d3433386235613933393932613f6d6f64653d66756c6c266e6f74653d70726f2532306772616e74267461673d61267461673d620a313738363039353030300a30313866336635612d376232632d376434652d386139312d3262336334643565366637310a31666661633065363666353733353664633161643535663733336633333263373736376665623463653564326165356130363436326464323834613662663631",
+      "signature": "v1=f6f0a0579234e57ef1c4b5cf8e93d0b74d3a3520d94bf5fcab10cd07f0a5db7e"
+    }
+  },
+  "grantCases": [
+    {
+      "name": "active-yearly",
+      "body": "{\"deliveryId\":\"018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f71\",\"issuer\":\"rote-paid-server\",\"instanceId\":\"rote-official\",\"revision\":\"42\",\"planId\":\"rote_pro\",\"status\":\"active\",\"productId\":\"ink.rote.pro.yearly\",\"entitlementExpiresAt\":\"2026-08-08T12:00:00.000Z\",\"leaseExpiresAt\":\"2026-08-08T00:00:00.000Z\",\"capabilities\":[\"ai.chat\",\"attachment.video.upload\"]}",
+      "canonicalSnapshot": "{\"issuer\":\"rote-paid-server\",\"instanceId\":\"rote-official\",\"revision\":\"42\",\"planId\":\"rote_pro\",\"status\":\"active\",\"productId\":\"ink.rote.pro.yearly\",\"entitlementExpiresAt\":\"2026-08-08T12:00:00.000Z\",\"leaseExpiresAt\":\"2026-08-08T00:00:00.000Z\",\"capabilities\":[\"ai.chat\",\"attachment.video.upload\"]}",
+      "canonicalSnapshotUtf8Hex": "7b22697373756572223a22726f74652d706169642d736572766572222c22696e7374616e63654964223a22726f74652d6f6666696369616c222c227265766973696f6e223a223432222c22706c616e4964223a22726f74655f70726f222c22737461747573223a22616374697665222c2270726f647563744964223a22696e6b2e726f74652e70726f2e796561726c79222c22656e7469746c656d656e74457870697265734174223a22323032362d30382d30385431323a30303a30302e3030305a222c226c65617365457870697265734174223a22323032362d30382d30385430303a30303a30302e3030305a222c226361706162696c6974696573223a5b2261692e63686174222c226174746163686d656e742e766964656f2e75706c6f6164225d7d",
+      "snapshotSha256": "b31bf87f3bb0dad07e972c9d37bc218381459ddc35a554490263566fa28daf51"
+    },
+    {
+      "name": "revoked",
+      "body": "{\"deliveryId\":\"018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f72\",\"issuer\":\"rote-paid-server\",\"instanceId\":\"rote-official\",\"revision\":\"43\",\"planId\":\"rote_pro\",\"status\":\"none\",\"productId\":null,\"entitlementExpiresAt\":null,\"leaseExpiresAt\":null,\"capabilities\":[]}",
+      "canonicalSnapshot": "{\"issuer\":\"rote-paid-server\",\"instanceId\":\"rote-official\",\"revision\":\"43\",\"planId\":\"rote_pro\",\"status\":\"none\",\"productId\":null,\"entitlementExpiresAt\":null,\"leaseExpiresAt\":null,\"capabilities\":[]}",
+      "canonicalSnapshotUtf8Hex": "7b22697373756572223a22726f74652d706169642d736572766572222c22696e7374616e63654964223a22726f74652d6f6666696369616c222c227265766973696f6e223a223433222c22706c616e4964223a22726f74655f70726f222c22737461747573223a226e6f6e65222c2270726f647563744964223a6e756c6c2c22656e7469746c656d656e74457870697265734174223a6e756c6c2c226c65617365457870697265734174223a6e756c6c2c226361706162696c6974696573223a5b5d7d",
+      "snapshotSha256": "bc02ee88e412778ed8de24cd634c1f54af344e3c75d4047105361b9e8ebe5f14"
+    }
+  ]
+}
