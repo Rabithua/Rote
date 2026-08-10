@@ -6,6 +6,10 @@ const migration = readFileSync(
   join(import.meta.dir, '../drizzle/migrations/0022_billing_foundation.sql'),
   'utf8'
 );
+const deliveryTargetMigration = readFileSync(
+  join(import.meta.dir, '../drizzle/migrations/0023_billing_delivery_target.sql'),
+  'utf8'
+);
 
 describe('billing foundation migration', () => {
   it('creates grant and inbound delivery tables with ordering and replay constraints', () => {
@@ -15,5 +19,7 @@ describe('billing foundation migration', () => {
     expect(migration).toContain('CREATE TABLE "billing_inbound_deliveries"');
     expect(migration).toContain('PRIMARY KEY("direction","delivery_id")');
     expect(migration).toContain('ON DELETE cascade');
+    expect(deliveryTargetMigration).toContain('ADD COLUMN "request_target" text');
+    expect(deliveryTargetMigration).toContain('ALTER COLUMN "request_target" DROP DEFAULT');
   });
 });

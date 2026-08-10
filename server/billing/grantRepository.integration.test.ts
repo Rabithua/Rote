@@ -86,6 +86,7 @@ databaseDescribe('billing grant repository integration', () => {
       direction: PAID_TO_ROTE_DIRECTION,
       deliveryId,
       keyId: 'paid-active',
+      requestTarget: `/internal/billing/grants/${targetUserId}`,
       bodyHash,
       outcome: {
         kind: 'grant' as const,
@@ -145,6 +146,15 @@ databaseDescribe('billing grant repository integration', () => {
     });
     expect(conflict.status).toBe(409);
     expect(conflict.body.message).toBe('billing_delivery_conflict');
+
+    const crossTargetReplay = await store.processInboundDelivery({
+      ...original,
+      keyId: 'paid-previous',
+      requestTarget: `/internal/billing/grants/${activationUserId}`,
+      outcome: { ...original.outcome, userId: activationUserId },
+    });
+    expect(crossTargetReplay.status).toBe(409);
+    expect(crossTargetReplay.body.message).toBe('billing_delivery_conflict');
   });
 
   it('atomically applies activation snapshots with the same revision semantics', async () => {
@@ -173,7 +183,7 @@ databaseDescribe('billing grant repository integration', () => {
     );
     expect(missing).toEqual({
       status: 404,
-      body: { code: 1, message: 'billing_grant_user_not_found', data: null },
+      body: { code: 404, message: 'billing_grant_user_not_found', data: null },
     });
 
     expect(await store.findGrantForUser(userId)).not.toBeNull();

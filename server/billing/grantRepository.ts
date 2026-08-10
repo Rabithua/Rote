@@ -37,6 +37,7 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
           direction: delivery.direction,
           deliveryId: delivery.deliveryId,
           keyId: delivery.keyId,
+          requestTarget: delivery.requestTarget,
           bodyHash: delivery.bodyHash,
         })
         .onConflictDoNothing({
@@ -47,6 +48,7 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
       if (!inserted) {
         const [existingDelivery] = await transaction
           .select({
+            requestTarget: billingInboundDeliveries.requestTarget,
             bodyHash: billingInboundDeliveries.bodyHash,
             responseStatus: billingInboundDeliveries.responseStatus,
             responseBody: billingInboundDeliveries.responseBody,
@@ -63,7 +65,10 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
         if (!existingDelivery) {
           throw new Error('Billing delivery disappeared during replay lookup');
         }
-        if (existingDelivery.bodyHash !== delivery.bodyHash) {
+        if (
+          existingDelivery.requestTarget !== delivery.requestTarget ||
+          existingDelivery.bodyHash !== delivery.bodyHash
+        ) {
           return billingHttpResponse(409, 'billing_delivery_conflict');
         }
         if (existingDelivery.responseStatus === null || existingDelivery.responseBody === null) {
