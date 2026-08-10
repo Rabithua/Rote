@@ -307,6 +307,26 @@ describe('public billing routes', () => {
     expect(provider?.sessionUsers).toEqual([user.id, user.id]);
   });
 
+  it('returns a stable billing error key for malformed public requests', async () => {
+    const { app } = createApp();
+    for (const [path, body] of [
+      ['/app-store/session', '{"unexpected":true}'],
+      ['/app-store/activate', '{"signedTransactionInfo":""}'],
+    ]) {
+      const response = await app.request(`https://api.rote.ink/v2/api/billing${path}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body,
+      });
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        code: 400,
+        message: 'billing_invalid_request',
+        data: null,
+      });
+    }
+  });
+
   it('applies the exact Paid activation snapshot locally before returning success', async () => {
     const { app, store } = createApp();
     const response = await app.request('https://api.rote.ink/v2/api/billing/app-store/activate', {
@@ -441,6 +461,11 @@ describe('public billing routes', () => {
     );
 
     expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({
+      code: 413,
+      message: 'billing_invalid_request',
+      data: null,
+    });
     expect(chunksRead).toBeLessThan(totalChunks);
     expect(chunksRead * 1024).toBeLessThanOrEqual(BILLING_ACTIVATION_BODY_LIMIT_BYTES + 1024);
     expect(provider?.activations).toHaveLength(0);

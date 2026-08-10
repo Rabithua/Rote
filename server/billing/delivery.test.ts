@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { classifyGrantRevision } from './delivery';
+import { billingHttpResponse, classifyGrantRevision } from './delivery';
 
 describe('billing grant revision ordering', () => {
   it('applies new and higher revisions', () => {
@@ -23,5 +23,14 @@ describe('billing grant revision ordering', () => {
     expect(
       classifyGrantRevision(existing, { revision: BigInt(2), snapshotHash: 'different' })
     ).toBe('conflict');
+  });
+});
+
+describe('billing response envelope', () => {
+  it('preserves the canonical HTTP status as the error code', () => {
+    expect(billingHttpResponse(200, 'success').body.code).toBe(0);
+    for (const status of [400, 401, 403, 404, 409, 413, 503]) {
+      expect(billingHttpResponse(status, 'billing_error').body.code).toBe(status);
+    }
   });
 });

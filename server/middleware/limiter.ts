@@ -31,19 +31,38 @@ function getLimiter(): RateLimiterMemory {
   return limiter;
 }
 
-// Create rate limiting middleware function with enhanced features
-export const rateLimiterMiddleware = async (c: HonoContext, next: () => Promise<void>) => {
-  const user = c.get('user');
-  const key = user ? user.id : getClientIp(c);
+type RateLimitConsumer = (key: string) => Promise<unknown>;
 
-  try {
-    const currentLimiter = getLimiter();
-    await currentLimiter.consume(key);
+function isRateLimitRejection(value: unknown): value is { msBeforeNext: number } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'msBeforeNext' in value &&
+    typeof value.msBeforeNext === 'number' &&
+    Number.isFinite(value.msBeforeNext)
+  );
+}
+
+export function createRateLimiterMiddleware(
+  consume: RateLimitConsumer = (key) => getLimiter().consume(key)
+) {
+  return async (c: HonoContext, next: () => Promise<void>) => {
+    const user = c.get('user');
+    const key = user ? user.id : getClientIp(c);
+
+    try {
+      await consume(key);
+    } catch (error) {
+      if (!isRateLimitRejection(error)) throw error;
+      const retrySecs = Math.round(error.msBeforeNext / 1000) || 1;
+      c.header('Retry-After', String(retrySecs));
+      console.log('Too Many Requests', error);
+      return c.text(`Too Many Requests. Please try again in ${retrySecs} seconds.`, 429);
+    }
+
     await next();
-  } catch (rejRes: any) {
-    const retrySecs = Math.round(rejRes.msBeforeNext / 1000) || 1;
-    c.header('Retry-After', String(retrySecs));
-    console.log('Too Many Requests', rejRes);
-    return c.text(`Too Many Requests. Please try again in ${retrySecs} seconds.`, 429);
-  }
-};
+  };
+}
+
+// Create rate limiting middleware function with enhanced features
+export const rateLimiterMiddleware = createRateLimiterMiddleware();

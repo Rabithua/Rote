@@ -59,6 +59,7 @@ describe('Rote-to-Paid billing transport', () => {
     const headers = new Headers(capturedInit?.headers);
 
     expect(capturedUrl?.toString()).toBe('https://billing.rote.ink/v1/rote/accounts/session');
+    expect(capturedInit?.redirect).toBe('error');
     expect(capturedInit?.body).toBe(fixture.hmacCase.body);
     expect(Buffer.byteLength(capturedInit?.body as string)).toBe(
       fixture.hmacCase.expected.bodyByteLength
@@ -132,6 +133,34 @@ describe('Rote-to-Paid billing transport', () => {
         fetch: async () => new Response(failedBody),
       }).postJson('/v1/rote/accounts/session', () => '{}'),
       'network_error'
+    );
+  });
+
+  it('rejects cross-origin paths before fetch and refuses every redirect response', async () => {
+    let fetchCalls = 0;
+    const transport = new PaidBillingTransport(enabledConfig(), {
+      fetch: async () => {
+        fetchCalls += 1;
+        return Response.json({ code: 0, message: 'success', data: {} });
+      },
+    });
+
+    await expect(
+      transport.postJson('//attacker.example/collect', () => '{"private":"payload"}')
+    ).rejects.toThrow('must stay on the configured Paid origin');
+    expect(fetchCalls).toBe(0);
+
+    await expectTransportError(
+      new PaidBillingTransport(enabledConfig(), {
+        fetch: async (_input, init) => {
+          expect(init?.redirect).toBe('error');
+          return new Response(null, {
+            status: 307,
+            headers: { location: 'https://attacker.example/collect' },
+          });
+        },
+      }).postJson('/v1/rote/app-store/activate', () => '{"private":"payload"}'),
+      'invalid_response'
     );
   });
 });
