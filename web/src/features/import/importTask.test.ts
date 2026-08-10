@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { migrateWithRetry, runAttachmentQueue, runImportTask } from './importTask';
 
 const { postMock, deleteMock } = vi.hoisted(() => ({
@@ -7,6 +7,11 @@ const { postMock, deleteMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/utils/api', () => ({ post: postMock, del: deleteMock }));
+
+beforeEach(() => {
+  postMock.mockReset();
+  deleteMock.mockReset();
+});
 
 describe('import attachment queue', () => {
   test('uses eight total slots, no more than two videos, and refills immediately', async () => {
@@ -82,6 +87,63 @@ describe('import attachment queue', () => {
     expect(permanent).toHaveBeenCalledOnce();
   });
 
+  test('skips an overwrite when any attachment fails and removes migrated temporary files', async () => {
+    const noteId = crypto.randomUUID();
+    postMock.mockImplementation(async (path: string, body: Record<string, unknown>) => {
+      if (path === '/users/me/import/plan') return { data: { noteIndexes: [0] } };
+      if (path === '/imports/attachments/migrate') {
+        const migratedAttachment = body.attachment as { url: string };
+        if (migratedAttachment.url.endsWith('/failed.png')) {
+          throw {
+            response: { status: 413, data: { message: 'remote_attachment_too_large' } },
+          };
+        }
+        return { data: { id: 'migrated-attachment' } };
+      }
+      throw new Error('overwrite with a failed attachment must not be imported');
+    });
+    deleteMock.mockResolvedValue({});
+
+    const result = await runImportTask({
+      payload: {
+        notes: [
+          {
+            id: noteId,
+            content: 'existing memo',
+            source: { provider: 'memos', accountId: 'account', externalId: 'memo-1' },
+            attachments: [
+              {
+                url: 'https://memos.example.com/success.png',
+                storage: 'REMOTE',
+                details: { mimetype: 'image/png' },
+                source: { provider: 'memos', accountId: 'account', externalId: 'asset-1' },
+              },
+              {
+                url: 'https://memos.example.com/failed.png',
+                storage: 'REMOTE',
+                details: { mimetype: 'image/png' },
+                source: { provider: 'memos', accountId: 'account', externalId: 'asset-2' },
+              },
+            ],
+          },
+        ],
+      },
+      overwriteExisting: true,
+      preserveVisibility: false,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+    });
+
+    expect(postMock.mock.calls.filter(([path]) => path === '/users/me/import')).toHaveLength(0);
+    expect(deleteMock).toHaveBeenCalledWith('/attachments', {
+      data: { ids: ['migrated-attachment'] },
+    });
+    expect(result.skippedAfterAttachmentFailure).toBe(1);
+    expect(result.failures).toEqual([
+      expect.objectContaining({ reason: 'remote_attachment_too_large' }),
+    ]);
+  });
+
   test('still imports articles when every note is skipped by preflight', async () => {
     postMock.mockResolvedValueOnce({ data: { noteIndexes: [] } }).mockResolvedValueOnce({
       data: {
@@ -112,8 +174,6 @@ describe('import attachment queue', () => {
   });
 
   test('keeps Memos credentials in memory and sends them only with attachment migration', async () => {
-    postMock.mockReset();
-    deleteMock.mockReset();
     const noteId = crypto.randomUUID();
     postMock
       .mockResolvedValueOnce({ data: { noteIndexes: [0] } })
