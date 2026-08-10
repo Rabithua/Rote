@@ -3,57 +3,71 @@ import { ROLE_PERMISSIONS, UserRole } from '../types/main';
 import { getSafeUser } from '../utils/dbMethods';
 import { verifyAccessToken } from '../utils/jwt';
 
-export async function authenticateJWT(c: HonoContext, next: () => Promise<void>) {
-  const authHeader = c.req.header('authorization');
-  const token = authHeader && authHeader.split(' ')[1];
+type JWTAuthenticationDependencies = {
+  verifyAccessToken: typeof verifyAccessToken;
+  getSafeUser: typeof getSafeUser;
+};
 
-  if (!token) {
-    return c.json({ code: 401, message: 'Access token required' }, 401);
-  }
+export function createJWTAuthenticationMiddleware(
+  dependencies: JWTAuthenticationDependencies = { verifyAccessToken, getSafeUser }
+) {
+  return async (c: HonoContext, next: () => Promise<void>) => {
+    const authHeader = c.req.header('authorization');
+    const token = authHeader && authHeader.split(' ')[1];
 
-  try {
-    const payload = await verifyAccessToken(token);
-    const user = await getSafeUser(payload.userId);
+    if (!token) {
+      return c.json({ code: 401, message: 'Access token required' }, 401);
+    }
 
+    let payload: Awaited<ReturnType<typeof verifyAccessToken>>;
+    try {
+      payload = await dependencies.verifyAccessToken(token);
+    } catch {
+      return c.json({ code: 401, message: 'Invalid token' }, 401);
+    }
+
+    const user = await dependencies.getSafeUser(payload.userId);
     if (!user) {
       return c.json({ code: 401, message: 'User not found' }, 401);
     }
 
     c.set('user', user);
     await next();
-  } catch (_error) {
-    return c.json({ code: 401, message: 'Invalid token' }, 401);
-  }
+  };
 }
+
+export const authenticateJWT = createJWTAuthenticationMiddleware();
 
 // 可选JWT认证中间件，允许访客和用户双重访问
-export async function optionalJWT(c: HonoContext, next: () => Promise<void>) {
-  const authHeader = c.req.header('authorization');
-  const token = authHeader && authHeader.split(' ')[1];
+export function createOptionalJWTAuthenticationMiddleware(
+  dependencies: JWTAuthenticationDependencies = { verifyAccessToken, getSafeUser }
+) {
+  return async (c: HonoContext, next: () => Promise<void>) => {
+    const authHeader = c.req.header('authorization');
+    const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    c.set('user', undefined);
-    await next();
-    return;
-  }
-
-  try {
-    const payload = await verifyAccessToken(token);
-    const user = await getSafeUser(payload.userId);
-
-    if (user) {
-      c.set('user', user);
-    } else {
+    if (!token) {
       c.set('user', undefined);
+      await next();
+      return;
     }
 
+    let payload: Awaited<ReturnType<typeof verifyAccessToken>>;
+    try {
+      payload = await dependencies.verifyAccessToken(token);
+    } catch {
+      // Token无效时，仍然允许继续（作为访客）
+      c.set('user', undefined);
+      await next();
+      return;
+    }
+
+    c.set('user', (await dependencies.getSafeUser(payload.userId)) ?? undefined);
     await next();
-  } catch (_error) {
-    // Token无效时，仍然允许继续（作为访客）
-    c.set('user', undefined);
-    await next();
-  }
+  };
 }
+
+export const optionalJWT = createOptionalJWTAuthenticationMiddleware();
 
 // 角色验证中间件
 export function requireRole(requiredRole: UserRole) {

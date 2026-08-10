@@ -198,6 +198,7 @@ export const billingInboundDeliveries = pgTable(
     direction: varchar('direction', { length: 32 }).notNull(),
     deliveryId: uuid('delivery_id').notNull(),
     keyId: varchar('key_id', { length: 100 }).notNull(),
+    requestTarget: text('request_target').notNull(),
     bodyHash: varchar('body_hash', { length: 64 }).notNull(),
     responseStatus: integer('response_status'),
     responseBody: jsonb('response_body').$type<{

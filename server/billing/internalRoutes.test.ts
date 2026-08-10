@@ -100,7 +100,7 @@ describe('internal billing grant route', () => {
 
     expect(response.status).toBe(403);
     expect(await response.json()).toEqual({
-      code: 1,
+      code: 403,
       message: 'billing_not_configured',
       data: null,
     });
@@ -142,6 +142,7 @@ describe('internal billing grant route', () => {
     expect(response.status).toBe(200);
     expect(store.deliveries).toHaveLength(1);
     expect(store.deliveries[0].keyId).toBe(active.keyId);
+    expect(store.deliveries[0].requestTarget).toBe(fixture.hmacCase.canonicalPathAndQuery);
     expect(store.deliveries[0].outcome.kind).toBe('grant');
     if (store.deliveries[0].outcome.kind !== 'grant') throw new Error('Expected grant outcome');
     expect(store.deliveries[0].outcome.grant.revision).toBe(BigInt(42));
@@ -169,7 +170,7 @@ describe('internal billing grant route', () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({
-      code: 1,
+      code: 404,
       message: 'billing_grant_user_not_found',
       data: null,
     });

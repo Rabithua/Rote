@@ -25,6 +25,7 @@ export type AuthenticatedInboundDelivery = {
   direction: typeof PAID_TO_ROTE_DIRECTION;
   deliveryId: string;
   keyId: string;
+  requestTarget: string;
   bodyHash: string;
   outcome:
     | {
@@ -65,5 +66,5 @@ export function billingHttpResponse(
   message: string,
   data: unknown = null
 ): BillingHttpResponse {
-  return { status, body: { code: status >= 400 ? 1 : 0, message, data } };
+  return { status, body: { code: status >= 400 ? status : 0, message, data } };
 }

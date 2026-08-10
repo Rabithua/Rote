@@ -94,6 +94,11 @@ export class PaidBillingTransport {
     if (!path.startsWith('/') || path.includes('?') || path.includes('#')) {
       throw new Error('Paid billing path must be an absolute path without query or fragment');
     }
+    const paidServerOrigin = new URL(this.config.paidServerUrl).origin;
+    const requestUrl = new URL(path, this.config.paidServerUrl);
+    if (requestUrl.origin !== paidServerOrigin) {
+      throw new Error('Paid billing path must stay on the configured Paid origin');
+    }
 
     const requestId = this.requestId();
     const body = serializeBody(requestId);
@@ -130,8 +135,9 @@ export class PaidBillingTransport {
 
     try {
       const response = await Promise.race([
-        this.fetch(new URL(path, this.config.paidServerUrl), {
+        this.fetch(requestUrl, {
           method: 'POST',
+          redirect: 'error',
           headers: {
             accept: 'application/json',
             'content-type': 'application/json',
@@ -147,6 +153,11 @@ export class PaidBillingTransport {
         totalTimeout,
       ]);
       clearTimeout(connectTimer);
+
+      if (response.redirected || (response.status >= 300 && response.status < 400)) {
+        await response.body?.cancel();
+        throw new PaidTransportError('invalid_response');
+      }
 
       const responseText = await Promise.race([readLimitedResponseBody(response), totalTimeout]);
       let responseBody: unknown;

@@ -104,7 +104,7 @@ export async function runImportTask({
     if (noteChunks.length === 0 && (payload.articles?.length ?? 0) > 0) noteChunks.push([]);
     for (const chunk of noteChunks) {
       throwIfAborted(signal);
-      const migratedNotes = await migrateChunk(
+      const { notes: migratedNotes, failedNoteIndexes } = await migrateChunk(
         chunk,
         signal,
         session,
@@ -118,7 +118,21 @@ export async function runImportTask({
           });
         }
       );
-      const importableNotes = migratedNotes.filter((note) => {
+      const noteIndexesToSkip = overwriteExisting ? failedNoteIndexes : new Set<number>();
+      const migratedIdsToDiscard = migratedNotes.flatMap((note, noteIndex) =>
+        noteIndexesToSkip.has(noteIndex)
+          ? (note.attachments ?? []).map((attachment: ImportRecord) => attachment.id)
+          : []
+      );
+      if (migratedIdsToDiscard.length > 0) {
+        await cleanupAttachmentIds(migratedIdsToDiscard);
+        removeAttachmentIds(session, migratedIdsToDiscard);
+      }
+      const importableNotes = migratedNotes.filter((note, noteIndex) => {
+        if (noteIndexesToSkip.has(noteIndex)) {
+          skippedAfterAttachmentFailure += 1;
+          return false;
+        }
         const importable = hasContent(note) || (note.attachments?.length ?? 0) > 0;
         if (!importable) skippedAfterAttachmentFailure += 1;
         return importable;
@@ -185,6 +199,7 @@ async function migrateChunk(
   onDelta: (delta: { active: number; completed: number; failed: number }) => void
 ) {
   const output = notes.map((note) => ({ ...note, attachments: [] as ImportRecord[] }));
+  const failedNoteIndexes = new Set<number>();
   const tasks = notes.flatMap((note, noteIndex) =>
     (Array.isArray(note.attachments) ? note.attachments : []).map(
       (attachment: ImportRecord, attachmentIndex: number) => ({
@@ -217,6 +232,7 @@ async function migrateChunk(
       onDelta({ active: -1, completed: 1, failed: 0 });
     } catch (error) {
       if (signal.aborted) throw error;
+      failedNoteIndexes.add(task.noteIndex);
       failures.push({
         attachmentName: attachmentName(task.attachment, task.attachmentIndex),
         noteTitle: String(task.note.title || ''),
@@ -229,7 +245,7 @@ async function migrateChunk(
   output.forEach((note) =>
     note.attachments.sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0))
   );
-  return output;
+  return { notes: output, failedNoteIndexes };
 }
 
 export async function migrateWithRetry(
@@ -360,6 +376,12 @@ function removeBoundIds(session: InterruptedSession, notes: ImportRecord[]) {
     )
   );
   session.attachmentIds = session.attachmentIds.filter((id) => !bound.has(id));
+  persistInterruptedSession(session);
+}
+
+function removeAttachmentIds(session: InterruptedSession, ids: string[]) {
+  const removed = new Set(ids);
+  session.attachmentIds = session.attachmentIds.filter((id) => !removed.has(id));
   persistInterruptedSession(session);
 }
 

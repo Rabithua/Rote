@@ -26,6 +26,7 @@ export type VerifiedBillingSignature = {
   requestId: string;
   timestamp: string;
   bodyHash: string;
+  canonicalPathAndQuery: string;
   canonicalRequest: string;
 };
 
@@ -178,6 +179,7 @@ export function verifyBillingRequest(params: {
     requestId,
     timestamp,
     bodyHash: expected.bodyHash,
+    canonicalPathAndQuery: canonicalizePathAndQuery(params.pathAndQuery),
     canonicalRequest: expected.canonicalRequest,
   };
 }

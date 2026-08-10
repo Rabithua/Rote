@@ -95,6 +95,7 @@ export function createInternalBillingRouter(params: {
       direction: PAID_TO_ROTE_DIRECTION,
       deliveryId: verified.requestId,
       keyId: verified.keyId,
+      requestTarget: verified.canonicalPathAndQuery,
       bodyHash: verified.bodyHash,
       outcome,
     });

@@ -29,7 +29,7 @@ function jsonResponse(c: HonoContext, response: BillingHttpResponse) {
 }
 
 function invalidRequest(c: HonoContext, status: 400 | 413 = 400) {
-  return jsonResponse(c, billingHttpResponse(status, 'Invalid request'));
+  return jsonResponse(c, billingHttpResponse(status, 'billing_invalid_request'));
 }
 
 function isOfficialBillingRequest(c: HonoContext, config: BillingConfig): boolean {
