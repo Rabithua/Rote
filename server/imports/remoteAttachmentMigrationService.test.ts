@@ -27,9 +27,11 @@ function attachment(overrides: Record<string, unknown> = {}) {
 function dependencies(contentTypes = new Map<string, string>()) {
   const stored: string[] = [];
   const removed: string[] = [];
+  const finalizedInputs: unknown[] = [];
   return {
     stored,
     removed,
+    finalizedInputs,
     values: {
       assertSafeOutboundUrl: async () => {},
       fetcher: async (url: string | URL | Request) =>
@@ -39,16 +41,19 @@ function dependencies(contentTypes = new Map<string, string>()) {
             'content-length': '3',
           },
         }),
-      finalizeAttachmentUploads: async () => [
-        {
-          id: '550e8400-e29b-41d4-a716-446655440000',
-          url: 'https://cdn.example/image.png',
-          compressUrl: '',
-          posterUrl: '',
-          storage: 'R2',
-          details: { key: stored[0], mimetype: 'image/png', mediaKind: 'image' },
-        },
-      ],
+      finalizeAttachmentUploads: async (input: unknown) => {
+        finalizedInputs.push(input);
+        return [
+          {
+            id: '550e8400-e29b-41d4-a716-446655440000',
+            url: 'https://cdn.example/image.png',
+            compressUrl: '',
+            posterUrl: '',
+            storage: 'R2',
+            details: { key: stored[0], mimetype: 'image/png', mediaKind: 'image' },
+          },
+        ];
+      },
       getAttachmentUploadPolicy: async () => policy,
       randomUUID: () => 'asset-id',
       removeObject: async (key: string) => {
@@ -125,6 +130,68 @@ describe('single remote attachment migration', () => {
       code: 'remote_attachment_invalid',
     });
     expect(deps.removed).toEqual(['users/user-1/uploads/asset-id.png']);
+  });
+
+  test('does not upload a compressed still that Live Photo finalization discards', async () => {
+    const compressedUrl = 'https://source.example/image.webp';
+    const pairedVideoUrl = 'https://source.example/image.mov';
+    const deps = dependencies(
+      new Map([
+        [compressedUrl, 'image/webp'],
+        [pairedVideoUrl, 'video/quicktime'],
+      ])
+    );
+
+    await migrateOneRemoteAttachment(
+      'user-1',
+      attachment({
+        compressUrl: compressedUrl,
+        details: {
+          ...attachment().details,
+          pairedVideoUrl,
+          pairedVideoFilename: 'image.mov',
+          pairedVideoMimetype: 'video/quicktime',
+        },
+      }),
+      deps.values as never
+    );
+
+    expect(deps.stored).toEqual([
+      'users/user-1/uploads/asset-id.png',
+      'users/user-1/paired-videos/asset-id.mov',
+    ]);
+    expect(deps.finalizedInputs).toEqual([
+      expect.objectContaining({
+        attachments: [
+          expect.objectContaining({
+            compressedKey: undefined,
+            mediaKind: 'livePhoto',
+            pairedVideoKey: 'users/user-1/paired-videos/asset-id.mov',
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  test('preserves the streamed too-large error instead of reporting a storage outage', async () => {
+    const deps = dependencies();
+    deps.values.fetcher = async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array(20 * 1024 * 1024 + 1));
+            controller.close();
+          },
+        }),
+        { headers: { 'content-type': 'image/png' } }
+      );
+
+    await expect(
+      migrateOneRemoteAttachment('user-1', attachment(), deps.values as never)
+    ).rejects.toMatchObject<RemoteAttachmentMigrationError>({
+      code: 'remote_attachment_too_large',
+      status: 413,
+    });
   });
 
   test('limits concurrent work and refills the queue', async () => {

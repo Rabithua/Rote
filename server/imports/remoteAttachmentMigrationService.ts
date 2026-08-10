@@ -129,8 +129,9 @@ export async function migrateOneRemoteAttachment(
     const compressedUrl = distinctRemoteUrl(attachment.compressUrl, attachment.url);
     const posterUrl = distinctRemoteUrl(attachment.posterUrl, attachment.url);
     const pairedVideoUrl = stringDetail(details, 'pairedVideoUrl');
+    const hasPairedVideo = isRemoteUrl(pairedVideoUrl);
     const companionResults = await Promise.allSettled([
-      compressedUrl
+      compressedUrl && !hasPairedVideo
         ? migrateAsset({
             userId,
             uuid,
@@ -162,7 +163,7 @@ export async function migrateOneRemoteAttachment(
             signal: options.signal,
           })
         : undefined,
-      isRemoteUrl(pairedVideoUrl)
+      hasPairedVideo
         ? migrateAsset({
             userId,
             uuid,
@@ -286,7 +287,8 @@ async function migrateAsset({
     });
     const source = Readable.fromWeb(response.body as never);
     limiter.once('error', () => source.destroy());
-    await dependencies.storeObjectStream(key, source.pipe(limiter), contentType).catch(() => {
+    await dependencies.storeObjectStream(key, source.pipe(limiter), contentType).catch((error) => {
+      if (error instanceof RemoteAttachmentMigrationError) throw error;
       throw new RemoteAttachmentMigrationError('remote_attachment_storage_unavailable', 503);
     });
     uploadedKeys.push(key);
