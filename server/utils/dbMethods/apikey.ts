@@ -2,6 +2,7 @@ import { asc, desc, eq, getTableColumns, sql } from 'drizzle-orm';
 import { openKeyUsageLogs, userOpenKeys } from '../../drizzle/schema';
 import db from '../drizzle';
 import { DatabaseError } from './common';
+import { createOpenKeyWithResourcePolicy } from '../../resources/service';
 
 // 使用日志数据类型
 export interface UsageLogData {
@@ -17,19 +18,12 @@ export interface UsageLogData {
 // API密钥相关方法
 export async function generateOpenKey(userid: string, permissions?: string[]): Promise<any> {
   try {
-    const [openKey] = await db
-      .insert(userOpenKeys)
-      .values({
-        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
-        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
-        permissions: permissions && permissions.length > 0 ? permissions : ['SENDROTE'],
-        userid,
-        createdAt: sql`now()`,
-        updatedAt: sql`now()`,
-      })
-      .returning();
-    return openKey;
+    return await createOpenKeyWithResourcePolicy(
+      userid,
+      permissions && permissions.length > 0 ? permissions : ['SENDROTE']
+    );
   } catch (error) {
+    if (error instanceof Error && error.name === 'ResourcePolicyError') throw error;
     throw new DatabaseError('Failed to generate open key', error);
   }
 }

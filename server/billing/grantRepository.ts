@@ -150,6 +150,16 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
       entitlementExpiresAt: input.grant.entitlementExpiresAt,
       leaseExpiresAt: input.grant.leaseExpiresAt,
       capabilities: input.grant.capabilities,
+      benefits: input.grant.benefits
+        ? {
+            storage: {
+              baseBytes: input.grant.benefits.storage.baseBytes.toString(),
+              bonusBytes: input.grant.benefits.storage.bonusBytes.toString(),
+              quotaBytes: input.grant.benefits.storage.quotaBytes.toString(),
+            },
+            openKey: input.grant.benefits.openKey,
+          }
+        : null,
       snapshotHash: input.snapshotHash,
       updatedAt: new Date(),
     };
@@ -177,6 +187,7 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
             entitlementExpiresAt: grantValues.entitlementExpiresAt,
             leaseExpiresAt: grantValues.leaseExpiresAt,
             capabilities: grantValues.capabilities,
+            benefits: grantValues.benefits,
             snapshotHash: grantValues.snapshotHash,
             updatedAt: grantValues.updatedAt,
           },

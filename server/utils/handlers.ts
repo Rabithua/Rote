@@ -1,4 +1,5 @@
 import { HonoContext } from '../types/hono';
+import { ResourcePolicyError } from '../resources/errors';
 
 function containsSensitiveServerDetails(message: string): boolean {
   const normalized = message.toLowerCase();
@@ -30,6 +31,17 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   // Check for both direct error code and nested error
   const errorCode = (err as any).code || (err as any).originalError?.code;
   const errorMessage = err.message || (err as any).originalError?.message || '';
+
+  if (err instanceof ResourcePolicyError) {
+    return c.json(
+      {
+        code: 1,
+        message: err.code,
+        data: null,
+      },
+      err.status
+    );
+  }
 
   if (
     errorCode === '23505' ||

@@ -1,4 +1,9 @@
 import NavBar from '@/components/layout/navBar';
+import {
+  parseResourcePreviewScenario,
+  RESOURCE_PREVIEW_STATES,
+} from '@/features/resources/preview';
+import { isOfficialApiOrigin, useResourceState } from '@/features/resources/useResourceState';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { usePermissions } from '@/hooks/usePermissions';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
@@ -17,6 +22,7 @@ import { ScanFace, Stars } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { Area } from 'react-easy-crop';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import AvatarCropDialog from './components/AvatarCropDialog';
@@ -31,6 +37,7 @@ function ProfilePage() {
   const { data: siteStatus } = useSiteStatus();
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const { t: tLogin } = useTranslation('translation', { keyPrefix: 'pages.login' });
+  const [searchParams] = useSearchParams();
   const inputAvatarRef = useRef<HTMLInputElement>(null);
   const inputCoverRef = useRef<HTMLInputElement>(null);
 
@@ -40,6 +47,10 @@ function ProfilePage() {
 
   // 使用 Jotai 托管 profile 与 user settings
   const profile = useAtomValue(profileAtom);
+  const previewScenario = import.meta.env.DEV
+    ? parseResourcePreviewScenario(searchParams.get('officialResourcesPreview'))
+    : null;
+  const showOfficialResources = isOfficialApiOrigin() || previewScenario !== null;
   const { capabilities } = usePermissions();
   const canUpload =
     !!siteStatus?.storage?.r2Configured &&
@@ -61,6 +72,12 @@ function ProfilePage() {
     mutate: mutateOpenKeys,
     isLoading: openKeyLoading,
   } = useAPIGet<OpenKeys>('openKeys', () => get('/api-keys').then((res) => res.data));
+  const { data: resourceState, mutate: mutateResourceState } = useResourceState(
+    Boolean(profile) && showOfficialResources && previewScenario === null
+  );
+  const displayedResourceState = previewScenario
+    ? RESOURCE_PREVIEW_STATES[previewScenario]
+    : resourceState;
 
   const [editProfile, setEditProfile] = useState<Partial<Profile>>(profile ?? {});
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -75,10 +92,14 @@ function ProfilePage() {
   }, [profile]);
 
   function generateOpenKeyFun() {
+    if (displayedResourceState?.openKey.canCreate === false) {
+      toast.error(t('resources.openKey.creationBlocked'));
+      return;
+    }
     const toastId = toast.loading(t('creating'));
     post('/api-keys')
-      .then(() => {
-        mutateOpenKeys();
+      .then(async () => {
+        await Promise.all([mutateOpenKeys(), mutateResourceState()]);
         toast.success(t('createSuccess'), {
           id: toastId,
         });
@@ -237,6 +258,8 @@ function ProfilePage() {
           isLoading={openKeyLoading}
           onCreateOpenKey={generateOpenKeyFun}
           onMutate={mutateOpenKeys}
+          canCreate={displayedResourceState?.openKey.canCreate !== false}
+          resourceState={showOfficialResources ? displayedResourceState?.openKey : undefined}
         />
 
         <EditProfileDialog

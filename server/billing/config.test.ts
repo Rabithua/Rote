@@ -42,7 +42,16 @@ describe('billing configuration', () => {
     ]);
     expect(config.connectTimeoutMs).toBe(3_000);
     expect(config.totalTimeoutMs).toBe(10_000);
+    expect(config.purchaseAvailable).toBe(false);
     expect(config.paidToRote.previous?.keyId).toBe('paid-previous');
+  });
+
+  it('keeps purchase UI independent from internal grant delivery', () => {
+    const config = loadBillingConfig({
+      ...enabledEnvironment(),
+      BILLING_PURCHASE_AVAILABLE: 'true',
+    });
+    expect(config.enabled && config.purchaseAvailable).toBe(true);
   });
 
   it('parses bounded Paid connection and total timeouts', () => {

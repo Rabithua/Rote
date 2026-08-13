@@ -27,6 +27,7 @@ const enabledConfig: BillingConfig = {
   productIds: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
   connectTimeoutMs: 3_000,
   totalTimeoutMs: 10_000,
+  purchaseAvailable: false,
   roteToPaid: {
     active: { keyId: 'rote-active', secret: 'rote-to-paid-route-fixture-secret-01' },
   },

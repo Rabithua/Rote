@@ -211,7 +211,11 @@ export async function deleteUserById(userId: string) {
     throw new Error('Cannot delete super admin user');
   }
 
-  await db.delete(users).where(eq(users.id, userId));
+  const { prepareAccountResourceDeletion } = await import('../../resources/service');
+  await db.transaction(async (tx) => {
+    await prepareAccountResourceDeletion(userId, tx);
+    await tx.delete(users).where(eq(users.id, userId));
+  });
   return true;
 }
 

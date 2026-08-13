@@ -235,6 +235,25 @@ export default function SetupWizard() {
     }
   };
 
+  // 跳过存储配置应忽略浏览器自动填充或用户先前输入的残留字段。
+  const handleSkipStorage = () => {
+    setConfig((prev) => ({
+      ...prev,
+      s3Config: {
+        storageType: 'r2',
+        accountId: '',
+        endpoint: '',
+        accessKey: '',
+        secretKey: '',
+        bucket: '',
+        region: 'auto',
+        urlPrefix: '',
+      },
+    }));
+    setErrors({});
+    setCurrentStep((prev) => Math.min(prev + 1, wizardSteps.length - 1));
+  };
+
   // 上一步
   const handlePrev = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
@@ -390,7 +409,7 @@ export default function SetupWizard() {
             <p className="text-muted-foreground mb-4 text-sm">
               {t('pages.setupWizard.descriptions.s3Optional')}
             </p>
-            <Button type="button" variant="outline" onClick={handleNext} className="w-full">
+            <Button type="button" variant="outline" onClick={handleSkipStorage} className="w-full">
               {t('pages.setupWizard.buttons.skipS3')}
             </Button>
 

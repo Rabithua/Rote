@@ -327,7 +327,7 @@
       "editProfile": "Edit Profile",
       "noDescription": "This person is lazy and hasn't left any description yet...",
       "registerTime": "Register Time:",
-      "openKeyDescription": "OpenKey allows easy access to permission-specific features. Properly allocate permissions to avoid unnecessary troubles from OpenKey leakage.",
+      "openKeyDescription": "Use OpenKey with shortcuts, MCP, and automations, and keep each key secure.",
       "noOpenKey": "No OpenKey yet, generate one?",
       "addOpenKey": "Generate an OpenKey",
       "email": "Email",
@@ -350,6 +350,68 @@
       "editSuccess": "Edit successful",
       "editFailed": "Edit failed",
       "sideBarTitle": "Besides... there are also",
+      "resources": {
+        "loadFailed": "We couldn't load your space details just now. Please try again.",
+        "retry": "Reload",
+        "errors": {
+          "storageQuotaExceeded": "There isn't enough space for this upload. Your attachment remains in this draft while this page is open. Delete some cloud attachments or restore Rote Pro and try again; for a custom instance, contact its administrator.",
+          "reservationExpired": "This upload authorization expired. Your attachment remains in this draft while this page is open. Please upload it again.",
+          "manifestMismatch": "The server couldn't verify the complete upload. Your attachment remains in this draft while this page is open. Please upload it again, or contact the administrator if this continues.",
+          "reconciliationRequired": "The server is checking storage usage, so uploads are temporarily paused. Your attachment remains in this draft while this page is open; please try again shortly.",
+          "backendUnsupported": "The storage service couldn't complete this upload. Your attachment remains in this draft while this page is open. Try again later or contact the administrator."
+        },
+        "management": {
+          "unmanaged": "This self-hosted instance does not enforce resource quotas. Existing upload and OpenKey behavior is unchanged.",
+          "official": "Account benefits measured and enforced by the official Rote service."
+        },
+        "source": {
+          "unmanaged": "Unmanaged",
+          "official_free": "Rote Free",
+          "official_pro": "Rote Pro",
+          "role_exempt": "Role exempt",
+          "unverified": "Unverified server policy"
+        },
+        "storage": {
+          "title": "Storage",
+          "subtitle": "Your photos, videos, and other attachments",
+          "notMeasured": "This instance does not measure your storage usage.",
+          "usedOfLimit": "{{used}} / {{limit}}",
+          "ofLimit": "of {{limit}}",
+          "noLimit": "No instance quota",
+          "uploading": "Another {{reserved}} is being uploaded",
+          "ready": "You have plenty of room to keep uploading.",
+          "fullDescription": "Your space is currently full, so new uploads are paused. You can still view, download, or delete everything already here.",
+          "status": {
+            "available": "Ready to upload",
+            "observing": "Tracking usage",
+            "full": "Space full"
+          },
+          "overLimit": "Usage has reached or exceeded the quota. Existing files will not be deleted.",
+          "uploadBlocked": "New attachments are paused; reading, downloading, and deleting remain available.",
+          "enforcement": { "off": "Off", "observe": "Observing", "enforce": "Enforcing" }
+        },
+        "openKey": {
+          "subtitle": "Connect shortcuts, MCP, and automations",
+          "created": "{{count}} created",
+          "countThreshold": "({{count}}/{{limit}})",
+          "countUnlimited": "({{count}}/∞)",
+          "status": {
+            "available": "Can create",
+            "unlimited": "No limit",
+            "paused": "Creation paused"
+          },
+          "policy": {
+            "unmanaged": "Unmanaged",
+            "threshold": "Creation threshold",
+            "unlimited": "Unlimited creation"
+          },
+          "freeFriendly": "A free account can create {{count}} OpenKey.",
+          "noNewTitle": "Your existing OpenKeys keep working",
+          "noNewDescription": "New OpenKeys are paused for now. We won't delete or disable any you've already created.",
+          "creationBlocked": "New OpenKeys cannot be created now. Existing OpenKeys remain available.",
+          "canCreate": "A new OpenKey can be created."
+        }
+      },
       "settings": {
         "themeLabel": "Theme Mode",
         "themeDescription": "Choose dark, light, or follow system.",
@@ -1181,6 +1243,17 @@
         "pleaseFillS3": "Please fill in all S3 configuration fields first"
       }
     },
+    "officialResourcesPreview": {
+      "title": "See what each account experiences",
+      "description": "Choose an account state to preview the storage and OpenKey details shown on the official Rote service.",
+      "scenarioLabel": "Preview scenario",
+      "scenarios": {
+        "free": { "title": "Free account", "description": "500 MB and 1 OpenKey" },
+        "pro": { "title": "Rote Pro", "description": "More space, unlimited OpenKeys" },
+        "expired": { "title": "Pro expired", "description": "Content stays, new items pause" }
+      },
+      "notice": "This is a local preview. It doesn't connect to billing or change any account data."
+    },
     "admin": {
       "title": "Admin Dashboard",
       "accessDenied": "Access Denied",
@@ -1296,6 +1369,54 @@
         "saving": "Saving...",
         "saveSuccess": "Saved successfully",
         "saveFailed": "Save failed: {{error}}"
+      },
+      "resources": {
+        "title": "Resource Policy",
+        "description": "Optionally enable local storage quotas and an OpenKey creation threshold. Unmanaged mode preserves the existing self-hosted experience.",
+        "officialDescription": "Official instance benefits are managed by RotePaidServer and are read-only here.",
+        "officialManaged": "Official benefit policy",
+        "officialEnforcement": "Storage enforcement: {{mode}}",
+        "modeLabel": "Instance resource management",
+        "mode": { "unmanaged": "Unmanaged", "local": "Local policy" },
+        "modeDescription": {
+          "unmanaged": "Do not measure or limit storage and OpenKey creation.",
+          "local": "Use this instance's own policy without connecting to official billing or using Rote Pro branding."
+        },
+        "enforcement": { "off": "Off", "observe": "Observe only", "enforce": "Enforce" },
+        "storage": {
+          "title": "Local storage quota",
+          "enforcement": "Enforcement",
+          "defaultLimit": "Default quota (GB)",
+          "unlimitedPlaceholder": "Blank means unlimited",
+          "defaultLimitDescription": "Uses decimal GB. Administrators and super administrators are exempt by default.",
+          "baseline": "Storage baseline",
+          "usersProcessed": "{{count}} users processed",
+          "reconcile": "Run reconciliation",
+          "enforceRequiresBaseline": "Enforcement is available only after reconciliation succeeds."
+        },
+        "baseline": {
+          "required": "Required",
+          "running": "Running",
+          "complete": "Complete",
+          "failed": "Failed"
+        },
+        "openKey": {
+          "title": "Local OpenKey policy",
+          "policy": "Creation policy",
+          "unmanaged": "Unlimited creation",
+          "threshold": "Limit by current count",
+          "creationThreshold": "Creation threshold",
+          "description": "Reaching the threshold only blocks creation. Existing OpenKeys are never deleted or disabled."
+        },
+        "save": "Save resource policy",
+        "saving": "Saving…",
+        "saveSuccess": "Resource policy saved",
+        "saveFailed": "Save failed: {{error}}",
+        "invalidStorageLimit": "Enter a valid non-negative GB value with at most 9 decimal places.",
+        "invalidOpenKeyThreshold": "The OpenKey creation threshold must be a non-negative integer.",
+        "reconcileRequired": "Storage reconciliation must finish before enforcement can be enabled.",
+        "reconcileSuccess": "Storage reconciliation completed",
+        "reconcileFailed": "Storage reconciliation failed: {{error}}"
       },
       "ui": {
         "title": "UI Configuration",
@@ -1778,6 +1899,9 @@
       "articleReference": "Reference Article",
       "send": "Send",
       "uploadFailed": "Attachment upload failed",
+      "retryUpload": "Retry upload",
+      "retryUploadDescription": "These attachments have not been uploaded yet. Fix the reported issue, then retry.",
+      "pendingAttachments": "Please wait for all attachments to finish uploading before sending.",
       "sending": "Sending...",
       "sendSuccess": "Sent successfully",
       "sendFailed": "Failed to send",

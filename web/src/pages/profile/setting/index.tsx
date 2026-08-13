@@ -1,6 +1,13 @@
 import { AppleIcon } from '@/components/icons/Apple';
 import NavBar from '@/components/layout/navBar';
 import { useTheme } from '@/components/theme-provider';
+import ResourceStatusSection from '@/features/resources/ResourceStatusSection';
+import {
+  parseResourcePreviewScenario,
+  RESOURCE_PREVIEW_SCENARIOS,
+  RESOURCE_PREVIEW_STATES,
+} from '@/features/resources/preview';
+import { isOfficialApiOrigin, useResourceState } from '@/features/resources/useResourceState';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -38,7 +45,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import DeleteAccountDialog from '../components/DeleteAccountDialog';
 import MergeAccountDialog from '../components/MergeAccountDialog';
 import ProfileSidebar from '../components/ProfileSidebar';
@@ -53,9 +60,23 @@ import {
 export default function SettingsPage() {
   const { data: siteStatus } = useSiteStatus();
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
+  const { t: tPreview } = useTranslation('translation', {
+    keyPrefix: 'pages.officialResourcesPreview',
+  });
   const { theme, setTheme } = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const profile = useAtomValue(profileAtom);
+  const previewScenario = import.meta.env.DEV
+    ? parseResourcePreviewScenario(searchParams.get('officialResourcesPreview'))
+    : null;
+  const showOfficialResources = isOfficialApiOrigin() || previewScenario !== null;
+  const {
+    data: resourceState,
+    error: resourceError,
+    isLoading: resourceLoading,
+    mutate: mutateResourceState,
+  } = useResourceState(Boolean(profile) && showOfficialResources && previewScenario === null);
   const userSettings = useAtomValue(userSettingsAtom);
   const loadProfile = useSetAtom(loadProfileAtom);
   const loadUserSettings = useSetAtom(loadUserSettingsAtom);
@@ -193,6 +214,38 @@ export default function SettingsPage() {
           <RefreshCw className="text-primary ml-auto size-4 animate-spin duration-300" />
         )}
       </NavBar>
+
+      {showOfficialResources ? (
+        <div>
+          {previewScenario ? (
+            <div className="flex flex-wrap gap-2 border-b p-4">
+              {RESOURCE_PREVIEW_SCENARIOS.map((scenario) => (
+                <Button
+                  key={scenario}
+                  type="button"
+                  size="sm"
+                  variant={previewScenario === scenario ? 'default' : 'outline'}
+                  aria-pressed={previewScenario === scenario}
+                  onClick={() => {
+                    const next = new URLSearchParams(searchParams);
+                    next.set('officialResourcesPreview', scenario);
+                    setSearchParams(next, { replace: true });
+                  }}
+                >
+                  {tPreview(`scenarios.${scenario}.title`)}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+          <ResourceStatusSection
+            state={previewScenario ? RESOURCE_PREVIEW_STATES[previewScenario] : resourceState}
+            isLoading={previewScenario ? false : resourceLoading}
+            error={previewScenario ? undefined : resourceError}
+            onRetry={() => void mutateResourceState()}
+            trustedOfficialPreview={previewScenario !== null}
+          />
+        </div>
+      ) : null}
 
       <div className="space-y-6 p-4">
         {/* 允许探索设置 */}

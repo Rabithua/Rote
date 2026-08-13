@@ -4,6 +4,7 @@ import { authService } from '../auth';
 type RequestConfig = {
   baseURL?: string;
   headers: Record<string, string>;
+  skipAuthentication?: boolean;
 };
 
 type RequestInterceptor = (config: RequestConfig) => Promise<RequestConfig>;
@@ -102,5 +103,20 @@ describe('API authentication request interceptor', () => {
     expect(
       configs.every((config) => config?.headers.Authorization === `Bearer ${newAccessToken}`)
     ).toBe(true);
+  });
+
+  it('does not refresh or attach tokens for public initialization requests', async () => {
+    const expiredAccessToken = createToken(Math.floor(Date.now() / 1000) - 60);
+    const validRefreshToken = createToken(Math.floor(Date.now() / 1000) + 3600);
+
+    authService.setTokens(expiredAccessToken, validRefreshToken);
+
+    const config = await axiosMocks.state.requestInterceptor?.({
+      headers: {},
+      skipAuthentication: true,
+    });
+
+    expect(axiosMocks.mockPost).not.toHaveBeenCalled();
+    expect(config?.headers.Authorization).toBeUndefined();
   });
 });

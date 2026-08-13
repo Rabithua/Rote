@@ -68,11 +68,23 @@ function RootRedirectEntry() {
 }
 
 export default function GlobalRouterProvider() {
+  const developmentRoutes = import.meta.env.DEV
+    ? [
+        {
+          path: 'dev/official-resources',
+          lazy: async () => {
+            const module = await import('@/pages/dev/OfficialResourcesPreview');
+            return { Component: module.default };
+          },
+        },
+      ]
+    : [];
   const router = createBrowserRouter([
     {
       element: <RootLayout />,
       errorElement: <RouteErrorPage />,
       children: [
+        ...developmentRoutes,
         {
           path: 'landing',
           element: <Landing />,
