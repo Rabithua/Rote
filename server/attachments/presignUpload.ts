@@ -14,12 +14,21 @@ import type { PresignFileInput } from './types';
 import { presignInputIncludesVideo } from './uploadMedia';
 import { requireStorageAvailable } from './types';
 import attachmentErrors from './errorCodes.json';
+import {
+  createUploadReservation,
+  getResourceStateForUserId,
+  type UploadReservationManifestItem,
+} from '../resources/service';
+import { createDerivedUploadProxyUrl } from '../resources/uploadProxy';
+import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 
 export type PresignAttachmentDependencies = {
   getAttachmentUploadPolicy: typeof getAttachmentUploadPolicy;
   presignPutUrl: typeof presignPutUrl;
   randomUUID: typeof randomUUID;
   requireStorageAvailable: typeof requireStorageAvailable;
+  getResourceStateForUserId: typeof getResourceStateForUserId;
+  createUploadReservation: typeof createUploadReservation;
 };
 
 const defaultDependencies: PresignAttachmentDependencies = {
@@ -27,6 +36,8 @@ const defaultDependencies: PresignAttachmentDependencies = {
   presignPutUrl,
   randomUUID,
   requireStorageAvailable,
+  getResourceStateForUserId,
+  createUploadReservation,
 };
 
 function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: number) {
@@ -78,75 +89,190 @@ export async function presignAttachmentUploads(
 
   input.files.forEach((file) => validatePresignFile(file, uploadPolicy.maxVideoUploadSizeMB));
 
-  const items = await Promise.all(
-    input.files.map(async (file) => {
-      const uuid = dependencies.randomUUID();
-      const ext = getUploadExtension(file.filename, file.contentType);
-      const originalKey = 'users/' + input.userId + '/uploads/' + uuid + ext;
-      const mediaKind =
-        file.mediaKind === 'livePhoto'
-          ? 'livePhoto'
-          : getMediaKindFromContentType(file.contentType);
-      const original = await dependencies.presignPutUrl(
-        originalKey,
-        file.contentType || undefined,
-        15 * 60
-      );
-      const result: Record<string, any> = {
-        uuid,
-        original: {
-          key: originalKey,
-          putUrl: original.putUrl,
-          url: original.url,
-          contentType: file.contentType,
-        },
+  const resourceState = await dependencies.getResourceStateForUserId(input.userId);
+  const managed =
+    resourceState.management !== 'unmanaged' && resourceState.storage.enforcement !== 'off';
+  if (managed && process.env.RESOURCE_MANAGED_STORAGE_SAFETY_FUSE === 'tripped') {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.storageBackendUnsupported, 503);
+  }
+  const reservationId = managed ? dependencies.randomUUID() : null;
+  const prepared = input.files.map((file) => {
+    const uuid = dependencies.randomUUID();
+    const ext = getUploadExtension(file.filename, file.contentType);
+    const mediaKind =
+      file.mediaKind === 'livePhoto' ? 'livePhoto' : getMediaKindFromContentType(file.contentType);
+    const finalPrefix = `users/${input.userId}`;
+    const stagingPrefix = managed ? `${finalPrefix}/staging/${reservationId}` : finalPrefix;
+    const manifest: UploadReservationManifestItem[] = [];
+    const originalFinalKey = `${finalPrefix}/uploads/${uuid}${ext}`;
+    const originalKey = `${stagingPrefix}/uploads/${uuid}${ext}`;
+    manifest.push({
+      uuid,
+      role: 'original',
+      stagingKey: originalKey,
+      finalKey: originalFinalKey,
+      declaredBytes: String(file.size ?? 0),
+      contentType: file.contentType ?? 'application/octet-stream',
+      billable: true,
+    });
+    let compressed: { key: string; finalKey: string } | undefined;
+    if (mediaKind === 'image') {
+      compressed = {
+        key: `${stagingPrefix}/compressed/${uuid}.webp`,
+        finalKey: `${finalPrefix}/compressed/${uuid}.webp`,
       };
+      manifest.push({
+        uuid,
+        role: 'compressed',
+        stagingKey: compressed.key,
+        finalKey: compressed.finalKey,
+        declaredBytes: null,
+        contentType: 'image/webp',
+        billable: false,
+      });
+    }
+    let pairedVideo:
+      | { key: string; finalKey: string; contentType: string; size: number }
+      | undefined;
+    if (mediaKind === 'livePhoto' && file.pairedVideo) {
+      const pairedExt = getUploadExtension(file.pairedVideo.filename, file.pairedVideo.contentType);
+      pairedVideo = {
+        key: `${stagingPrefix}/paired-videos/${uuid}${pairedExt}`,
+        finalKey: `${finalPrefix}/paired-videos/${uuid}${pairedExt}`,
+        contentType: file.pairedVideo.contentType ?? 'video/quicktime',
+        size: file.pairedVideo.size ?? 0,
+      };
+      manifest.push({
+        uuid,
+        role: 'paired_video',
+        stagingKey: pairedVideo.key,
+        finalKey: pairedVideo.finalKey,
+        declaredBytes: String(pairedVideo.size),
+        contentType: pairedVideo.contentType,
+        billable: true,
+      });
+    }
+    let poster: { key: string; finalKey: string } | undefined;
+    if (mediaKind === 'video') {
+      poster = {
+        key: `${stagingPrefix}/posters/${uuid}.jpg`,
+        finalKey: `${finalPrefix}/posters/${uuid}.jpg`,
+      };
+      manifest.push({
+        uuid,
+        role: 'poster',
+        stagingKey: poster.key,
+        finalKey: poster.finalKey,
+        declaredBytes: null,
+        contentType: 'image/jpeg',
+        billable: false,
+      });
+    }
+    return { file, uuid, mediaKind, originalKey, manifest, compressed, pairedVideo, poster };
+  });
 
-      // Live Photo stills are generated server-side during finalize. Do not ask
-      // clients to encode WebP, because iOS cannot reliably produce it.
-      if (mediaKind === 'image') {
-        const compressedKey = 'users/' + input.userId + '/compressed/' + uuid + '.webp';
-        const compressed = await dependencies.presignPutUrl(compressedKey, 'image/webp', 15 * 60);
-        result.compressed = {
-          key: compressedKey,
-          putUrl: compressed.putUrl,
-          url: compressed.url,
-          contentType: 'image/webp',
-        };
-      }
+  if (managed && reservationId) {
+    await dependencies.createUploadReservation({
+      id: reservationId,
+      userId: input.userId,
+      manifest: prepared.flatMap((item) => item.manifest),
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+    });
+  }
 
-      if (mediaKind === 'livePhoto') {
-        const pairedVideo = file.pairedVideo;
-        if (!pairedVideo) throw new Error(attachmentErrors.livePhotoPairedVideoRequired);
-        const pairedVideoExt = getUploadExtension(pairedVideo.filename, pairedVideo.contentType);
-        const pairedVideoKey = 'users/' + input.userId + '/paired-videos/' + uuid + pairedVideoExt;
-        const pairedVideoUpload = await dependencies.presignPutUrl(
-          pairedVideoKey,
-          pairedVideo.contentType || undefined,
-          15 * 60
+  const items = await Promise.all(
+    prepared.map(
+      async ({ file, uuid, mediaKind, originalKey, compressed, pairedVideo, poster }) => {
+        const original = await dependencies.presignPutUrl(
+          originalKey,
+          file.contentType || undefined,
+          15 * 60,
+          managed ? file.size : undefined
         );
-        result.pairedVideo = {
-          key: pairedVideoKey,
-          putUrl: pairedVideoUpload.putUrl,
-          url: pairedVideoUpload.url,
-          contentType: pairedVideo.contentType,
+        const result: Record<string, any> = {
+          uuid,
+          ...(managed ? { expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString() } : {}),
+          original: {
+            key: originalKey,
+            putUrl: original.putUrl,
+            url: original.url,
+            contentType: file.contentType,
+          },
         };
-      }
 
-      if (mediaKind === 'video') {
-        const posterKey = 'users/' + input.userId + '/posters/' + uuid + '.jpg';
-        const poster = await dependencies.presignPutUrl(posterKey, 'image/jpeg', 15 * 60);
-        result.poster = {
-          key: posterKey,
-          putUrl: poster.putUrl,
-          url: poster.url,
-          contentType: 'image/jpeg',
-        };
-      }
+        // Live Photo stills are generated server-side during finalize. Do not ask
+        // clients to encode WebP, because iOS cannot reliably produce it.
+        if (mediaKind === 'image') {
+          if (!compressed) throw new Error('Missing compressed upload manifest');
+          const compressedUpload = managed
+            ? {
+                putUrl: createDerivedUploadProxyUrl({
+                  reservationId: reservationId!,
+                  userId: input.userId,
+                  role: 'compressed',
+                  key: compressed.key,
+                  contentType: 'image/webp',
+                  expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                }),
+                url: '',
+              }
+            : await dependencies.presignPutUrl(compressed.key, 'image/webp', 15 * 60);
+          result.compressed = {
+            key: compressed.key,
+            putUrl: compressedUpload.putUrl,
+            url: compressedUpload.url,
+            contentType: 'image/webp',
+          };
+        }
 
-      return result;
-    })
+        if (mediaKind === 'livePhoto') {
+          if (!pairedVideo) throw new Error(attachmentErrors.livePhotoPairedVideoRequired);
+          const pairedVideoUpload = await dependencies.presignPutUrl(
+            pairedVideo.key,
+            pairedVideo.contentType || undefined,
+            15 * 60,
+            managed ? pairedVideo.size : undefined
+          );
+          result.pairedVideo = {
+            key: pairedVideo.key,
+            putUrl: pairedVideoUpload.putUrl,
+            url: pairedVideoUpload.url,
+            contentType: pairedVideo.contentType,
+          };
+        }
+
+        if (mediaKind === 'video') {
+          if (!poster) throw new Error('Missing poster upload manifest');
+          const posterUpload = managed
+            ? {
+                putUrl: createDerivedUploadProxyUrl({
+                  reservationId: reservationId!,
+                  userId: input.userId,
+                  role: 'poster',
+                  key: poster.key,
+                  contentType: 'image/jpeg',
+                  expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                }),
+                url: '',
+              }
+            : await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60);
+          result.poster = {
+            key: poster.key,
+            putUrl: posterUpload.putUrl,
+            url: posterUpload.url,
+            contentType: 'image/jpeg',
+          };
+        }
+
+        return result;
+      }
+    )
   );
 
-  return { items };
+  return {
+    items,
+    ...(reservationId
+      ? { reservationId, expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString() }
+      : {}),
+  };
 }

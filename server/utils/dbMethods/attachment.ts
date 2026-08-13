@@ -6,6 +6,7 @@ import db from '../drizzle';
 import { r2deletehandler } from '../r2';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
+import { releaseStorageObjectReferences } from '../../resources/service';
 
 function collectAttachmentObjectKeys(details: any): string[] {
   if (!details || typeof details !== 'object') {
@@ -88,10 +89,11 @@ export async function createAttachments(
 export async function upsertAttachmentsByOriginalKey(
   userid: string,
   roteid: string | undefined,
-  data: UploadResult[]
+  data: UploadResult[],
+  transactionOverride?: any
 ): Promise<any[]> {
   try {
-    const results = await db.transaction(async (tx) => {
+    const execute = async (tx: any) => {
       const out: any[] = [];
       for (const e of data) {
         const originalKey = (e.details as any)?.key as string | undefined;
@@ -177,7 +179,10 @@ export async function upsertAttachmentsByOriginalKey(
         }
       }
       return out;
-    });
+    };
+    const results = transactionOverride
+      ? await execute(transactionOverride)
+      : await db.transaction(execute);
     return results;
   } catch (error) {
     // 打印底层错误，便于排查
@@ -325,6 +330,10 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
     attachmentsList.forEach(({ details }) => {
       deleteAttachmentObjects(details);
     });
+    await releaseStorageObjectReferences(
+      userid,
+      attachmentsList.flatMap(({ details }) => collectAttachmentObjectKeys(details))
+    );
 
     // 记录变更历史（如果 rote 存在）
     if (rote) {
@@ -495,6 +504,10 @@ export async function deleteAttachments(
     dbAttachments.forEach(({ details }) => {
       deleteAttachmentObjects(details);
     });
+    await releaseStorageObjectReferences(
+      userid,
+      dbAttachments.flatMap(({ details }) => collectAttachmentObjectKeys(details))
+    );
 
     // 兼容性：如果请求体传入了 key，但 DB 没有 details（历史数据），也尝试删除
     attachmentsData.forEach(({ key }) => {
@@ -560,6 +573,7 @@ export async function deleteAttachment(id: string, userid: string): Promise<any>
     }
 
     deleteAttachmentObjects(record?.details);
+    await releaseStorageObjectReferences(userid, collectAttachmentObjectKeys(record?.details));
 
     return { count: result.length };
   } catch (error) {

@@ -169,6 +169,13 @@
       "when": 1786320881344,
       "tag": "0023_billing_delivery_target",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1786591381444,
+      "tag": "0024_vengeful_wendigo",
+      "breakpoints": true
     }
   ]
 }

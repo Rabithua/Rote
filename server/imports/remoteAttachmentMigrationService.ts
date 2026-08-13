@@ -14,6 +14,11 @@ import {
 import { assertSafeOutboundUrl } from '../utils/adminHooks/network';
 import { r2deletehandler, storeObjectStream } from '../utils/r2';
 import type { ImportAttachment } from './importSchema';
+import {
+  appendUploadReservation,
+  cancelUploadReservation,
+  type UploadReservationManifestItem,
+} from '../resources/service';
 
 const DOWNLOAD_TIMEOUT_MS = 5 * 60_000;
 const MAX_REDIRECTS = 3;
@@ -49,6 +54,8 @@ type MigrationDependencies = {
   removeObject: typeof r2deletehandler;
   requireStorageAvailable: typeof requireStorageAvailable;
   storeObjectStream: typeof storeObjectStream;
+  appendUploadReservation: typeof appendUploadReservation;
+  cancelUploadReservation: typeof cancelUploadReservation;
 };
 
 type MigrationOptions = {
@@ -68,6 +75,8 @@ const defaultDependencies: MigrationDependencies = {
   removeObject: r2deletehandler,
   requireStorageAvailable,
   storeObjectStream,
+  appendUploadReservation,
+  cancelUploadReservation,
 };
 
 const globalTransferLimiter = createRemoteAttachmentLimiter(
@@ -99,12 +108,14 @@ export async function migrateOneRemoteAttachment(
 
   const details = attachment.details ?? {};
   const uuid = dependencies.randomUUID();
+  const reservationId = dependencies.randomUUID();
   const uploadedKeys: string[] = [];
 
   try {
     const original = await migrateAsset({
       userId,
       uuid,
+      reservationId,
       sourceUrl: attachment.url,
       directory: 'uploads',
       filename: stringDetail(details, 'originalname') ?? stringDetail(details, 'key'),
@@ -135,6 +146,7 @@ export async function migrateOneRemoteAttachment(
         ? migrateAsset({
             userId,
             uuid,
+            reservationId,
             sourceUrl: compressedUrl,
             directory: 'compressed',
             declaredType: 'image/webp',
@@ -151,6 +163,7 @@ export async function migrateOneRemoteAttachment(
         ? migrateAsset({
             userId,
             uuid,
+            reservationId,
             sourceUrl: posterUrl,
             directory: 'posters',
             declaredType: 'image/jpeg',
@@ -167,6 +180,7 @@ export async function migrateOneRemoteAttachment(
         ? migrateAsset({
             userId,
             uuid,
+            reservationId,
             sourceUrl: pairedVideoUrl,
             directory: 'paired-videos',
             filename: stringDetail(details, 'pairedVideoFilename'),
@@ -216,6 +230,7 @@ export async function migrateOneRemoteAttachment(
     return finalized;
   } catch (error) {
     await Promise.allSettled(uploadedKeys.map((key) => dependencies.removeObject(key)));
+    await dependencies.cancelUploadReservation(userId, reservationId).catch(() => undefined);
     if (error instanceof RemoteAttachmentMigrationError) throw error;
     throw mapMigrationError(error);
   }
@@ -224,6 +239,7 @@ export async function migrateOneRemoteAttachment(
 async function migrateAsset({
   userId,
   uuid,
+  reservationId,
   sourceUrl,
   directory,
   filename,
@@ -238,6 +254,7 @@ async function migrateAsset({
 }: {
   userId: string;
   uuid: string;
+  reservationId: string;
   sourceUrl: string;
   directory: 'uploads' | 'compressed' | 'posters' | 'paired-videos';
   filename?: string;
@@ -264,8 +281,9 @@ async function migrateAsset({
     const maxSize = isVideoContentType(contentType)
       ? getMaxVideoUploadSizeBytes(maxVideoUploadSizeMB)
       : MAX_IMAGE_FILE_SIZE;
-    const declaredLength = Number(response.headers.get('content-length'));
-    if (Number.isFinite(declaredLength) && declaredLength > maxSize) {
+    const rawLength = response.headers.get('content-length');
+    const declaredLength = rawLength === null ? null : Number(rawLength);
+    if (declaredLength !== null && Number.isFinite(declaredLength) && declaredLength > maxSize) {
       throw new RemoteAttachmentMigrationError('remote_attachment_too_large', 413);
     }
 
@@ -273,13 +291,61 @@ async function migrateAsset({
       filename ?? filenameFromUrl(response.url || sourceUrl),
       contentType
     );
-    const key = `users/${userId}/${directory}/${uuid}${extension}`;
+    const finalKey = `users/${userId}/${directory}/${uuid}${extension}`;
+    const stagingKey = `users/${userId}/staging/${reservationId}/${directory}/${uuid}${extension}`;
+    const roleMapping: Record<AssetRole, UploadReservationManifestItem['role']> = {
+      original: 'original',
+      compressed: 'compressed',
+      poster: 'poster',
+      pairedVideo: 'paired_video',
+    };
+    const billable = role === 'original' || role === 'pairedVideo';
+    const knownLength =
+      declaredLength !== null && Number.isFinite(declaredLength) && declaredLength >= 0
+        ? declaredLength
+        : null;
+    const initialReservation = billable
+      ? BigInt(knownLength ?? Math.min(8 * 1024 * 1024, maxSize))
+      : BigInt(0);
+    const managed = await dependencies.appendUploadReservation({
+      id: reservationId,
+      userId,
+      item: {
+        uuid,
+        role: roleMapping[role],
+        stagingKey,
+        finalKey,
+        declaredBytes: knownLength === null ? null : String(knownLength),
+        contentType,
+        billable,
+      },
+      reserveBytes: initialReservation,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+    });
+    const key = managed ? stagingKey : finalKey;
     let size = 0;
+    let reservedCapacity = Number(initialReservation);
     const limiter = new Transform({
       transform(chunk: Buffer, _encoding, callback) {
         size += chunk.byteLength;
         if (size > maxSize) {
           callback(new RemoteAttachmentMigrationError('remote_attachment_too_large', 413));
+          return;
+        }
+        if (managed && billable && knownLength === null && size > reservedCapacity) {
+          const extensionBytes = Math.min(8 * 1024 * 1024, maxSize - reservedCapacity);
+          dependencies
+            .appendUploadReservation({
+              id: reservationId,
+              userId,
+              reserveBytes: BigInt(extensionBytes),
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+            })
+            .then(() => {
+              reservedCapacity += extensionBytes;
+              callback(null, chunk);
+            })
+            .catch((error) => callback(error as Error));
           return;
         }
         callback(null, chunk);

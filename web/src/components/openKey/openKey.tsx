@@ -23,12 +23,13 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInView } from 'react-intersection-observer';
 import { toast } from 'sonner';
-import type { KeyedMutator } from 'swr';
+import { type KeyedMutator, useSWRConfig } from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import { ScrollArea } from '../ui/scroll-area';
 import OpenKeyEditModel from './openKeyEditModel';
 
 function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMutator<OpenKey[]> }) {
+  const { mutate: mutateGlobal } = useSWRConfig();
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.openKey',
   });
@@ -83,6 +84,7 @@ function OpenKeyItem({ openKey, mutate }: { openKey: OpenKey; mutate?: KeyedMuta
           if (mutate) {
             mutate();
           }
+          mutateGlobal('/resources/me');
         })
         .catch(() => {
           toast.error(t('deleteFailed'), {

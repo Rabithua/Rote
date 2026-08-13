@@ -62,7 +62,8 @@
       "productId": "ink.rote.pro.yearly",
       "entitlementExpiresAt": "2027-08-07T00:00:00.000Z",
       "leaseExpiresAt": "2026-08-08T00:00:00.000Z",
-      "capabilities": ["ai.chat", "attachment.video.upload"]
+      "capabilities": ["ai.chat", "attachment.video.upload"],
+      "benefits": {"storage": {"baseBytes": "10000000000", "bonusBytes": "600000000", "quotaBytes": "10600000000"}, "openKey": {"creationPolicy": "unlimited"}}
     }
   },
   "duplicateActivationResponse": {
@@ -78,7 +79,8 @@
       "productId": "ink.rote.pro.yearly",
       "entitlementExpiresAt": "2027-08-07T00:00:00.000Z",
       "leaseExpiresAt": "2026-08-08T00:00:00.000Z",
-      "capabilities": ["ai.chat", "attachment.video.upload"]
+      "capabilities": ["ai.chat", "attachment.video.upload"],
+      "benefits": {"storage": {"baseBytes": "10000000000", "bonusBytes": "600000000", "quotaBytes": "10600000000"}, "openKey": {"creationPolicy": "unlimited"}}
     }
   },
   "standardErrorResponses": {

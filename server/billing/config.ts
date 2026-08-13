@@ -34,6 +34,7 @@ export type BillingConfig =
       productIds: BillingProductId[];
       connectTimeoutMs: number;
       totalTimeoutMs: number;
+      purchaseAvailable: boolean;
       roteToPaid: BillingSigningKeys;
       paidToRote: BillingSigningKeys;
     };
@@ -45,6 +46,7 @@ const enabledConfigSchema = z.object({
   BILLING_PRODUCT_IDS: z.string().trim().min(1),
   BILLING_PAID_CONNECT_TIMEOUT_MS: z.string().trim().min(1).optional(),
   BILLING_PAID_TOTAL_TIMEOUT_MS: z.string().trim().min(1).optional(),
+  BILLING_PURCHASE_AVAILABLE: z.enum(['true', 'false']).optional(),
   BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID: z.string().trim().min(1),
   BILLING_ROTE_TO_PAID_ACTIVE_SECRET: z.string().min(32),
   BILLING_ROTE_TO_PAID_PREVIOUS_KEY_ID: z.string().trim().min(1).optional(),
@@ -180,6 +182,7 @@ export function loadBillingConfig(environment: NodeJS.ProcessEnv = process.env):
     BILLING_PAID_TOTAL_TIMEOUT_MS: optionalEnvironmentValue(
       environment.BILLING_PAID_TOTAL_TIMEOUT_MS
     ),
+    BILLING_PURCHASE_AVAILABLE: optionalEnvironmentValue(environment.BILLING_PURCHASE_AVAILABLE),
     BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID: environment.BILLING_ROTE_TO_PAID_ACTIVE_KEY_ID,
     BILLING_ROTE_TO_PAID_ACTIVE_SECRET: environment.BILLING_ROTE_TO_PAID_ACTIVE_SECRET,
     BILLING_ROTE_TO_PAID_PREVIOUS_KEY_ID: optionalEnvironmentValue(
@@ -243,6 +246,7 @@ export function loadBillingConfig(environment: NodeJS.ProcessEnv = process.env):
     productIds: parseProducts(raw.BILLING_PRODUCT_IDS),
     connectTimeoutMs,
     totalTimeoutMs,
+    purchaseAvailable: raw.BILLING_PURCHASE_AVAILABLE === 'true',
     roteToPaid,
     paidToRote,
   };

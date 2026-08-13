@@ -19,8 +19,22 @@ import {
 import { MAX_BATCH_SIZE } from '../../utils/fileValidation';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { AttachmentPresignZod } from '../../utils/zod';
+import { uploadDerivedObject } from '../../resources/uploadProxy';
+import { ResourcePolicyError } from '../../resources/errors';
 
 const attachmentsRouter = new Hono<{ Variables: HonoVariables }>();
+
+attachmentsRouter.put('/upload-proxy', async (c: HonoContext) => {
+  try {
+    await uploadDerivedObject(c.req.query('token') ?? '', c.req.raw);
+    return c.body(null, 204);
+  } catch (error) {
+    if (error instanceof ResourcePolicyError) {
+      return c.json(createResponse(null, error.code), error.status);
+    }
+    throw error;
+  }
+});
 
 attachmentsRouter.delete('/:id', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;

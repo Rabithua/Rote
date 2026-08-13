@@ -317,7 +317,7 @@
       "editProfile": "编辑资料",
       "noDescription": "这个人很懒，还没留下任何简介...",
       "registerTime": "注册时间：",
-      "openKeyDescription": "OpenKey 可以轻易的使用权限指定的功能，合理分配权限，避免 OpenKey 泄露带来不必要的麻烦。",
+      "openKeyDescription": "通过 OpenKey 连接快捷指令、MCP 和自动化工具，请妥善保管。",
       "noOpenKey": "暂时还没有OpenKey，生成一个？",
       "addOpenKey": "生成一个OpenKey",
       "email": "邮箱",
@@ -340,6 +340,55 @@
       "editSuccess": "修改成功",
       "editFailed": "修改失败",
       "sideBarTitle": "除了这些...还有",
+      "resources": {
+        "loadFailed": "暂时没能加载你的空间信息，请稍后再试。",
+        "retry": "重新加载",
+        "management": {
+          "unmanaged": "此自托管实例未启用资源配额，不影响现有上传与 OpenKey 行为。",
+          "official": "由 Rote 官方服务计量和执行的账户权益。"
+        },
+        "source": {
+          "unmanaged": "未托管",
+          "official_free": "Rote 免费版",
+          "official_pro": "Rote Pro",
+          "role_exempt": "角色豁免",
+          "unverified": "未验证的服务端策略"
+        },
+        "storage": {
+          "title": "存储空间",
+          "subtitle": "你的图片、视频和其他附件",
+          "notMeasured": "此实例不计量你的存储用量。",
+          "usedOfLimit": "{{used}} / {{limit}}",
+          "ofLimit": "共 {{limit}}",
+          "noLimit": "无实例额度上限",
+          "uploading": "还有 {{reserved}} 正在上传",
+          "ready": "空间充足，可以继续上传。",
+          "fullDescription": "当前空间已用满，暂时不能上传新附件。你仍然可以查看、下载或删除已有文件。",
+          "status": { "available": "可以上传", "observing": "正在统计", "full": "空间已满" },
+          "overLimit": "当前用量已达到或超过额度。已有文件不会被删除。",
+          "uploadBlocked": "已暂停新增附件；读取、下载和删除仍可使用。",
+          "enforcement": {
+            "off": "关闭",
+            "observe": "观察中",
+            "enforce": "执行中"
+          }
+        },
+        "openKey": {
+          "subtitle": "连接快捷指令、MCP 和自动化工具",
+          "created": "已创建 {{count}} 个",
+          "status": { "available": "可以新建", "unlimited": "不限数量", "paused": "暂不可新建" },
+          "policy": {
+            "unmanaged": "未限制",
+            "threshold": "创建阈值",
+            "unlimited": "无限创建"
+          },
+          "freeFriendly": "免费账户可以创建 {{count}} 个 OpenKey。",
+          "noNewTitle": "已有 OpenKey 都能继续使用",
+          "noNewDescription": "当前暂时不能新建；我们不会删除或停用你已经创建的 OpenKey。",
+          "creationBlocked": "当前不能新建 OpenKey；已有 OpenKey 会保留并继续工作。",
+          "canCreate": "当前可以新建 OpenKey。"
+        }
+      },
       "settings": {
         "themeLabel": "颜色模式",
         "themeDescription": "选择深色、浅色或跟随系统。",
@@ -1171,6 +1220,17 @@
         "pleaseFillS3": "请先填写完整的 S3 配置信息"
       }
     },
+      "officialResourcesPreview": {
+      "title": "看看不同账户会看到什么",
+      "description": "选择一种账户状态，预览用户在 Rote 官方服务中看到的空间与 OpenKey 信息。",
+      "scenarioLabel": "预览场景",
+      "scenarios": {
+        "free": { "title": "免费账户", "description": "500 MB 与 1 个 OpenKey" },
+        "pro": { "title": "Rote Pro", "description": "更多空间，不限 OpenKey" },
+        "expired": { "title": "Pro 已到期", "description": "内容保留，暂停新增" }
+      },
+      "notice": "这是本地预览，不会连接付费服务，也不会修改任何账户数据。"
+    },
     "admin": {
       "title": "管理员仪表盘",
       "accessDenied": "访问被拒绝",
@@ -1286,6 +1346,49 @@
         "saving": "保存中...",
         "saveSuccess": "保存成功",
         "saveFailed": "保存失败: {{error}}"
+      },
+      "resources": {
+        "title": "资源策略",
+        "description": "选择是否为此实例启用本地存储配额和 OpenKey 创建阈值。默认未托管模式保持原有自部署体验。",
+        "officialDescription": "官方实例的资源权益由 RotePaidServer 管理，此处只读。",
+        "officialManaged": "官方权益策略",
+        "officialEnforcement": "存储执行状态：{{mode}}",
+        "modeLabel": "实例资源管理模式",
+        "mode": { "unmanaged": "未托管", "local": "本地策略" },
+        "modeDescription": {
+          "unmanaged": "不计量或限制存储与 OpenKey，保持传统 self-hosted 行为。",
+          "local": "使用此实例自己的策略；不会连接官方付费服务，也不会显示 Rote Pro。"
+        },
+        "enforcement": { "off": "关闭", "observe": "仅观察", "enforce": "强制执行" },
+        "storage": {
+          "title": "本地存储配额",
+          "enforcement": "执行方式",
+          "defaultLimit": "默认额度（GB）",
+          "unlimitedPlaceholder": "留空表示无限",
+          "defaultLimitDescription": "使用十进制 GB；管理员和超级管理员默认豁免。",
+          "baseline": "存储基线核账",
+          "usersProcessed": "已处理 {{count}} 位用户",
+          "reconcile": "运行核账",
+          "enforceRequiresBaseline": "只有核账成功后才能启用强制执行。"
+        },
+        "baseline": { "required": "需要核账", "running": "核账中", "complete": "已完成", "failed": "失败" },
+        "openKey": {
+          "title": "本地 OpenKey 策略",
+          "policy": "创建策略",
+          "unmanaged": "不限制创建",
+          "threshold": "按当前数量限制创建",
+          "creationThreshold": "创建阈值",
+          "description": "达到阈值后只阻止新建；已有 OpenKey 永不删除或停用。"
+        },
+        "save": "保存资源策略",
+        "saving": "保存中…",
+        "saveSuccess": "资源策略已保存",
+        "saveFailed": "保存失败：{{error}}",
+        "invalidStorageLimit": "请输入有效的非负 GB 数值，最多 9 位小数。",
+        "invalidOpenKeyThreshold": "OpenKey 创建阈值必须是非负整数。",
+        "reconcileRequired": "启用强制执行前必须完成存储核账。",
+        "reconcileSuccess": "存储核账已完成",
+        "reconcileFailed": "存储核账失败：{{error}}"
       },
       "ui": {
         "title": "界面配置",

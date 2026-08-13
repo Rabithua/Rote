@@ -1,6 +1,7 @@
 import {
   AbortMultipartUploadCommand,
   CompleteMultipartUploadCommand,
+  CopyObjectCommand,
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
   GetObjectCommand,
@@ -10,6 +11,7 @@ import {
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
 import type { Readable } from 'node:stream';
+import { randomUUID } from 'node:crypto';
 import { RequestChecksumCalculation } from '@aws-sdk/middleware-flexible-checksums';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageConfig } from '../types/config';
@@ -21,6 +23,7 @@ const STREAM_UPLOAD_PART_SIZE = 8 * 1024 * 1024;
 export type StoredObjectInfo = {
   contentLength: number | null;
   contentType: string | null;
+  etag: string | null;
 };
 
 type StorageClientConfig = {
@@ -130,7 +133,8 @@ async function presignPutUrlWithClient(
   clientConfig: StorageClientConfig,
   key: string,
   contentType?: string,
-  expiresIn: number = 3600
+  expiresIn: number = 3600,
+  contentLength?: number
 ): Promise<{ putUrl: string; url: string }> {
   const { s3, bucketName, urlPrefix } = clientConfig;
 
@@ -138,6 +142,7 @@ async function presignPutUrlWithClient(
     Bucket: bucketName,
     Key: key,
     ContentType: contentType || undefined,
+    ContentLength: contentLength,
     CacheControl: cacheControl,
     // 明确不设置校验和算法，避免 AWS SDK 自动添加校验和参数
     // Garage 等 S3 兼容服务可能不支持或不正确支持 AWS SDK 自动添加的校验和
@@ -147,7 +152,12 @@ async function presignPutUrlWithClient(
     expiresIn,
     // Bind the declared object media type into the signature so the key
     // extension, presign metadata, and actual upload header cannot diverge.
-    signableHeaders: contentType ? new Set(['content-type']) : undefined,
+    signableHeaders: new Set(
+      [
+        contentType ? 'content-type' : null,
+        contentLength !== undefined ? 'content-length' : null,
+      ].filter((header): header is string => header !== null)
+    ),
   });
 
   const url = `${urlPrefix}/${key}`;
@@ -190,7 +200,8 @@ export { r2deletehandler };
 export async function presignPutUrl(
   key: string,
   contentType?: string,
-  expiresIn: number = 3600
+  expiresIn: number = 3600,
+  contentLength?: number
 ): Promise<{ putUrl: string; url: string }> {
   const r2Config = getR2Client();
   if (!r2Config) {
@@ -199,16 +210,23 @@ export async function presignPutUrl(
     );
   }
 
-  return presignPutUrlWithClient(r2Config, key, contentType, expiresIn);
+  return presignPutUrlWithClient(r2Config, key, contentType, expiresIn, contentLength);
 }
 
 export async function presignPutUrlForConfig(
   config: StorageConfig,
   key: string,
   contentType?: string,
-  expiresIn: number = 3600
+  expiresIn: number = 3600,
+  contentLength?: number
 ): Promise<{ putUrl: string; url: string }> {
-  return presignPutUrlWithClient(createStorageClient(config), key, contentType, expiresIn);
+  return presignPutUrlWithClient(
+    createStorageClient(config),
+    key,
+    contentType,
+    expiresIn,
+    contentLength
+  );
 }
 
 export async function storeObjectStream(
@@ -334,6 +352,7 @@ export async function getObjectInfo(key: string): Promise<StoredObjectInfo | nul
     return {
       contentLength: result.ContentLength ?? null,
       contentType: result.ContentType ?? null,
+      etag: result.ETag ?? null,
     };
   } catch (error: any) {
     if (error.name === 'NotFound' || error.$metadata?.httpStatusCode === 404) {
@@ -341,6 +360,66 @@ export async function getObjectInfo(key: string): Promise<StoredObjectInfo | nul
     }
     throw error;
   }
+}
+
+export async function copyObjectIfMatch(params: {
+  sourceKey: string;
+  destinationKey: string;
+  sourceEtag: string;
+}): Promise<void> {
+  const r2Config = getR2Client();
+  if (!r2Config) throw new Error('R2 storage is not configured.');
+  await r2Config.s3.send(
+    new CopyObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: params.destinationKey,
+      CopySource: `${r2Config.bucketName}/${encodeURIComponent(params.sourceKey).replace(/%2F/g, '/')}`,
+      CopySourceIfMatch: params.sourceEtag,
+      CacheControl: cacheControl,
+      MetadataDirective: 'COPY',
+    })
+  );
+}
+
+export async function probeManagedStorageCapabilities(): Promise<{
+  ok: boolean;
+  missing: string[];
+}> {
+  const probeId = randomUUID();
+  const sourceKey = `rote-resource-probe/${probeId}/staging/source.bin`;
+  const finalKey = `rote-resource-probe/${probeId}/final/source.bin`;
+  const body = new Uint8Array([82, 111, 116, 101]);
+  const missing: string[] = [];
+  try {
+    const signed = await presignPutUrl(sourceKey, 'application/octet-stream', 60, body.byteLength);
+    const response = await fetch(signed.putUrl, {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-length': String(body.byteLength),
+      },
+      body,
+    });
+    if (!response.ok) missing.push('presigned_put_exact_content_length');
+    const source = await getObjectInfo(sourceKey);
+    if (!source || source.contentLength !== body.byteLength || !source.etag) missing.push('head');
+    if (source?.etag) {
+      try {
+        await copyObjectIfMatch({ sourceKey, destinationKey: finalKey, sourceEtag: source.etag });
+        const final = await getObjectInfo(finalKey);
+        if (!final || final.contentLength !== body.byteLength) missing.push('copy_object');
+      } catch {
+        missing.push('copy_object_if_match');
+      }
+    }
+  } catch {
+    if (missing.length === 0) missing.push('storage_request');
+  } finally {
+    const deletedSource = await r2deletehandler(sourceKey).catch(() => false);
+    const deletedFinal = await r2deletehandler(finalKey).catch(() => false);
+    if (!deletedSource || !deletedFinal) missing.push('delete');
+  }
+  return { ok: missing.length === 0, missing: [...new Set(missing)] };
 }
 
 export async function getObjectBytes(key: string): Promise<Uint8Array> {

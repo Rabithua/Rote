@@ -1,10 +1,14 @@
 import crypto from 'crypto';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import {
   attachments,
+  billingGrants,
   reactions,
   roteChanges,
   rotes,
+  resourceStorageAccounts,
+  resourceStorageObjects,
+  resourceUploadReservations,
   userOAuthBindings,
   userOpenKeys,
   userSettings,
@@ -12,9 +16,9 @@ import {
   users,
 } from '../../drizzle/schema';
 import db from '../drizzle';
-import { r2deletehandler } from '../r2';
 import { enqueueBackfillEmbeddingJobsForOwner } from './ai';
 import { DatabaseError } from './common';
+import { prepareAccountResourceDeletion } from '../../resources/service';
 
 // 删除用户账户
 export async function deleteUserAccount(userid: string, password: string): Promise<any> {
@@ -44,29 +48,10 @@ export async function deleteUserAccount(userid: string, password: string): Promi
       }
     }
 
-    // 3. 查询用户的所有附件（包括已绑定和未绑定的）
-    const attachmentsList = await db
-      .select({ details: attachments.details })
-      .from(attachments)
-      .where(eq(attachments.userid, userid));
-
-    // 4. 删除所有附件文件（从 R2/S3）
-    attachmentsList.forEach(({ details }) => {
-      // @ts-expect-error - details 可能包含动态属性
-      const key = details?.key;
-      // @ts-expect-error - details 可能包含动态属性
-      const compressKey = details?.compressKey;
-      if (key) {
-        r2deletehandler(key).catch((err) => {
-          console.error(`Failed to delete attachment from R2: ${key}`, err);
-        });
-      }
-      if (compressKey) {
-        r2deletehandler(compressKey).catch((err) => {
-          console.error(`Failed to delete compressed attachment from R2: ${compressKey}`, err);
-        });
-      }
-    });
+    // Persist the managed cleanup manifest and release logical usage before the
+    // user FK can be nulled/cascaded. Object-store availability never blocks
+    // the account deletion itself.
+    await prepareAccountResourceDeletion(userid);
 
     // 5. 删除用户记录（数据库会自动级联删除 userSettings, userOpenKeys, userSwSubscriptions, rotes 等）
     // 附件和反应记录的外键设置为 set null，删除用户后会自动设为 null
@@ -105,6 +90,13 @@ export async function mergeUserAccounts(
 
       if (sourceUserId === targetUserId) {
         throw new DatabaseError('Cannot merge account with itself');
+      }
+      const billing = await tx
+        .select({ userId: billingGrants.userId, status: billingGrants.status })
+        .from(billingGrants)
+        .where(inArray(billingGrants.userId, [sourceUserId, targetUserId]));
+      if (billing.some((grant) => grant.status !== 'none')) {
+        throw new DatabaseError('Managed billing accounts cannot be merged automatically');
       }
       const mergedData: any = {
         notes: 0,
@@ -154,6 +146,49 @@ export async function mergeUserAccounts(
         .where(eq(userOpenKeys.userid, sourceUserId))
         .returning({ id: userOpenKeys.id });
       mergedData.openKeys = openKeysResult.length;
+
+      // Managed storage follows ownership. Existing objects are never deleted
+      // merely because the destination is over its current quota; subsequent
+      // creates are evaluated against the combined usage.
+      const [sourceStorage] = await tx
+        .select()
+        .from(resourceStorageAccounts)
+        .where(eq(resourceStorageAccounts.userId, sourceUserId))
+        .limit(1)
+        .for('update');
+      const [targetStorage] = await tx
+        .select()
+        .from(resourceStorageAccounts)
+        .where(eq(resourceStorageAccounts.userId, targetUserId))
+        .limit(1)
+        .for('update');
+      await tx
+        .update(resourceUploadReservations)
+        .set({ status: 'cancelled' })
+        .where(eq(resourceUploadReservations.userId, sourceUserId));
+      await tx
+        .update(resourceStorageObjects)
+        .set({ ownerId: targetUserId, updatedAt: new Date() })
+        .where(eq(resourceStorageObjects.ownerId, sourceUserId));
+      if (sourceStorage) {
+        await tx
+          .insert(resourceStorageAccounts)
+          .values({
+            userId: targetUserId,
+            usedBytes: (targetStorage?.usedBytes ?? BigInt(0)) + sourceStorage.usedBytes,
+            reservedBytes: targetStorage?.reservedBytes ?? BigInt(0),
+          })
+          .onConflictDoUpdate({
+            target: resourceStorageAccounts.userId,
+            set: {
+              usedBytes: sql`${resourceStorageAccounts.usedBytes} + ${sourceStorage.usedBytes}`,
+              updatedAt: new Date(),
+            },
+          });
+        await tx
+          .delete(resourceStorageAccounts)
+          .where(eq(resourceStorageAccounts.userId, sourceUserId));
+      }
 
       // 7. 合并推送订阅（endpoint 唯一，需要处理冲突）
       const sourceSubscriptions = await tx

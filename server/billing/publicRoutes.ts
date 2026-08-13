@@ -52,9 +52,10 @@ function billingUnavailable(c: HonoContext) {
   return jsonResponse(c, billingHttpResponse(503, 'billing_provider_unavailable'));
 }
 
-function publicBillingConfig(enabled: boolean) {
+function publicBillingConfig(enabled: boolean, purchaseAvailable = false) {
   return {
     enabled,
+    purchaseAvailable: enabled && purchaseAvailable,
     officialOrigin: BILLING_OFFICIAL_ORIGIN,
     products: [...BILLING_ALLOWED_PRODUCT_IDS],
     features: { offerCode: true, promotedPurchases: false },
@@ -74,6 +75,7 @@ function localBillingState(grant: BillingGrant | null, now: Date) {
       entitlementExpiresAt: null,
       leaseExpiresAt: null,
       capabilities: [] as BillingGrantCapability[],
+      benefits: null,
     };
   }
 
@@ -84,19 +86,26 @@ function localBillingState(grant: BillingGrant | null, now: Date) {
     leaseExpiresAt: grant.leaseExpiresAt?.toISOString() ?? null,
   };
   if (grant.status === 'none') {
-    return { ...common, status: 'none' as const, capabilities: [] as BillingGrantCapability[] };
+    return {
+      ...common,
+      status: 'none' as const,
+      capabilities: [] as BillingGrantCapability[],
+      benefits: null,
+    };
   }
   if (!grant.leaseExpiresAt || now.getTime() >= grant.leaseExpiresAt.getTime()) {
     return {
       ...common,
       status: 'unavailable' as const,
       capabilities: [] as BillingGrantCapability[],
+      benefits: null,
     };
   }
   return {
     ...common,
     status: grant.status,
     capabilities: normalizeCapabilities(grant.capabilities),
+    benefits: grant.benefits,
   };
 }
 
@@ -136,7 +145,7 @@ export function createPublicBillingRouter(params: {
     return jsonResponse(
       c,
       billingHttpResponse(200, 'success', {
-        ...publicBillingConfig(true),
+        ...publicBillingConfig(true, params.config.purchaseAvailable),
         products: params.config.productIds,
       })
     );
@@ -161,7 +170,8 @@ export function createPublicBillingRouter(params: {
     const parsedBody = await parseLimitedJsonBody(c.req.raw, BILLING_SESSION_BODY_LIMIT_BYTES);
     if (!parsedBody.ok) return invalidRequest(c, parsedBody.tooLarge ? 413 : 400);
     if (!emptyObjectSchema.safeParse(parsedBody.value).success) return invalidRequest(c);
-    if (!params.provider || !params.config.enabled) return billingUnavailable(c);
+    if (!params.provider || !params.config.enabled || !params.config.purchaseAvailable)
+      return billingUnavailable(c);
 
     try {
       const session = await params.provider.createSession(user.id);
