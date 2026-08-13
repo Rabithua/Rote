@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
-import { attachments, rotes } from '../../drizzle/schema';
+import { attachments, rotes, users } from '../../drizzle/schema';
 import { UploadResult } from '../../types/main';
 import { validateRoteAttachmentDetails } from '../fileValidation';
 import db from '../drizzle';
@@ -297,52 +297,42 @@ export async function bindAttachmentsToRote(
 
 export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: string): Promise<any> {
   try {
-    const attachmentsList = await db
-      .select({ details: attachments.details })
-      .from(attachments)
-      .where(and(eq(attachments.roteid, roteid), eq(attachments.userid, userid)));
-
-    if (attachmentsList.length === 0) {
-      return { count: 0 };
-    }
-
-    // 先获取 rote 信息（用于记录变更）
-    const [rote] = await db
-      .select({ id: rotes.id, authorid: rotes.authorid })
-      .from(rotes)
-      .where(eq(rotes.id, roteid))
-      .limit(1);
-
-    const result = await db
-      .delete(attachments)
-      .where(and(eq(attachments.roteid, roteid), eq(attachments.userid, userid)))
-      .returning();
-
-    // 更新 rote 的 updatedAt（如果 rote 存在）
-    if (rote) {
-      try {
-        await db.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
-      } catch (_error) {
-        // 忽略更新错误
-      }
-    }
-
-    attachmentsList.forEach(({ details }) => {
-      deleteAttachmentObjects(details);
+    const deleted = await db.transaction(async (tx) => {
+      await tx.select({ id: users.id }).from(users).where(eq(users.id, userid)).for('update');
+      const attachmentsList = await tx
+        .select({ details: attachments.details })
+        .from(attachments)
+        .where(and(eq(attachments.roteid, roteid), eq(attachments.userid, userid)))
+        .for('update');
+      if (attachmentsList.length === 0) return { count: 0, details: [], tracked: [], rote: null };
+      const [rote] = await tx
+        .select({ id: rotes.id, authorid: rotes.authorid })
+        .from(rotes)
+        .where(eq(rotes.id, roteid))
+        .limit(1);
+      const keys = attachmentsList.flatMap(({ details }) => collectAttachmentObjectKeys(details));
+      const tracked = await releaseStorageObjectReferences(userid, keys, tx);
+      const result = await tx
+        .delete(attachments)
+        .where(and(eq(attachments.roteid, roteid), eq(attachments.userid, userid)))
+        .returning();
+      if (rote) await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
+      return { count: result.length, details: attachmentsList, tracked, rote };
     });
-    await releaseStorageObjectReferences(
-      userid,
-      attachmentsList.flatMap(({ details }) => collectAttachmentObjectKeys(details))
-    );
+    const tracked = new Set(deleted.tracked);
+    deleted.details
+      .flatMap(({ details }) => collectAttachmentObjectKeys(details))
+      .filter((key) => !tracked.has(key))
+      .forEach((key) => deleteAttachmentObjects({ key }));
 
     // 记录变更历史（如果 rote 存在）
-    if (rote) {
+    if (deleted.rote) {
       try {
         await createRoteChange({
-          originid: rote.id,
-          roteid: rote.id,
+          originid: deleted.rote.id,
+          roteid: deleted.rote.id,
           action: 'UPDATE',
-          userid: rote.authorid,
+          userid: deleted.rote.authorid,
         });
       } catch (error) {
         // 记录变更失败不影响操作，只记录错误
@@ -350,7 +340,7 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
       }
     }
 
-    return { count: result.length };
+    return { count: deleted.count };
   } catch (error) {
     throw new DatabaseError(`Failed to delete attachments for rote: ${roteid}`, error);
   }
@@ -434,43 +424,52 @@ export async function deleteAttachments(
   userid: string
 ): Promise<any> {
   try {
-    const dbAttachments = await db
-      .select({ id: attachments.id, details: attachments.details, roteid: attachments.roteid })
-      .from(attachments)
-      .where(
-        and(
-          inArray(
-            attachments.id,
-            attachmentsData.map((e) => e.id)
-          ),
-          eq(attachments.userid, userid)
+    const deleted = await db.transaction(async (tx) => {
+      await tx.select({ id: users.id }).from(users).where(eq(users.id, userid)).for('update');
+      const dbAttachments = await tx
+        .select({ id: attachments.id, details: attachments.details, roteid: attachments.roteid })
+        .from(attachments)
+        .where(
+          and(
+            inArray(
+              attachments.id,
+              attachmentsData.map((e) => e.id)
+            ),
+            eq(attachments.userid, userid)
+          )
         )
+        .for('update');
+      if (dbAttachments.length !== attachmentsData.length) {
+        throw new DatabaseError('Some attachments not found or unauthorized');
+      }
+      const tracked = await releaseStorageObjectReferences(
+        userid,
+        dbAttachments.flatMap(({ details }) => collectAttachmentObjectKeys(details)),
+        tx
       );
-
-    if (dbAttachments.length !== attachmentsData.length) {
-      throw new DatabaseError('Some attachments not found or unauthorized');
-    }
-
-    // 收集需要更新的 rote ID（去重）
-    const roteIds = new Set(
-      dbAttachments.map((a) => a.roteid).filter((id): id is string => id !== null)
-    );
-
-    const result = await db
-      .delete(attachments)
-      .where(
-        and(
-          inArray(
-            attachments.id,
-            attachmentsData.map((e) => e.id)
-          ),
-          eq(attachments.userid, userid)
+      const result = await tx
+        .delete(attachments)
+        .where(
+          and(
+            inArray(
+              attachments.id,
+              attachmentsData.map((e) => e.id)
+            ),
+            eq(attachments.userid, userid)
+          )
         )
-      )
-      .returning();
+        .returning();
+      const roteIds = [
+        ...new Set(dbAttachments.map((a) => a.roteid).filter((id): id is string => id !== null)),
+      ];
+      for (const roteid of roteIds) {
+        await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
+      }
+      return { dbAttachments, result, roteIds, tracked };
+    });
 
     // 更新相关 rote 的 updatedAt 并记录变更历史
-    for (const roteid of roteIds) {
+    for (const roteid of deleted.roteIds) {
       try {
         const [rote] = await db
           .select({ id: rotes.id, authorid: rotes.authorid })
@@ -501,13 +500,11 @@ export async function deleteAttachments(
     }
 
     // 优先使用 DB 中的 details 删除，以涵盖压缩文件；兼容传入 key 的旧行为
-    dbAttachments.forEach(({ details }) => {
-      deleteAttachmentObjects(details);
-    });
-    await releaseStorageObjectReferences(
-      userid,
-      dbAttachments.flatMap(({ details }) => collectAttachmentObjectKeys(details))
-    );
+    const tracked = new Set(deleted.tracked);
+    deleted.dbAttachments
+      .flatMap(({ details }) => collectAttachmentObjectKeys(details))
+      .filter((key) => !tracked.has(key))
+      .forEach((key) => deleteAttachmentObjects({ key }));
 
     // 兼容性：如果请求体传入了 key，但 DB 没有 details（历史数据），也尝试删除
     attachmentsData.forEach(({ key }) => {
@@ -518,7 +515,7 @@ export async function deleteAttachments(
       }
     });
 
-    return { count: result.length };
+    return { count: deleted.result.length };
   } catch (error) {
     throw new DatabaseError('Failed to delete attachments', error);
   }
@@ -526,17 +523,31 @@ export async function deleteAttachments(
 
 export async function deleteAttachment(id: string, userid: string): Promise<any> {
   try {
-    // 先查出对象 key 和 roteid，再删除 DB 记录与对象存储
-    const [record] = await db
-      .select({ id: attachments.id, details: attachments.details, roteid: attachments.roteid })
-      .from(attachments)
-      .where(and(eq(attachments.id, id), eq(attachments.userid, userid)))
-      .limit(1);
-
-    const result = await db
-      .delete(attachments)
-      .where(and(eq(attachments.id, id), eq(attachments.userid, userid)))
-      .returning();
+    const deleted = await db.transaction(async (tx) => {
+      await tx.select({ id: users.id }).from(users).where(eq(users.id, userid)).for('update');
+      const [record] = await tx
+        .select({ id: attachments.id, details: attachments.details, roteid: attachments.roteid })
+        .from(attachments)
+        .where(and(eq(attachments.id, id), eq(attachments.userid, userid)))
+        .limit(1)
+        .for('update');
+      if (!record) return { record: null, result: [], tracked: [] };
+      const tracked = await releaseStorageObjectReferences(
+        userid,
+        collectAttachmentObjectKeys(record.details),
+        tx
+      );
+      const result = await tx
+        .delete(attachments)
+        .where(and(eq(attachments.id, id), eq(attachments.userid, userid)))
+        .returning();
+      if (record.roteid) {
+        await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, record.roteid));
+      }
+      return { record, result, tracked };
+    });
+    const record = deleted.record;
+    const result = deleted.result;
 
     // 如果附件绑定了 rote，更新 rote 的 updatedAt 并记录变更历史
     if (record?.roteid) {
@@ -549,8 +560,6 @@ export async function deleteAttachment(id: string, userid: string): Promise<any>
 
         if (rote) {
           // 更新 rote 的 updatedAt
-          await db.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, record.roteid));
-
           // 记录变更历史
           try {
             await createRoteChange({
@@ -572,8 +581,10 @@ export async function deleteAttachment(id: string, userid: string): Promise<any>
       }
     }
 
-    deleteAttachmentObjects(record?.details);
-    await releaseStorageObjectReferences(userid, collectAttachmentObjectKeys(record?.details));
+    const tracked = new Set(deleted.tracked);
+    collectAttachmentObjectKeys(record?.details)
+      .filter((key) => !tracked.has(key))
+      .forEach((key) => deleteAttachmentObjects({ key }));
 
     return { count: result.length };
   } catch (error) {

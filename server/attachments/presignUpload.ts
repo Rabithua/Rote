@@ -16,7 +16,9 @@ import { requireStorageAvailable } from './types';
 import attachmentErrors from './errorCodes.json';
 import {
   createUploadReservation,
+  cancelUploadReservation,
   getResourceStateForUserId,
+  refreshUploadReservationCredentialExpiry,
   type UploadReservationManifestItem,
 } from '../resources/service';
 import { createDerivedUploadProxyUrl } from '../resources/uploadProxy';
@@ -92,10 +94,8 @@ export async function presignAttachmentUploads(
   const resourceState = await dependencies.getResourceStateForUserId(input.userId);
   const managed =
     resourceState.management !== 'unmanaged' && resourceState.storage.enforcement !== 'off';
-  if (managed && process.env.RESOURCE_MANAGED_STORAGE_SAFETY_FUSE === 'tripped') {
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.storageBackendUnsupported, 503);
-  }
   const reservationId = managed ? dependencies.randomUUID() : null;
+  const credentialExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
   const prepared = input.files.map((file) => {
     const uuid = dependencies.randomUUID();
     const ext = getUploadExtension(file.filename, file.contentType);
@@ -177,6 +177,7 @@ export async function presignAttachmentUploads(
       userId: input.userId,
       manifest: prepared.flatMap((item) => item.manifest),
       expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      credentialExpiresAt,
     });
   }
 
@@ -191,7 +192,7 @@ export async function presignAttachmentUploads(
         );
         const result: Record<string, any> = {
           uuid,
-          ...(managed ? { expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString() } : {}),
+          ...(managed ? { expiresAt: credentialExpiresAt.toISOString() } : {}),
           original: {
             key: originalKey,
             putUrl: original.putUrl,
@@ -212,7 +213,7 @@ export async function presignAttachmentUploads(
                   role: 'compressed',
                   key: compressed.key,
                   contentType: 'image/webp',
-                  expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                  expiresAt: credentialExpiresAt,
                 }),
                 url: '',
               }
@@ -251,7 +252,7 @@ export async function presignAttachmentUploads(
                   role: 'poster',
                   key: poster.key,
                   contentType: 'image/jpeg',
-                  expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                  expiresAt: credentialExpiresAt,
                 }),
                 url: '',
               }
@@ -271,8 +272,88 @@ export async function presignAttachmentUploads(
 
   return {
     items,
-    ...(reservationId
-      ? { reservationId, expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString() }
-      : {}),
+    ...(reservationId ? { reservationId, expiresAt: credentialExpiresAt.toISOString() } : {}),
   };
+}
+
+export async function refreshAttachmentUploadReservation(userId: string, reservationId: string) {
+  const reservation = await refreshUploadReservationCredentialExpiry(
+    userId,
+    reservationId,
+    new Date(Date.now() + 15 * 60 * 1000)
+  );
+  const expiresAt = reservation.credentialExpiresAt!;
+  const remainingMs = expiresAt.getTime() - Date.now();
+  if (remainingMs < 1000) {
+    await cancelUploadReservation(userId, reservationId);
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+  }
+  const expiresIn = Math.floor(remainingMs / 1000);
+  const manifest = reservation.manifest as UploadReservationManifestItem[];
+  const byUuid = new Map<string, UploadReservationManifestItem[]>();
+  for (const item of manifest) {
+    const values = byUuid.get(item.uuid) ?? [];
+    values.push(item);
+    byUuid.set(item.uuid, values);
+  }
+  const items = await Promise.all(
+    [...byUuid.entries()].map(async ([uuid, objects]) => {
+      const original = objects.find((item) => item.role === 'original');
+      if (!original) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      const signedOriginal = await presignPutUrl(
+        original.stagingKey,
+        original.contentType,
+        expiresIn,
+        original.declaredBytes === null ? undefined : Number(original.declaredBytes)
+      );
+      const response: Record<string, any> = {
+        uuid,
+        expiresAt: expiresAt.toISOString(),
+        original: {
+          key: original.stagingKey,
+          putUrl: signedOriginal.putUrl,
+          url: signedOriginal.url,
+          contentType: original.contentType,
+        },
+      };
+      const derived = (role: 'compressed' | 'poster') => {
+        const object = objects.find((item) => item.role === role);
+        if (!object) return undefined;
+        return {
+          key: object.stagingKey,
+          putUrl: createDerivedUploadProxyUrl({
+            reservationId,
+            userId,
+            role,
+            key: object.stagingKey,
+            contentType: object.contentType,
+            expiresAt,
+          }),
+          url: '',
+          contentType: object.contentType,
+        };
+      };
+      const compressed = derived('compressed');
+      const poster = derived('poster');
+      if (compressed) response.compressed = compressed;
+      if (poster) response.poster = poster;
+      const paired = objects.find((item) => item.role === 'paired_video');
+      if (paired) {
+        const signed = await presignPutUrl(
+          paired.stagingKey,
+          paired.contentType,
+          expiresIn,
+          paired.declaredBytes === null ? undefined : Number(paired.declaredBytes)
+        );
+        response.pairedVideo = {
+          key: paired.stagingKey,
+          putUrl: signed.putUrl,
+          url: signed.url,
+          contentType: paired.contentType,
+        };
+      }
+      return response;
+    })
+  );
+  return { items, reservationId, expiresAt: expiresAt.toISOString() };
 }

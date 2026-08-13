@@ -332,23 +332,33 @@ async function migrateAsset({
           callback(new RemoteAttachmentMigrationError('remote_attachment_too_large', 413));
           return;
         }
-        if (managed && billable && knownLength === null && size > reservedCapacity) {
-          const extensionBytes = Math.min(8 * 1024 * 1024, maxSize - reservedCapacity);
-          dependencies
-            .appendUploadReservation({
+        if (knownLength !== null && size > knownLength) {
+          callback(new RemoteAttachmentMigrationError('remote_attachment_invalid', 422));
+          return;
+        }
+        const reserveBeforeWrite = async () => {
+          while (managed && billable && knownLength === null && size > reservedCapacity) {
+            const extensionBytes = Math.min(
+              8 * 1024 * 1024,
+              size - reservedCapacity,
+              maxSize - reservedCapacity
+            );
+            if (extensionBytes <= 0) {
+              throw new RemoteAttachmentMigrationError('remote_attachment_too_large', 413);
+            }
+            await dependencies.appendUploadReservation({
               id: reservationId,
               userId,
               reserveBytes: BigInt(extensionBytes),
               expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-            })
-            .then(() => {
-              reservedCapacity += extensionBytes;
-              callback(null, chunk);
-            })
-            .catch((error) => callback(error as Error));
-          return;
-        }
-        callback(null, chunk);
+            });
+            reservedCapacity += extensionBytes;
+          }
+        };
+        void reserveBeforeWrite().then(
+          () => callback(null, chunk),
+          (error) => callback(error as Error)
+        );
       },
     });
     const source = Readable.fromWeb(response.body as never);

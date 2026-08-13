@@ -6,6 +6,7 @@ import {
   noteImportSources,
   roteChanges,
   rotes,
+  users,
   type NewAttachment,
   type NewNoteImportSource,
   type NewRote,
@@ -67,6 +68,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
       const objectKeysToDelete: string[] = [];
 
       const trackedObjectKeys = await db.transaction(async (tx) => {
+        await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for('update');
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`import:${userId}`}))`);
         const sourceNotes = chunk.filter(hasImportSource);
         const sourceConditions = sourceNotes.map((note) =>

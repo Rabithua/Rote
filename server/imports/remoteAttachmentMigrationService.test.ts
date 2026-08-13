@@ -33,6 +33,7 @@ function dependencies(contentTypes = new Map<string, string>()) {
     removed,
     finalizedInputs,
     values: {
+      appendUploadReservation: async () => false,
       assertSafeOutboundUrl: async () => {},
       fetcher: async (url: string | URL | Request) =>
         new Response(new Uint8Array([1, 2, 3]), {
@@ -54,6 +55,7 @@ function dependencies(contentTypes = new Map<string, string>()) {
           },
         ];
       },
+      cancelUploadReservation: async () => {},
       getAttachmentUploadPolicy: async () => policy,
       randomUUID: () => 'asset-id',
       removeObject: async (key: string) => {
@@ -192,6 +194,74 @@ describe('single remote attachment migration', () => {
       code: 'remote_attachment_too_large',
       status: 413,
     });
+  });
+
+  test('fully reserves a large unknown-length chunk before storage receives it', async () => {
+    const deps = dependencies();
+    const reserveCalls: bigint[] = [];
+    let reserved = BigInt(0);
+    const chunkSize = 18 * 1024 * 1024;
+    deps.values.fetcher = async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array(chunkSize));
+            controller.close();
+          },
+        }),
+        { headers: { 'content-type': 'image/png' } }
+      );
+    deps.values.appendUploadReservation = async (input: { reserveBytes: bigint }) => {
+      reserveCalls.push(input.reserveBytes);
+      reserved += input.reserveBytes;
+      return true;
+    };
+    deps.values.storeObjectStream = async (key: string, body: Readable) => {
+      let received = 0;
+      for await (const chunk of body) {
+        received += (chunk as Buffer).byteLength;
+        expect(reserved).toBeGreaterThanOrEqual(BigInt(received));
+      }
+      deps.stored.push(key);
+      return { url: `https://cdn.example/${key}` };
+    };
+
+    await migrateOneRemoteAttachment('user-1', attachment(), deps.values as never);
+
+    expect(reserveCalls).toEqual([
+      BigInt(8 * 1024 * 1024),
+      BigInt(8 * 1024 * 1024),
+      BigInt(2 * 1024 * 1024),
+    ]);
+  });
+
+  test('rejects a stream that exceeds its declared content length before writing overflow', async () => {
+    const deps = dependencies();
+    let received = 0;
+    deps.values.fetcher = async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          start(controller) {
+            controller.enqueue(new Uint8Array([1, 2, 3]));
+            controller.enqueue(new Uint8Array([4]));
+            controller.close();
+          },
+        }),
+        { headers: { 'content-type': 'image/png', 'content-length': '3' } }
+      );
+    deps.values.appendUploadReservation = async () => true;
+    deps.values.storeObjectStream = async (_key: string, body: Readable) => {
+      for await (const chunk of body) received += (chunk as Buffer).byteLength;
+      return { url: '' };
+    };
+
+    await expect(
+      migrateOneRemoteAttachment('user-1', attachment(), deps.values as never)
+    ).rejects.toMatchObject<RemoteAttachmentMigrationError>({
+      code: 'remote_attachment_invalid',
+      status: 422,
+    });
+    expect(received).toBeLessThanOrEqual(3);
   });
 
   test('limits concurrent work and refills the queue', async () => {

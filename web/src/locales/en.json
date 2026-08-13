@@ -353,6 +353,13 @@
       "resources": {
         "loadFailed": "We couldn't load your space details just now. Please try again.",
         "retry": "Reload",
+        "errors": {
+          "storageQuotaExceeded": "There isn't enough space for this upload. Your attachment remains in this draft while this page is open. Delete some cloud attachments or restore Rote Pro and try again; for a custom instance, contact its administrator.",
+          "reservationExpired": "This upload authorization expired. Your attachment remains in this draft while this page is open. Please upload it again.",
+          "manifestMismatch": "The server couldn't verify the complete upload. Your attachment remains in this draft while this page is open. Please upload it again, or contact the administrator if this continues.",
+          "reconciliationRequired": "The server is checking storage usage, so uploads are temporarily paused. Your attachment remains in this draft while this page is open; please try again shortly.",
+          "backendUnsupported": "The storage service couldn't complete this upload. Your attachment remains in this draft while this page is open. Try again later or contact the administrator."
+        },
         "management": {
           "unmanaged": "This self-hosted instance does not enforce resource quotas. Existing upload and OpenKey behavior is unchanged.",
           "official": "Account benefits measured and enforced by the official Rote service."
@@ -374,7 +381,11 @@
           "uploading": "Another {{reserved}} is being uploaded",
           "ready": "You have plenty of room to keep uploading.",
           "fullDescription": "Your space is currently full, so new uploads are paused. You can still view, download, or delete everything already here.",
-          "status": { "available": "Ready to upload", "observing": "Tracking usage", "full": "Space full" },
+          "status": {
+            "available": "Ready to upload",
+            "observing": "Tracking usage",
+            "full": "Space full"
+          },
           "overLimit": "Usage has reached or exceeded the quota. Existing files will not be deleted.",
           "uploadBlocked": "New attachments are paused; reading, downloading, and deleting remain available.",
           "enforcement": { "off": "Off", "observe": "Observing", "enforce": "Enforcing" }
@@ -384,8 +395,16 @@
           "created": "{{count}} created",
           "countThreshold": "({{count}}/{{limit}})",
           "countUnlimited": "({{count}}/∞)",
-          "status": { "available": "Can create", "unlimited": "No limit", "paused": "Creation paused" },
-          "policy": { "unmanaged": "Unmanaged", "threshold": "Creation threshold", "unlimited": "Unlimited creation" },
+          "status": {
+            "available": "Can create",
+            "unlimited": "No limit",
+            "paused": "Creation paused"
+          },
+          "policy": {
+            "unmanaged": "Unmanaged",
+            "threshold": "Creation threshold",
+            "unlimited": "Unlimited creation"
+          },
           "freeFriendly": "A free account can create {{count}} OpenKey.",
           "noNewTitle": "Your existing OpenKeys keep working",
           "noNewDescription": "New OpenKeys are paused for now. We won't delete or disable any you've already created.",
@@ -1224,7 +1243,7 @@
         "pleaseFillS3": "Please fill in all S3 configuration fields first"
       }
     },
-      "officialResourcesPreview": {
+    "officialResourcesPreview": {
       "title": "See what each account experiences",
       "description": "Choose an account state to preview the storage and OpenKey details shown on the official Rote service.",
       "scenarioLabel": "Preview scenario",
@@ -1375,7 +1394,12 @@
           "reconcile": "Run reconciliation",
           "enforceRequiresBaseline": "Enforcement is available only after reconciliation succeeds."
         },
-        "baseline": { "required": "Required", "running": "Running", "complete": "Complete", "failed": "Failed" },
+        "baseline": {
+          "required": "Required",
+          "running": "Running",
+          "complete": "Complete",
+          "failed": "Failed"
+        },
         "openKey": {
           "title": "Local OpenKey policy",
           "policy": "Creation policy",
@@ -1875,6 +1899,9 @@
       "articleReference": "Reference Article",
       "send": "Send",
       "uploadFailed": "Attachment upload failed",
+      "retryUpload": "Retry upload",
+      "retryUploadDescription": "These attachments have not been uploaded yet. Fix the reported issue, then retry.",
+      "pendingAttachments": "Please wait for all attachments to finish uploading before sending.",
       "sending": "Sending...",
       "sendSuccess": "Sent successfully",
       "sendFailed": "Failed to send",

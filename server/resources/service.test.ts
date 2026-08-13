@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'bun:test';
 import {
   collectOwnedAttachmentObjectKeys,
+  countObjectKeyReferences,
+  effectiveOfficialStorageEnforcement,
   reservationCleanupKeys,
   type UploadReservationManifestItem,
 } from './service';
@@ -27,6 +29,12 @@ const manifest: UploadReservationManifestItem[] = [
 ];
 
 describe('resource cleanup helpers', () => {
+  it('never enables official enforcement before reconciliation completes', () => {
+    expect(effectiveOfficialStorageEnforcement('enforce', 'pending')).toBe('observe');
+    expect(effectiveOfficialStorageEnforcement('enforce', 'failed')).toBe('observe');
+    expect(effectiveOfficialStorageEnforcement('enforce', 'complete')).toBe('enforce');
+    expect(effectiveOfficialStorageEnforcement('observe', 'complete')).toBe('observe');
+  });
   it('collects staging keys and optionally final keys without duplicates', () => {
     expect(reservationCleanupKeys(manifest, false)).toEqual([
       'users/user/staging/session/original.jpg',
@@ -60,5 +68,23 @@ describe('resource cleanup helpers', () => {
       'users/user/uploads/live.mov',
       'users/user/uploads/nested.mov',
     ]);
+  });
+
+  it('preserves duplicate keys so batch deletion can release every reference', () => {
+    const first = collectOwnedAttachmentObjectKeys(
+      { key: 'users/user/uploads/shared.jpg' },
+      'user'
+    );
+    const second = collectOwnedAttachmentObjectKeys(
+      { key: 'users/user/uploads/shared.jpg' },
+      'user'
+    );
+    expect([...first, ...second]).toEqual([
+      'users/user/uploads/shared.jpg',
+      'users/user/uploads/shared.jpg',
+    ]);
+    expect(countObjectKeyReferences([...first, ...second])).toEqual(
+      new Map([['users/user/uploads/shared.jpg', 2]])
+    );
   });
 });

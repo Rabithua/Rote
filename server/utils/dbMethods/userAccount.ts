@@ -53,11 +53,11 @@ export async function deleteUserAccount(userid: string, password: string): Promi
     // Persist the managed cleanup manifest and release logical usage before the
     // user FK can be nulled/cascaded. Object-store availability never blocks
     // the account deletion itself.
-    await prepareAccountResourceDeletion(userid);
-
-    // 5. 删除用户记录（数据库会自动级联删除 userSettings, userOpenKeys, userSwSubscriptions, rotes 等）
-    // 附件和反应记录的外键设置为 set null，删除用户后会自动设为 null
-    await db.delete(users).where(eq(users.id, userid));
+    await db.transaction(async (tx) => {
+      await prepareAccountResourceDeletion(userid, tx);
+      // 删除用户和持久化清理清单属于同一提交；worker 不可能清理仍存活账户的数据。
+      await tx.delete(users).where(eq(users.id, userid));
+    });
 
     return { success: true };
   } catch (error) {
@@ -83,8 +83,14 @@ export async function mergeUserAccounts(
   const result = await db.transaction(async (tx) => {
     try {
       // 1. 验证两个用户都存在（在事务内验证，避免竞态条件）
-      const [sourceUser] = await tx.select().from(users).where(eq(users.id, sourceUserId)).limit(1);
-      const [targetUser] = await tx.select().from(users).where(eq(users.id, targetUserId)).limit(1);
+      const lockedUsers = await tx
+        .select()
+        .from(users)
+        .where(inArray(users.id, [sourceUserId, targetUserId]))
+        .orderBy(users.id)
+        .for('update');
+      const sourceUser = lockedUsers.find((user) => user.id === sourceUserId);
+      const targetUser = lockedUsers.find((user) => user.id === targetUserId);
 
       if (!sourceUser || !targetUser) {
         throw new DatabaseError('Source or target user not found');

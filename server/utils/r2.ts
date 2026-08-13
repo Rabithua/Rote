@@ -164,7 +164,7 @@ async function presignPutUrlWithClient(
   return { putUrl, url };
 }
 
-async function r2deletehandler(key: string) {
+async function r2deletehandler(key: string, options: { silent?: boolean } = {}) {
   const r2Config = getR2Client();
   if (!r2Config) {
     throw new Error(
@@ -182,14 +182,14 @@ async function r2deletehandler(key: string) {
   try {
     const deleteResult = await s3.send(deleteCommand);
     if (deleteResult.$metadata.httpStatusCode === 204) {
-      console.log(`Successfully deleted ${key}`);
+      if (!options.silent) console.log(`Successfully deleted ${key}`);
       return true;
     } else {
-      console.log(`Failed to delete ${key}`);
+      if (!options.silent) console.log(`Failed to delete ${key}`);
       return false;
     }
   } catch (err) {
-    console.log(`Error deleting ${key}:`, err);
+    if (!options.silent) console.log(`Error deleting ${key}:`, err);
     return false;
   }
 }

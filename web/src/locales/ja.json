@@ -357,29 +357,62 @@
       "resources": {
         "loadFailed": "保存スペースの情報を読み込めませんでした。しばらくしてから再度お試しください。",
         "retry": "再読み込み",
+        "errors": {
+          "storageQuotaExceeded": "このアップロードに必要な空き容量がありません。このページを開いている間、添付ファイルは現在の下書きに保持されます。クラウド上の添付を削除するか Rote Pro を再開してから再試行してください。カスタム環境では管理者にお問い合わせください。",
+          "reservationExpired": "アップロード認証の有効期限が切れました。このページを開いている間、添付ファイルは現在の下書きに保持されます。もう一度アップロードしてください。",
+          "manifestMismatch": "サーバーがアップロード全体を確認できませんでした。このページを開いている間、添付ファイルは現在の下書きに保持されます。再度アップロードし、解決しない場合は管理者にお問い合わせください。",
+          "reconciliationRequired": "サーバーがストレージ使用量を確認しているため、アップロードを一時停止しています。このページを開いている間、添付ファイルは現在の下書きに保持されます。しばらくしてから再試行してください。",
+          "backendUnsupported": "ストレージサービスがアップロードを完了できませんでした。このページを開いている間、添付ファイルは現在の下書きに保持されます。後でもう一度試すか、管理者にお問い合わせください。"
+        },
         "management": {
           "unmanaged": "このセルフホスト環境ではリソース制限を適用しません。既存のアップロードと OpenKey の動作は変わりません。",
           "official": "Rote 公式サービスが計測・適用するアカウント特典です。"
         },
         "source": {
-          "unmanaged": "管理なし", "official_free": "Rote Free", "official_pro": "Rote Pro",
-          "role_exempt": "ロール免除", "unverified": "未検証のサーバーポリシー"
+          "unmanaged": "管理なし",
+          "official_free": "Rote Free",
+          "official_pro": "Rote Pro",
+          "role_exempt": "ロール免除",
+          "unverified": "未検証のサーバーポリシー"
         },
         "storage": {
-          "title": "ストレージ", "subtitle": "写真、動画、その他の添付ファイル", "notMeasured": "このインスタンスはストレージ使用量を計測しません。",
-          "usedOfLimit": "{{used}} / {{limit}}", "ofLimit": "上限 {{limit}}", "noLimit": "インスタンス上限なし", "uploading": "さらに {{reserved}} をアップロード中",
-      "ready": "まだ十分な空き容量があります。",
-          "fullDescription": "現在は容量がいっぱいのため、新規アップロードを一時停止しています。既存ファイルの閲覧・ダウンロード・削除は引き続き可能です。", "status": { "available": "アップロード可能", "observing": "使用量を集計中", "full": "容量がいっぱい" },
+          "title": "ストレージ",
+          "subtitle": "写真、動画、その他の添付ファイル",
+          "notMeasured": "このインスタンスはストレージ使用量を計測しません。",
+          "usedOfLimit": "{{used}} / {{limit}}",
+          "ofLimit": "上限 {{limit}}",
+          "noLimit": "インスタンス上限なし",
+          "uploading": "さらに {{reserved}} をアップロード中",
+          "ready": "まだ十分な空き容量があります。",
+          "fullDescription": "現在は容量がいっぱいのため、新規アップロードを一時停止しています。既存ファイルの閲覧・ダウンロード・削除は引き続き可能です。",
+          "status": {
+            "available": "アップロード可能",
+            "observing": "使用量を集計中",
+            "full": "容量がいっぱい"
+          },
           "overLimit": "使用量が上限に達しています。既存ファイルは削除されません。",
           "uploadBlocked": "新規添付は停止中です。閲覧・ダウンロード・削除は利用できます。",
           "enforcement": { "off": "オフ", "observe": "監視中", "enforce": "適用中" }
         },
         "openKey": {
-          "subtitle": "ショートカット、MCP、自動化ツールに接続", "created": "{{count}} 個作成済み", "countThreshold": "（{{count}}/{{limit}}）", "countUnlimited": "（{{count}}/∞）", "status": { "available": "作成可能", "unlimited": "無制限", "paused": "新規作成を停止中" },
-          "policy": { "unmanaged": "制限なし", "threshold": "作成しきい値", "unlimited": "無制限作成" },
+          "subtitle": "ショートカット、MCP、自動化ツールに接続",
+          "created": "{{count}} 個作成済み",
+          "countThreshold": "（{{count}}/{{limit}}）",
+          "countUnlimited": "（{{count}}/∞）",
+          "status": {
+            "available": "作成可能",
+            "unlimited": "無制限",
+            "paused": "新規作成を停止中"
+          },
+          "policy": {
+            "unmanaged": "制限なし",
+            "threshold": "作成しきい値",
+            "unlimited": "無制限作成"
+          },
           "freeFriendly": "無料アカウントでは {{count}} 個の OpenKey を作成できます。",
           "noNewTitle": "既存の OpenKey はそのまま使えます",
-          "noNewDescription": "新規作成は一時停止中です。作成済みの OpenKey を削除・無効化することはありません。", "creationBlocked": "現在は新規 OpenKey を作成できません。既存キーは引き続き利用できます。",
+          "noNewDescription": "新規作成は一時停止中です。作成済みの OpenKey を削除・無効化することはありません。",
+          "creationBlocked": "現在は新規 OpenKey を作成できません。既存キーは引き続き利用できます。",
           "canCreate": "新しい OpenKey を作成できます。"
         }
       },
@@ -1214,7 +1247,7 @@
         "pleaseFillS3": "まずすべてのS3設定フィールドに入力してください"
       }
     },
-      "officialResourcesPreview": {
+    "officialResourcesPreview": {
       "title": "アカウントごとの表示を確認",
       "description": "アカウント状態を選んで、Rote 公式サービスに表示されるストレージと OpenKey 情報を確認できます。",
       "scenarioLabel": "プレビューシナリオ",
@@ -1345,27 +1378,49 @@
         "title": "リソースポリシー",
         "description": "ローカルのストレージクォータと OpenKey 作成しきい値を任意で有効にします。管理なしモードでは従来のセルフホスト体験を維持します。",
         "officialDescription": "公式インスタンスの特典は RotePaidServer が管理し、ここでは読み取り専用です。",
-        "officialManaged": "公式特典ポリシー", "officialEnforcement": "ストレージ適用状態：{{mode}}",
-        "modeLabel": "インスタンスのリソース管理", "mode": { "unmanaged": "管理なし", "local": "ローカルポリシー" },
-        "modeDescription": { "unmanaged": "ストレージと OpenKey を計測・制限しません。", "local": "公式課金に接続せず、Rote Pro 表示を使わない独自ポリシーです。" },
+        "officialManaged": "公式特典ポリシー",
+        "officialEnforcement": "ストレージ適用状態：{{mode}}",
+        "modeLabel": "インスタンスのリソース管理",
+        "mode": { "unmanaged": "管理なし", "local": "ローカルポリシー" },
+        "modeDescription": {
+          "unmanaged": "ストレージと OpenKey を計測・制限しません。",
+          "local": "公式課金に接続せず、Rote Pro 表示を使わない独自ポリシーです。"
+        },
         "enforcement": { "off": "オフ", "observe": "監視のみ", "enforce": "強制適用" },
         "storage": {
-          "title": "ローカルストレージクォータ", "enforcement": "適用方法", "defaultLimit": "既定クォータ（GB）",
-          "unlimitedPlaceholder": "空欄は無制限", "defaultLimitDescription": "10進 GB を使用します。管理者は既定で免除されます。",
-          "baseline": "ストレージ基準照合", "usersProcessed": "{{count}} ユーザー処理済み", "reconcile": "照合を実行",
+          "title": "ローカルストレージクォータ",
+          "enforcement": "適用方法",
+          "defaultLimit": "既定クォータ（GB）",
+          "unlimitedPlaceholder": "空欄は無制限",
+          "defaultLimitDescription": "10進 GB を使用します。管理者は既定で免除されます。",
+          "baseline": "ストレージ基準照合",
+          "usersProcessed": "{{count}} ユーザー処理済み",
+          "reconcile": "照合を実行",
           "enforceRequiresBaseline": "照合成功後にのみ強制適用できます。"
         },
-        "baseline": { "required": "照合が必要", "running": "実行中", "complete": "完了", "failed": "失敗" },
+        "baseline": {
+          "required": "照合が必要",
+          "running": "実行中",
+          "complete": "完了",
+          "failed": "失敗"
+        },
         "openKey": {
-          "title": "ローカル OpenKey ポリシー", "policy": "作成ポリシー", "unmanaged": "無制限作成",
-          "threshold": "現在数で制限", "creationThreshold": "作成しきい値",
+          "title": "ローカル OpenKey ポリシー",
+          "policy": "作成ポリシー",
+          "unmanaged": "無制限作成",
+          "threshold": "現在数で制限",
+          "creationThreshold": "作成しきい値",
           "description": "しきい値到達後は新規作成のみ停止します。既存 OpenKey は削除・無効化されません。"
         },
-        "save": "リソースポリシーを保存", "saving": "保存中…", "saveSuccess": "リソースポリシーを保存しました",
-        "saveFailed": "保存に失敗しました：{{error}}", "invalidStorageLimit": "有効な0以上のGB値を入力してください（小数9桁まで）。",
+        "save": "リソースポリシーを保存",
+        "saving": "保存中…",
+        "saveSuccess": "リソースポリシーを保存しました",
+        "saveFailed": "保存に失敗しました：{{error}}",
+        "invalidStorageLimit": "有効な0以上のGB値を入力してください（小数9桁まで）。",
         "invalidOpenKeyThreshold": "OpenKey 作成しきい値は0以上の整数にしてください。",
         "reconcileRequired": "強制適用前にストレージ照合を完了してください。",
-        "reconcileSuccess": "ストレージ照合が完了しました", "reconcileFailed": "ストレージ照合に失敗しました：{{error}}"
+        "reconcileSuccess": "ストレージ照合が完了しました",
+        "reconcileFailed": "ストレージ照合に失敗しました：{{error}}"
       },
       "ui": {
         "title": "UI設定",
@@ -1848,6 +1903,9 @@
       "articleReference": "記事を参照",
       "send": "送信",
       "uploadFailed": "添付ファイルのアップロードに失敗しました",
+      "retryUpload": "再アップロード",
+      "retryUploadDescription": "これらの添付ファイルはまだアップロードされていません。表示された問題を解決してから再試行してください。",
+      "pendingAttachments": "すべての添付ファイルのアップロードが完了してから送信してください。",
       "sending": "送信中...",
       "sendSuccess": "送信成功",
       "sendFailed": "送信失敗",

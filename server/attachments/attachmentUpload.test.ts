@@ -5,7 +5,8 @@ import { presignAttachmentUploads } from './presignUpload';
 import { getUploadExtension } from './uploadKeys';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
-const { finalizeAttachmentUploads } = await import('./finalizeUpload');
+const { assertCompleteRequiredManifest, finalizeAttachmentUploads } =
+  await import('./finalizeUpload');
 
 const USER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const LIVE_UUID = '11111111-1111-4111-8111-111111111111';
@@ -33,6 +34,72 @@ const detectedContentTypeForKey = async (key: string) => {
 };
 
 describe('attachment upload flow', () => {
+  it('requires all billable roles while allowing optional derivatives', () => {
+    const reservationId = LIVE_UUID;
+    const original = `users/${USER_ID}/staging/${reservationId}/uploads/a.jpg`;
+    const compressed = `users/${USER_ID}/staging/${reservationId}/compressed/a.webp`;
+    const liveOriginal = `users/${USER_ID}/staging/${reservationId}/uploads/b.heic`;
+    const paired = `users/${USER_ID}/staging/${reservationId}/paired-videos/b.mov`;
+    const manifest = [
+      {
+        uuid: 'a',
+        role: 'original' as const,
+        stagingKey: original,
+        finalKey: 'a',
+        declaredBytes: '1',
+        contentType: 'image/jpeg',
+        billable: true,
+      },
+      {
+        uuid: 'a',
+        role: 'compressed' as const,
+        stagingKey: compressed,
+        finalKey: 'ac',
+        declaredBytes: null,
+        contentType: 'image/webp',
+        billable: false,
+      },
+      {
+        uuid: 'b',
+        role: 'original' as const,
+        stagingKey: liveOriginal,
+        finalKey: 'b',
+        declaredBytes: '1',
+        contentType: 'image/heic',
+        billable: true,
+      },
+      {
+        uuid: 'b',
+        role: 'paired_video' as const,
+        stagingKey: paired,
+        finalKey: 'bp',
+        declaredBytes: '1',
+        contentType: 'video/quicktime',
+        billable: true,
+      },
+    ];
+    expect(() =>
+      assertCompleteRequiredManifest(
+        [
+          { uuid: 'a', originalKey: original },
+          { uuid: 'b', originalKey: liveOriginal, pairedVideoKey: paired },
+        ],
+        manifest
+      )
+    ).not.toThrow();
+    expect(() =>
+      assertCompleteRequiredManifest([{ uuid: 'a', originalKey: original }], manifest)
+    ).toThrow();
+    expect(() =>
+      assertCompleteRequiredManifest(
+        [
+          { uuid: 'a', originalKey: original },
+          { uuid: 'b', originalKey: liveOriginal },
+        ],
+        manifest
+      )
+    ).toThrow();
+  });
   it('uses the signed Content-Type to choose the key extension', () => {
     expect(getUploadExtension('photo.webp', 'image/jpeg')).toBe('.jpg');
     expect(getUploadExtension('photo.jpg', 'image/webp')).toBe('.webp');

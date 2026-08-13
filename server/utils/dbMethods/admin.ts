@@ -212,8 +212,10 @@ export async function deleteUserById(userId: string) {
   }
 
   const { prepareAccountResourceDeletion } = await import('../../resources/service');
-  await prepareAccountResourceDeletion(userId);
-  await db.delete(users).where(eq(users.id, userId));
+  await db.transaction(async (tx) => {
+    await prepareAccountResourceDeletion(userId, tx);
+    await tx.delete(users).where(eq(users.id, userId));
+  });
   return true;
 }
 

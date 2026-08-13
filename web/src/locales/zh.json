@@ -343,6 +343,13 @@
       "resources": {
         "loadFailed": "暂时没能加载你的空间信息，请稍后再试。",
         "retry": "重新加载",
+        "errors": {
+          "storageQuotaExceeded": "当前空间不足；本页面打开期间，附件仍保留在当前草稿中。你可以删除一些云端附件、恢复 Rote Pro 后重试；若使用自定义实例，请联系管理员。",
+          "reservationExpired": "本次上传凭证已过期；本页面打开期间，附件仍保留在当前草稿中。请重新上传。",
+          "manifestMismatch": "服务器未能确认这次上传的完整性；本页面打开期间，附件仍保留在当前草稿中。请重新上传；若问题持续，请联系管理员。",
+          "reconciliationRequired": "服务器正在核对存储用量，暂时不能上传。本页面打开期间，附件仍保留在当前草稿中，请稍后重试。",
+          "backendUnsupported": "存储服务暂时无法完成上传；本页面打开期间，附件仍保留在当前草稿中。请稍后重试或联系管理员。"
+        },
         "management": {
           "unmanaged": "此自托管实例未启用资源配额，不影响现有上传与 OpenKey 行为。",
           "official": "由 Rote 官方服务计量和执行的账户权益。"
@@ -1222,7 +1229,7 @@
         "pleaseFillS3": "请先填写完整的 S3 配置信息"
       }
     },
-      "officialResourcesPreview": {
+    "officialResourcesPreview": {
       "title": "看看不同账户会看到什么",
       "description": "选择一种账户状态，预览用户在 Rote 官方服务中看到的空间与 OpenKey 信息。",
       "scenarioLabel": "预览场景",
@@ -1373,7 +1380,12 @@
           "reconcile": "运行核账",
           "enforceRequiresBaseline": "只有核账成功后才能启用强制执行。"
         },
-        "baseline": { "required": "需要核账", "running": "核账中", "complete": "已完成", "failed": "失败" },
+        "baseline": {
+          "required": "需要核账",
+          "running": "核账中",
+          "complete": "已完成",
+          "failed": "失败"
+        },
         "openKey": {
           "title": "本地 OpenKey 策略",
           "policy": "创建策略",
@@ -1873,6 +1885,9 @@
       "articleReference": "引用文章",
       "send": "发送",
       "uploadFailed": "附件上传失败",
+      "retryUpload": "重新上传",
+      "retryUploadDescription": "这些附件还没有上传成功，处理提示的问题后可以重试。",
+      "pendingAttachments": "请等待所有附件上传完成后再发送。",
       "sending": "发送中...",
       "sendSuccess": "发送成功",
       "sendFailed": "发送失败",

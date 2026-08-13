@@ -176,6 +176,13 @@
       "when": 1786591381444,
       "tag": "0024_vengeful_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786608883008,
+      "tag": "0025_resource_invariants",
+      "breakpoints": true
     }
   ]
 }

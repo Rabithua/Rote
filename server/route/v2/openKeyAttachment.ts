@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
-import { presignAttachmentUploads } from '../../attachments/presignUpload';
+import {
+  presignAttachmentUploads,
+  refreshAttachmentUploadReservation,
+} from '../../attachments/presignUpload';
 import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
@@ -28,6 +31,21 @@ function requireOpenKeyPermission(permission: string) {
 function canUploadVideo(permissions: string[]): boolean {
   return permissions.includes('UPLOADVIDEO');
 }
+
+openKeyAttachmentRouter.post(
+  '/attachments/reservations/:reservationId/refresh',
+  isOpenKeyOk,
+  requireOpenKeyPermission('UPLOADATTACHMENT'),
+  requireStorageConfig,
+  async (c: HonoContext) => {
+    const openKey = c.get('openKey')!;
+    const reservationId = c.req.param('reservationId');
+    if (!/^[0-9a-f-]{36}$/i.test(reservationId)) throw new Error('Invalid reservation ID');
+    return c.json(
+      createResponse(await refreshAttachmentUploadReservation(openKey.userid, reservationId))
+    );
+  }
+);
 
 openKeyAttachmentRouter.post(
   '/attachments/presign',

@@ -1,6 +1,9 @@
 import { Hono } from 'hono';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
-import { presignAttachmentUploads } from '../../attachments/presignUpload';
+import {
+  presignAttachmentUploads,
+  refreshAttachmentUploadReservation,
+} from '../../attachments/presignUpload';
 import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
@@ -35,6 +38,18 @@ attachmentsRouter.put('/upload-proxy', async (c: HonoContext) => {
     throw error;
   }
 });
+
+attachmentsRouter.post(
+  '/reservations/:reservationId/refresh',
+  authenticateJWT,
+  requireStorageConfig,
+  async (c: HonoContext) => {
+    const user = c.get('user') as User;
+    const reservationId = c.req.param('reservationId');
+    if (!isValidUUID(reservationId)) throw new Error('Invalid reservation ID');
+    return c.json(createResponse(await refreshAttachmentUploadReservation(user.id, reservationId)));
+  }
+);
 
 attachmentsRouter.delete('/:id', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
