@@ -23,7 +23,7 @@ export type ReconciledObject = {
 type InspectedObject = ReconciledObject & { actualBytes: bigint };
 
 const RECONCILIATION_HEAD_CONCURRENCY = 8;
-const RECONCILIATION_USERS_PER_RUN = 10;
+const RECONCILIATION_USERS_PER_RUN = 100;
 
 export async function inspectReconciledObjects(
   objects: readonly ReconciledObject[],
@@ -371,7 +371,7 @@ export async function runResourceMaintenance(now = new Date()) {
     .where(
       and(
         sql`${resourceUploadReservations.status} <> 'pending'`,
-        sql`COALESCE(${resourceUploadReservations.completedAt}, ${resourceUploadReservations.createdAt}) <= ${reservationRetention}`
+        sql`COALESCE(${resourceUploadReservations.completedAt}, ${resourceUploadReservations.createdAt}) <= ${reservationRetention.toISOString()}::timestamptz`
       )
     );
   const cleanupRetention = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
