@@ -177,6 +177,10 @@ export const billingGrants = pgTable(
     }),
     leaseExpiresAt: timestamp('lease_expires_at', { withTimezone: true, precision: 6 }),
     capabilities: jsonb('capabilities').$type<string[]>().notNull().default([]),
+    benefits: jsonb('benefits').$type<{
+      storage: { baseBytes: string; bonusBytes: string; quotaBytes: string };
+      openKey: { creationPolicy: 'unlimited' };
+    } | null>(),
     snapshotHash: varchar('snapshot_hash', { length: 64 }).notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
@@ -215,6 +219,122 @@ export const billingInboundDeliveries = pgTable(
     paidToRoteDirection: check(
       'billing_inbound_deliveries_paid_to_rote_direction',
       sql`${table.direction} = 'paid_to_rote'`
+    ),
+  })
+);
+
+export const resourceStorageAccounts = pgTable('resource_storage_accounts', {
+  userId: uuid('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  usedBytes: bigint('used_bytes', { mode: 'bigint' })
+    .notNull()
+    .default(sql`0`),
+  reservedBytes: bigint('reserved_bytes', { mode: 'bigint' })
+    .notNull()
+    .default(sql`0`),
+  reconciledAt: timestamp('reconciled_at', { withTimezone: true, precision: 6 }),
+  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const resourceManagementState = pgTable('resource_management_state', {
+  id: varchar('id', { length: 32 }).primaryKey(),
+  cleanupFuseTripped: boolean('cleanup_fuse_tripped').notNull().default(false),
+  reconciliationStatus: varchar('reconciliation_status', { length: 32 })
+    .notNull()
+    .default('pending'),
+  reconciliationStartedAt: timestamp('reconciliation_started_at', {
+    withTimezone: true,
+    precision: 6,
+  }),
+  reconciliationCompletedAt: timestamp('reconciliation_completed_at', {
+    withTimezone: true,
+    precision: 6,
+  }),
+  reconciliationLastError: text('reconciliation_last_error'),
+  updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
+export const resourceStorageObjects = pgTable(
+  'resource_storage_objects',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id').references(() => users.id, { onDelete: 'set null' }),
+    storageIdentity: varchar('storage_identity', { length: 255 }).notNull(),
+    objectKey: text('object_key').notNull(),
+    role: varchar('role', { length: 32 }).notNull(),
+    actualBytes: bigint('actual_bytes', { mode: 'bigint' }).notNull(),
+    billable: boolean('billable').notNull(),
+    referenceCount: integer('reference_count').notNull().default(1),
+    state: varchar('state', { length: 32 }).notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueStorageObject: unique('resource_storage_objects_identity_key_unique').on(
+      table.storageIdentity,
+      table.objectKey
+    ),
+    ownerIdx: index('resource_storage_objects_owner_idx').on(table.ownerId),
+  })
+);
+
+export const resourceUploadReservations = pgTable(
+  'resource_upload_reservations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    grantRevision: bigint('grant_revision', { mode: 'bigint' }),
+    grantProDerived: boolean('grant_pro_derived').notNull().default(false),
+    grantEntitlementExpiresAt: timestamp('grant_entitlement_expires_at', {
+      withTimezone: true,
+      precision: 6,
+    }),
+    manifest: jsonb('manifest').$type<unknown[]>().notNull(),
+    reservedBytes: bigint('reserved_bytes', { mode: 'bigint' }).notNull(),
+    status: varchar('status', { length: 32 }).notNull().default('pending'),
+    expiresAt: timestamp('expires_at', { withTimezone: true, precision: 6 }).notNull(),
+    credentialExpiresAt: timestamp('credential_expires_at', { withTimezone: true, precision: 6 }),
+    result: jsonb('result'),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, precision: 6 }),
+  },
+  (table) => ({
+    userStatusIdx: index('resource_upload_reservations_user_status_idx').on(
+      table.userId,
+      table.status
+    ),
+    statusExpiryIdx: index('resource_upload_reservations_status_expiry_idx').on(
+      table.status,
+      table.expiresAt
+    ),
+  })
+);
+
+export const resourceCleanupOutbox = pgTable(
+  'resource_cleanup_outbox',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    storageIdentity: varchar('storage_identity', { length: 255 }).notNull(),
+    objectKey: text('object_key').notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
+    completedAt: timestamp('completed_at', { withTimezone: true, precision: 6 }),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniquePendingObject: unique('resource_cleanup_outbox_identity_key_unique').on(
+      table.storageIdentity,
+      table.objectKey
+    ),
+    pendingAttemptIdx: index('resource_cleanup_outbox_pending_attempt_idx').on(
+      table.completedAt,
+      table.nextAttemptAt
     ),
   })
 );

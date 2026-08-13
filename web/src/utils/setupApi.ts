@@ -1,9 +1,9 @@
-import { get, post, put } from './api';
+import { get, post, publicGet, publicPost, put } from './api';
 
 // 设置相关 API 接口
 
 // 获取系统配置状态
-export const getConfigStatus = () => get('/site/config-status');
+export const getConfigStatus = () => publicGet('/site/config-status');
 
 // 获取站点状态
 export const getSiteStatus = () => get('/site/status');
@@ -148,7 +148,7 @@ export const updateUrls = (frontendUrl?: string) =>
   post('/admin/settings/update-urls', { frontendUrl });
 
 // 系统初始化向导
-export const setupSystem = (setupData: any) => post('/admin/setup', setupData);
+export const setupSystem = (setupData: any) => publicPost('/admin/setup', setupData);
 
 // 刷新配置缓存
 export const refreshConfigCache = () => post('/admin/refresh-cache');

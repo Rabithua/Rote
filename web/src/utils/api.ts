@@ -71,6 +71,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
+type ApiRequestConfig = AxiosRequestConfig & {
+  skipAuthentication?: boolean;
+};
+
+function skipsAuthentication(config: unknown): boolean {
+  return Boolean((config as ApiRequestConfig | undefined)?.skipAuthentication);
+}
+
 let refreshPromise: Promise<string> | null = null;
 
 function clearExpiredSession() {
@@ -98,6 +106,10 @@ api.interceptors.request.use(
     // 这样可以避免在配置注入前就使用旧的 baseURL
     if (!config.baseURL) {
       config.baseURL = getApiUrl();
+    }
+
+    if (skipsAuthentication(config)) {
+      return config;
     }
 
     let accessToken = authService.getAccessToken();
@@ -158,7 +170,7 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // 处理401未授权错误
-    if (error.response && error.response.status === 401) {
+    if (error.response && error.response.status === 401 && !skipsAuthentication(originalRequest)) {
       // 如果是JWT认证失败，尝试刷新token
       if (authService.hasValidRefreshToken() && !originalRequest._retry) {
         originalRequest._retry = true;
@@ -216,5 +228,32 @@ export const put = <T = any>(url: string, data?: any, config?: AxiosRequestConfi
 
 export const del = <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> =>
   api.delete(url, config);
+
+// 系统初始化接口必须在安全配置和有效登录态都不存在时可用。
+export const publicGet = <T = any>(
+  url: string,
+  params?: any,
+  config?: AxiosRequestConfig
+): Promise<T> =>
+  api.request({
+    method: 'get',
+    url,
+    params,
+    ...config,
+    skipAuthentication: true,
+  } as ApiRequestConfig);
+
+export const publicPost = <T = any>(
+  url: string,
+  data?: any,
+  config?: AxiosRequestConfig
+): Promise<T> =>
+  api.request({
+    method: 'post',
+    url,
+    data,
+    ...config,
+    skipAuthentication: true,
+  } as ApiRequestConfig);
 
 export default api;

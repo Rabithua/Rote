@@ -141,12 +141,13 @@ function AttachmentItem({
 
       <button
         type="button"
+        disabled={isUploading}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           onDelete(index);
         }}
-        className="absolute top-1.5 right-1.5 z-10 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95"
+        className="absolute top-1.5 right-1.5 z-10 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
         aria-label="Delete attachment"
       >
         <X className="size-3 text-white" />

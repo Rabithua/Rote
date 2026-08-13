@@ -14,6 +14,7 @@
     "test": "bun run tests/index.ts",
     "test:full": "bun run tests/index.ts",
     "backfill:heic-browser-covers": "bun run scripts/backfillHeicBrowserCovers.ts",
+    "maintenance:reset-grant-contract": "bun run scripts/resetGrantContract.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "db:generate": "drizzle-kit generate",

@@ -11,6 +11,7 @@ import {
   getOpenKeyUsageLogs,
 } from '../../utils/dbMethods';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
+import { ResourcePolicyError } from '../../resources/errors';
 
 // API密钥相关路由
 const apiKeysRouter = new Hono<{ Variables: HonoVariables }>();
@@ -54,8 +55,15 @@ apiKeysRouter.post('/', authenticateJWT, async (c: HonoContext) => {
     throw new Error('User ID is required');
   }
 
-  const data = await generateOpenKey(user.id, permissions);
-  return c.json(createResponse(data), 201);
+  try {
+    const data = await generateOpenKey(user.id, permissions);
+    return c.json(createResponse(data), 201);
+  } catch (error) {
+    if (error instanceof ResourcePolicyError) {
+      return c.json(createResponse(null, error.code), error.status);
+    }
+    throw error;
+  }
 });
 
 // 获取所有API密钥（带统计）

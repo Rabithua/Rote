@@ -23,6 +23,7 @@ import openKeyRouter from './openKeyRouter';
 import passkeyRouter from './passkey';
 import permissionsRouter from './permissions';
 import reactionsRouter from './reaction';
+import resourcesRouter from './resources';
 import siteRouter from './site';
 import subscriptionsRouter from './subscription';
 import usersRouter from './user';
@@ -142,5 +143,6 @@ router.route('/ai', aiRouter);
 router.route('/changes', changeRouter);
 router.route('/imports', importsRouter);
 router.route('/billing', billingRouter);
+router.route('/resources', resourcesRouter);
 
 export default router;

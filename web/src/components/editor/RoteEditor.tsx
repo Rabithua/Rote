@@ -7,6 +7,7 @@ import { del, post, put } from '@/utils/api';
 import {
   finalize as finalizeUpload,
   getUploadErrorMessage,
+  isResourceUploadPolicyError,
   presign,
   uploadToSignedUrl,
 } from '@/utils/directUpload';
@@ -29,7 +30,7 @@ import {
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import debounce from 'lodash/debounce';
 import { Archive, BookOpen, Globe2, Globe2Icon, PinIcon, Send, X } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import 'react-photo-view/dist/react-photo-view.css';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -56,6 +57,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [submiting, setSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<Map<File, number>>(new Map());
+  const [retryableFiles, setRetryableFiles] = useState<Set<File>>(new Set());
+  const activeUploadFiles = useRef<Set<File>>(new Set());
   const [rote, setRote] = useAtom(roteAtom);
   const { data: siteStatus } = useSiteStatus();
   const { capabilities } = usePermissions();
@@ -116,6 +119,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     setLocalContent('');
     setUploadingFiles(new Set());
     setUploadProgress(new Map());
+    setRetryableFiles(new Set());
   }, [setRote]);
 
   useEffect(() => {
@@ -204,6 +208,11 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       }));
 
       if (item instanceof File) {
+        setRetryableFiles((prev) => {
+          const next = new Set(prev);
+          next.delete(item);
+          return next;
+        });
         setUploadProgress((prev) => {
           const next = new Map(prev);
           next.delete(item);
@@ -220,8 +229,20 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   );
 
   const uploadFiles = useCallback(
-    async (files: File[]) => {
+    async (requestedFiles: File[], preserveOnFailure = false) => {
+      const files = requestedFiles.filter((file) => !activeUploadFiles.current.has(file));
       if (!files?.length) return;
+
+      const existingAttachments = rote.attachments.filter(
+        (attachment) => !(attachment instanceof File && files.includes(attachment))
+      );
+      const existingMediaKinds = existingAttachments
+        .map((attachment) => getAttachmentMediaKind(attachment))
+        .filter(Boolean);
+      const existingHasVideo = existingMediaKinds.includes('video');
+      const existingImageCount = existingMediaKinds.filter(
+        (kind) => kind === 'image' || kind === 'livePhoto'
+      ).length;
 
       const fileKinds = files.map((file) => {
         if (isImageFile(file)) return 'image';
@@ -244,19 +265,19 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         toast.error(t('videoUploadDisabled'));
         return;
       }
-      if (hasVideoSelection && imageAttachmentCount > 0) {
+      if (hasVideoSelection && existingImageCount > 0) {
         toast.error(t('mixedMediaNotAllowed'));
         return;
       }
-      if (hasImageSelection && hasVideoAttachment) {
+      if (hasImageSelection && existingHasVideo) {
         toast.error(t('mixedMediaNotAllowed'));
         return;
       }
-      if (hasVideoSelection && (files.length > 1 || hasVideoAttachment)) {
+      if (hasVideoSelection && (files.length > 1 || existingHasVideo)) {
         toast.error(t('singleVideoOnly'));
         return;
       }
-      if (hasImageSelection && imageAttachmentCount + files.length > 9) {
+      if (hasImageSelection && existingImageCount + files.length > 9) {
         toast.error(t('imageLimitExceeded', { count: 9 }));
         return;
       }
@@ -265,7 +286,19 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         return;
       }
 
-      setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
+      files.forEach((file) => activeUploadFiles.current.add(file));
+      setRetryableFiles((prev) => {
+        const next = new Set(prev);
+        files.forEach((file) => next.delete(file));
+        return next;
+      });
+      setRote((prev) => ({
+        ...prev,
+        attachments: [
+          ...prev.attachments,
+          ...files.filter((file) => !prev.attachments.includes(file)),
+        ],
+      }));
       setUploadingFiles((prev) => {
         const next = new Set(prev);
         files.forEach((f) => next.add(f));
@@ -409,14 +442,31 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
             ...(Array.isArray(finalized) ? finalized : []),
           ],
         }));
+        setRetryableFiles((prev) => {
+          const next = new Set(prev);
+          files.forEach((file) => next.delete(file));
+          return next;
+        });
       } catch (error: any) {
-        // 失败：移除对应的本地 File 占位，并提示错误
-        setRote((prev) => ({
-          ...prev,
-          attachments: prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
-        }));
+        // Resource-policy failures are recoverable by deleting cloud files,
+        // restoring Pro, or waiting for the instance administrator. Keep the
+        // local File placeholders so a failed cloud upload never discards the
+        // user's draft attachments.
+        if (!isResourceUploadPolicyError(error) && !preserveOnFailure) {
+          setRote((prev) => ({
+            ...prev,
+            attachments: prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
+          }));
+        } else {
+          setRetryableFiles((prev) => {
+            const next = new Set(prev);
+            files.forEach((file) => next.add(file));
+            return next;
+          });
+        }
         toast.error(`${t('uploadFailed')}: ${getUploadErrorMessage(error)}`);
       } finally {
+        files.forEach((file) => activeUploadFiles.current.delete(file));
         // 清理上传中标记
         setUploadingFiles((prev) => {
           const next = new Set(prev);
@@ -432,10 +482,9 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     },
     [
       canUploadVideo,
-      hasVideoAttachment,
-      imageAttachmentCount,
       maxVideoUploadSizeBytes,
       maxVideoUploadSizeMB,
+      rote.attachments,
       rote.id,
       setRote,
       t,
@@ -444,6 +493,11 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   const submit = useCallback(() => {
     const contentToSubmit = localContent;
+
+    if (rote.attachments.some((attachment) => attachment instanceof File)) {
+      toast.error(t('pendingAttachments'));
+      return;
+    }
 
     if (!contentToSubmit.trim() && rote.attachments.length === 0) {
       toast.error(t('error.emptyContent'));
@@ -631,6 +685,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   );
 
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
+  const hasPendingAttachments = rote.attachments.some((attachment) => attachment instanceof File);
 
   return (
     <div className="bg-background grow space-y-2 overflow-hidden">
@@ -663,6 +718,23 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           accept={uploadAccept}
           canAddMore={canAddMoreAttachments}
         />
+      )}
+
+      {retryableFiles.size > 0 && (
+        <Alert className="animate-show">
+          <AlertDescription className="flex items-center justify-between gap-3 font-light">
+            <span>{t('retryUploadDescription')}</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={uploadingFiles.size > 0}
+              onClick={() => void uploadFiles(Array.from(retryableFiles), true)}
+            >
+              {t('retryUpload')}
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* 绑定的文章 - 一对一，只在有绑定时显示 */}
@@ -766,7 +838,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           type="button"
           className="ml-auto flex items-center gap-2 px-4 py-1 active:scale-95"
           onClick={submit}
-          disabled={submiting}
+          disabled={submiting || hasPendingAttachments}
         >
           <Send className="size-4" />
           {t('send')}

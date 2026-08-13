@@ -1,6 +1,44 @@
 import type { Attachment } from '@/types/main';
 import axios, { type AxiosProgressEvent } from 'axios';
+import i18n from 'i18next';
 import { post } from './api';
+
+const RESOURCE_UPLOAD_ERROR_TRANSLATIONS = {
+  resource_storage_quota_exceeded: 'pages.profile.resources.errors.storageQuotaExceeded',
+  resource_upload_reservation_expired: 'pages.profile.resources.errors.reservationExpired',
+  resource_upload_manifest_mismatch: 'pages.profile.resources.errors.manifestMismatch',
+  resource_storage_reconciliation_required: 'pages.profile.resources.errors.reconciliationRequired',
+  resource_storage_backend_unsupported: 'pages.profile.resources.errors.backendUnsupported',
+} as const;
+
+type ResourceUploadErrorCode = keyof typeof RESOURCE_UPLOAD_ERROR_TRANSLATIONS;
+
+function errorCandidates(error: unknown): unknown[] {
+  const value = error as any;
+  return [
+    value?.code,
+    value?.message,
+    value?.response?.data?.code,
+    value?.response?.data?.message,
+    value?.response?.data?.error,
+  ];
+}
+
+export function getResourceUploadErrorCode(error: unknown): ResourceUploadErrorCode | null {
+  for (const candidate of errorCandidates(error)) {
+    if (
+      typeof candidate === 'string' &&
+      Object.hasOwn(RESOURCE_UPLOAD_ERROR_TRANSLATIONS, candidate)
+    ) {
+      return candidate as ResourceUploadErrorCode;
+    }
+  }
+  return null;
+}
+
+export function isResourceUploadPolicyError(error: unknown): boolean {
+  return getResourceUploadErrorCode(error) !== null;
+}
 
 export type MediaKind = 'image' | 'video' | 'livePhoto';
 export type PresignFile = {
@@ -99,6 +137,11 @@ export async function uploadToSignedUrl(
  */
 export function getUploadErrorMessage(error: unknown): string {
   if (!error) return 'Unknown error';
+
+  const resourceCode = getResourceUploadErrorCode(error);
+  if (resourceCode) {
+    return i18n.t(RESOURCE_UPLOAD_ERROR_TRANSLATIONS[resourceCode]);
+  }
 
   const err = error as any;
 

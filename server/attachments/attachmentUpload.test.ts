@@ -5,7 +5,8 @@ import { presignAttachmentUploads } from './presignUpload';
 import { getUploadExtension } from './uploadKeys';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
-const { finalizeAttachmentUploads } = await import('./finalizeUpload');
+const { assertCompleteRequiredManifest, finalizeAttachmentUploads } =
+  await import('./finalizeUpload');
 
 const USER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const LIVE_UUID = '11111111-1111-4111-8111-111111111111';
@@ -33,6 +34,72 @@ const detectedContentTypeForKey = async (key: string) => {
 };
 
 describe('attachment upload flow', () => {
+  it('requires all billable roles while allowing optional derivatives', () => {
+    const reservationId = LIVE_UUID;
+    const original = `users/${USER_ID}/staging/${reservationId}/uploads/a.jpg`;
+    const compressed = `users/${USER_ID}/staging/${reservationId}/compressed/a.webp`;
+    const liveOriginal = `users/${USER_ID}/staging/${reservationId}/uploads/b.heic`;
+    const paired = `users/${USER_ID}/staging/${reservationId}/paired-videos/b.mov`;
+    const manifest = [
+      {
+        uuid: 'a',
+        role: 'original' as const,
+        stagingKey: original,
+        finalKey: 'a',
+        declaredBytes: '1',
+        contentType: 'image/jpeg',
+        billable: true,
+      },
+      {
+        uuid: 'a',
+        role: 'compressed' as const,
+        stagingKey: compressed,
+        finalKey: 'ac',
+        declaredBytes: null,
+        contentType: 'image/webp',
+        billable: false,
+      },
+      {
+        uuid: 'b',
+        role: 'original' as const,
+        stagingKey: liveOriginal,
+        finalKey: 'b',
+        declaredBytes: '1',
+        contentType: 'image/heic',
+        billable: true,
+      },
+      {
+        uuid: 'b',
+        role: 'paired_video' as const,
+        stagingKey: paired,
+        finalKey: 'bp',
+        declaredBytes: '1',
+        contentType: 'video/quicktime',
+        billable: true,
+      },
+    ];
+    expect(() =>
+      assertCompleteRequiredManifest(
+        [
+          { uuid: 'a', originalKey: original },
+          { uuid: 'b', originalKey: liveOriginal, pairedVideoKey: paired },
+        ],
+        manifest
+      )
+    ).not.toThrow();
+    expect(() =>
+      assertCompleteRequiredManifest([{ uuid: 'a', originalKey: original }], manifest)
+    ).toThrow();
+    expect(() =>
+      assertCompleteRequiredManifest(
+        [
+          { uuid: 'a', originalKey: original },
+          { uuid: 'b', originalKey: liveOriginal },
+        ],
+        manifest
+      )
+    ).toThrow();
+  });
   it('uses the signed Content-Type to choose the key extension', () => {
     expect(getUploadExtension('photo.webp', 'image/jpeg')).toBe('.jpg');
     expect(getUploadExtension('photo.jpg', 'image/webp')).toBe('.webp');
@@ -71,6 +138,25 @@ describe('attachment upload flow', () => {
       },
       {
         getAttachmentUploadPolicy: async () => uploadPolicy,
+        getResourceStateForUserId: async () => ({
+          management: 'unmanaged',
+          source: 'unmanaged',
+          storage: {
+            enforcement: 'off',
+            usedBytes: null,
+            reservedBytes: null,
+            limitBytes: null,
+            overLimit: null,
+            canUpload: true,
+          },
+          openKey: {
+            policy: 'unmanaged',
+            creationThreshold: null,
+            existingCount: 0,
+            canCreate: true,
+          },
+        }),
+        createUploadReservation: async () => false,
         presignPutUrl: async (key, contentType) => {
           signed.push({ contentType, key });
           return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
@@ -86,6 +172,74 @@ describe('attachment upload flow', () => {
     expect(result.items[0].pairedVideo.key).toEndWith('.mov');
     expect(result.items[0].pairedVideo.contentType).toBe('video/quicktime');
     expect(signed.some(({ key }) => key.endsWith('.webp'))).toBe(false);
+  });
+
+  it('uses length-bound staging objects and one atomic reservation for managed uploads', async () => {
+    const signed: Array<{ contentLength?: number; key: string }> = [];
+    let reservation:
+      | Parameters<
+          NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
+        >[0]
+      | undefined;
+    const result = await presignAttachmentUploads(
+      {
+        files: [
+          {
+            contentType: 'image/heic',
+            filename: 'IMG_0001.HEIC',
+            mediaKind: 'livePhoto',
+            pairedVideo: {
+              contentType: 'video/quicktime',
+              filename: 'IMG_0001.MOV',
+              size: 2048,
+            },
+            size: 1024,
+          },
+        ],
+        scopes: ['video:upload'],
+        userId: USER_ID,
+      },
+      {
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        getResourceStateForUserId: async () => ({
+          management: 'official',
+          source: 'official_pro',
+          storage: {
+            enforcement: 'enforce',
+            usedBytes: '0',
+            reservedBytes: '0',
+            limitBytes: '10000000000',
+            overLimit: false,
+            canUpload: true,
+          },
+          openKey: {
+            policy: 'unlimited',
+            creationThreshold: null,
+            existingCount: 2,
+            canCreate: true,
+          },
+        }),
+        createUploadReservation: async (input) => {
+          reservation = input;
+          return true;
+        },
+        presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
+          signed.push({ contentLength, key });
+          return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
+        },
+        randomUUID: () => LIVE_UUID,
+        requireStorageAvailable: () => storageConfig,
+      }
+    );
+
+    expect(result.reservationId).toBe(LIVE_UUID);
+    expect(result.items[0].original.key).toContain(`/staging/${LIVE_UUID}/`);
+    expect(result.items[0].pairedVideo.key).toContain(`/staging/${LIVE_UUID}/`);
+    expect(signed.map(({ contentLength }) => contentLength)).toEqual([1024, 2048]);
+    expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
+      ['original', '1024'],
+      ['paired_video', '2048'],
+    ]);
   });
 
   it('finalizes HEIC and MOV with a browser-compatible cover URL', async () => {

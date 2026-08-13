@@ -6,12 +6,14 @@ import {
   noteImportSources,
   roteChanges,
   rotes,
+  users,
   type NewAttachment,
   type NewNoteImportSource,
   type NewRote,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
 import { trackBackgroundTask } from '../utils/backgroundTask';
+import { releaseStorageObjectReferences } from '../resources/service';
 import { enqueueEmbeddingJobs } from '../utils/dbMethods/ai';
 import { DatabaseError } from '../utils/dbMethods/common';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
@@ -65,7 +67,8 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
       const chunk = payload.notes.slice(offset, offset + IMPORT_CHUNK_SIZE);
       const objectKeysToDelete: string[] = [];
 
-      await db.transaction(async (tx) => {
+      const trackedObjectKeys = await db.transaction(async (tx) => {
+        await tx.select({ id: users.id }).from(users).where(eq(users.id, userId)).for('update');
         await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`import:${userId}`}))`);
         const sourceNotes = chunk.filter(hasImportSource);
         const sourceConditions = sourceNotes.map((note) =>
@@ -326,14 +329,18 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
             }))
           );
         }
+        return releaseStorageObjectReferences(userId, objectKeysToDelete, tx);
       });
 
-      objectKeysToDelete.forEach((key) => {
-        r2deletehandler(key).catch((error) => {
-          // eslint-disable-next-line no-console -- committed imports must not fail if stale-object cleanup is unavailable
-          console.error(`[import] failed to delete replaced attachment object: ${key}`, error);
+      const trackedObjectKeySet = new Set(trackedObjectKeys);
+      objectKeysToDelete
+        .filter((key) => !trackedObjectKeySet.has(key))
+        .forEach((key) => {
+          r2deletehandler(key).catch((error) => {
+            // eslint-disable-next-line no-console -- committed imports must not fail if stale-object cleanup is unavailable
+            console.error(`[import] failed to delete replaced attachment object: ${key}`, error);
+          });
         });
-      });
     }
 
     trackBackgroundTask(

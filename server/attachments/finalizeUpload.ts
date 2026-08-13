@@ -9,6 +9,7 @@ import { getAttachmentUploadPolicy } from './uploadPolicy';
 import { getAttachmentDetailsByRoteId, upsertAttachmentsByOriginalKey } from '../utils/dbMethods';
 import {
   MAX_BATCH_SIZE,
+  MAX_IMAGE_FILE_SIZE,
   inferAttachmentMediaKind,
   isImageContentType,
   isVideoContentType,
@@ -17,7 +18,7 @@ import {
   validateFileSize,
   validateRoteAttachmentDetails,
 } from '../utils/fileValidation';
-import { checkObjectExists } from '../utils/r2';
+import { checkObjectExists, copyObjectIfMatch, getObjectInfo } from '../utils/r2';
 import type { FinalizeAttachmentInput } from './types';
 import { requireStorageAvailable } from './types';
 import attachmentErrors from './errorCodes.json';
@@ -25,6 +26,17 @@ import { ensureHeicBrowserCover } from './heicBrowserCover';
 import { assertLivePhotoFinalizeBatch } from './livePhotoFinalize';
 import { finalizeInputIncludesVideo, isHeicLikeUpload } from './uploadMedia';
 import { detectStoredImageContentTypeByKey } from './storedImageContent';
+import {
+  completeUploadReservation,
+  cancelUploadReservation,
+  getPendingUploadReservation,
+  reservationIdFromStagingKey,
+  type UploadReservationManifestItem,
+} from '../resources/service';
+import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
+import db from '../utils/drizzle';
+import { users } from '../drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export type FinalizeAttachmentDependencies = {
   checkObjectExists: typeof checkObjectExists;
@@ -34,6 +46,10 @@ export type FinalizeAttachmentDependencies = {
   getAttachmentUploadPolicy: typeof getAttachmentUploadPolicy;
   requireStorageAvailable: typeof requireStorageAvailable;
   upsertAttachmentsByOriginalKey: typeof upsertAttachmentsByOriginalKey;
+  getObjectInfo: typeof getObjectInfo;
+  copyObjectIfMatch: typeof copyObjectIfMatch;
+  getPendingUploadReservation: typeof getPendingUploadReservation;
+  completeUploadReservation: typeof completeUploadReservation;
 };
 
 const defaultDependencies: FinalizeAttachmentDependencies = {
@@ -44,7 +60,135 @@ const defaultDependencies: FinalizeAttachmentDependencies = {
   getAttachmentUploadPolicy,
   requireStorageAvailable,
   upsertAttachmentsByOriginalKey,
+  getObjectInfo,
+  copyObjectIfMatch,
+  getPendingUploadReservation,
+  completeUploadReservation,
 };
+
+type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: bigint };
+
+export function assertCompleteRequiredManifest(
+  attachments: readonly FinalizeAttachmentInput[],
+  manifest: readonly UploadReservationManifestItem[]
+) {
+  const submitted = new Map<
+    string,
+    { uuid: string; role: UploadReservationManifestItem['role'] }
+  >();
+  for (const attachment of attachments) {
+    const entries: Array<[string | undefined, UploadReservationManifestItem['role']]> = [
+      [attachment.originalKey, 'original'],
+      [attachment.compressedKey, 'compressed'],
+      [attachment.posterKey, 'poster'],
+      [attachment.pairedVideoKey, 'paired_video'],
+    ];
+    for (const [key, role] of entries) {
+      if (!key) continue;
+      if (submitted.has(key)) {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      }
+      submitted.set(key, { uuid: attachment.uuid, role });
+    }
+  }
+  const expectedByKey = new Map(manifest.map((item) => [item.stagingKey, item]));
+  for (const [key, actual] of submitted) {
+    const expected = expectedByKey.get(key);
+    if (!expected || expected.uuid !== actual.uuid || expected.role !== actual.role) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+  }
+  const required = manifest.filter(
+    (item) => item.role === 'original' || item.role === 'paired_video'
+  );
+  if (required.some((item) => !submitted.has(item.stagingKey))) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  const originalUuids = manifest
+    .filter((item) => item.role === 'original')
+    .map((item) => item.uuid);
+  if (
+    new Set(originalUuids).size !== originalUuids.length ||
+    attachments.length !== originalUuids.length ||
+    new Set(attachments.map((item) => item.uuid)).size !== attachments.length
+  ) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+}
+
+async function promoteManagedObjects(
+  userId: string,
+  attachments: FinalizeAttachmentInput[],
+  dependencies: FinalizeAttachmentDependencies,
+  transaction?: any
+): Promise<{ reservationId: string; objects: FinalizedManagedObject[] } | null> {
+  const ids = new Set(
+    attachments.map((item) => reservationIdFromStagingKey(item.originalKey)).filter(Boolean)
+  );
+  if (ids.size === 0) return null;
+  if (ids.size !== 1 || ids.has(null as any)) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  const reservationId = [...ids][0]!;
+  const reservation = await dependencies.getPendingUploadReservation(
+    userId,
+    reservationId,
+    transaction,
+    Boolean(transaction)
+  );
+  if (!reservation) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  if (reservation.status === 'completed') return { reservationId, objects: [] };
+  assertCompleteRequiredManifest(attachments, reservation.manifest);
+  const manifest = new Map(reservation.manifest.map((item) => [item.stagingKey, item]));
+  const objects: FinalizedManagedObject[] = [];
+  const promote = async (key: string | undefined) => {
+    if (!key) return key;
+    const expected = manifest.get(key);
+    if (!expected) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    const info = await dependencies.getObjectInfo(key);
+    if (!info || info.contentLength === null || !info.etag) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    if (
+      expected.declaredBytes !== null &&
+      BigInt(info.contentLength) !== BigInt(expected.declaredBytes)
+    ) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    if (!expected.billable && info.contentLength > MAX_IMAGE_FILE_SIZE) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 413);
+    }
+    if (info.contentType && info.contentType.toLowerCase() !== expected.contentType.toLowerCase()) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    await dependencies.copyObjectIfMatch({
+      sourceKey: expected.stagingKey,
+      destinationKey: expected.finalKey,
+      sourceEtag: info.etag,
+    });
+    const finalInfo = await dependencies.getObjectInfo(expected.finalKey);
+    if (!finalInfo || finalInfo.contentLength !== info.contentLength) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    objects.push({ ...expected, actualBytes: BigInt(info.contentLength) });
+    return expected.finalKey;
+  };
+  for (const item of attachments) {
+    item.originalKey = (await promote(item.originalKey))!;
+    item.compressedKey = await promote(item.compressedKey);
+    item.posterKey = await promote(item.posterKey);
+    item.pairedVideoKey = await promote(item.pairedVideoKey);
+    const original = objects.find(
+      (object) => object.uuid === item.uuid && object.role === 'original'
+    );
+    if (original) item.size = Number(original.actualBytes);
+    const paired = objects.find(
+      (object) => object.uuid === item.uuid && object.role === 'paired_video'
+    );
+    if (paired) item.pairedVideoSize = Number(paired.actualBytes);
+  }
+  return { reservationId, objects };
+}
 
 function assertFinalizeInput(
   attachments: FinalizeAttachmentInput[] | undefined
@@ -215,9 +359,31 @@ export async function finalizeAttachmentUploads(
     noteId?: string;
     attachments?: FinalizeAttachmentInput[];
   },
-  dependencyOverrides: Partial<FinalizeAttachmentDependencies> = {}
-) {
+  dependencyOverrides: Partial<FinalizeAttachmentDependencies> = {},
+  managedTransaction?: any
+): Promise<any[]> {
   const dependencies = { ...defaultDependencies, ...dependencyOverrides };
+  const requestedReservationIds = new Set(
+    (input.attachments ?? [])
+      .map((item) => reservationIdFromStagingKey(item.originalKey))
+      .filter((id): id is string => Boolean(id))
+  );
+  if (!managedTransaction && requestedReservationIds.size === 1) {
+    const reservationId = [...requestedReservationIds][0]!;
+    try {
+      return await db.transaction((transaction) =>
+        finalizeAttachmentUploads(input, dependencyOverrides, transaction)
+      );
+    } catch (error) {
+      if (
+        error instanceof ResourcePolicyError &&
+        error.code === RESOURCE_ERROR_CODES.uploadReservationExpired
+      ) {
+        await cancelUploadReservation(input.userId, reservationId);
+      }
+      throw error;
+    }
+  }
   const storageConfig = dependencies.requireStorageAvailable();
   const uploadPolicy = await dependencies.getAttachmentUploadPolicy(input.userId);
   if (!uploadPolicy.canUploadAttachments)
@@ -244,10 +410,47 @@ export async function finalizeAttachmentUploads(
   if (hasVideo && !uploadPolicy.canUploadVideo)
     throw new Error(attachmentErrors.capabilityVideoUpload);
 
+  if (managedTransaction && requestedReservationIds.size === 1) {
+    const [lockedUser] = await managedTransaction
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, input.userId))
+      .limit(1)
+      .for('update');
+    if (!lockedUser) throw new Error('User not found');
+    const reservationId = [...requestedReservationIds][0]!;
+    const claimed = await dependencies.getPendingUploadReservation(
+      input.userId,
+      reservationId,
+      managedTransaction,
+      true
+    );
+    if (!claimed) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    if (claimed.status === 'completed' && Array.isArray(claimed.result)) return claimed.result;
+    assertCompleteRequiredManifest(input.attachments, claimed.manifest);
+  }
+
   const validAttachments = await collectValidAttachments(
     input.attachments,
     dependencies.checkObjectExists
   );
+  const managedPromotion = await promoteManagedObjects(
+    input.userId,
+    validAttachments,
+    dependencies,
+    managedTransaction
+  );
+  if (managedPromotion?.objects.length === 0) {
+    const completed = await dependencies.getPendingUploadReservation(
+      input.userId,
+      managedPromotion.reservationId,
+      managedTransaction,
+      Boolean(managedTransaction)
+    );
+    if (completed?.status === 'completed' && Array.isArray(completed.result)) {
+      return completed.result;
+    }
+  }
   if (input.noteId) {
     const currentAttachments = await dependencies.getAttachmentDetailsByRoteId(input.noteId);
     const pendingAttachments = validAttachments.map((item) => ({
@@ -305,21 +508,69 @@ export async function finalizeAttachmentUploads(
       if (requiresHeicBrowserCover) {
         const cover = await dependencies.ensureHeicBrowserCover(item.originalKey);
         item.compressedKey = cover.key;
+        if (managedPromotion) {
+          const coverInfo = await dependencies.getObjectInfo(cover.key);
+          if (!coverInfo || coverInfo.contentLength === null) {
+            throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+          }
+          managedPromotion.objects.push({
+            uuid: item.uuid,
+            role: 'compressed',
+            stagingKey: cover.key,
+            finalKey: cover.key,
+            declaredBytes: null,
+            contentType: coverInfo.contentType ?? 'image/jpeg',
+            billable: false,
+            actualBytes: BigInt(coverInfo.contentLength),
+          });
+        }
       } else {
         item.compressedKey = item.originalKey;
       }
     } else if (mediaKind === 'image' && requiresHeicBrowserCover && !item.compressedKey) {
       const cover = await dependencies.ensureHeicBrowserCover(item.originalKey);
       item.compressedKey = cover.key;
+      if (managedPromotion) {
+        const coverInfo = await dependencies.getObjectInfo(cover.key);
+        if (!coverInfo || coverInfo.contentLength === null) {
+          throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+        }
+        managedPromotion.objects.push({
+          uuid: item.uuid,
+          role: 'compressed',
+          stagingKey: cover.key,
+          finalKey: cover.key,
+          declaredBytes: null,
+          contentType: coverInfo.contentType ?? 'image/jpeg',
+          billable: false,
+          actualBytes: BigInt(coverInfo.contentLength),
+        });
+      }
     }
   }
 
   const uploads = validAttachments.map((item) => toUploadResult(storageConfig.urlPrefix, item));
-  const finalized = await dependencies.upsertAttachmentsByOriginalKey(
-    input.userId,
-    input.noteId,
-    uploads
-  );
+  const persist = async (transaction?: any) => {
+    const finalized = await dependencies.upsertAttachmentsByOriginalKey(
+      input.userId,
+      input.noteId,
+      uploads,
+      transaction
+    );
+    if (managedPromotion) {
+      await dependencies.completeUploadReservation(
+        {
+          userId: input.userId,
+          reservationId: managedPromotion.reservationId,
+          result: finalized,
+          objects: managedPromotion.objects,
+        },
+        transaction
+      );
+    }
+    return finalized;
+  };
+  const finalized = await persist(managedTransaction);
   validAttachments.forEach((item, index) => {
     if (!isHeicLikeUpload(item)) return;
     const stored = finalized[index] as { id?: string; compressUrl?: string } | undefined;

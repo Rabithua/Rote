@@ -15,6 +15,15 @@ export const BILLING_GRANT_CAPABILITY_KEYS = [
 export type BillingGrantStatus = (typeof BILLING_GRANT_STATUSES)[number];
 export type BillingGrantCapability = (typeof BILLING_GRANT_CAPABILITY_KEYS)[number];
 
+export type BillingGrantBenefits = {
+  storage: {
+    baseBytes: bigint;
+    bonusBytes: bigint;
+    quotaBytes: bigint;
+  };
+  openKey: { creationPolicy: 'unlimited' };
+};
+
 export type BillingGrantSnapshot = {
   issuer: typeof BILLING_ISSUER;
   instanceId: string;
@@ -25,6 +34,7 @@ export type BillingGrantSnapshot = {
   entitlementExpiresAt: Date | null;
   leaseExpiresAt: Date | null;
   capabilities: BillingGrantCapability[];
+  benefits: BillingGrantBenefits | null;
 };
 
 export type BillingGrantDelivery = BillingGrantSnapshot & {
@@ -52,6 +62,19 @@ const grantDeliverySchema = z
         (capabilities) => new Set(capabilities).size === capabilities.length,
         'capabilities must be unique'
       ),
+    benefits: z
+      .object({
+        storage: z
+          .object({
+            baseBytes: z.string().regex(/^(0|[1-9][0-9]*)$/),
+            bonusBytes: z.string().regex(/^(0|[1-9][0-9]*)$/),
+            quotaBytes: z.string().regex(/^(0|[1-9][0-9]*)$/),
+          })
+          .strict(),
+        openKey: z.object({ creationPolicy: z.literal('unlimited') }).strict(),
+      })
+      .strict()
+      .nullable(),
   })
   .strict()
   .superRefine((snapshot, context) => {
@@ -60,11 +83,13 @@ const grantDeliverySchema = z
         snapshot.productId !== null ||
         snapshot.entitlementExpiresAt !== null ||
         snapshot.leaseExpiresAt !== null ||
-        snapshot.capabilities.length !== 0
+        snapshot.capabilities.length !== 0 ||
+        snapshot.benefits !== null
       ) {
         context.addIssue({
           code: 'custom',
-          message: 'status none requires null product and expiry values and no capabilities',
+          message:
+            'status none requires null product, expiry and benefits values and no capabilities',
         });
       }
       return;
@@ -74,13 +99,30 @@ const grantDeliverySchema = z
       snapshot.planId !== BILLING_PLAN_ID ||
       snapshot.productId === null ||
       snapshot.entitlementExpiresAt === null ||
-      snapshot.leaseExpiresAt === null
+      snapshot.leaseExpiresAt === null ||
+      snapshot.benefits === null
     ) {
       context.addIssue({
         code: 'custom',
         message: 'active grants require plan, product, entitlement expiry, and lease expiry',
       });
       return;
+    }
+
+    const { baseBytes, bonusBytes, quotaBytes } = snapshot.benefits.storage;
+    const parsedValues = [baseBytes, bonusBytes, quotaBytes].map((value) => BigInt(value));
+    if (parsedValues.some((value) => value > BILLING_MAX_REVISION)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['benefits', 'storage'],
+        message: 'storage bytes exceed signed 64-bit range',
+      });
+    } else if (parsedValues[0] + parsedValues[1] !== parsedValues[2]) {
+      context.addIssue({
+        code: 'custom',
+        path: ['benefits', 'storage', 'quotaBytes'],
+        message: 'quotaBytes must equal baseBytes + bonusBytes',
+      });
     }
 
     if (Date.parse(snapshot.leaseExpiresAt) > Date.parse(snapshot.entitlementExpiresAt)) {
@@ -161,6 +203,16 @@ export function parseBillingGrantSnapshot(params: {
       : null,
     leaseExpiresAt: parsed.leaseExpiresAt ? new Date(parsed.leaseExpiresAt) : null,
     capabilities: [...parsed.capabilities].sort(),
+    benefits: parsed.benefits
+      ? {
+          storage: {
+            baseBytes: BigInt(parsed.benefits.storage.baseBytes),
+            bonusBytes: BigInt(parsed.benefits.storage.bonusBytes),
+            quotaBytes: BigInt(parsed.benefits.storage.quotaBytes),
+          },
+          openKey: parsed.benefits.openKey,
+        }
+      : null,
   };
 }
 
@@ -191,6 +243,16 @@ export function canonicalizeBillingGrantSnapshot(snapshot: BillingGrantSnapshot)
     entitlementExpiresAt: snapshot.entitlementExpiresAt?.toISOString() ?? null,
     leaseExpiresAt: snapshot.leaseExpiresAt?.toISOString() ?? null,
     capabilities: [...snapshot.capabilities].sort(),
+    benefits: snapshot.benefits
+      ? {
+          storage: {
+            baseBytes: snapshot.benefits.storage.baseBytes.toString(),
+            bonusBytes: snapshot.benefits.storage.bonusBytes.toString(),
+            quotaBytes: snapshot.benefits.storage.quotaBytes.toString(),
+          },
+          openKey: snapshot.benefits.openKey,
+        }
+      : null,
   });
 }
 

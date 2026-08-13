@@ -49,6 +49,7 @@ const enabledConfig = {
   productIds: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
   connectTimeoutMs: 3_000,
   totalTimeoutMs: 10_000,
+  purchaseAvailable: true,
   roteToPaid: {
     active: { keyId: 'rote-active', secret: 'rote-to-paid-active-secret-00000001' },
   },
@@ -68,6 +69,14 @@ const snapshot: BillingGrantDelivery = {
   entitlementExpiresAt: new Date('2026-08-09T00:00:00.000Z'),
   leaseExpiresAt: new Date('2026-08-08T00:00:00.000Z'),
   capabilities: ['ai.chat', 'attachment.video.upload'],
+  benefits: {
+    storage: {
+      baseBytes: BigInt('10000000000'),
+      bonusBytes: BigInt('600000000'),
+      quotaBytes: BigInt('10600000000'),
+    },
+    openKey: { creationPolicy: 'unlimited' },
+  },
 };
 
 class StubGrantStore implements BillingGrantProjectionStore {
@@ -95,6 +104,16 @@ class StubGrantStore implements BillingGrantProjectionStore {
         entitlementExpiresAt: grant.entitlementExpiresAt,
         leaseExpiresAt: grant.leaseExpiresAt,
         capabilities: grant.capabilities,
+        benefits: grant.benefits
+          ? {
+              storage: {
+                baseBytes: grant.benefits.storage.baseBytes.toString(),
+                bonusBytes: grant.benefits.storage.bonusBytes.toString(),
+                quotaBytes: grant.benefits.storage.quotaBytes.toString(),
+              },
+              openKey: grant.benefits.openKey,
+            }
+          : null,
       });
     }
     return this.applyResponse;
@@ -131,6 +150,14 @@ function databaseGrant(overrides: Partial<BillingGrant> = {}): BillingGrant {
     entitlementExpiresAt: new Date('2026-08-09T00:00:00.000Z'),
     leaseExpiresAt: new Date('2026-08-08T00:00:00.000Z'),
     capabilities: ['ai.chat', 'attachment.video.upload'],
+    benefits: {
+      storage: {
+        baseBytes: '10000000000',
+        bonusBytes: '600000000',
+        quotaBytes: '10600000000',
+      },
+      openKey: { creationPolicy: 'unlimited' },
+    },
     snapshotHash: 'a'.repeat(64),
     updatedAt: new Date('2026-08-07T00:00:00.000Z'),
     ...overrides,
@@ -180,6 +207,7 @@ describe('public billing routes', () => {
       message: 'success',
       data: {
         enabled: true,
+        purchaseAvailable: true,
         officialOrigin: 'https://api.rote.ink',
         products: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
         features: { offerCode: true, promotedPurchases: false },
@@ -195,6 +223,7 @@ describe('public billing routes', () => {
     ]) {
       expect((await (await app.request(url)).json()).data).toEqual({
         enabled: false,
+        purchaseAvailable: false,
         officialOrigin: 'https://api.rote.ink',
         products: ['ink.rote.pro.monthly', 'ink.rote.pro.quarterly', 'ink.rote.pro.yearly'],
         features: { offerCode: true, promotedPurchases: false },
@@ -222,6 +251,7 @@ describe('public billing routes', () => {
       (await (await disabled.app.request('https://api.rote.ink/v2/api/billing/config')).json()).data
     ).toEqual({
       enabled: false,
+      purchaseAvailable: false,
       officialOrigin: 'https://api.rote.ink',
       products: ['ink.rote.pro.monthly', 'ink.rote.pro.quarterly', 'ink.rote.pro.yearly'],
       features: { offerCode: true, promotedPurchases: false },
@@ -284,6 +314,7 @@ describe('public billing routes', () => {
       entitlementExpiresAt: null,
       leaseExpiresAt: null,
       capabilities: [],
+      benefits: null,
     });
   });
 
@@ -345,6 +376,14 @@ describe('public billing routes', () => {
         entitlementExpiresAt: '2026-08-09T00:00:00.000Z',
         leaseExpiresAt: '2026-08-08T00:00:00.000Z',
         capabilities: ['ai.chat', 'attachment.video.upload'],
+        benefits: {
+          storage: {
+            baseBytes: '10000000000',
+            bonusBytes: '600000000',
+            quotaBytes: '10600000000',
+          },
+          openKey: { creationPolicy: 'unlimited' },
+        },
       },
     });
     expect(store.applied).toEqual([{ userId: user.id, grant: snapshot }]);

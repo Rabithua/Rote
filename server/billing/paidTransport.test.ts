@@ -13,6 +13,7 @@ function enabledConfig(overrides: Partial<Extract<BillingConfig, { enabled: true
     productIds: ['ink.rote.pro.monthly', 'ink.rote.pro.yearly'],
     connectTimeoutMs: 50,
     totalTimeoutMs: 100,
+    purchaseAvailable: true,
     roteToPaid: {
       active: {
         keyId: fixture.fixtureKey.keyId,
