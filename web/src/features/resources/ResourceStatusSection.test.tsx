@@ -45,4 +45,58 @@ describe('ResourceStatusSection', () => {
     expect(screen.queryByText('storage.notMeasured')).not.toBeInTheDocument();
     expect(screen.queryByText('source.official_pro')).not.toBeInTheDocument();
   });
+
+  it('does not present a placeholder zero while the official baseline is still running', () => {
+    render(
+      <ResourceStatusSection
+        state={{
+          ...unmanagedState,
+          management: 'official',
+          source: 'role_exempt',
+          storage: {
+            enforcement: 'observe',
+            usedBytes: null,
+            reservedBytes: '0',
+            limitBytes: null,
+            overLimit: null,
+            canUpload: true,
+          },
+        }}
+        isLoading={false}
+        onRetry={vi.fn()}
+        trustedOfficialPreview
+      />
+    );
+
+    expect(screen.getByText('storage.reconciling')).toBeInTheDocument();
+    expect(screen.queryByText('0 B')).not.toBeInTheDocument();
+    expect(screen.queryByText('storage.noLimit')).not.toBeInTheDocument();
+    expect(screen.queryByText('storage.uploading')).not.toBeInTheDocument();
+  });
+
+  it('labels role-exempt storage without implying a missing quota configuration', () => {
+    render(
+      <ResourceStatusSection
+        state={{
+          ...unmanagedState,
+          management: 'official',
+          source: 'role_exempt',
+          storage: {
+            enforcement: 'enforce',
+            usedBytes: '123',
+            reservedBytes: '0',
+            limitBytes: null,
+            overLimit: false,
+            canUpload: true,
+          },
+        }}
+        isLoading={false}
+        onRetry={vi.fn()}
+        trustedOfficialPreview
+      />
+    );
+
+    expect(screen.getByText('storage.roleExemptLimit')).toBeInTheDocument();
+    expect(screen.queryByText('storage.noLimit')).not.toBeInTheDocument();
+  });
 });

@@ -169,6 +169,16 @@ export function effectiveOfficialStorageEnforcement(
   return requested === 'enforce' && reconciliationStatus === 'complete' ? 'enforce' : 'observe';
 }
 
+export function reportedOfficialUsedBytes(
+  account: Pick<typeof resourceStorageAccounts.$inferSelect, 'usedBytes' | 'reconciledAt'> | null,
+  reconciliationStatus: string | null | undefined
+): string | null {
+  if (account?.reconciledAt || reconciliationStatus === 'complete') {
+    return (account?.usedBytes ?? BigInt(0)).toString();
+  }
+  return null;
+}
+
 function grantIsUsable(grant: typeof billingGrants.$inferSelect | null, now: Date): boolean {
   return Boolean(
     grant &&
@@ -207,13 +217,17 @@ async function resolveStateWithExecutor(
       requestedOfficialStorageEnforcement(),
       managementState?.reconciliationStatus
     );
+    const reportedUsed = reportedOfficialUsedBytes(
+      account ?? null,
+      managementState?.reconciliationStatus
+    );
     if (isRoleExempt(user.role)) {
       return {
         management: 'official',
         source: 'role_exempt',
         storage: {
           enforcement,
-          usedBytes: (account?.usedBytes ?? BigInt(0)).toString(),
+          usedBytes: reportedUsed,
           reservedBytes: (account?.reservedBytes ?? BigInt(0)).toString(),
           limitBytes: null,
           overLimit: false,
@@ -232,7 +246,7 @@ async function resolveStateWithExecutor(
       source: pro ? 'official_pro' : 'official_free',
       storage: {
         enforcement,
-        usedBytes: used.toString(),
+        usedBytes: reportedUsed,
         reservedBytes: reserved.toString(),
         limitBytes: limit.toString(),
         overLimit,

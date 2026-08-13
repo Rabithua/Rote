@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { AlertTriangle, HardDrive, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { formatBytes, storageProgress } from './format';
+import { formatBytes, parseByteCount, storageProgress } from './format';
 import type { ResourceState } from './types';
 import { isOfficialApiOrigin } from './useResourceState';
 
@@ -49,6 +49,7 @@ export default function ResourceStatusSection({
   const used = formatBytes(state.storage.usedBytes);
   const reserved = formatBytes(state.storage.reservedBytes);
   const limit = formatBytes(state.storage.limitBytes);
+  const hasReservedBytes = (parseByteCount(state.storage.reservedBytes) ?? BigInt(0)) > BigInt(0);
   const progress = storageProgress(
     state.storage.usedBytes,
     state.storage.reservedBytes,
@@ -70,20 +71,28 @@ export default function ResourceStatusSection({
           </div>
           <Badge variant="outline">{t(`storage.status.${storageStatusKey}`)}</Badge>
         </div>
-        {state.storage.enforcement === 'off' || used === null ? (
+        {state.storage.enforcement === 'off' ? (
           <p className="text-muted-foreground text-sm">{t('storage.notMeasured')}</p>
+        ) : used === null ? (
+          <p className="text-muted-foreground text-sm">{t('storage.reconciling')}</p>
         ) : (
           <>
             <div className="flex items-baseline justify-between gap-3">
               <span className="text-2xl font-semibold">{used}</span>
               <span className="text-muted-foreground text-sm">
-                {limit ? t('storage.ofLimit', { limit }) : t('storage.noLimit')}
+                {limit
+                  ? t('storage.ofLimit', { limit })
+                  : state.source === 'role_exempt'
+                    ? t('storage.roleExemptLimit')
+                    : t('storage.noLimit')}
               </span>
             </div>
             {state.storage.limitBytes ? <Progress value={progress} /> : null}
-            <p className="text-muted-foreground text-xs">
-              {t('storage.uploading', { reserved: reserved ?? '0 B' })}
-            </p>
+            {hasReservedBytes ? (
+              <p className="text-muted-foreground text-xs">
+                {t('storage.uploading', { reserved: reserved ?? '0 B' })}
+              </p>
+            ) : null}
             {!state.storage.canUpload ? (
               <p className="text-muted-foreground text-sm">{t('storage.fullDescription')}</p>
             ) : null}

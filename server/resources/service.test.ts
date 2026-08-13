@@ -3,6 +3,7 @@ import {
   collectOwnedAttachmentObjectKeys,
   countObjectKeyReferences,
   effectiveOfficialStorageEnforcement,
+  reportedOfficialUsedBytes,
   reservationCleanupKeys,
   type UploadReservationManifestItem,
 } from './service';
@@ -34,6 +35,19 @@ describe('resource cleanup helpers', () => {
     expect(effectiveOfficialStorageEnforcement('enforce', 'failed')).toBe('observe');
     expect(effectiveOfficialStorageEnforcement('enforce', 'complete')).toBe('enforce');
     expect(effectiveOfficialStorageEnforcement('observe', 'complete')).toBe('observe');
+  });
+  it('does not report a placeholder zero before the user baseline is authoritative', () => {
+    expect(reportedOfficialUsedBytes(null, 'running')).toBeNull();
+    expect(
+      reportedOfficialUsedBytes({ usedBytes: 123n, reconciledAt: null }, 'running')
+    ).toBeNull();
+    expect(
+      reportedOfficialUsedBytes(
+        { usedBytes: 123n, reconciledAt: new Date('2026-08-14T00:00:00.000Z') },
+        'running'
+      )
+    ).toBe('123');
+    expect(reportedOfficialUsedBytes(null, 'complete')).toBe('0');
   });
   it('collects staging keys and optionally final keys without duplicates', () => {
     expect(reservationCleanupKeys(manifest, false)).toEqual([
