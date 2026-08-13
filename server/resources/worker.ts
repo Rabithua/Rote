@@ -13,12 +13,54 @@ import { getObjectInfo, r2deletehandler } from '../utils/r2';
 import type { UploadReservationManifestItem } from './service';
 import { billingConfig } from '../billing/runtimeConfig';
 
-type ReconciledObject = {
+export type ReconciledObject = {
   key: string;
   role: UploadReservationManifestItem['role'];
   billable: boolean;
   references: number;
 };
+
+type InspectedObject = ReconciledObject & { actualBytes: bigint };
+
+const RECONCILIATION_HEAD_CONCURRENCY = 8;
+const RECONCILIATION_USERS_PER_RUN = 10;
+
+export async function inspectReconciledObjects(
+  objects: readonly ReconciledObject[],
+  readObjectInfo: typeof getObjectInfo = getObjectInfo,
+  concurrency = RECONCILIATION_HEAD_CONCURRENCY
+): Promise<{ inspected: InspectedObject[]; missingCount: number }> {
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new Error('storage_reconciliation_concurrency_invalid');
+  }
+  const inspected: Array<InspectedObject | undefined> = new Array(objects.length);
+  let cursor = 0;
+  let missingCount = 0;
+  const inspectNext = async () => {
+    while (true) {
+      const index = cursor++;
+      if (index >= objects.length) return;
+      const object = objects[index]!;
+      const info = await readObjectInfo(object.key);
+      // A legacy attachment can outlive its physical object. It consumes no
+      // storage, so omit it from the physical ledger instead of letting one
+      // stale row block every user's baseline forever.
+      if (!info) {
+        missingCount += 1;
+        continue;
+      }
+      if (info.contentLength === null) throw new Error('storage_object_size_unknown');
+      inspected[index] = { ...object, actualBytes: BigInt(info.contentLength) };
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, Math.max(objects.length, 1)) }, inspectNext)
+  );
+  return {
+    inspected: inspected.filter((object): object is InspectedObject => object !== undefined),
+    missingCount,
+  };
+}
 
 export function attachmentObjects(details: unknown, userId: string): ReconciledObject[] {
   if (!details || typeof details !== 'object' || Array.isArray(details)) return [];
@@ -77,65 +119,32 @@ export async function runOfficialStorageReconciliation(now = new Date()) {
     })
     .where(eq(resourceManagementState.id, 'official'));
   try {
-    const [candidate] = await db
-      .select({ id: users.id })
-      .from(users)
-      .leftJoin(resourceStorageAccounts, eq(resourceStorageAccounts.userId, users.id))
-      .where(
-        and(
-          lte(users.createdAt, startedAt),
-          or(isNull(resourceStorageAccounts.userId), isNull(resourceStorageAccounts.reconciledAt))
-        )
-      )
-      .orderBy(users.createdAt, users.id)
-      .limit(1);
-    if (!candidate) {
-      await db
-        .update(resourceManagementState)
-        .set({
-          reconciliationStatus: 'complete',
-          reconciliationCompletedAt: now,
-          reconciliationLastError: null,
-          updatedAt: now,
-        })
-        .where(eq(resourceManagementState.id, 'official'));
-      return;
-    }
-    const rows = await db
-      .select({
-        id: attachments.id,
-        details: attachments.details,
-        updatedAt: attachments.updatedAt,
-      })
-      .from(attachments)
-      .where(eq(attachments.userid, candidate.id))
-      .orderBy(attachments.id);
-    const snapshot = JSON.stringify(rows);
-    const objects = new Map<string, ReconciledObject>();
-    for (const row of rows) {
-      for (const object of attachmentObjects(row.details, candidate.id)) {
-        const existing = objects.get(object.key);
-        if (existing) existing.references++;
-        else objects.set(object.key, object);
-      }
-    }
-    // Deliberately sequential: reconciliation is background work and must not fan out
-    // unbounded object-store requests or keep a database lock during network I/O.
-    const inspected: Array<ReconciledObject & { actualBytes: bigint }> = [];
-    for (const object of objects.values()) {
-      const info = await getObjectInfo(object.key);
-      if (!info || info.contentLength === null) throw new Error('storage_object_head_failed');
-      inspected.push({ ...object, actualBytes: BigInt(info.contentLength) });
-    }
-    await db.transaction(async (transaction) => {
-      const [lockedUser] = await transaction
+    for (let processed = 0; processed < RECONCILIATION_USERS_PER_RUN; processed += 1) {
+      const [candidate] = await db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.id, candidate.id))
-        .limit(1)
-        .for('update');
-      if (!lockedUser) return;
-      const currentRows = await transaction
+        .leftJoin(resourceStorageAccounts, eq(resourceStorageAccounts.userId, users.id))
+        .where(
+          and(
+            lte(users.createdAt, startedAt),
+            or(isNull(resourceStorageAccounts.userId), isNull(resourceStorageAccounts.reconciledAt))
+          )
+        )
+        .orderBy(users.createdAt, users.id)
+        .limit(1);
+      if (!candidate) {
+        await db
+          .update(resourceManagementState)
+          .set({
+            reconciliationStatus: 'complete',
+            reconciliationCompletedAt: now,
+            reconciliationLastError: null,
+            updatedAt: now,
+          })
+          .where(eq(resourceManagementState.id, 'official'));
+        return;
+      }
+      const rows = await db
         .select({
           id: attachments.id,
           details: attachments.details,
@@ -144,35 +153,76 @@ export async function runOfficialStorageReconciliation(now = new Date()) {
         .from(attachments)
         .where(eq(attachments.userid, candidate.id))
         .orderBy(attachments.id);
-      if (JSON.stringify(currentRows) !== snapshot) return;
-      await transaction
-        .delete(resourceStorageObjects)
-        .where(eq(resourceStorageObjects.ownerId, candidate.id));
-      if (inspected.length > 0) {
-        await transaction.insert(resourceStorageObjects).values(
-          inspected.map((object) => ({
-            ownerId: candidate.id,
-            storageIdentity: 'primary',
-            objectKey: object.key,
-            role: object.role,
-            actualBytes: object.actualBytes,
-            billable: object.billable,
-            referenceCount: object.references,
-          }))
-        );
+      const snapshot = JSON.stringify(rows);
+      const objects = new Map<string, ReconciledObject>();
+      for (const row of rows) {
+        for (const object of attachmentObjects(row.details, candidate.id)) {
+          const existing = objects.get(object.key);
+          if (existing) existing.references++;
+          else objects.set(object.key, object);
+        }
       }
-      const usedBytes = inspected.reduce(
-        (sum, object) => sum + (object.billable ? object.actualBytes : BigInt(0)),
-        BigInt(0)
-      );
-      await transaction
-        .insert(resourceStorageAccounts)
-        .values({ userId: candidate.id, usedBytes, reconciledAt: now })
-        .onConflictDoUpdate({
-          target: resourceStorageAccounts.userId,
-          set: { usedBytes, reconciledAt: now, updatedAt: now },
+      // Bound concurrency so large legacy accounts finish before the next
+      // maintenance tick without fanning out unbounded object-store requests.
+      const { inspected, missingCount } = await inspectReconciledObjects([...objects.values()]);
+      const reconciled = await db.transaction(async (transaction) => {
+        const [lockedUser] = await transaction
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.id, candidate.id))
+          .limit(1)
+          .for('update');
+        if (!lockedUser) return true;
+        const currentRows = await transaction
+          .select({
+            id: attachments.id,
+            details: attachments.details,
+            updatedAt: attachments.updatedAt,
+          })
+          .from(attachments)
+          .where(eq(attachments.userid, candidate.id))
+          .orderBy(attachments.id);
+        if (JSON.stringify(currentRows) !== snapshot) return false;
+        await transaction
+          .delete(resourceStorageObjects)
+          .where(eq(resourceStorageObjects.ownerId, candidate.id));
+        if (inspected.length > 0) {
+          await transaction.insert(resourceStorageObjects).values(
+            inspected.map((object) => ({
+              ownerId: candidate.id,
+              storageIdentity: 'primary',
+              objectKey: object.key,
+              role: object.role,
+              actualBytes: object.actualBytes,
+              billable: object.billable,
+              referenceCount: object.references,
+            }))
+          );
+        }
+        const usedBytes = inspected.reduce(
+          (sum, object) => sum + (object.billable ? object.actualBytes : BigInt(0)),
+          BigInt(0)
+        );
+        await transaction
+          .insert(resourceStorageAccounts)
+          .values({ userId: candidate.id, usedBytes, reconciledAt: now })
+          .onConflictDoUpdate({
+            target: resourceStorageAccounts.userId,
+            set: { usedBytes, reconciledAt: now, updatedAt: now },
+          });
+        return true;
+      });
+      // A concurrent attachment change invalidates the object snapshot. Retry
+      // this user on the next tick rather than repeatedly selecting it here.
+      if (!reconciled) return;
+      if (missingCount > 0) {
+        // Aggregate only: object keys and user identifiers must never reach logs.
+        // eslint-disable-next-line no-console
+        console.warn('[managed-storage] reconciliation_missing_objects', {
+          count: missingCount,
         });
-    });
+      }
+    }
   } catch (error) {
     await db
       .update(resourceManagementState)
@@ -199,6 +249,7 @@ export async function isolateReconciliationFailure(
 }
 
 let started = false;
+let maintenanceInFlight = false;
 
 export async function runResourceMaintenance(now = new Date()) {
   await isolateReconciliationFailure(
@@ -338,15 +389,22 @@ export async function startResourceMaintenanceWorker() {
   if (started) return;
   if (!billingConfig.enabled) return;
   started = true;
-  const run = () =>
-    void runResourceMaintenance().catch((error) => {
-      // Never include object keys, upload tokens or credentials in this log.
-      // eslint-disable-next-line no-console
-      console.error(
-        '[managed-storage] maintenance_failed',
-        error instanceof Error ? error.name : 'unknown'
-      );
-    });
+  const run = () => {
+    if (maintenanceInFlight) return;
+    maintenanceInFlight = true;
+    void runResourceMaintenance()
+      .catch((error) => {
+        // Never include object keys, upload tokens or credentials in this log.
+        // eslint-disable-next-line no-console
+        console.error(
+          '[managed-storage] maintenance_failed',
+          error instanceof Error ? error.name : 'unknown'
+        );
+      })
+      .finally(() => {
+        maintenanceInFlight = false;
+      });
+  };
   run();
   setInterval(run, 60_000).unref();
 }
