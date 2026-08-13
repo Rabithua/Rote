@@ -382,6 +382,8 @@
         "openKey": {
           "subtitle": "Connect shortcuts, MCP, and automations",
           "created": "{{count}} created",
+          "countThreshold": "({{count}}/{{limit}})",
+          "countUnlimited": "({{count}}/∞)",
           "status": { "available": "Can create", "unlimited": "No limit", "paused": "Creation paused" },
           "policy": { "unmanaged": "Unmanaged", "threshold": "Creation threshold", "unlimited": "Unlimited creation" },
           "freeFriendly": "A free account can create {{count}} OpenKey.",

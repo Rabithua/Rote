@@ -376,6 +376,8 @@
         "openKey": {
           "subtitle": "连接快捷指令、MCP 和自动化工具",
           "created": "已创建 {{count}} 个",
+          "countThreshold": "（{{count}}/{{limit}}）",
+          "countUnlimited": "（{{count}}/∞）",
           "status": { "available": "可以新建", "unlimited": "不限数量", "paused": "暂不可新建" },
           "policy": {
             "unmanaged": "未限制",

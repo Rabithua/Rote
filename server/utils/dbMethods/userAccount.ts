@@ -8,7 +8,6 @@ import {
   rotes,
   resourceStorageAccounts,
   resourceStorageObjects,
-  resourceUploadReservations,
   userOAuthBindings,
   userOpenKeys,
   userSettings,
@@ -18,7 +17,10 @@ import {
 import db from '../drizzle';
 import { enqueueBackfillEmbeddingJobsForOwner } from './ai';
 import { DatabaseError } from './common';
-import { prepareAccountResourceDeletion } from '../../resources/service';
+import {
+  cancelPendingUploadReservationsForUser,
+  prepareAccountResourceDeletion,
+} from '../../resources/service';
 
 // 删除用户账户
 export async function deleteUserAccount(userid: string, password: string): Promise<any> {
@@ -162,10 +164,7 @@ export async function mergeUserAccounts(
         .where(eq(resourceStorageAccounts.userId, targetUserId))
         .limit(1)
         .for('update');
-      await tx
-        .update(resourceUploadReservations)
-        .set({ status: 'cancelled' })
-        .where(eq(resourceUploadReservations.userId, sourceUserId));
+      await cancelPendingUploadReservationsForUser(sourceUserId, tx);
       await tx
         .update(resourceStorageObjects)
         .set({ ownerId: targetUserId, updatedAt: new Date() })

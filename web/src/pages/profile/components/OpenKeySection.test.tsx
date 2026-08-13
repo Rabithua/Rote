@@ -21,7 +21,7 @@ describe('OpenKeySection', () => {
     );
 
     expect(screen.getByText('OpenKey')).toBeInTheDocument();
-    expect(screen.getByText('（3/1）')).toBeInTheDocument();
+    expect(screen.getByText('resources.openKey.countThreshold')).toBeInTheDocument();
     const message = screen.getByText(/resources.openKey.noNewTitle/);
     expect(message).toHaveClass('text-muted-foreground');
     expect(message).not.toHaveClass('text-destructive');
@@ -44,6 +44,6 @@ describe('OpenKeySection', () => {
       />
     );
 
-    expect(screen.getByText('（6/∞）')).toBeInTheDocument();
+    expect(screen.getByText('resources.openKey.countUnlimited')).toBeInTheDocument();
   });
 });

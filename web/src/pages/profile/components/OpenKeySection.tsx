@@ -33,9 +33,14 @@ export default function OpenKeySection({
           <span>OpenKey</span>
           {resourceState ? (
             <span className="text-muted-foreground text-base font-normal">
-              （{resourceState.existingCount}/
-              {resourceState.policy === 'unlimited' ? '∞' : (resourceState.creationThreshold ?? 1)}
-              ）
+              {resourceState.policy === 'unlimited'
+                ? t('resources.openKey.countUnlimited', {
+                    count: resourceState.existingCount,
+                  })
+                : t('resources.openKey.countThreshold', {
+                    count: resourceState.existingCount,
+                    limit: resourceState.creationThreshold ?? 1,
+                  })}
             </span>
           ) : null}
         </div>

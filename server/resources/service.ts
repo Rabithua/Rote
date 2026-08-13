@@ -1,6 +1,7 @@
 import { and, count, eq, sql } from 'drizzle-orm';
 import type { User } from '../drizzle/schema';
 import {
+  attachments,
   billingGrants,
   resourceStorageAccounts,
   resourceStorageObjects,
@@ -37,6 +38,99 @@ export type ResourceState = {
     canCreate: boolean;
   };
 };
+
+export function reservationCleanupKeys(
+  manifest: readonly UploadReservationManifestItem[],
+  includeFinalKeys: boolean
+): string[] {
+  return [
+    ...new Set(
+      manifest.flatMap((item) =>
+        includeFinalKeys ? [item.stagingKey, item.finalKey] : [item.stagingKey]
+      )
+    ),
+  ];
+}
+
+export function collectOwnedAttachmentObjectKeys(details: unknown, userId: string): string[] {
+  if (!details || typeof details !== 'object' || Array.isArray(details)) return [];
+  const record = details as Record<string, unknown>;
+  const livePhoto =
+    record.livePhoto && typeof record.livePhoto === 'object' && !Array.isArray(record.livePhoto)
+      ? (record.livePhoto as Record<string, unknown>)
+      : undefined;
+  const prefix = `users/${userId}/`;
+  return [
+    ...new Set(
+      [
+        record.key,
+        record.compressKey,
+        record.posterKey,
+        record.pairedVideoKey,
+        record.livePhotoVideoKey,
+        livePhoto?.pairedVideoKey,
+      ].filter((value): value is string => typeof value === 'string' && value.startsWith(prefix))
+    ),
+  ];
+}
+
+async function enqueueCleanupKeys(transaction: any, objectKeys: readonly string[]) {
+  for (const objectKey of new Set(objectKeys)) {
+    await transaction
+      .insert(resourceCleanupOutbox)
+      .values({ storageIdentity: 'primary', objectKey })
+      .onConflictDoNothing({
+        target: [resourceCleanupOutbox.storageIdentity, resourceCleanupOutbox.objectKey],
+      });
+  }
+}
+
+export async function cancelPendingUploadReservationsForUser(
+  userId: string,
+  transactionOverride?: any
+) {
+  const execute = async (transaction: any) => {
+    const pendingReservations = await transaction
+      .select()
+      .from(resourceUploadReservations)
+      .where(
+        and(
+          eq(resourceUploadReservations.userId, userId),
+          eq(resourceUploadReservations.status, 'pending')
+        )
+      )
+      .for('update');
+    if (pendingReservations.length === 0) return;
+    await enqueueCleanupKeys(
+      transaction,
+      pendingReservations.flatMap(({ manifest }: { manifest: unknown }) =>
+        reservationCleanupKeys(manifest as UploadReservationManifestItem[], true)
+      )
+    );
+    const reservedBytes = pendingReservations.reduce(
+      (total: bigint, reservation: { reservedBytes: bigint }) => total + reservation.reservedBytes,
+      BigInt(0)
+    );
+    await transaction
+      .update(resourceStorageAccounts)
+      .set({
+        reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservedBytes})`,
+        updatedAt: new Date(),
+      })
+      .where(eq(resourceStorageAccounts.userId, userId));
+    await transaction
+      .update(resourceUploadReservations)
+      .set({ status: 'cancelled' })
+      .where(
+        and(
+          eq(resourceUploadReservations.userId, userId),
+          eq(resourceUploadReservations.status, 'pending')
+        )
+      );
+  };
+  if (transactionOverride) await execute(transactionOverride);
+  else await db.transaction(execute);
+}
 
 function isRoleExempt(role: string): boolean {
   return role === 'admin' || role === 'super_admin';
@@ -377,6 +471,10 @@ export async function cancelUploadReservation(userId: string, id: string) {
       .update(resourceUploadReservations)
       .set({ status: 'cancelled' })
       .where(eq(resourceUploadReservations.id, id));
+    await enqueueCleanupKeys(
+      transaction,
+      reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
+    );
   });
 }
 
@@ -480,6 +578,12 @@ export async function completeUploadReservation(
           set: { actualBytes: object.actualBytes, updatedAt: new Date() },
         });
     }
+    await enqueueCleanupKeys(
+      transaction,
+      params.objects
+        .filter((object) => object.stagingKey !== object.finalKey)
+        .map((object) => object.stagingKey)
+    );
     await transaction
       .insert(resourceStorageAccounts)
       .values({ userId: params.userId, usedBytes: actualBillable })
@@ -504,11 +608,16 @@ export function reservationIdFromStagingKey(key: string): string | null {
   return key.match(/\/staging\/([0-9a-f-]{36})\//i)?.[1] ?? null;
 }
 
-export async function releaseStorageObjectReferences(userId: string, objectKeys: string[]) {
+export async function releaseStorageObjectReferences(
+  userId: string,
+  objectKeys: string[],
+  transactionOverride?: any
+): Promise<string[]> {
   const uniqueKeys = [...new Set(objectKeys)];
-  if (uniqueKeys.length === 0) return;
-  await db.transaction(async (transaction) => {
+  if (uniqueKeys.length === 0) return [];
+  const execute = async (transaction: any) => {
     let released = BigInt(0);
+    const trackedKeys: string[] = [];
     for (const objectKey of uniqueKeys) {
       const [object] = await transaction
         .select()
@@ -522,6 +631,7 @@ export async function releaseStorageObjectReferences(userId: string, objectKeys:
         .limit(1)
         .for('update');
       if (!object || object.ownerId !== userId) continue;
+      trackedKeys.push(objectKey);
       if (object.referenceCount > 1) {
         await transaction
           .update(resourceStorageObjects)
@@ -549,7 +659,9 @@ export async function releaseStorageObjectReferences(userId: string, objectKeys:
         })
         .where(eq(resourceStorageAccounts.userId, userId));
     }
-  });
+    return trackedKeys;
+  };
+  return transactionOverride ? execute(transactionOverride) : db.transaction(execute);
 }
 
 export async function prepareAccountResourceDeletion(userId: string) {
@@ -562,6 +674,17 @@ export async function prepareAccountResourceDeletion(userId: string) {
       .from(resourceStorageObjects)
       .where(eq(resourceStorageObjects.ownerId, userId))
       .for('update');
+    const trackedObjectKeys = new Set(objects.map(({ objectKey }) => objectKey));
+    const legacyAttachments = await transaction
+      .select({ details: attachments.details })
+      .from(attachments)
+      .where(eq(attachments.userid, userId));
+    await enqueueCleanupKeys(
+      transaction,
+      legacyAttachments
+        .flatMap(({ details }) => collectOwnedAttachmentObjectKeys(details, userId))
+        .filter((objectKey) => !trackedObjectKeys.has(objectKey))
+    );
     for (const object of objects) {
       await transaction
         .insert(resourceCleanupOutbox)
@@ -570,13 +693,10 @@ export async function prepareAccountResourceDeletion(userId: string) {
           target: [resourceCleanupOutbox.storageIdentity, resourceCleanupOutbox.objectKey],
         });
     }
+    await cancelPendingUploadReservationsForUser(userId, transaction);
     await transaction
       .delete(resourceStorageObjects)
       .where(eq(resourceStorageObjects.ownerId, userId));
-    await transaction
-      .update(resourceUploadReservations)
-      .set({ status: 'cancelled' })
-      .where(eq(resourceUploadReservations.userId, userId));
     await transaction
       .delete(resourceStorageAccounts)
       .where(eq(resourceStorageAccounts.userId, userId));

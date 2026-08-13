@@ -375,7 +375,7 @@
           "enforcement": { "off": "オフ", "observe": "監視中", "enforce": "適用中" }
         },
         "openKey": {
-          "subtitle": "ショートカット、MCP、自動化ツールに接続", "created": "{{count}} 個作成済み", "status": { "available": "作成可能", "unlimited": "無制限", "paused": "新規作成を停止中" },
+          "subtitle": "ショートカット、MCP、自動化ツールに接続", "created": "{{count}} 個作成済み", "countThreshold": "（{{count}}/{{limit}}）", "countUnlimited": "（{{count}}/∞）", "status": { "available": "作成可能", "unlimited": "無制限", "paused": "新規作成を停止中" },
           "policy": { "unmanaged": "制限なし", "threshold": "作成しきい値", "unlimited": "無制限作成" },
           "freeFriendly": "無料アカウントでは {{count}} 個の OpenKey を作成できます。",
           "noNewTitle": "既存の OpenKey はそのまま使えます",
