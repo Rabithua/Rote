@@ -1,6 +1,14 @@
 import crypto from 'crypto';
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
-import { articles, attachments, rotes, userOpenKeys, users } from '../../drizzle/schema';
+import {
+  articles,
+  attachments,
+  resourceStorageAccounts,
+  rotes,
+  userOpenKeys,
+  users,
+} from '../../drizzle/schema';
+import { billingConfig } from '../../billing/runtimeConfig';
 import {
   deleteEmbeddingsForOwner,
   enqueueBackfillEmbeddingJobsForOwner,
@@ -307,6 +315,17 @@ export async function getDashboardStats() {
     FROM ai_token_usage_logs
     WHERE ai_token_usage_logs.userid = users.id AND ai_token_usage_logs."createdAt" > NOW() - INTERVAL '30 days'
   )`;
+  const storageUsageTotalSql = billingConfig.enabled
+    ? sql<number>`COALESCE((
+        SELECT ${resourceStorageAccounts.usedBytes}
+        FROM ${resourceStorageAccounts}
+        WHERE ${resourceStorageAccounts.userId} = ${users.id}
+      ), 0)::bigint`
+    : sql<number>`(
+        SELECT COALESCE(SUM(CAST(${attachments.details}->>'size' AS BIGINT)), 0)::bigint
+        FROM ${attachments}
+        WHERE ${attachments.userid} = ${users.id}
+      )`;
 
   const topUsersByNotes = await db
     .select({
@@ -353,14 +372,10 @@ export async function getDashboardStats() {
       email: users.email,
       nickname: users.nickname,
       avatar: users.avatar,
-      storageUsage: sql<number>`(
-        SELECT COALESCE(SUM(CAST(attachments.details->>'size' AS BIGINT)), 0)::bigint
-        FROM attachments
-        WHERE attachments.userid = users.id
-      )`.as('storageUsage'),
+      storageUsage: storageUsageTotalSql.as('storageUsage'),
     })
     .from(users)
-    .orderBy(desc(sql`"storageUsage"`))
+    .orderBy(desc(storageUsageTotalSql))
     .limit(50);
 
   const topUsersByTokenUsage = await db
