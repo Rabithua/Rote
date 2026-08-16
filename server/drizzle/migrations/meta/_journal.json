@@ -183,6 +183,20 @@
       "when": 1786608883008,
       "tag": "0025_resource_invariants",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786894167031,
+      "tag": "0026_sloppy_wildside",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1786894730247,
+      "tag": "0027_chemical_diamondback",
+      "breakpoints": true
     }
   ]
 }

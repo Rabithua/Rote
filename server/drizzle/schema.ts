@@ -438,6 +438,159 @@ export const userSwSubscriptions = pgTable(
   })
 );
 
+// Official rote.ink Apple Push Notification devices. Self-hosted deployments keep
+// the push runtime disabled unless explicitly configured.
+export const apnsDevices = pgTable(
+  'apns_devices',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userid: uuid('userid').notNull(),
+    installationId: uuid('installationId').notNull(),
+    token: text('token').notNull(),
+    environment: varchar('environment', { length: 16 }).notNull(),
+    masterEnabled: boolean('masterEnabled').notNull().default(true),
+    timeZone: varchar('timeZone', { length: 100 }).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('active'),
+    lastSeenAt: timestamp('lastSeenAt', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    installationUnique: unique('apns_devices_installation_id_unique').on(table.installationId),
+    tokenEnvironmentUnique: unique('apns_devices_token_environment_unique').on(
+      table.token,
+      table.environment
+    ),
+    useridIdx: index('apns_devices_userid_idx').on(table.userid),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+      name: 'apns_devices_userid_users_id_fk',
+    }).onDelete('cascade'),
+  })
+);
+
+export const pushPreferences = pgTable(
+  'push_preferences',
+  {
+    userid: uuid('userid').primaryKey(),
+    reactionsEnabled: boolean('reactionsEnabled').notNull().default(true),
+    accountEnabled: boolean('accountEnabled').notNull().default(true),
+    systemEnabled: boolean('systemEnabled').notNull().default(true),
+    dailyReminderEnabled: boolean('dailyReminderEnabled').notNull().default(true),
+    dailyReminderTime: varchar('dailyReminderTime', { length: 5 }).notNull().default('21:30'),
+    timeZone: varchar('timeZone', { length: 100 }).notNull(),
+    nextReminderAt: timestamp('nextReminderAt', { withTimezone: true, precision: 6 }),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    reminderDueIdx: index('push_preferences_reminder_due_idx').on(
+      table.dailyReminderEnabled,
+      table.nextReminderAt
+    ),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+      name: 'push_preferences_userid_users_id_fk',
+    }).onDelete('cascade'),
+  })
+);
+
+export const pushEvents = pgTable(
+  'push_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userid: uuid('userid').notNull(),
+    type: varchar('type', { length: 80 }).notNull(),
+    category: varchar('category', { length: 30 }).notNull(),
+    title: text('title'),
+    body: text('body'),
+    titleLocKey: varchar('titleLocKey', { length: 100 }),
+    bodyLocKey: varchar('bodyLocKey', { length: 100 }),
+    route: text('route'),
+    payload: jsonb('payload').$type<Record<string, unknown>>().notNull().default({}),
+    dedupeKey: varchar('dedupeKey', { length: 255 }).notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    availableAt: timestamp('availableAt', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
+    expiresAt: timestamp('expiresAt', { withTimezone: true, precision: 6 }),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    dedupeUnique: unique('push_events_dedupe_key_unique').on(table.dedupeKey),
+    pendingIdx: index('push_events_pending_idx').on(table.status, table.availableAt),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+      name: 'push_events_userid_users_id_fk',
+    }).onDelete('cascade'),
+  })
+);
+
+export const pushDeliveries = pgTable(
+  'push_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    eventId: uuid('eventId').notNull(),
+    deviceId: uuid('deviceId').notNull(),
+    status: varchar('status', { length: 20 }).notNull().default('pending'),
+    attemptCount: integer('attemptCount').notNull().default(0),
+    nextAttemptAt: timestamp('nextAttemptAt', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
+    apnsId: varchar('apnsId', { length: 100 }),
+    lastError: text('lastError'),
+    sentAt: timestamp('sentAt', { withTimezone: true, precision: 6 }),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    eventDeviceUnique: unique('push_deliveries_event_device_unique').on(
+      table.eventId,
+      table.deviceId
+    ),
+    pendingIdx: index('push_deliveries_pending_idx').on(table.status, table.nextAttemptAt),
+    eventFk: foreignKey({
+      columns: [table.eventId],
+      foreignColumns: [pushEvents.id],
+      name: 'push_deliveries_event_id_push_events_id_fk',
+    }).onDelete('cascade'),
+    deviceFk: foreignKey({
+      columns: [table.deviceId],
+      foreignColumns: [apnsDevices.id],
+      name: 'push_deliveries_device_id_apns_devices_id_fk',
+    }).onDelete('cascade'),
+  })
+);
+
+export const pushCampaigns = pgTable(
+  'push_campaigns',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    createdBy: uuid('createdBy').notNull(),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    route: text('route'),
+    status: varchar('status', { length: 20 }).notNull().default('draft'),
+    sentAt: timestamp('sentAt', { withTimezone: true, precision: 6 }),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index('push_campaigns_status_idx').on(table.status, table.createdAt),
+    createdByFk: foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'push_campaigns_created_by_users_id_fk',
+    }).onDelete('restrict'),
+  })
+);
+
 // Articles 表
 export const articles = pgTable(
   'articles',

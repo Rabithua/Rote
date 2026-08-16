@@ -250,10 +250,16 @@ export async function certifyUser(userId: string) {
       console.error('Failed to enqueue certified user embedding backfill:', error);
     });
   }
-  return user;
+  return { user, changed: user != null && existingUser?.emailVerified === false };
 }
 
 export async function uncertifyUser(userId: string) {
+  const [existingUser] = await db
+    .select({ emailVerified: users.emailVerified })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
   const [user] = await db
     .update(users)
     .set({ emailVerified: false, updatedAt: new Date() })
@@ -268,7 +274,7 @@ export async function uncertifyUser(userId: string) {
   if (user) {
     await deleteEmbeddingsForOwner(user.id);
   }
-  return user;
+  return { user, changed: user != null && existingUser?.emailVerified === true };
 }
 
 export async function getRoleStats() {

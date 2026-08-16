@@ -2,10 +2,12 @@ import { and, eq } from 'drizzle-orm';
 import {
   billingGrants,
   billingInboundDeliveries,
+  pushEvents,
   users,
   type BillingGrant,
   type NewBillingGrant,
 } from '../drizzle/schema';
+import { isPushNotificationsEnabled } from '../push/config';
 import db from '../utils/drizzle';
 import {
   billingHttpResponse,
@@ -133,6 +135,8 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
       .select({
         revision: billingGrants.revision,
         snapshotHash: billingGrants.snapshotHash,
+        planId: billingGrants.planId,
+        status: billingGrants.status,
       })
       .from(billingGrants)
       .where(eq(billingGrants.userId, input.userId))
@@ -192,6 +196,27 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
             updatedAt: grantValues.updatedAt,
           },
         });
+
+      const statusChanged =
+        existingGrant?.status !== grantValues.status ||
+        existingGrant?.planId !== grantValues.planId;
+      if (isPushNotificationsEnabled() && statusChanged) {
+        const isActive = grantValues.status === 'active';
+        await transaction
+          .insert(pushEvents)
+          .values({
+            userid: input.userId,
+            type: isActive ? 'account.pro.active' : 'account.pro.inactive',
+            category: 'account',
+            titleLocKey: isActive ? 'push.pro.active.title' : 'push.pro.inactive.title',
+            bodyLocKey: isActive ? 'push.pro.active.body' : 'push.pro.inactive.body',
+            route: 'rote://profile',
+            payload: { status: grantValues.status, planId: grantValues.planId },
+            dedupeKey: `pro:${input.userId}:${grantValues.revision.toString()}`,
+            expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          })
+          .onConflictDoNothing({ target: pushEvents.dedupeKey });
+      }
     }
 
     const responseRevision =
