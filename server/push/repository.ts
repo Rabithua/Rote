@@ -46,7 +46,7 @@ export async function registerDevice(input: {
       await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
     }
 
-    const [existingInstallation] = await transaction
+    let [existingInstallation] = await transaction
       .select({
         id: apnsDevices.id,
         userid: apnsDevices.userid,
@@ -57,7 +57,7 @@ export async function registerDevice(input: {
       .from(apnsDevices)
       .where(eq(apnsDevices.installationId, input.installationId))
       .limit(1);
-    const [existingToken] = await transaction
+    let [existingToken] = await transaction
       .select({
         id: apnsDevices.id,
         userid: apnsDevices.userid,
@@ -83,6 +83,36 @@ export async function registerDevice(input: {
         sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device-send:${deviceId}`}))`
       );
     }
+
+    // The two stable input locks prevent new matches, while the send locks
+    // serialize mutations of rows found by the initial lookup. Reload those
+    // rows now so a concurrent refresh cannot be overwritten by this request's
+    // pre-lock snapshot.
+    [existingInstallation] = await transaction
+      .select({
+        id: apnsDevices.id,
+        userid: apnsDevices.userid,
+        token: apnsDevices.token,
+        masterEnabled: apnsDevices.masterEnabled,
+        status: apnsDevices.status,
+      })
+      .from(apnsDevices)
+      .where(eq(apnsDevices.installationId, input.installationId))
+      .limit(1);
+    [existingToken] = await transaction
+      .select({
+        id: apnsDevices.id,
+        userid: apnsDevices.userid,
+        installationId: apnsDevices.installationId,
+        token: apnsDevices.token,
+        masterEnabled: apnsDevices.masterEnabled,
+        status: apnsDevices.status,
+      })
+      .from(apnsDevices)
+      .where(
+        and(eq(apnsDevices.token, normalizedToken), eq(apnsDevices.environment, input.environment))
+      )
+      .limit(1);
 
     const reusableTokenDevice =
       existingToken &&
@@ -321,6 +351,38 @@ export async function updatePreferences(userid: string, patch: PushPreferencePat
     const dailyReminderChanged =
       patch.dailyReminderEnabled !== undefined &&
       patch.dailyReminderEnabled !== current.dailyReminderEnabled;
+    const disabledCategories = [
+      patch.reactionsEnabled === false && current.reactionsEnabled ? 'reactions' : null,
+      patch.accountEnabled === false && current.accountEnabled ? 'account' : null,
+      patch.systemEnabled === false && current.systemEnabled ? 'system' : null,
+      patch.dailyReminderEnabled === false && current.dailyReminderEnabled ? 'dailyReminder' : null,
+    ].filter((category): category is string => category !== null);
+    if (disabledCategories.length > 0) {
+      await transaction
+        .update(pushDeliveries)
+        .set({
+          status: 'cancelled',
+          lastError: 'preference_disabled',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            inArray(pushDeliveries.status, ['pending', 'retry', 'processing']),
+            inArray(
+              pushDeliveries.eventId,
+              transaction
+                .select({ id: pushEvents.id })
+                .from(pushEvents)
+                .where(
+                  and(
+                    eq(pushEvents.userid, userid),
+                    inArray(pushEvents.category, disabledCategories)
+                  )
+                )
+            )
+          )
+        );
+    }
     const [updated] = await transaction
       .update(pushPreferences)
       .set({ ...patch, updatedAt: new Date() })

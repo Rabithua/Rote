@@ -394,10 +394,13 @@ databaseDescribe('push repository integration', () => {
       .where(eq(schema.pushDeliveries.eventId, regular!.id));
     expect(regularBeforeOptOut.every((item) => item.status === 'pending')).toBe(true);
 
-    await database
-      .update(schema.pushPreferences)
-      .set({ reactionsEnabled: false })
-      .where(eq(schema.pushPreferences.userid, userIds[0]));
+    await repository.updatePreferences(userIds[0], { reactionsEnabled: false });
+    const cancelledByOptOut = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, regular!.id));
+    expect(cancelledByOptOut.every((item) => item.status === 'cancelled')).toBe(true);
+    expect(cancelledByOptOut.every((item) => item.lastError === 'preference_disabled')).toBe(true);
     await repository.disableDevice(userIds[0], installationIds[1]);
     await worker.cancelIneligibleDeliveries();
 

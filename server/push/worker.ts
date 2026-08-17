@@ -6,10 +6,10 @@ import {
   DELIVERY_BATCH_SIZE,
   DELIVERY_CLAIM_LEASE_MS,
   hasSafeDeliveryClaimLease,
+  shouldInvalidateDeviceForApnsReason,
 } from './deliveryPolicy';
 import { createDueDailyReminderEvents } from './repository';
 
-const permanentReasons = new Set(['BadDeviceToken', 'DeviceTokenNotForTopic', 'Unregistered']);
 export { DELIVERY_BATCH_SIZE, DELIVERY_CLAIM_LEASE_MS, hasSafeDeliveryClaimLease };
 
 export async function fanOutEvents(): Promise<void> {
@@ -177,7 +177,7 @@ async function deliverClaimedItem(item: ClaimedDelivery): Promise<void> {
       .where(eq(pushDeliveries.id, item.delivery.id));
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    const permanent = permanentReasons.has(reason);
+    const permanent = shouldInvalidateDeviceForApnsReason(reason);
     const attempts = item.delivery.attemptCount + 1;
     if (permanent) {
       await db

@@ -5,6 +5,7 @@ import {
   DELIVERY_CLAIM_LEASE_MS,
   DELIVERY_CLAIM_SAFETY_MS,
   hasSafeDeliveryClaimLease,
+  shouldInvalidateDeviceForApnsReason,
   shouldDrainDeliveryQueue,
 } from './deliveryPolicy';
 
@@ -23,5 +24,11 @@ describe('push worker delivery lease', () => {
     expect(shouldDrainDeliveryQueue(DELIVERY_BATCH_SIZE)).toBe(true);
     expect(shouldDrainDeliveryQueue(DELIVERY_BATCH_SIZE - 1)).toBe(false);
     expect(shouldDrainDeliveryQueue(0)).toBe(false);
+  });
+
+  it('does not invalidate devices for a server-wide APNs topic mismatch', () => {
+    expect(shouldInvalidateDeviceForApnsReason('BadDeviceToken')).toBe(true);
+    expect(shouldInvalidateDeviceForApnsReason('Unregistered')).toBe(true);
+    expect(shouldInvalidateDeviceForApnsReason('DeviceTokenNotForTopic')).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Hono } from 'hono';
 import { z, type ZodType } from 'zod';
 import { eq, sql } from 'drizzle-orm';
@@ -101,7 +102,7 @@ router.post('/devices/:installationId/test', async (c: HonoContext) => {
     userid: user.id,
     type: 'system.test',
     category: 'system',
-    dedupeKey: `test:${installationId}:${Date.now()}`,
+    dedupeKey: `test:${installationId}:${randomUUID()}`,
     titleLocKey: 'push.test.title',
     bodyLocKey: 'push.test.body',
     route: 'rote://home',
