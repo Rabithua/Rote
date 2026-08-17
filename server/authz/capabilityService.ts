@@ -6,7 +6,7 @@ import { UserRole } from '../types/main';
 import db from '../utils/drizzle';
 import {
   CAPABILITY_KEYS,
-  getRoleDefaultCapability,
+  buildRoleCapabilitySettings,
   isCapabilityEffect,
   isCapabilityKey,
   resolveEffectiveCapabilities,
@@ -127,30 +127,27 @@ export async function getRoleCapabilityPolicies() {
       effect: rolePermissionPolicies.effect,
     })
     .from(rolePermissionPolicies);
-  const explicit = new Map(
-    policies.map((policy) => [`${policy.role}:${policy.permission}`, policy.effect])
-  );
-
-  return Object.values(UserRole).map((role) => ({
-    role,
-    capabilities: Object.fromEntries(
-      CAPABILITY_KEYS.map((capability) => {
-        const effect = explicit.get(`${role}:${capability}`) as CapabilityEffect | undefined;
-        return [
-          capability,
-          effect || (getRoleDefaultCapability(role, capability) ? 'allow' : 'deny'),
-        ];
-      })
-    ) as Record<CapabilityKey, CapabilityEffect>,
-  }));
+  return buildRoleCapabilitySettings(policies);
 }
 
 export async function setRoleCapabilityPolicies(
   role: UserRole,
-  capabilities: Partial<Record<CapabilityKey, CapabilityEffect>>
+  capabilities: Partial<Record<CapabilityKey, CapabilityOverride>>
 ) {
   await db.transaction(async (tx) => {
     for (const [permission, effect] of Object.entries(capabilities)) {
+      if (effect === 'inherit') {
+        await tx
+          .delete(rolePermissionPolicies)
+          .where(
+            and(
+              eq(rolePermissionPolicies.role, role),
+              eq(rolePermissionPolicies.permission, permission)
+            )
+          );
+        continue;
+      }
+
       await tx
         .insert(rolePermissionPolicies)
         .values({ role, permission, effect })

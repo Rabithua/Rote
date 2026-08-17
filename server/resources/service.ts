@@ -212,6 +212,12 @@ export function resolveOfficialStorageState(params: {
   };
 }
 
+export function storageReservationDependsOnPro(
+  state: Pick<ResourceState, 'source' | 'storage'>
+): boolean {
+  return state.source === 'official_pro' && state.storage.limitBytes !== null;
+}
+
 function grantIsUsable(grant: typeof billingGrants.$inferSelect | null, now: Date): boolean {
   return Boolean(
     grant &&
@@ -459,7 +465,7 @@ export async function createUploadReservation(params: {
       id: params.id,
       userId: params.userId,
       grantRevision: grant?.revision ?? null,
-      grantProDerived: state.source === 'official_pro',
+      grantProDerived: storageReservationDependsOnPro(state),
       grantEntitlementExpiresAt: grant?.entitlementExpiresAt ?? null,
       manifest: params.manifest,
       reservedBytes,
@@ -601,7 +607,7 @@ export async function appendUploadReservation(params: {
         reservedBytes: params.reserveBytes,
         expiresAt: params.expiresAt,
         grantRevision: grant?.revision ?? null,
-        grantProDerived: state.source === 'official_pro',
+        grantProDerived: storageReservationDependsOnPro(state),
         grantEntitlementExpiresAt: grant?.entitlementExpiresAt ?? null,
       });
     }

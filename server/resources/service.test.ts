@@ -6,6 +6,7 @@ import {
   reportedOfficialUsedBytes,
   reservationCleanupKeys,
   resolveOfficialStorageState,
+  storageReservationDependsOnPro,
   type UploadReservationManifestItem,
 } from './service';
 
@@ -155,5 +156,32 @@ describe('official storage limits', () => {
       overLimit: false,
       canUpload: true,
     });
+  });
+
+  it('only binds a reservation to Pro when its storage quota depends on Pro', () => {
+    const unlimited = resolveOfficialStorageState({
+      enforcement: 'enforce',
+      reportedUsedBytes: '12000000000',
+      usedBytes: 12_000_000_000n,
+      reservedBytes: 0n,
+      limitBytes: 10_000_000_000n,
+      unlimited: true,
+    });
+    const bounded = resolveOfficialStorageState({
+      enforcement: 'enforce',
+      reportedUsedBytes: '500000000',
+      usedBytes: 500_000_000n,
+      reservedBytes: 0n,
+      limitBytes: 10_000_000_000n,
+      unlimited: false,
+    });
+
+    expect(storageReservationDependsOnPro({ source: 'official_pro', storage: unlimited })).toBe(
+      false
+    );
+    expect(storageReservationDependsOnPro({ source: 'official_pro', storage: bounded })).toBe(true);
+    expect(storageReservationDependsOnPro({ source: 'official_free', storage: bounded })).toBe(
+      false
+    );
   });
 });

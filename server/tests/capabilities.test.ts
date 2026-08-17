@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import { UserRole } from '../types/main';
-import { resolveEffectiveCapabilities } from '../authz/capabilities';
+import { buildRoleCapabilitySettings, resolveEffectiveCapabilities } from '../authz/capabilities';
 
 describe('capability resolution', () => {
   it('keeps AI chat denied for users and allowed for admins by default', () => {
@@ -23,6 +23,35 @@ describe('capability resolution', () => {
     expect(
       resolveEffectiveCapabilities({ role: UserRole.ADMIN })['resource.storage.unlimited']
     ).toEqual({ allowed: true, source: 'role_default', role: UserRole.ADMIN });
+  });
+
+  it('preserves inherit for missing role policies while reporting the effective default', () => {
+    const settings = buildRoleCapabilitySettings([
+      {
+        role: UserRole.USER,
+        permission: 'resource.storage.unlimited',
+        effect: 'allow',
+      },
+    ]);
+    const user = settings.find((setting) => setting.role === UserRole.USER)!;
+    const moderator = settings.find((setting) => setting.role === UserRole.MODERATOR)!;
+    const admin = settings.find((setting) => setting.role === UserRole.ADMIN)!;
+
+    expect(user.capabilities['resource.storage.unlimited']).toBe('allow');
+    expect(user.effective['resource.storage.unlimited']).toMatchObject({
+      allowed: true,
+      source: 'role_policy',
+    });
+    expect(moderator.capabilities['resource.storage.unlimited']).toBe('inherit');
+    expect(moderator.effective['resource.storage.unlimited']).toMatchObject({
+      allowed: false,
+      source: 'role_default',
+    });
+    expect(admin.capabilities['resource.storage.unlimited']).toBe('inherit');
+    expect(admin.effective['resource.storage.unlimited']).toMatchObject({
+      allowed: true,
+      source: 'role_default',
+    });
   });
 
   it('applies unlimited storage role policies and user overrides in priority order', () => {

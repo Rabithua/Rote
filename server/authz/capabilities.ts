@@ -26,6 +26,12 @@ export type EffectiveCapability = {
 
 export type EffectiveCapabilities = Record<CapabilityKey, EffectiveCapability>;
 
+export type RoleCapabilitySettings = {
+  role: string;
+  capabilities: Record<CapabilityKey, CapabilityOverride>;
+  effective: EffectiveCapabilities;
+};
+
 const USER_DEFAULTS: Record<CapabilityKey, boolean> = {
   'attachment.upload': true,
   'attachment.video.upload': false,
@@ -139,6 +145,36 @@ export function resolveEffectiveCapabilities(params: {
   }
 
   return capabilities;
+}
+
+export function buildRoleCapabilitySettings(
+  policies: readonly { role: string; permission: string; effect: string }[]
+): RoleCapabilitySettings[] {
+  const explicit = new Map(
+    policies
+      .filter(
+        (policy): policy is { role: string; permission: CapabilityKey; effect: CapabilityEffect } =>
+          isCapabilityKey(policy.permission) && isCapabilityEffect(policy.effect)
+      )
+      .map((policy) => [`${policy.role}:${policy.permission}`, policy.effect])
+  );
+
+  return Object.values(UserRole).map((role) => {
+    const rolePolicies = Object.fromEntries(
+      CAPABILITY_KEYS.flatMap((capability) => {
+        const effect = explicit.get(`${role}:${capability}`);
+        return effect ? [[capability, effect]] : [];
+      })
+    ) as Partial<Record<CapabilityKey, CapabilityEffect>>;
+
+    return {
+      role,
+      capabilities: Object.fromEntries(
+        CAPABILITY_KEYS.map((capability) => [capability, rolePolicies[capability] ?? 'inherit'])
+      ) as Record<CapabilityKey, CapabilityOverride>,
+      effective: resolveEffectiveCapabilities({ role, rolePolicies }),
+    };
+  });
 }
 
 function getSubscriptionValidUntil(

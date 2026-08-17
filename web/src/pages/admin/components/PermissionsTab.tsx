@@ -5,8 +5,8 @@ import { useProfile } from '@/state/profile';
 import {
   CAPABILITY_KEYS,
   MANAGEABLE_ROLES,
-  type CapabilityEffect,
   type CapabilityKey,
+  type CapabilityOverride,
   type ManageableRole,
   type RoleCapabilityPolicy,
 } from '@/types/permissions';
@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 import useSWR from 'swr';
 import PermissionSettingRow from './PermissionSettingRow';
 
-type RoleDrafts = Partial<Record<ManageableRole, Record<CapabilityKey, CapabilityEffect>>>;
+type RoleDrafts = Partial<Record<ManageableRole, Record<CapabilityKey, CapabilityOverride>>>;
 
 export default function PermissionsTab() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.permissions' });
@@ -49,14 +49,14 @@ export default function PermissionsTab() {
   const updateRoleCapability = (
     role: ManageableRole,
     capability: CapabilityKey,
-    effect: CapabilityEffect
+    effect: CapabilityOverride
   ) => {
     setDrafts((current) => ({
       ...current,
       [role]: {
         ...current[role],
         [capability]: effect,
-      } as Record<CapabilityKey, CapabilityEffect>,
+      } as Record<CapabilityKey, CapabilityOverride>,
     }));
   };
 
@@ -94,6 +94,7 @@ export default function PermissionsTab() {
         ) : (
           MANAGEABLE_ROLES.map((role) => {
             const capabilities = drafts[role];
+            const effective = data?.find((policy) => policy.role === role)?.effective;
             return (
               <section key={role} className="border">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
@@ -125,10 +126,11 @@ export default function PermissionsTab() {
                         key={capability}
                         capability={capability}
                         value={capabilities[capability]}
-                        options={['allow', 'deny']}
+                        options={['inherit', 'allow', 'deny']}
                         disabled={!isSuperAdmin}
+                        effective={effective?.[capability]}
                         onChange={(effect) =>
-                          updateRoleCapability(role, capability, effect as CapabilityEffect)
+                          updateRoleCapability(role, capability, effect as CapabilityOverride)
                         }
                       />
                     ))}

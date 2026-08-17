@@ -23,7 +23,8 @@ export type ManageableRole = (typeof MANAGEABLE_ROLES)[number];
 
 export type RoleCapabilityPolicy = {
   role: string;
-  capabilities: Record<CapabilityKey, CapabilityEffect>;
+  capabilities: Record<CapabilityKey, CapabilityOverride>;
+  effective: EffectiveCapabilities;
 };
 
 export type EffectivePermissionsResponse = {
