@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { authenticateJWT, requireAdmin, requireSuperAdmin } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { UserRole } from '../../types/main';
+import { isPushNotificationsEnabled } from '../../push/config';
 import {
   certifyUser,
   deleteUserById,
@@ -19,7 +20,7 @@ const adminUsersRouter = new Hono<{ Variables: HonoVariables }>();
 async function handleCertifyUser(c: HonoContext) {
   const userId = c.req.param('userId');
 
-  const user = await certifyUser(userId);
+  const { user } = await certifyUser(userId, isPushNotificationsEnabled());
 
   if (!user) {
     throw new Error('User not found');
@@ -31,7 +32,7 @@ async function handleCertifyUser(c: HonoContext) {
 async function handleUncertifyUser(c: HonoContext) {
   const userId = c.req.param('userId');
 
-  const user = await uncertifyUser(userId);
+  const { user } = await uncertifyUser(userId, isPushNotificationsEnabled());
 
   if (!user) {
     throw new Error('User not found');

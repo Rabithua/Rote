@@ -5,6 +5,7 @@
   "main": "server.ts",
   "scripts": {
     "start": "bun run server.ts",
+    "worker:push": "bun run pushWorker.ts",
     "build": "tsc",
     "dev": "bun --watch server.ts",
     "dockerBuild": "docker buildx build --platform linux/amd64,linux/arm64 -t rabithua/rotebackend:latest --push .",
