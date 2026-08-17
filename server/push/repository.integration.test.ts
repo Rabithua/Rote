@@ -10,8 +10,15 @@ databaseDescribe('push repository integration', () => {
   let repository: typeof import('./repository');
   let worker: typeof import('./worker');
   let admin: typeof import('../utils/dbMethods/admin');
-  const userIds = [randomUUID(), randomUUID(), randomUUID()];
-  const installationIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+  const userIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+  const installationIds = [
+    randomUUID(),
+    randomUUID(),
+    randomUUID(),
+    randomUUID(),
+    randomUUID(),
+    randomUUID(),
+  ];
 
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl;
@@ -49,6 +56,27 @@ databaseDescribe('push repository integration', () => {
     const preference = await repository.getPreferences(userIds[0]);
     expect(preference?.timeZone).toBe('UTC');
     expect(preference?.nextReminderAt).toBeInstanceOf(Date);
+
+    await repository.disableDevice(userIds[0], installationIds[0]);
+    const refreshedDisabled = await repository.registerDevice({
+      userid: userIds[0],
+      installationId: installationIds[0],
+      token: 'a'.repeat(64),
+      environment: 'production',
+      timeZone: 'UTC',
+    });
+    expect(refreshedDisabled.masterEnabled).toBe(false);
+    expect(refreshedDisabled.status).toBe('disabled');
+    const explicitlyEnabled = await repository.registerDevice({
+      userid: userIds[0],
+      installationId: installationIds[0],
+      token: 'a'.repeat(64),
+      environment: 'production',
+      masterEnabled: true,
+      timeZone: 'UTC',
+    });
+    expect(explicitlyEnabled.masterEnabled).toBe(true);
+    expect(explicitlyEnabled.status).toBe('active');
 
     const invalidInstallationId = installationIds[3];
     await expect(
@@ -138,6 +166,39 @@ databaseDescribe('push repository integration', () => {
     expect(updatedPreference.nextReminderAt?.getUTCHours()).toBe(5);
     expect(updatedPreference.nextReminderAt?.getUTCMinutes()).toBe(45);
     expect(updatedPreference.nextReminderAt?.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('drops reminder occurrences missed before local midnight and schedules the next future time', async () => {
+    const { eq, like } = await import('drizzle-orm');
+    await repository.registerDevice({
+      userid: userIds[3],
+      installationId: installationIds[5],
+      token: 'e'.repeat(64),
+      environment: 'production',
+      masterEnabled: true,
+      timeZone: 'UTC',
+    });
+    await database
+      .update(schema.pushPreferences)
+      .set({
+        dailyReminderTime: '21:30',
+        nextReminderAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      })
+      .where(eq(schema.pushPreferences.userid, userIds[3]));
+
+    await repository.createDueDailyReminderEvents();
+
+    expect(
+      await database
+        .select()
+        .from(schema.pushEvents)
+        .where(like(schema.pushEvents.dedupeKey, `daily-reminder:${userIds[3]}:%`))
+    ).toHaveLength(0);
+    const rescheduled = await repository.getPreferences(userIds[3]);
+    expect(rescheduled?.nextReminderAt?.getTime()).toBeGreaterThan(Date.now());
+    expect(rescheduled?.nextReminderAt?.getTime()).toBeLessThanOrEqual(
+      Date.now() + 24 * 60 * 60 * 1000
+    );
   });
 
   it('fans out regular and targeted events and cancels expired or newly ineligible deliveries', async () => {
@@ -397,41 +458,52 @@ databaseDescribe('push repository integration', () => {
       FOR EACH ROW EXECUTE FUNCTION fail_reaction_push_for_test()
     `);
     const reactionInput = { type: 'heart', roteid: roteId, userid: userIds[1] };
-    const notificationInput = { userid: userIds[0], roteId };
+    const previousPushEnabled = process.env.PUSH_NOTIFICATIONS_ENABLED;
+    process.env.PUSH_NOTIFICATIONS_ENABLED = 'true';
     try {
-      await expect(addReaction(reactionInput, notificationInput)).rejects.toThrow();
+      try {
+        await expect(addReaction(reactionInput)).rejects.toThrow();
+        expect(
+          await database
+            .select()
+            .from(schema.reactions)
+            .where(
+              and(eq(schema.reactions.roteid, roteId), eq(schema.reactions.userid, userIds[1]))
+            )
+        ).toHaveLength(0);
+      } finally {
+        await database.execute(sql`
+          DROP TRIGGER IF EXISTS fail_reaction_push_for_test ON push_events
+        `);
+        await database.execute(sql`DROP FUNCTION IF EXISTS fail_reaction_push_for_test()`);
+      }
+
+      await addReaction(reactionInput);
       expect(
         await database
           .select()
           .from(schema.reactions)
           .where(and(eq(schema.reactions.roteid, roteId), eq(schema.reactions.userid, userIds[1])))
-      ).toHaveLength(0);
-    } finally {
-      await database.execute(sql`
-        DROP TRIGGER IF EXISTS fail_reaction_push_for_test ON push_events
-      `);
-      await database.execute(sql`DROP FUNCTION IF EXISTS fail_reaction_push_for_test()`);
-    }
-
-    await addReaction(reactionInput, notificationInput);
-    expect(
-      await database
-        .select()
-        .from(schema.reactions)
-        .where(and(eq(schema.reactions.roteid, roteId), eq(schema.reactions.userid, userIds[1])))
-    ).toHaveLength(1);
-    expect(
-      await database
-        .select()
-        .from(schema.pushEvents)
-        .where(
-          and(
-            eq(schema.pushEvents.userid, userIds[0]),
-            eq(schema.pushEvents.type, 'reaction.received'),
-            sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+      ).toHaveLength(1);
+      expect(
+        await database
+          .select()
+          .from(schema.pushEvents)
+          .where(
+            and(
+              eq(schema.pushEvents.userid, userIds[0]),
+              eq(schema.pushEvents.type, 'reaction.received'),
+              sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+            )
           )
-        )
-    ).toHaveLength(1);
+      ).toHaveLength(1);
+    } finally {
+      if (previousPushEnabled === undefined) {
+        delete process.env.PUSH_NOTIFICATIONS_ENABLED;
+      } else {
+        process.env.PUSH_NOTIFICATIONS_ENABLED = previousPushEnabled;
+      }
+    }
   });
 
   it('rolls back certification when its push event cannot be inserted', async () => {
@@ -505,5 +577,50 @@ databaseDescribe('push repository integration', () => {
           )
         )
     ).toHaveLength(1);
+  });
+
+  it('preserves APNs devices, preferences, events, and deliveries during account merge', async () => {
+    const { eq } = await import('drizzle-orm');
+    const { mergeUserAccounts } = await import('../utils/dbMethods/userAccount');
+    await database
+      .update(schema.pushPreferences)
+      .set({ reactionsEnabled: false })
+      .where(eq(schema.pushPreferences.userid, userIds[3]));
+    const event = await repository.enqueuePushEvent({
+      userid: userIds[3],
+      type: 'system.merge-preservation',
+      category: 'system',
+      dedupeKey: `integration:merge:${randomUUID()}`,
+      payload: { targetInstallationId: installationIds[5] },
+    });
+    await worker.fanOutEvents();
+    const [delivery] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, event!.id));
+    expect(delivery).not.toBeUndefined();
+
+    const merged = await mergeUserAccounts(userIds[3], userIds[4]);
+    expect(merged.success).toBe(true);
+    expect(merged.mergedData.apnsDevices).toBe(1);
+    expect(merged.mergedData.pushEvents).toBeGreaterThanOrEqual(1);
+    expect(
+      await database.query.users.findFirst({ where: eq(schema.users.id, userIds[3]) })
+    ).toBeUndefined();
+    const migratedDevice = await database.query.apnsDevices.findFirst({
+      where: eq(schema.apnsDevices.installationId, installationIds[5]),
+    });
+    expect(migratedDevice?.userid).toBe(userIds[4]);
+    const migratedPreferences = await repository.getPreferences(userIds[4]);
+    expect(migratedPreferences?.reactionsEnabled).toBe(false);
+    const migratedEvent = await database.query.pushEvents.findFirst({
+      where: eq(schema.pushEvents.id, event!.id),
+    });
+    expect(migratedEvent?.userid).toBe(userIds[4]);
+    expect(
+      await database.query.pushDeliveries.findFirst({
+        where: eq(schema.pushDeliveries.id, delivery.id),
+      })
+    ).not.toBeUndefined();
   });
 });

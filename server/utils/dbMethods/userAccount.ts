@@ -1,8 +1,11 @@
 import crypto from 'crypto';
 import { eq, inArray, sql } from 'drizzle-orm';
 import {
+  apnsDevices,
   attachments,
   billingGrants,
+  pushEvents,
+  pushPreferences,
   reactions,
   roteChanges,
   rotes,
@@ -112,6 +115,8 @@ export async function mergeUserAccounts(
         reactions: 0,
         openKeys: 0,
         subscriptions: 0,
+        apnsDevices: 0,
+        pushEvents: 0,
         changes: 0,
       };
 
@@ -217,6 +222,41 @@ export async function mergeUserAccounts(
             .where(eq(userSwSubscriptions.id, sub.id));
           mergedData.subscriptions++;
         }
+      }
+
+      // Preserve native push registrations, delivery foreign keys, and queued
+      // events. Preferences follow the same target-wins rule as user settings.
+      const migratedApnsDevices = await tx
+        .update(apnsDevices)
+        .set({ userid: targetUserId, updatedAt: new Date() })
+        .where(eq(apnsDevices.userid, sourceUserId))
+        .returning({ id: apnsDevices.id });
+      mergedData.apnsDevices = migratedApnsDevices.length;
+
+      const migratedPushEvents = await tx
+        .update(pushEvents)
+        .set({ userid: targetUserId, updatedAt: new Date() })
+        .where(eq(pushEvents.userid, sourceUserId))
+        .returning({ id: pushEvents.id });
+      mergedData.pushEvents = migratedPushEvents.length;
+
+      const [sourcePushPreferences] = await tx
+        .select()
+        .from(pushPreferences)
+        .where(eq(pushPreferences.userid, sourceUserId))
+        .limit(1);
+      const [targetPushPreferences] = await tx
+        .select({ userid: pushPreferences.userid })
+        .from(pushPreferences)
+        .where(eq(pushPreferences.userid, targetUserId))
+        .limit(1);
+      if (sourcePushPreferences && targetPushPreferences) {
+        await tx.delete(pushPreferences).where(eq(pushPreferences.userid, sourceUserId));
+      } else if (sourcePushPreferences) {
+        await tx
+          .update(pushPreferences)
+          .set({ userid: targetUserId, updatedAt: new Date() })
+          .where(eq(pushPreferences.userid, sourceUserId));
       }
 
       // 8. 合并用户设置（目标用户没有时使用源用户的，否则保留目标用户的）

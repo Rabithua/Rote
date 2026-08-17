@@ -47,7 +47,7 @@ const registerSchema = z.object({
   installationId: z.uuid(),
   token: z.string().regex(/^[a-fA-F0-9]{32,256}$/),
   environment: z.enum(['sandbox', 'production']),
-  masterEnabled: z.boolean().default(true),
+  masterEnabled: z.boolean().optional(),
   timeZone: z.string().min(1).max(100),
 });
 

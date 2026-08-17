@@ -1,22 +1,20 @@
 import { and, eq, sql } from 'drizzle-orm';
 import { reactions, rotes } from '../../drizzle/schema';
+import { isPushNotificationsEnabled } from '../../push/config';
 import { enqueueAggregatedReactionPushEventInTransaction } from '../../push/repository';
 import db from '../drizzle';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 
 // 反应相关方法
-export async function addReaction(
-  data: {
-    type: string;
-    roteid: string;
-    userid?: string;
-    visitorId?: string;
-    visitorInfo?: any;
-    metadata?: any;
-  },
-  pushNotification?: { userid: string; roteId: string }
-): Promise<any> {
+export async function addReaction(data: {
+  type: string;
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+  visitorInfo?: any;
+  metadata?: any;
+}): Promise<any> {
   try {
     const insertedReaction = await db.transaction(async (transaction) => {
       const [inserted] = await transaction
@@ -42,8 +40,18 @@ export async function addReaction(
           },
         })
         .returning();
-      if (pushNotification) {
-        await enqueueAggregatedReactionPushEventInTransaction(transaction, pushNotification);
+      if (isPushNotificationsEnabled()) {
+        const [rote] = await transaction
+          .select({ id: rotes.id, authorid: rotes.authorid })
+          .from(rotes)
+          .where(eq(rotes.id, data.roteid))
+          .limit(1);
+        if (rote && rote.authorid !== data.userid) {
+          await enqueueAggregatedReactionPushEventInTransaction(transaction, {
+            userid: rote.authorid,
+            roteId: rote.id,
+          });
+        }
       }
       return inserted;
     });

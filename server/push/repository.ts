@@ -30,7 +30,7 @@ export async function registerDevice(input: {
   installationId: string;
   token: string;
   environment: ApnsEnvironment;
-  masterEnabled: boolean;
+  masterEnabled?: boolean;
   timeZone: string;
 }) {
   const device = await db.transaction(async (transaction) => {
@@ -46,7 +46,12 @@ export async function registerDevice(input: {
     }
 
     const [existingInstallation] = await transaction
-      .select({ id: apnsDevices.id, userid: apnsDevices.userid })
+      .select({
+        id: apnsDevices.id,
+        userid: apnsDevices.userid,
+        masterEnabled: apnsDevices.masterEnabled,
+        status: apnsDevices.status,
+      })
       .from(apnsDevices)
       .where(eq(apnsDevices.installationId, input.installationId))
       .limit(1);
@@ -55,6 +60,8 @@ export async function registerDevice(input: {
         id: apnsDevices.id,
         userid: apnsDevices.userid,
         installationId: apnsDevices.installationId,
+        masterEnabled: apnsDevices.masterEnabled,
+        status: apnsDevices.status,
       })
       .from(apnsDevices)
       .where(
@@ -108,13 +115,27 @@ export async function registerDevice(input: {
         );
     }
 
+    const existingSameOwnerDevice =
+      existingInstallation?.userid === input.userid
+        ? existingInstallation
+        : existingToken?.userid === input.userid
+          ? existingToken
+          : null;
+    const effectiveMasterEnabled =
+      input.masterEnabled ?? existingSameOwnerDevice?.masterEnabled ?? true;
+    const effectiveStatus =
+      input.masterEnabled === undefined && existingSameOwnerDevice
+        ? existingSameOwnerDevice.status
+        : effectiveMasterEnabled
+          ? 'active'
+          : 'disabled';
     const deviceValues = {
       userid: input.userid,
       token: input.token,
       environment: input.environment,
-      masterEnabled: input.masterEnabled,
+      masterEnabled: effectiveMasterEnabled,
       timeZone: input.timeZone,
-      status: 'active',
+      status: effectiveStatus,
       lastSeenAt: new Date(),
       updatedAt: new Date(),
     };
@@ -144,7 +165,17 @@ export async function registerDevice(input: {
       }
       [registered] = await transaction
         .insert(apnsDevices)
-        .values({ ...input, status: 'active', lastSeenAt: new Date(), updatedAt: new Date() })
+        .values({
+          userid: input.userid,
+          installationId: input.installationId,
+          token: input.token,
+          environment: input.environment,
+          masterEnabled: effectiveMasterEnabled,
+          timeZone: input.timeZone,
+          status: effectiveStatus,
+          lastSeenAt: new Date(),
+          updatedAt: new Date(),
+        })
         .onConflictDoUpdate({
           target: apnsDevices.installationId,
           set: deviceValues,
@@ -332,8 +363,9 @@ export async function createDueDailyReminderEvents(): Promise<void> {
     await db.execute(sql`
       WITH due AS MATERIALIZED (
         SELECT p.userid, p."timeZone",
-          (now() AT TIME ZONE p."timeZone")::date AS local_date,
-          (((now() AT TIME ZONE p."timeZone")::date + 1)::timestamp AT TIME ZONE p."timeZone") AS expires_at,
+          (p."nextReminderAt" AT TIME ZONE p."timeZone")::date AS scheduled_local_date,
+          (now() AT TIME ZONE p."timeZone")::date AS current_local_date,
+          ((((p."nextReminderAt" AT TIME ZONE p."timeZone")::date + 1)::timestamp) AT TIME ZONE p."timeZone") AS expires_at,
           EXISTS (
             SELECT 1 FROM apns_devices d
             WHERE d.userid = p.userid AND d.status = 'active' AND d."masterEnabled" = true
@@ -345,10 +377,13 @@ export async function createDueDailyReminderEvents(): Promise<void> {
         LIMIT 500
       ), eligible AS (
         SELECT due.* FROM due
-        WHERE due.has_active_device AND NOT EXISTS (
+        WHERE due.has_active_device
+          AND due.scheduled_local_date = due.current_local_date
+          AND due.expires_at > now()
+          AND NOT EXISTS (
           SELECT 1 FROM rotes r
           WHERE r.authorid = due.userid
-            AND r."createdAt" >= (due.local_date::timestamp AT TIME ZONE due."timeZone")
+            AND r."createdAt" >= (due.scheduled_local_date::timestamp AT TIME ZONE due."timeZone")
             AND r."createdAt" < due.expires_at
         )
       ), inserted AS (
@@ -357,14 +392,18 @@ export async function createDueDailyReminderEvents(): Promise<void> {
          "dedupeKey", status, "availableAt", "expiresAt", "createdAt", "updatedAt")
         SELECT userid, 'habit.daily_record_reminder', 'dailyReminder',
           'push.dailyReminder.title', 'push.dailyReminder.body', 'rote://new', '{}'::jsonb,
-          'daily-reminder:' || userid::text || ':' || local_date::text,
+          'daily-reminder:' || userid::text || ':' || scheduled_local_date::text,
           'pending', now(), expires_at, now(), now()
         FROM eligible
         ON CONFLICT ("dedupeKey") DO NOTHING
         RETURNING userid
       )
       UPDATE push_preferences p
-      SET "nextReminderAt" = ((((now() AT TIME ZONE p."timeZone")::date + 1) + p."dailyReminderTime"::time) AT TIME ZONE p."timeZone"),
+      SET "nextReminderAt" = CASE
+            WHEN (now() AT TIME ZONE p."timeZone")::time < p."dailyReminderTime"::time
+              THEN (((now() AT TIME ZONE p."timeZone")::date + p."dailyReminderTime"::time) AT TIME ZONE p."timeZone")
+            ELSE ((((now() AT TIME ZONE p."timeZone")::date + 1) + p."dailyReminderTime"::time) AT TIME ZONE p."timeZone")
+          END,
           "updatedAt" = now()
       FROM due
       WHERE p.userid = due.userid

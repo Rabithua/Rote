@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { optionalJWT } from '../../middleware/jwtAuth';
 import { mayAddReaction } from '../../reactions/policy';
-import { isPushNotificationsEnabled } from '../../push/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { assertUsersMayInteract } from '../../userBlocks/service';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
@@ -63,12 +62,7 @@ reactionsRouter.post('/', async (c: HonoContext) => {
     reactionData.visitorInfo = visitorInfo;
   }
 
-  const reaction = await addReaction(
-    reactionData,
-    isPushNotificationsEnabled() && rote.authorid !== user?.id
-      ? { userid: rote.authorid, roteId: rote.id }
-      : undefined
-  );
+  const reaction = await addReaction(reactionData);
   return c.json(createResponse(reaction), 201);
 });
 
