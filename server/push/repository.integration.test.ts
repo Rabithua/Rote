@@ -148,6 +148,55 @@ databaseDescribe('push repository integration', () => {
     await database.delete(schema.pushCampaigns).where(eq(schema.pushCampaigns.id, campaignId));
   });
 
+  it('canonicalizes APNs tokens before transferring ownership', async () => {
+    const { and, eq, inArray } = await import('drizzle-orm');
+    const firstUserId = randomUUID();
+    const secondUserId = randomUUID();
+    await database.insert(schema.users).values([
+      {
+        id: firstUserId,
+        email: `token-a-${firstUserId}@example.test`,
+        username: `token-a-${firstUserId}`,
+      },
+      {
+        id: secondUserId,
+        email: `token-b-${secondUserId}@example.test`,
+        username: `token-b-${secondUserId}`,
+      },
+    ]);
+    await repository.registerDevice({
+      userid: firstUserId,
+      installationId: randomUUID(),
+      token: 'AB'.repeat(32),
+      environment: 'production',
+      timeZone: 'UTC',
+    });
+    const replacement = await repository.registerDevice({
+      userid: secondUserId,
+      installationId: randomUUID(),
+      token: 'ab'.repeat(32),
+      environment: 'production',
+      timeZone: 'UTC',
+    });
+
+    expect(replacement.token).toBe('ab'.repeat(32));
+    expect(replacement.userid).toBe(secondUserId);
+    expect(
+      await database
+        .select()
+        .from(schema.apnsDevices)
+        .where(
+          and(
+            eq(schema.apnsDevices.token, 'ab'.repeat(32)),
+            eq(schema.apnsDevices.environment, 'production')
+          )
+        )
+    ).toHaveLength(1);
+    await database
+      .delete(schema.users)
+      .where(inArray(schema.users.id, [firstUserId, secondUserId]));
+  });
+
   it('schedules daily reminders with the stored time, deduplicates, and skips recorded users', async () => {
     const { and, eq, like } = await import('drizzle-orm');
     await repository.registerDevice({
@@ -746,6 +795,19 @@ databaseDescribe('push repository integration', () => {
       payload: { campaignId },
     });
     await worker.fanOutEvents();
+    const reminderDate = '2099-01-01';
+    const sourceReminder = await repository.enqueuePushEvent({
+      userid: userIds[3],
+      type: 'habit.daily_record_reminder',
+      category: 'dailyReminder',
+      dedupeKey: `daily-reminder:${userIds[3]}:${reminderDate}`,
+    });
+    const targetReminder = await repository.enqueuePushEvent({
+      userid: userIds[4],
+      type: 'habit.daily_record_reminder',
+      category: 'dailyReminder',
+      dedupeKey: `daily-reminder:${userIds[4]}:${reminderDate}`,
+    });
 
     const merged = await mergeUserAccounts(userIds[3], userIds[4]);
     expect(merged.success).toBe(true);
@@ -771,8 +833,23 @@ databaseDescribe('push repository integration', () => {
       where: eq(schema.pushEvents.id, targetCampaign!.id),
     });
     expect(migratedSourceCampaign?.userid).toBe(userIds[4]);
-    expect(migratedSourceCampaign?.status).toBe('cancelled');
+    expect(migratedSourceCampaign?.status).toBe('processed');
     expect(retainedTargetCampaign?.status).not.toBe('cancelled');
+    expect(
+      await database.query.pushDeliveries.findFirst({
+        where: eq(schema.pushDeliveries.eventId, sourceCampaign!.id),
+      })
+    ).toMatchObject({ status: 'pending' });
+    expect(
+      await database.query.pushEvents.findFirst({
+        where: eq(schema.pushEvents.id, sourceReminder!.id),
+      })
+    ).toMatchObject({ status: 'cancelled' });
+    expect(
+      await database.query.pushEvents.findFirst({
+        where: eq(schema.pushEvents.id, targetReminder!.id),
+      })
+    ).toMatchObject({ status: 'pending' });
     expect(
       await database.query.pushCampaigns.findFirst({
         where: eq(schema.pushCampaigns.id, campaignId),

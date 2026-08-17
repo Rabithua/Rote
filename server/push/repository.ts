@@ -33,12 +33,13 @@ export async function registerDevice(input: {
   masterEnabled?: boolean;
   timeZone: string;
 }) {
+  const normalizedToken = input.token.toLowerCase();
   const device = await db.transaction(async (transaction) => {
     // Serialize installation ownership, token ownership, and preference scheduling
     // even when their rows do not exist yet. A stable order avoids lock inversion.
     const lockKeys = [
       `push-device:${input.installationId}`,
-      `push-token:${input.environment}:${input.token}`,
+      `push-token:${input.environment}:${normalizedToken}`,
       `push-preference:${input.userid}`,
     ].sort();
     for (const lockKey of lockKeys) {
@@ -67,7 +68,7 @@ export async function registerDevice(input: {
       })
       .from(apnsDevices)
       .where(
-        and(eq(apnsDevices.token, input.token), eq(apnsDevices.environment, input.environment))
+        and(eq(apnsDevices.token, normalizedToken), eq(apnsDevices.environment, input.environment))
       )
       .limit(1);
 
@@ -126,7 +127,7 @@ export async function registerDevice(input: {
     const reactivatingInvalidDevice =
       input.masterEnabled === undefined &&
       existingSameOwnerDevice?.status === 'invalid' &&
-      existingSameOwnerDevice.token !== input.token;
+      existingSameOwnerDevice.token !== normalizedToken;
     const effectiveMasterEnabled =
       input.masterEnabled ??
       (reactivatingInvalidDevice ? true : existingSameOwnerDevice?.masterEnabled) ??
@@ -140,7 +141,7 @@ export async function registerDevice(input: {
           : 'disabled';
     const deviceValues = {
       userid: input.userid,
-      token: input.token,
+      token: normalizedToken,
       environment: input.environment,
       masterEnabled: effectiveMasterEnabled,
       timeZone: input.timeZone,
@@ -177,7 +178,7 @@ export async function registerDevice(input: {
         .values({
           userid: input.userid,
           installationId: input.installationId,
-          token: input.token,
+          token: normalizedToken,
           environment: input.environment,
           masterEnabled: effectiveMasterEnabled,
           timeZone: input.timeZone,
