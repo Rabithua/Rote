@@ -4,6 +4,14 @@ import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../dri
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import type { ApnsEnvironment } from './config';
 import { PushApiError } from './errors';
+import { readPushPayloadMetadata, withPushPayloadMetadata } from './payload';
+import {
+  canPresentDetailedReactionType,
+  mergeReactionNotificationState,
+  parseReactionNotificationState,
+  reactionNoteLabel,
+  reactionNotificationPresentation,
+} from './reactionPresentation';
 
 export type PushPreferencePatch = Partial<{
   reactionsEnabled: boolean;
@@ -437,6 +445,11 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
   input: {
     userid: string;
     roteId: string;
+    reactionType?: string;
+    actorKey?: string;
+    actorName?: string;
+    noteTitle?: string | null;
+    noteContent?: string;
   }
 ): Promise<void> {
   const now = new Date();
@@ -444,7 +457,11 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
     sql`SELECT pg_advisory_xact_lock(hashtext(${`push-reaction:${input.userid}:${input.roteId}`}))`
   );
   const [pending] = await transaction
-    .select({ id: pushEvents.id })
+    .select({
+      id: pushEvents.id,
+      titleLocKey: pushEvents.titleLocKey,
+      payload: pushEvents.payload,
+    })
     .from(pushEvents)
     .where(
       and(
@@ -456,17 +473,91 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
       )
     )
     .limit(1);
-  if (pending) return;
+
+  const hasDetailedContext =
+    input.reactionType !== undefined &&
+    input.actorKey !== undefined &&
+    input.noteContent !== undefined &&
+    canPresentDetailedReactionType(input.reactionType);
+  if (pending?.titleLocKey === 'push.reaction.title') return;
+  if (pending && !hasDetailedContext) {
+    await transaction
+      .update(pushEvents)
+      .set({
+        titleLocKey: 'push.reaction.title',
+        bodyLocKey: 'push.reaction.body',
+        payload: { roteId: input.roteId },
+        updatedAt: new Date(),
+      })
+      .where(eq(pushEvents.id, pending.id));
+    return;
+  }
+
+  let presentation:
+    | {
+        titleLocKey: string;
+        bodyLocKey: string;
+        titleLocArgs: string[];
+        bodyLocArgs: string[];
+        state: ReturnType<typeof mergeReactionNotificationState>;
+      }
+    | undefined;
+  if (hasDetailedContext) {
+    const currentMetadata = readPushPayloadMetadata(pending?.payload);
+    const state = mergeReactionNotificationState(
+      parseReactionNotificationState(currentMetadata.reaction),
+      {
+        actorKey: input.actorKey!,
+        actorName: input.actorName,
+        reactionType: input.reactionType!,
+        noteLabel: reactionNoteLabel(input.noteTitle, input.noteContent!),
+      }
+    );
+    presentation = { ...reactionNotificationPresentation(state), state };
+  }
+
+  if (pending && presentation) {
+    const currentMetadata = readPushPayloadMetadata(pending.payload);
+    await transaction
+      .update(pushEvents)
+      .set({
+        titleLocKey: presentation.titleLocKey,
+        bodyLocKey: presentation.bodyLocKey,
+        payload: withPushPayloadMetadata(
+          { ...pending.payload, roteId: input.roteId },
+          {
+            ...currentMetadata,
+            titleLocArgs: presentation.titleLocArgs,
+            bodyLocArgs: presentation.bodyLocArgs,
+            reaction: presentation.state,
+          }
+        ),
+        updatedAt: new Date(),
+      })
+      .where(eq(pushEvents.id, pending.id));
+    return;
+  }
+
+  const payload = presentation
+    ? withPushPayloadMetadata(
+        { roteId: input.roteId },
+        {
+          titleLocArgs: presentation.titleLocArgs,
+          bodyLocArgs: presentation.bodyLocArgs,
+          reaction: presentation.state,
+        }
+      )
+    : { roteId: input.roteId };
 
   await transaction.insert(pushEvents).values({
     userid: input.userid,
     type: 'reaction.received',
     category: 'reactions',
     dedupeKey: `reaction:${input.roteId}:${randomUUID()}`,
-    titleLocKey: 'push.reaction.title',
-    bodyLocKey: 'push.reaction.body',
+    titleLocKey: presentation?.titleLocKey ?? 'push.reaction.title',
+    bodyLocKey: presentation?.bodyLocKey ?? 'push.reaction.body',
     route: `rote://detail?id=${input.roteId}`,
-    payload: { roteId: input.roteId },
+    payload,
     availableAt: new Date(now.getTime() + 30_000),
     expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
   });
@@ -475,6 +566,11 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
 export async function enqueueAggregatedReactionPushEvent(input: {
   userid: string;
   roteId: string;
+  reactionType?: string;
+  actorKey?: string;
+  actorName?: string;
+  noteTitle?: string | null;
+  noteContent?: string;
 }): Promise<void> {
   await db.transaction(async (transaction) => {
     await enqueueAggregatedReactionPushEventInTransaction(transaction, input);

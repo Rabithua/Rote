@@ -1,0 +1,260 @@
+import { describe, expect, it } from 'bun:test';
+import { APNS_MAX_PAYLOAD_BYTES, serializeApnsPayload } from './apns';
+import {
+  canPresentDetailedReactionType,
+  mergeReactionNotificationState,
+  reactionActorName,
+  reactionNoteLabel,
+  reactionNotificationPresentation,
+} from './reactionPresentation';
+
+describe('reaction notification presentation', () => {
+  it('uses the known actor, reaction, and note label for a single response', () => {
+    const state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '❤️',
+      noteLabel: 'Summer wind',
+    });
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.known.title',
+      bodyLocKey: 'push.reaction.detail.body',
+      titleLocArgs: ['Alice'],
+      bodyLocArgs: ['❤️', 'Summer wind'],
+    });
+  });
+
+  it('aggregates unique actors and response types while preserving the first actor', () => {
+    const first = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '❤️',
+      noteLabel: 'Summer wind',
+    });
+    const repeatedActor = mergeReactionNotificationState(first, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '👍',
+      noteLabel: 'Summer wind',
+    });
+    const anotherActor = mergeReactionNotificationState(repeatedActor, {
+      actorKey: 'visitor:beta',
+      reactionType: '🎉',
+      noteLabel: 'Summer wind',
+    });
+    expect(reactionNotificationPresentation(anotherActor)).toEqual({
+      titleLocKey: 'push.reaction.detail.known_multiple.title',
+      bodyLocKey: 'push.reaction.detail.body',
+      titleLocArgs: ['Alice', '1'],
+      bodyLocArgs: ['❤️ 👍 🎉', 'Summer wind'],
+    });
+  });
+
+  it('uses localized anonymous titles without embedding a server-language label', () => {
+    const state = mergeReactionNotificationState(null, {
+      actorKey: 'visitor:alpha',
+      reactionType: '👏',
+      noteLabel: 'Summer wind',
+    });
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous.title',
+      bodyLocKey: 'push.reaction.detail.body',
+      titleLocArgs: [],
+      bodyLocArgs: ['👏', 'Summer wind'],
+    });
+  });
+
+  it('falls back to a bounded content excerpt when a note has no title', () => {
+    expect(reactionNoteLabel('  ', `  ${'记'.repeat(50)}\nnext line  `)).toBe(
+      `${'记'.repeat(36)}…`
+    );
+    expect(reactionActorName('  Alice\nSmith  ', 'fallback')).toBe('Alice Smith');
+  });
+
+  it('preserves angle-bracket comparisons in plain note titles', () => {
+    expect(reactionNoteLabel('Compare 1 < 2 and 3 > 1', 'ignored')).toBe('Compare 1 < 2 and 3 > 1');
+  });
+
+  it('uses a localized unlabeled-note body when title and content are empty', () => {
+    const state = mergeReactionNotificationState(null, {
+      actorKey: 'visitor:alpha',
+      reactionType: '❤️',
+      noteLabel: reactionNoteLabel(' ', '<p> </p>') ?? '',
+    });
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous.title',
+      bodyLocKey: 'push.reaction.detail.body.unlabeled',
+      titleLocArgs: [],
+      bodyLocArgs: ['❤️'],
+    });
+  });
+
+  it('truncates text on grapheme boundaries', () => {
+    const family = '👨‍👩‍👧‍👦';
+    expect(reactionActorName(family.repeat(40), 'fallback')).toBe(`${family.repeat(6)}…`);
+  });
+
+  it('deduplicates custom reactions by their full normalized identity', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: 'abcdefghijkl-first',
+      noteLabel: 'Summer wind',
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: 'abcdefghijkl-second',
+      noteLabel: 'Summer wind',
+    });
+    expect(state.reactionTypes).toHaveLength(2);
+  });
+
+  it('rejects reaction details that normalize to empty', () => {
+    expect(canPresentDetailedReactionType(' \n\u0000\u200B ')).toBe(false);
+  });
+
+  it('strips unsafe format controls while preserving visible ZWJ emoji', () => {
+    expect(canPresentDetailedReactionType('\u200B\u202E')).toBe(false);
+    expect(canPresentDetailedReactionType('👩‍💻')).toBe(true);
+  });
+
+  it('preserves standardized emoji tag sequences as distinct reaction identities', () => {
+    const england = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+    const scotland = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: england,
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: scotland,
+    });
+    expect(state.reactionTypes.map((item) => item.label)).toEqual([england, scotland]);
+  });
+
+  it('strips emoji tags outside a complete black-flag sequence', () => {
+    const heart = '❤️';
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: heart,
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: `${heart}\u{E0067}`,
+    });
+    expect(state.reactionTypes).toHaveLength(1);
+    expect(state.reactionTypes[0].label).toBe(heart);
+  });
+
+  it('deduplicates canonically equivalent Unicode reaction types', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: 'é',
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: 'e\u0301',
+    });
+    expect(state.reactionTypes).toHaveLength(1);
+    expect(state.reactionTypes[0].label).toBe('é');
+  });
+
+  it('normalizes an invisible nickname before falling back to the username', () => {
+    expect(reactionActorName(' \u200B\u202E ', 'Alice')).toBe('Alice');
+  });
+
+  it('uses localized overflow bodies with the hidden count as a separate argument', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: '❤️',
+      noteLabel: 'Summer wind',
+    });
+    for (const reactionType of ['👍', '🎉', '👏']) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: 'user:alice',
+        reactionType,
+        noteLabel: 'Summer wind',
+      });
+    }
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous.title',
+      bodyLocKey: 'push.reaction.detail.body.overflow',
+      titleLocArgs: [],
+      bodyLocArgs: ['❤️ 👍 🎉', '1', 'Summer wind'],
+    });
+  });
+
+  it('bounds retained aggregate identities and switches saturated dimensions to many', () => {
+    let state: ReturnType<typeof mergeReactionNotificationState> | null = null;
+    for (let index = 0; index < 100; index += 1) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: `visitor:${index}`,
+        reactionType: `custom-${index}`,
+        noteLabel: 'Summer wind',
+      });
+    }
+    expect(state.actorKeyHashes).toHaveLength(32);
+    expect(state.actorsOverflowed).toBe(true);
+    expect(state.reactionTypes).toHaveLength(8);
+    expect(state.reactionTypesOverflowed).toBe(true);
+    expect(Buffer.byteLength(JSON.stringify(state), 'utf8')).toBeLessThan(5_000);
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous_many.title',
+      bodyLocKey: 'push.reaction.detail.body.many',
+      titleLocArgs: [],
+      bodyLocArgs: ['custom-0 custom-1 custom-2', 'Summer wind'],
+    });
+  });
+
+  it('does not turn repeated overflow actors or types into unique counts', () => {
+    let state: ReturnType<typeof mergeReactionNotificationState> | null = null;
+    for (let index = 0; index < 32; index += 1) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: `visitor:${index}`,
+        reactionType: `custom-${index % 8}`,
+      });
+    }
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'visitor:overflow',
+      reactionType: 'custom-overflow',
+    });
+    const saturatedState = state;
+    for (let index = 0; index < 5; index += 1) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: 'visitor:overflow',
+        reactionType: 'custom-overflow',
+      });
+    }
+    expect(state.actorKeyHashes).toEqual(saturatedState.actorKeyHashes);
+    expect(state.reactionTypes).toEqual(saturatedState.reactionTypes);
+    expect(reactionNotificationPresentation(state).titleLocKey).toBe(
+      'push.reaction.detail.anonymous_many.title'
+    );
+    expect(reactionNotificationPresentation(state).bodyLocKey).toBe(
+      'push.reaction.detail.body.unlabeled.many'
+    );
+  });
+
+  it('bounds pathological graphemes so the completed APNs payload remains below 4 KB', () => {
+    const noteLabel = reactionNoteLabel('', `a${'\u0301'.repeat(5_000)}`);
+    const state = mergeReactionNotificationState(null, {
+      actorKey: 'visitor:alpha',
+      reactionType: '❤️',
+      noteLabel,
+    });
+    const presentation = reactionNotificationPresentation(state);
+    const payload = serializeApnsPayload({
+      titleLocKey: presentation.titleLocKey,
+      bodyLocKey: presentation.bodyLocKey,
+      titleLocArgs: presentation.titleLocArgs,
+      bodyLocArgs: presentation.bodyLocArgs,
+      route: 'rote://detail?id=00000000-0000-0000-0000-000000000000',
+      payload: { roteId: '00000000-0000-0000-0000-000000000000' },
+    });
+    expect(noteLabel).toBeUndefined();
+    expect(Buffer.byteLength(payload, 'utf8')).toBeLessThanOrEqual(APNS_MAX_PAYLOAD_BYTES);
+  });
+
+  it('truncates a maximal plain-text note without changing its bounded preview', () => {
+    expect(reactionNoteLabel('', 'x'.repeat(1_000_000))).toBe(`${'x'.repeat(36)}…`);
+  });
+});

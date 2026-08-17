@@ -49,6 +49,8 @@ export type ApnsMessage = {
   body?: string | null;
   titleLocKey?: string | null;
   bodyLocKey?: string | null;
+  titleLocArgs?: string[];
+  bodyLocArgs?: string[];
   route?: string | null;
   payload?: Record<string, unknown>;
   expiration?: Date | null;
@@ -59,15 +61,24 @@ export const APNS_MAX_PAYLOAD_BYTES = 4096;
 
 type ApnsPayloadMessage = Pick<
   ApnsMessage,
-  'title' | 'body' | 'titleLocKey' | 'bodyLocKey' | 'route' | 'payload'
+  | 'title'
+  | 'body'
+  | 'titleLocKey'
+  | 'bodyLocKey'
+  | 'titleLocArgs'
+  | 'bodyLocArgs'
+  | 'route'
+  | 'payload'
 >;
 
 export function serializeApnsPayload(message: ApnsPayloadMessage): string {
-  const alert: Record<string, string> = {};
+  const alert: Record<string, string | string[]> = {};
   if (message.title) alert.title = message.title;
   if (message.body) alert.body = message.body;
   if (message.titleLocKey) alert['title-loc-key'] = message.titleLocKey;
   if (message.bodyLocKey) alert['loc-key'] = message.bodyLocKey;
+  if (message.titleLocArgs?.length) alert['title-loc-args'] = message.titleLocArgs;
+  if (message.bodyLocArgs?.length) alert['loc-args'] = message.bodyLocArgs;
   return JSON.stringify({
     ...message.payload,
     aps: { alert, sound: 'default' },

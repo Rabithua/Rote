@@ -17,4 +17,23 @@ describe('APNs payload sizing', () => {
     );
     expect(isApnsPayloadWithinLimit(oversized)).toBe(false);
   });
+
+  it('serializes localized title and body arguments into the alert', () => {
+    const payload = JSON.parse(
+      serializeApnsPayload({
+        titleLocKey: 'push.reaction.detail.known.title',
+        bodyLocKey: 'push.reaction.detail.body',
+        titleLocArgs: ['Alice'],
+        bodyLocArgs: ['❤️', 'Summer wind'],
+        route: 'rote://detail?id=rote-a',
+        payload: { roteId: 'rote-a' },
+      })
+    );
+    expect(payload.aps.alert).toEqual({
+      'title-loc-key': 'push.reaction.detail.known.title',
+      'loc-key': 'push.reaction.detail.body',
+      'title-loc-args': ['Alice'],
+      'loc-args': ['❤️', 'Summer wind'],
+    });
+  });
 });
