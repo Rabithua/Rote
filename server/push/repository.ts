@@ -6,6 +6,7 @@ import type { ApnsEnvironment } from './config';
 import { PushApiError } from './errors';
 import { readPushPayloadMetadata, withPushPayloadMetadata } from './payload';
 import {
+  canPresentDetailedReactionType,
   mergeReactionNotificationState,
   parseReactionNotificationState,
   reactionNoteLabel,
@@ -472,7 +473,8 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
   const hasDetailedContext =
     input.reactionType !== undefined &&
     input.actorKey !== undefined &&
-    input.noteContent !== undefined;
+    input.noteContent !== undefined &&
+    canPresentDetailedReactionType(input.reactionType);
   if (pending && !hasDetailedContext) return;
 
   let presentation:

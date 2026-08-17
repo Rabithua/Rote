@@ -3,18 +3,34 @@ const ACTOR_PREVIEW_LENGTH = 32;
 const REACTION_PREVIEW_LENGTH = 12;
 const MAX_VISIBLE_REACTION_TYPES = 3;
 
+type GraphemeSegmenter = {
+  segment(value: string): Iterable<{ segment: string }>;
+};
+
+type GraphemeSegmenterConstructor = new (
+  locales?: string | string[],
+  options?: { granularity: 'grapheme' }
+) => GraphemeSegmenter;
+
+const GraphemeSegmenter = (Intl as unknown as { Segmenter: GraphemeSegmenterConstructor })
+  .Segmenter;
+const graphemeSegmenter = new GraphemeSegmenter(undefined, { granularity: 'grapheme' });
+
 export type ReactionNotificationState = {
   actorKeys: string[];
   firstKnownActorName?: string;
-  reactionTypes: string[];
-  noteLabel: string;
+  reactionTypes: Array<{
+    identity: string;
+    label: string;
+  }>;
+  noteLabel?: string;
 };
 
 export type ReactionNotificationInput = {
   actorKey: string;
   actorName?: string;
   reactionType: string;
-  noteLabel: string;
+  noteLabel?: string;
 };
 
 export type ReactionNotificationPresentation = {
@@ -33,19 +49,26 @@ function normalizedText(value: string | null | undefined): string {
 }
 
 function truncated(value: string, maximumLength: number): string {
-  const characters = Array.from(value);
+  const characters = Array.from(graphemeSegmenter.segment(value), (segment) => segment.segment);
   if (characters.length <= maximumLength) return value;
   return `${characters.slice(0, maximumLength).join('')}…`;
 }
 
-export function reactionNoteLabel(title: string | null | undefined, content: string): string {
+export function reactionNoteLabel(
+  title: string | null | undefined,
+  content: string
+): string | undefined {
   const titleText = normalizedText(title);
-  const source = titleText || normalizedText(content) || 'Rote';
-  return truncated(source, NOTE_PREVIEW_LENGTH);
+  const source = titleText || normalizedText(content);
+  return source ? truncated(source, NOTE_PREVIEW_LENGTH) : undefined;
 }
 
 export function reactionActorName(nickname: string | null | undefined, username: string): string {
   return truncated(normalizedText(nickname) || normalizedText(username), ACTOR_PREVIEW_LENGTH);
+}
+
+export function canPresentDetailedReactionType(reactionType: string): boolean {
+  return normalizedText(reactionType).length > 0;
 }
 
 export function mergeReactionNotificationState(
@@ -55,10 +78,19 @@ export function mergeReactionNotificationState(
   const actorKeys = current?.actorKeys.includes(input.actorKey)
     ? current.actorKeys
     : [...(current?.actorKeys ?? []), input.actorKey];
-  const reactionType = truncated(normalizedText(input.reactionType), REACTION_PREVIEW_LENGTH);
-  const reactionTypes = current?.reactionTypes.includes(reactionType)
+  const reactionIdentity = normalizedText(input.reactionType);
+  const reactionTypes = current?.reactionTypes.some(
+    (reactionType) => reactionType.identity === reactionIdentity
+  )
     ? current.reactionTypes
-    : [...(current?.reactionTypes ?? []), reactionType];
+    : [
+        ...(current?.reactionTypes ?? []),
+        {
+          identity: reactionIdentity,
+          label: truncated(reactionIdentity, REACTION_PREVIEW_LENGTH),
+        },
+      ];
+  const nextNoteLabel = truncated(normalizedText(input.noteLabel), NOTE_PREVIEW_LENGTH);
   return {
     actorKeys,
     firstKnownActorName:
@@ -67,8 +99,7 @@ export function mergeReactionNotificationState(
         ? truncated(normalizedText(input.actorName), ACTOR_PREVIEW_LENGTH)
         : undefined),
     reactionTypes,
-    noteLabel:
-      current?.noteLabel || truncated(normalizedText(input.noteLabel), NOTE_PREVIEW_LENGTH),
+    noteLabel: current?.noteLabel || nextNoteLabel || undefined,
   };
 }
 
@@ -79,8 +110,15 @@ export function parseReactionNotificationState(value: unknown): ReactionNotifica
     !Array.isArray(state.actorKeys) ||
     state.actorKeys.some((item) => typeof item !== 'string') ||
     !Array.isArray(state.reactionTypes) ||
-    state.reactionTypes.some((item) => typeof item !== 'string') ||
-    typeof state.noteLabel !== 'string' ||
+    state.reactionTypes.some(
+      (item) =>
+        !item ||
+        typeof item !== 'object' ||
+        Array.isArray(item) ||
+        typeof item.identity !== 'string' ||
+        typeof item.label !== 'string'
+    ) ||
+    (state.noteLabel !== undefined && typeof state.noteLabel !== 'string') ||
     (state.firstKnownActorName !== undefined && typeof state.firstKnownActorName !== 'string')
   ) {
     return null;
@@ -88,10 +126,10 @@ export function parseReactionNotificationState(value: unknown): ReactionNotifica
   return state as ReactionNotificationState;
 }
 
-function reactionSummary(reactionTypes: string[]): string {
+function reactionSummary(reactionTypes: ReactionNotificationState['reactionTypes']): string {
   const visible = reactionTypes.slice(0, MAX_VISIBLE_REACTION_TYPES);
   const hiddenCount = reactionTypes.length - visible.length;
-  return `${visible.join(' ')}${hiddenCount > 0 ? ` +${hiddenCount}` : ''}`;
+  return `${visible.map((item) => item.label).join(' ')}${hiddenCount > 0 ? ` +${hiddenCount}` : ''}`;
 }
 
 export function reactionNotificationPresentation(
@@ -117,8 +155,12 @@ export function reactionNotificationPresentation(
   }
   return {
     titleLocKey,
-    bodyLocKey: 'push.reaction.detail.body',
+    bodyLocKey: state.noteLabel
+      ? 'push.reaction.detail.body'
+      : 'push.reaction.detail.body.unlabeled',
     titleLocArgs,
-    bodyLocArgs: [reactionSummary(state.reactionTypes), state.noteLabel],
+    bodyLocArgs: state.noteLabel
+      ? [reactionSummary(state.reactionTypes), state.noteLabel]
+      : [reactionSummary(state.reactionTypes)],
   };
 }

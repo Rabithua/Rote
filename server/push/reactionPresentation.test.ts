@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  canPresentDetailedReactionType,
   mergeReactionNotificationState,
   reactionActorName,
   reactionNoteLabel,
@@ -67,5 +68,42 @@ describe('reaction notification presentation', () => {
       `${'记'.repeat(36)}…`
     );
     expect(reactionActorName('  Alice\nSmith  ', 'fallback')).toBe('Alice Smith');
+  });
+
+  it('uses a localized unlabeled-note body when title and content are empty', () => {
+    const state = mergeReactionNotificationState(null, {
+      actorKey: 'visitor:alpha',
+      reactionType: '❤️',
+      noteLabel: reactionNoteLabel(' ', '<p> </p>') ?? '',
+    });
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous.title',
+      bodyLocKey: 'push.reaction.detail.body.unlabeled',
+      titleLocArgs: [],
+      bodyLocArgs: ['❤️'],
+    });
+  });
+
+  it('truncates text on grapheme boundaries', () => {
+    const family = '👨‍👩‍👧‍👦';
+    expect(reactionActorName(family.repeat(40), 'fallback')).toBe(`${family.repeat(32)}…`);
+  });
+
+  it('deduplicates custom reactions by their full normalized identity', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: 'abcdefghijkl-first',
+      noteLabel: 'Summer wind',
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: 'abcdefghijkl-second',
+      noteLabel: 'Summer wind',
+    });
+    expect(state.reactionTypes).toHaveLength(2);
+  });
+
+  it('rejects reaction details that normalize to empty', () => {
+    expect(canPresentDetailedReactionType(' \n\u0000<p></p> ')).toBe(false);
   });
 });
