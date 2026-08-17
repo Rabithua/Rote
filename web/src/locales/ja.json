@@ -1782,6 +1782,10 @@
           "ai.chat": {
             "label": "AI チャット",
             "description": "AI チャットを許可し、システムのメモリー実行環境が準備できていればメモリーツールも利用できます。"
+          },
+          "resource.storage.unlimited": {
+            "label": "ストレージ無制限",
+            "description": "アップロード権限やファイル単位のサイズ上限を変更せず、ユーザーのストレージ総容量制限を解除します。"
           }
         },
         "userDialog": {

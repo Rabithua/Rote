@@ -1778,6 +1778,10 @@
           "ai.chat": {
             "label": "AI Chat",
             "description": "Allow AI chat and memory tools when the system memory runtime is ready."
+          },
+          "resource.storage.unlimited": {
+            "label": "Unlimited Storage",
+            "description": "Remove the user's total storage quota without changing upload permissions or per-file size limits."
           }
         },
         "userDialog": {

@@ -5,6 +5,8 @@ import {
   effectiveOfficialStorageEnforcement,
   reportedOfficialUsedBytes,
   reservationCleanupKeys,
+  resolveOfficialStorageState,
+  storageReservationDependsOnPro,
   type UploadReservationManifestItem,
 } from './service';
 
@@ -99,6 +101,87 @@ describe('resource cleanup helpers', () => {
     ]);
     expect(countObjectKeyReferences([...first, ...second])).toEqual(
       new Map([['users/user/uploads/shared.jpg', 2]])
+    );
+  });
+});
+
+describe('official storage limits', () => {
+  it('keeps unlimited users uploadable after they exceed either free or Pro quotas', () => {
+    for (const limitBytes of [500_000_000n, 10_000_000_000n]) {
+      expect(
+        resolveOfficialStorageState({
+          enforcement: 'enforce',
+          reportedUsedBytes: '12000000000',
+          usedBytes: 12_000_000_000n,
+          reservedBytes: 1_000n,
+          limitBytes,
+          unlimited: true,
+        })
+      ).toEqual({
+        enforcement: 'enforce',
+        usedBytes: '12000000000',
+        reservedBytes: '1000',
+        limitBytes: null,
+        overLimit: false,
+        canUpload: true,
+      });
+    }
+  });
+
+  it('restores enforcement against the supplied free or Pro quota after unlimited is revoked', () => {
+    const free = resolveOfficialStorageState({
+      enforcement: 'enforce',
+      reportedUsedBytes: '500000000',
+      usedBytes: 500_000_000n,
+      reservedBytes: 0n,
+      limitBytes: 500_000_000n,
+      unlimited: false,
+    });
+    const pro = resolveOfficialStorageState({
+      enforcement: 'enforce',
+      reportedUsedBytes: '500000000',
+      usedBytes: 500_000_000n,
+      reservedBytes: 0n,
+      limitBytes: 10_000_000_000n,
+      unlimited: false,
+    });
+
+    expect(free).toMatchObject({
+      limitBytes: '500000000',
+      overLimit: true,
+      canUpload: false,
+    });
+    expect(pro).toMatchObject({
+      limitBytes: '10000000000',
+      overLimit: false,
+      canUpload: true,
+    });
+  });
+
+  it('only binds a reservation to Pro when its storage quota depends on Pro', () => {
+    const unlimited = resolveOfficialStorageState({
+      enforcement: 'enforce',
+      reportedUsedBytes: '12000000000',
+      usedBytes: 12_000_000_000n,
+      reservedBytes: 0n,
+      limitBytes: 10_000_000_000n,
+      unlimited: true,
+    });
+    const bounded = resolveOfficialStorageState({
+      enforcement: 'enforce',
+      reportedUsedBytes: '500000000',
+      usedBytes: 500_000_000n,
+      reservedBytes: 0n,
+      limitBytes: 10_000_000_000n,
+      unlimited: false,
+    });
+
+    expect(storageReservationDependsOnPro({ source: 'official_pro', storage: unlimited })).toBe(
+      false
+    );
+    expect(storageReservationDependsOnPro({ source: 'official_pro', storage: bounded })).toBe(true);
+    expect(storageReservationDependsOnPro({ source: 'official_free', storage: bounded })).toBe(
+      false
     );
   });
 });

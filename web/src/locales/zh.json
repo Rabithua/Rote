@@ -1764,6 +1764,10 @@
           "ai.chat": {
             "label": "AI 对话",
             "description": "允许使用 AI 对话；系统记忆运行环境就绪时也可使用记忆工具。"
+          },
+          "resource.storage.unlimited": {
+            "label": "无限存储空间",
+            "description": "取消用户的存储总额度限制，不改变上传权限和单文件大小限制。"
           }
         },
         "userDialog": {
