@@ -113,6 +113,20 @@ describe('reaction notification presentation', () => {
     expect(canPresentDetailedReactionType('👩‍💻')).toBe(true);
   });
 
+  it('preserves standardized emoji tag sequences as distinct reaction identities', () => {
+    const england = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}';
+    const scotland = '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}';
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: england,
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: scotland,
+    });
+    expect(state.reactionTypes.map((item) => item.label)).toEqual([england, scotland]);
+  });
+
   it('normalizes an invisible nickname before falling back to the username', () => {
     expect(reactionActorName(' <b> </b>\u200B', 'Alice')).toBe('Alice');
   });
@@ -138,7 +152,7 @@ describe('reaction notification presentation', () => {
     });
   });
 
-  it('bounds retained aggregate identities while keeping aggregate counts', () => {
+  it('bounds retained aggregate identities and switches saturated dimensions to many', () => {
     let state: ReturnType<typeof mergeReactionNotificationState> | null = null;
     for (let index = 0; index < 100; index += 1) {
       state = mergeReactionNotificationState(state, {
@@ -148,10 +162,45 @@ describe('reaction notification presentation', () => {
       });
     }
     expect(state.actorKeyHashes).toHaveLength(32);
-    expect(state.actorCount).toBe(100);
+    expect(state.actorsOverflowed).toBe(true);
     expect(state.reactionTypes).toHaveLength(8);
-    expect(state.reactionTypeCount).toBe(100);
+    expect(state.reactionTypesOverflowed).toBe(true);
     expect(Buffer.byteLength(JSON.stringify(state), 'utf8')).toBeLessThan(5_000);
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous_many.title',
+      bodyLocKey: 'push.reaction.detail.body.many',
+      titleLocArgs: [],
+      bodyLocArgs: ['custom-0 custom-1 custom-2', 'Summer wind'],
+    });
+  });
+
+  it('does not turn repeated overflow actors or types into unique counts', () => {
+    let state: ReturnType<typeof mergeReactionNotificationState> | null = null;
+    for (let index = 0; index < 32; index += 1) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: `visitor:${index}`,
+        reactionType: `custom-${index % 8}`,
+      });
+    }
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'visitor:overflow',
+      reactionType: 'custom-overflow',
+    });
+    const saturatedState = state;
+    for (let index = 0; index < 5; index += 1) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: 'visitor:overflow',
+        reactionType: 'custom-overflow',
+      });
+    }
+    expect(state.actorKeyHashes).toEqual(saturatedState.actorKeyHashes);
+    expect(state.reactionTypes).toEqual(saturatedState.reactionTypes);
+    expect(reactionNotificationPresentation(state).titleLocKey).toBe(
+      'push.reaction.detail.anonymous_many.title'
+    );
+    expect(reactionNotificationPresentation(state).bodyLocKey).toBe(
+      'push.reaction.detail.body.unlabeled.many'
+    );
   });
 
   it('bounds pathological graphemes so the completed APNs payload remains below 4 KB', () => {
