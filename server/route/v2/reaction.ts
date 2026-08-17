@@ -3,7 +3,7 @@ import type { User } from '../../drizzle/schema';
 import { optionalJWT } from '../../middleware/jwtAuth';
 import { mayAddReaction } from '../../reactions/policy';
 import { isPushNotificationsEnabled } from '../../push/config';
-import { enqueuePushEvent } from '../../push/repository';
+import { enqueueAggregatedReactionPushEvent } from '../../push/repository';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { assertUsersMayInteract } from '../../userBlocks/service';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
@@ -66,19 +66,10 @@ reactionsRouter.post('/', async (c: HonoContext) => {
 
   const reaction = await addReaction(reactionData);
   if (isPushNotificationsEnabled() && rote.authorid !== user?.id) {
-    const bucket = Math.floor(Date.now() / 30_000);
     try {
-      await enqueuePushEvent({
+      await enqueueAggregatedReactionPushEvent({
         userid: rote.authorid,
-        type: 'reaction.received',
-        category: 'reactions',
-        dedupeKey: `reaction:${rote.id}:${bucket}`,
-        titleLocKey: 'push.reaction.title',
-        bodyLocKey: 'push.reaction.body',
-        route: `rote://detail?id=${rote.id}`,
-        payload: { roteId: rote.id },
-        availableAt: new Date(Date.now() + 30_000),
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        roteId: rote.id,
       });
     } catch (error) {
       console.error('Failed to enqueue reaction push notification:', error);

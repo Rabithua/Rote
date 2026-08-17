@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { and, eq, ne, sql } from 'drizzle-orm';
 import { apnsDevices, pushEvents, pushPreferences } from '../drizzle/schema';
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
@@ -111,12 +112,17 @@ export async function getPreferences(userid: string) {
 export async function updatePreferences(userid: string, patch: PushPreferencePatch) {
   const current = await getPreferences(userid);
   if (!current) throw new PushApiError('push_device_registration_required', 409);
+  const dailyReminderChanged =
+    patch.dailyReminderEnabled !== undefined &&
+    patch.dailyReminderEnabled !== current.dailyReminderEnabled;
   const [updated] = await db
     .update(pushPreferences)
     .set({ ...patch, updatedAt: new Date() })
     .where(eq(pushPreferences.userid, userid))
     .returning();
-  await scheduleNextReminder(userid);
+  if (dailyReminderChanged) {
+    await scheduleNextReminder(userid);
+  }
   return updated;
 }
 
@@ -140,6 +146,45 @@ export async function enqueuePushEvent(input: {
     .onConflictDoNothing({ target: pushEvents.dedupeKey })
     .returning();
   return event ?? null;
+}
+
+export async function enqueueAggregatedReactionPushEvent(input: {
+  userid: string;
+  roteId: string;
+}): Promise<void> {
+  const now = new Date();
+  await db.transaction(async (transaction) => {
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-reaction:${input.userid}:${input.roteId}`}))`
+    );
+    const [pending] = await transaction
+      .select({ id: pushEvents.id })
+      .from(pushEvents)
+      .where(
+        and(
+          eq(pushEvents.userid, input.userid),
+          eq(pushEvents.type, 'reaction.received'),
+          eq(pushEvents.status, 'pending'),
+          sql`${pushEvents.availableAt} > now()`,
+          sql`${pushEvents.payload}->>'roteId' = ${input.roteId}`
+        )
+      )
+      .limit(1);
+    if (pending) return;
+
+    await transaction.insert(pushEvents).values({
+      userid: input.userid,
+      type: 'reaction.received',
+      category: 'reactions',
+      dedupeKey: `reaction:${input.roteId}:${randomUUID()}`,
+      titleLocKey: 'push.reaction.title',
+      bodyLocKey: 'push.reaction.body',
+      route: `rote://detail?id=${input.roteId}`,
+      payload: { roteId: input.roteId },
+      availableAt: new Date(now.getTime() + 30_000),
+      expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+    });
+  });
 }
 
 export async function createDueDailyReminderEvents(): Promise<void> {

@@ -9,6 +9,7 @@ databaseDescribe('push repository integration', () => {
   let schema: typeof import('../drizzle/schema');
   let repository: typeof import('./repository');
   let worker: typeof import('./worker');
+  let admin: typeof import('../utils/dbMethods/admin');
   const userIds = [randomUUID(), randomUUID(), randomUUID()];
   const installationIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
 
@@ -18,6 +19,7 @@ databaseDescribe('push repository integration', () => {
     schema = await import('../drizzle/schema');
     repository = await import('./repository');
     worker = await import('./worker');
+    admin = await import('../utils/dbMethods/admin');
     await database.insert(schema.users).values(
       userIds.map((id, index) => ({
         id,
@@ -79,9 +81,10 @@ databaseDescribe('push repository integration', () => {
       masterEnabled: true,
       timeZone: 'UTC',
     });
+    const dueReminderAt = new Date(Date.now() - 60_000);
     await database
       .update(schema.pushPreferences)
-      .set({ dailyReminderTime: '05:45', nextReminderAt: new Date(Date.now() - 60_000) })
+      .set({ dailyReminderTime: '05:45', nextReminderAt: dueReminderAt })
       .where(eq(schema.pushPreferences.userid, userIds[0]));
     await database
       .update(schema.pushPreferences)
@@ -91,6 +94,16 @@ databaseDescribe('push repository integration', () => {
       authorid: userIds[1],
       content: 'already recorded today',
     });
+
+    await repository.updatePreferences(userIds[0], { reactionsEnabled: false });
+    expect((await repository.getPreferences(userIds[0]))?.nextReminderAt?.getTime()).toBe(
+      dueReminderAt.getTime()
+    );
+    await repository.updatePreferences(userIds[0], { dailyReminderEnabled: true });
+    expect((await repository.getPreferences(userIds[0]))?.nextReminderAt?.getTime()).toBe(
+      dueReminderAt.getTime()
+    );
+    await repository.updatePreferences(userIds[0], { reactionsEnabled: true });
 
     await repository.createDueDailyReminderEvents();
     await repository.createDueDailyReminderEvents();
@@ -115,7 +128,7 @@ databaseDescribe('push repository integration', () => {
     expect(updatedPreference.nextReminderAt?.getTime()).toBeGreaterThan(Date.now());
   });
 
-  it('fans out regular and installation-targeted events and cancels newly ineligible deliveries', async () => {
+  it('fans out regular and targeted events and cancels expired or newly ineligible deliveries', async () => {
     const { and, eq, inArray } = await import('drizzle-orm');
     await repository.registerDevice({
       userid: userIds[0],
@@ -160,11 +173,27 @@ databaseDescribe('push repository integration', () => {
     expect(targetedDevice).not.toBeUndefined();
 
     await database
+      .update(schema.pushEvents)
+      .set({ expiresAt: new Date(Date.now() - 1_000) })
+      .where(eq(schema.pushEvents.id, targeted!.id));
+    await worker.cancelIneligibleDeliveries();
+    const [expiredDelivery] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.id, targetedDelivery!.id));
+    expect(expiredDelivery.status).toBe('cancelled');
+    const regularBeforeOptOut = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, regular!.id));
+    expect(regularBeforeOptOut.every((item) => item.status === 'pending')).toBe(true);
+
+    await database
       .update(schema.pushPreferences)
       .set({ reactionsEnabled: false })
       .where(eq(schema.pushPreferences.userid, userIds[0]));
     await repository.disableDevice(userIds[0], installationIds[1]);
-    await worker.deliverBatch();
+    await worker.cancelIneligibleDeliveries();
 
     const cancelled = await database
       .select()
@@ -176,5 +205,61 @@ databaseDescribe('push repository integration', () => {
         )
       );
     expect(cancelled.every((item) => item.status === 'cancelled')).toBe(true);
+  });
+
+  it('anchors reaction aggregation to the first pending event', async () => {
+    const { and, eq } = await import('drizzle-orm');
+    const roteId = randomUUID();
+    await Promise.all([
+      repository.enqueueAggregatedReactionPushEvent({ userid: userIds[0], roteId }),
+      repository.enqueueAggregatedReactionPushEvent({ userid: userIds[0], roteId }),
+    ]);
+    await repository.enqueueAggregatedReactionPushEvent({ userid: userIds[0], roteId });
+
+    const aggregated = await database
+      .select()
+      .from(schema.pushEvents)
+      .where(
+        and(
+          eq(schema.pushEvents.userid, userIds[0]),
+          eq(schema.pushEvents.type, 'reaction.received')
+        )
+      );
+    const matching = aggregated.filter((event) => event.payload.roteId === roteId);
+    expect(matching).toHaveLength(1);
+
+    await database
+      .update(schema.pushEvents)
+      .set({ availableAt: new Date(Date.now() - 1_000) })
+      .where(eq(schema.pushEvents.id, matching[0].id));
+    await repository.enqueueAggregatedReactionPushEvent({ userid: userIds[0], roteId });
+    const nextWindow = await database
+      .select()
+      .from(schema.pushEvents)
+      .where(
+        and(
+          eq(schema.pushEvents.userid, userIds[0]),
+          eq(schema.pushEvents.type, 'reaction.received')
+        )
+      );
+    expect(nextWindow.filter((event) => event.payload.roteId === roteId)).toHaveLength(2);
+  });
+
+  it('reports only one certification transition under concurrent updates', async () => {
+    const certified = await Promise.all([
+      admin.certifyUser(userIds[2]),
+      admin.certifyUser(userIds[2]),
+      admin.certifyUser(userIds[2]),
+    ]);
+    expect(certified.filter((result) => result.changed)).toHaveLength(1);
+    expect(certified.every((result) => result.user?.certified === true)).toBe(true);
+
+    const uncertified = await Promise.all([
+      admin.uncertifyUser(userIds[2]),
+      admin.uncertifyUser(userIds[2]),
+      admin.uncertifyUser(userIds[2]),
+    ]);
+    expect(uncertified.filter((result) => result.changed)).toHaveLength(1);
+    expect(uncertified.every((result) => result.user?.certified === false)).toBe(true);
   });
 });

@@ -227,17 +227,26 @@ export async function deleteUserById(userId: string) {
   return true;
 }
 
-export async function certifyUser(userId: string) {
-  const [existingUser] = await db
-    .select({ emailVerified: users.emailVerified })
+async function findUserCertification(userId: string) {
+  const [user] = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      certified: users.emailVerified,
+      updatedAt: users.updatedAt,
+    })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
+  return user;
+}
 
-  const [user] = await db
+export async function certifyUser(userId: string) {
+  const [changedUser] = await db
     .update(users)
     .set({ emailVerified: true, updatedAt: new Date() })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), eq(users.emailVerified, false)))
     .returning({
       id: users.id,
       username: users.username,
@@ -245,25 +254,20 @@ export async function certifyUser(userId: string) {
       certified: users.emailVerified,
       updatedAt: users.updatedAt,
     });
-  if (user && existingUser?.emailVerified === false) {
-    void enqueueBackfillEmbeddingJobsForOwner(user.id).catch((error) => {
+  const user = changedUser ?? (await findUserCertification(userId));
+  if (changedUser) {
+    void enqueueBackfillEmbeddingJobsForOwner(changedUser.id).catch((error) => {
       console.error('Failed to enqueue certified user embedding backfill:', error);
     });
   }
-  return { user, changed: user != null && existingUser?.emailVerified === false };
+  return { user, changed: changedUser != null };
 }
 
 export async function uncertifyUser(userId: string) {
-  const [existingUser] = await db
-    .select({ emailVerified: users.emailVerified })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  const [user] = await db
+  const [changedUser] = await db
     .update(users)
     .set({ emailVerified: false, updatedAt: new Date() })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), eq(users.emailVerified, true)))
     .returning({
       id: users.id,
       username: users.username,
@@ -271,10 +275,11 @@ export async function uncertifyUser(userId: string) {
       certified: users.emailVerified,
       updatedAt: users.updatedAt,
     });
+  const user = changedUser ?? (await findUserCertification(userId));
   if (user) {
     await deleteEmbeddingsForOwner(user.id);
   }
-  return { user, changed: user != null && existingUser?.emailVerified === true };
+  return { user, changed: changedUser != null };
 }
 
 export async function getRoleStats() {

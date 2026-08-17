@@ -52,7 +52,7 @@ export async function fanOutEvents(): Promise<void> {
   `);
 }
 
-async function cancelIneligibleDeliveries(): Promise<void> {
+export async function cancelIneligibleDeliveries(): Promise<void> {
   await db.execute(sql`
     UPDATE push_deliveries delivery
     SET status = 'cancelled', "updatedAt" = now()
@@ -62,7 +62,8 @@ async function cancelIneligibleDeliveries(): Promise<void> {
       AND preference.userid = event.userid
       AND delivery.status IN ('pending', 'retry', 'processing')
       AND (
-        device.status <> 'active'
+        (event."expiresAt" IS NOT NULL AND event."expiresAt" <= now())
+        OR device.status <> 'active'
         OR device."masterEnabled" = false
         OR NOT CASE event.category
           WHEN 'reactions' THEN preference."reactionsEnabled"
