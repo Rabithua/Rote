@@ -23,6 +23,7 @@ const GraphemeSegmenter = (Intl as unknown as { Segmenter: GraphemeSegmenterCons
   .Segmenter;
 const graphemeSegmenter = new GraphemeSegmenter(undefined, { granularity: 'grapheme' });
 const visibleReactionCharacter = /[\p{L}\p{N}\p{P}\p{S}]/u;
+const emojiTagSequenceOrFormatCharacter = /\u{1F3F4}[\u{E0020}-\u{E007E}]+\u{E007F}|\p{Cf}/gu;
 
 export type ReactionNotificationState = {
   actorKeyHashes: string[];
@@ -52,15 +53,17 @@ export type ReactionNotificationPresentation = {
 
 function normalizedText(value: string | null | undefined): string {
   return (value ?? '')
-    .replace(/<[^>]*>/g, ' ')
     .replace(/\p{Cc}/gu, ' ')
-    .replace(/\p{Cf}/gu, (character) => {
-      const codePoint = character.codePointAt(0) ?? 0;
-      const isEmojiTag = codePoint >= 0xe0020 && codePoint <= 0xe007f;
-      return character === '\u200D' || isEmojiTag ? character : ' ';
-    })
+    .replace(emojiTagSequenceOrFormatCharacter, (sequence) =>
+      sequence === '\u200D' || sequence.startsWith('\u{1F3F4}') ? sequence : ' '
+    )
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim()
+    .normalize('NFC');
+}
+
+function normalizedRichText(value: string | null | undefined): string {
+  return normalizedText((value ?? '').replace(/<[^>]*>/g, ' '));
 }
 
 function identityHash(value: string): string {
@@ -101,7 +104,7 @@ export function reactionNoteLabel(
   content: string
 ): string | undefined {
   const titleText = normalizedText(title);
-  const source = titleText || normalizedText(content);
+  const source = titleText || normalizedRichText(content);
   return source ? truncated(source, NOTE_PREVIEW_LENGTH, NOTE_PREVIEW_BYTES) : undefined;
 }
 

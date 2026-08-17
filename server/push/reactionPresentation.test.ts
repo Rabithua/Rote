@@ -71,6 +71,10 @@ describe('reaction notification presentation', () => {
     expect(reactionActorName('  Alice\nSmith  ', 'fallback')).toBe('Alice Smith');
   });
 
+  it('preserves angle-bracket comparisons in plain note titles', () => {
+    expect(reactionNoteLabel('Compare 1 < 2 and 3 > 1', 'ignored')).toBe('Compare 1 < 2 and 3 > 1');
+  });
+
   it('uses a localized unlabeled-note body when title and content are empty', () => {
     const state = mergeReactionNotificationState(null, {
       actorKey: 'visitor:alpha',
@@ -105,7 +109,7 @@ describe('reaction notification presentation', () => {
   });
 
   it('rejects reaction details that normalize to empty', () => {
-    expect(canPresentDetailedReactionType(' \n\u0000<p></p> ')).toBe(false);
+    expect(canPresentDetailedReactionType(' \n\u0000\u200B ')).toBe(false);
   });
 
   it('strips unsafe format controls while preserving visible ZWJ emoji', () => {
@@ -127,8 +131,35 @@ describe('reaction notification presentation', () => {
     expect(state.reactionTypes.map((item) => item.label)).toEqual([england, scotland]);
   });
 
+  it('strips emoji tags outside a complete black-flag sequence', () => {
+    const heart = '❤️';
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: heart,
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: `${heart}\u{E0067}`,
+    });
+    expect(state.reactionTypes).toHaveLength(1);
+    expect(state.reactionTypes[0].label).toBe(heart);
+  });
+
+  it('deduplicates canonically equivalent Unicode reaction types', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: 'é',
+    });
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:bob',
+      reactionType: 'e\u0301',
+    });
+    expect(state.reactionTypes).toHaveLength(1);
+    expect(state.reactionTypes[0].label).toBe('é');
+  });
+
   it('normalizes an invisible nickname before falling back to the username', () => {
-    expect(reactionActorName(' <b> </b>\u200B', 'Alice')).toBe('Alice');
+    expect(reactionActorName(' \u200B\u202E ', 'Alice')).toBe('Alice');
   });
 
   it('uses localized overflow bodies with the hidden count as a separate argument', () => {
