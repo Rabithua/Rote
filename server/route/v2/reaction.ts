@@ -56,6 +56,7 @@ reactionsRouter.post('/', async (c: HonoContext) => {
   if (user) {
     // 已登录用户
     reactionData.userid = user.id;
+    reactionData.actorName = user.nickname || user.username;
   } else {
     // 访客用户（visitorId 已在前面验证）
     reactionData.visitorId = visitorId;

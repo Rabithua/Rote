@@ -2,6 +2,7 @@ import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../drizzle/schema';
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import { sendApns } from './apns';
+import { prepareApnsPayload } from './payload';
 import {
   DELIVERY_BATCH_SIZE,
   DELIVERY_CLAIM_LEASE_MS,
@@ -153,6 +154,7 @@ async function deliverClaimedItem(item: ClaimedDelivery): Promise<void> {
     return;
   }
   try {
+    const preparedPayload = prepareApnsPayload(item.event.payload);
     const response = await sendApns({
       token: item.device.token,
       environment: item.device.environment as 'sandbox' | 'production',
@@ -160,8 +162,10 @@ async function deliverClaimedItem(item: ClaimedDelivery): Promise<void> {
       body: item.event.body,
       titleLocKey: item.event.titleLocKey,
       bodyLocKey: item.event.bodyLocKey,
+      titleLocArgs: preparedPayload.titleLocArgs,
+      bodyLocArgs: preparedPayload.bodyLocArgs,
       route: item.event.route,
-      payload: item.event.payload,
+      payload: preparedPayload.payload,
       expiration: item.event.expiresAt,
       collapseId: item.event.dedupeKey.slice(0, 64),
     });
