@@ -589,6 +589,114 @@ databaseDescribe('push repository integration', () => {
     expect(nextWindow.filter((event) => event.payload.roteId === roteId)).toHaveLength(2);
   });
 
+  it('aggregates detailed reaction presentation without exposing queue metadata to APNs', async () => {
+    const { and, eq, sql } = await import('drizzle-orm');
+    const { addReaction } = await import('../utils/dbMethods/reaction');
+    const { prepareApnsPayload } = await import('./payload');
+    const roteId = randomUUID();
+    await database.insert(schema.rotes).values({
+      id: roteId,
+      authorid: userIds[0],
+      title: 'Summer wind',
+      content: 'A longer note body that should not replace its title.',
+    });
+    const previousPushEnabled = process.env.PUSH_NOTIFICATIONS_ENABLED;
+    process.env.PUSH_NOTIFICATIONS_ENABLED = 'true';
+    try {
+      await addReaction({
+        type: '❤️',
+        roteid: roteId,
+        userid: userIds[1],
+        actorName: 'Alice',
+      });
+      await addReaction({
+        type: '👍',
+        roteid: roteId,
+        userid: userIds[2],
+        actorName: 'Bob',
+      });
+
+      const matching = await database
+        .select()
+        .from(schema.pushEvents)
+        .where(
+          and(
+            eq(schema.pushEvents.userid, userIds[0]),
+            eq(schema.pushEvents.type, 'reaction.received'),
+            sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+          )
+        );
+      expect(matching).toHaveLength(1);
+      expect(matching[0].titleLocKey).toBe('push.reaction.detail.known_multiple.title');
+      expect(matching[0].bodyLocKey).toBe('push.reaction.detail.body');
+      expect(prepareApnsPayload(matching[0].payload)).toEqual({
+        payload: { roteId },
+        titleLocArgs: ['Alice', '1'],
+        bodyLocArgs: ['❤️ 👍', 'Summer wind'],
+      });
+    } finally {
+      if (previousPushEnabled === undefined) {
+        delete process.env.PUSH_NOTIFICATIONS_ENABLED;
+      } else {
+        process.env.PUSH_NOTIFICATIONS_ENABLED = previousPushEnabled;
+      }
+    }
+  });
+
+  it('downgrades a mixed reaction aggregate to the generic presentation', async () => {
+    const { and, eq, sql } = await import('drizzle-orm');
+    const { addReaction } = await import('../utils/dbMethods/reaction');
+    const { prepareApnsPayload } = await import('./payload');
+    const roteId = randomUUID();
+    await database.insert(schema.rotes).values({
+      id: roteId,
+      authorid: userIds[0],
+      title: 'Mixed response context',
+      content: 'The second reaction cannot be presented safely.',
+    });
+    const previousPushEnabled = process.env.PUSH_NOTIFICATIONS_ENABLED;
+    process.env.PUSH_NOTIFICATIONS_ENABLED = 'true';
+    try {
+      await addReaction({
+        type: '❤️',
+        roteid: roteId,
+        userid: userIds[1],
+        actorName: 'Alice',
+      });
+      await addReaction({
+        type: '\u200B\u202E',
+        roteid: roteId,
+        userid: userIds[2],
+        actorName: 'Bob',
+      });
+
+      const matching = await database
+        .select()
+        .from(schema.pushEvents)
+        .where(
+          and(
+            eq(schema.pushEvents.userid, userIds[0]),
+            eq(schema.pushEvents.type, 'reaction.received'),
+            sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+          )
+        );
+      expect(matching).toHaveLength(1);
+      expect(matching[0].titleLocKey).toBe('push.reaction.title');
+      expect(matching[0].bodyLocKey).toBe('push.reaction.body');
+      expect(prepareApnsPayload(matching[0].payload)).toEqual({
+        payload: { roteId },
+        titleLocArgs: undefined,
+        bodyLocArgs: undefined,
+      });
+    } finally {
+      if (previousPushEnabled === undefined) {
+        delete process.env.PUSH_NOTIFICATIONS_ENABLED;
+      } else {
+        process.env.PUSH_NOTIFICATIONS_ENABLED = previousPushEnabled;
+      }
+    }
+  });
+
   it('rolls back a reaction when its aggregated push event cannot be inserted', async () => {
     const { and, eq, sql } = await import('drizzle-orm');
     const { addReaction, removeReaction } = await import('../utils/dbMethods/reaction');

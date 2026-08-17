@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { optionalJWT } from '../../middleware/jwtAuth';
 import { mayAddReaction } from '../../reactions/policy';
+import { reactionActorName } from '../../push/reactionPresentation';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { assertUsersMayInteract } from '../../userBlocks/service';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
@@ -56,6 +57,7 @@ reactionsRouter.post('/', async (c: HonoContext) => {
   if (user) {
     // 已登录用户
     reactionData.userid = user.id;
+    reactionData.actorName = reactionActorName(user.nickname, user.username);
   } else {
     // 访客用户（visitorId 已在前面验证）
     reactionData.visitorId = visitorId;

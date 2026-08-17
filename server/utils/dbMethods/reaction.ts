@@ -1,6 +1,7 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
-import { reactions, rotes } from '../../drizzle/schema';
+import { reactions, rotes, users } from '../../drizzle/schema';
 import { isPushNotificationsEnabled } from '../../push/config';
+import { reactionActorName } from '../../push/reactionPresentation';
 import { enqueueAggregatedReactionPushEventInTransaction } from '../../push/repository';
 import db from '../drizzle';
 import { createRoteChange } from './change';
@@ -35,6 +36,7 @@ export async function addReaction(data: {
   visitorId?: string;
   visitorInfo?: any;
   metadata?: any;
+  actorName?: string;
 }): Promise<any> {
   try {
     const insertedReaction = await db.transaction(async (transaction) => {
@@ -71,14 +73,33 @@ export async function addReaction(data: {
         : await transaction.insert(reactions).values(reactionValues).returning();
       if (!existing && isPushNotificationsEnabled()) {
         const [rote] = await transaction
-          .select({ id: rotes.id, authorid: rotes.authorid })
+          .select({
+            id: rotes.id,
+            authorid: rotes.authorid,
+            title: rotes.title,
+            content: rotes.content,
+          })
           .from(rotes)
           .where(eq(rotes.id, data.roteid))
           .limit(1);
         if (rote && rote.authorid !== data.userid) {
+          let actorName = data.actorName;
+          if (!actorName && data.userid) {
+            const [actor] = await transaction
+              .select({ nickname: users.nickname, username: users.username })
+              .from(users)
+              .where(eq(users.id, data.userid))
+              .limit(1);
+            if (actor) actorName = reactionActorName(actor.nickname, actor.username);
+          }
           await enqueueAggregatedReactionPushEventInTransaction(transaction, {
             userid: rote.authorid,
             roteId: rote.id,
+            reactionType: data.type,
+            actorKey: data.userid ? `user:${data.userid}` : `visitor:${data.visitorId}`,
+            actorName,
+            noteTitle: rote.title,
+            noteContent: rote.content,
           });
         }
       }
