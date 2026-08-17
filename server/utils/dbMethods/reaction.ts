@@ -1,4 +1,4 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, isNull, sql } from 'drizzle-orm';
 import { reactions, rotes } from '../../drizzle/schema';
 import { isPushNotificationsEnabled } from '../../push/config';
 import { enqueueAggregatedReactionPushEventInTransaction } from '../../push/repository';
@@ -17,30 +17,45 @@ export async function addReaction(data: {
 }): Promise<any> {
   try {
     const insertedReaction = await db.transaction(async (transaction) => {
-      const [inserted] = await transaction
-        .insert(reactions)
-        .values({
-          // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
-          // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
-          type: data.type,
-          roteid: data.roteid,
-          userid: data.userid || null,
-          visitorId: data.visitorId || null,
-          visitorInfo: data.visitorInfo || null,
-          metadata: data.metadata || null,
-          createdAt: sql`now()`,
-          updatedAt: sql`now()`,
-        })
-        .onConflictDoUpdate({
-          target: [reactions.userid, reactions.visitorId, reactions.roteid, reactions.type],
-          set: {
-            updatedAt: sql`now()`,
-            visitorInfo: data.visitorInfo || null,
-            metadata: data.metadata || null,
-          },
-        })
-        .returning();
-      if (isPushNotificationsEnabled()) {
+      const actorKey = data.userid ? `user:${data.userid}` : `visitor:${data.visitorId ?? ''}`;
+      await transaction.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${`reaction:${data.roteid}:${data.type}:${actorKey}`}))`
+      );
+      const identity = and(
+        eq(reactions.type, data.type),
+        eq(reactions.roteid, data.roteid),
+        data.userid ? eq(reactions.userid, data.userid) : isNull(reactions.userid),
+        data.visitorId ? eq(reactions.visitorId, data.visitorId) : isNull(reactions.visitorId)
+      );
+      const [existing] = await transaction
+        .select({ id: reactions.id })
+        .from(reactions)
+        .where(identity)
+        .limit(1);
+      const reactionValues = {
+        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
+        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
+        type: data.type,
+        roteid: data.roteid,
+        userid: data.userid || null,
+        visitorId: data.visitorId || null,
+        visitorInfo: data.visitorInfo || null,
+        metadata: data.metadata || null,
+        createdAt: sql`now()`,
+        updatedAt: sql`now()`,
+      };
+      const [inserted] = existing
+        ? await transaction
+            .update(reactions)
+            .set({
+              updatedAt: sql`now()`,
+              visitorInfo: data.visitorInfo || null,
+              metadata: data.metadata || null,
+            })
+            .where(eq(reactions.id, existing.id))
+            .returning()
+        : await transaction.insert(reactions).values(reactionValues).returning();
+      if (!existing && isPushNotificationsEnabled()) {
         const [rote] = await transaction
           .select({ id: rotes.id, authorid: rotes.authorid })
           .from(rotes)

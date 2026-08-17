@@ -44,6 +44,7 @@ databaseDescribe('push repository integration', () => {
   });
 
   it('registers device, preferences, and first reminder atomically', async () => {
+    const { eq } = await import('drizzle-orm');
     const device = await repository.registerDevice({
       userid: userIds[0],
       installationId: installationIds[0],
@@ -78,7 +79,7 @@ databaseDescribe('push repository integration', () => {
     expect(explicitlyEnabled.masterEnabled).toBe(true);
     expect(explicitlyEnabled.status).toBe('active');
 
-    const invalidInstallationId = installationIds[3];
+    const invalidInstallationId = installationIds[4];
     await expect(
       repository.registerDevice({
         userid: userIds[2],
@@ -90,13 +91,35 @@ databaseDescribe('push repository integration', () => {
       })
     ).rejects.toThrow();
 
-    const { eq } = await import('drizzle-orm');
     expect(
       await database.query.apnsDevices.findFirst({
         where: eq(schema.apnsDevices.installationId, invalidInstallationId),
       })
     ).toBeUndefined();
     expect(await repository.getPreferences(userIds[2])).toBeNull();
+
+    const invalidRefreshInstallationId = installationIds[3];
+    await repository.registerDevice({
+      userid: userIds[2],
+      installationId: invalidRefreshInstallationId,
+      token: 'd'.repeat(64),
+      environment: 'production',
+      masterEnabled: true,
+      timeZone: 'UTC',
+    });
+    await database
+      .update(schema.apnsDevices)
+      .set({ status: 'invalid', masterEnabled: false })
+      .where(eq(schema.apnsDevices.installationId, invalidRefreshInstallationId));
+    const reactivated = await repository.registerDevice({
+      userid: userIds[2],
+      installationId: invalidRefreshInstallationId,
+      token: 'f'.repeat(64),
+      environment: 'production',
+      timeZone: 'UTC',
+    });
+    expect(reactivated.masterEnabled).toBe(true);
+    expect(reactivated.status).toBe('active');
   });
 
   it('schedules daily reminders with the stored time, deduplicates, and skips recorded users', async () => {
@@ -199,6 +222,41 @@ databaseDescribe('push repository integration', () => {
     expect(rescheduled?.nextReminderAt?.getTime()).toBeLessThanOrEqual(
       Date.now() + 24 * 60 * 60 * 1000
     );
+  });
+
+  it('cancels reminders queued under the previous time zone', async () => {
+    const { eq } = await import('drizzle-orm');
+    const event = await repository.enqueuePushEvent({
+      userid: userIds[0],
+      type: 'habit.daily_record_reminder',
+      category: 'dailyReminder',
+      dedupeKey: `integration:old-zone:${randomUUID()}`,
+    });
+    await worker.fanOutEvents();
+    const [delivery] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, event!.id));
+    expect(delivery.status).toBe('pending');
+
+    await repository.registerDevice({
+      userid: userIds[0],
+      installationId: installationIds[0],
+      token: 'a'.repeat(64),
+      environment: 'production',
+      timeZone: 'America/New_York',
+    });
+    const [cancelledEvent] = await database
+      .select()
+      .from(schema.pushEvents)
+      .where(eq(schema.pushEvents.id, event!.id));
+    const [cancelledDelivery] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.id, delivery.id));
+    expect(cancelledEvent.status).toBe('cancelled');
+    expect(cancelledDelivery.status).toBe('cancelled');
+    expect(cancelledDelivery.lastError).toBe('reminder_time_zone_changed');
   });
 
   it('fans out regular and targeted events and cancels expired or newly ineligible deliveries', async () => {
@@ -485,6 +543,29 @@ databaseDescribe('push repository integration', () => {
           .from(schema.reactions)
           .where(and(eq(schema.reactions.roteid, roteId), eq(schema.reactions.userid, userIds[1])))
       ).toHaveLength(1);
+      await database
+        .update(schema.pushEvents)
+        .set({ availableAt: new Date(Date.now() - 1_000) })
+        .where(
+          and(
+            eq(schema.pushEvents.userid, userIds[0]),
+            eq(schema.pushEvents.type, 'reaction.received'),
+            sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+          )
+        );
+      await addReaction(reactionInput);
+      expect(
+        await database
+          .select()
+          .from(schema.pushEvents)
+          .where(
+            and(
+              eq(schema.pushEvents.userid, userIds[0]),
+              eq(schema.pushEvents.type, 'reaction.received'),
+              sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+            )
+          )
+      ).toHaveLength(1);
       expect(
         await database
           .select()
@@ -599,6 +680,22 @@ databaseDescribe('push repository integration', () => {
       .from(schema.pushDeliveries)
       .where(eq(schema.pushDeliveries.eventId, event!.id));
     expect(delivery).not.toBeUndefined();
+    const campaignId = randomUUID();
+    const sourceCampaign = await repository.enqueuePushEvent({
+      userid: userIds[3],
+      type: 'system.campaign',
+      category: 'system',
+      dedupeKey: `campaign:${campaignId}:${userIds[3]}`,
+      payload: { campaignId },
+    });
+    const targetCampaign = await repository.enqueuePushEvent({
+      userid: userIds[4],
+      type: 'system.campaign',
+      category: 'system',
+      dedupeKey: `campaign:${campaignId}:${userIds[4]}`,
+      payload: { campaignId },
+    });
+    await worker.fanOutEvents();
 
     const merged = await mergeUserAccounts(userIds[3], userIds[4]);
     expect(merged.success).toBe(true);
@@ -617,6 +714,15 @@ databaseDescribe('push repository integration', () => {
       where: eq(schema.pushEvents.id, event!.id),
     });
     expect(migratedEvent?.userid).toBe(userIds[4]);
+    const migratedSourceCampaign = await database.query.pushEvents.findFirst({
+      where: eq(schema.pushEvents.id, sourceCampaign!.id),
+    });
+    const retainedTargetCampaign = await database.query.pushEvents.findFirst({
+      where: eq(schema.pushEvents.id, targetCampaign!.id),
+    });
+    expect(migratedSourceCampaign?.userid).toBe(userIds[4]);
+    expect(migratedSourceCampaign?.status).toBe('cancelled');
+    expect(retainedTargetCampaign?.status).not.toBe('cancelled');
     expect(
       await database.query.pushDeliveries.findFirst({
         where: eq(schema.pushDeliveries.id, delivery.id),

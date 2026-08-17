@@ -49,6 +49,7 @@ export async function registerDevice(input: {
       .select({
         id: apnsDevices.id,
         userid: apnsDevices.userid,
+        token: apnsDevices.token,
         masterEnabled: apnsDevices.masterEnabled,
         status: apnsDevices.status,
       })
@@ -60,6 +61,7 @@ export async function registerDevice(input: {
         id: apnsDevices.id,
         userid: apnsDevices.userid,
         installationId: apnsDevices.installationId,
+        token: apnsDevices.token,
         masterEnabled: apnsDevices.masterEnabled,
         status: apnsDevices.status,
       })
@@ -121,10 +123,17 @@ export async function registerDevice(input: {
         : existingToken?.userid === input.userid
           ? existingToken
           : null;
+    const reactivatingInvalidDevice =
+      input.masterEnabled === undefined &&
+      existingSameOwnerDevice?.status === 'invalid' &&
+      existingSameOwnerDevice.token !== input.token;
     const effectiveMasterEnabled =
-      input.masterEnabled ?? existingSameOwnerDevice?.masterEnabled ?? true;
-    const effectiveStatus =
-      input.masterEnabled === undefined && existingSameOwnerDevice
+      input.masterEnabled ??
+      (reactivatingInvalidDevice ? true : existingSameOwnerDevice?.masterEnabled) ??
+      true;
+    const effectiveStatus = reactivatingInvalidDevice
+      ? 'active'
+      : input.masterEnabled === undefined && existingSameOwnerDevice
         ? existingSameOwnerDevice.status
         : effectiveMasterEnabled
           ? 'active'
@@ -200,6 +209,44 @@ export async function registerDevice(input: {
         .where(eq(pushPreferences.userid, input.userid));
     }
     if (timeZoneChanged) {
+      const staleDeliveries = await transaction.execute(sql`
+        SELECT DISTINCT delivery."deviceId" AS "deviceId"
+        FROM push_deliveries delivery
+        JOIN push_events event ON event.id = delivery."eventId"
+        WHERE event.userid = ${input.userid}::uuid
+          AND event.type = 'habit.daily_record_reminder'
+          AND delivery.status IN ('pending', 'retry', 'processing')
+      `);
+      const staleDeviceIds = staleDeliveries.map((row) => row.deviceId as string).sort();
+      for (const deviceId of staleDeviceIds) {
+        await transaction.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device-send:${deviceId}`}))`
+        );
+      }
+      await transaction.execute(sql`
+        WITH stale AS MATERIALIZED (
+          SELECT event.id
+          FROM push_events event
+          WHERE event.userid = ${input.userid}::uuid
+            AND event.type = 'habit.daily_record_reminder'
+            AND (
+              event.status = 'pending'
+              OR EXISTS (
+                SELECT 1 FROM push_deliveries delivery
+                WHERE delivery."eventId" = event.id
+                  AND delivery.status IN ('pending', 'retry', 'processing')
+              )
+            )
+        ), cancelled_deliveries AS (
+          UPDATE push_deliveries delivery
+          SET status = 'cancelled', "lastError" = 'reminder_time_zone_changed', "updatedAt" = now()
+          WHERE delivery."eventId" IN (SELECT id FROM stale)
+            AND delivery.status IN ('pending', 'retry', 'processing')
+        )
+        UPDATE push_events event
+        SET status = 'cancelled', "updatedAt" = now()
+        WHERE event.id IN (SELECT id FROM stale)
+      `);
       await transaction.execute(scheduleNextReminderQuery(input.userid));
     }
     return registered;

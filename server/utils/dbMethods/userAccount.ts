@@ -233,6 +233,34 @@ export async function mergeUserAccounts(
         .returning({ id: apnsDevices.id });
       mergedData.apnsDevices = migratedApnsDevices.length;
 
+      // A campaign creates one event per account. If both accounts were in the
+      // audience, retire the source copy before ownership migration so the
+      // combined device set cannot receive it twice.
+      await tx.execute(sql`
+        WITH duplicate_campaigns AS MATERIALIZED (
+          SELECT source.id
+          FROM push_events source
+          WHERE source.userid = ${sourceUserId}::uuid
+            AND source.type = 'system.campaign'
+            AND source.status IN ('pending', 'processed')
+            AND EXISTS (
+              SELECT 1 FROM push_events target
+              WHERE target.userid = ${targetUserId}::uuid
+                AND target.type = 'system.campaign'
+                AND target.status IN ('pending', 'processed')
+                AND target.payload->>'campaignId' = source.payload->>'campaignId'
+            )
+        ), cancelled_deliveries AS (
+          UPDATE push_deliveries delivery
+          SET status = 'cancelled', "lastError" = 'account_merge_duplicate_campaign', "updatedAt" = now()
+          WHERE delivery."eventId" IN (SELECT id FROM duplicate_campaigns)
+            AND delivery.status IN ('pending', 'retry', 'processing')
+        )
+        UPDATE push_events event
+        SET status = 'cancelled', "updatedAt" = now()
+        WHERE event.id IN (SELECT id FROM duplicate_campaigns)
+      `);
+
       const migratedPushEvents = await tx
         .update(pushEvents)
         .set({ userid: targetUserId, updatedAt: new Date() })
