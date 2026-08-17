@@ -5,6 +5,7 @@ import {
   attachments,
   billingGrants,
   pushEvents,
+  pushCampaigns,
   pushPreferences,
   reactions,
   roteChanges,
@@ -232,6 +233,11 @@ export async function mergeUserAccounts(
         .where(eq(apnsDevices.userid, sourceUserId))
         .returning({ id: apnsDevices.id });
       mergedData.apnsDevices = migratedApnsDevices.length;
+
+      await tx
+        .update(pushCampaigns)
+        .set({ createdBy: targetUserId, updatedAt: new Date() })
+        .where(eq(pushCampaigns.createdBy, sourceUserId));
 
       // A campaign creates one event per account. If both accounts were in the
       // audience, retire the source copy before ownership migration so the

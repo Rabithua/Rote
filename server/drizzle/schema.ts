@@ -572,7 +572,7 @@ export const pushCampaigns = pgTable(
   'push_campaigns',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    createdBy: uuid('createdBy').notNull(),
+    createdBy: uuid('createdBy'),
     title: text('title').notNull(),
     body: text('body').notNull(),
     route: text('route'),
@@ -587,7 +587,7 @@ export const pushCampaigns = pgTable(
       columns: [table.createdBy],
       foreignColumns: [users.id],
       name: 'push_campaigns_created_by_users_id_fk',
-    }).onDelete('restrict'),
+    }).onDelete('set null'),
   })
 );
 

@@ -6,6 +6,27 @@ import db from '../drizzle';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 
+type ReactionIdentity = {
+  type: string;
+  roteid: string;
+  userid?: string;
+  visitorId?: string;
+};
+
+function reactionLockKey(data: ReactionIdentity): string {
+  const actorKey = data.userid ? `user:${data.userid}` : `visitor:${data.visitorId ?? ''}`;
+  return `reaction:${data.roteid}:${data.type}:${actorKey}`;
+}
+
+function reactionIdentity(data: ReactionIdentity) {
+  return and(
+    eq(reactions.type, data.type),
+    eq(reactions.roteid, data.roteid),
+    data.userid ? eq(reactions.userid, data.userid) : isNull(reactions.userid),
+    data.visitorId ? eq(reactions.visitorId, data.visitorId) : isNull(reactions.visitorId)
+  );
+}
+
 // 反应相关方法
 export async function addReaction(data: {
   type: string;
@@ -17,20 +38,13 @@ export async function addReaction(data: {
 }): Promise<any> {
   try {
     const insertedReaction = await db.transaction(async (transaction) => {
-      const actorKey = data.userid ? `user:${data.userid}` : `visitor:${data.visitorId ?? ''}`;
       await transaction.execute(
-        sql`SELECT pg_advisory_xact_lock(hashtext(${`reaction:${data.roteid}:${data.type}:${actorKey}`}))`
-      );
-      const identity = and(
-        eq(reactions.type, data.type),
-        eq(reactions.roteid, data.roteid),
-        data.userid ? eq(reactions.userid, data.userid) : isNull(reactions.userid),
-        data.visitorId ? eq(reactions.visitorId, data.visitorId) : isNull(reactions.visitorId)
+        sql`SELECT pg_advisory_xact_lock(hashtext(${reactionLockKey(data)}))`
       );
       const [existing] = await transaction
         .select({ id: reactions.id })
         .from(reactions)
-        .where(identity)
+        .where(reactionIdentity(data))
         .limit(1);
       const reactionValues = {
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
@@ -118,18 +132,12 @@ export async function removeReaction(data: {
   visitorId?: string;
 }): Promise<any> {
   try {
-    const whereConditions = [eq(reactions.type, data.type), eq(reactions.roteid, data.roteid)];
-
-    if (data.userid) {
-      whereConditions.push(eq(reactions.userid, data.userid));
-    } else if (data.visitorId) {
-      whereConditions.push(eq(reactions.visitorId, data.visitorId));
-    }
-
-    const result = await db
-      .delete(reactions)
-      .where(and(...whereConditions))
-      .returning();
+    const result = await db.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${reactionLockKey(data)}))`
+      );
+      return await transaction.delete(reactions).where(reactionIdentity(data)).returning();
+    });
 
     // 记录变更历史（reactions 变化视为笔记更新）
     // 只有在成功删除反应时才记录（count > 0）

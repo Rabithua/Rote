@@ -122,6 +122,32 @@ databaseDescribe('push repository integration', () => {
     expect(reactivated.status).toBe('active');
   });
 
+  it('preserves campaign history when its creator account is deleted', async () => {
+    const { eq } = await import('drizzle-orm');
+    const creatorId = randomUUID();
+    const campaignId = randomUUID();
+    await database.insert(schema.users).values({
+      id: creatorId,
+      email: `campaign-${creatorId}@example.test`,
+      username: `campaign-${creatorId}`,
+    });
+    await database.insert(schema.pushCampaigns).values({
+      id: campaignId,
+      createdBy: creatorId,
+      title: 'Historical campaign',
+      body: 'Preserved after account deletion',
+    });
+
+    await database.delete(schema.users).where(eq(schema.users.id, creatorId));
+
+    expect(
+      await database.query.pushCampaigns.findFirst({
+        where: eq(schema.pushCampaigns.id, campaignId),
+      })
+    ).toMatchObject({ createdBy: null });
+    await database.delete(schema.pushCampaigns).where(eq(schema.pushCampaigns.id, campaignId));
+  });
+
   it('schedules daily reminders with the stored time, deduplicates, and skips recorded users', async () => {
     const { and, eq, like } = await import('drizzle-orm');
     await repository.registerDevice({
@@ -492,7 +518,7 @@ databaseDescribe('push repository integration', () => {
 
   it('rolls back a reaction when its aggregated push event cannot be inserted', async () => {
     const { and, eq, sql } = await import('drizzle-orm');
-    const { addReaction } = await import('../utils/dbMethods/reaction');
+    const { addReaction, removeReaction } = await import('../utils/dbMethods/reaction');
     const roteId = randomUUID();
     await database.insert(schema.rotes).values({
       id: roteId,
@@ -566,18 +592,36 @@ databaseDescribe('push repository integration', () => {
             )
           )
       ).toHaveLength(1);
-      expect(
-        await database
-          .select()
-          .from(schema.pushEvents)
-          .where(
-            and(
-              eq(schema.pushEvents.userid, userIds[0]),
-              eq(schema.pushEvents.type, 'reaction.received'),
-              sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
-            )
-          )
-      ).toHaveLength(1);
+
+      let markLockHeld = () => {};
+      const lockHeld = new Promise<void>((resolve) => {
+        markLockHeld = resolve;
+      });
+      let releaseLock = () => {};
+      const holdLock = new Promise<void>((resolve) => {
+        releaseLock = resolve;
+      });
+      const blocker = database.transaction(async (transaction) => {
+        await transaction.execute(
+          sql`SELECT pg_advisory_xact_lock(hashtext(${`reaction:${roteId}:heart:user:${userIds[1]}`}))`
+        );
+        markLockHeld();
+        await holdLock;
+      });
+      await lockHeld;
+      let removalFinished = false;
+      const removal = removeReaction(reactionInput).then((result) => {
+        removalFinished = true;
+        return result;
+      });
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 25));
+        expect(removalFinished).toBe(false);
+      } finally {
+        releaseLock();
+      }
+      await blocker;
+      expect((await removal).count).toBe(1);
     } finally {
       if (previousPushEnabled === undefined) {
         delete process.env.PUSH_NOTIFICATIONS_ENABLED;
@@ -681,6 +725,12 @@ databaseDescribe('push repository integration', () => {
       .where(eq(schema.pushDeliveries.eventId, event!.id));
     expect(delivery).not.toBeUndefined();
     const campaignId = randomUUID();
+    await database.insert(schema.pushCampaigns).values({
+      id: campaignId,
+      createdBy: userIds[3],
+      title: 'Merge campaign',
+      body: 'Campaign body',
+    });
     const sourceCampaign = await repository.enqueuePushEvent({
       userid: userIds[3],
       type: 'system.campaign',
@@ -723,6 +773,11 @@ databaseDescribe('push repository integration', () => {
     expect(migratedSourceCampaign?.userid).toBe(userIds[4]);
     expect(migratedSourceCampaign?.status).toBe('cancelled');
     expect(retainedTargetCampaign?.status).not.toBe('cancelled');
+    expect(
+      await database.query.pushCampaigns.findFirst({
+        where: eq(schema.pushCampaigns.id, campaignId),
+      })
+    ).toMatchObject({ createdBy: userIds[4] });
     expect(
       await database.query.pushDeliveries.findFirst({
         where: eq(schema.pushDeliveries.id, delivery.id),

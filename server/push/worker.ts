@@ -77,32 +77,6 @@ export async function cancelIneligibleDeliveries(): Promise<void> {
   `);
 }
 
-async function isDeliveryStillEligible(deliveryId: string): Promise<boolean> {
-  const result = await db.execute(sql`
-    SELECT EXISTS (
-      SELECT 1
-      FROM push_deliveries delivery
-      JOIN push_events event ON event.id = delivery."eventId"
-      JOIN apns_devices device ON device.id = delivery."deviceId"
-      JOIN push_preferences preference ON preference.userid = event.userid
-      WHERE delivery.id = ${deliveryId}::uuid
-        AND delivery.status = 'processing'
-        AND device.userid = event.userid
-        AND device.status = 'active'
-        AND device."masterEnabled" = true
-        AND (event."expiresAt" IS NULL OR event."expiresAt" > now())
-        AND CASE event.category
-          WHEN 'reactions' THEN preference."reactionsEnabled"
-          WHEN 'account' THEN preference."accountEnabled"
-          WHEN 'system' THEN preference."systemEnabled"
-          WHEN 'dailyReminder' THEN preference."dailyReminderEnabled"
-          ELSE false
-        END
-    ) AS eligible
-  `);
-  return result[0]?.eligible === true;
-}
-
 async function stillEligibleForDailyReminder(userid: string, timeZone: string): Promise<boolean> {
   const result = await db.execute(sql`
     SELECT NOT EXISTS (
@@ -122,14 +96,52 @@ type ClaimedDelivery = {
   preference: typeof pushPreferences.$inferSelect;
 };
 
+async function reloadEligibleDelivery(deliveryId: string): Promise<ClaimedDelivery | null> {
+  const [current] = await db
+    .select({
+      delivery: pushDeliveries,
+      event: pushEvents,
+      device: apnsDevices,
+      preference: pushPreferences,
+    })
+    .from(pushDeliveries)
+    .innerJoin(pushEvents, eq(pushDeliveries.eventId, pushEvents.id))
+    .innerJoin(apnsDevices, eq(pushDeliveries.deviceId, apnsDevices.id))
+    .innerJoin(pushPreferences, eq(pushEvents.userid, pushPreferences.userid))
+    .where(
+      and(
+        eq(pushDeliveries.id, deliveryId),
+        eq(pushDeliveries.status, 'processing'),
+        eq(apnsDevices.userid, pushEvents.userid),
+        eq(apnsDevices.status, 'active'),
+        eq(apnsDevices.masterEnabled, true),
+        or(sql`${pushEvents.expiresAt} IS NULL`, sql`${pushEvents.expiresAt} > now()`),
+        sql`CASE ${pushEvents.category}
+          WHEN 'reactions' THEN ${pushPreferences.reactionsEnabled}
+          WHEN 'account' THEN ${pushPreferences.accountEnabled}
+          WHEN 'system' THEN ${pushPreferences.systemEnabled}
+          WHEN 'dailyReminder' THEN ${pushPreferences.dailyReminderEnabled}
+          ELSE false
+        END`
+      )
+    )
+    .limit(1);
+  return current ?? null;
+}
+
 async function deliverClaimedItem(item: ClaimedDelivery): Promise<void> {
-  if (!(await isDeliveryStillEligible(item.delivery.id))) {
+  // The registration path uses the same advisory lock. Reload after acquiring
+  // it so a claim can never send or invalidate a token snapshot that was
+  // replaced while the worker waited for the lock.
+  const current = await reloadEligibleDelivery(item.delivery.id);
+  if (!current) {
     await db
       .update(pushDeliveries)
       .set({ status: 'cancelled', updatedAt: new Date() })
       .where(eq(pushDeliveries.id, item.delivery.id));
     return;
   }
+  item = current;
   if (
     item.event.category === 'dailyReminder' &&
     !(await stillEligibleForDailyReminder(item.event.userid, item.preference.timeZone))
