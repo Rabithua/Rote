@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'bun:test';
+import { APNS_MAX_PAYLOAD_BYTES, serializeApnsPayload } from './apns';
 import {
   canPresentDetailedReactionType,
   mergeReactionNotificationState,
@@ -86,7 +87,7 @@ describe('reaction notification presentation', () => {
 
   it('truncates text on grapheme boundaries', () => {
     const family = '👨‍👩‍👧‍👦';
-    expect(reactionActorName(family.repeat(40), 'fallback')).toBe(`${family.repeat(32)}…`);
+    expect(reactionActorName(family.repeat(40), 'fallback')).toBe(`${family.repeat(6)}…`);
   });
 
   it('deduplicates custom reactions by their full normalized identity', () => {
@@ -105,5 +106,75 @@ describe('reaction notification presentation', () => {
 
   it('rejects reaction details that normalize to empty', () => {
     expect(canPresentDetailedReactionType(' \n\u0000<p></p> ')).toBe(false);
+  });
+
+  it('strips unsafe format controls while preserving visible ZWJ emoji', () => {
+    expect(canPresentDetailedReactionType('\u200B\u202E')).toBe(false);
+    expect(canPresentDetailedReactionType('👩‍💻')).toBe(true);
+  });
+
+  it('normalizes an invisible nickname before falling back to the username', () => {
+    expect(reactionActorName(' <b> </b>\u200B', 'Alice')).toBe('Alice');
+  });
+
+  it('uses localized overflow bodies with the hidden count as a separate argument', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      reactionType: '❤️',
+      noteLabel: 'Summer wind',
+    });
+    for (const reactionType of ['👍', '🎉', '👏']) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: 'user:alice',
+        reactionType,
+        noteLabel: 'Summer wind',
+      });
+    }
+    expect(reactionNotificationPresentation(state)).toEqual({
+      titleLocKey: 'push.reaction.detail.anonymous.title',
+      bodyLocKey: 'push.reaction.detail.body.overflow',
+      titleLocArgs: [],
+      bodyLocArgs: ['❤️ 👍 🎉', '1', 'Summer wind'],
+    });
+  });
+
+  it('bounds retained aggregate identities while keeping aggregate counts', () => {
+    let state: ReturnType<typeof mergeReactionNotificationState> | null = null;
+    for (let index = 0; index < 100; index += 1) {
+      state = mergeReactionNotificationState(state, {
+        actorKey: `visitor:${index}`,
+        reactionType: `custom-${index}`,
+        noteLabel: 'Summer wind',
+      });
+    }
+    expect(state.actorKeyHashes).toHaveLength(32);
+    expect(state.actorCount).toBe(100);
+    expect(state.reactionTypes).toHaveLength(8);
+    expect(state.reactionTypeCount).toBe(100);
+    expect(Buffer.byteLength(JSON.stringify(state), 'utf8')).toBeLessThan(5_000);
+  });
+
+  it('bounds pathological graphemes so the completed APNs payload remains below 4 KB', () => {
+    const noteLabel = reactionNoteLabel('', `a${'\u0301'.repeat(5_000)}`);
+    const state = mergeReactionNotificationState(null, {
+      actorKey: 'visitor:alpha',
+      reactionType: '❤️',
+      noteLabel,
+    });
+    const presentation = reactionNotificationPresentation(state);
+    const payload = serializeApnsPayload({
+      titleLocKey: presentation.titleLocKey,
+      bodyLocKey: presentation.bodyLocKey,
+      titleLocArgs: presentation.titleLocArgs,
+      bodyLocArgs: presentation.bodyLocArgs,
+      route: 'rote://detail?id=00000000-0000-0000-0000-000000000000',
+      payload: { roteId: '00000000-0000-0000-0000-000000000000' },
+    });
+    expect(noteLabel).toBeUndefined();
+    expect(Buffer.byteLength(payload, 'utf8')).toBeLessThanOrEqual(APNS_MAX_PAYLOAD_BYTES);
+  });
+
+  it('truncates a maximal plain-text note without changing its bounded preview', () => {
+    expect(reactionNoteLabel('', 'x'.repeat(1_000_000))).toBe(`${'x'.repeat(36)}…`);
   });
 });

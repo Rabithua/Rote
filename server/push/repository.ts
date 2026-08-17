@@ -457,7 +457,11 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
     sql`SELECT pg_advisory_xact_lock(hashtext(${`push-reaction:${input.userid}:${input.roteId}`}))`
   );
   const [pending] = await transaction
-    .select({ id: pushEvents.id, payload: pushEvents.payload })
+    .select({
+      id: pushEvents.id,
+      titleLocKey: pushEvents.titleLocKey,
+      payload: pushEvents.payload,
+    })
     .from(pushEvents)
     .where(
       and(
@@ -475,7 +479,19 @@ export async function enqueueAggregatedReactionPushEventInTransaction(
     input.actorKey !== undefined &&
     input.noteContent !== undefined &&
     canPresentDetailedReactionType(input.reactionType);
-  if (pending && !hasDetailedContext) return;
+  if (pending?.titleLocKey === 'push.reaction.title') return;
+  if (pending && !hasDetailedContext) {
+    await transaction
+      .update(pushEvents)
+      .set({
+        titleLocKey: 'push.reaction.title',
+        bodyLocKey: 'push.reaction.body',
+        payload: { roteId: input.roteId },
+        updatedAt: new Date(),
+      })
+      .where(eq(pushEvents.id, pending.id));
+    return;
+  }
 
   let presentation:
     | {

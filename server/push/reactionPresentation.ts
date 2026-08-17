@@ -1,7 +1,15 @@
+import { createHash } from 'node:crypto';
+
 const NOTE_PREVIEW_LENGTH = 36;
+const NOTE_PREVIEW_BYTES = 256;
 const ACTOR_PREVIEW_LENGTH = 32;
+const ACTOR_PREVIEW_BYTES = 160;
 const REACTION_PREVIEW_LENGTH = 12;
+const REACTION_PREVIEW_BYTES = 64;
 const MAX_VISIBLE_REACTION_TYPES = 3;
+const MAX_TRACKED_ACTORS = 32;
+const MAX_TRACKED_REACTION_TYPES = 8;
+const MAX_AGGREGATE_COUNT = 9_999;
 
 type GraphemeSegmenter = {
   segment(value: string): Iterable<{ segment: string }>;
@@ -15,14 +23,17 @@ type GraphemeSegmenterConstructor = new (
 const GraphemeSegmenter = (Intl as unknown as { Segmenter: GraphemeSegmenterConstructor })
   .Segmenter;
 const graphemeSegmenter = new GraphemeSegmenter(undefined, { granularity: 'grapheme' });
+const visibleReactionCharacter = /[\p{L}\p{N}\p{P}\p{S}]/u;
 
 export type ReactionNotificationState = {
-  actorKeys: string[];
+  actorKeyHashes: string[];
+  actorCount: number;
   firstKnownActorName?: string;
   reactionTypes: Array<{
-    identity: string;
+    identityHash: string;
     label: string;
   }>;
+  reactionTypeCount: number;
   noteLabel?: string;
 };
 
@@ -44,14 +55,42 @@ function normalizedText(value: string | null | undefined): string {
   return (value ?? '')
     .replace(/<[^>]*>/g, ' ')
     .replace(/\p{Cc}/gu, ' ')
+    .replace(/\p{Cf}/gu, (character) => (character === '\u200D' ? character : ' '))
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function truncated(value: string, maximumLength: number): string {
-  const characters = Array.from(graphemeSegmenter.segment(value), (segment) => segment.segment);
-  if (characters.length <= maximumLength) return value;
-  return `${characters.slice(0, maximumLength).join('')}…`;
+function identityHash(value: string): string {
+  return createHash('sha256').update(value).digest('base64url');
+}
+
+function truncated(
+  value: string,
+  maximumLength: number,
+  maximumUtf8Bytes: number
+): string | undefined {
+  if (!value) return undefined;
+  const segments: string[] = [];
+  let byteLength = 0;
+  let wasTruncated = false;
+  for (const { segment } of graphemeSegmenter.segment(value)) {
+    const segmentBytes = Buffer.byteLength(segment, 'utf8');
+    if (segments.length >= maximumLength || byteLength + segmentBytes > maximumUtf8Bytes) {
+      wasTruncated = true;
+      break;
+    }
+    segments.push(segment);
+    byteLength += segmentBytes;
+  }
+  if (!segments.length) return undefined;
+  if (!wasTruncated) return segments.join('');
+
+  const suffix = '…';
+  const suffixBytes = Buffer.byteLength(suffix, 'utf8');
+  while (segments.length && byteLength + suffixBytes > maximumUtf8Bytes) {
+    byteLength -= Buffer.byteLength(segments.pop()!, 'utf8');
+  }
+  return segments.length ? `${segments.join('')}${suffix}` : undefined;
 }
 
 export function reactionNoteLabel(
@@ -60,46 +99,86 @@ export function reactionNoteLabel(
 ): string | undefined {
   const titleText = normalizedText(title);
   const source = titleText || normalizedText(content);
-  return source ? truncated(source, NOTE_PREVIEW_LENGTH) : undefined;
+  return source ? truncated(source, NOTE_PREVIEW_LENGTH, NOTE_PREVIEW_BYTES) : undefined;
 }
 
-export function reactionActorName(nickname: string | null | undefined, username: string): string {
-  return truncated(normalizedText(nickname) || normalizedText(username), ACTOR_PREVIEW_LENGTH);
+export function reactionActorName(
+  nickname: string | null | undefined,
+  username: string
+): string | undefined {
+  return truncated(
+    normalizedText(nickname) || normalizedText(username),
+    ACTOR_PREVIEW_LENGTH,
+    ACTOR_PREVIEW_BYTES
+  );
 }
 
 export function canPresentDetailedReactionType(reactionType: string): boolean {
-  return normalizedText(reactionType).length > 0;
+  const normalized = normalizedText(reactionType);
+  return (
+    visibleReactionCharacter.test(normalized) &&
+    truncated(normalized, REACTION_PREVIEW_LENGTH, REACTION_PREVIEW_BYTES) !== undefined
+  );
 }
 
 export function mergeReactionNotificationState(
   current: ReactionNotificationState | null,
   input: ReactionNotificationInput
 ): ReactionNotificationState {
-  const actorKeys = current?.actorKeys.includes(input.actorKey)
-    ? current.actorKeys
-    : [...(current?.actorKeys ?? []), input.actorKey];
+  const actorKeyHash = identityHash(input.actorKey);
+  const actorAlreadyTracked = current?.actorKeyHashes.includes(actorKeyHash) ?? false;
+  const actorKeyHashes =
+    actorAlreadyTracked || (current?.actorKeyHashes.length ?? 0) >= MAX_TRACKED_ACTORS
+      ? (current?.actorKeyHashes ?? [])
+      : [...(current?.actorKeyHashes ?? []), actorKeyHash];
+  const actorCount = actorAlreadyTracked
+    ? (current?.actorCount ?? 1)
+    : Math.min((current?.actorCount ?? 0) + 1, MAX_AGGREGATE_COUNT);
+
   const reactionIdentity = normalizedText(input.reactionType);
-  const reactionTypes = current?.reactionTypes.some(
-    (reactionType) => reactionType.identity === reactionIdentity
-  )
-    ? current.reactionTypes
-    : [
-        ...(current?.reactionTypes ?? []),
-        {
-          identity: reactionIdentity,
-          label: truncated(reactionIdentity, REACTION_PREVIEW_LENGTH),
-        },
-      ];
-  const nextNoteLabel = truncated(normalizedText(input.noteLabel), NOTE_PREVIEW_LENGTH);
+  const reactionIdentityHash = identityHash(reactionIdentity);
+  const reactionAlreadyTracked =
+    current?.reactionTypes.some(
+      (reactionType) => reactionType.identityHash === reactionIdentityHash
+    ) ?? false;
+  const reactionLabel = truncated(
+    reactionIdentity,
+    REACTION_PREVIEW_LENGTH,
+    REACTION_PREVIEW_BYTES
+  );
+  const reactionTypes =
+    reactionAlreadyTracked ||
+    !reactionLabel ||
+    (current?.reactionTypes.length ?? 0) >= MAX_TRACKED_REACTION_TYPES
+      ? (current?.reactionTypes ?? [])
+      : [
+          ...(current?.reactionTypes ?? []),
+          {
+            identityHash: reactionIdentityHash,
+            label: reactionLabel,
+          },
+        ];
+  const reactionTypeCount =
+    reactionAlreadyTracked || !reactionLabel
+      ? (current?.reactionTypeCount ?? reactionTypes.length)
+      : Math.min((current?.reactionTypeCount ?? 0) + 1, MAX_AGGREGATE_COUNT);
+  const nextActorName = truncated(
+    normalizedText(input.actorName),
+    ACTOR_PREVIEW_LENGTH,
+    ACTOR_PREVIEW_BYTES
+  );
+  const nextNoteLabel = truncated(
+    normalizedText(input.noteLabel),
+    NOTE_PREVIEW_LENGTH,
+    NOTE_PREVIEW_BYTES
+  );
   return {
-    actorKeys,
-    firstKnownActorName:
-      current?.firstKnownActorName ||
-      (input.actorName
-        ? truncated(normalizedText(input.actorName), ACTOR_PREVIEW_LENGTH)
-        : undefined),
+    actorKeyHashes,
+    actorCount,
+    firstKnownActorName: current?.firstKnownActorName || nextActorName,
     reactionTypes,
-    noteLabel: current?.noteLabel || nextNoteLabel || undefined,
+    reactionTypeCount,
+    noteLabel: current?.noteLabel || nextNoteLabel,
   };
 }
 
@@ -107,17 +186,25 @@ export function parseReactionNotificationState(value: unknown): ReactionNotifica
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const state = value as Partial<ReactionNotificationState>;
   if (
-    !Array.isArray(state.actorKeys) ||
-    state.actorKeys.some((item) => typeof item !== 'string') ||
+    !Array.isArray(state.actorKeyHashes) ||
+    state.actorKeyHashes.length > MAX_TRACKED_ACTORS ||
+    state.actorKeyHashes.some((item) => typeof item !== 'string') ||
+    !Number.isInteger(state.actorCount) ||
+    state.actorCount! < state.actorKeyHashes.length ||
+    state.actorCount! > MAX_AGGREGATE_COUNT ||
     !Array.isArray(state.reactionTypes) ||
+    state.reactionTypes.length > MAX_TRACKED_REACTION_TYPES ||
     state.reactionTypes.some(
       (item) =>
         !item ||
         typeof item !== 'object' ||
         Array.isArray(item) ||
-        typeof item.identity !== 'string' ||
+        typeof item.identityHash !== 'string' ||
         typeof item.label !== 'string'
     ) ||
+    !Number.isInteger(state.reactionTypeCount) ||
+    state.reactionTypeCount! < state.reactionTypes.length ||
+    state.reactionTypeCount! > MAX_AGGREGATE_COUNT ||
     (state.noteLabel !== undefined && typeof state.noteLabel !== 'string') ||
     (state.firstKnownActorName !== undefined && typeof state.firstKnownActorName !== 'string')
   ) {
@@ -126,32 +213,50 @@ export function parseReactionNotificationState(value: unknown): ReactionNotifica
   return state as ReactionNotificationState;
 }
 
-function reactionSummary(reactionTypes: ReactionNotificationState['reactionTypes']): string {
-  const visible = reactionTypes.slice(0, MAX_VISIBLE_REACTION_TYPES);
-  const hiddenCount = reactionTypes.length - visible.length;
-  return `${visible.map((item) => item.label).join(' ')}${hiddenCount > 0 ? ` +${hiddenCount}` : ''}`;
+function visibleReactionSummary(state: ReactionNotificationState): string {
+  return state.reactionTypes
+    .slice(0, MAX_VISIBLE_REACTION_TYPES)
+    .map((item) => item.label)
+    .join(' ');
 }
 
 export function reactionNotificationPresentation(
   state: ReactionNotificationState
 ): ReactionNotificationPresentation {
-  const actorCount = state.actorKeys.length;
   let titleLocKey: string;
   let titleLocArgs: string[];
   if (state.firstKnownActorName) {
-    if (actorCount > 1) {
+    if (state.actorCount > 1) {
       titleLocKey = 'push.reaction.detail.known_multiple.title';
-      titleLocArgs = [state.firstKnownActorName, String(actorCount - 1)];
+      titleLocArgs = [state.firstKnownActorName, String(state.actorCount - 1)];
     } else {
       titleLocKey = 'push.reaction.detail.known.title';
       titleLocArgs = [state.firstKnownActorName];
     }
-  } else if (actorCount > 1) {
+  } else if (state.actorCount > 1) {
     titleLocKey = 'push.reaction.detail.anonymous_multiple.title';
-    titleLocArgs = [String(actorCount)];
+    titleLocArgs = [String(state.actorCount)];
   } else {
     titleLocKey = 'push.reaction.detail.anonymous.title';
     titleLocArgs = [];
+  }
+
+  const summary = visibleReactionSummary(state);
+  const hiddenReactionCount = Math.max(
+    0,
+    state.reactionTypeCount - Math.min(state.reactionTypes.length, MAX_VISIBLE_REACTION_TYPES)
+  );
+  if (hiddenReactionCount > 0) {
+    return {
+      titleLocKey,
+      bodyLocKey: state.noteLabel
+        ? 'push.reaction.detail.body.overflow'
+        : 'push.reaction.detail.body.unlabeled.overflow',
+      titleLocArgs,
+      bodyLocArgs: state.noteLabel
+        ? [summary, String(hiddenReactionCount), state.noteLabel]
+        : [summary, String(hiddenReactionCount)],
+    };
   }
   return {
     titleLocKey,
@@ -159,8 +264,6 @@ export function reactionNotificationPresentation(
       ? 'push.reaction.detail.body'
       : 'push.reaction.detail.body.unlabeled',
     titleLocArgs,
-    bodyLocArgs: state.noteLabel
-      ? [reactionSummary(state.reactionTypes), state.noteLabel]
-      : [reactionSummary(state.reactionTypes)],
+    bodyLocArgs: state.noteLabel ? [summary, state.noteLabel] : [summary],
   };
 }
