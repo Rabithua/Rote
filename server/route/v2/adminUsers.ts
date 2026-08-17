@@ -3,7 +3,6 @@ import { authenticateJWT, requireAdmin, requireSuperAdmin } from '../../middlewa
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { UserRole } from '../../types/main';
 import { isPushNotificationsEnabled } from '../../push/config';
-import { enqueuePushEvent } from '../../push/repository';
 import {
   certifyUser,
   deleteUserById,
@@ -21,27 +20,10 @@ const adminUsersRouter = new Hono<{ Variables: HonoVariables }>();
 async function handleCertifyUser(c: HonoContext) {
   const userId = c.req.param('userId');
 
-  const { user, changed } = await certifyUser(userId);
+  const { user } = await certifyUser(userId, isPushNotificationsEnabled());
 
   if (!user) {
     throw new Error('User not found');
-  }
-
-  if (isPushNotificationsEnabled() && changed) {
-    try {
-      await enqueuePushEvent({
-        userid: user.id,
-        type: 'account.certification.enabled',
-        category: 'account',
-        dedupeKey: `certification:enabled:${user.id}:${user.updatedAt.toISOString()}`,
-        titleLocKey: 'push.certification.enabled.title',
-        bodyLocKey: 'push.certification.enabled.body',
-        route: 'rote://profile',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      });
-    } catch (error) {
-      console.error('Failed to enqueue certification push notification:', error);
-    }
   }
 
   return c.json(createResponse(user, 'User certified successfully'), 200);
@@ -50,27 +32,10 @@ async function handleCertifyUser(c: HonoContext) {
 async function handleUncertifyUser(c: HonoContext) {
   const userId = c.req.param('userId');
 
-  const { user, changed } = await uncertifyUser(userId);
+  const { user } = await uncertifyUser(userId, isPushNotificationsEnabled());
 
   if (!user) {
     throw new Error('User not found');
-  }
-
-  if (isPushNotificationsEnabled() && changed) {
-    try {
-      await enqueuePushEvent({
-        userid: user.id,
-        type: 'account.certification.disabled',
-        category: 'account',
-        dedupeKey: `certification:disabled:${user.id}:${user.updatedAt.toISOString()}`,
-        titleLocKey: 'push.certification.disabled.title',
-        bodyLocKey: 'push.certification.disabled.body',
-        route: 'rote://profile',
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      });
-    } catch (error) {
-      console.error('Failed to enqueue certification removal push notification:', error);
-    }
   }
 
   return c.json(createResponse(user, 'User certification removed successfully'), 200);

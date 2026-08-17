@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, inArray, ne, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../drizzle/schema';
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import type { ApnsEnvironment } from './config';
@@ -38,18 +38,53 @@ export async function registerDevice(input: {
   timeZone: string;
 }) {
   const device = await db.transaction(async (transaction) => {
-    // Serialize ownership changes even when this installation does not exist yet.
-    // Otherwise concurrent registrations can both miss the current owner and an
-    // upsert can transfer the row without retiring the previous user's queue.
-    await transaction.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device:${input.installationId}`}))`
-    );
+    // Serialize installation ownership, token ownership, and preference scheduling
+    // even when their rows do not exist yet. A stable order avoids lock inversion.
+    const lockKeys = [
+      `push-device:${input.installationId}`,
+      `push-token:${input.environment}:${input.token}`,
+      `push-preference:${input.userid}`,
+    ].sort();
+    for (const lockKey of lockKeys) {
+      await transaction.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`);
+    }
+
     const [existingInstallation] = await transaction
       .select({ id: apnsDevices.id, userid: apnsDevices.userid })
       .from(apnsDevices)
       .where(eq(apnsDevices.installationId, input.installationId))
       .limit(1);
+    const [existingToken] = await transaction
+      .select({
+        id: apnsDevices.id,
+        userid: apnsDevices.userid,
+        installationId: apnsDevices.installationId,
+      })
+      .from(apnsDevices)
+      .where(
+        and(eq(apnsDevices.token, input.token), eq(apnsDevices.environment, input.environment))
+      )
+      .limit(1);
+
+    const reusableTokenDevice =
+      existingToken &&
+      existingToken.installationId !== input.installationId &&
+      existingToken.userid === input.userid &&
+      !existingInstallation
+        ? existingToken
+        : null;
+    const retiringDeviceIds = new Set<string>();
     if (existingInstallation && existingInstallation.userid !== input.userid) {
+      retiringDeviceIds.add(existingInstallation.id);
+    }
+    if (
+      existingToken &&
+      existingToken.installationId !== input.installationId &&
+      !reusableTokenDevice
+    ) {
+      retiringDeviceIds.add(existingToken.id);
+    }
+    if (retiringDeviceIds.size > 0) {
       await transaction
         .update(pushDeliveries)
         .set({
@@ -59,49 +94,75 @@ export async function registerDevice(input: {
         })
         .where(
           and(
-            eq(pushDeliveries.deviceId, existingInstallation.id),
+            inArray(pushDeliveries.deviceId, [...retiringDeviceIds]),
             inArray(pushDeliveries.status, ['pending', 'retry', 'processing'])
           )
         );
     }
 
-    // A restored installation may receive a token that was previously associated
-    // with another installation identifier. Keep the APNs token single-owner.
-    await transaction
-      .delete(apnsDevices)
-      .where(
-        and(
-          eq(apnsDevices.token, input.token),
-          eq(apnsDevices.environment, input.environment),
-          ne(apnsDevices.installationId, input.installationId)
-        )
-      );
-    const [registered] = await transaction
-      .insert(apnsDevices)
-      .values({ ...input, status: 'active', lastSeenAt: new Date(), updatedAt: new Date() })
-      .onConflictDoUpdate({
-        target: apnsDevices.installationId,
-        set: {
-          userid: input.userid,
-          token: input.token,
-          environment: input.environment,
-          masterEnabled: input.masterEnabled,
-          timeZone: input.timeZone,
-          status: 'active',
-          lastSeenAt: new Date(),
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
+    const deviceValues = {
+      userid: input.userid,
+      token: input.token,
+      environment: input.environment,
+      masterEnabled: input.masterEnabled,
+      timeZone: input.timeZone,
+      status: 'active',
+      lastSeenAt: new Date(),
+      updatedAt: new Date(),
+    };
+    let registered;
+    if (reusableTokenDevice) {
+      // An app restore can retain its APNs token while generating a new
+      // installation ID. Move the existing row so delivery history and queued
+      // work keep their stable device foreign key.
+      [registered] = await transaction
+        .update(apnsDevices)
+        .set({ ...deviceValues, installationId: input.installationId })
+        .where(eq(apnsDevices.id, reusableTokenDevice.id))
+        .returning();
+    } else {
+      if (existingToken && existingToken.installationId !== input.installationId) {
+        // Preserve historical delivery rows while freeing the APNs token for its
+        // current installation. Unsent work was cancelled above.
+        await transaction
+          .update(apnsDevices)
+          .set({
+            token: `retired:${existingToken.id}:${randomUUID()}`,
+            status: 'disabled',
+            masterEnabled: false,
+            updatedAt: new Date(),
+          })
+          .where(eq(apnsDevices.id, existingToken.id));
+      }
+      [registered] = await transaction
+        .insert(apnsDevices)
+        .values({ ...input, status: 'active', lastSeenAt: new Date(), updatedAt: new Date() })
+        .onConflictDoUpdate({
+          target: apnsDevices.installationId,
+          set: deviceValues,
+        })
+        .returning();
+    }
 
-    await transaction
-      .insert(pushPreferences)
-      .values({ userid: input.userid, timeZone: input.timeZone })
-      .onConflictDoUpdate({
-        target: pushPreferences.userid,
-        set: { timeZone: input.timeZone, updatedAt: new Date() },
-      });
-    await transaction.execute(scheduleNextReminderQuery(input.userid));
+    const [existingPreference] = await transaction
+      .select({ timeZone: pushPreferences.timeZone })
+      .from(pushPreferences)
+      .where(eq(pushPreferences.userid, input.userid))
+      .limit(1);
+    const timeZoneChanged = existingPreference?.timeZone !== input.timeZone;
+    if (!existingPreference) {
+      await transaction
+        .insert(pushPreferences)
+        .values({ userid: input.userid, timeZone: input.timeZone });
+    } else if (timeZoneChanged) {
+      await transaction
+        .update(pushPreferences)
+        .set({ timeZone: input.timeZone, updatedAt: new Date() })
+        .where(eq(pushPreferences.userid, input.userid));
+    }
+    if (timeZoneChanged) {
+      await transaction.execute(scheduleNextReminderQuery(input.userid));
+    }
     return registered;
   });
   return device;

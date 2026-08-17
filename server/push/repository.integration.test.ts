@@ -11,7 +11,7 @@ databaseDescribe('push repository integration', () => {
   let worker: typeof import('./worker');
   let admin: typeof import('../utils/dbMethods/admin');
   const userIds = [randomUUID(), randomUUID(), randomUUID()];
-  const installationIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+  const installationIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()];
 
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl;
@@ -94,6 +94,18 @@ databaseDescribe('push repository integration', () => {
       authorid: userIds[1],
       content: 'already recorded today',
     });
+
+    await repository.registerDevice({
+      userid: userIds[0],
+      installationId: installationIds[0],
+      token: 'a'.repeat(64),
+      environment: 'production',
+      masterEnabled: true,
+      timeZone: 'UTC',
+    });
+    expect((await repository.getPreferences(userIds[0]))?.nextReminderAt?.getTime()).toBe(
+      dueReminderAt.getTime()
+    );
 
     await repository.updatePreferences(userIds[0], { reactionsEnabled: false });
     expect((await repository.getPreferences(userIds[0]))?.nextReminderAt?.getTime()).toBe(
@@ -251,6 +263,45 @@ databaseDescribe('push repository integration', () => {
     ).not.toBeUndefined();
   });
 
+  it('preserves queued deliveries when a restored app keeps its token with a new installation ID', async () => {
+    const { eq } = await import('drizzle-orm');
+    const existingDevice = await database.query.apnsDevices.findFirst({
+      where: eq(schema.apnsDevices.installationId, installationIds[0]),
+    });
+    expect(existingDevice?.userid).toBe(userIds[1]);
+    const event = await repository.enqueuePushEvent({
+      userid: userIds[1],
+      type: 'system.app-restore',
+      category: 'system',
+      dedupeKey: `integration:app-restore:${randomUUID()}`,
+      payload: { targetInstallationId: installationIds[0] },
+    });
+    await worker.fanOutEvents();
+    const [queued] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, event!.id));
+    expect(queued.deviceId).toBe(existingDevice!.id);
+    expect(queued.status).toBe('pending');
+
+    const restored = await repository.registerDevice({
+      userid: userIds[1],
+      installationId: installationIds[4],
+      token: 'a'.repeat(64),
+      environment: 'production',
+      masterEnabled: true,
+      timeZone: 'UTC',
+    });
+    expect(restored.id).toBe(existingDevice!.id);
+    expect(restored.installationId).toBe(installationIds[4]);
+    const [preserved] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.id, queued.id));
+    expect(preserved.deviceId).toBe(existingDevice!.id);
+    expect(preserved.status).toBe('pending');
+  });
+
   it('anchors reaction aggregation to the first pending event', async () => {
     const { and, eq } = await import('drizzle-orm');
     const roteId = randomUUID();
@@ -289,21 +340,76 @@ databaseDescribe('push repository integration', () => {
     expect(nextWindow.filter((event) => event.payload.roteId === roteId)).toHaveLength(2);
   });
 
-  it('reports only one certification transition under concurrent updates', async () => {
+  it('rolls back certification when its push event cannot be inserted', async () => {
+    const { eq, sql } = await import('drizzle-orm');
+    await database.execute(sql`
+      CREATE OR REPLACE FUNCTION fail_certification_push_for_test()
+      RETURNS trigger AS $$
+      BEGIN
+        IF NEW.type = 'account.certification.enabled' THEN
+          RAISE EXCEPTION 'forced certification push failure';
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await database.execute(sql`
+      CREATE TRIGGER fail_certification_push_for_test
+      BEFORE INSERT ON push_events
+      FOR EACH ROW EXECUTE FUNCTION fail_certification_push_for_test()
+    `);
+    try {
+      await expect(admin.certifyUser(userIds[2], true)).rejects.toThrow();
+      const user = await database.query.users.findFirst({
+        where: eq(schema.users.id, userIds[2]),
+      });
+      expect(user?.emailVerified).toBe(false);
+    } finally {
+      await database.execute(sql`
+        DROP TRIGGER IF EXISTS fail_certification_push_for_test ON push_events
+      `);
+      await database.execute(sql`DROP FUNCTION IF EXISTS fail_certification_push_for_test()`);
+    }
+  });
+
+  it('reports and enqueues only one certification transition under concurrent updates', async () => {
+    const { and, eq } = await import('drizzle-orm');
     const certified = await Promise.all([
-      admin.certifyUser(userIds[2]),
-      admin.certifyUser(userIds[2]),
-      admin.certifyUser(userIds[2]),
+      admin.certifyUser(userIds[2], true),
+      admin.certifyUser(userIds[2], true),
+      admin.certifyUser(userIds[2], true),
     ]);
     expect(certified.filter((result) => result.changed)).toHaveLength(1);
     expect(certified.every((result) => result.user?.certified === true)).toBe(true);
+    expect(
+      await database
+        .select()
+        .from(schema.pushEvents)
+        .where(
+          and(
+            eq(schema.pushEvents.userid, userIds[2]),
+            eq(schema.pushEvents.type, 'account.certification.enabled')
+          )
+        )
+    ).toHaveLength(1);
 
     const uncertified = await Promise.all([
-      admin.uncertifyUser(userIds[2]),
-      admin.uncertifyUser(userIds[2]),
-      admin.uncertifyUser(userIds[2]),
+      admin.uncertifyUser(userIds[2], true),
+      admin.uncertifyUser(userIds[2], true),
+      admin.uncertifyUser(userIds[2], true),
     ]);
     expect(uncertified.filter((result) => result.changed)).toHaveLength(1);
     expect(uncertified.every((result) => result.user?.certified === false)).toBe(true);
+    expect(
+      await database
+        .select()
+        .from(schema.pushEvents)
+        .where(
+          and(
+            eq(schema.pushEvents.userid, userIds[2]),
+            eq(schema.pushEvents.type, 'account.certification.disabled')
+          )
+        )
+    ).toHaveLength(1);
   });
 });

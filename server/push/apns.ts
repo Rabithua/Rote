@@ -55,19 +55,34 @@ export type ApnsMessage = {
   collapseId?: string;
 };
 
-export async function sendApns(message: ApnsMessage): Promise<{ apnsId?: string }> {
-  const config = getApnsConfig(message.environment);
-  const authorization = await providerToken(message.environment);
+export const APNS_MAX_PAYLOAD_BYTES = 4096;
+
+type ApnsPayloadMessage = Pick<
+  ApnsMessage,
+  'title' | 'body' | 'titleLocKey' | 'bodyLocKey' | 'route' | 'payload'
+>;
+
+export function serializeApnsPayload(message: ApnsPayloadMessage): string {
   const alert: Record<string, string> = {};
   if (message.title) alert.title = message.title;
   if (message.body) alert.body = message.body;
   if (message.titleLocKey) alert['title-loc-key'] = message.titleLocKey;
   if (message.bodyLocKey) alert['loc-key'] = message.bodyLocKey;
-  const body = JSON.stringify({
+  return JSON.stringify({
     ...message.payload,
     aps: { alert, sound: 'default' },
     route: message.route,
   });
+}
+
+export function isApnsPayloadWithinLimit(message: ApnsPayloadMessage): boolean {
+  return Buffer.byteLength(serializeApnsPayload(message), 'utf8') <= APNS_MAX_PAYLOAD_BYTES;
+}
+
+export async function sendApns(message: ApnsMessage): Promise<{ apnsId?: string }> {
+  const config = getApnsConfig(message.environment);
+  const authorization = await providerToken(message.environment);
+  const body = serializeApnsPayload(message);
 
   return await new Promise((resolve, reject) => {
     const client = apnsClient(config.origin);

@@ -5,6 +5,7 @@ import { pushCampaigns, type User } from '../../drizzle/schema';
 import { authenticateJWT, requireSuperAdmin } from '../../middleware/jwtAuth';
 import { isPushNotificationsEnabled, validateTimeZone } from '../../push/config';
 import { PushApiError } from '../../push/errors';
+import { isApnsPayloadWithinLimit } from '../../push/apns';
 import {
   disableDevice,
   enqueuePushEvent,
@@ -120,9 +121,28 @@ const campaignSchema = z.object({
     .optional(),
 });
 
+const campaignIdPlaceholder = '00000000-0000-0000-0000-000000000000';
+
+function validateCampaignPayload(
+  campaign: { title: string; body: string; route?: string | null },
+  campaignId: string
+): void {
+  if (
+    !isApnsPayloadWithinLimit({
+      title: campaign.title,
+      body: campaign.body,
+      route: campaign.route,
+      payload: { campaignId },
+    })
+  ) {
+    throw new PushApiError('push_invalid_request', 400);
+  }
+}
+
 router.post('/campaigns', requireSuperAdmin, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const body = await parsePushBody(c, campaignSchema);
+  validateCampaignPayload(body, campaignIdPlaceholder);
   const [campaign] = await db
     .insert(pushCampaigns)
     .values({ ...body, createdBy: user.id })
@@ -159,6 +179,7 @@ router.post('/campaigns/:campaignId/send', requireSuperAdmin, async (c: HonoCont
     if (campaign.status !== 'draft') {
       throw new PushApiError('push_campaign_already_sent', 409);
     }
+    validateCampaignPayload(campaign, campaignId);
     await transaction.execute(sql`
       INSERT INTO push_events
         (userid, type, category, title, body, route, payload, "dedupeKey",
