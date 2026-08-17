@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { and, eq, ne, sql } from 'drizzle-orm';
-import { apnsDevices, pushEvents, pushPreferences } from '../drizzle/schema';
+import { and, eq, inArray, ne, sql } from 'drizzle-orm';
+import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../drizzle/schema';
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import type { ApnsEnvironment } from './config';
 import { PushApiError } from './errors';
@@ -38,6 +38,33 @@ export async function registerDevice(input: {
   timeZone: string;
 }) {
   const device = await db.transaction(async (transaction) => {
+    // Serialize ownership changes even when this installation does not exist yet.
+    // Otherwise concurrent registrations can both miss the current owner and an
+    // upsert can transfer the row without retiring the previous user's queue.
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device:${input.installationId}`}))`
+    );
+    const [existingInstallation] = await transaction
+      .select({ id: apnsDevices.id, userid: apnsDevices.userid })
+      .from(apnsDevices)
+      .where(eq(apnsDevices.installationId, input.installationId))
+      .limit(1);
+    if (existingInstallation && existingInstallation.userid !== input.userid) {
+      await transaction
+        .update(pushDeliveries)
+        .set({
+          status: 'cancelled',
+          lastError: 'device_owner_changed',
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(pushDeliveries.deviceId, existingInstallation.id),
+            inArray(pushDeliveries.status, ['pending', 'retry', 'processing'])
+          )
+        );
+    }
+
     // A restored installation may receive a token that was previously associated
     // with another installation identifier. Keep the APNs token single-owner.
     await transaction

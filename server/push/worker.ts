@@ -63,6 +63,7 @@ export async function cancelIneligibleDeliveries(): Promise<void> {
       AND delivery.status IN ('pending', 'retry', 'processing')
       AND (
         (event."expiresAt" IS NOT NULL AND event."expiresAt" <= now())
+        OR device.userid <> event.userid
         OR device.status <> 'active'
         OR device."masterEnabled" = false
         OR NOT CASE event.category
@@ -86,6 +87,7 @@ async function isDeliveryStillEligible(deliveryId: string): Promise<boolean> {
       JOIN push_preferences preference ON preference.userid = event.userid
       WHERE delivery.id = ${deliveryId}::uuid
         AND delivery.status = 'processing'
+        AND device.userid = event.userid
         AND device.status = 'active'
         AND device."masterEnabled" = true
         AND (event."expiresAt" IS NULL OR event."expiresAt" > now())
@@ -132,6 +134,7 @@ export async function deliverBatch(): Promise<void> {
           inArray(pushDeliveries.status, ['pending', 'retry', 'processing']),
           lte(pushDeliveries.nextAttemptAt, new Date()),
           or(sql`${pushEvents.expiresAt} IS NULL`, sql`${pushEvents.expiresAt} > now()`),
+          eq(apnsDevices.userid, pushEvents.userid),
           eq(apnsDevices.status, 'active'),
           eq(apnsDevices.masterEnabled, true),
           sql`CASE ${pushEvents.category}

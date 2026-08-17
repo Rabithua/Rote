@@ -207,6 +207,50 @@ databaseDescribe('push repository integration', () => {
     expect(cancelled.every((item) => item.status === 'cancelled')).toBe(true);
   });
 
+  it('retires queued deliveries before transferring an installation to another account', async () => {
+    const { and, eq } = await import('drizzle-orm');
+    const event = await repository.enqueuePushEvent({
+      userid: userIds[0],
+      type: 'system.owner-transfer',
+      category: 'system',
+      dedupeKey: `integration:owner-transfer:${randomUUID()}`,
+      payload: { targetInstallationId: installationIds[0] },
+    });
+    expect(event).not.toBeNull();
+
+    await worker.fanOutEvents();
+    const [queued] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, event!.id));
+    expect(queued.status).toBe('pending');
+
+    const transferred = await repository.registerDevice({
+      userid: userIds[1],
+      installationId: installationIds[0],
+      token: 'a'.repeat(64),
+      environment: 'production',
+      masterEnabled: true,
+      timeZone: 'UTC',
+    });
+    expect(transferred.userid).toBe(userIds[1]);
+
+    const [retired] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.id, queued.id));
+    expect(retired.status).toBe('cancelled');
+    expect(retired.lastError).toBe('device_owner_changed');
+    expect(
+      await database.query.apnsDevices.findFirst({
+        where: and(
+          eq(schema.apnsDevices.installationId, installationIds[0]),
+          eq(schema.apnsDevices.userid, userIds[1])
+        ),
+      })
+    ).not.toBeUndefined();
+  });
+
   it('anchors reaction aggregation to the first pending event', async () => {
     const { and, eq } = await import('drizzle-orm');
     const roteId = randomUUID();
