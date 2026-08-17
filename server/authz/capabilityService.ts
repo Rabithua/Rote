@@ -7,6 +7,8 @@ import db from '../utils/drizzle';
 import {
   CAPABILITY_KEYS,
   getRoleDefaultCapability,
+  isCapabilityEffect,
+  isCapabilityKey,
   resolveEffectiveCapabilities,
   type CapabilityEffect,
   type CapabilityKey,
@@ -14,8 +16,62 @@ import {
   type EffectiveCapabilities,
 } from './capabilities';
 
-function isActiveOverride(expiresAt: Date | null): boolean {
-  return !expiresAt || expiresAt.getTime() > Date.now();
+function isActiveOverride(expiresAt: Date | null, now = new Date()): boolean {
+  return !expiresAt || expiresAt.getTime() > now.getTime();
+}
+
+export function resolveCapabilitiesFromRecords(params: {
+  role: string;
+  rolePolicies: readonly { permission: string; effect: string }[];
+  userOverrides: readonly { permission: string; effect: string; expiresAt: Date | null }[];
+  billingGrant?: {
+    status: unknown;
+    capabilities: unknown;
+    leaseExpiresAt: Date | null;
+  } | null;
+  now?: Date;
+}): EffectiveCapabilities {
+  const now = params.now ?? new Date();
+  const rolePolicies = Object.fromEntries(
+    params.rolePolicies
+      .filter(
+        (policy): policy is { permission: CapabilityKey; effect: CapabilityEffect } =>
+          isCapabilityKey(policy.permission) && isCapabilityEffect(policy.effect)
+      )
+      .map((policy) => [policy.permission, policy.effect])
+  ) as Partial<Record<CapabilityKey, CapabilityEffect>>;
+  const userOverrides = Object.fromEntries(
+    params.userOverrides
+      .filter(
+        (
+          override
+        ): override is {
+          permission: CapabilityKey;
+          effect: CapabilityEffect;
+          expiresAt: Date | null;
+        } =>
+          isCapabilityKey(override.permission) &&
+          isCapabilityEffect(override.effect) &&
+          isActiveOverride(override.expiresAt, now)
+      )
+      .map((override) => [override.permission, override.effect])
+  ) as Partial<Record<CapabilityKey, CapabilityEffect>>;
+
+  return resolveEffectiveCapabilities({
+    role: params.role,
+    rolePolicies,
+    userOverrides,
+    ...(params.billingGrant
+      ? {
+          subscription: {
+            status: params.billingGrant.status,
+            capabilities: params.billingGrant.capabilities,
+            validUntil: params.billingGrant.leaseExpiresAt?.toISOString(),
+          },
+        }
+      : {}),
+    now,
+  });
 }
 
 export async function getEffectiveCapabilitiesForUser(userId: string): Promise<{
@@ -48,30 +104,11 @@ export async function getEffectiveCapabilitiesForUser(userId: string): Promise<{
     billingConfig.enabled ? billingGrantRepository.findGrantForUser(userId) : Promise.resolve(null),
   ]);
 
-  const rolePolicyMap = new Map(rolePolicies.map((policy) => [policy.permission, policy.effect]));
-  const userOverrideMap = new Map(
-    userOverrides
-      .filter((override) => isActiveOverride(override.expiresAt))
-      .map((override) => [override.permission, override.effect])
-  );
-
-  const capabilities = resolveEffectiveCapabilities({
+  const capabilities = resolveCapabilitiesFromRecords({
     role: user.role,
-    rolePolicies: Object.fromEntries(rolePolicyMap) as Partial<
-      Record<CapabilityKey, CapabilityEffect>
-    >,
-    userOverrides: Object.fromEntries(userOverrideMap) as Partial<
-      Record<CapabilityKey, CapabilityEffect>
-    >,
-    ...(billingGrant
-      ? {
-          subscription: {
-            status: billingGrant.status,
-            capabilities: billingGrant.capabilities,
-            validUntil: billingGrant.leaseExpiresAt?.toISOString(),
-          },
-        }
-      : {}),
+    rolePolicies,
+    userOverrides,
+    billingGrant,
   });
 
   return { role: user.role, capabilities };

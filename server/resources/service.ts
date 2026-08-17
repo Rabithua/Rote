@@ -8,11 +8,14 @@ import {
   resourceStorageObjects,
   resourceCleanupOutbox,
   resourceUploadReservations,
+  rolePermissionPolicies,
+  userPermissionOverrides,
   userOpenKeys,
   users,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
 import { billingConfig } from '../billing/runtimeConfig';
+import { resolveCapabilitiesFromRecords } from '../authz/capabilityService';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from './errors';
 
 export const OFFICIAL_FREE_STORAGE_BYTES = BigInt(500_000_000);
@@ -179,6 +182,36 @@ export function reportedOfficialUsedBytes(
   return null;
 }
 
+export function resolveOfficialStorageState(params: {
+  enforcement: 'observe' | 'enforce';
+  reportedUsedBytes: string | null;
+  usedBytes: bigint;
+  reservedBytes: bigint;
+  limitBytes: bigint;
+  unlimited: boolean;
+}): ResourceState['storage'] {
+  if (params.unlimited) {
+    return {
+      enforcement: params.enforcement,
+      usedBytes: params.reportedUsedBytes,
+      reservedBytes: params.reservedBytes.toString(),
+      limitBytes: null,
+      overLimit: false,
+      canUpload: true,
+    };
+  }
+
+  const overLimit = params.usedBytes + params.reservedBytes >= params.limitBytes;
+  return {
+    enforcement: params.enforcement,
+    usedBytes: params.reportedUsedBytes,
+    reservedBytes: params.reservedBytes.toString(),
+    limitBytes: params.limitBytes.toString(),
+    overLimit,
+    canUpload: params.enforcement !== 'enforce' || !overLimit,
+  };
+}
+
 function grantIsUsable(grant: typeof billingGrants.$inferSelect | null, now: Date): boolean {
   return Boolean(
     grant &&
@@ -195,23 +228,39 @@ async function resolveStateWithExecutor(
   now: Date
 ): Promise<ResourceState> {
   if (billingConfig.enabled) {
-    const [[grant], [account], [keyCount], [managementState]] = await Promise.all([
-      executor.select().from(billingGrants).where(eq(billingGrants.userId, user.id)).limit(1),
-      executor
-        .select()
-        .from(resourceStorageAccounts)
-        .where(eq(resourceStorageAccounts.userId, user.id))
-        .limit(1),
-      executor
-        .select({ value: count() })
-        .from(userOpenKeys)
-        .where(eq(userOpenKeys.userid, user.id)),
-      executor
-        .select({ reconciliationStatus: resourceManagementState.reconciliationStatus })
-        .from(resourceManagementState)
-        .where(eq(resourceManagementState.id, 'official'))
-        .limit(1),
-    ]);
+    const [[grant], [account], [keyCount], [managementState], rolePolicies, userOverrides] =
+      await Promise.all([
+        executor.select().from(billingGrants).where(eq(billingGrants.userId, user.id)).limit(1),
+        executor
+          .select()
+          .from(resourceStorageAccounts)
+          .where(eq(resourceStorageAccounts.userId, user.id))
+          .limit(1),
+        executor
+          .select({ value: count() })
+          .from(userOpenKeys)
+          .where(eq(userOpenKeys.userid, user.id)),
+        executor
+          .select({ reconciliationStatus: resourceManagementState.reconciliationStatus })
+          .from(resourceManagementState)
+          .where(eq(resourceManagementState.id, 'official'))
+          .limit(1),
+        executor
+          .select({
+            permission: rolePermissionPolicies.permission,
+            effect: rolePermissionPolicies.effect,
+          })
+          .from(rolePermissionPolicies)
+          .where(eq(rolePermissionPolicies.role, user.role)),
+        executor
+          .select({
+            permission: userPermissionOverrides.permission,
+            effect: userPermissionOverrides.effect,
+            expiresAt: userPermissionOverrides.expiresAt,
+          })
+          .from(userPermissionOverrides)
+          .where(eq(userPermissionOverrides.userid, user.id)),
+      ]);
     const existingCount = Number(keyCount?.value ?? 0);
     const enforcement = effectiveOfficialStorageEnforcement(
       requestedOfficialStorageEnforcement(),
@@ -221,45 +270,40 @@ async function resolveStateWithExecutor(
       account ?? null,
       managementState?.reconciliationStatus
     );
-    if (isRoleExempt(user.role)) {
-      return {
-        management: 'official',
-        source: 'role_exempt',
-        storage: {
-          enforcement,
-          usedBytes: reportedUsed,
-          reservedBytes: (account?.reservedBytes ?? BigInt(0)).toString(),
-          limitBytes: null,
-          overLimit: false,
-          canUpload: true,
-        },
-        openKey: { policy: 'unlimited', creationThreshold: null, existingCount, canCreate: true },
-      };
-    }
     const pro = grantIsUsable(grant ?? null, now);
     const limit = pro ? BigInt(grant!.benefits!.storage.quotaBytes) : OFFICIAL_FREE_STORAGE_BYTES;
     const used = account?.usedBytes ?? BigInt(0);
     const reserved = account?.reservedBytes ?? BigInt(0);
-    const overLimit = used + reserved >= limit;
+    const capabilities = resolveCapabilitiesFromRecords({
+      role: user.role,
+      rolePolicies,
+      userOverrides,
+      billingGrant: grant ?? null,
+      now,
+    });
+    const unlimitedStorage = capabilities['resource.storage.unlimited'].allowed;
+    const roleExempt = isRoleExempt(user.role);
     return {
       management: 'official',
-      source: pro ? 'official_pro' : 'official_free',
-      storage: {
+      source:
+        roleExempt && unlimitedStorage ? 'role_exempt' : pro ? 'official_pro' : 'official_free',
+      storage: resolveOfficialStorageState({
         enforcement,
-        usedBytes: reportedUsed,
-        reservedBytes: reserved.toString(),
-        limitBytes: limit.toString(),
-        overLimit,
-        canUpload: enforcement !== 'enforce' || !overLimit,
-      },
-      openKey: pro
-        ? { policy: 'unlimited', creationThreshold: null, existingCount, canCreate: true }
-        : {
-            policy: 'threshold',
-            creationThreshold: OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
-            existingCount,
-            canCreate: existingCount < OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
-          },
+        reportedUsedBytes: reportedUsed,
+        usedBytes: used,
+        reservedBytes: reserved,
+        limitBytes: limit,
+        unlimited: unlimitedStorage,
+      }),
+      openKey:
+        roleExempt || pro
+          ? { policy: 'unlimited', creationThreshold: null, existingCount, canCreate: true }
+          : {
+              policy: 'threshold',
+              creationThreshold: OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
+              existingCount,
+              canCreate: existingCount < OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
+            },
     };
   }
 

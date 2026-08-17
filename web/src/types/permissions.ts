@@ -1,4 +1,9 @@
-export const CAPABILITY_KEYS = ['attachment.upload', 'attachment.video.upload', 'ai.chat'] as const;
+export const CAPABILITY_KEYS = [
+  'attachment.upload',
+  'attachment.video.upload',
+  'ai.chat',
+  'resource.storage.unlimited',
+] as const;
 
 export type CapabilityKey = (typeof CAPABILITY_KEYS)[number];
 export type CapabilityEffect = 'allow' | 'deny';
@@ -6,8 +11,9 @@ export type CapabilityOverride = CapabilityEffect | 'inherit';
 
 export type EffectiveCapability = {
   allowed: boolean;
-  source: 'user_override' | 'role_policy' | 'role_default' | 'dependency';
+  source: 'user_override' | 'subscription' | 'role_policy' | 'role_default' | 'dependency';
   role: string;
+  validUntil?: string;
 };
 
 export type EffectiveCapabilities = Record<CapabilityKey, EffectiveCapability>;
