@@ -1,5 +1,6 @@
 import { HonoContext } from '../types/hono';
 import { ResourcePolicyError } from '../resources/errors';
+import { PushApiError } from '../push/errors';
 
 function containsSensitiveServerDetails(message: string): boolean {
   const normalized = message.toLowerCase();
@@ -33,6 +34,17 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   const errorMessage = err.message || (err as any).originalError?.message || '';
 
   if (err instanceof ResourcePolicyError) {
+    return c.json(
+      {
+        code: 1,
+        message: err.code,
+        data: null,
+      },
+      err.status
+    );
+  }
+
+  if (err instanceof PushApiError) {
     return c.json(
       {
         code: 1,

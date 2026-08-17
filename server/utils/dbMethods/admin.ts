@@ -3,6 +3,7 @@ import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm'
 import {
   articles,
   attachments,
+  pushEvents,
   resourceStorageAccounts,
   rotes,
   userOpenKeys,
@@ -227,48 +228,89 @@ export async function deleteUserById(userId: string) {
   return true;
 }
 
-export async function certifyUser(userId: string) {
-  const [existingUser] = await db
-    .select({ emailVerified: users.emailVerified })
+async function findUserCertification(userId: string) {
+  const [user] = await db
+    .select({
+      id: users.id,
+      username: users.username,
+      email: users.email,
+      certified: users.emailVerified,
+      updatedAt: users.updatedAt,
+    })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
-
-  const [user] = await db
-    .update(users)
-    .set({ emailVerified: true, updatedAt: new Date() })
-    .where(eq(users.id, userId))
-    .returning({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      certified: users.emailVerified,
-      updatedAt: users.updatedAt,
-    });
-  if (user && existingUser?.emailVerified === false) {
-    void enqueueBackfillEmbeddingJobsForOwner(user.id).catch((error) => {
-      console.error('Failed to enqueue certified user embedding backfill:', error);
-    });
-  }
   return user;
 }
 
-export async function uncertifyUser(userId: string) {
-  const [user] = await db
-    .update(users)
-    .set({ emailVerified: false, updatedAt: new Date() })
-    .where(eq(users.id, userId))
-    .returning({
-      id: users.id,
-      username: users.username,
-      email: users.email,
-      certified: users.emailVerified,
-      updatedAt: users.updatedAt,
+export async function certifyUser(userId: string, enqueuePushNotification = false) {
+  const changedUser = await db.transaction(async (transaction) => {
+    const [changed] = await transaction
+      .update(users)
+      .set({ emailVerified: true, updatedAt: new Date() })
+      .where(and(eq(users.id, userId), eq(users.emailVerified, false)))
+      .returning({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        certified: users.emailVerified,
+        updatedAt: users.updatedAt,
+      });
+    if (changed && enqueuePushNotification) {
+      await transaction.insert(pushEvents).values({
+        userid: changed.id,
+        type: 'account.certification.enabled',
+        category: 'account',
+        dedupeKey: `certification:enabled:${changed.id}:${changed.updatedAt.toISOString()}`,
+        titleLocKey: 'push.certification.enabled.title',
+        bodyLocKey: 'push.certification.enabled.body',
+        route: 'rote://profile',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+    }
+    return changed;
+  });
+  const user = changedUser ?? (await findUserCertification(userId));
+  if (changedUser) {
+    void enqueueBackfillEmbeddingJobsForOwner(changedUser.id).catch((error) => {
+      console.error('Failed to enqueue certified user embedding backfill:', error);
     });
+  }
+  return { user, changed: changedUser != null };
+}
+
+export async function uncertifyUser(userId: string, enqueuePushNotification = false) {
+  const changedUser = await db.transaction(async (transaction) => {
+    const [changed] = await transaction
+      .update(users)
+      .set({ emailVerified: false, updatedAt: new Date() })
+      .where(and(eq(users.id, userId), eq(users.emailVerified, true)))
+      .returning({
+        id: users.id,
+        username: users.username,
+        email: users.email,
+        certified: users.emailVerified,
+        updatedAt: users.updatedAt,
+      });
+    if (changed && enqueuePushNotification) {
+      await transaction.insert(pushEvents).values({
+        userid: changed.id,
+        type: 'account.certification.disabled',
+        category: 'account',
+        dedupeKey: `certification:disabled:${changed.id}:${changed.updatedAt.toISOString()}`,
+        titleLocKey: 'push.certification.disabled.title',
+        bodyLocKey: 'push.certification.disabled.body',
+        route: 'rote://profile',
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+    }
+    return changed;
+  });
+  const user = changedUser ?? (await findUserCertification(userId));
   if (user) {
     await deleteEmbeddingsForOwner(user.id);
   }
-  return user;
+  return { user, changed: changedUser != null };
 }
 
 export async function getRoleStats() {
