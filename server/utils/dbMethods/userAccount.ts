@@ -239,49 +239,54 @@ export async function mergeUserAccounts(
         .set({ createdBy: targetUserId, updatedAt: new Date() })
         .where(eq(pushCampaigns.createdBy, sourceUserId));
 
-      // Campaigns and daily reminders are created once per account. Retire the
-      // source copy only when the target copy can still fan out or already has
-      // a delivery; a processed target with no delivery must not shadow the
-      // source account's deliverable event.
+      // Campaigns and daily reminders are created once per account. Collapse
+      // duplicate logical events onto the target copy, preserve sent-device
+      // coverage, and requeue the target so fan-out fills only missing devices
+      // after registrations move to the combined account.
       await tx.execute(sql`
-        WITH duplicate_events AS MATERIALIZED (
-          SELECT source.id
+        WITH duplicate_pairs AS MATERIALIZED (
+          SELECT source.id AS source_id, target.id AS target_id
           FROM push_events source
+          JOIN push_events target
+            ON target.userid = ${targetUserId}::uuid
+            AND target.type = source.type
+            AND target.status IN ('pending', 'processed')
+            AND (
+              (
+                source.type = 'system.campaign'
+                AND target.payload->>'campaignId' = source.payload->>'campaignId'
+              )
+              OR (
+                source.type = 'habit.daily_record_reminder'
+                AND split_part(target."dedupeKey", ':', 3) = split_part(source."dedupeKey", ':', 3)
+              )
+            )
           WHERE source.userid = ${sourceUserId}::uuid
             AND source.status IN ('pending', 'processed')
-            AND EXISTS (
-              SELECT 1 FROM push_events target
-              WHERE target.userid = ${targetUserId}::uuid
-                AND target.type = source.type
-                AND target.status IN ('pending', 'processed')
-                AND (
-                  (
-                    source.type = 'system.campaign'
-                    AND target.payload->>'campaignId' = source.payload->>'campaignId'
-                  )
-                  OR (
-                    source.type = 'habit.daily_record_reminder'
-                    AND split_part(target."dedupeKey", ':', 3) = split_part(source."dedupeKey", ':', 3)
-                  )
-                )
-                AND (
-                  target.status = 'pending'
-                  OR EXISTS (
-                    SELECT 1 FROM push_deliveries target_delivery
-                    WHERE target_delivery."eventId" = target.id
-                      AND target_delivery.status IN ('pending', 'retry', 'processing', 'sent')
-                  )
-                )
-            )
+        ), preserved_sent AS (
+          INSERT INTO push_deliveries
+            ("eventId", "deviceId", status, "attemptCount", "nextAttemptAt", "apnsId",
+             "lastError", "sentAt", "createdAt", "updatedAt")
+          SELECT pair.target_id, delivery."deviceId", delivery.status, delivery."attemptCount",
+            delivery."nextAttemptAt", delivery."apnsId", delivery."lastError", delivery."sentAt",
+            delivery."createdAt", delivery."updatedAt"
+          FROM duplicate_pairs pair
+          JOIN push_deliveries delivery ON delivery."eventId" = pair.source_id
+          WHERE delivery.status = 'sent'
+          ON CONFLICT ("eventId", "deviceId") DO NOTHING
+        ), requeued_targets AS (
+          UPDATE push_events target
+          SET status = 'pending', "updatedAt" = now()
+          WHERE target.id IN (SELECT target_id FROM duplicate_pairs)
         ), cancelled_deliveries AS (
           UPDATE push_deliveries delivery
           SET status = 'cancelled', "lastError" = 'account_merge_duplicate_event', "updatedAt" = now()
-          WHERE delivery."eventId" IN (SELECT id FROM duplicate_events)
+          WHERE delivery."eventId" IN (SELECT source_id FROM duplicate_pairs)
             AND delivery.status IN ('pending', 'retry', 'processing')
         )
         UPDATE push_events event
         SET status = 'cancelled', "updatedAt" = now()
-        WHERE event.id IN (SELECT id FROM duplicate_events)
+        WHERE event.id IN (SELECT source_id FROM duplicate_pairs)
       `);
 
       const migratedPushEvents = await tx

@@ -401,7 +401,28 @@ databaseDescribe('push repository integration', () => {
       .where(eq(schema.pushDeliveries.eventId, regular!.id));
     expect(cancelledByOptOut.every((item) => item.status === 'cancelled')).toBe(true);
     expect(cancelledByOptOut.every((item) => item.lastError === 'preference_disabled')).toBe(true);
+    const deviceOptOutEvent = await repository.enqueuePushEvent({
+      userid: userIds[0],
+      type: 'system.device-opt-out',
+      category: 'system',
+      dedupeKey: `integration:device-opt-out:${randomUUID()}`,
+      payload: { targetInstallationId: installationIds[1] },
+    });
+    await worker.fanOutEvents();
+    const [deviceOptOutDelivery] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.eventId, deviceOptOutEvent!.id));
+    expect(deviceOptOutDelivery.status).toBe('pending');
     await repository.disableDevice(userIds[0], installationIds[1]);
+    const [cancelledByDeviceDisable] = await database
+      .select()
+      .from(schema.pushDeliveries)
+      .where(eq(schema.pushDeliveries.id, deviceOptOutDelivery.id));
+    expect(cancelledByDeviceDisable).toMatchObject({
+      status: 'cancelled',
+      lastError: 'device_disabled',
+    });
     await worker.cancelIneligibleDeliveries();
 
     const cancelled = await database
@@ -757,7 +778,7 @@ databaseDescribe('push repository integration', () => {
   });
 
   it('preserves APNs devices, preferences, events, and deliveries during account merge', async () => {
-    const { eq } = await import('drizzle-orm');
+    const { and, eq } = await import('drizzle-orm');
     const { mergeUserAccounts } = await import('../utils/dbMethods/userAccount');
     await database
       .update(schema.pushPreferences)
@@ -836,13 +857,13 @@ databaseDescribe('push repository integration', () => {
       where: eq(schema.pushEvents.id, targetCampaign!.id),
     });
     expect(migratedSourceCampaign?.userid).toBe(userIds[4]);
-    expect(migratedSourceCampaign?.status).toBe('processed');
-    expect(retainedTargetCampaign?.status).not.toBe('cancelled');
+    expect(migratedSourceCampaign?.status).toBe('cancelled');
+    expect(retainedTargetCampaign?.status).toBe('pending');
     expect(
       await database.query.pushDeliveries.findFirst({
         where: eq(schema.pushDeliveries.eventId, sourceCampaign!.id),
       })
-    ).toMatchObject({ status: 'pending' });
+    ).toMatchObject({ status: 'cancelled' });
     expect(
       await database.query.pushEvents.findFirst({
         where: eq(schema.pushEvents.id, sourceReminder!.id),
@@ -851,6 +872,15 @@ databaseDescribe('push repository integration', () => {
     expect(
       await database.query.pushEvents.findFirst({
         where: eq(schema.pushEvents.id, targetReminder!.id),
+      })
+    ).toMatchObject({ status: 'pending' });
+    await worker.fanOutEvents();
+    expect(
+      await database.query.pushDeliveries.findFirst({
+        where: and(
+          eq(schema.pushDeliveries.eventId, targetCampaign!.id),
+          eq(schema.pushDeliveries.deviceId, migratedDevice!.id)
+        ),
       })
     ).toMatchObject({ status: 'pending' });
     expect(

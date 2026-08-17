@@ -299,6 +299,19 @@ export async function disableDevice(userid: string, installationId: string) {
     await transaction.execute(
       sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device-send:${current.id}`}))`
     );
+    await transaction
+      .update(pushDeliveries)
+      .set({
+        status: 'cancelled',
+        lastError: 'device_disabled',
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(pushDeliveries.deviceId, current.id),
+          inArray(pushDeliveries.status, ['pending', 'retry', 'processing'])
+        )
+      );
     const [device] = await transaction
       .update(apnsDevices)
       .set({ masterEnabled: false, status: 'disabled', updatedAt: new Date() })
