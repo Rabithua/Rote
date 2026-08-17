@@ -237,14 +237,45 @@ databaseDescribe('push repository integration', () => {
       .where(eq(schema.pushDeliveries.eventId, event!.id));
     expect(queued.status).toBe('pending');
 
-    const transferred = await repository.registerDevice({
-      userid: userIds[1],
-      installationId: installationIds[0],
-      token: 'a'.repeat(64),
-      environment: 'production',
-      masterEnabled: true,
-      timeZone: 'UTC',
+    const { withDatabaseAdvisoryLock } = await import('../utils/drizzle');
+    let markSendLockHeld = () => {};
+    const sendLockHeld = new Promise<void>((resolve) => {
+      markSendLockHeld = resolve;
     });
+    let releaseSendLock = () => {};
+    const holdSendLock = new Promise<void>((resolve) => {
+      releaseSendLock = resolve;
+    });
+    const simulatedSend = withDatabaseAdvisoryLock(
+      `push-device-send:${queued.deviceId}`,
+      async () => {
+        markSendLockHeld();
+        await holdSendLock;
+      }
+    );
+    await sendLockHeld;
+    let transferFinished = false;
+    const transfer = repository
+      .registerDevice({
+        userid: userIds[1],
+        installationId: installationIds[0],
+        token: 'a'.repeat(64),
+        environment: 'production',
+        masterEnabled: true,
+        timeZone: 'UTC',
+      })
+      .then((result) => {
+        transferFinished = true;
+        return result;
+      });
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      expect(transferFinished).toBe(false);
+    } finally {
+      releaseSendLock();
+    }
+    expect((await simulatedSend).acquired).toBe(true);
+    const transferred = await transfer;
     expect(transferred.userid).toBe(userIds[1]);
 
     const [retired] = await database
@@ -338,6 +369,69 @@ databaseDescribe('push repository integration', () => {
         )
       );
     expect(nextWindow.filter((event) => event.payload.roteId === roteId)).toHaveLength(2);
+  });
+
+  it('rolls back a reaction when its aggregated push event cannot be inserted', async () => {
+    const { and, eq, sql } = await import('drizzle-orm');
+    const { addReaction } = await import('../utils/dbMethods/reaction');
+    const roteId = randomUUID();
+    await database.insert(schema.rotes).values({
+      id: roteId,
+      authorid: userIds[0],
+      content: 'reaction atomicity test',
+    });
+    await database.execute(sql`
+      CREATE OR REPLACE FUNCTION fail_reaction_push_for_test()
+      RETURNS trigger AS $$
+      BEGIN
+        IF NEW.type = 'reaction.received' THEN
+          RAISE EXCEPTION 'forced reaction push failure';
+        END IF;
+        RETURN NEW;
+      END;
+      $$ LANGUAGE plpgsql
+    `);
+    await database.execute(sql`
+      CREATE TRIGGER fail_reaction_push_for_test
+      BEFORE INSERT ON push_events
+      FOR EACH ROW EXECUTE FUNCTION fail_reaction_push_for_test()
+    `);
+    const reactionInput = { type: 'heart', roteid: roteId, userid: userIds[1] };
+    const notificationInput = { userid: userIds[0], roteId };
+    try {
+      await expect(addReaction(reactionInput, notificationInput)).rejects.toThrow();
+      expect(
+        await database
+          .select()
+          .from(schema.reactions)
+          .where(and(eq(schema.reactions.roteid, roteId), eq(schema.reactions.userid, userIds[1])))
+      ).toHaveLength(0);
+    } finally {
+      await database.execute(sql`
+        DROP TRIGGER IF EXISTS fail_reaction_push_for_test ON push_events
+      `);
+      await database.execute(sql`DROP FUNCTION IF EXISTS fail_reaction_push_for_test()`);
+    }
+
+    await addReaction(reactionInput, notificationInput);
+    expect(
+      await database
+        .select()
+        .from(schema.reactions)
+        .where(and(eq(schema.reactions.roteid, roteId), eq(schema.reactions.userid, userIds[1])))
+    ).toHaveLength(1);
+    expect(
+      await database
+        .select()
+        .from(schema.pushEvents)
+        .where(
+          and(
+            eq(schema.pushEvents.userid, userIds[0]),
+            eq(schema.pushEvents.type, 'reaction.received'),
+            sql`${schema.pushEvents.payload}->>'roteId' = ${roteId}`
+          )
+        )
+    ).toHaveLength(1);
   });
 
   it('rolls back certification when its push event cannot be inserted', async () => {

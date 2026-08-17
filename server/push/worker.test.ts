@@ -5,6 +5,7 @@ import {
   DELIVERY_CLAIM_LEASE_MS,
   DELIVERY_CLAIM_SAFETY_MS,
   hasSafeDeliveryClaimLease,
+  shouldDrainDeliveryQueue,
 } from './deliveryPolicy';
 
 describe('push worker delivery lease', () => {
@@ -16,5 +17,11 @@ describe('push worker delivery lease', () => {
       DELIVERY_BATCH_SIZE * APNS_REQUEST_TIMEOUT_MS + DELIVERY_CLAIM_SAFETY_MS
     );
     expect(hasSafeDeliveryClaimLease()).toBe(true);
+  });
+
+  it('continues immediately after a full batch and sleeps after the queue tail', () => {
+    expect(shouldDrainDeliveryQueue(DELIVERY_BATCH_SIZE)).toBe(true);
+    expect(shouldDrainDeliveryQueue(DELIVERY_BATCH_SIZE - 1)).toBe(false);
+    expect(shouldDrainDeliveryQueue(0)).toBe(false);
   });
 });

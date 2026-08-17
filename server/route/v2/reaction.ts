@@ -3,7 +3,6 @@ import type { User } from '../../drizzle/schema';
 import { optionalJWT } from '../../middleware/jwtAuth';
 import { mayAddReaction } from '../../reactions/policy';
 import { isPushNotificationsEnabled } from '../../push/config';
-import { enqueueAggregatedReactionPushEvent } from '../../push/repository';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { assertUsersMayInteract } from '../../userBlocks/service';
 import { addReaction, findRoteById, removeReaction } from '../../utils/dbMethods';
@@ -64,17 +63,12 @@ reactionsRouter.post('/', async (c: HonoContext) => {
     reactionData.visitorInfo = visitorInfo;
   }
 
-  const reaction = await addReaction(reactionData);
-  if (isPushNotificationsEnabled() && rote.authorid !== user?.id) {
-    try {
-      await enqueueAggregatedReactionPushEvent({
-        userid: rote.authorid,
-        roteId: rote.id,
-      });
-    } catch (error) {
-      console.error('Failed to enqueue reaction push notification:', error);
-    }
-  }
+  const reaction = await addReaction(
+    reactionData,
+    isPushNotificationsEnabled() && rote.authorid !== user?.id
+      ? { userid: rote.authorid, roteId: rote.id }
+      : undefined
+  );
   return c.json(createResponse(reaction), 201);
 });
 

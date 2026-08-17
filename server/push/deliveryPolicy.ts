@@ -10,3 +10,7 @@ export function hasSafeDeliveryClaimLease(): boolean {
     DELIVERY_BATCH_SIZE * APNS_REQUEST_TIMEOUT_MS + DELIVERY_CLAIM_SAFETY_MS
   );
 }
+
+export function shouldDrainDeliveryQueue(claimedCount: number): boolean {
+  return claimedCount >= DELIVERY_BATCH_SIZE;
+}

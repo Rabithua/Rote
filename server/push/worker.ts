@@ -1,6 +1,6 @@
 import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../drizzle/schema';
-import { db } from '../utils/drizzle';
+import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import { sendApns } from './apns';
 import {
   DELIVERY_BATCH_SIZE,
@@ -115,7 +115,78 @@ async function stillEligibleForDailyReminder(userid: string, timeZone: string): 
   return result[0]?.eligible === true;
 }
 
-export async function deliverBatch(): Promise<void> {
+type ClaimedDelivery = {
+  delivery: typeof pushDeliveries.$inferSelect;
+  event: typeof pushEvents.$inferSelect;
+  device: typeof apnsDevices.$inferSelect;
+  preference: typeof pushPreferences.$inferSelect;
+};
+
+async function deliverClaimedItem(item: ClaimedDelivery): Promise<void> {
+  if (!(await isDeliveryStillEligible(item.delivery.id))) {
+    await db
+      .update(pushDeliveries)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(eq(pushDeliveries.id, item.delivery.id));
+    return;
+  }
+  if (
+    item.event.category === 'dailyReminder' &&
+    !(await stillEligibleForDailyReminder(item.event.userid, item.preference.timeZone))
+  ) {
+    await db
+      .update(pushDeliveries)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(eq(pushDeliveries.id, item.delivery.id));
+    return;
+  }
+  try {
+    const response = await sendApns({
+      token: item.device.token,
+      environment: item.device.environment as 'sandbox' | 'production',
+      title: item.event.title,
+      body: item.event.body,
+      titleLocKey: item.event.titleLocKey,
+      bodyLocKey: item.event.bodyLocKey,
+      route: item.event.route,
+      payload: item.event.payload,
+      expiration: item.event.expiresAt,
+      collapseId: item.event.dedupeKey.slice(0, 64),
+    });
+    await db
+      .update(pushDeliveries)
+      .set({
+        status: 'sent',
+        sentAt: new Date(),
+        apnsId: response.apnsId,
+        attemptCount: item.delivery.attemptCount + 1,
+        updatedAt: new Date(),
+      })
+      .where(eq(pushDeliveries.id, item.delivery.id));
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    const permanent = permanentReasons.has(reason);
+    const attempts = item.delivery.attemptCount + 1;
+    if (permanent) {
+      await db
+        .update(apnsDevices)
+        .set({ status: 'invalid', masterEnabled: false, updatedAt: new Date() })
+        .where(eq(apnsDevices.id, item.device.id));
+    }
+    await db
+      .update(pushDeliveries)
+      .set({
+        status: permanent || attempts >= 6 ? 'failed' : 'retry',
+        attemptCount: attempts,
+        nextAttemptAt: new Date(Date.now() + Math.min(3600, 2 ** attempts * 30) * 1000),
+        lastError: reason,
+        updatedAt: new Date(),
+      })
+      .where(eq(pushDeliveries.id, item.delivery.id));
+  }
+}
+
+export async function deliverBatch(): Promise<number> {
   await cancelIneligibleDeliveries();
   const deliveries = await db.transaction(async (transaction) => {
     const claimed = await transaction
@@ -167,72 +238,27 @@ export async function deliverBatch(): Promise<void> {
   });
 
   for (const item of deliveries) {
-    if (!(await isDeliveryStillEligible(item.delivery.id))) {
-      await db
-        .update(pushDeliveries)
-        .set({ status: 'cancelled', updatedAt: new Date() })
-        .where(eq(pushDeliveries.id, item.delivery.id));
-      continue;
-    }
-    if (
-      item.event.category === 'dailyReminder' &&
-      !(await stillEligibleForDailyReminder(item.event.userid, item.preference.timeZone))
-    ) {
-      await db
-        .update(pushDeliveries)
-        .set({ status: 'cancelled', updatedAt: new Date() })
-        .where(eq(pushDeliveries.id, item.delivery.id));
-      continue;
-    }
-    try {
-      const response = await sendApns({
-        token: item.device.token,
-        environment: item.device.environment as 'sandbox' | 'production',
-        title: item.event.title,
-        body: item.event.body,
-        titleLocKey: item.event.titleLocKey,
-        bodyLocKey: item.event.bodyLocKey,
-        route: item.event.route,
-        payload: item.event.payload,
-        expiration: item.event.expiresAt,
-        collapseId: item.event.dedupeKey.slice(0, 64),
-      });
+    const lockResult = await withDatabaseAdvisoryLock(`push-device-send:${item.device.id}`, () =>
+      deliverClaimedItem(item)
+    );
+    if (!lockResult.acquired) {
       await db
         .update(pushDeliveries)
         .set({
-          status: 'sent',
-          sentAt: new Date(),
-          apnsId: response.apnsId,
-          attemptCount: item.delivery.attemptCount + 1,
+          status: 'retry',
+          nextAttemptAt: new Date(Date.now() + 1_000),
           updatedAt: new Date(),
         })
-        .where(eq(pushDeliveries.id, item.delivery.id));
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      const permanent = permanentReasons.has(reason);
-      const attempts = item.delivery.attemptCount + 1;
-      if (permanent) {
-        await db
-          .update(apnsDevices)
-          .set({ status: 'invalid', masterEnabled: false, updatedAt: new Date() })
-          .where(eq(apnsDevices.id, item.device.id));
-      }
-      await db
-        .update(pushDeliveries)
-        .set({
-          status: permanent || attempts >= 6 ? 'failed' : 'retry',
-          attemptCount: attempts,
-          nextAttemptAt: new Date(Date.now() + Math.min(3600, 2 ** attempts * 30) * 1000),
-          lastError: reason,
-          updatedAt: new Date(),
-        })
-        .where(eq(pushDeliveries.id, item.delivery.id));
+        .where(
+          and(eq(pushDeliveries.id, item.delivery.id), eq(pushDeliveries.status, 'processing'))
+        );
     }
   }
+  return deliveries.length;
 }
 
-export async function runPushWorkerIteration(): Promise<void> {
+export async function runPushWorkerIteration(): Promise<number> {
   await createDueDailyReminderEvents();
   await fanOutEvents();
-  await deliverBatch();
+  return await deliverBatch();
 }

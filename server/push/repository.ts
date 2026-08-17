@@ -25,10 +25,6 @@ function scheduleNextReminderQuery(userid: string) {
   `;
 }
 
-async function scheduleNextReminder(userid: string): Promise<void> {
-  await db.execute(scheduleNextReminderQuery(userid));
-}
-
 export async function registerDevice(input: {
   userid: string;
   installationId: string;
@@ -65,6 +61,18 @@ export async function registerDevice(input: {
         and(eq(apnsDevices.token, input.token), eq(apnsDevices.environment, input.environment))
       )
       .limit(1);
+
+    // A sender holds this lock from its final eligibility check until APNs and
+    // the delivery update finish. Ownership changes wait here, so no old-account
+    // payload can cross a committed transfer boundary.
+    const activeDeviceIds = new Set(
+      [existingInstallation?.id, existingToken?.id].filter((id): id is string => Boolean(id))
+    );
+    for (const deviceId of [...activeDeviceIds].sort()) {
+      await transaction.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device-send:${deviceId}`}))`
+      );
+    }
 
     const reusableTokenDevice =
       existingToken &&
@@ -169,12 +177,26 @@ export async function registerDevice(input: {
 }
 
 export async function disableDevice(userid: string, installationId: string) {
-  const [device] = await db
-    .update(apnsDevices)
-    .set({ masterEnabled: false, status: 'disabled', updatedAt: new Date() })
-    .where(and(eq(apnsDevices.userid, userid), eq(apnsDevices.installationId, installationId)))
-    .returning();
-  return device ?? null;
+  return await db.transaction(async (transaction) => {
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device:${installationId}`}))`
+    );
+    const [current] = await transaction
+      .select({ id: apnsDevices.id })
+      .from(apnsDevices)
+      .where(and(eq(apnsDevices.userid, userid), eq(apnsDevices.installationId, installationId)))
+      .limit(1);
+    if (!current) return null;
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device-send:${current.id}`}))`
+    );
+    const [device] = await transaction
+      .update(apnsDevices)
+      .set({ masterEnabled: false, status: 'disabled', updatedAt: new Date() })
+      .where(eq(apnsDevices.id, current.id))
+      .returning();
+    return device ?? null;
+  });
 }
 
 export async function getActiveDevice(userid: string, installationId: string) {
@@ -198,20 +220,38 @@ export async function getPreferences(userid: string) {
 }
 
 export async function updatePreferences(userid: string, patch: PushPreferencePatch) {
-  const current = await getPreferences(userid);
-  if (!current) throw new PushApiError('push_device_registration_required', 409);
-  const dailyReminderChanged =
-    patch.dailyReminderEnabled !== undefined &&
-    patch.dailyReminderEnabled !== current.dailyReminderEnabled;
-  const [updated] = await db
-    .update(pushPreferences)
-    .set({ ...patch, updatedAt: new Date() })
-    .where(eq(pushPreferences.userid, userid))
-    .returning();
-  if (dailyReminderChanged) {
-    await scheduleNextReminder(userid);
-  }
-  return updated;
+  return await db.transaction(async (transaction) => {
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-preference:${userid}`}))`
+    );
+    const [current] = await transaction
+      .select()
+      .from(pushPreferences)
+      .where(eq(pushPreferences.userid, userid))
+      .limit(1);
+    if (!current) throw new PushApiError('push_device_registration_required', 409);
+    const deviceIds = await transaction
+      .select({ id: apnsDevices.id })
+      .from(apnsDevices)
+      .where(eq(apnsDevices.userid, userid));
+    for (const deviceId of deviceIds.map((device) => device.id).sort()) {
+      await transaction.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${`push-device-send:${deviceId}`}))`
+      );
+    }
+    const dailyReminderChanged =
+      patch.dailyReminderEnabled !== undefined &&
+      patch.dailyReminderEnabled !== current.dailyReminderEnabled;
+    const [updated] = await transaction
+      .update(pushPreferences)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(pushPreferences.userid, userid))
+      .returning();
+    if (dailyReminderChanged) {
+      await transaction.execute(scheduleNextReminderQuery(userid));
+    }
+    return updated;
+  });
 }
 
 export async function enqueuePushEvent(input: {
@@ -236,42 +276,54 @@ export async function enqueuePushEvent(input: {
   return event ?? null;
 }
 
+type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+export async function enqueueAggregatedReactionPushEventInTransaction(
+  transaction: DatabaseTransaction,
+  input: {
+    userid: string;
+    roteId: string;
+  }
+): Promise<void> {
+  const now = new Date();
+  await transaction.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtext(${`push-reaction:${input.userid}:${input.roteId}`}))`
+  );
+  const [pending] = await transaction
+    .select({ id: pushEvents.id })
+    .from(pushEvents)
+    .where(
+      and(
+        eq(pushEvents.userid, input.userid),
+        eq(pushEvents.type, 'reaction.received'),
+        eq(pushEvents.status, 'pending'),
+        sql`${pushEvents.availableAt} > now()`,
+        sql`${pushEvents.payload}->>'roteId' = ${input.roteId}`
+      )
+    )
+    .limit(1);
+  if (pending) return;
+
+  await transaction.insert(pushEvents).values({
+    userid: input.userid,
+    type: 'reaction.received',
+    category: 'reactions',
+    dedupeKey: `reaction:${input.roteId}:${randomUUID()}`,
+    titleLocKey: 'push.reaction.title',
+    bodyLocKey: 'push.reaction.body',
+    route: `rote://detail?id=${input.roteId}`,
+    payload: { roteId: input.roteId },
+    availableAt: new Date(now.getTime() + 30_000),
+    expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
+  });
+}
+
 export async function enqueueAggregatedReactionPushEvent(input: {
   userid: string;
   roteId: string;
 }): Promise<void> {
-  const now = new Date();
   await db.transaction(async (transaction) => {
-    await transaction.execute(
-      sql`SELECT pg_advisory_xact_lock(hashtext(${`push-reaction:${input.userid}:${input.roteId}`}))`
-    );
-    const [pending] = await transaction
-      .select({ id: pushEvents.id })
-      .from(pushEvents)
-      .where(
-        and(
-          eq(pushEvents.userid, input.userid),
-          eq(pushEvents.type, 'reaction.received'),
-          eq(pushEvents.status, 'pending'),
-          sql`${pushEvents.availableAt} > now()`,
-          sql`${pushEvents.payload}->>'roteId' = ${input.roteId}`
-        )
-      )
-      .limit(1);
-    if (pending) return;
-
-    await transaction.insert(pushEvents).values({
-      userid: input.userid,
-      type: 'reaction.received',
-      category: 'reactions',
-      dedupeKey: `reaction:${input.roteId}:${randomUUID()}`,
-      titleLocKey: 'push.reaction.title',
-      bodyLocKey: 'push.reaction.body',
-      route: `rote://detail?id=${input.roteId}`,
-      payload: { roteId: input.roteId },
-      availableAt: new Date(now.getTime() + 30_000),
-      expiresAt: new Date(now.getTime() + 24 * 60 * 60 * 1000),
-    });
+    await enqueueAggregatedReactionPushEventInTransaction(transaction, input);
   });
 }
 
