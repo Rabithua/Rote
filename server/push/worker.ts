@@ -2,11 +2,17 @@ import { and, eq, inArray, lte, or, sql } from 'drizzle-orm';
 import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../drizzle/schema';
 import { db } from '../utils/drizzle';
 import { sendApns } from './apns';
+import {
+  DELIVERY_BATCH_SIZE,
+  DELIVERY_CLAIM_LEASE_MS,
+  hasSafeDeliveryClaimLease,
+} from './deliveryPolicy';
 import { createDueDailyReminderEvents } from './repository';
 
 const permanentReasons = new Set(['BadDeviceToken', 'DeviceTokenNotForTopic', 'Unregistered']);
+export { DELIVERY_BATCH_SIZE, DELIVERY_CLAIM_LEASE_MS, hasSafeDeliveryClaimLease };
 
-async function fanOutEvents(): Promise<void> {
+export async function fanOutEvents(): Promise<void> {
   await db
     .update(pushEvents)
     .set({ status: 'expired', updatedAt: new Date() })
@@ -28,7 +34,7 @@ async function fanOutEvents(): Promise<void> {
     JOIN apns_devices d ON d.userid = e.userid
       WHERE d.status = 'active' AND d."masterEnabled" = true
       AND (e.payload->>'targetInstallationId' IS NULL
-        OR d."installationId" = e.payload->>'targetInstallationId')
+        OR d."installationId"::text = e.payload->>'targetInstallationId')
       AND CASE e.category
         WHEN 'reactions' THEN p."reactionsEnabled"
         WHEN 'account' THEN p."accountEnabled"
@@ -46,6 +52,54 @@ async function fanOutEvents(): Promise<void> {
   `);
 }
 
+async function cancelIneligibleDeliveries(): Promise<void> {
+  await db.execute(sql`
+    UPDATE push_deliveries delivery
+    SET status = 'cancelled', "updatedAt" = now()
+    FROM push_events event, apns_devices device, push_preferences preference
+    WHERE delivery."eventId" = event.id
+      AND delivery."deviceId" = device.id
+      AND preference.userid = event.userid
+      AND delivery.status IN ('pending', 'retry', 'processing')
+      AND (
+        device.status <> 'active'
+        OR device."masterEnabled" = false
+        OR NOT CASE event.category
+          WHEN 'reactions' THEN preference."reactionsEnabled"
+          WHEN 'account' THEN preference."accountEnabled"
+          WHEN 'system' THEN preference."systemEnabled"
+          WHEN 'dailyReminder' THEN preference."dailyReminderEnabled"
+          ELSE false
+        END
+      )
+  `);
+}
+
+async function isDeliveryStillEligible(deliveryId: string): Promise<boolean> {
+  const result = await db.execute(sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM push_deliveries delivery
+      JOIN push_events event ON event.id = delivery."eventId"
+      JOIN apns_devices device ON device.id = delivery."deviceId"
+      JOIN push_preferences preference ON preference.userid = event.userid
+      WHERE delivery.id = ${deliveryId}::uuid
+        AND delivery.status = 'processing'
+        AND device.status = 'active'
+        AND device."masterEnabled" = true
+        AND (event."expiresAt" IS NULL OR event."expiresAt" > now())
+        AND CASE event.category
+          WHEN 'reactions' THEN preference."reactionsEnabled"
+          WHEN 'account' THEN preference."accountEnabled"
+          WHEN 'system' THEN preference."systemEnabled"
+          WHEN 'dailyReminder' THEN preference."dailyReminderEnabled"
+          ELSE false
+        END
+    ) AS eligible
+  `);
+  return result[0]?.eligible === true;
+}
+
 async function stillEligibleForDailyReminder(userid: string, timeZone: string): Promise<boolean> {
   const result = await db.execute(sql`
     SELECT NOT EXISTS (
@@ -58,7 +112,8 @@ async function stillEligibleForDailyReminder(userid: string, timeZone: string): 
   return result[0]?.eligible === true;
 }
 
-async function deliverBatch(): Promise<void> {
+export async function deliverBatch(): Promise<void> {
+  await cancelIneligibleDeliveries();
   const deliveries = await db.transaction(async (transaction) => {
     const claimed = await transaction
       .select({
@@ -75,17 +130,26 @@ async function deliverBatch(): Promise<void> {
         and(
           inArray(pushDeliveries.status, ['pending', 'retry', 'processing']),
           lte(pushDeliveries.nextAttemptAt, new Date()),
-          or(sql`${pushEvents.expiresAt} IS NULL`, sql`${pushEvents.expiresAt} > now()`)
+          or(sql`${pushEvents.expiresAt} IS NULL`, sql`${pushEvents.expiresAt} > now()`),
+          eq(apnsDevices.status, 'active'),
+          eq(apnsDevices.masterEnabled, true),
+          sql`CASE ${pushEvents.category}
+            WHEN 'reactions' THEN ${pushPreferences.reactionsEnabled}
+            WHEN 'account' THEN ${pushPreferences.accountEnabled}
+            WHEN 'system' THEN ${pushPreferences.systemEnabled}
+            WHEN 'dailyReminder' THEN ${pushPreferences.dailyReminderEnabled}
+            ELSE false
+          END`
         )
       )
-      .limit(100)
+      .limit(DELIVERY_BATCH_SIZE)
       .for('update', { of: pushDeliveries, skipLocked: true });
     if (claimed.length > 0) {
       await transaction
         .update(pushDeliveries)
         .set({
           status: 'processing',
-          nextAttemptAt: new Date(Date.now() + 5 * 60 * 1000),
+          nextAttemptAt: new Date(Date.now() + DELIVERY_CLAIM_LEASE_MS),
           updatedAt: new Date(),
         })
         .where(
@@ -99,6 +163,13 @@ async function deliverBatch(): Promise<void> {
   });
 
   for (const item of deliveries) {
+    if (!(await isDeliveryStillEligible(item.delivery.id))) {
+      await db
+        .update(pushDeliveries)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(eq(pushDeliveries.id, item.delivery.id));
+      continue;
+    }
     if (
       item.event.category === 'dailyReminder' &&
       !(await stillEligibleForDailyReminder(item.event.userid, item.preference.timeZone))

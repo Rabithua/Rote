@@ -1,3 +1,5 @@
+import { PushApiError } from './errors';
+
 export type ApnsEnvironment = 'sandbox' | 'production';
 
 export function isPushNotificationsEnabled(): boolean {
@@ -15,7 +17,7 @@ export function validateTimeZone(timeZone: string): string {
     new Intl.DateTimeFormat('en-US', { timeZone }).format();
     return timeZone;
   } catch {
-    throw new Error('Invalid IANA time zone');
+    throw new PushApiError('push_invalid_time_zone', 400);
   }
 }
 

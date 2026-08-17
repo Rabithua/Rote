@@ -18,6 +18,9 @@ databaseDescribe('billing grant repository integration', () => {
   let schema: typeof import('../drizzle/schema');
   const userId = randomUUID();
   const activationUserId = randomUUID();
+  const entitlementUserId = randomUUID();
+  const initialNoneUserId = randomUUID();
+  const originalPushEnabled = process.env.PUSH_NOTIFICATIONS_ENABLED;
   const deliveryIds = [
     '018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f80',
     '018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f81',
@@ -29,6 +32,7 @@ databaseDescribe('billing grant repository integration', () => {
 
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl;
+    process.env.PUSH_NOTIFICATIONS_ENABLED = 'true';
     ({ default: database } = await import('../utils/drizzle'));
     schema = await import('../drizzle/schema');
     const { BillingGrantRepository } = await import('./grantRepository');
@@ -43,6 +47,18 @@ databaseDescribe('billing grant repository integration', () => {
       email: `billing-${activationUserId}@example.test`,
       username: `billing-${activationUserId}`,
     });
+    await database.insert(schema.users).values([
+      {
+        id: entitlementUserId,
+        email: `billing-${entitlementUserId}@example.test`,
+        username: `billing-${entitlementUserId}`,
+      },
+      {
+        id: initialNoneUserId,
+        email: `billing-${initialNoneUserId}@example.test`,
+        username: `billing-${initialNoneUserId}`,
+      },
+    ]);
   });
 
   afterAll(async () => {
@@ -55,7 +71,13 @@ databaseDescribe('billing grant repository integration', () => {
           inArray(schema.billingInboundDeliveries.deliveryId, deliveryIds)
         )
       );
-    await database.delete(schema.users).where(inArray(schema.users.id, [userId, activationUserId]));
+    await database
+      .delete(schema.users)
+      .where(
+        inArray(schema.users.id, [userId, activationUserId, entitlementUserId, initialNoneUserId])
+      );
+    if (originalPushEnabled === undefined) delete process.env.PUSH_NOTIFICATIONS_ENABLED;
+    else process.env.PUSH_NOTIFICATIONS_ENABLED = originalPushEnabled;
     const { closeDatabase } = await import('../utils/drizzle');
     await closeDatabase();
   });
@@ -174,6 +196,42 @@ databaseDescribe('billing grant repository integration', () => {
     expect(
       (await store.applyGrantSnapshot(activationUserId, grant(2, 'ink.rote.pro.monthly'))).status
     ).toBe(409);
+  });
+
+  it('emits Pro notifications only when crossing the entitlement boundary', async () => {
+    const { asc, eq } = await import('drizzle-orm');
+    const active = { ...grant(1), revision: 1n };
+    const grace = { ...grant(2), revision: 2n, status: 'grace_period' as const };
+    const activeAgain = { ...grant(3), revision: 3n };
+    const none = {
+      ...grant(4),
+      revision: 4n,
+      status: 'none' as const,
+      productId: null,
+      entitlementExpiresAt: null,
+      leaseExpiresAt: null,
+      capabilities: [],
+      benefits: null,
+    };
+
+    await store.applyGrantSnapshot(entitlementUserId, active);
+    await store.applyGrantSnapshot(entitlementUserId, grace);
+    await store.applyGrantSnapshot(entitlementUserId, activeAgain);
+    await store.applyGrantSnapshot(entitlementUserId, none);
+
+    const events = await database
+      .select({ type: schema.pushEvents.type })
+      .from(schema.pushEvents)
+      .where(eq(schema.pushEvents.userid, entitlementUserId))
+      .orderBy(asc(schema.pushEvents.createdAt));
+    expect(events).toEqual([{ type: 'account.pro.active' }, { type: 'account.pro.inactive' }]);
+
+    await store.applyGrantSnapshot(initialNoneUserId, { ...none, revision: 1n });
+    const initialNoneEvents = await database
+      .select()
+      .from(schema.pushEvents)
+      .where(eq(schema.pushEvents.userid, initialNoneUserId));
+    expect(initialNoneEvents).toHaveLength(0);
   });
 
   it('returns a stable missing-user 404 and cascades grants on user deletion', async () => {

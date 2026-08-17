@@ -2,6 +2,7 @@ import { and, eq, ne, sql } from 'drizzle-orm';
 import { apnsDevices, pushEvents, pushPreferences } from '../drizzle/schema';
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import type { ApnsEnvironment } from './config';
+import { PushApiError } from './errors';
 
 export type PushPreferencePatch = Partial<{
   reactionsEnabled: boolean;
@@ -10,17 +11,21 @@ export type PushPreferencePatch = Partial<{
   dailyReminderEnabled: boolean;
 }>;
 
-async function scheduleNextReminder(userid: string): Promise<void> {
-  await db.execute(sql`
+function scheduleNextReminderQuery(userid: string) {
+  return sql`
     UPDATE push_preferences
     SET "nextReminderAt" = CASE
-      WHEN (now() AT TIME ZONE "timeZone")::time < time '21:30'
-        THEN (((now() AT TIME ZONE "timeZone")::date + time '21:30') AT TIME ZONE "timeZone")
-      ELSE ((((now() AT TIME ZONE "timeZone")::date + 1) + time '21:30') AT TIME ZONE "timeZone")
+      WHEN (now() AT TIME ZONE "timeZone")::time < "dailyReminderTime"::time
+        THEN (((now() AT TIME ZONE "timeZone")::date + "dailyReminderTime"::time) AT TIME ZONE "timeZone")
+      ELSE ((((now() AT TIME ZONE "timeZone")::date + 1) + "dailyReminderTime"::time) AT TIME ZONE "timeZone")
     END,
     "updatedAt" = now()
     WHERE userid = ${userid}::uuid
-  `);
+  `;
+}
+
+async function scheduleNextReminder(userid: string): Promise<void> {
+  await db.execute(scheduleNextReminderQuery(userid));
 }
 
 export async function registerDevice(input: {
@@ -60,17 +65,17 @@ export async function registerDevice(input: {
         },
       })
       .returning();
+
+    await transaction
+      .insert(pushPreferences)
+      .values({ userid: input.userid, timeZone: input.timeZone })
+      .onConflictDoUpdate({
+        target: pushPreferences.userid,
+        set: { timeZone: input.timeZone, updatedAt: new Date() },
+      });
+    await transaction.execute(scheduleNextReminderQuery(input.userid));
     return registered;
   });
-
-  await db
-    .insert(pushPreferences)
-    .values({ userid: input.userid, timeZone: input.timeZone })
-    .onConflictDoUpdate({
-      target: pushPreferences.userid,
-      set: { timeZone: input.timeZone, updatedAt: new Date() },
-    });
-  await scheduleNextReminder(input.userid);
   return device;
 }
 
@@ -105,7 +110,7 @@ export async function getPreferences(userid: string) {
 
 export async function updatePreferences(userid: string, patch: PushPreferencePatch) {
   const current = await getPreferences(userid);
-  if (!current) throw new Error('Register a push device before updating preferences');
+  if (!current) throw new PushApiError('push_device_registration_required', 409);
   const [updated] = await db
     .update(pushPreferences)
     .set({ ...patch, updatedAt: new Date() })
@@ -161,7 +166,6 @@ export async function createDueDailyReminderEvents(): Promise<void> {
             AND r."createdAt" >= (due.local_date::timestamp AT TIME ZONE due."timeZone")
             AND r."createdAt" < due.expires_at
         )
-      )
       ), inserted AS (
         INSERT INTO push_events
         (userid, type, category, "titleLocKey", "bodyLocKey", route, payload,
@@ -175,7 +179,7 @@ export async function createDueDailyReminderEvents(): Promise<void> {
         RETURNING userid
       )
       UPDATE push_preferences p
-      SET "nextReminderAt" = ((((now() AT TIME ZONE p."timeZone")::date + 1) + time '21:30') AT TIME ZONE p."timeZone"),
+      SET "nextReminderAt" = ((((now() AT TIME ZONE p."timeZone")::date + 1) + p."dailyReminderTime"::time) AT TIME ZONE p."timeZone"),
           "updatedAt" = now()
       FROM due
       WHERE p.userid = due.userid

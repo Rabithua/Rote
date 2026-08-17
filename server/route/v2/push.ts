@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
-import { z } from 'zod';
+import { z, type ZodType } from 'zod';
 import { eq, sql } from 'drizzle-orm';
 import { pushCampaigns, type User } from '../../drizzle/schema';
 import { authenticateJWT, requireSuperAdmin } from '../../middleware/jwtAuth';
-import { assertPushNotificationsEnabled, validateTimeZone } from '../../push/config';
+import { isPushNotificationsEnabled, validateTimeZone } from '../../push/config';
+import { PushApiError } from '../../push/errors';
 import {
   disableDevice,
   enqueuePushEvent,
@@ -19,10 +20,27 @@ import { db } from '../../utils/drizzle';
 const router = new Hono<{ Variables: HonoVariables }>();
 
 router.use('*', async (c, next) => {
-  assertPushNotificationsEnabled();
+  if (!isPushNotificationsEnabled()) {
+    throw new PushApiError('push_not_available', 404);
+  }
   await next();
 });
 router.use('*', authenticateJWT);
+
+function parsePushValue<T>(schema: ZodType<T>, value: unknown): T {
+  const result = schema.safeParse(value);
+  if (!result.success) throw new PushApiError('push_invalid_request', 400);
+  return result.data;
+}
+
+async function parsePushBody<T>(c: HonoContext, schema: ZodType<T>): Promise<T> {
+  try {
+    return parsePushValue(schema, await c.req.json());
+  } catch (error) {
+    if (error instanceof PushApiError) throw error;
+    throw new PushApiError('push_invalid_request', 400);
+  }
+}
 
 const registerSchema = z.object({
   installationId: z.uuid(),
@@ -34,7 +52,7 @@ const registerSchema = z.object({
 
 router.put('/devices/current', async (c: HonoContext) => {
   const user = c.get('user') as User;
-  const body = registerSchema.parse(await c.req.json());
+  const body = await parsePushBody(c, registerSchema);
   const device = await registerDevice({
     userid: user.id,
     ...body,
@@ -45,8 +63,9 @@ router.put('/devices/current', async (c: HonoContext) => {
 
 router.delete('/devices/:installationId', async (c: HonoContext) => {
   const user = c.get('user') as User;
-  const installationId = z.uuid().parse(c.req.param('installationId'));
+  const installationId = parsePushValue(z.uuid(), c.req.param('installationId'));
   const device = await disableDevice(user.id, installationId);
+  if (!device) throw new PushApiError('push_device_not_found', 404);
   return c.json(createResponse(device), 200);
 });
 
@@ -64,19 +83,19 @@ const preferenceSchema = z
     dailyReminderEnabled: z.boolean().optional(),
   })
   .strict()
-  .refine((value) => Object.keys(value).length > 0, 'At least one preference is required');
+  .refine((value) => Object.keys(value).length > 0);
 
 router.put('/preferences', async (c: HonoContext) => {
   const user = c.get('user') as User;
-  const preferences = await updatePreferences(user.id, preferenceSchema.parse(await c.req.json()));
+  const preferences = await updatePreferences(user.id, await parsePushBody(c, preferenceSchema));
   return c.json(createResponse(preferences), 200);
 });
 
 router.post('/devices/:installationId/test', async (c: HonoContext) => {
   const user = c.get('user') as User;
-  const installationId = z.uuid().parse(c.req.param('installationId'));
+  const installationId = parsePushValue(z.uuid(), c.req.param('installationId'));
   const device = await getActiveDevice(user.id, installationId);
-  if (!device) throw new Error('Active push device not found');
+  if (!device) throw new PushApiError('push_device_not_found', 404);
   const event = await enqueuePushEvent({
     userid: user.id,
     type: 'system.test',
@@ -103,7 +122,7 @@ const campaignSchema = z.object({
 
 router.post('/campaigns', requireSuperAdmin, async (c: HonoContext) => {
   const user = c.get('user') as User;
-  const body = campaignSchema.parse(await c.req.json());
+  const body = await parsePushBody(c, campaignSchema);
   const [campaign] = await db
     .insert(pushCampaigns)
     .values({ ...body, createdBy: user.id })
@@ -112,11 +131,11 @@ router.post('/campaigns', requireSuperAdmin, async (c: HonoContext) => {
 });
 
 router.get('/campaigns/:campaignId', requireSuperAdmin, async (c: HonoContext) => {
-  const campaignId = z.uuid().parse(c.req.param('campaignId'));
+  const campaignId = parsePushValue(z.uuid(), c.req.param('campaignId'));
   const campaign = await db.query.pushCampaigns.findFirst({
     where: eq(pushCampaigns.id, campaignId),
   });
-  if (!campaign) throw new Error('Push campaign not found');
+  if (!campaign) throw new PushApiError('push_campaign_not_found', 404);
   const deliveryStats = await db.execute(sql`
     SELECT d.status, count(*)::int AS count
     FROM push_deliveries d
@@ -128,7 +147,7 @@ router.get('/campaigns/:campaignId', requireSuperAdmin, async (c: HonoContext) =
 });
 
 router.post('/campaigns/:campaignId/send', requireSuperAdmin, async (c: HonoContext) => {
-  const campaignId = z.uuid().parse(c.req.param('campaignId'));
+  const campaignId = parsePushValue(z.uuid(), c.req.param('campaignId'));
   await db.transaction(async (transaction) => {
     const [campaign] = await transaction
       .select()
@@ -136,8 +155,10 @@ router.post('/campaigns/:campaignId/send', requireSuperAdmin, async (c: HonoCont
       .where(eq(pushCampaigns.id, campaignId))
       .limit(1)
       .for('update');
-    if (!campaign) throw new Error('Push campaign not found');
-    if (campaign.status !== 'draft') throw new Error('Push campaign has already been sent');
+    if (!campaign) throw new PushApiError('push_campaign_not_found', 404);
+    if (campaign.status !== 'draft') {
+      throw new PushApiError('push_campaign_already_sent', 409);
+    }
     await transaction.execute(sql`
       INSERT INTO push_events
         (userid, type, category, title, body, route, payload, "dedupeKey",

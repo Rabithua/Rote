@@ -5,7 +5,7 @@ import { getApnsConfig } from './config';
 
 let cachedToken: { value: string; expiresAt: number; signature: string } | null = null;
 const clients = new Map<string, http2.ClientHttp2Session>();
-const requestTimeoutMs = 15_000;
+export const APNS_REQUEST_TIMEOUT_MS = 15_000;
 
 function apnsClient(origin: string): http2.ClientHttp2Session {
   const existing = clients.get(origin);
@@ -35,6 +35,11 @@ async function providerToken(environment: ApnsEnvironment): Promise<string> {
     .sign(key);
   cachedToken = { value, expiresAt: Date.now() + 50 * 60 * 1000, signature };
   return value;
+}
+
+export async function validateApnsCredentials(): Promise<void> {
+  const config = getApnsConfig('production');
+  await importPKCS8(config.privateKey, 'ES256');
 }
 
 export type ApnsMessage = {
@@ -95,7 +100,7 @@ export async function sendApns(message: ApnsMessage): Promise<{ apnsId?: string 
       request.close(http2.constants.NGHTTP2_CANCEL);
       client.destroy();
       reject(new Error('APNs request timed out'));
-    }, requestTimeoutMs);
+    }, APNS_REQUEST_TIMEOUT_MS);
     request.on('end', () => {
       if (settled) return;
       settled = true;

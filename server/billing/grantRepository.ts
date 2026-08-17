@@ -197,19 +197,19 @@ export class BillingGrantRepository implements BillingGrantStore, BillingGrantPr
           },
         });
 
-      const statusChanged =
-        existingGrant?.status !== grantValues.status ||
-        existingGrant?.planId !== grantValues.planId;
-      if (isPushNotificationsEnabled() && statusChanged) {
-        const isActive = grantValues.status === 'active';
+      const wasEntitled =
+        existingGrant?.status === 'active' || existingGrant?.status === 'grace_period';
+      const isEntitled = grantValues.status === 'active' || grantValues.status === 'grace_period';
+      const entitlementChanged = existingGrant ? wasEntitled !== isEntitled : isEntitled;
+      if (isPushNotificationsEnabled() && entitlementChanged) {
         await transaction
           .insert(pushEvents)
           .values({
             userid: input.userId,
-            type: isActive ? 'account.pro.active' : 'account.pro.inactive',
+            type: isEntitled ? 'account.pro.active' : 'account.pro.inactive',
             category: 'account',
-            titleLocKey: isActive ? 'push.pro.active.title' : 'push.pro.inactive.title',
-            bodyLocKey: isActive ? 'push.pro.active.body' : 'push.pro.inactive.body',
+            titleLocKey: isEntitled ? 'push.pro.active.title' : 'push.pro.inactive.title',
+            bodyLocKey: isEntitled ? 'push.pro.active.body' : 'push.pro.inactive.body',
             route: 'rote://profile',
             payload: { status: grantValues.status, planId: grantValues.planId },
             dedupeKey: `pro:${input.userId}:${grantValues.revision.toString()}`,

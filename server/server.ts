@@ -20,6 +20,8 @@ import { errorHandler } from './utils/handlers';
 import { injectDynamicUrls } from './utils/main';
 import { StartupMigration } from './utils/startupMigration';
 import { startResourceMaintenanceWorker } from './resources/worker';
+import { isPushNotificationsEnabled } from './push/config';
+import { startPushWorkerRuntime } from './push/runtime';
 
 const app = new Hono<{ Variables: HonoVariables }>();
 
@@ -149,6 +151,9 @@ subscribeConfigChange('site', (_group, newConfig) => {
     await StartupMigration.showConfigStatus();
     startEmbeddingWorker();
     await startResourceMaintenanceWorker();
+    if (isPushNotificationsEnabled()) {
+      await startPushWorkerRuntime();
+    }
 
     // 启动服务器（使用 Bun 原生服务器）
     // @ts-expect-error - Bun 全局类型在运行时可用
