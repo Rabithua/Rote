@@ -78,7 +78,7 @@ export function collectOwnedAttachmentObjectKeys(details: unknown, userId: strin
   ];
 }
 
-async function enqueueCleanupKeys(
+export async function enqueueStorageObjectCleanup(
   transaction: any,
   objectKeys: readonly string[],
   nextAttemptAt = new Date()
@@ -122,7 +122,7 @@ export async function cancelPendingUploadReservationsForUser(
       )
       .for('update');
     if (pendingReservations.length === 0) return;
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       pendingReservations.flatMap(({ manifest }: { manifest: unknown }) =>
         reservationCleanupKeys(manifest as UploadReservationManifestItem[], true)
@@ -522,7 +522,7 @@ export async function appendUploadReservation(params: {
           updatedAt: now,
         })
         .where(eq(resourceStorageAccounts.userId, params.userId));
-      await enqueueCleanupKeys(
+      await enqueueStorageObjectCleanup(
         transaction,
         reservationCleanupKeys(existing.manifest as UploadReservationManifestItem[], true)
       );
@@ -558,7 +558,7 @@ export async function appendUploadReservation(params: {
             updatedAt: now,
           })
           .where(eq(resourceStorageAccounts.userId, params.userId));
-        await enqueueCleanupKeys(
+        await enqueueStorageObjectCleanup(
           transaction,
           reservationCleanupKeys(existing.manifest as UploadReservationManifestItem[], true)
         );
@@ -651,7 +651,7 @@ export async function cancelUploadReservation(userId: string, id: string) {
       .update(resourceUploadReservations)
       .set({ status: 'cancelled', completedAt: new Date() })
       .where(eq(resourceUploadReservations.id, id));
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
     );
@@ -715,7 +715,7 @@ export async function getPendingUploadReservation(
             updatedAt: new Date(),
           })
           .where(eq(resourceStorageAccounts.userId, userId));
-        await enqueueCleanupKeys(
+        await enqueueStorageObjectCleanup(
           transactionOverride,
           reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
         );
@@ -829,7 +829,7 @@ export async function completeUploadReservation(
           set: { actualBytes: object.actualBytes, updatedAt: new Date() },
         });
     }
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       params.objects
         .filter((object) => object.stagingKey !== object.finalKey)
@@ -837,7 +837,7 @@ export async function completeUploadReservation(
       reservation.credentialExpiresAt ?? new Date()
     );
     const submittedStagingKeys = new Set(params.objects.map((object) => object.stagingKey));
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       (reservation.manifest as UploadReservationManifestItem[])
         .filter((object) => !submittedStagingKeys.has(object.stagingKey))
@@ -955,7 +955,7 @@ export async function prepareAccountResourceDeletion(userId: string, transaction
       .select({ details: attachments.details })
       .from(attachments)
       .where(eq(attachments.userid, userId))) as Array<{ details: unknown }>;
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       legacyAttachments
         .flatMap(({ details }) => collectOwnedAttachmentObjectKeys(details, userId))

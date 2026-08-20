@@ -1,5 +1,9 @@
 import { and, eq, ne } from 'drizzle-orm';
 import { users } from '../../drizzle/schema';
+import {
+  releaseReplacedProfileAttachments,
+  resolveProfileMediaUpdate,
+} from '../../profile/mediaLifecycle';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 import { getUserOAuthBindings } from './userOAuth';
@@ -9,9 +13,11 @@ export async function editMyProfile(
   userid: string,
   data: {
     avatar?: string | null;
+    avatarAttachmentId?: string | null;
     nickname?: string | null;
     description?: string | null;
     cover?: string | null;
+    coverAttachmentId?: string | null;
     username?: string;
   }
 ): Promise<{
@@ -27,36 +33,56 @@ export async function editMyProfile(
   updatedAt: Date;
 }> {
   try {
-    // 如果提供了新用户名，检查是否已被其他用户使用
-    if (data.username !== undefined) {
-      const existingUser = await db
+    const user = await db.transaction(async (transaction) => {
+      const [currentUser] = await transaction
         .select()
         .from(users)
-        .where(and(eq(users.username, data.username), ne(users.id, userid)))
-        .limit(1);
+        .where(eq(users.id, userid))
+        .limit(1)
+        .for('update');
+      if (!currentUser) throw new DatabaseError('User not found');
 
-      if (existingUser.length > 0) {
-        throw new DatabaseError('Username already exists', new Error('Username already exists'));
+      if (data.username !== undefined) {
+        const existingUser = await transaction
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.username, data.username), ne(users.id, userid)))
+          .limit(1);
+        if (existingUser.length > 0) {
+          throw new DatabaseError('Username already exists', new Error('Username already exists'));
+        }
       }
-    }
 
-    const updateData: {
-      avatar?: string | null;
-      nickname?: string | null;
-      description?: string | null;
-      cover?: string | null;
-      username?: string;
-      updatedAt: Date;
-    } = {
-      updatedAt: new Date(),
-    };
-    if (data.avatar !== undefined) updateData.avatar = data.avatar || null;
-    if (data.nickname !== undefined) updateData.nickname = data.nickname || null;
-    if (data.description !== undefined) updateData.description = data.description || null;
-    if (data.cover !== undefined) updateData.cover = data.cover || null;
-    if (data.username !== undefined) updateData.username = data.username;
+      const resolvedMedia = await resolveProfileMediaUpdate(transaction, userid, data);
+      const updateData: {
+        avatar?: string | null;
+        nickname?: string | null;
+        description?: string | null;
+        cover?: string | null;
+        username?: string;
+        updatedAt: Date;
+      } = {
+        updatedAt: new Date(),
+      };
+      if (resolvedMedia.avatar !== undefined) updateData.avatar = resolvedMedia.avatar;
+      if (data.nickname !== undefined) updateData.nickname = data.nickname || null;
+      if (data.description !== undefined) updateData.description = data.description || null;
+      if (resolvedMedia.cover !== undefined) updateData.cover = resolvedMedia.cover;
+      if (data.username !== undefined) updateData.username = data.username;
 
-    const [user] = await db.update(users).set(updateData).where(eq(users.id, userid)).returning();
+      const [updatedUser] = await transaction
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, userid))
+        .returning();
+      await releaseReplacedProfileAttachments(
+        transaction,
+        userid,
+        { avatar: currentUser.avatar, cover: currentUser.cover },
+        { avatar: updatedUser.avatar, cover: updatedUser.cover }
+      );
+      return updatedUser;
+    });
 
     return {
       id: user.id,

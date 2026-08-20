@@ -1,6 +1,12 @@
+import type { Attachment } from '@/types/main';
+import { del } from '@/utils/api';
 import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
 import type { Area } from 'react-easy-crop';
+
+export function profileAttachmentUrl(attachment: Attachment): string {
+  return attachment.compressUrl || attachment.url;
+}
 
 // 生成裁剪后的图片
 export async function createCroppedImage(imageSrc: File | Blob, pixelCrop: Area): Promise<Blob> {
@@ -54,7 +60,7 @@ export async function createCroppedImage(imageSrc: File | Blob, pixelCrop: Area)
 export async function uploadAvatar(
   croppedImageBlob: Blob,
   options?: { maxWidthOrHeight?: number; initialQuality?: number }
-): Promise<string> {
+): Promise<Attachment> {
   // 将 Blob 转换为 File
   const croppedFile = new File([croppedImageBlob], 'cropped_image.png', {
     type: 'image/png',
@@ -110,15 +116,14 @@ export async function uploadAvatar(
   ]);
 
   if (finalized && finalized.length > 0) {
-    const attachment = finalized[0];
-    return attachment.compressUrl || attachment.url;
+    return finalized[0] as Attachment;
   } else {
     throw new Error('Failed to finalize upload');
   }
 }
 
 // 上传封面
-export async function uploadCover(file: File): Promise<string> {
+export async function uploadCover(file: File): Promise<Attachment> {
   // 获取预签名 URL
   const signItems = await presign([
     {
@@ -169,9 +174,12 @@ export async function uploadCover(file: File): Promise<string> {
   ]);
 
   if (finalized && finalized.length > 0) {
-    const attachment = finalized[0];
-    return attachment.compressUrl || attachment.url;
+    return finalized[0] as Attachment;
   } else {
     throw new Error('Failed to finalize upload');
   }
+}
+
+export async function deletePendingProfileAttachment(attachmentId: string): Promise<void> {
+  await del(`/attachments/${attachmentId}`);
 }

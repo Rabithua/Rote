@@ -427,8 +427,16 @@
         "avatar": {
           "type": "string"
         },
+        "avatarAttachmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
         "cover": {
           "type": "string"
+        },
+        "coverAttachmentId": {
+          "type": "string",
+          "format": "uuid"
         }
       },
       "required": [],

@@ -1,12 +1,13 @@
 import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm';
 import { attachments, rotes, users } from '../../drizzle/schema';
+import { profileReferencesAttachment } from '../../profile/mediaLifecycle';
+import { releaseStorageObjectReferences } from '../../resources/service';
 import { UploadResult } from '../../types/main';
 import { validateRoteAttachmentDetails } from '../fileValidation';
 import db from '../drizzle';
 import { r2deletehandler } from '../r2';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
-import { releaseStorageObjectReferences } from '../../resources/service';
 
 function collectAttachmentObjectKeys(details: any): string[] {
   if (!details || typeof details !== 'object') {
@@ -216,7 +217,19 @@ export async function bindAttachmentsToRote(
     }
 
     const result = await db.transaction(async (tx) => {
-      // 先严格校验：必须都是当前用户、且尚未绑定
+      // 与资料更新和孤儿附件回收使用相同的锁顺序：先用户、后附件。
+      // 这样在并发绑定时，回收任务会在重新校验前等待，而不会删除正在绑定的附件。
+      const [lockedUser] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userid))
+        .limit(1)
+        .for('update');
+      if (!lockedUser) {
+        throw new DatabaseError('User not found');
+      }
+
+      // 严格校验：必须都是当前用户、且尚未绑定，并锁定到事务结束。
       const candidates = await tx
         .select({ id: attachments.id, details: attachments.details })
         .from(attachments)
@@ -226,7 +239,8 @@ export async function bindAttachmentsToRote(
             eq(attachments.userid, userid),
             isNull(attachments.roteid)
           )
-        );
+        )
+        .for('update');
 
       if (candidates.length !== attachmentIds.length) {
         throw new DatabaseError(
@@ -425,9 +439,19 @@ export async function deleteAttachments(
 ): Promise<any> {
   try {
     const deleted = await db.transaction(async (tx) => {
-      await tx.select({ id: users.id }).from(users).where(eq(users.id, userid)).for('update');
+      const [profile] = await tx
+        .select({ id: users.id, avatar: users.avatar, cover: users.cover })
+        .from(users)
+        .where(eq(users.id, userid))
+        .for('update');
       const dbAttachments = await tx
-        .select({ id: attachments.id, details: attachments.details, roteid: attachments.roteid })
+        .select({
+          id: attachments.id,
+          url: attachments.url,
+          compressUrl: attachments.compressUrl,
+          details: attachments.details,
+          roteid: attachments.roteid,
+        })
         .from(attachments)
         .where(
           and(
@@ -442,9 +466,15 @@ export async function deleteAttachments(
       if (dbAttachments.length !== attachmentsData.length) {
         throw new DatabaseError('Some attachments not found or unauthorized');
       }
+      const removableAttachments = profile
+        ? dbAttachments.filter((attachment) => !profileReferencesAttachment(profile, attachment))
+        : dbAttachments;
+      if (removableAttachments.length === 0) {
+        return { dbAttachments: [], result: [], roteIds: [], tracked: [] };
+      }
       const tracked = await releaseStorageObjectReferences(
         userid,
-        dbAttachments.flatMap(({ details }) => collectAttachmentObjectKeys(details)),
+        removableAttachments.flatMap(({ details }) => collectAttachmentObjectKeys(details)),
         tx
       );
       const result = await tx
@@ -453,19 +483,21 @@ export async function deleteAttachments(
           and(
             inArray(
               attachments.id,
-              attachmentsData.map((e) => e.id)
+              removableAttachments.map((attachment) => attachment.id)
             ),
             eq(attachments.userid, userid)
           )
         )
         .returning();
       const roteIds = [
-        ...new Set(dbAttachments.map((a) => a.roteid).filter((id): id is string => id !== null)),
+        ...new Set(
+          removableAttachments.map((a) => a.roteid).filter((id): id is string => id !== null)
+        ),
       ];
       for (const roteid of roteIds) {
         await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
       }
-      return { dbAttachments, result, roteIds, tracked };
+      return { dbAttachments: removableAttachments, result, roteIds, tracked };
     });
 
     // 更新相关 rote 的 updatedAt 并记录变更历史
@@ -507,13 +539,16 @@ export async function deleteAttachments(
       .forEach((key) => deleteAttachmentObjects({ key }));
 
     // 兼容性：如果请求体传入了 key，但 DB 没有 details（历史数据），也尝试删除
-    attachmentsData.forEach(({ key }) => {
-      if (key) {
-        r2deletehandler(key).catch((err) => {
-          console.error(`Failed to delete attachment (compat) from R2: ${key}`, err);
-        });
-      }
-    });
+    const deletedIds = new Set(deleted.result.map(({ id }) => id));
+    attachmentsData
+      .filter(({ id }) => deletedIds.has(id))
+      .forEach(({ key }) => {
+        if (key) {
+          r2deletehandler(key).catch((err) => {
+            console.error(`Failed to delete attachment (compat) from R2: ${key}`, err);
+          });
+        }
+      });
 
     return { count: deleted.result.length };
   } catch (error) {
@@ -524,14 +559,27 @@ export async function deleteAttachments(
 export async function deleteAttachment(id: string, userid: string): Promise<any> {
   try {
     const deleted = await db.transaction(async (tx) => {
-      await tx.select({ id: users.id }).from(users).where(eq(users.id, userid)).for('update');
+      const [profile] = await tx
+        .select({ id: users.id, avatar: users.avatar, cover: users.cover })
+        .from(users)
+        .where(eq(users.id, userid))
+        .for('update');
       const [record] = await tx
-        .select({ id: attachments.id, details: attachments.details, roteid: attachments.roteid })
+        .select({
+          id: attachments.id,
+          url: attachments.url,
+          compressUrl: attachments.compressUrl,
+          details: attachments.details,
+          roteid: attachments.roteid,
+        })
         .from(attachments)
         .where(and(eq(attachments.id, id), eq(attachments.userid, userid)))
         .limit(1)
         .for('update');
       if (!record) return { record: null, result: [], tracked: [] };
+      if (profile && profileReferencesAttachment(profile, record)) {
+        return { record: null, result: [], tracked: [] };
+      }
       const tracked = await releaseStorageObjectReferences(
         userid,
         collectAttachmentObjectKeys(record.details),
