@@ -13,7 +13,7 @@ import {
   patchProfileAtom,
   profileAtom,
 } from '@/state/profile';
-import type { OpenKeys, Profile } from '@/types/main';
+import type { Attachment, OpenKeys, Profile } from '@/types/main';
 import { get, post } from '@/utils/api';
 import { useAPIGet } from '@/utils/fetcher';
 import { isHeicFile } from '@/utils/uploadHelpers';
@@ -31,7 +31,26 @@ import OpenKeySection from './components/OpenKeySection';
 import ProfileHeader from './components/ProfileHeader';
 import ProfileSidebar from './components/ProfileSidebar';
 import { getUploadErrorMessage } from '@/utils/directUpload';
-import { createCroppedImage, uploadAvatar, uploadCover } from './utils/avatarUpload';
+import {
+  createCroppedImage,
+  deletePendingProfileAttachment,
+  profileAttachmentUrl,
+  uploadAvatar,
+  uploadCover,
+} from './utils/avatarUpload';
+
+async function deletePendingAttachmentQuietly(attachmentId: string) {
+  try {
+    await deletePendingProfileAttachment(attachmentId);
+  } catch (error) {
+    // The server's seven-day orphan cleanup is the durable fallback.
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[profile] pending attachment cleanup failed',
+      error instanceof Error ? error.name : 'unknown'
+    );
+  }
+}
 
 function ProfilePage() {
   const { data: siteStatus } = useSiteStatus();
@@ -40,6 +59,11 @@ function ProfilePage() {
   const [searchParams] = useSearchParams();
   const inputAvatarRef = useRef<HTMLInputElement>(null);
   const inputCoverRef = useRef<HTMLInputElement>(null);
+  const isMountedRef = useRef(true);
+  const profileEditorSessionRef = useRef(0);
+  const avatarUploadGenerationRef = useRef(0);
+  const coverUploadGenerationRef = useRef(0);
+  const pendingAvatarAttachmentRef = useRef<Attachment | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState<boolean>(false);
@@ -81,6 +105,7 @@ function ProfilePage() {
 
   const [editProfile, setEditProfile] = useState<Partial<Profile>>(profile ?? {});
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [pendingAvatarAttachment, setPendingAvatarAttachment] = useState<Attachment | null>(null);
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
@@ -90,6 +115,74 @@ function ProfilePage() {
       setEditProfile(profile);
     }
   }, [profile]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      avatarUploadGenerationRef.current += 1;
+      coverUploadGenerationRef.current += 1;
+      const pending = pendingAvatarAttachmentRef.current;
+      pendingAvatarAttachmentRef.current = null;
+      if (pending) void deletePendingAttachmentQuietly(pending.id);
+    };
+  }, []);
+
+  async function discardPendingAvatarAttachment() {
+    const pending = pendingAvatarAttachmentRef.current;
+    pendingAvatarAttachmentRef.current = null;
+    if (isMountedRef.current) setPendingAvatarAttachment(null);
+    if (pending) await deletePendingAttachmentQuietly(pending.id);
+  }
+
+  async function acceptPendingAvatarAttachment(
+    attachment: Attachment,
+    session: number,
+    generation: number
+  ): Promise<boolean> {
+    if (
+      !isMountedRef.current ||
+      session !== profileEditorSessionRef.current ||
+      generation !== avatarUploadGenerationRef.current
+    ) {
+      await deletePendingAttachmentQuietly(attachment.id);
+      return false;
+    }
+    const previous = pendingAvatarAttachmentRef.current;
+    if (previous && previous.id !== attachment.id) {
+      await deletePendingAttachmentQuietly(previous.id);
+    }
+    if (
+      !isMountedRef.current ||
+      session !== profileEditorSessionRef.current ||
+      generation !== avatarUploadGenerationRef.current
+    ) {
+      await deletePendingAttachmentQuietly(attachment.id);
+      return false;
+    }
+    pendingAvatarAttachmentRef.current = attachment;
+    setPendingAvatarAttachment(attachment);
+    return true;
+  }
+
+  function openProfileEditor() {
+    profileEditorSessionRef.current += 1;
+    setEditProfile(profile ?? {});
+    setIsModalOpen(true);
+  }
+
+  function changeProfileEditorOpen(open: boolean) {
+    if (open) {
+      openProfileEditor();
+      return;
+    }
+    if (profileEditing) return;
+    profileEditorSessionRef.current += 1;
+    avatarUploadGenerationRef.current += 1;
+    setIsModalOpen(false);
+    setEditProfile(profile ?? {});
+    void discardPendingAvatarAttachment();
+  }
 
   function generateOpenKeyFun() {
     if (displayedResourceState?.openKey.canCreate === false) {
@@ -133,14 +226,21 @@ function ProfilePage() {
     }
 
     try {
+      const session = profileEditorSessionRef.current;
+      const generation = ++avatarUploadGenerationRef.current;
       setAvatarUploading(true);
       const croppedImage = await createCroppedImage(avatarFile, croppedAreaPixels);
-      const avatarUrl = await uploadAvatar(croppedImage);
+      const attachment = await uploadAvatar(croppedImage);
+      const accepted = await acceptPendingAvatarAttachment(attachment, session, generation);
+      if (!accepted) {
+        setAvatarUploading(false);
+        return;
+      }
 
-      setEditProfile({
-        ...editProfile,
-        avatar: avatarUrl,
-      });
+      setEditProfile((current) => ({
+        ...current,
+        avatar: profileAttachmentUrl(attachment),
+      }));
       setAvatarUploading(false);
       setIsAvatarModalOpen(false);
       setAvatarFile(null);
@@ -151,7 +251,7 @@ function ProfilePage() {
     }
   }
 
-  function saveProfile() {
+  async function saveProfile() {
     if (!profile || !editProfile) return;
 
     if (editProfile.username !== undefined && editProfile.username !== profile.username) {
@@ -174,31 +274,39 @@ function ProfilePage() {
     }
 
     setProfileEditing(true);
-    patchProfile(editProfile as Partial<NonNullable<Profile>>)
-      .then(() => {
-        toast.success(t('editSuccess'));
-        setIsModalOpen(false);
-        setProfileEditing(false);
-      })
-      .catch((error: any) => {
-        const errorMessage =
-          error?.response?.data?.message ||
-          error?.message ||
-          error?.response?.data?.error ||
-          t('editFailed');
-
-        if (
-          errorMessage.includes('username') ||
-          errorMessage.includes('Username') ||
-          errorMessage.includes('already exists')
-        ) {
-          toast.error(tLogin('usernameConflict') || errorMessage);
-        } else {
-          toast.error(errorMessage);
-        }
-        setIsModalOpen(false);
-        setProfileEditing(false);
+    try {
+      await patchProfile({
+        ...(editProfile as Partial<NonNullable<Profile>>),
+        ...(pendingAvatarAttachment ? { avatarAttachmentId: pendingAvatarAttachment.id } : {}),
       });
+      pendingAvatarAttachmentRef.current = null;
+      setPendingAvatarAttachment(null);
+      profileEditorSessionRef.current += 1;
+      toast.success(t('editSuccess'));
+      setIsModalOpen(false);
+    } catch (error: any) {
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        error?.response?.data?.error ||
+        t('editFailed');
+
+      if (
+        errorMessage.includes('username') ||
+        errorMessage.includes('Username') ||
+        errorMessage.includes('already exists')
+      ) {
+        toast.error(tLogin('usernameConflict') || errorMessage);
+      } else {
+        toast.error(errorMessage);
+      }
+      profileEditorSessionRef.current += 1;
+      setIsModalOpen(false);
+      setEditProfile(profile ?? {});
+      await discardPendingAvatarAttachment();
+    } finally {
+      setProfileEditing(false);
+    }
   }
 
   async function changeCover(event: React.ChangeEvent<HTMLInputElement>) {
@@ -212,16 +320,30 @@ function ProfilePage() {
       return;
     }
 
+    const generation = ++coverUploadGenerationRef.current;
     setCoverChangeing(true);
+    let uploadedAttachment: Attachment | null = null;
     try {
-      const coverUrl = await uploadCover(selectedFile);
+      uploadedAttachment = await uploadCover(selectedFile);
+      if (!isMountedRef.current || generation !== coverUploadGenerationRef.current) {
+        await deletePendingAttachmentQuietly(uploadedAttachment.id);
+        return;
+      }
       await patchProfile({
-        cover: coverUrl,
+        cover: profileAttachmentUrl(uploadedAttachment),
+        coverAttachmentId: uploadedAttachment.id,
       });
-      setCoverChangeing(false);
     } catch (_error: any) {
-      setCoverChangeing(false);
-      toast.error(`${t('uploadFailed')}: ${getUploadErrorMessage(_error)}`);
+      if (uploadedAttachment) {
+        await deletePendingAttachmentQuietly(uploadedAttachment.id);
+      }
+      if (isMountedRef.current && generation === coverUploadGenerationRef.current) {
+        toast.error(`${t('uploadFailed')}: ${getUploadErrorMessage(_error)}`);
+      }
+    } finally {
+      if (isMountedRef.current && generation === coverUploadGenerationRef.current) {
+        setCoverChangeing(false);
+      }
     }
   }
 
@@ -250,7 +372,7 @@ function ProfilePage() {
           inputCoverRef={inputCoverRef}
           inputAvatarRef={inputAvatarRef}
           onChangeCover={changeCover}
-          onOpenEditProfile={() => setIsModalOpen(true)}
+          onOpenEditProfile={openProfileEditor}
         />
 
         <OpenKeySection
@@ -264,7 +386,7 @@ function ProfilePage() {
 
         <EditProfileDialog
           isOpen={isModalOpen}
-          onOpenChange={setIsModalOpen}
+          onOpenChange={changeProfileEditorOpen}
           editProfile={editProfile}
           onProfileChange={setEditProfile}
           onSave={saveProfile}

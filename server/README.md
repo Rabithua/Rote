@@ -5,6 +5,14 @@ npm v9.5.1
 
 ## Other Operations
 
+### Unbound attachment cleanup
+
+The resource maintenance worker scans at most 100 unbound attachments per minute after a fixed
+seven-day retention period. `UNBOUND_ATTACHMENT_CLEANUP_MODE` defaults to `observe`, which only
+logs aggregate candidate counts and declared bytes. Set it to `enforce` only after reviewing those
+aggregates; deletion then updates the storage ledger transactionally and uses the cleanup Outbox for
+physical object retries.
+
 ### Steps after updating schema
 
 ```bash

@@ -12,6 +12,7 @@ import db from '../utils/drizzle';
 import { getObjectInfo, r2deletehandler } from '../utils/r2';
 import type { UploadReservationManifestItem } from './service';
 import { billingConfig } from '../billing/runtimeConfig';
+import { runUnboundAttachmentCleanup } from '../attachments/unboundCleanup';
 
 export type ReconciledObject = {
   key: string;
@@ -24,6 +25,10 @@ type InspectedObject = ReconciledObject & { actualBytes: bigint };
 
 const RECONCILIATION_HEAD_CONCURRENCY = 8;
 const RECONCILIATION_USERS_PER_RUN = 100;
+
+export function cleanupRetryDelaySeconds(attempts: number): number {
+  return Math.min(3600, 2 ** Math.min(attempts, 10));
+}
 
 export async function inspectReconciledObjects(
   objects: readonly ReconciledObject[],
@@ -263,6 +268,18 @@ export async function runResourceMaintenance(now = new Date()) {
       );
     }
   );
+  await isolateReconciliationFailure(
+    async () => {
+      await runUnboundAttachmentCleanup(now);
+    },
+    (error) => {
+      // eslint-disable-next-line no-console
+      console.error(
+        '[managed-storage] unbound_attachment_cleanup_failed',
+        error instanceof Error ? error.name : 'unknown'
+      );
+    }
+  );
   const expired = await db
     .select()
     .from(resourceUploadReservations)
@@ -325,7 +342,7 @@ export async function runResourceMaintenance(now = new Date()) {
       continue;
     }
     const attempts = item.attempts + 1;
-    const delaySeconds = Math.min(3600, 2 ** Math.min(attempts, 10));
+    const delaySeconds = cleanupRetryDelaySeconds(attempts);
     await db
       .update(resourceCleanupOutbox)
       .set({
@@ -387,7 +404,6 @@ export async function runResourceMaintenance(now = new Date()) {
 
 export async function startResourceMaintenanceWorker() {
   if (started) return;
-  if (!billingConfig.enabled) return;
   started = true;
   const run = () => {
     if (maintenanceInFlight) return;
