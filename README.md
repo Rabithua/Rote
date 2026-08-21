@@ -106,7 +106,7 @@ The iOS app can connect to your self-hosted backend.
 
 ### Memory
 
-Memory is optional and disabled by default. It is available in the `develop` image and will be available in stable images after the next release that includes Memory. Administrators can enable it from `Admin -> AI Settings` after configuring chat and embedding providers. Rote supports OpenAI-compatible providers, including OpenAI, OpenRouter, Ollama / LM Studio, DeepSeek, SiliconFlow, DashScope / Qwen, Zhipu GLM, Moonshot / Kimi, Volcengine Ark, Tencent Hunyuan, Baidu Qianfan, and custom OpenAI-compatible endpoints.
+Memory is optional and disabled by default. It is available in the `develop` image and will be available in stable images after the next release that includes Memory. Administrators can enable it from `Admin -> AI Settings` after configuring chat and embedding providers. Rote supports OpenAI-compatible providers, including OpenAI, OpenRouter, OrcaRouter, Ollama / LM Studio, DeepSeek, SiliconFlow, DashScope / Qwen, Zhipu GLM, Moonshot / Kimi, Volcengine Ark, Tencent Hunyuan, Baidu Qianfan, and custom OpenAI-compatible endpoints.
 
 AI access is controlled by the `ai.chat` permission, which administrators can grant by role or per user. AI conversations stay in the current browser session and are not persisted to the database. Notes and articles are indexed only for users with AI chat permission when AI vector storage and automatic indexing are enabled by an administrator.
 
