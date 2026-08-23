@@ -55,6 +55,10 @@ function updateFields(input: UpdateUserNoteInput): Partial<WritableNoteFields> {
   };
 }
 
+function normalizedCreateTags(tags: string[] | undefined): string[] {
+  return (tags ?? []).map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+}
+
 async function assertOwnedArticle(
   transaction: Parameters<Parameters<typeof db.transaction>[0]>[0],
   userId: string,
@@ -146,10 +150,10 @@ export async function createUserNote(userId: string, input: CreateUserNoteInput)
         content: input.content,
         editor: input.editor ?? 'normal',
         pin: input.pin ?? false,
-        state: input.state ?? 'private',
-        tags: input.tags ?? [],
+        state: input.state || 'private',
+        tags: normalizedCreateTags(input.tags),
         title: input.title ?? '',
-        type: input.type ?? 'rote',
+        type: input.type || 'Rote',
         createdAt: sql`now()`,
         updatedAt: sql`now()`,
       })

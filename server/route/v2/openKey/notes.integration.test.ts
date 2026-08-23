@@ -12,6 +12,8 @@ type NoteResponse = {
     content: string;
     id: string;
     pin: boolean;
+    state: string;
+    tags: string[];
     title: string | null;
     type: string | null;
   };
@@ -89,13 +91,20 @@ databaseDescribe('OpenKey note routes', () => {
   });
 
   it('creates notes through the recommended route without deprecation headers', async () => {
-    const response = await post('/notes', { content: `modern-${randomUUID()}` });
+    const response = await post('/notes', {
+      content: `modern-${randomUUID()}`,
+      state: '',
+      tags: [' work ', '   '],
+      type: '',
+    });
     const body = (await response.json()) as NoteResponse;
 
     expect(response.status).toBe(201);
     expect(response.headers.get('Deprecation')).toBeNull();
     expect(response.headers.get('Link')).toBeNull();
-    expect(body.data.type).toBe('rote');
+    expect(body.data.type).toBe('Rote');
+    expect(body.data.state).toBe('private');
+    expect(body.data.tags).toEqual(['work']);
     expect(body.data.pin).toBe(false);
     expect(body.data.archived).toBe(false);
   });
@@ -111,7 +120,7 @@ databaseDescribe('OpenKey note routes', () => {
     expect(response.status).toBe(201);
     expect(response.headers.get('Deprecation')).toBe('true');
     expect(response.headers.get('Link')).toBe('</v2/api/openkey/notes>; rel="successor-version"');
-    expect(body.data.type).toBe('rote');
+    expect(body.data.type).toBe('Rote');
     expect(body.data.pin).toBe(true);
     expect(body.data.archived).toBe(true);
   });
@@ -134,10 +143,25 @@ databaseDescribe('OpenKey note routes', () => {
 
       expect(response.status).toBe(201);
       expect(response.headers.get('Deprecation')).toBe('true');
-      expect(body.data.type).toBe('rote');
+      expect(body.data.type).toBe('Rote');
       expect(body.data.pin).toBe(expected);
       expect(body.data.archived).toBe(expected);
     }
+  });
+
+  it('preserves defaults when legacy GET includes empty state and type values', async () => {
+    const query = new URLSearchParams({
+      openkey: openKeyId,
+      content: `legacy-empty-defaults-${randomUUID()}`,
+      state: '',
+      type: '',
+    });
+    const response = await request(`/notes/create?${query}`);
+    const body = (await response.json()) as NoteResponse;
+
+    expect(response.status).toBe(201);
+    expect(body.data.state).toBe('private');
+    expect(body.data.type).toBe('Rote');
   });
 
   it('rejects unsupported legacy GET booleans', async () => {
@@ -150,7 +174,7 @@ databaseDescribe('OpenKey note routes', () => {
     const body = (await response.json()) as { message: string };
 
     expect(response.status).toBe(400);
-    expect(body.message).toBe('Invalid pin parameter: expected true, false, 1, or 0');
+    expect(body.message).toBe('invalid_boolean_parameter:pin');
   });
 
   it('updates and deletes notes through the shared application service', async () => {

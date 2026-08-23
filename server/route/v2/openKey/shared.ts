@@ -1,5 +1,6 @@
 import type { HonoContext, HonoVariables } from '../../../types/hono';
 import { z } from 'zod';
+import openKeyErrors from './errorCodes.json';
 
 const UuidZod = z.string().uuid();
 
@@ -47,9 +48,12 @@ export function parseLegacyBoolean(
   parameter: string
 ): boolean | undefined {
   if (value === undefined) return undefined;
-  if (value === 'true' || value === '1') return true;
-  if (value === 'false' || value === '0') return false;
-  throw new Error(`Invalid ${parameter} parameter: expected true, false, 1, or 0`);
+  const parsed = z
+    .enum(['true', 'false', '1', '0'], {
+      error: openKeyErrors.invalidBooleanParameterPrefix + parameter,
+    })
+    .parse(value);
+  return parsed === 'true' || parsed === '1';
 }
 
 export function processTags(values: readonly string[]): string[] {

@@ -141,6 +141,9 @@ databaseDescribe('note write transactions', () => {
       content: `atomic-create-${randomUUID()}`,
       attachmentIds: [attachmentId],
       articleId: ownedArticleId,
+      state: '',
+      tags: [' work ', '   '],
+      type: '',
     });
     const [attachment] = await database
       .select({ roteid: schema.attachments.roteid })
@@ -154,6 +157,9 @@ databaseDescribe('note write transactions', () => {
     expect(note.articleId).toBe(ownedArticleId);
     expect(attachment?.roteid).toBe(note.id);
     expect(changes.map(({ action }) => action)).toEqual(['CREATE']);
+    expect(note.state).toBe('private');
+    expect(note.tags).toEqual(['work']);
+    expect(note.type).toBe('Rote');
   });
 
   it('rolls back note fields when an update references another users article', async () => {
