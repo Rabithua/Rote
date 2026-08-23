@@ -24,7 +24,7 @@ export type UpdateUserNoteInput = z.infer<typeof NoteUpdateZod>;
 
 type WritableNoteFields = Pick<
   Rote,
-  'archived' | 'content' | 'editor' | 'pin' | 'state' | 'tags' | 'title' | 'type'
+  'archived' | 'content' | 'editor' | 'pin' | 'state' | 'tags' | 'title'
 >;
 
 function createArticleId(input: CreateUserNoteInput): string | null {
@@ -51,7 +51,6 @@ function updateFields(input: UpdateUserNoteInput): Partial<WritableNoteFields> {
     ...(input.state !== undefined ? { state: input.state } : {}),
     ...(input.tags !== undefined ? { tags: input.tags } : {}),
     ...(input.title !== undefined ? { title: input.title } : {}),
-    ...(input.type !== undefined ? { type: input.type } : {}),
   };
 }
 
@@ -153,7 +152,6 @@ export async function createUserNote(userId: string, input: CreateUserNoteInput)
         state: input.state || 'private',
         tags: normalizedCreateTags(input.tags),
         title: input.title ?? '',
-        type: input.type || 'Rote',
         createdAt: sql`now()`,
         updatedAt: sql`now()`,
       })

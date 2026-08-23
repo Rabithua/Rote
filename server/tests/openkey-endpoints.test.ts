@@ -152,7 +152,6 @@ export class OpenKeyEndpointsTestSuite {
       content: `Delete permission compatibility test note (${label})`,
       title: `Delete Perm ${label}`,
       state: 'private',
-      type: 'rote',
       tags: ['permission-test'],
       pin: false,
     });
@@ -180,7 +179,6 @@ export class OpenKeyEndpointsTestSuite {
         content: 'This is a test note created via OpenKey POST method.',
         title: 'Test Note Title',
         state: 'private',
-        type: 'rote',
         tags: ['test', 'openkey'],
         pin: false,
       });
@@ -226,7 +224,6 @@ export class OpenKeyEndpointsTestSuite {
         openkey: this.openKey,
         content: 'This is a test note created via OpenKey GET method.',
         state: 'private',
-        type: 'Rote',
         title: 'Test Note GET',
         pin: 'false',
       });

@@ -1,0 +1,1 @@
+ALTER TABLE "rotes" DROP COLUMN "type";

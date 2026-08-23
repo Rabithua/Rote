@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { Hono } from 'hono';
 import {
+  buildNoteFilter,
   markConvenienceNoteCreate,
   markLegacyNoteCreatePost,
   parseBooleanQueryParameter,
@@ -35,6 +36,12 @@ describe('OpenKey route input parsing', () => {
     expect(() => processTags(Array.from({ length: 21 }, (_, index) => `tag-${index}`))).toThrow(
       'Maximum 20 tags allowed'
     );
+  });
+
+  it('ignores the retired note type query parameter', () => {
+    expect(buildNoteFilter({ state: 'private', type: 'legacy-custom-type' }, [], [])).toEqual({
+      state: 'private',
+    });
   });
 });
 

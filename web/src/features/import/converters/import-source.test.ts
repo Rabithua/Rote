@@ -49,7 +49,6 @@ function createNote(
   return {
     id: crypto.randomUUID(),
     title: '',
-    type: 'Rote',
     tags: [],
     content: 'content',
     state: 'private',

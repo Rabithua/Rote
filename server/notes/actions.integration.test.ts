@@ -13,13 +13,15 @@ databaseDescribe('note write transactions', () => {
   let database: typeof import('../utils/drizzle').default;
   let schema: typeof import('../drizzle/schema');
   let actions: typeof import('./actions');
+  let changeMethods: typeof import('../utils/dbMethods/change');
   let operators: typeof import('drizzle-orm');
 
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl;
-    [schema, actions, operators, { default: database }] = await Promise.all([
+    [schema, actions, changeMethods, operators, { default: database }] = await Promise.all([
       import('../drizzle/schema'),
       import('./actions'),
+      import('../utils/dbMethods/change'),
       import('drizzle-orm'),
       import('../utils/drizzle'),
     ]);
@@ -143,7 +145,6 @@ databaseDescribe('note write transactions', () => {
       articleId: ownedArticleId,
       state: '',
       tags: [' work ', '   '],
-      type: '',
     });
     const [attachment] = await database
       .select({ roteid: schema.attachments.roteid })
@@ -159,7 +160,11 @@ databaseDescribe('note write transactions', () => {
     expect(changes.map(({ action }) => action)).toEqual(['CREATE']);
     expect(note.state).toBe('private');
     expect(note.tags).toEqual(['work']);
-    expect(note.type).toBe('Rote');
+    expect('type' in note).toBe(false);
+
+    const [change] = await changeMethods.findRoteChangesByOriginId(note.id, ownerId);
+    expect(change.rote.id).toBe(note.id);
+    expect('type' in change.rote).toBe(false);
   });
 
   it('rolls back note fields when an update references another users article', async () => {

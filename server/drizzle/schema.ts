@@ -614,7 +614,6 @@ export const rotes = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     title: text('title').default(''),
-    type: varchar('type', { length: 100 }).default('Rote'),
     tags: text('tags').array().notNull().default([]),
     content: text('content').notNull(),
     state: varchar('state', { length: 50 }).notNull().default('private'),

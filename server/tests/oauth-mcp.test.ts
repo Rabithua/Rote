@@ -16,6 +16,7 @@ import {
 } from './oauthMcp/metadataAuthorization.test';
 import { testClientMetadataDocumentSupport } from './oauthMcp/clientMetadata.test';
 import { testInsufficientScope, testMcpTools, testProtocol } from './oauthMcp/protocolTools.test';
+import { testLegacyRestNoteTypeCompatibility } from './oauthMcp/restCompatibility.test';
 import {
   testPkceReuseAndAudience,
   testRefreshAndRevoke,
@@ -26,6 +27,7 @@ async function main() {
   console.log('Running OAuth MCP tests against ' + API_BASE);
   await ensureInitialized();
   const appAccessToken = await loginOrRegister();
+  await testLegacyRestNoteTypeCompatibility(appAccessToken);
   await testMetadata();
   await testClientMetadataDocumentSupport();
   await testClientInitiatedNativeClientFlow(appAccessToken);

@@ -38,7 +38,6 @@ GET /v2/api/notes/search
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "笔记内容",
       "state": "public",

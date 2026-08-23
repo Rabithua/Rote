@@ -378,7 +378,6 @@ Content-Disposition: attachment; filename=demo-2026-07-23-12-00-00.json
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "笔记内容",
       "state": "private",

@@ -33,7 +33,6 @@ export interface Reaction {
 export type Rote = {
   id: string;
   title?: string;
-  type?: 'Rote';
   tags: string[];
   content: string;
   state: RoteState;

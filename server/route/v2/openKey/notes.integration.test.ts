@@ -15,7 +15,6 @@ type NoteResponse = {
     state: string;
     tags: string[];
     title: string | null;
-    type: string | null;
   };
 };
 
@@ -95,14 +94,14 @@ databaseDescribe('OpenKey note routes', () => {
       content: `modern-${randomUUID()}`,
       state: '',
       tags: [' work ', '   '],
-      type: '',
+      type: 'legacy-custom-type',
     });
     const body = (await response.json()) as NoteResponse;
 
     expect(response.status).toBe(201);
     expect(response.headers.get('Deprecation')).toBeNull();
     expect(response.headers.get('Link')).toBeNull();
-    expect(body.data.type).toBe('Rote');
+    expect('type' in body.data).toBe(false);
     expect(body.data.state).toBe('private');
     expect(body.data.tags).toEqual(['work']);
     expect(body.data.pin).toBe(false);
@@ -114,13 +113,14 @@ databaseDescribe('OpenKey note routes', () => {
       content: `legacy-post-${randomUUID()}`,
       pin: true,
       archived: true,
+      type: 'legacy-custom-type',
     });
     const body = (await response.json()) as NoteResponse;
 
     expect(response.status).toBe(201);
     expect(response.headers.get('Deprecation')).toBe('true');
     expect(response.headers.get('Link')).toBe('</v2/api/openkey/notes>; rel="successor-version"');
-    expect(body.data.type).toBe('Rote');
+    expect('type' in body.data).toBe(false);
     expect(body.data.pin).toBe(true);
     expect(body.data.archived).toBe(true);
   });
@@ -145,25 +145,43 @@ databaseDescribe('OpenKey note routes', () => {
       expect(response.headers.get('Deprecation')).toBeNull();
       expect(response.headers.get('Link')).toBeNull();
       expect(response.headers.get('Cache-Control')).toBe('no-store');
-      expect(body.data.type).toBe('Rote');
+      expect('type' in body.data).toBe(false);
       expect(body.data.pin).toBe(expected);
       expect(body.data.archived).toBe(expected);
     }
   });
 
-  it('preserves defaults when convenience GET includes empty state and type values', async () => {
+  it('ignores the legacy type query while preserving convenience GET defaults', async () => {
     const query = new URLSearchParams({
       openkey: openKeyId,
       content: `convenience-empty-defaults-${randomUUID()}`,
       state: '',
-      type: '',
+      type: 'legacy-custom-type',
     });
     const response = await request(`/notes/create?${query}`);
     const body = (await response.json()) as NoteResponse;
 
     expect(response.status).toBe(201);
     expect(body.data.state).toBe('private');
-    expect(body.data.type).toBe('Rote');
+    expect('type' in body.data).toBe(false);
+  });
+
+  it('ignores the retired type filter on note lists', async () => {
+    const content = `legacy-type-filter-${randomUUID()}`;
+    const createdResponse = await post('/notes', { content });
+    const created = (await createdResponse.json()) as NoteResponse;
+    const query = new URLSearchParams({
+      openkey: openKeyId,
+      limit: '100',
+      type: 'legacy-custom-type',
+    });
+    const response = await request(`/notes?${query}`);
+    const body = (await response.json()) as { data: NoteResponse['data'][] };
+
+    expect(createdResponse.status).toBe(201);
+    expect(response.status).toBe(200);
+    expect(body.data.some((note) => note.id === created.data.id)).toBe(true);
+    expect(body.data.every((note) => !('type' in note))).toBe(true);
   });
 
   it('rejects unsupported convenience GET booleans', async () => {

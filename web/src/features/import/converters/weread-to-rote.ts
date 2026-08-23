@@ -261,7 +261,6 @@ function convertNote(source: NormalizedWereadNote, options: ConversionOptions): 
   return {
     id: uuidv4(),
     title: [source.book.title, source.chapterTitle].filter(Boolean).join(' · '),
-    type: 'Rote',
     tags,
     content: normalizeContent(rawContent, options),
     state: 'private',
