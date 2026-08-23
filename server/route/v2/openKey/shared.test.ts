@@ -13,9 +13,7 @@ describe('OpenKey route input parsing', () => {
   });
 
   it('rejects unsupported legacy boolean values', () => {
-    expect(() => parseLegacyBoolean('yes', 'pin')).toThrow(
-      'Invalid pin parameter: expected true, false, 1, or 0'
-    );
+    expect(() => parseLegacyBoolean('yes', 'pin')).toThrow('invalid_boolean_parameter:pin');
   });
 
   it('only accepts whole pagination numbers at or above the minimum', () => {

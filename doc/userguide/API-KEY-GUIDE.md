@@ -100,7 +100,7 @@ The legacy GET endpoint accepts these query parameters:
 - `openkey`: YOUR_API_KEY (Required)
 - `content`: Note content (required, max 1,000,000 characters)
 - `state`: Note state (private or public, defaults to private)
-- `type`: Note type (defaults to `rote`)
+- `type`: Note type (defaults to `Rote`)
 - `title`: Optional title
 - `tag`: Tags (can be multiple, e.g., `tag=tag1&tag=tag2`, each tag max 50 characters, max 20 tags)
 - `pin`: Whether to pin the note (`true`, `false`, `1`, or `0`)
