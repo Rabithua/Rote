@@ -1,16 +1,9 @@
 import { Hono } from 'hono';
 import type { User } from '../../drizzle/schema';
 import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
+import { createUserNote, deleteUserNote, updateUserNote } from '../../notes/actions';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
-  bindAttachmentsToRote,
-  createRote,
-  deleteEmbeddingsForSource,
-  deleteRote,
-  deleteRoteAttachmentsByRoteId,
-  deleteRoteLinkPreviewsByRoteId,
-  editRote,
-  enqueueEmbeddingJob,
   findMyRandomRote,
   findMyRote,
   findPublicRote,
@@ -22,9 +15,7 @@ import {
   searchMyRotes,
   searchPublicRotes,
   searchUserPublicRotes,
-  setNoteArticleId,
 } from '../../utils/dbMethods';
-import { extractUrlsFromContent, parseAndStoreRoteLinkPreviews } from '../../utils/linkPreview';
 import { bodyTypeCheck, createResponse, isValidUUID } from '../../utils/main';
 import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod';
 
@@ -34,68 +25,10 @@ const notesRouter = new Hono<{ Variables: HonoVariables }>();
 // 创建笔记
 notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => {
   const body = await c.req.json();
-  // 验证输入长度
-  NoteCreateZod.parse(body);
-
-  const { title, content, type, tags, state, archived, pin, editor, attachmentIds } = body as {
-    title?: string;
-    content: string;
-    type?: string;
-    tags?: string[];
-    state?: string;
-    archived?: boolean;
-    pin?: boolean;
-    editor?: string;
-    attachmentIds?: string[];
-    articleId?: string;
-    articleIds?: string[]; // 兼容旧客户端：严格单篇后最多 1 个
-  };
+  const input = NoteCreateZod.parse(body);
   const user = c.get('user') as User;
-
-  if (!content) {
-    throw new Error('Content is required');
-  }
-
-  const rote = await createRote({
-    title,
-    content,
-    type,
-    tags,
-    state,
-    pin: !!pin,
-    editor,
-    archived: !!archived,
-    authorid: user.id,
-  });
-
-  // 如果传入了附件ID，则绑定到新建的笔记
-  if (Array.isArray(attachmentIds) && attachmentIds.length > 0) {
-    await bindAttachmentsToRote(user.id, rote.id, attachmentIds);
-  }
-
-  // 绑定文章（优先 articleId；兼容 articleIds，取第一个）
-  const articleIdToSet =
-    typeof (body as any).articleId === 'string'
-      ? (body as any).articleId
-      : Array.isArray((body as any).articleIds) && (body as any).articleIds.length > 0
-        ? (body as any).articleIds[0]
-        : null;
-  if (articleIdToSet) {
-    await setNoteArticleId(rote.id, articleIdToSet, user.id);
-  }
-
-  if (!articleIdToSet) {
-    void parseAndStoreRoteLinkPreviews(rote.id, rote.content).catch((error) => {
-      console.error('Failed to parse link previews:', error);
-    });
-  }
-
-  // 重新查询以获取最新关联数据（附件/文章等）
-  const fullRote = await findRoteById(rote.id, user.id);
-  void enqueueEmbeddingJob('rote', rote.id, user.id).catch((error) => {
-    console.error('Failed to enqueue rote embedding job:', error);
-  });
-  return c.json(createResponse(fullRote), 201);
+  const note = await createUserNote(user.id, input);
+  return c.json(createResponse(note), 201);
 });
 
 // 获取随机笔记 - 移到前面避免被当作ID匹配
@@ -525,51 +458,8 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
     throw new Error('Invalid or missing ID');
   }
 
-  // 验证输入长度
-  NoteUpdateZod.parse(body);
-
-  // 确保使用路由参数中的 id，而不是 body 中的 id（防止不一致）
-  await editRote({ ...body, id, authorid: user.id });
-
-  // 更新文章绑定（优先 articleId；兼容 articleIds，取第一个）
-  let articleIdToSet: string | null | undefined;
-  if ('articleId' in (body as any)) {
-    const articleId = (body as any).articleId;
-    articleIdToSet = typeof articleId === 'string' ? articleId : (articleId ?? null);
-  } else if (Array.isArray((body as any).articleIds)) {
-    articleIdToSet = (body as any).articleIds.length > 0 ? (body as any).articleIds[0] : null;
-  }
-
-  if (articleIdToSet !== undefined) {
-    await setNoteArticleId(id, articleIdToSet, user.id);
-  }
-
-  // 重新获取最新数据（包含更新后的 article）
-  const data = await findRoteById(id, user.id);
-  void enqueueEmbeddingJob('rote', id, user.id).catch((error) => {
-    console.error('Failed to enqueue rote embedding job:', error);
-  });
-
-  const hasArticle = Boolean(data?.articleId || data?.article);
-  const contentProvided = Object.prototype.hasOwnProperty.call(body, 'content');
-  const contentForPreview = contentProvided ? (body as any).content : data?.content;
-
-  if (hasArticle && articleIdToSet !== undefined) {
-    await deleteRoteLinkPreviewsByRoteId(id);
-  } else if (
-    (contentProvided || articleIdToSet !== undefined) &&
-    typeof contentForPreview === 'string'
-  ) {
-    const urls = extractUrlsFromContent(contentForPreview);
-    if (urls.length === 0 || hasArticle) {
-      await deleteRoteLinkPreviewsByRoteId(id);
-    } else {
-      await deleteRoteLinkPreviewsByRoteId(id);
-      void parseAndStoreRoteLinkPreviews(id, contentForPreview).catch((error) => {
-        console.error('Failed to parse link previews:', error);
-      });
-    }
-  }
+  const input = NoteUpdateZod.parse(body);
+  const data = await updateUserNote(user.id, id, input);
 
   return c.json(createResponse(data), 200);
 });
@@ -578,12 +468,11 @@ notesRouter.put('/:id', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =
 notesRouter.delete('/:id', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const id = c.req.param('id');
+  if (!id || !isValidUUID(id)) {
+    throw new Error('Invalid or missing ID');
+  }
 
-  const data = await deleteRote({ id, authorid: user.id });
-  await deleteRoteAttachmentsByRoteId(id, user.id);
-  void deleteEmbeddingsForSource('rote', id).catch((error) => {
-    console.error('Failed to delete rote embeddings:', error);
-  });
+  const data = await deleteUserNote(user.id, id);
 
   return c.json(createResponse(data), 200);
 });

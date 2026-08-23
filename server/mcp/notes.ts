@@ -11,33 +11,21 @@ import {
   parseArchived,
   parseOptionalInteger,
   parseOptionalLimit,
-  processTags,
   requireAuth,
 } from './shared';
 import type { McpTool } from './types';
 
 async function createNote(c: HonoContext, args: Record<string, any>) {
   const auth = requireAuth(c);
-  NoteCreateZod.parse(args);
-  return await createUserNote(auth.userId, {
-    content: args.content,
-    title: args.title || '',
-    state: args.state || 'private',
-    type: args.type || 'rote',
-    tags: processTags(args.tags),
-    pin: !!args.pin,
-    archived: !!args.archived,
-    editor: args.editor,
-    articleId: args.articleId,
-    articleIds: args.articleIds,
-  });
+  const input = NoteCreateZod.parse(args);
+  return await createUserNote(auth.userId, input);
 }
 
 async function updateNote(c: HonoContext, args: Record<string, any>) {
   const auth = requireAuth(c);
   const id = assertUuid(args.id, 'note_id');
-  NoteUpdateZod.parse(args);
-  return await updateUserNote(auth.userId, id, args);
+  const input = NoteUpdateZod.parse(args);
+  return await updateUserNote(auth.userId, id, input);
 }
 
 export const noteTools: McpTool[] = [
