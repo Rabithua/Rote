@@ -585,7 +585,7 @@ curl -X POST 'https://your-domain.com/v2/api/imports/attachments/migrate' \
 笔记支持以下字段：
 
 - 必填：`id`（UUID）、`content`（string）。
-- 可选：`title`、`type`、`tags`、`state`、`archived`、`articleId`、`pin`、`editor`、`createdAt`、`updatedAt`、`attachments`、`source`。
+- 可选：`title`、`tags`、`state`、`archived`、`articleId`、`pin`、`editor`、`createdAt`、`updatedAt`、`attachments`、`source`。
 - 单条笔记最多包含 100 个标签和 500 个附件。
 - `createdAt`、`updatedAt` 和 `source.sourceUpdatedAt` 使用 ISO 8601 日期时间字符串。笔记的 `createdAt`
   会保留；`updatedAt` 会被忽略并写为本次导入时间；`sourceUpdatedAt` 当前只参与格式校验，不会持久化或用于冲突判断。

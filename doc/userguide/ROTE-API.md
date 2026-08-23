@@ -171,7 +171,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选，是否只显示归档笔记）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `state`、`type` 等）
+  - 其他过滤参数（如 `state`、`pin` 等）
 
 **标签过滤说明**：
 
@@ -432,7 +432,6 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
 - **Body**: 需要更新的字段（所有字段均为可选，长度限制与创建接口相同）
   - `content`: string（可选，最大 1,000,000 个字符）
   - `title`: string（可选，最大 200 个字符）
-  - `type`: string（可选）
   - `state`: string（可选）
   - `editor`: string（可选）
   - `tags`: string[]（可选，每个标签最大 50 个字符，最多 20 个标签）
@@ -593,7 +592,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选，是否只搜索归档笔记）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `state`、`type` 等）
+  - 其他过滤参数（如 `state`、`pin` 等）
 
 **标签过滤说明**：
 
@@ -659,7 +658,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `type` 等）
+  - 其他过滤参数（如 `pin` 等）
 
 **标签过滤说明**：
 
@@ -793,7 +792,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `state`、`type` 等）
+  - 其他过滤参数（如 `pin` 等）
 
 **标签过滤说明**：
 
@@ -854,7 +853,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/users/demo?skip=0&limit=20'
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `type` 等）
+  - 其他过滤参数（如 `pin` 等）
 
 **标签过滤说明**：
 
