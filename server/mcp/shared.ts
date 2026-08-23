@@ -74,7 +74,7 @@ export function buildNoteFilter(args: Record<string, any>) {
     filter.tags = { hasEvery: tags };
   }
 
-  for (const key of ['state', 'type', 'pin']) {
+  for (const key of ['state', 'pin']) {
     if (args[key] !== undefined) {
       filter[key] = args[key];
     }

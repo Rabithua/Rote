@@ -89,7 +89,7 @@ export async function generateRssFeed(
       title,
       id: note.id,
       link: noteUrl,
-      description: note.type,
+      description: title,
       image:
         note.attachments &&
         note.attachments.length > 0 &&

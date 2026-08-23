@@ -81,7 +81,7 @@ export function buildNoteFilter(
   tags: string[],
   excludedKeys: readonly string[]
 ): NoteFilter {
-  const excluded = new Set([...excludedKeys, 'openkey', 'tag', 'tag[]']);
+  const excluded = new Set([...excludedKeys, 'openkey', 'tag', 'tag[]', 'type']);
   const filter: NoteFilter = {};
   if (tags.length > 0) filter.tags = { hasEvery: tags };
   for (const [key, value] of Object.entries(query)) {

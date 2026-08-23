@@ -36,6 +36,14 @@ export async function testProtocol(accessToken: string) {
   ]) {
     assert(names.includes(expected), 'tools/list missing ' + expected);
   }
+  for (const tool of tools.data.result?.tools || []) {
+    if (['notes_create', 'notes_list', 'notes_search', 'notes_update'].includes(tool.name)) {
+      assert(
+        !Object.prototype.hasOwnProperty.call(tool.inputSchema?.properties || {}, 'type'),
+        tool.name + ' must not advertise the retired note type'
+      );
+    }
+  }
 }
 
 export async function testMcpTools(accessToken: string) {
@@ -49,10 +57,16 @@ export async function testMcpTools(accessToken: string) {
     state: 'private',
     tags: ['oauth-mcp'],
     articleId: article.id,
+    type: 'legacy-custom-type',
   });
   assert(note.id, 'note id missing');
-  await callTool(accessToken, 'notes_list', { limit: 10 });
-  await callTool(accessToken, 'notes_search', { keyword: 'OAuth MCP', limit: 10 });
+  assert(!Object.prototype.hasOwnProperty.call(note, 'type'), 'legacy note type should be ignored');
+  await callTool(accessToken, 'notes_list', { limit: 10, type: 'legacy-custom-type' });
+  await callTool(accessToken, 'notes_search', {
+    keyword: 'OAuth MCP',
+    limit: 10,
+    type: 'legacy-custom-type',
+  });
   await callTool(accessToken, 'notes_get', { id: note.id });
   await callTool(accessToken, 'notes_batch_get', { ids: [note.id] });
   await callTool(accessToken, 'notes_update', {
@@ -61,6 +75,7 @@ export async function testMcpTools(accessToken: string) {
     content: 'OAuth MCP test note content updated',
     tags: ['oauth-mcp', 'updated'],
     articleId: article.id,
+    type: 'legacy-custom-type',
   });
   await callTool(accessToken, 'articles_list', { limit: 10 });
   await callTool(accessToken, 'articles_get', { id: article.id });

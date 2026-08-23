@@ -48,7 +48,6 @@ router.get('/notes/create', requireOpenKeyPerm('SENDROTE'), async (c: HonoContex
     content: c.req.query('content'),
     title: c.req.query('title'),
     state: c.req.query('state'),
-    type: c.req.query('type'),
     tags: queryTags(c),
     pin: parseBooleanQueryParameter(c.req.query('pin'), 'pin'),
     archived: parseBooleanQueryParameter(c.req.query('archived'), 'archived'),

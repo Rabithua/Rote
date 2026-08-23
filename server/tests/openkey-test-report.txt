@@ -16,7 +16,6 @@ Request data: {
   "content": "This is a test note created via OpenKey POST method.",
   "title": "Test Note Title",
   "state": "private",
-  "type": "rote",
   "tags": [
     "test",
     "openkey"
@@ -30,7 +29,6 @@ Request data: {
   "data": {
     "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
     "title": "Test Note Title",
-    "type": "rote",
     "tags": [
       "test",
       "openkey"
@@ -58,7 +56,7 @@ Request data: {
 ────────────────────────────────────────────────────────────────────────────────
 ✅ Endpoint 1: Create Note (POST) (81ms): Note created with ID: f03663c8-22e0-47ee-ae25-8a6e4099141a
 
-📤 GET /notes/create?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589&content=This+is+a+test+note+created+via+OpenKey+GET+method.&state=private&type=rote&title=Test+Note+GET&pin=false&tag=test&tag=legacy
+📤 GET /notes/create?openkey=ae8f4d1f-7b4f-43ed-80ea-672f91a11589&content=This+is+a+test+note+created+via+OpenKey+GET+method.&state=private&title=Test+Note+GET&pin=false&tag=test&tag=legacy
 📥 Response Status: 201
 ✅ Response Data: {
   "code": 0,
@@ -66,7 +64,6 @@ Request data: {
   "data": {
     "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
     "title": "Test Note GET",
-    "type": "rote",
     "tags": [
       "test",
       "legacy"
@@ -125,7 +122,6 @@ Request data: {
     {
       "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
       "title": "Test Note GET",
-      "type": "rote",
       "tags": [
         "test",
         "legacy"
@@ -153,7 +149,6 @@ Request data: {
     {
       "id": "509ad0d4-393d-4e73-92d6-b05c1e34f6d6",
       "title": "Test Note GET",
-      "type": "rote",
       "tags": [
         "test",
         "legacy"
@@ -181,7 +176,6 @@ Request data: {
     {
       "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
       "title": "Test Note Title",
-      "type": "rote",
       "tags": [
         "test",
         "openkey"
@@ -209,7 +203,6 @@ Request data: {
     {
       "id": "3b125bef-6a58-4c20-b800-c59703c6faa2",
       "title": "Test Note Title",
-      "type": "rote",
       "tags": [
         "test",
         "openkey"
@@ -237,7 +230,6 @@ Request data: {
     {
       "id": "32a88d1e-a15e-4f99-bc41-cb8a3157e6ef",
       "title": "",
-      "type": "Rote",
       "tags": [],
       "content": "ReactionTest",
       "state": "private",
@@ -262,7 +254,6 @@ Request data: {
     {
       "id": "3e52cb5b-7045-4f9f-869d-8f8b456d26d0",
       "title": "",
-      "type": "rote",
       "tags": [],
       "content": "Test POST /notes/create",
       "state": "private",
@@ -287,7 +278,6 @@ Request data: {
     {
       "id": "83b86c78-c920-4cde-88ea-41d34b383aad",
       "title": "",
-      "type": "Rote",
       "tags": [],
       "content": "TestGETCreate",
       "state": "private",
@@ -312,7 +302,6 @@ Request data: {
     {
       "id": "b1d032d9-c843-4268-b2a9-a7ef51686f96",
       "title": "",
-      "type": "rote",
       "tags": [],
       "content": "Test POST /notes",
       "state": "private",
@@ -337,7 +326,6 @@ Request data: {
     {
       "id": "a9f1669f-4d4d-49c2-8020-202554ee5447",
       "title": "",
-      "type": "Rote",
       "tags": [],
       "content": "NoteForReaction",
       "state": "private",
@@ -362,7 +350,6 @@ Request data: {
     {
       "id": "c59747c9-196d-4eb1-9d8c-d942d63f9f9b",
       "title": "",
-      "type": "rote",
       "tags": [],
       "content": "TestPostBody",
       "state": "private",
@@ -398,7 +385,6 @@ Request data: {
     {
       "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
       "title": "Test Note GET",
-      "type": "rote",
       "tags": [
         "test",
         "legacy"
@@ -426,7 +412,6 @@ Request data: {
     {
       "id": "509ad0d4-393d-4e73-92d6-b05c1e34f6d6",
       "title": "Test Note GET",
-      "type": "rote",
       "tags": [
         "test",
         "legacy"
@@ -454,7 +439,6 @@ Request data: {
     {
       "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
       "title": "Test Note Title",
-      "type": "rote",
       "tags": [
         "test",
         "openkey"
@@ -482,7 +466,6 @@ Request data: {
     {
       "id": "3b125bef-6a58-4c20-b800-c59703c6faa2",
       "title": "Test Note Title",
-      "type": "rote",
       "tags": [
         "test",
         "openkey"
@@ -521,7 +504,6 @@ Request data: {
     {
       "id": "631cdee0-8cc2-42ac-b13b-bb4889dd8dc9",
       "title": "Test Note GET",
-      "type": "rote",
       "tags": [
         "test",
         "legacy"
@@ -549,7 +531,6 @@ Request data: {
     {
       "id": "509ad0d4-393d-4e73-92d6-b05c1e34f6d6",
       "title": "Test Note GET",
-      "type": "rote",
       "tags": [
         "test",
         "legacy"
@@ -577,7 +558,6 @@ Request data: {
     {
       "id": "f03663c8-22e0-47ee-ae25-8a6e4099141a",
       "title": "Test Note Title",
-      "type": "rote",
       "tags": [
         "test",
         "openkey"
@@ -605,7 +585,6 @@ Request data: {
     {
       "id": "3b125bef-6a58-4c20-b800-c59703c6faa2",
       "title": "Test Note Title",
-      "type": "rote",
       "tags": [
         "test",
         "openkey"

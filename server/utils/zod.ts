@@ -60,7 +60,6 @@ export const NoteCreateZod = z.object({
     .string()
     .min(1, 'Content cannot be empty')
     .max(1000000, 'Content cannot exceed 1,000,000 characters'), // 约 1MB 文本
-  type: z.string().optional(),
   tags: z
     .array(
       z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
@@ -80,7 +79,6 @@ export const NoteCreateZod = z.object({
 export const NoteUpdateZod = z.object({
   title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),
   content: z.string().max(1000000, 'Content cannot exceed 1,000,000 characters').optional(),
-  type: z.string().optional(),
   tags: z
     .array(
       z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')

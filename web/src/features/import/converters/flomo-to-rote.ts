@@ -58,7 +58,6 @@ export function convertFlomoToRote(
       notes.push({
         id: uuidv4(),
         title: '',
-        type: 'Rote',
         tags: normalizeTags([], rawContent),
         content,
         state: 'private',

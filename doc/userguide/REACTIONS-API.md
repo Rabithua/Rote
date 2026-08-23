@@ -181,7 +181,6 @@ curl -X DELETE 'https://your-domain.com/v2/api/reactions/<NOTE_ID>/%E2%9D%A4%EF%
   "data": {
     "id": "note-uuid",
     "title": "笔记标题",
-    "type": "Rote",
     "tags": ["标签1"],
     "content": "笔记内容",
     "state": "public",

@@ -50,6 +50,11 @@ describe('batched import service', () => {
 
       expect(first.notes.created).toBe(2_500);
       expect(firstDurationMs).toBeLessThan(30_000);
+      const [legacyImported] = await db
+        .select()
+        .from(rotes)
+        .where(eq(rotes.content, notes[0].content));
+      expect('type' in legacyImported).toBe(false);
 
       const repeated = await importUserData(userId, v2Payload(notes));
       expect(repeated.notes.unchanged).toBe(2_500);
@@ -177,6 +182,7 @@ function createNote(index: number) {
     id: `20000000-0000-4000-8000-${suffix}`,
     content: `note ${index}`,
     title: '',
+    type: 'legacy-custom-type',
     tags: ['migration'],
     state: 'public',
     createdAt: '2026-07-16T00:00:00.000Z',
