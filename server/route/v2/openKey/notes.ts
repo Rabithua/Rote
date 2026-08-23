@@ -9,8 +9,9 @@ import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../../utils/z
 import {
   assertUuid,
   buildNoteFilter,
-  markLegacyNoteCreate,
-  parseLegacyBoolean,
+  markConvenienceNoteCreate,
+  markLegacyNoteCreatePost,
+  parseBooleanQueryParameter,
   parseOptionalInteger,
   processTags,
   requireOpenKey,
@@ -42,15 +43,15 @@ async function createNoteFromBody(c: HonoContext) {
 }
 
 router.get('/notes/create', requireOpenKeyPerm('SENDROTE'), async (c: HonoContext) => {
-  markLegacyNoteCreate(c);
+  markConvenienceNoteCreate(c);
   const input = NoteCreateZod.parse({
     content: c.req.query('content'),
     title: c.req.query('title'),
     state: c.req.query('state'),
     type: c.req.query('type'),
     tags: queryTags(c),
-    pin: parseLegacyBoolean(c.req.query('pin'), 'pin'),
-    archived: parseLegacyBoolean(c.req.query('archived'), 'archived'),
+    pin: parseBooleanQueryParameter(c.req.query('pin'), 'pin'),
+    archived: parseBooleanQueryParameter(c.req.query('archived'), 'archived'),
     editor: c.req.query('editor'),
     articleId: c.req.query('articleId'),
   });
@@ -59,7 +60,7 @@ router.get('/notes/create', requireOpenKeyPerm('SENDROTE'), async (c: HonoContex
 });
 
 router.post('/notes/create', requireOpenKeyPerm('SENDROTE'), async (c: HonoContext) => {
-  markLegacyNoteCreate(c);
+  markLegacyNoteCreatePost(c);
   return createNoteFromBody(c);
 });
 

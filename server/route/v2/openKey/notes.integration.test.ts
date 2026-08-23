@@ -125,7 +125,7 @@ databaseDescribe('OpenKey note routes', () => {
     expect(body.data.archived).toBe(true);
   });
 
-  it('parses all supported legacy GET booleans without changing defaults', async () => {
+  it('supports all documented convenience GET booleans without changing defaults', async () => {
     for (const [value, expected] of [
       ['true', true],
       ['1', true],
@@ -134,7 +134,7 @@ databaseDescribe('OpenKey note routes', () => {
     ] as const) {
       const query = new URLSearchParams({
         openkey: openKeyId,
-        content: `legacy-get-${value}-${randomUUID()}`,
+        content: `convenience-get-${value}-${randomUUID()}`,
         pin: value,
         archived: value,
       });
@@ -142,17 +142,19 @@ databaseDescribe('OpenKey note routes', () => {
       const body = (await response.json()) as NoteResponse;
 
       expect(response.status).toBe(201);
-      expect(response.headers.get('Deprecation')).toBe('true');
+      expect(response.headers.get('Deprecation')).toBeNull();
+      expect(response.headers.get('Link')).toBeNull();
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
       expect(body.data.type).toBe('Rote');
       expect(body.data.pin).toBe(expected);
       expect(body.data.archived).toBe(expected);
     }
   });
 
-  it('preserves defaults when legacy GET includes empty state and type values', async () => {
+  it('preserves defaults when convenience GET includes empty state and type values', async () => {
     const query = new URLSearchParams({
       openkey: openKeyId,
-      content: `legacy-empty-defaults-${randomUUID()}`,
+      content: `convenience-empty-defaults-${randomUUID()}`,
       state: '',
       type: '',
     });
@@ -164,7 +166,7 @@ databaseDescribe('OpenKey note routes', () => {
     expect(body.data.type).toBe('Rote');
   });
 
-  it('rejects unsupported legacy GET booleans', async () => {
+  it('rejects unsupported convenience GET booleans', async () => {
     const query = new URLSearchParams({
       openkey: openKeyId,
       content: `invalid-boolean-${randomUUID()}`,

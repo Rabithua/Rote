@@ -180,7 +180,7 @@ AI 与向量存储默认关闭，需要管理员在后台配置供应商并显�
 
 | 路径                    | 方法   | 认证    | 描述                         |
 | ----------------------- | ------ | ------- | ---------------------------- |
-| `/openkey/notes/create` | GET    | API Key | 创建笔记（兼容）             |
+| `/openkey/notes/create` | GET    | API Key | 创建笔记（便捷 URL）         |
 | `/openkey/notes`        | POST   | API Key | 创建笔记                     |
 | `/openkey/notes`        | GET    | API Key | 获取笔记列表                 |
 | `/openkey/notes/search` | GET    | API Key | 搜索笔记                     |
