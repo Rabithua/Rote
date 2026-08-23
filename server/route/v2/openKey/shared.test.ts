@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'bun:test';
-import { parseLegacyBoolean, parseOptionalInteger, processTags } from './shared';
+import { Hono } from 'hono';
+import {
+  markConvenienceNoteCreate,
+  markLegacyNoteCreatePost,
+  parseBooleanQueryParameter,
+  parseOptionalInteger,
+  processTags,
+} from './shared';
 
 describe('OpenKey route input parsing', () => {
   it.each([
@@ -8,12 +15,12 @@ describe('OpenKey route input parsing', () => {
     ['false', false],
     ['0', false],
     [undefined, undefined],
-  ] as const)('parses legacy boolean %s', (value, expected) => {
-    expect(parseLegacyBoolean(value, 'pin')).toBe(expected);
+  ] as const)('parses query boolean %s', (value, expected) => {
+    expect(parseBooleanQueryParameter(value, 'pin')).toBe(expected);
   });
 
-  it('rejects unsupported legacy boolean values', () => {
-    expect(() => parseLegacyBoolean('yes', 'pin')).toThrow('invalid_boolean_parameter:pin');
+  it('rejects unsupported query boolean values', () => {
+    expect(() => parseBooleanQueryParameter('yes', 'pin')).toThrow('invalid_boolean_parameter:pin');
   });
 
   it('only accepts whole pagination numbers at or above the minimum', () => {
@@ -28,5 +35,34 @@ describe('OpenKey route input parsing', () => {
     expect(() => processTags(Array.from({ length: 21 }, (_, index) => `tag-${index}`))).toThrow(
       'Maximum 20 tags allowed'
     );
+  });
+});
+
+describe('OpenKey note creation route policy', () => {
+  it('marks the convenience GET response as non-cacheable and supported', async () => {
+    const app = new Hono();
+    app.get('/', (c) => {
+      markConvenienceNoteCreate(c);
+      return c.text('ok');
+    });
+
+    const response = await app.request('/');
+
+    expect(response.headers.get('Cache-Control')).toBe('no-store');
+    expect(response.headers.get('Deprecation')).toBeNull();
+    expect(response.headers.get('Link')).toBeNull();
+  });
+
+  it('marks only the legacy POST response as deprecated', async () => {
+    const app = new Hono();
+    app.post('/', (c) => {
+      markLegacyNoteCreatePost(c);
+      return c.text('ok');
+    });
+
+    const response = await app.request('/', { method: 'POST' });
+
+    expect(response.headers.get('Deprecation')).toBe('true');
+    expect(response.headers.get('Link')).toBe('</v2/api/openkey/notes>; rel="successor-version"');
   });
 });

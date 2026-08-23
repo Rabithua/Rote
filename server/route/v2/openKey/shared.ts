@@ -43,7 +43,7 @@ export function parseOptionalInteger(
   return parsed;
 }
 
-export function parseLegacyBoolean(
+export function parseBooleanQueryParameter(
   value: string | undefined,
   parameter: string
 ): boolean | undefined {
@@ -65,7 +65,11 @@ export function processTags(values: readonly string[]): string[] {
   return tags;
 }
 
-export function markLegacyNoteCreate(c: HonoContext) {
+export function markConvenienceNoteCreate(c: HonoContext) {
+  c.header('Cache-Control', 'no-store');
+}
+
+export function markLegacyNoteCreatePost(c: HonoContext) {
   c.header('Deprecation', 'true');
   c.header('Link', '</v2/api/openkey/notes>; rel="successor-version"');
 }

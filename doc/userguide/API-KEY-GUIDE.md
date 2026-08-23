@@ -49,7 +49,7 @@ When generating or updating an API Key, you can specify which permissions it sho
   "content": "Note content (required, max 1,000,000 characters)",
   "title": "Optional title (max 200 characters)",
   "state": "private|public",
-  "type": "rote|article|other",
+  "type": "Rote|article|other",
   "tags": ["tag1", "tag2"], // Each tag max 50 characters, max 20 tags
   "pin": false,
   "articleId": "optional-article-uuid" // Bind to an existing article
@@ -67,7 +67,7 @@ When generating or updating an API Key, you can specify which permissions it sho
     "content": "Note content",
     "title": "Optional title",
     "state": "private",
-    "type": "rote",
+    "type": "Rote",
     "tags": ["tag1", "tag2"],
     "pin": false,
     "authorid": "user_id",
@@ -79,21 +79,28 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Required Permission**: `SENDROTE`
 
-### 2. Create Note (Legacy/Compatibility)
+### 2. Create Note (Convenient URL and Legacy POST)
 
 **Endpoints**:
 
-- `GET /v2/api/openkey/notes/create`
-- `POST /v2/api/openkey/notes/create`
+- `GET /v2/api/openkey/notes/create` (supported convenient URL)
+- `POST /v2/api/openkey/notes/create` (legacy compatibility)
 
-Both compatibility endpoints remain available, but new integrations should use
-`POST /v2/api/openkey/notes`. Successful compatibility responses include:
+The GET endpoint is intentionally supported for browser bookmarks, Shortcuts, webhooks, and
+URL-only automation. Responses include `Cache-Control: no-store` so they are not cached.
+
+Because its query string contains the OpenKey and note content, only use the convenient URL in
+trusted environments and avoid sensitive content that could be retained in browser history or
+intermediary logs. Structured integrations should use `POST /v2/api/openkey/notes`.
+
+The legacy POST endpoint remains available, but new POST integrations should use
+`POST /v2/api/openkey/notes`. Successful legacy POST responses include:
 
 - `Deprecation: true`
 - `Link: </v2/api/openkey/notes>; rel="successor-version"`
 
 The legacy POST endpoint accepts the same JSON body as the recommended POST endpoint.
-The legacy GET endpoint accepts these query parameters:
+The convenient GET endpoint accepts these query parameters:
 
 **Query Parameters**:
 
