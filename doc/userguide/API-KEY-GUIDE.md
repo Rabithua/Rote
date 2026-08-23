@@ -79,20 +79,35 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Required Permission**: `SENDROTE`
 
-### 2. Create Note (GET method - Legacy/Compatibility)
+### 2. Create Note (Legacy/Compatibility)
 
-**Endpoint**: `GET /v2/api/openkey/notes/create`
+**Endpoints**:
+
+- `GET /v2/api/openkey/notes/create`
+- `POST /v2/api/openkey/notes/create`
+
+Both compatibility endpoints remain available, but new integrations should use
+`POST /v2/api/openkey/notes`. Successful compatibility responses include:
+
+- `Deprecation: true`
+- `Link: </v2/api/openkey/notes>; rel="successor-version"`
+
+The legacy POST endpoint accepts the same JSON body as the recommended POST endpoint.
+The legacy GET endpoint accepts these query parameters:
 
 **Query Parameters**:
 
 - `openkey`: YOUR_API_KEY (Required)
 - `content`: Note content (required, max 1,000,000 characters)
 - `state`: Note state (private or public, defaults to private)
-- `type`: Note type (defaults to "Rote")
+- `type`: Note type (defaults to `rote`)
 - `title`: Optional title
 - `tag`: Tags (can be multiple, e.g., `tag=tag1&tag=tag2`, each tag max 50 characters, max 20 tags)
-- `pin`: Whether to pin the note (true/false)
+- `pin`: Whether to pin the note (`true`, `false`, `1`, or `0`)
+- `archived`: Whether to archive the note (`true`, `false`, `1`, or `0`)
 - `articleId`: Optional article ID to bind
+
+Other boolean values are rejected with HTTP 400.
 
 **Response**: Same as POST method
 
