@@ -27,12 +27,6 @@ const uploadPolicy = {
   maxVideoUploadSizeMB: 300,
 };
 
-const detectedContentTypeForKey = async (key: string) => {
-  if (key.includes('mislabelled') || /\.(heic|heif)$/i.test(key)) return 'image/heic' as const;
-  if (/\.jpe?g$/i.test(key)) return 'image/jpeg' as const;
-  return null;
-};
-
 describe('attachment upload flow', () => {
   it('rejects batch-shaped completion results on the legacy finalize path', () => {
     expect(() =>
@@ -45,7 +39,7 @@ describe('attachment upload flow', () => {
     ).toThrow('resource_upload_manifest_mismatch');
   });
 
-  it('requires all billable roles while allowing optional derivatives', () => {
+  it('keeps legacy derivatives optional but requires every batch manifest part', () => {
     const reservationId = LIVE_UUID;
     const original = `users/${USER_ID}/staging/${reservationId}/uploads/a.jpg`;
     const compressed = `users/${USER_ID}/staging/${reservationId}/compressed/a.webp`;
@@ -99,6 +93,16 @@ describe('attachment upload flow', () => {
       )
     ).not.toThrow();
     expect(() =>
+      assertCompleteRequiredManifest(
+        [
+          { uuid: 'a', originalKey: original },
+          { uuid: 'b', originalKey: liveOriginal, pairedVideoKey: paired },
+        ],
+        manifest,
+        true
+      )
+    ).toThrow();
+    expect(() =>
       assertCompleteRequiredManifest([{ uuid: 'a', originalKey: original }], manifest)
     ).toThrow();
     expect(() =>
@@ -127,7 +131,7 @@ describe('attachment upload flow', () => {
     expect(new URL(putUrl).searchParams.get('X-Amz-SignedHeaders')).toBe('content-type;host');
   });
 
-  it('does not presign a client WebP target for Live Photos', async () => {
+  it('presigns a client JPEG preview target for Live Photos', async () => {
     const signed: Array<{ contentType?: string; key: string }> = [];
     const result = await presignAttachmentUploads(
       {
@@ -177,12 +181,64 @@ describe('attachment upload flow', () => {
       }
     );
 
-    expect(result.items[0].compressed).toBeUndefined();
+    expect(result.items[0].compressed.key).toEndWith('.jpg');
+    expect(result.items[0].compressed.contentType).toBe('image/jpeg');
     expect(result.items[0].original.key).toEndWith('.heic');
     expect(result.items[0].original.contentType).toBe('image/heic');
     expect(result.items[0].pairedVideo.key).toEndWith('.mov');
     expect(result.items[0].pairedVideo.contentType).toBe('video/quicktime');
-    expect(signed.some(({ key }) => key.endsWith('.webp'))).toBe(false);
+    expect(
+      signed.some(({ contentType, key }) => contentType === 'image/jpeg' && key.endsWith('.jpg'))
+    ).toBe(true);
+  });
+
+  it('honors an iOS JPEG preview preference for standalone images', async () => {
+    const result = await presignAttachmentUploads(
+      {
+        files: [
+          {
+            compressedContentType: 'image/jpeg',
+            contentType: 'image/heic',
+            filename: 'IMG_0002.HEIC',
+            mediaKind: 'image',
+            size: 1024,
+          },
+        ],
+        scopes: [],
+        userId: USER_ID,
+      },
+      {
+        createUploadReservation: async () => false,
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        getResourceStateForUserId: async () => ({
+          management: 'unmanaged',
+          source: 'unmanaged',
+          storage: {
+            enforcement: 'off',
+            usedBytes: null,
+            reservedBytes: null,
+            limitBytes: null,
+            overLimit: null,
+            canUpload: true,
+          },
+          openKey: {
+            policy: 'unmanaged',
+            creationThreshold: null,
+            existingCount: 0,
+            canCreate: true,
+          },
+        }),
+        presignPutUrl: async (key) => ({
+          putUrl: `https://put.example.com/${key}`,
+          url: `${URL_PREFIX}/${key}`,
+        }),
+        randomUUID: () => LIVE_UUID,
+        requireStorageAvailable: () => storageConfig,
+      }
+    );
+
+    expect(result.items[0].compressed.key).toEndWith('.jpg');
+    expect(result.items[0].compressed.contentType).toBe('image/jpeg');
   });
 
   it('uses length-bound staging objects and one atomic reservation for managed uploads', async () => {
@@ -211,6 +267,7 @@ describe('attachment upload flow', () => {
         userId: USER_ID,
       },
       {
+        createDerivedUploadProxyUrl: ({ key }) => `https://put.example.com/${key}`,
         getAttachmentUploadPolicy: async () => uploadPolicy,
         getResourceStateForUserId: async () => ({
           management: 'official',
@@ -252,14 +309,15 @@ describe('attachment upload flow', () => {
     expect(signed.map(({ contentLength }) => contentLength)).toEqual([1024, 2048]);
     expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
       ['original', '1024'],
+      ['compressed', null],
       ['paired_video', '2048'],
     ]);
   });
 
-  it('finalizes HEIC and MOV with a browser-compatible cover URL', async () => {
+  it('finalizes a client-provided Live Photo preview without media processing', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
     const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
-    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.v2.jpg`;
+    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.jpg`;
     let persisted: UploadResult[] = [];
 
     const result = await finalizeAttachmentUploads(
@@ -269,6 +327,7 @@ describe('attachment upload flow', () => {
             mimetype: 'image/heic',
             mediaKind: 'livePhoto',
             originalKey,
+            compressedKey: coverKey,
             pairedVideoKey,
             pairedVideoMimetype: 'video/quicktime',
             pairedVideoSize: 2048,
@@ -280,14 +339,8 @@ describe('attachment upload flow', () => {
         userId: USER_ID,
       },
       {
-        checkObjectExists: async (key) => key === originalKey || key === pairedVideoKey,
-        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
-        ensureHeicBrowserCover: async () => ({
-          contentType: 'image/jpeg',
-          key: coverKey,
-          size: 512,
-          status: 'generated',
-        }),
+        checkObjectExists: async (key) =>
+          key === originalKey || key === coverKey || key === pairedVideoKey,
         getAttachmentUploadPolicy: async () => uploadPolicy,
         requireStorageAvailable: () => storageConfig,
         upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => {
@@ -306,10 +359,8 @@ describe('attachment upload flow', () => {
     expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
   });
 
-  it('generates a browser-compatible cover when a standalone HEIC has no compressed upload', async () => {
+  it('does not generate a server-side cover when a legacy HEIC upload omits one', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
-    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.v2.jpg`;
-    let coverCalls = 0;
 
     const result = await finalizeAttachmentUploads(
       {
@@ -327,31 +378,19 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async (key) => key === originalKey,
-        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
-        ensureHeicBrowserCover: async () => {
-          coverCalls++;
-          return {
-            contentType: 'image/jpeg',
-            key: coverKey,
-            size: 512,
-            status: 'generated',
-          };
-        },
         getAttachmentUploadPolicy: async () => uploadPolicy,
         requireStorageAvailable: () => storageConfig,
         upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
       }
     );
 
-    expect(coverCalls).toBe(1);
     expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
-    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
-    expect(result[0].details.compressKey).toBe(coverKey);
+    expect(result[0].compressUrl).toBeNull();
+    expect(result[0].details.compressKey).toBeUndefined();
   });
 
-  it('corrects a mislabelled standalone HEIC and generates a JPEG cover', async () => {
+  it('uses the client-declared media metadata without reading image bytes', async () => {
     const originalKey = `users/${USER_ID}/uploads/mislabelled-standalone.jpg`;
-    const coverKey = `users/${USER_ID}/compressed/mislabelled-standalone.v2.jpg`;
 
     const result = await finalizeAttachmentUploads(
       {
@@ -369,28 +408,20 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async (key) => key === originalKey,
-        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
-        ensureHeicBrowserCover: async () => ({
-          contentType: 'image/jpeg',
-          key: coverKey,
-          size: 512,
-          status: 'generated',
-        }),
         getAttachmentUploadPolicy: async () => uploadPolicy,
         requireStorageAvailable: () => storageConfig,
         upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
       }
     );
 
-    expect(result[0].details.mimetype).toBe('image/heic');
-    expect(result[0].details.compressKey).toBe(coverKey);
-    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+    expect(result[0].details.mimetype).toBe('image/jpeg');
+    expect(result[0].compressUrl).toBeNull();
   });
 
-  it('reuses a browser-compatible JPEG Live Photo still without HEIC decoding', async () => {
+  it('keeps a client-provided JPEG Live Photo preview', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
     const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
-    let coverCalls = 0;
+    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.jpg`;
 
     const result = await finalizeAttachmentUploads(
       {
@@ -399,6 +430,7 @@ describe('attachment upload flow', () => {
             mimetype: 'image/jpeg',
             mediaKind: 'livePhoto',
             originalKey,
+            compressedKey: coverKey,
             pairedVideoKey,
             pairedVideoMimetype: 'video/quicktime',
             pairedVideoSize: 2048,
@@ -411,112 +443,21 @@ describe('attachment upload flow', () => {
       },
       {
         checkObjectExists: async () => true,
-        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
-        ensureHeicBrowserCover: async () => {
-          coverCalls++;
-          throw new Error('JPEG still must not be sent to the HEIC decoder');
-        },
         getAttachmentUploadPolicy: async () => uploadPolicy,
         requireStorageAvailable: () => storageConfig,
         upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
       }
     );
 
-    expect(coverCalls).toBe(0);
     expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
-    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${originalKey}`);
-    expect(result[0].details.compressKey).toBe(originalKey);
+    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+    expect(result[0].details.compressKey).toBe(coverKey);
     expect(result[0].details.pairedVideoKey).toBe(pairedVideoKey);
   });
 
-  it('corrects a mislabelled HEIC Live Photo and generates a JPEG cover', async () => {
-    const originalKey = `users/${USER_ID}/uploads/mislabelled.jpg`;
-    const pairedVideoKey = `users/${USER_ID}/paired-videos/mislabelled.mov`;
-    const coverKey = `users/${USER_ID}/compressed/mislabelled.v2.jpg`;
-
-    const result = await finalizeAttachmentUploads(
-      {
-        attachments: [
-          {
-            mimetype: 'image/jpeg',
-            mediaKind: 'livePhoto',
-            originalKey,
-            pairedVideoKey,
-            pairedVideoMimetype: 'video/quicktime',
-            pairedVideoSize: 2048,
-            size: 1024,
-            uuid: 'mislabelled',
-          },
-        ],
-        scopes: ['video:upload'],
-        userId: USER_ID,
-      },
-      {
-        checkObjectExists: async () => true,
-        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
-        ensureHeicBrowserCover: async () => ({
-          contentType: 'image/jpeg',
-          key: coverKey,
-          size: 512,
-          status: 'generated',
-        }),
-        getAttachmentUploadPolicy: async () => uploadPolicy,
-        requireStorageAvailable: () => storageConfig,
-        upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => uploads,
-      }
-    );
-
-    expect(result[0].details.mimetype).toBe('image/heic');
-    expect(result[0].details.compressKey).toBe(coverKey);
-    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
-  });
-
-  it('rejects finalize when an uploaded image signature cannot be read', async () => {
-    const originalKey = `users/${USER_ID}/uploads/unreadable.jpg`;
-    const pairedVideoKey = `users/${USER_ID}/paired-videos/unreadable.mov`;
-    let persisted = false;
-
-    await expect(
-      finalizeAttachmentUploads(
-        {
-          attachments: [
-            {
-              mimetype: 'image/jpeg',
-              mediaKind: 'livePhoto',
-              originalKey,
-              pairedVideoKey,
-              pairedVideoMimetype: 'video/quicktime',
-              pairedVideoSize: 2048,
-              size: 1024,
-              uuid: 'unreadable',
-            },
-          ],
-          scopes: ['video:upload'],
-          userId: USER_ID,
-        },
-        {
-          checkObjectExists: async () => true,
-          detectStoredImageContentTypeByKey: async () => {
-            throw new Error('range read failed');
-          },
-          getAttachmentUploadPolicy: async () => uploadPolicy,
-          requireStorageAvailable: () => storageConfig,
-          upsertAttachmentsByOriginalKey: async () => {
-            persisted = true;
-            return [];
-          },
-        }
-      )
-    ).rejects.toThrow(`Failed to inspect uploaded image ${originalKey}: range read failed`);
-
-    expect(persisted).toBe(false);
-  });
-
-  it('validates note attachment limits before generating a HEIC browser cover', async () => {
+  it('validates note attachment limits before persistence', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
     const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
-    let coverCalls = 0;
-
     await expect(
       finalizeAttachmentUploads(
         {
@@ -538,10 +479,6 @@ describe('attachment upload flow', () => {
         },
         {
           checkObjectExists: async () => true,
-          ensureHeicBrowserCover: async () => {
-            coverCalls++;
-            throw new Error('cover generation should not run');
-          },
           getAttachmentDetailsByRoteId: async () =>
             Array.from({ length: 9 }, (_, index) => ({
               details: {
@@ -558,8 +495,6 @@ describe('attachment upload flow', () => {
         }
       )
     ).rejects.toThrow('Maximum 9 images');
-
-    expect(coverCalls).toBe(0);
   });
 
   it('preserves JPEG, PNG, GIF, and video attachment behavior', async () => {
@@ -596,7 +531,6 @@ describe('attachment upload flow', () => {
       { attachments: inputs, scopes: ['video:upload'], userId: USER_ID },
       {
         checkObjectExists: async () => true,
-        detectStoredImageContentTypeByKey: detectedContentTypeForKey,
         getAttachmentUploadPolicy: async () => uploadPolicy,
         requireStorageAvailable: () => storageConfig,
         upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => {
@@ -645,7 +579,6 @@ describe('attachment upload flow', () => {
         },
         {
           checkObjectExists: async (key) => key === availableKey,
-          detectStoredImageContentTypeByKey: detectedContentTypeForKey,
           getAttachmentUploadPolicy: async () => uploadPolicy,
           requireStorageAvailable: () => storageConfig,
           upsertAttachmentsByOriginalKey: async () => {

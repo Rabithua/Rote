@@ -6,6 +6,7 @@
   "attachmentsRequired": "attachments_required",
   "capabilityAttachmentUpload": "capability_required:attachment.upload",
   "capabilityVideoUpload": "capability_required:attachment.video.upload",
+  "compressedContentTypeInvalid": "compressed_content_type_invalid",
   "compressedFileInvalidPrefix": "compressed_file_invalid:",
   "fileCountExceeded": "file_count_exceeded",
   "insufficientVideoUpload": "insufficient_scope:video:upload",

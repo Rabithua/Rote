@@ -25,6 +25,7 @@ import { createDerivedUploadProxyUrl } from '../resources/uploadProxy';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 
 export type PresignAttachmentDependencies = {
+  createDerivedUploadProxyUrl: typeof createDerivedUploadProxyUrl;
   getAttachmentUploadPolicy: typeof getAttachmentUploadPolicy;
   presignPutUrl: typeof presignPutUrl;
   randomUUID: typeof randomUUID;
@@ -34,6 +35,7 @@ export type PresignAttachmentDependencies = {
 };
 
 const defaultDependencies: PresignAttachmentDependencies = {
+  createDerivedUploadProxyUrl,
   getAttachmentUploadPolicy,
   presignPutUrl,
   randomUUID,
@@ -46,6 +48,13 @@ const UPLOAD_RESERVATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
 function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: number) {
   validateContentType(file.contentType);
+  if (
+    file.compressedContentType !== undefined &&
+    file.compressedContentType !== 'image/jpeg' &&
+    file.compressedContentType !== 'image/webp'
+  ) {
+    throw new Error(attachmentErrors.compressedContentTypeInvalid);
+  }
   if (file.mediaKind !== 'livePhoto') {
     validateFileSize(file.size, file.contentType, maxVideoUploadSizeMB);
     return;
@@ -103,6 +112,10 @@ export async function presignAttachmentUploads(
     const ext = getUploadExtension(file.filename, file.contentType);
     const mediaKind =
       file.mediaKind === 'livePhoto' ? 'livePhoto' : getMediaKindFromContentType(file.contentType);
+    const compressedContentType =
+      mediaKind === 'image' || mediaKind === 'livePhoto'
+        ? (file.compressedContentType ?? (mediaKind === 'livePhoto' ? 'image/jpeg' : 'image/webp'))
+        : undefined;
     const finalPrefix = `users/${input.userId}`;
     const stagingPrefix = managed ? `${finalPrefix}/staging/${reservationId}` : finalPrefix;
     const manifest: UploadReservationManifestItem[] = [];
@@ -117,11 +130,15 @@ export async function presignAttachmentUploads(
       contentType: file.contentType ?? 'application/octet-stream',
       billable: true,
     });
-    let compressed: { key: string; finalKey: string } | undefined;
-    if (mediaKind === 'image') {
+    let compressed:
+      | { contentType: 'image/jpeg' | 'image/webp'; key: string; finalKey: string }
+      | undefined;
+    if (compressedContentType) {
+      const compressedExtension = compressedContentType === 'image/jpeg' ? 'jpg' : 'webp';
       compressed = {
-        key: `${stagingPrefix}/compressed/${uuid}.webp`,
-        finalKey: `${finalPrefix}/compressed/${uuid}.webp`,
+        contentType: compressedContentType,
+        key: `${stagingPrefix}/compressed/${uuid}.${compressedExtension}`,
+        finalKey: `${finalPrefix}/compressed/${uuid}.${compressedExtension}`,
       };
       manifest.push({
         uuid,
@@ -129,7 +146,7 @@ export async function presignAttachmentUploads(
         stagingKey: compressed.key,
         finalKey: compressed.finalKey,
         declaredBytes: null,
-        contentType: 'image/webp',
+        contentType: compressed.contentType,
         billable: false,
       });
     }
@@ -203,28 +220,26 @@ export async function presignAttachmentUploads(
           },
         };
 
-        // Live Photo stills are generated server-side during finalize. Do not ask
-        // clients to encode WebP, because iOS cannot reliably produce it.
-        if (mediaKind === 'image') {
+        if (mediaKind === 'image' || mediaKind === 'livePhoto') {
           if (!compressed) throw new Error('Missing compressed upload manifest');
           const compressedUpload = managed
             ? {
-                putUrl: createDerivedUploadProxyUrl({
+                putUrl: dependencies.createDerivedUploadProxyUrl({
                   reservationId: reservationId!,
                   userId: input.userId,
                   role: 'compressed',
                   key: compressed.key,
-                  contentType: 'image/webp',
+                  contentType: compressed.contentType,
                   expiresAt: credentialExpiresAt,
                 }),
                 url: '',
               }
-            : await dependencies.presignPutUrl(compressed.key, 'image/webp', 15 * 60);
+            : await dependencies.presignPutUrl(compressed.key, compressed.contentType, 15 * 60);
           result.compressed = {
             key: compressed.key,
             putUrl: compressedUpload.putUrl,
             url: compressedUpload.url,
-            contentType: 'image/webp',
+            contentType: compressed.contentType,
           };
         }
 
@@ -248,7 +263,7 @@ export async function presignAttachmentUploads(
           if (!poster) throw new Error('Missing poster upload manifest');
           const posterUpload = managed
             ? {
-                putUrl: createDerivedUploadProxyUrl({
+                putUrl: dependencies.createDerivedUploadProxyUrl({
                   reservationId: reservationId!,
                   userId: input.userId,
                   role: 'poster',
