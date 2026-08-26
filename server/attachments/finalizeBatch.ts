@@ -279,7 +279,7 @@ async function persistBatch(params: {
     });
 
     const orderedAttachmentIds = params.input.order.map((reference) => {
-      if (reference.attachmentId) return reference.attachmentId;
+      if (reference.attachmentId) return reference.attachmentId.toLowerCase();
       const attachmentId = reference.clientId ? clientIdMap[reference.clientId] : undefined;
       if (!attachmentId) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
       return attachmentId;

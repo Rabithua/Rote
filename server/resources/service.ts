@@ -442,6 +442,41 @@ export type UploadReservationFinalizeClaim =
 
 const FINALIZE_LEASE_DURATION_MS = 2 * 60 * 1000;
 
+async function cancelLockedUploadReservation(
+  transaction: any,
+  reservation: typeof resourceUploadReservations.$inferSelect,
+  now: Date
+): Promise<void> {
+  await transaction
+    .update(resourceStorageAccounts)
+    .set({
+      reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
+      updatedAt: now,
+    })
+    .where(eq(resourceStorageAccounts.userId, reservation.userId));
+  const cleanupAt =
+    reservation.status === 'finalizing' &&
+    reservation.finalizingLeaseExpiresAt !== null &&
+    reservation.finalizingLeaseExpiresAt.getTime() > now.getTime()
+      ? reservation.finalizingLeaseExpiresAt
+      : now;
+  await enqueueStorageObjectCleanup(
+    transaction,
+    reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true),
+    cleanupAt
+  );
+  await transaction
+    .update(resourceUploadReservations)
+    .set({
+      status: 'cancelled',
+      finalizingBatchId: null,
+      finalizingLeaseToken: null,
+      finalizingLeaseExpiresAt: null,
+      completedAt: now,
+    })
+    .where(eq(resourceUploadReservations.id, reservation.id));
+}
+
 async function cancelReservationIfGrantWasReplaced(
   transaction: any,
   reservation: typeof resourceUploadReservations.$inferSelect,
@@ -467,27 +502,7 @@ async function cancelReservationIfGrantWasReplaced(
   const replacedEarly = uploadReservationGrantWasReplaced(reservation, current, now);
   if (!replacedEarly) return false;
 
-  await transaction
-    .update(resourceStorageAccounts)
-    .set({
-      reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
-      updatedAt: now,
-    })
-    .where(eq(resourceStorageAccounts.userId, reservation.userId));
-  await enqueueStorageObjectCleanup(
-    transaction,
-    reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
-  );
-  await transaction
-    .update(resourceUploadReservations)
-    .set({
-      status: 'cancelled',
-      finalizingBatchId: null,
-      finalizingLeaseToken: null,
-      finalizingLeaseExpiresAt: null,
-      completedAt: now,
-    })
-    .where(eq(resourceUploadReservations.id, reservation.id));
+  await cancelLockedUploadReservation(transaction, reservation, now);
   return true;
 }
 
@@ -560,7 +575,8 @@ export async function claimUploadReservationForFinalize(params: {
         return { kind: 'completed', result: reservation.result };
       }
       if (reservation.expiresAt.getTime() <= now.getTime()) {
-        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+        await cancelLockedUploadReservation(transaction, reservation, now);
+        return { kind: 'expired' } as const;
       }
       if (await cancelReservationIfGrantWasReplaced(transaction, reservation, now)) {
         return { kind: 'expired' } as const;
