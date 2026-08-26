@@ -181,7 +181,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
         allowRegistration: uiConfig?.allowRegistration ?? true,
         allowUploadFile: uiConfig?.allowUploadFile ?? true,
         maxVideoUploadSizeMB: uiConfig?.maxVideoUploadSizeMB ?? 300,
-        attachmentUploadSessions: true,
+        attachmentUploadSessions: false,
         attachmentBatchFinalize: billingConfig.enabled,
       },
 
