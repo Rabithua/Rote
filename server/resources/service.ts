@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { and, count, eq, sql } from 'drizzle-orm';
 import type { User } from '../drizzle/schema';
 import {
@@ -416,6 +417,115 @@ export type UploadReservationRecord = Omit<
   typeof resourceUploadReservations.$inferSelect,
   'manifest'
 > & { manifest: UploadReservationManifestItem[] };
+
+export type UploadReservationFinalizeClaim =
+  | { kind: 'completed'; result: unknown }
+  | {
+      kind: 'claimed';
+      leaseToken: string;
+      reservation: UploadReservationRecord;
+    };
+
+const FINALIZE_LEASE_DURATION_MS = 2 * 60 * 1000;
+
+/**
+ * Claims a short finalize lease without keeping a database transaction open
+ * while object storage is inspected and staging objects are promoted.
+ */
+export async function claimUploadReservationForFinalize(params: {
+  userId: string;
+  reservationId: string;
+  batchId: string;
+  now?: Date;
+}): Promise<UploadReservationFinalizeClaim> {
+  const now = params.now ?? new Date();
+  return db.transaction(async (transaction) => {
+    const [reservation] = await transaction
+      .select()
+      .from(resourceUploadReservations)
+      .where(
+        and(
+          eq(resourceUploadReservations.id, params.reservationId),
+          eq(resourceUploadReservations.userId, params.userId)
+        )
+      )
+      .limit(1)
+      .for('update');
+
+    if (!reservation) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    if (reservation.status === 'completed') {
+      return { kind: 'completed', result: reservation.result };
+    }
+    if (reservation.expiresAt.getTime() <= now.getTime()) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+    }
+
+    const activeLease =
+      reservation.status === 'finalizing' &&
+      reservation.finalizingLeaseExpiresAt !== null &&
+      reservation.finalizingLeaseExpiresAt.getTime() > now.getTime();
+    if (activeLease) {
+      // Concurrent callers must retry the same idempotency key after the short
+      // lease holder commits; this is not a manifest corruption signal.
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+    }
+    if (reservation.status !== 'pending' && reservation.status !== 'finalizing') {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+
+    const leaseToken = randomUUID();
+    const finalizingLeaseExpiresAt = new Date(now.getTime() + FINALIZE_LEASE_DURATION_MS);
+    await transaction
+      .update(resourceUploadReservations)
+      .set({
+        status: 'finalizing',
+        finalizingBatchId: params.batchId,
+        finalizingLeaseToken: leaseToken,
+        finalizingLeaseExpiresAt,
+      })
+      .where(eq(resourceUploadReservations.id, reservation.id));
+
+    return {
+      kind: 'claimed',
+      leaseToken,
+      reservation: {
+        ...reservation,
+        status: 'finalizing',
+        finalizingBatchId: params.batchId,
+        finalizingLeaseToken: leaseToken,
+        finalizingLeaseExpiresAt,
+        manifest: reservation.manifest as UploadReservationManifestItem[],
+      },
+    };
+  });
+}
+
+export async function releaseUploadReservationFinalizeClaim(params: {
+  userId: string;
+  reservationId: string;
+  batchId: string;
+  leaseToken: string;
+}): Promise<void> {
+  await db
+    .update(resourceUploadReservations)
+    .set({
+      status: 'pending',
+      finalizingBatchId: null,
+      finalizingLeaseToken: null,
+      finalizingLeaseExpiresAt: null,
+    })
+    .where(
+      and(
+        eq(resourceUploadReservations.id, params.reservationId),
+        eq(resourceUploadReservations.userId, params.userId),
+        eq(resourceUploadReservations.status, 'finalizing'),
+        eq(resourceUploadReservations.finalizingBatchId, params.batchId),
+        eq(resourceUploadReservations.finalizingLeaseToken, params.leaseToken)
+      )
+    );
+}
 
 export async function createUploadReservation(params: {
   id: string;
@@ -862,6 +972,106 @@ export async function completeUploadReservation(
   };
   if (transactionOverride) await execute(transactionOverride);
   else await db.transaction(execute);
+}
+
+/** Completes a reservation previously claimed by the batch finalize path. */
+export async function completeClaimedUploadReservation(
+  params: {
+    userId: string;
+    reservationId: string;
+    batchId: string;
+    leaseToken: string;
+    result: unknown;
+    objects: Array<UploadReservationManifestItem & { actualBytes: bigint }>;
+  },
+  transactionOverride: any
+): Promise<unknown> {
+  const [reservation] = await transactionOverride
+    .select()
+    .from(resourceUploadReservations)
+    .where(
+      and(
+        eq(resourceUploadReservations.id, params.reservationId),
+        eq(resourceUploadReservations.userId, params.userId)
+      )
+    )
+    .limit(1)
+    .for('update');
+  if (!reservation) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  if (reservation.status === 'completed') return reservation.result;
+  if (
+    reservation.status !== 'finalizing' ||
+    reservation.finalizingBatchId !== params.batchId ||
+    reservation.finalizingLeaseToken !== params.leaseToken
+  ) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  if (reservation.expiresAt.getTime() <= Date.now()) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired);
+  }
+
+  const actualBillable = params.objects.reduce(
+    (sum, object) => sum + (object.billable ? object.actualBytes : BigInt(0)),
+    BigInt(0)
+  );
+  if (actualBillable > reservation.reservedBytes) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  for (const object of params.objects) {
+    await transactionOverride
+      .insert(resourceStorageObjects)
+      .values({
+        ownerId: params.userId,
+        storageIdentity: 'primary',
+        objectKey: object.finalKey,
+        role: object.role,
+        actualBytes: object.actualBytes,
+        billable: object.billable,
+      })
+      .onConflictDoUpdate({
+        target: [resourceStorageObjects.storageIdentity, resourceStorageObjects.objectKey],
+        set: { actualBytes: object.actualBytes, updatedAt: new Date() },
+      });
+  }
+  await enqueueStorageObjectCleanup(
+    transactionOverride,
+    params.objects
+      .filter((object) => object.stagingKey !== object.finalKey)
+      .map((object) => object.stagingKey),
+    reservation.credentialExpiresAt ?? new Date()
+  );
+  const submittedStagingKeys = new Set(params.objects.map((object) => object.stagingKey));
+  await enqueueStorageObjectCleanup(
+    transactionOverride,
+    (reservation.manifest as UploadReservationManifestItem[])
+      .filter((object) => !submittedStagingKeys.has(object.stagingKey))
+      .map((object) => object.stagingKey),
+    reservation.credentialExpiresAt ?? new Date()
+  );
+  await transactionOverride
+    .insert(resourceStorageAccounts)
+    .values({ userId: params.userId, usedBytes: actualBillable })
+    .onConflictDoUpdate({
+      target: resourceStorageAccounts.userId,
+      set: {
+        usedBytes: sql`${resourceStorageAccounts.usedBytes} + ${actualBillable}`,
+        reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
+        updatedAt: new Date(),
+      },
+    });
+  await transactionOverride
+    .update(resourceUploadReservations)
+    .set({
+      status: 'completed',
+      result: params.result,
+      completedAt: new Date(),
+      finalizingLeaseExpiresAt: null,
+      finalizingLeaseToken: null,
+    })
+    .where(eq(resourceUploadReservations.id, reservation.id));
+  return params.result;
 }
 
 export function reservationIdFromStagingKey(key: string): string | null {

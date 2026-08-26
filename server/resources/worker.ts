@@ -285,7 +285,10 @@ export async function runResourceMaintenance(now = new Date()) {
     .from(resourceUploadReservations)
     .where(
       and(
-        eq(resourceUploadReservations.status, 'pending'),
+        or(
+          eq(resourceUploadReservations.status, 'pending'),
+          eq(resourceUploadReservations.status, 'finalizing')
+        ),
         lte(resourceUploadReservations.expiresAt, now)
       )
     )
@@ -298,7 +301,12 @@ export async function runResourceMaintenance(now = new Date()) {
         .where(eq(resourceUploadReservations.id, reservation.id))
         .limit(1)
         .for('update');
-      if (!locked || locked.status !== 'pending' || locked.expiresAt > now) return;
+      if (
+        !locked ||
+        (locked.status !== 'pending' && locked.status !== 'finalizing') ||
+        locked.expiresAt > now
+      )
+        return;
       await transaction
         .update(resourceStorageAccounts)
         .set({

@@ -42,6 +42,8 @@ const defaultDependencies: PresignAttachmentDependencies = {
   createUploadReservation,
 };
 
+const UPLOAD_RESERVATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
 function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: number) {
   validateContentType(file.contentType);
   if (file.mediaKind !== 'livePhoto') {
@@ -176,7 +178,7 @@ export async function presignAttachmentUploads(
       id: reservationId,
       userId: input.userId,
       manifest: prepared.flatMap((item) => item.manifest),
-      expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+      expiresAt: new Date(Date.now() + UPLOAD_RESERVATION_LIFETIME_MS),
       credentialExpiresAt,
     });
   }

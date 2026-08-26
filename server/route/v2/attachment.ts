@@ -1,10 +1,15 @@
 import { Hono } from 'hono';
+import { finalizeAttachmentBatch } from '../../attachments/finalizeBatch';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
 import {
   presignAttachmentUploads,
   refreshAttachmentUploadReservation,
 } from '../../attachments/presignUpload';
-import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
+import type {
+  FinalizeAttachmentBatchInput,
+  FinalizeAttachmentInput,
+  PresignFileInput,
+} from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
   presignInputIncludesVideo,
@@ -95,6 +100,56 @@ attachmentsRouter.put('/sort', authenticateJWT, async (c: HonoContext) => {
   const data = await updateAttachmentsSortOrder(user.id, roteId, attachmentIds);
   return c.json(createResponse(data), 200);
 });
+
+attachmentsRouter.post(
+  '/finalize-batch',
+  authenticateJWT,
+  requireStorageConfig,
+  async (c: HonoContext) => {
+    const user = c.get('user') as User;
+    const input = (await c.req.json()) as FinalizeAttachmentBatchInput;
+    if (!isValidUUID(input.batchId)) throw new Error('Invalid batch ID');
+    if (!isValidUUID(input.noteId)) throw new Error('Invalid note ID');
+    if (input.reservationId && !isValidUUID(input.reservationId)) {
+      throw new Error('Invalid reservation ID');
+    }
+    if (
+      !Array.isArray(input.attachments) ||
+      input.attachments.some(
+        (attachment) => !attachment.clientId || !isValidUUID(attachment.clientId)
+      )
+    ) {
+      throw new Error('Invalid attachment client ID');
+    }
+    if (
+      !Array.isArray(input.order) ||
+      input.order.some(
+        (reference) =>
+          (reference.attachmentId && !isValidUUID(reference.attachmentId)) ||
+          (reference.clientId && !isValidUUID(reference.clientId))
+      )
+    ) {
+      throw new Error('Invalid attachment order ID');
+    }
+    const uploadPolicy = await getAttachmentUploadPolicy(user.id);
+    if (!uploadPolicy.canUploadAttachments) {
+      return c.json(createResponse(null, 'capability_required:attachment.upload'), 403);
+    }
+    if (
+      Array.isArray(input.attachments) &&
+      finalizeInputIncludesVideo(input.attachments) &&
+      !uploadPolicy.canUploadVideo
+    ) {
+      return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
+    }
+    const result = await finalizeAttachmentBatch({
+      input,
+      scopes: ['video:upload'],
+      userId: user.id,
+    });
+    return c.json(createResponse(result), 201);
+  }
+);
 
 attachmentsRouter.post(
   '/presign',

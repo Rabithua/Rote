@@ -233,6 +233,9 @@ describe('attachment upload flow', () => {
     );
 
     expect(result.reservationId).toBe(LIVE_UUID);
+    const remainingReservationLifetime = reservation!.expiresAt.getTime() - Date.now();
+    expect(remainingReservationLifetime).toBeGreaterThan(23 * 60 * 60 * 1000);
+    expect(remainingReservationLifetime).toBeLessThanOrEqual(24 * 60 * 60 * 1000);
     expect(result.items[0].original.key).toContain(`/staging/${LIVE_UUID}/`);
     expect(result.items[0].pairedVideo.key).toContain(`/staging/${LIVE_UUID}/`);
     expect(signed.map(({ contentLength }) => contentLength)).toEqual([1024, 2048]);
@@ -602,5 +605,47 @@ describe('attachment upload flow', () => {
     expect(persisted[1].url).toEndWith('/uploads/png.png');
     expect(persisted[2].url).toEndWith('/uploads/gif.gif');
     expect(persisted[3].posterUrl).toEndWith('/posters/video.jpg');
+  });
+
+  it('rejects the entire strict batch when one attachment object is missing', async () => {
+    const availableKey = `users/${USER_ID}/uploads/available.jpg`;
+    const missingKey = `users/${USER_ID}/uploads/missing.jpg`;
+    let upsertCalled = false;
+
+    await expect(
+      finalizeAttachmentUploads(
+        {
+          attachments: [
+            {
+              mimetype: 'image/jpeg',
+              originalKey: availableKey,
+              size: 16,
+              uuid: '11111111-1111-4111-8111-111111111111',
+            },
+            {
+              mimetype: 'image/jpeg',
+              originalKey: missingKey,
+              size: 16,
+              uuid: '22222222-2222-4222-8222-222222222222',
+            },
+          ],
+          scopes: [],
+          userId: USER_ID,
+        },
+        {
+          checkObjectExists: async (key) => key === availableKey,
+          detectStoredImageContentTypeByKey: detectedContentTypeForKey,
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          requireStorageAvailable: () => storageConfig,
+          upsertAttachmentsByOriginalKey: async () => {
+            upsertCalled = true;
+            return [];
+          },
+        },
+        undefined,
+        { manageTransaction: false, strictValidation: true }
+      )
+    ).rejects.toThrow();
+    expect(upsertCalled).toBe(false);
   });
 });

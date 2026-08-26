@@ -2,6 +2,7 @@ export const RESOURCE_ERROR_CODES = {
   storageQuotaExceeded: 'resource_storage_quota_exceeded',
   uploadReservationExpired: 'resource_upload_reservation_expired',
   uploadManifestMismatch: 'resource_upload_manifest_mismatch',
+  attachmentBatchFinalizing: 'attachment_batch_finalizing',
   openKeyCreationBlocked: 'resource_openkey_creation_blocked',
   storageReconciliationRequired: 'resource_storage_reconciliation_required',
   storageBackendUnsupported: 'resource_storage_backend_unsupported',

@@ -218,7 +218,8 @@ function validateAttachmentPayload(item: FinalizeAttachmentInput, maxVideoUpload
 
 async function collectValidAttachments(
   attachments: FinalizeAttachmentInput[],
-  objectExists: typeof checkObjectExists
+  objectExists: typeof checkObjectExists,
+  strict = false
 ) {
   const validationErrors: string[] = [];
   const validAttachments: FinalizeAttachmentInput[] = [];
@@ -303,7 +304,7 @@ async function collectValidAttachments(
     validAttachments.push(normalizedAttachment);
   }
 
-  if (validAttachments.length === 0) {
+  if (validAttachments.length === 0 || (strict && validationErrors.length > 0)) {
     const message =
       validationErrors.length === 1
         ? validationErrors[0]
@@ -360,7 +361,8 @@ export async function finalizeAttachmentUploads(
     attachments?: FinalizeAttachmentInput[];
   },
   dependencyOverrides: Partial<FinalizeAttachmentDependencies> = {},
-  managedTransaction?: any
+  managedTransaction?: any,
+  behavior: { manageTransaction?: boolean; strictValidation?: boolean } = {}
 ): Promise<any[]> {
   const dependencies = { ...defaultDependencies, ...dependencyOverrides };
   const requestedReservationIds = new Set(
@@ -368,11 +370,15 @@ export async function finalizeAttachmentUploads(
       .map((item) => reservationIdFromStagingKey(item.originalKey))
       .filter((id): id is string => Boolean(id))
   );
-  if (!managedTransaction && requestedReservationIds.size === 1) {
+  if (
+    behavior.manageTransaction !== false &&
+    !managedTransaction &&
+    requestedReservationIds.size === 1
+  ) {
     const reservationId = [...requestedReservationIds][0]!;
     try {
       return await db.transaction((transaction) =>
-        finalizeAttachmentUploads(input, dependencyOverrides, transaction)
+        finalizeAttachmentUploads(input, dependencyOverrides, transaction, behavior)
       );
     } catch (error) {
       if (
@@ -432,7 +438,8 @@ export async function finalizeAttachmentUploads(
 
   const validAttachments = await collectValidAttachments(
     input.attachments,
-    dependencies.checkObjectExists
+    dependencies.checkObjectExists,
+    behavior.strictValidation === true
   );
   const managedPromotion = await promoteManagedObjects(
     input.userId,
