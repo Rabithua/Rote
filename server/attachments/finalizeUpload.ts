@@ -68,6 +68,11 @@ const defaultDependencies: FinalizeAttachmentDependencies = {
 
 type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: bigint };
 
+export function completedLegacyFinalizeResult(result: unknown): any[] {
+  if (Array.isArray(result)) return result;
+  throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+}
+
 export function assertCompleteRequiredManifest(
   attachments: readonly FinalizeAttachmentInput[],
   manifest: readonly UploadReservationManifestItem[]
@@ -432,7 +437,7 @@ export async function finalizeAttachmentUploads(
       true
     );
     if (!claimed) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    if (claimed.status === 'completed' && Array.isArray(claimed.result)) return claimed.result;
+    if (claimed.status === 'completed') return completedLegacyFinalizeResult(claimed.result);
     assertCompleteRequiredManifest(input.attachments, claimed.manifest);
   }
 
@@ -454,8 +459,8 @@ export async function finalizeAttachmentUploads(
       managedTransaction,
       Boolean(managedTransaction)
     );
-    if (completed?.status === 'completed' && Array.isArray(completed.result)) {
-      return completed.result;
+    if (completed?.status === 'completed') {
+      return completedLegacyFinalizeResult(completed.result);
     }
   }
   if (input.noteId) {

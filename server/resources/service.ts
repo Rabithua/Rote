@@ -464,11 +464,7 @@ async function cancelReservationIfGrantWasReplaced(
     .from(billingGrants)
     .where(eq(billingGrants.userId, reservation.userId))
     .limit(1);
-  const replacedEarly =
-    current !== undefined &&
-    current.revision > reservation.grantRevision &&
-    current.status !== 'active' &&
-    current.status !== 'grace_period';
+  const replacedEarly = uploadReservationGrantWasReplaced(reservation, current, now);
   if (!replacedEarly) return false;
 
   await transaction
@@ -493,6 +489,43 @@ async function cancelReservationIfGrantWasReplaced(
     })
     .where(eq(resourceUploadReservations.id, reservation.id));
   return true;
+}
+
+export function uploadReservationGrantWasReplaced(
+  reservation: Pick<
+    typeof resourceUploadReservations.$inferSelect,
+    'grantProDerived' | 'grantRevision' | 'grantEntitlementExpiresAt'
+  >,
+  current: Pick<typeof billingGrants.$inferSelect, 'revision' | 'status'> | undefined,
+  now: Date
+): boolean {
+  return Boolean(
+    reservation.grantProDerived &&
+    reservation.grantRevision !== null &&
+    reservation.grantEntitlementExpiresAt !== null &&
+    reservation.grantEntitlementExpiresAt.getTime() > now.getTime() &&
+    current &&
+    current.revision > reservation.grantRevision &&
+    current.status !== 'active' &&
+    current.status !== 'grace_period'
+  );
+}
+
+/** Revalidates a Pro-derived reservation after the caller has locked the user row. */
+export async function assertUploadReservationGrantCurrent(
+  transaction: any,
+  reservation: typeof resourceUploadReservations.$inferSelect,
+  now = new Date()
+): Promise<void> {
+  if (!billingConfig.enabled || !reservation.grantProDerived) return;
+  const [current] = await transaction
+    .select({ revision: billingGrants.revision, status: billingGrants.status })
+    .from(billingGrants)
+    .where(eq(billingGrants.userId, reservation.userId))
+    .limit(1);
+  if (uploadReservationGrantWasReplaced(reservation, current, now)) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+  }
 }
 
 /**

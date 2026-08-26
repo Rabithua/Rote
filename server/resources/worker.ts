@@ -30,6 +30,17 @@ export function cleanupRetryDelaySeconds(attempts: number): number {
   return Math.min(3600, 2 ** Math.min(attempts, 10));
 }
 
+export function reservationCleanupNotBefore(
+  reservation: { status: string; finalizingLeaseExpiresAt: Date | null },
+  now: Date
+): Date {
+  return reservation.status === 'finalizing' &&
+    reservation.finalizingLeaseExpiresAt &&
+    reservation.finalizingLeaseExpiresAt > now
+    ? reservation.finalizingLeaseExpiresAt
+    : now;
+}
+
 export async function inspectReconciledObjects(
   objects: readonly ReconciledObject[],
   readObjectInfo: typeof getObjectInfo = getObjectInfo,
@@ -315,15 +326,21 @@ export async function runResourceMaintenance(now = new Date()) {
         })
         .where(eq(resourceStorageAccounts.userId, locked.userId));
       const manifest = locked.manifest as UploadReservationManifestItem[];
+      const cleanupNotBefore = reservationCleanupNotBefore(locked, now);
       for (const objectKey of new Set(
         manifest.flatMap((item) => [item.stagingKey, item.finalKey])
       )) {
         await transaction
           .insert(resourceCleanupOutbox)
-          .values({ storageIdentity: 'primary', objectKey })
+          .values({ storageIdentity: 'primary', objectKey, nextAttemptAt: cleanupNotBefore })
           .onConflictDoUpdate({
             target: [resourceCleanupOutbox.storageIdentity, resourceCleanupOutbox.objectKey],
-            set: { attempts: 0, nextAttemptAt: now, completedAt: null, lastError: null },
+            set: {
+              attempts: 0,
+              nextAttemptAt: cleanupNotBefore,
+              completedAt: null,
+              lastError: null,
+            },
           });
       }
       await transaction

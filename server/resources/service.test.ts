@@ -8,6 +8,7 @@ import {
   reservationCleanupKeys,
   resolveOfficialStorageState,
   storageReservationDependsOnPro,
+  uploadReservationGrantWasReplaced,
   type UploadReservationManifestItem,
 } from './service';
 import { RESOURCE_ERROR_CODES } from './errors';
@@ -154,6 +155,22 @@ describe('attachment finalize leases', () => {
       code: RESOURCE_ERROR_CODES.attachmentBatchFinalizing,
       status: 503,
     });
+  });
+
+  it('revalidates a Pro-derived reservation against a newer inactive grant', () => {
+    const now = new Date('2026-08-26T00:00:00.000Z');
+    const reservation = {
+      grantEntitlementExpiresAt: new Date('2026-09-01T00:00:00.000Z'),
+      grantProDerived: true,
+      grantRevision: 4,
+    };
+
+    expect(
+      uploadReservationGrantWasReplaced(reservation, { revision: 5, status: 'inactive' }, now)
+    ).toBe(true);
+    expect(
+      uploadReservationGrantWasReplaced(reservation, { revision: 5, status: 'active' }, now)
+    ).toBe(false);
   });
 });
 

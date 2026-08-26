@@ -1,15 +1,14 @@
 import { Hono } from 'hono';
-import { finalizeAttachmentBatch } from '../../attachments/finalizeBatch';
+import {
+  assertFinalizeAttachmentBatchInput,
+  finalizeAttachmentBatch,
+} from '../../attachments/finalizeBatch';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
 import {
   presignAttachmentUploads,
   refreshAttachmentUploadReservation,
 } from '../../attachments/presignUpload';
-import type {
-  FinalizeAttachmentBatchInput,
-  FinalizeAttachmentInput,
-  PresignFileInput,
-} from '../../attachments/types';
+import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
   presignInputIncludesVideo,
@@ -107,9 +106,10 @@ attachmentsRouter.post(
   requireStorageConfig,
   async (c: HonoContext) => {
     const user = c.get('user') as User;
-    const input = (await c.req.json()) as FinalizeAttachmentBatchInput;
+    const input: unknown = await c.req.json();
     const invalidBatch = () =>
       new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchInvalid, 400);
+    assertFinalizeAttachmentBatchInput(input);
     if (!isValidUUID(input.batchId)) throw invalidBatch();
     if (!isValidUUID(input.noteId)) throw invalidBatch();
     if (input.reservationId && !isValidUUID(input.reservationId)) {

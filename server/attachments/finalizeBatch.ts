@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import { attachments as attachmentsTable, rotes, users } from '../drizzle/schema';
 import {
+  assertUploadReservationGrantCurrent,
   claimUploadReservationForFinalize,
   completeClaimedUploadReservation,
   releaseUploadReservationFinalizeClaim,
@@ -24,18 +25,33 @@ type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: big
 
 type ActiveFinalizeClaim = Extract<UploadReservationFinalizeClaim, { kind: 'claimed' }>;
 
-export function assertFinalizeAttachmentBatchInput(input: FinalizeAttachmentBatchInput) {
+export function assertFinalizeAttachmentBatchInput(
+  input: unknown
+): asserts input is FinalizeAttachmentBatchInput {
   const invalid = () => new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchInvalid, 400);
-  if (!input.batchId || !input.noteId) throw invalid();
+  if (!isRecord(input) || !isNonEmptyString(input.batchId) || !isNonEmptyString(input.noteId)) {
+    throw invalid();
+  }
+  if (input.reservationId !== undefined && !isNonEmptyString(input.reservationId)) {
+    throw invalid();
+  }
   if (!Array.isArray(input.attachments) || input.attachments.length === 0) {
     throw invalid();
   }
   if (input.attachments.length > MAX_FILES) throw invalid();
+  if (input.attachments.some((attachment) => !isBatchAttachmentInput(attachment))) {
+    throw invalid();
+  }
   if (!Array.isArray(input.order) || input.order.length === 0) {
     throw invalid();
   }
+  if (input.order.some((reference) => !isBatchOrderReference(reference))) {
+    throw invalid();
+  }
 
-  const clientIds = input.attachments.map((attachment) => attachment.clientId?.trim() ?? '');
+  const typedInput = input as unknown as FinalizeAttachmentBatchInput;
+
+  const clientIds = typedInput.attachments.map((attachment) => attachment.clientId?.trim() ?? '');
   if (clientIds.some((clientId) => clientId.length === 0)) {
     throw invalid();
   }
@@ -43,13 +59,13 @@ export function assertFinalizeAttachmentBatchInput(input: FinalizeAttachmentBatc
     throw invalid();
   }
 
-  const orderKeys = input.order.map(orderReferenceKey);
+  const orderKeys = typedInput.order.map(orderReferenceKey);
   if (orderKeys.some((key) => key === null)) throw invalid();
   if (new Set(orderKeys).size !== orderKeys.length) {
     throw invalid();
   }
   const orderedClientIds = new Set(
-    input.order.flatMap((reference) => (reference.clientId ? [reference.clientId] : []))
+    typedInput.order.flatMap((reference) => (reference.clientId ? [reference.clientId] : []))
   );
   if (
     orderedClientIds.size !== clientIds.length ||
@@ -57,6 +73,67 @@ export function assertFinalizeAttachmentBatchInput(input: FinalizeAttachmentBatc
   ) {
     throw invalid();
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function hasOptionalString(record: Record<string, unknown>, key: string): boolean {
+  return record[key] === undefined || typeof record[key] === 'string';
+}
+
+function hasOptionalNumber(record: Record<string, unknown>, key: string): boolean {
+  return (
+    record[key] === undefined || (typeof record[key] === 'number' && Number.isFinite(record[key]))
+  );
+}
+
+function isBatchAttachmentInput(
+  value: unknown
+): value is FinalizeAttachmentBatchInput['attachments'][number] {
+  if (!isRecord(value)) return false;
+  if (
+    !isNonEmptyString(value.clientId) ||
+    !isNonEmptyString(value.uuid) ||
+    !isNonEmptyString(value.originalKey)
+  ) {
+    return false;
+  }
+  const optionalStrings = [
+    'compressedKey',
+    'posterKey',
+    'pairedVideoKey',
+    'pairedVideoMimetype',
+    'pairedVideoFilename',
+    'mimetype',
+    'hash',
+    'noteId',
+  ];
+  if (optionalStrings.some((key) => !hasOptionalString(value, key))) return false;
+  if (!hasOptionalNumber(value, 'size') || !hasOptionalNumber(value, 'pairedVideoSize')) {
+    return false;
+  }
+  return (
+    value.mediaKind === undefined ||
+    value.mediaKind === 'image' ||
+    value.mediaKind === 'video' ||
+    value.mediaKind === 'livePhoto'
+  );
+}
+
+function isBatchOrderReference(value: unknown): value is AttachmentBatchOrderReference {
+  if (!isRecord(value)) return false;
+  const attachmentId = value.attachmentId;
+  const clientId = value.clientId;
+  return (
+    (isNonEmptyString(attachmentId) && clientId === undefined) ||
+    (attachmentId === undefined && isNonEmptyString(clientId))
+  );
 }
 
 function orderReferenceKey(reference: AttachmentBatchOrderReference): string | null {
@@ -82,14 +159,15 @@ function completedBatchResult(
   const result = claim.result as Partial<FinalizeAttachmentBatchResult> | null;
   if (
     !result ||
-    result.batchId !== batchId ||
+    typeof result.batchId !== 'string' ||
+    result.batchId.toLowerCase() !== batchId ||
     !Array.isArray(result.attachments) ||
     !Array.isArray(result.orderedAttachmentIds) ||
     !result.clientIdMap
   ) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
-  return result as FinalizeAttachmentBatchResult;
+  return { ...(result as FinalizeAttachmentBatchResult), batchId };
 }
 
 async function prepareUploadsOutsideTransaction(
@@ -150,6 +228,9 @@ async function persistBatch(params: {
       .limit(1)
       .for('update');
     if (!user) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    if (params.claim) {
+      await assertUploadReservationGrantCurrent(transaction, params.claim.reservation, new Date());
+    }
 
     const [note] = await transaction
       .select({ id: rotes.id })
@@ -292,38 +373,47 @@ export async function finalizeAttachmentBatch(params: {
 }): Promise<FinalizeAttachmentBatchResult> {
   assertFinalizeAttachmentBatchInput(params.input);
 
+  const normalizedBatchId = params.input.batchId.toLowerCase();
+  const normalizedReservationId = params.input.reservationId?.toLowerCase();
+  const input: FinalizeAttachmentBatchInput = {
+    ...params.input,
+    batchId: normalizedBatchId,
+    reservationId: normalizedReservationId,
+  };
+
   const inferredReservationIds = new Set(
-    params.input.attachments
+    input.attachments
       .map((attachment) => reservationIdFromStagingKey(attachment.originalKey))
+      .map((reservationId) => reservationId?.toLowerCase() ?? null)
       .filter((reservationId): reservationId is string => Boolean(reservationId))
   );
   if (inferredReservationIds.size > 1) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   const inferredReservationId = [...inferredReservationIds][0];
-  if (params.input.reservationId && params.input.reservationId !== inferredReservationId) {
+  if (normalizedReservationId && normalizedReservationId !== inferredReservationId) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
-  const reservationId = params.input.reservationId ?? inferredReservationId;
+  const reservationId = normalizedReservationId ?? inferredReservationId;
   if (!reservationId) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
 
   const claimResult = await claimUploadReservationForFinalize({
-    batchId: params.input.batchId,
+    batchId: normalizedBatchId,
     reservationId,
     userId: params.userId,
   });
   if (claimResult.kind === 'completed') {
-    return completedBatchResult(claimResult, params.input.batchId);
+    return completedBatchResult(claimResult, normalizedBatchId);
   }
   const claim: ActiveFinalizeClaim = claimResult;
 
   try {
-    const prepared = await prepareUploadsOutsideTransaction(params.input, claim, params.userId);
+    const prepared = await prepareUploadsOutsideTransaction(input, claim, params.userId);
     const result = await persistBatch({
       claim,
-      input: params.input,
+      input,
       objects: prepared.objects,
       uploads: prepared.uploads,
       userId: params.userId,
@@ -331,7 +421,7 @@ export async function finalizeAttachmentBatch(params: {
     return result;
   } catch (error) {
     await releaseUploadReservationFinalizeClaim({
-      batchId: params.input.batchId,
+      batchId: normalizedBatchId,
       leaseToken: claim.leaseToken,
       reservationId: claim.reservation.id,
       userId: params.userId,

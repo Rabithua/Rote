@@ -5,7 +5,7 @@ import { presignAttachmentUploads } from './presignUpload';
 import { getUploadExtension } from './uploadKeys';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
-const { assertCompleteRequiredManifest, finalizeAttachmentUploads } =
+const { assertCompleteRequiredManifest, completedLegacyFinalizeResult, finalizeAttachmentUploads } =
   await import('./finalizeUpload');
 
 const USER_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -34,6 +34,17 @@ const detectedContentTypeForKey = async (key: string) => {
 };
 
 describe('attachment upload flow', () => {
+  it('rejects batch-shaped completion results on the legacy finalize path', () => {
+    expect(() =>
+      completedLegacyFinalizeResult({
+        attachments: [],
+        batchId: LIVE_UUID,
+        clientIdMap: {},
+        orderedAttachmentIds: [],
+      })
+    ).toThrow('resource_upload_manifest_mismatch');
+  });
+
   it('requires all billable roles while allowing optional derivatives', () => {
     const reservationId = LIVE_UUID;
     const original = `users/${USER_ID}/staging/${reservationId}/uploads/a.jpg`;

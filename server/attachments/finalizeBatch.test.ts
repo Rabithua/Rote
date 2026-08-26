@@ -60,6 +60,17 @@ describe('attachment batch finalize contract', () => {
     expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow('attachment_batch_invalid');
   });
 
+  it('rejects malformed nested JSON as a batch validation error', () => {
+    for (const value of [
+      null,
+      { ...input(), attachments: [null] },
+      { ...input(), order: [null] },
+      { ...input(), attachments: [{ ...input().attachments[0], originalKey: 42 }] },
+    ]) {
+      expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow('attachment_batch_invalid');
+    }
+  });
+
   it('requires a managed reservation instead of offering non-idempotent batch finalize', async () => {
     await expect(
       finalizeAttachmentBatch({ input: input(), scopes: [], userId: 'user' })
