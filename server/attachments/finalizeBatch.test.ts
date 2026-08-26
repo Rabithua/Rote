@@ -2,7 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import type { FinalizeAttachmentBatchInput } from './types';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
-const { assertFinalizeAttachmentBatchInput } = await import('./finalizeBatch');
+const {
+  assertAttachmentBindingAllowed,
+  assertFinalizeAttachmentBatchInput,
+  finalizeAttachmentBatch,
+} = await import('./finalizeBatch');
 
 const input = (): FinalizeAttachmentBatchInput => ({
   attachments: [
@@ -38,17 +42,13 @@ describe('attachment batch finalize contract', () => {
   it('rejects a batch that omits a new attachment from the final order', () => {
     const value = input();
     value.order = value.order.slice(0, 2);
-    expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow(
-      'attachment_batch_order_incomplete'
-    );
+    expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow('attachment_batch_invalid');
   });
 
   it('rejects duplicate client identities before any object or database work', () => {
     const value = input();
     value.attachments[1].clientId = value.attachments[0].clientId;
-    expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow(
-      'attachment_batch_client_id_duplicate'
-    );
+    expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow('attachment_batch_invalid');
   });
 
   it('rejects an order reference containing both identity forms', () => {
@@ -57,8 +57,20 @@ describe('attachment batch finalize contract', () => {
       attachmentId: '55555555-5555-4555-8555-555555555555',
       clientId: '11111111-1111-4111-8111-111111111111',
     } as never;
-    expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow(
-      'attachment_batch_order_invalid'
+    expect(() => assertFinalizeAttachmentBatchInput(value)).toThrow('attachment_batch_invalid');
+  });
+
+  it('requires a managed reservation instead of offering non-idempotent batch finalize', async () => {
+    await expect(
+      finalizeAttachmentBatch({ input: input(), scopes: [], userId: 'user' })
+    ).rejects.toMatchObject({ code: 'resource_upload_manifest_mismatch', status: 409 });
+  });
+
+  it('never rebinds an upload that already belongs to another note', () => {
+    expect(() => assertAttachmentBindingAllowed(null, 'note-a')).not.toThrow();
+    expect(() => assertAttachmentBindingAllowed('note-a', 'note-a')).not.toThrow();
+    expect(() => assertAttachmentBindingAllowed('note-b', 'note-a')).toThrow(
+      'resource_upload_manifest_mismatch'
     );
   });
 });

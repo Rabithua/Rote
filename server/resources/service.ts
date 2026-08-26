@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { and, count, eq, sql } from 'drizzle-orm';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { User } from '../drizzle/schema';
 import {
   attachments,
@@ -112,24 +112,32 @@ export async function cancelPendingUploadReservationsForUser(
   transactionOverride?: any
 ) {
   const execute = async (transaction: any) => {
-    const pendingReservations = await transaction
+    const activeReservations = await transaction
       .select()
       .from(resourceUploadReservations)
       .where(
         and(
           eq(resourceUploadReservations.userId, userId),
-          eq(resourceUploadReservations.status, 'pending')
+          inArray(resourceUploadReservations.status, ['pending', 'finalizing'])
         )
       )
       .for('update');
-    if (pendingReservations.length === 0) return;
+    if (activeReservations.length === 0) return;
+    const cleanupNotBefore = activeReservations.reduce(
+      (latest: Date, reservation: { finalizingLeaseExpiresAt: Date | null }) =>
+        reservation.finalizingLeaseExpiresAt && reservation.finalizingLeaseExpiresAt > latest
+          ? reservation.finalizingLeaseExpiresAt
+          : latest,
+      new Date()
+    );
     await enqueueStorageObjectCleanup(
       transaction,
-      pendingReservations.flatMap(({ manifest }: { manifest: unknown }) =>
+      activeReservations.flatMap(({ manifest }: { manifest: unknown }) =>
         reservationCleanupKeys(manifest as UploadReservationManifestItem[], true)
-      )
+      ),
+      cleanupNotBefore
     );
-    const reservedBytes = pendingReservations.reduce(
+    const reservedBytes = activeReservations.reduce(
       (total: bigint, reservation: { reservedBytes: bigint }) => total + reservation.reservedBytes,
       BigInt(0)
     );
@@ -142,11 +150,17 @@ export async function cancelPendingUploadReservationsForUser(
       .where(eq(resourceStorageAccounts.userId, userId));
     await transaction
       .update(resourceUploadReservations)
-      .set({ status: 'cancelled', completedAt: new Date() })
+      .set({
+        status: 'cancelled',
+        finalizingBatchId: null,
+        finalizingLeaseToken: null,
+        finalizingLeaseExpiresAt: null,
+        completedAt: new Date(),
+      })
       .where(
         and(
           eq(resourceUploadReservations.userId, userId),
-          eq(resourceUploadReservations.status, 'pending')
+          inArray(resourceUploadReservations.status, ['pending', 'finalizing'])
         )
       );
   };
@@ -428,6 +442,59 @@ export type UploadReservationFinalizeClaim =
 
 const FINALIZE_LEASE_DURATION_MS = 2 * 60 * 1000;
 
+async function cancelReservationIfGrantWasReplaced(
+  transaction: any,
+  reservation: typeof resourceUploadReservations.$inferSelect,
+  now: Date
+): Promise<boolean> {
+  if (
+    !billingConfig.enabled ||
+    !reservation.grantProDerived ||
+    reservation.grantRevision === null ||
+    reservation.grantEntitlementExpiresAt === null ||
+    reservation.grantEntitlementExpiresAt.getTime() <= now.getTime()
+  ) {
+    return false;
+  }
+  const [current] = await transaction
+    .select({
+      revision: billingGrants.revision,
+      status: billingGrants.status,
+    })
+    .from(billingGrants)
+    .where(eq(billingGrants.userId, reservation.userId))
+    .limit(1);
+  const replacedEarly =
+    current !== undefined &&
+    current.revision > reservation.grantRevision &&
+    current.status !== 'active' &&
+    current.status !== 'grace_period';
+  if (!replacedEarly) return false;
+
+  await transaction
+    .update(resourceStorageAccounts)
+    .set({
+      reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
+      updatedAt: now,
+    })
+    .where(eq(resourceStorageAccounts.userId, reservation.userId));
+  await enqueueStorageObjectCleanup(
+    transaction,
+    reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
+  );
+  await transaction
+    .update(resourceUploadReservations)
+    .set({
+      status: 'cancelled',
+      finalizingBatchId: null,
+      finalizingLeaseToken: null,
+      finalizingLeaseExpiresAt: null,
+      completedAt: now,
+    })
+    .where(eq(resourceUploadReservations.id, reservation.id));
+  return true;
+}
+
 /**
  * Claims a short finalize lease without keeping a database transaction open
  * while object storage is inspected and staging objects are promoted.
@@ -439,67 +506,76 @@ export async function claimUploadReservationForFinalize(params: {
   now?: Date;
 }): Promise<UploadReservationFinalizeClaim> {
   const now = params.now ?? new Date();
-  return db.transaction(async (transaction) => {
-    const [reservation] = await transaction
-      .select()
-      .from(resourceUploadReservations)
-      .where(
-        and(
-          eq(resourceUploadReservations.id, params.reservationId),
-          eq(resourceUploadReservations.userId, params.userId)
+  const outcome = await db.transaction(
+    async (transaction): Promise<UploadReservationFinalizeClaim | { kind: 'expired' }> => {
+      const [reservation] = await transaction
+        .select()
+        .from(resourceUploadReservations)
+        .where(
+          and(
+            eq(resourceUploadReservations.id, params.reservationId),
+            eq(resourceUploadReservations.userId, params.userId)
+          )
         )
-      )
-      .limit(1)
-      .for('update');
+        .limit(1)
+        .for('update');
 
-    if (!reservation) {
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    }
-    if (reservation.status === 'completed') {
-      return { kind: 'completed', result: reservation.result };
-    }
-    if (reservation.expiresAt.getTime() <= now.getTime()) {
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
-    }
+      if (!reservation) {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      }
+      if (reservation.status === 'completed') {
+        return { kind: 'completed', result: reservation.result };
+      }
+      if (reservation.expiresAt.getTime() <= now.getTime()) {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+      }
+      if (await cancelReservationIfGrantWasReplaced(transaction, reservation, now)) {
+        return { kind: 'expired' } as const;
+      }
 
-    const activeLease =
-      reservation.status === 'finalizing' &&
-      reservation.finalizingLeaseExpiresAt !== null &&
-      reservation.finalizingLeaseExpiresAt.getTime() > now.getTime();
-    if (activeLease) {
-      // Concurrent callers must retry the same idempotency key after the short
-      // lease holder commits; this is not a manifest corruption signal.
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
-    }
-    if (reservation.status !== 'pending' && reservation.status !== 'finalizing') {
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    }
+      const activeLease =
+        reservation.status === 'finalizing' &&
+        reservation.finalizingLeaseExpiresAt !== null &&
+        reservation.finalizingLeaseExpiresAt.getTime() > now.getTime();
+      if (activeLease) {
+        // Concurrent callers must retry the same idempotency key after the short
+        // lease holder commits; this is not a manifest corruption signal.
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+      }
+      if (reservation.status !== 'pending' && reservation.status !== 'finalizing') {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      }
 
-    const leaseToken = randomUUID();
-    const finalizingLeaseExpiresAt = new Date(now.getTime() + FINALIZE_LEASE_DURATION_MS);
-    await transaction
-      .update(resourceUploadReservations)
-      .set({
-        status: 'finalizing',
-        finalizingBatchId: params.batchId,
-        finalizingLeaseToken: leaseToken,
-        finalizingLeaseExpiresAt,
-      })
-      .where(eq(resourceUploadReservations.id, reservation.id));
+      const leaseToken = randomUUID();
+      const finalizingLeaseExpiresAt = new Date(now.getTime() + FINALIZE_LEASE_DURATION_MS);
+      await transaction
+        .update(resourceUploadReservations)
+        .set({
+          status: 'finalizing',
+          finalizingBatchId: params.batchId,
+          finalizingLeaseToken: leaseToken,
+          finalizingLeaseExpiresAt,
+        })
+        .where(eq(resourceUploadReservations.id, reservation.id));
 
-    return {
-      kind: 'claimed',
-      leaseToken,
-      reservation: {
-        ...reservation,
-        status: 'finalizing',
-        finalizingBatchId: params.batchId,
-        finalizingLeaseToken: leaseToken,
-        finalizingLeaseExpiresAt,
-        manifest: reservation.manifest as UploadReservationManifestItem[],
-      },
-    };
-  });
+      return {
+        kind: 'claimed',
+        leaseToken,
+        reservation: {
+          ...reservation,
+          status: 'finalizing',
+          finalizingBatchId: params.batchId,
+          finalizingLeaseToken: leaseToken,
+          finalizingLeaseExpiresAt,
+          manifest: reservation.manifest as UploadReservationManifestItem[],
+        },
+      };
+    }
+  );
+  if (outcome.kind === 'expired') {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+  }
+  return outcome;
 }
 
 export async function releaseUploadReservationFinalizeClaim(params: {
@@ -1000,12 +1076,17 @@ export async function completeClaimedUploadReservation(
   if (!reservation) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
-  if (reservation.status === 'completed') return reservation.result;
+  if (reservation.status === 'completed') {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+  }
   if (
     reservation.status !== 'finalizing' ||
     reservation.finalizingBatchId !== params.batchId ||
     reservation.finalizingLeaseToken !== params.leaseToken
   ) {
+    if (reservation.status === 'finalizing') {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+    }
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   if (reservation.expiresAt.getTime() <= Date.now()) {

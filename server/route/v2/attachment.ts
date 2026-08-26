@@ -28,7 +28,7 @@ import { MAX_BATCH_SIZE } from '../../utils/fileValidation';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { AttachmentPresignZod } from '../../utils/zod';
 import { uploadDerivedObject } from '../../resources/uploadProxy';
-import { ResourcePolicyError } from '../../resources/errors';
+import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../../resources/errors';
 
 const attachmentsRouter = new Hono<{ Variables: HonoVariables }>();
 
@@ -108,10 +108,12 @@ attachmentsRouter.post(
   async (c: HonoContext) => {
     const user = c.get('user') as User;
     const input = (await c.req.json()) as FinalizeAttachmentBatchInput;
-    if (!isValidUUID(input.batchId)) throw new Error('Invalid batch ID');
-    if (!isValidUUID(input.noteId)) throw new Error('Invalid note ID');
+    const invalidBatch = () =>
+      new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchInvalid, 400);
+    if (!isValidUUID(input.batchId)) throw invalidBatch();
+    if (!isValidUUID(input.noteId)) throw invalidBatch();
     if (input.reservationId && !isValidUUID(input.reservationId)) {
-      throw new Error('Invalid reservation ID');
+      throw invalidBatch();
     }
     if (
       !Array.isArray(input.attachments) ||
@@ -119,7 +121,7 @@ attachmentsRouter.post(
         (attachment) => !attachment.clientId || !isValidUUID(attachment.clientId)
       )
     ) {
-      throw new Error('Invalid attachment client ID');
+      throw invalidBatch();
     }
     if (
       !Array.isArray(input.order) ||
@@ -129,7 +131,7 @@ attachmentsRouter.post(
           (reference.clientId && !isValidUUID(reference.clientId))
       )
     ) {
-      throw new Error('Invalid attachment order ID');
+      throw invalidBatch();
     }
     const uploadPolicy = await getAttachmentUploadPolicy(user.id);
     if (!uploadPolicy.canUploadAttachments) {

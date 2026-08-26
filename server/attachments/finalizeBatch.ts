@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import { attachments as attachmentsTable, rotes, users } from '../drizzle/schema';
 import {
   claimUploadReservationForFinalize,
@@ -25,27 +25,28 @@ type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: big
 type ActiveFinalizeClaim = Extract<UploadReservationFinalizeClaim, { kind: 'claimed' }>;
 
 export function assertFinalizeAttachmentBatchInput(input: FinalizeAttachmentBatchInput) {
-  if (!input.batchId || !input.noteId) throw new Error('attachment_batch_identity_required');
+  const invalid = () => new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchInvalid, 400);
+  if (!input.batchId || !input.noteId) throw invalid();
   if (!Array.isArray(input.attachments) || input.attachments.length === 0) {
-    throw new Error('attachments_required');
+    throw invalid();
   }
-  if (input.attachments.length > MAX_FILES) throw new Error('file_count_exceeded');
+  if (input.attachments.length > MAX_FILES) throw invalid();
   if (!Array.isArray(input.order) || input.order.length === 0) {
-    throw new Error('attachment_batch_order_required');
+    throw invalid();
   }
 
   const clientIds = input.attachments.map((attachment) => attachment.clientId?.trim() ?? '');
   if (clientIds.some((clientId) => clientId.length === 0)) {
-    throw new Error('attachment_batch_client_id_required');
+    throw invalid();
   }
   if (new Set(clientIds).size !== clientIds.length) {
-    throw new Error('attachment_batch_client_id_duplicate');
+    throw invalid();
   }
 
   const orderKeys = input.order.map(orderReferenceKey);
-  if (orderKeys.some((key) => key === null)) throw new Error('attachment_batch_order_invalid');
+  if (orderKeys.some((key) => key === null)) throw invalid();
   if (new Set(orderKeys).size !== orderKeys.length) {
-    throw new Error('attachment_batch_order_duplicate');
+    throw invalid();
   }
   const orderedClientIds = new Set(
     input.order.flatMap((reference) => (reference.clientId ? [reference.clientId] : []))
@@ -54,7 +55,7 @@ export function assertFinalizeAttachmentBatchInput(input: FinalizeAttachmentBatc
     orderedClientIds.size !== clientIds.length ||
     clientIds.some((clientId) => !orderedClientIds.has(clientId))
   ) {
-    throw new Error('attachment_batch_order_incomplete');
+    throw invalid();
   }
 }
 
@@ -63,6 +64,15 @@ function orderReferenceKey(reference: AttachmentBatchOrderReference): string | n
   const clientId = reference.clientId?.trim();
   if (Boolean(attachmentId) === Boolean(clientId)) return null;
   return attachmentId ? `attachment:${attachmentId}` : `client:${clientId}`;
+}
+
+export function assertAttachmentBindingAllowed(
+  existingNoteId: string | null | undefined,
+  targetNoteId: string
+) {
+  if (existingNoteId && existingNoteId !== targetNoteId) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
 }
 
 function completedBatchResult(
@@ -139,7 +149,7 @@ async function persistBatch(params: {
       .where(eq(users.id, params.userId))
       .limit(1)
       .for('update');
-    if (!user) throw new Error('User not found');
+    if (!user) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
 
     const [note] = await transaction
       .select({ id: rotes.id })
@@ -147,7 +157,27 @@ async function persistBatch(params: {
       .where(and(eq(rotes.id, params.input.noteId), eq(rotes.authorid, params.userId)))
       .limit(1)
       .for('update');
-    if (!note) throw new Error('Note not found or unauthorized');
+    if (!note) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+
+    for (const upload of params.uploads) {
+      if (!upload.url) {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      }
+      const originalKey = (upload.details as { key?: string } | undefined)?.key;
+      const matcher = originalKey
+        ? or(
+            sql`${attachmentsTable.details}->>'key' = ${originalKey}`,
+            eq(attachmentsTable.url, upload.url)
+          )
+        : eq(attachmentsTable.url, upload.url);
+      const [existing] = await transaction
+        .select({ roteid: attachmentsTable.roteid })
+        .from(attachmentsTable)
+        .where(and(eq(attachmentsTable.userid, params.userId), matcher))
+        .limit(1)
+        .for('update');
+      assertAttachmentBindingAllowed(existing?.roteid, params.input.noteId);
+    }
 
     const finalized = await upsertAttachmentsByOriginalKey(
       params.userId,
@@ -192,7 +222,7 @@ async function persistBatch(params: {
       boundAttachments.length !== orderedAttachmentIds.length ||
       boundAttachments.some((attachment) => !uniqueOrderedIds.has(attachment.id))
     ) {
-      throw new Error('attachment_batch_order_does_not_match_note');
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
     }
     validateRoteAttachmentDetails(boundAttachments);
 
@@ -226,6 +256,16 @@ async function persistBatch(params: {
       clientIdMap,
       orderedAttachmentIds,
     };
+
+    await createRoteChange(
+      {
+        action: 'UPDATE',
+        originid: params.input.noteId,
+        roteid: params.input.noteId,
+        userid: params.userId,
+      },
+      transaction
+    );
 
     if (params.claim) {
       const completed = await completeClaimedUploadReservation(
@@ -265,19 +305,19 @@ export async function finalizeAttachmentBatch(params: {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   const reservationId = params.input.reservationId ?? inferredReservationId;
-
-  let claim: ActiveFinalizeClaim | null = null;
-  if (reservationId) {
-    const claimResult = await claimUploadReservationForFinalize({
-      batchId: params.input.batchId,
-      reservationId,
-      userId: params.userId,
-    });
-    if (claimResult.kind === 'completed') {
-      return completedBatchResult(claimResult, params.input.batchId);
-    }
-    claim = claimResult;
+  if (!reservationId) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
+
+  const claimResult = await claimUploadReservationForFinalize({
+    batchId: params.input.batchId,
+    reservationId,
+    userId: params.userId,
+  });
+  if (claimResult.kind === 'completed') {
+    return completedBatchResult(claimResult, params.input.batchId);
+  }
+  const claim: ActiveFinalizeClaim = claimResult;
 
   try {
     const prepared = await prepareUploadsOutsideTransaction(params.input, claim, params.userId);
@@ -288,27 +328,14 @@ export async function finalizeAttachmentBatch(params: {
       uploads: prepared.uploads,
       userId: params.userId,
     });
-    try {
-      await createRoteChange({
-        action: 'UPDATE',
-        originid: params.input.noteId,
-        roteid: params.input.noteId,
-        userid: params.userId,
-      });
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to record attachment batch finalize change:', error);
-    }
     return result;
   } catch (error) {
-    if (claim) {
-      await releaseUploadReservationFinalizeClaim({
-        batchId: params.input.batchId,
-        leaseToken: claim.leaseToken,
-        reservationId: claim.reservation.id,
-        userId: params.userId,
-      });
-    }
+    await releaseUploadReservationFinalizeClaim({
+      batchId: params.input.batchId,
+      leaseToken: claim.leaseToken,
+      reservationId: claim.reservation.id,
+      userId: params.userId,
+    });
     throw error;
   }
 }

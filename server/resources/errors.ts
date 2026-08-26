@@ -3,6 +3,7 @@ export const RESOURCE_ERROR_CODES = {
   uploadReservationExpired: 'resource_upload_reservation_expired',
   uploadManifestMismatch: 'resource_upload_manifest_mismatch',
   attachmentBatchFinalizing: 'attachment_batch_finalizing',
+  attachmentBatchInvalid: 'attachment_batch_invalid',
   openKeyCreationBlocked: 'resource_openkey_creation_blocked',
   storageReconciliationRequired: 'resource_storage_reconciliation_required',
   storageBackendUnsupported: 'resource_storage_backend_unsupported',
@@ -11,7 +12,7 @@ export const RESOURCE_ERROR_CODES = {
 export class ResourcePolicyError extends Error {
   constructor(
     public readonly code: (typeof RESOURCE_ERROR_CODES)[keyof typeof RESOURCE_ERROR_CODES],
-    public readonly status: 409 | 413 | 503 = 409
+    public readonly status: 400 | 409 | 413 | 503 = 409
   ) {
     super(code);
     this.name = 'ResourcePolicyError';

@@ -16,6 +16,7 @@ import {
 } from '../../utils/dbMethods';
 import { createResponse } from '../../utils/main';
 import { generateSitemapXML } from '../../utils/sitemap';
+import { billingConfig } from '../../billing/runtimeConfig';
 
 // 站点数据相关路由
 const siteRouter = new Hono<{ Variables: HonoVariables }>();
@@ -181,7 +182,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
         allowUploadFile: uiConfig?.allowUploadFile ?? true,
         maxVideoUploadSizeMB: uiConfig?.maxVideoUploadSizeMB ?? 300,
         attachmentUploadSessions: true,
-        attachmentBatchFinalize: true,
+        attachmentBatchFinalize: billingConfig.enabled,
       },
 
       // OAuth 配置（用于前端判断是否显示 OAuth 登录按钮）
