@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'bun:test';
 import {
   collectOwnedAttachmentObjectKeys,
+  completeClaimedUploadReservation,
   countObjectKeyReferences,
   effectiveOfficialStorageEnforcement,
   reportedOfficialUsedBytes,
   reservationCleanupKeys,
   resolveOfficialStorageState,
   storageReservationDependsOnPro,
+  uploadReservationGrantWasReplaced,
   type UploadReservationManifestItem,
 } from './service';
+import { RESOURCE_ERROR_CODES } from './errors';
 
 const manifest: UploadReservationManifestItem[] = [
   {
@@ -102,6 +105,72 @@ describe('resource cleanup helpers', () => {
     expect(countObjectKeyReferences([...first, ...second])).toEqual(
       new Map([['users/user/uploads/shared.jpg', 2]])
     );
+  });
+});
+
+describe('attachment finalize leases', () => {
+  const transactionReturning = (reservation: Record<string, unknown>) =>
+    ({
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({ for: async () => [reservation] }),
+          }),
+        }),
+      }),
+    }) as any;
+
+  const completionParams = {
+    batchId: '11111111-1111-4111-8111-111111111111',
+    leaseToken: '22222222-2222-4222-8222-222222222222',
+    objects: [],
+    reservationId: '33333333-3333-4333-8333-333333333333',
+    result: {},
+    userId: '44444444-4444-4444-8444-444444444444',
+  };
+
+  it('rolls back a stale transaction after another request completes the reservation', async () => {
+    await expect(
+      completeClaimedUploadReservation(
+        completionParams,
+        transactionReturning({ status: 'completed', result: { winner: true } })
+      )
+    ).rejects.toMatchObject({
+      code: RESOURCE_ERROR_CODES.attachmentBatchFinalizing,
+      status: 503,
+    });
+  });
+
+  it('rejects a transaction whose lease token was replaced', async () => {
+    await expect(
+      completeClaimedUploadReservation(
+        completionParams,
+        transactionReturning({
+          status: 'finalizing',
+          finalizingBatchId: completionParams.batchId,
+          finalizingLeaseToken: '55555555-5555-4555-8555-555555555555',
+        })
+      )
+    ).rejects.toMatchObject({
+      code: RESOURCE_ERROR_CODES.attachmentBatchFinalizing,
+      status: 503,
+    });
+  });
+
+  it('revalidates a Pro-derived reservation against a newer inactive grant', () => {
+    const now = new Date('2026-08-26T00:00:00.000Z');
+    const reservation = {
+      grantEntitlementExpiresAt: new Date('2026-09-01T00:00:00.000Z'),
+      grantProDerived: true,
+      grantRevision: 4,
+    };
+
+    expect(
+      uploadReservationGrantWasReplaced(reservation, { revision: 5, status: 'inactive' }, now)
+    ).toBe(true);
+    expect(
+      uploadReservationGrantWasReplaced(reservation, { revision: 5, status: 'active' }, now)
+    ).toBe(false);
   });
 });
 

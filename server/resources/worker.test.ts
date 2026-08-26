@@ -6,6 +6,7 @@ const {
   cleanupRetryDelaySeconds,
   inspectReconciledObjects,
   isolateReconciliationFailure,
+  reservationCleanupNotBefore,
 } = await import('./worker');
 
 describe('resource maintenance isolation', () => {
@@ -73,5 +74,16 @@ describe('resource maintenance isolation', () => {
     expect(cleanupRetryDelaySeconds(1)).toBe(2);
     expect(cleanupRetryDelaySeconds(10)).toBe(1024);
     expect(cleanupRetryDelaySeconds(20)).toBe(1024);
+  });
+
+  it('defers expired reservation cleanup until an active finalize lease ends', () => {
+    const now = new Date('2026-08-26T00:00:00.000Z');
+    const leaseEnd = new Date('2026-08-26T00:02:00.000Z');
+    expect(
+      reservationCleanupNotBefore({ status: 'finalizing', finalizingLeaseExpiresAt: leaseEnd }, now)
+    ).toEqual(leaseEnd);
+    expect(
+      reservationCleanupNotBefore({ status: 'pending', finalizingLeaseExpiresAt: null }, now)
+    ).toEqual(now);
   });
 });
