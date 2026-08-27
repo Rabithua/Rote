@@ -13,6 +13,15 @@ export type PresignFileInput = {
     contentType?: string;
     size?: number;
   };
+  poster?: {
+    contentType?: 'image/jpeg';
+    size?: number;
+  };
+};
+
+export type PresignAttachmentInput = {
+  files: PresignFileInput[];
+  directFinalUpload?: boolean;
 };
 
 export type FinalizeAttachmentInput = {

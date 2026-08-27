@@ -314,6 +314,151 @@ describe('attachment upload flow', () => {
     ]);
   });
 
+  it('presigns the final attachment key without a preview for direct uploads', async () => {
+    const signed: Array<{ contentLength?: number; key: string }> = [];
+    let reservation:
+      | Parameters<
+          NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
+        >[0]
+      | undefined;
+    const result = await presignAttachmentUploads(
+      {
+        directFinalUpload: true,
+        files: [
+          {
+            contentType: 'image/jpeg',
+            filename: 'IMG_0002.JPG',
+            mediaKind: 'image',
+            size: 1024,
+          },
+        ],
+        scopes: [],
+        userId: USER_ID,
+      },
+      {
+        createUploadReservation: async (input) => {
+          reservation = input;
+          return true;
+        },
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        getResourceStateForUserId: async () => ({
+          management: 'official',
+          source: 'official_pro',
+          storage: {
+            enforcement: 'enforce',
+            usedBytes: '0',
+            reservedBytes: '0',
+            limitBytes: '10000000000',
+            overLimit: false,
+            canUpload: true,
+          },
+          openKey: {
+            policy: 'unlimited',
+            creationThreshold: null,
+            existingCount: 2,
+            canCreate: true,
+          },
+        }),
+        presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
+          signed.push({ contentLength, key });
+          return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
+        },
+        randomUUID: () => LIVE_UUID,
+        requireStorageAvailable: () => storageConfig,
+      }
+    );
+
+    expect(result.items[0].original.key).toBe(
+      `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`
+    );
+    expect(result.items[0].compressed).toBeUndefined();
+    expect(reservation?.manifest).toHaveLength(1);
+    expect(reservation?.manifest[0].stagingKey).toBe(reservation?.manifest[0].finalKey);
+    expect(signed).toEqual([
+      {
+        contentLength: 1024,
+        key: `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`,
+      },
+    ]);
+  });
+
+  it('presigns a direct video and its client-generated poster at final keys', async () => {
+    const signed: Array<{ contentLength?: number; key: string }> = [];
+    let reservation:
+      | Parameters<
+          NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
+        >[0]
+      | undefined;
+    const result = await presignAttachmentUploads(
+      {
+        directFinalUpload: true,
+        files: [
+          {
+            contentType: 'video/quicktime',
+            filename: 'clip.mov',
+            mediaKind: 'video',
+            poster: { contentType: 'image/jpeg', size: 256 },
+            size: 2048,
+          },
+        ],
+        scopes: ['video:upload'],
+        userId: USER_ID,
+      },
+      {
+        createUploadReservation: async (input) => {
+          reservation = input;
+          return true;
+        },
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        getResourceStateForUserId: async () => ({
+          management: 'official',
+          source: 'official_pro',
+          storage: {
+            enforcement: 'enforce',
+            usedBytes: '0',
+            reservedBytes: '0',
+            limitBytes: '10000000000',
+            overLimit: false,
+            canUpload: true,
+          },
+          openKey: {
+            policy: 'unlimited',
+            creationThreshold: null,
+            existingCount: 2,
+            canCreate: true,
+          },
+        }),
+        presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
+          signed.push({ contentLength, key });
+          return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
+        },
+        randomUUID: () => LIVE_UUID,
+        requireStorageAvailable: () => storageConfig,
+      }
+    );
+
+    expect(result.items[0].original.key).toBe(
+      `users/${USER_ID}/attachments/${LIVE_UUID}/original.mov`
+    );
+    expect(result.items[0].poster?.key).toBe(
+      `users/${USER_ID}/attachments/${LIVE_UUID}/poster.jpg`
+    );
+    expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
+      ['original', '2048'],
+      ['poster', '256'],
+    ]);
+    expect(signed).toEqual([
+      {
+        contentLength: 2048,
+        key: `users/${USER_ID}/attachments/${LIVE_UUID}/original.mov`,
+      },
+      {
+        contentLength: 256,
+        key: `users/${USER_ID}/attachments/${LIVE_UUID}/poster.jpg`,
+      },
+    ]);
+  });
+
   it('finalizes a client-provided Live Photo preview without media processing', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
     const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;

@@ -4,7 +4,7 @@ import {
   presignAttachmentUploads,
   refreshAttachmentUploadReservation,
 } from '../../attachments/presignUpload';
-import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
+import type { FinalizeAttachmentInput, PresignAttachmentInput } from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
   presignInputIncludesVideo,
@@ -56,7 +56,7 @@ openKeyAttachmentRouter.post(
     const openKey = c.get('openKey')!;
     const body = await c.req.json();
     AttachmentPresignZod.parse(body);
-    const { files } = body as { files: PresignFileInput[] };
+    const { files } = body as PresignAttachmentInput;
     const videoAllowed = canUploadVideo(openKey.permissions);
     if (presignInputIncludesVideo(files) && !videoAllowed) {
       return c.json(createResponse(null, 'openkey_permission_required:UPLOADVIDEO'), 403);

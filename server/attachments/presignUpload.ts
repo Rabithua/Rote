@@ -46,7 +46,11 @@ const defaultDependencies: PresignAttachmentDependencies = {
 
 const UPLOAD_RESERVATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
-function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: number) {
+function validatePresignFile(
+  file: PresignFileInput,
+  maxVideoUploadSizeMB: number,
+  directFinalUpload: boolean
+) {
   validateContentType(file.contentType);
   if (
     file.compressedContentType !== undefined &&
@@ -54,6 +58,17 @@ function validatePresignFile(file: PresignFileInput, maxVideoUploadSizeMB: numbe
     file.compressedContentType !== 'image/webp'
   ) {
     throw new Error(attachmentErrors.compressedContentTypeInvalid);
+  }
+  if (directFinalUpload && file.compressedContentType !== undefined) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  const mediaKind =
+    file.mediaKind === 'livePhoto' ? 'livePhoto' : getMediaKindFromContentType(file.contentType);
+  if (directFinalUpload && mediaKind === 'video') {
+    if (file.poster?.contentType !== 'image/jpeg' || !file.poster.size) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    validateFileSize(file.poster.size, file.poster.contentType, maxVideoUploadSizeMB);
   }
   if (file.mediaKind !== 'livePhoto') {
     validateFileSize(file.size, file.contentType, maxVideoUploadSizeMB);
@@ -79,6 +94,7 @@ export async function presignAttachmentUploads(
     userId: string;
     scopes: string[];
     files: PresignFileInput[];
+    directFinalUpload?: boolean;
   },
   dependencyOverrides: Partial<PresignAttachmentDependencies> = {}
 ) {
@@ -100,11 +116,17 @@ export async function presignAttachmentUploads(
     throw new Error(attachmentErrors.capabilityVideoUpload);
   }
 
-  input.files.forEach((file) => validatePresignFile(file, uploadPolicy.maxVideoUploadSizeMB));
+  const directFinalUpload = input.directFinalUpload === true;
+  input.files.forEach((file) =>
+    validatePresignFile(file, uploadPolicy.maxVideoUploadSizeMB, directFinalUpload)
+  );
 
   const resourceState = await dependencies.getResourceStateForUserId(input.userId);
   const managed =
     resourceState.management !== 'unmanaged' && resourceState.storage.enforcement !== 'off';
+  if (directFinalUpload && !managed) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
   const reservationId = managed ? dependencies.randomUUID() : null;
   const credentialExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
   const prepared = input.files.map((file) => {
@@ -113,14 +135,19 @@ export async function presignAttachmentUploads(
     const mediaKind =
       file.mediaKind === 'livePhoto' ? 'livePhoto' : getMediaKindFromContentType(file.contentType);
     const compressedContentType =
-      mediaKind === 'image' || mediaKind === 'livePhoto'
+      !directFinalUpload && (mediaKind === 'image' || mediaKind === 'livePhoto')
         ? (file.compressedContentType ?? (mediaKind === 'livePhoto' ? 'image/jpeg' : 'image/webp'))
         : undefined;
     const finalPrefix = `users/${input.userId}`;
     const stagingPrefix = managed ? `${finalPrefix}/staging/${reservationId}` : finalPrefix;
+    const attachmentPrefix = `${finalPrefix}/attachments/${uuid}`;
     const manifest: UploadReservationManifestItem[] = [];
-    const originalFinalKey = `${finalPrefix}/uploads/${uuid}${ext}`;
-    const originalKey = `${stagingPrefix}/uploads/${uuid}${ext}`;
+    const originalFinalKey = directFinalUpload
+      ? `${attachmentPrefix}/original${ext}`
+      : `${finalPrefix}/uploads/${uuid}${ext}`;
+    const originalKey = directFinalUpload
+      ? originalFinalKey
+      : `${stagingPrefix}/uploads/${uuid}${ext}`;
     manifest.push({
       uuid,
       role: 'original',
@@ -156,8 +183,12 @@ export async function presignAttachmentUploads(
     if (mediaKind === 'livePhoto' && file.pairedVideo) {
       const pairedExt = getUploadExtension(file.pairedVideo.filename, file.pairedVideo.contentType);
       pairedVideo = {
-        key: `${stagingPrefix}/paired-videos/${uuid}${pairedExt}`,
-        finalKey: `${finalPrefix}/paired-videos/${uuid}${pairedExt}`,
+        key: directFinalUpload
+          ? `${attachmentPrefix}/paired-video${pairedExt}`
+          : `${stagingPrefix}/paired-videos/${uuid}${pairedExt}`,
+        finalKey: directFinalUpload
+          ? `${attachmentPrefix}/paired-video${pairedExt}`
+          : `${finalPrefix}/paired-videos/${uuid}${pairedExt}`,
         contentType: file.pairedVideo.contentType ?? 'video/quicktime',
         size: file.pairedVideo.size ?? 0,
       };
@@ -171,18 +202,24 @@ export async function presignAttachmentUploads(
         billable: true,
       });
     }
-    let poster: { key: string; finalKey: string } | undefined;
+    let poster: { key: string; finalKey: string; size: number } | undefined;
     if (mediaKind === 'video') {
+      const posterSize = directFinalUpload ? (file.poster?.size ?? 0) : 0;
       poster = {
-        key: `${stagingPrefix}/posters/${uuid}.jpg`,
-        finalKey: `${finalPrefix}/posters/${uuid}.jpg`,
+        key: directFinalUpload
+          ? `${attachmentPrefix}/poster.jpg`
+          : `${stagingPrefix}/posters/${uuid}.jpg`,
+        finalKey: directFinalUpload
+          ? `${attachmentPrefix}/poster.jpg`
+          : `${finalPrefix}/posters/${uuid}.jpg`,
+        size: posterSize,
       };
       manifest.push({
         uuid,
         role: 'poster',
         stagingKey: poster.key,
         finalKey: poster.finalKey,
-        declaredBytes: null,
+        declaredBytes: directFinalUpload ? String(posterSize) : null,
         contentType: 'image/jpeg',
         billable: false,
       });
@@ -220,8 +257,7 @@ export async function presignAttachmentUploads(
           },
         };
 
-        if (mediaKind === 'image' || mediaKind === 'livePhoto') {
-          if (!compressed) throw new Error('Missing compressed upload manifest');
+        if ((mediaKind === 'image' || mediaKind === 'livePhoto') && compressed) {
           const compressedUpload = managed
             ? {
                 putUrl: dependencies.createDerivedUploadProxyUrl({
@@ -261,19 +297,21 @@ export async function presignAttachmentUploads(
 
         if (mediaKind === 'video') {
           if (!poster) throw new Error('Missing poster upload manifest');
-          const posterUpload = managed
-            ? {
-                putUrl: dependencies.createDerivedUploadProxyUrl({
-                  reservationId: reservationId!,
-                  userId: input.userId,
-                  role: 'poster',
-                  key: poster.key,
-                  contentType: 'image/jpeg',
-                  expiresAt: credentialExpiresAt,
-                }),
-                url: '',
-              }
-            : await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60);
+          const posterUpload = directFinalUpload
+            ? await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60, poster.size)
+            : managed
+              ? {
+                  putUrl: dependencies.createDerivedUploadProxyUrl({
+                    reservationId: reservationId!,
+                    userId: input.userId,
+                    role: 'poster',
+                    key: poster.key,
+                    contentType: 'image/jpeg',
+                    expiresAt: credentialExpiresAt,
+                  }),
+                  url: '',
+                }
+              : await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60);
           result.poster = {
             key: poster.key,
             putUrl: posterUpload.putUrl,
@@ -307,6 +345,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
   }
   const expiresIn = Math.floor(remainingMs / 1000);
   const manifest = reservation.manifest as UploadReservationManifestItem[];
+  const directFinalUpload = manifest.every((item) => item.stagingKey === item.finalKey);
   const byUuid = new Map<string, UploadReservationManifestItem[]>();
   for (const item of manifest) {
     const values = byUuid.get(item.uuid) ?? [];
@@ -333,9 +372,23 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
           contentType: original.contentType,
         },
       };
-      const derived = (role: 'compressed' | 'poster') => {
+      const derived = async (role: 'compressed' | 'poster') => {
         const object = objects.find((item) => item.role === role);
         if (!object) return undefined;
+        if (directFinalUpload) {
+          const signed = await presignPutUrl(
+            object.finalKey,
+            object.contentType,
+            expiresIn,
+            object.declaredBytes === null ? undefined : Number(object.declaredBytes)
+          );
+          return {
+            key: object.finalKey,
+            putUrl: signed.putUrl,
+            url: signed.url,
+            contentType: object.contentType,
+          };
+        }
         return {
           key: object.stagingKey,
           putUrl: createDerivedUploadProxyUrl({
@@ -350,8 +403,8 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
           contentType: object.contentType,
         };
       };
-      const compressed = derived('compressed');
-      const poster = derived('poster');
+      const compressed = await derived('compressed');
+      const poster = await derived('poster');
       if (compressed) response.compressed = compressed;
       if (poster) response.poster = poster;
       const paired = objects.find((item) => item.role === 'paired_video');
