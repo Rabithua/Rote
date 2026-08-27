@@ -183,6 +183,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
         maxVideoUploadSizeMB: uiConfig?.maxVideoUploadSizeMB ?? 300,
         attachmentUploadSessions: false,
         attachmentBatchFinalize: billingConfig.enabled,
+        attachmentDirectFinalUpload: billingConfig.enabled,
       },
 
       // OAuth 配置（用于前端判断是否显示 OAuth 登录按钮）

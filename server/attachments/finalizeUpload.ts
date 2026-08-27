@@ -313,7 +313,7 @@ async function collectValidAttachments(
   return validAttachments;
 }
 
-function toUploadResult(urlPrefix: string, item: FinalizeAttachmentInput): UploadResult {
+export function toUploadResult(urlPrefix: string, item: FinalizeAttachmentInput): UploadResult {
   const mediaKind = inferAttachmentMediaKind({
     mediaKind: item.mediaKind,
     mimetype: item.mimetype || null,

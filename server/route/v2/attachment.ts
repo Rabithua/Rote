@@ -8,7 +8,7 @@ import {
   presignAttachmentUploads,
   refreshAttachmentUploadReservation,
 } from '../../attachments/presignUpload';
-import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
+import type { FinalizeAttachmentInput, PresignAttachmentInput } from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
   presignInputIncludesVideo,
@@ -161,7 +161,7 @@ attachmentsRouter.post(
     const user = c.get('user') as User;
     const body = await c.req.json();
     AttachmentPresignZod.parse(body);
-    const { files } = body as { files: PresignFileInput[] };
+    const { files, directFinalUpload } = body as PresignAttachmentInput;
     const uploadPolicy = await getAttachmentUploadPolicy(user.id);
     if (!uploadPolicy.canUploadAttachments) {
       return c.json(createResponse(null, 'capability_required:attachment.upload'), 403);
@@ -170,6 +170,7 @@ attachmentsRouter.post(
       return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
     }
     const result = await presignAttachmentUploads({
+      directFinalUpload,
       files,
       scopes: ['video:upload'],
       userId: user.id,

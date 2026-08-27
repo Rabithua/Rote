@@ -15,11 +15,13 @@ import { createRoteChange, upsertAttachmentsByOriginalKey } from '../utils/dbMet
 import { MAX_FILES, validateRoteAttachmentDetails } from '../utils/fileValidation';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 import { finalizeAttachmentUploads } from './finalizeUpload';
+import { isDirectFinalUploadManifest, prepareDirectFinalUpload } from './directFinalUpload';
 import type {
   AttachmentBatchOrderReference,
   FinalizeAttachmentBatchInput,
   FinalizeAttachmentBatchResult,
 } from './types';
+import { requireStorageAvailable } from './types';
 
 type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: bigint };
 
@@ -391,7 +393,11 @@ export async function finalizeAttachmentBatch(params: {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   const inferredReservationId = [...inferredReservationIds][0];
-  if (normalizedReservationId && normalizedReservationId !== inferredReservationId) {
+  if (
+    normalizedReservationId &&
+    inferredReservationId &&
+    normalizedReservationId !== inferredReservationId
+  ) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   const reservationId = normalizedReservationId ?? inferredReservationId;
@@ -410,7 +416,14 @@ export async function finalizeAttachmentBatch(params: {
   const claim: ActiveFinalizeClaim = claimResult;
 
   try {
-    const prepared = await prepareUploadsOutsideTransaction(input, claim, params.userId);
+    const prepared = isDirectFinalUploadManifest(claim.reservation.manifest)
+      ? prepareDirectFinalUpload(
+          input,
+          claim.reservation.manifest,
+          params.userId,
+          requireStorageAvailable().urlPrefix
+        )
+      : await prepareUploadsOutsideTransaction(input, claim, params.userId);
     const result = await persistBatch({
       claim,
       input,
