@@ -106,7 +106,7 @@ iOS App 支持连接到你自部署的后端。
 
 ### 记忆
 
-记忆是可选能力，默认关闭。它已经可以在 `develop` 镜像中使用，并会在包含记忆的下一个稳定版发布后进入稳定镜像。管理员可以在 `管理 -> AI 相关` 配置对话模型和向量模型后启用。Rote 支持 OpenAI-compatible 供应商，包括 OpenAI、OpenRouter、Ollama / LM Studio、DeepSeek、SiliconFlow、DashScope / Qwen、Zhipu GLM、Moonshot / Kimi、Volcengine Ark、Tencent Hunyuan、Baidu Qianfan，以及自定义 OpenAI-compatible 接口。
+记忆是可选能力，默认关闭。它已经可以在 `develop` 镜像中使用，并会在包含记忆的下一个稳定版发布后进入稳定镜像。管理员可以在 `管理 -> AI 相关` 配置对话模型和向量模型后启用。Rote 支持 OpenAI-compatible 供应商，包括 OpenAI、OpenRouter、OrcaRouter、Ollama / LM Studio、DeepSeek、SiliconFlow、DashScope / Qwen、Zhipu GLM、Moonshot / Kimi、Volcengine Ark、Tencent Hunyuan、Baidu Qianfan，以及自定义 OpenAI-compatible 接口。
 
 只有已登录且已认证的用户可以使用 AI 功能。AI 对话只保存在当前浏览器会话中，不会持久化写入数据库。只有在管理员开启 AI 向量存储和自动索引后，笔记与文章才会进入向量索引。
 

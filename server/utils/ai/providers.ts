@@ -37,6 +37,16 @@ export const AI_PROVIDER_PRESETS: AiProviderPreset[] = [
     requiresApiKey: true,
   },
   {
+    id: 'orcarouter',
+    name: 'OrcaRouter',
+    apiFormat: 'openai_compatible',
+    baseUrl: 'https://api.orcarouter.ai/v1',
+    capabilities: ['chat', 'embedding'],
+    chatModels: ['orcarouter/auto', 'anthropic/claude-sonnet-4.6'],
+    embeddingModels: ['openai/text-embedding-3-small', 'openai/text-embedding-3-large'],
+    requiresApiKey: true,
+  },
+  {
     id: 'ollama',
     name: 'Ollama / LM Studio',
     apiFormat: 'openai_compatible',
