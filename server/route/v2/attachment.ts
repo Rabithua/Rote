@@ -1,10 +1,14 @@
 import { Hono } from 'hono';
+import {
+  assertFinalizeAttachmentBatchInput,
+  finalizeAttachmentBatch,
+} from '../../attachments/finalizeBatch';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
 import {
   presignAttachmentUploads,
   refreshAttachmentUploadReservation,
 } from '../../attachments/presignUpload';
-import type { FinalizeAttachmentInput, PresignFileInput } from '../../attachments/types';
+import type { FinalizeAttachmentInput, PresignAttachmentInput } from '../../attachments/types';
 import {
   finalizeInputIncludesVideo,
   presignInputIncludesVideo,
@@ -23,7 +27,7 @@ import { MAX_BATCH_SIZE } from '../../utils/fileValidation';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { AttachmentPresignZod } from '../../utils/zod';
 import { uploadDerivedObject } from '../../resources/uploadProxy';
-import { ResourcePolicyError } from '../../resources/errors';
+import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../../resources/errors';
 
 const attachmentsRouter = new Hono<{ Variables: HonoVariables }>();
 
@@ -97,6 +101,59 @@ attachmentsRouter.put('/sort', authenticateJWT, async (c: HonoContext) => {
 });
 
 attachmentsRouter.post(
+  '/finalize-batch',
+  authenticateJWT,
+  requireStorageConfig,
+  async (c: HonoContext) => {
+    const user = c.get('user') as User;
+    const input: unknown = await c.req.json();
+    const invalidBatch = () =>
+      new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchInvalid, 400);
+    assertFinalizeAttachmentBatchInput(input);
+    if (!isValidUUID(input.batchId)) throw invalidBatch();
+    if (!isValidUUID(input.noteId)) throw invalidBatch();
+    if (input.reservationId && !isValidUUID(input.reservationId)) {
+      throw invalidBatch();
+    }
+    if (
+      !Array.isArray(input.attachments) ||
+      input.attachments.some(
+        (attachment) => !attachment.clientId || !isValidUUID(attachment.clientId)
+      )
+    ) {
+      throw invalidBatch();
+    }
+    if (
+      !Array.isArray(input.order) ||
+      input.order.some(
+        (reference) =>
+          (reference.attachmentId && !isValidUUID(reference.attachmentId)) ||
+          (reference.clientId && !isValidUUID(reference.clientId))
+      )
+    ) {
+      throw invalidBatch();
+    }
+    const uploadPolicy = await getAttachmentUploadPolicy(user.id);
+    if (!uploadPolicy.canUploadAttachments) {
+      return c.json(createResponse(null, 'capability_required:attachment.upload'), 403);
+    }
+    if (
+      Array.isArray(input.attachments) &&
+      finalizeInputIncludesVideo(input.attachments) &&
+      !uploadPolicy.canUploadVideo
+    ) {
+      return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
+    }
+    const result = await finalizeAttachmentBatch({
+      input,
+      scopes: ['video:upload'],
+      userId: user.id,
+    });
+    return c.json(createResponse(result), 201);
+  }
+);
+
+attachmentsRouter.post(
   '/presign',
   authenticateJWT,
   requireStorageConfig,
@@ -104,7 +161,7 @@ attachmentsRouter.post(
     const user = c.get('user') as User;
     const body = await c.req.json();
     AttachmentPresignZod.parse(body);
-    const { files } = body as { files: PresignFileInput[] };
+    const { files, directFinalUpload } = body as PresignAttachmentInput;
     const uploadPolicy = await getAttachmentUploadPolicy(user.id);
     if (!uploadPolicy.canUploadAttachments) {
       return c.json(createResponse(null, 'capability_required:attachment.upload'), 403);
@@ -113,6 +170,7 @@ attachmentsRouter.post(
       return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
     }
     const result = await presignAttachmentUploads({
+      directFinalUpload,
       files,
       scopes: ['video:upload'],
       userId: user.id,

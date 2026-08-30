@@ -152,7 +152,6 @@ export class OpenKeyEndpointsTestSuite {
       content: `Delete permission compatibility test note (${label})`,
       title: `Delete Perm ${label}`,
       state: 'private',
-      type: 'rote',
       tags: ['permission-test'],
       pin: false,
     });
@@ -180,7 +179,6 @@ export class OpenKeyEndpointsTestSuite {
         content: 'This is a test note created via OpenKey POST method.',
         title: 'Test Note Title',
         state: 'private',
-        type: 'rote',
         tags: ['test', 'openkey'],
         pin: false,
       });
@@ -217,7 +215,7 @@ export class OpenKeyEndpointsTestSuite {
   }
 
   /**
-   * 测试 2: 创建笔记 (GET /notes/create) - 兼容接口
+   * 测试 2: 创建笔记 (GET /notes/create) - 便捷 URL 接口
    */
   async test2_CreateNoteGet(): Promise<any> {
     const startTime = Date.now();
@@ -226,12 +224,11 @@ export class OpenKeyEndpointsTestSuite {
         openkey: this.openKey,
         content: 'This is a test note created via OpenKey GET method.',
         state: 'private',
-        type: 'rote',
         title: 'Test Note GET',
         pin: 'false',
       });
       params.append('tag', 'test');
-      params.append('tag', 'legacy');
+      params.append('tag', 'url');
 
       const response = await this.openkeyClient.get(`/notes/create?${params.toString()}`);
 
@@ -244,7 +241,7 @@ export class OpenKeyEndpointsTestSuite {
 
       const duration = Date.now() - startTime;
       this.resultManager.recordResult(
-        'Endpoint 2: Create Note (GET - Legacy)',
+        'Endpoint 2: Create Note (GET - Convenient URL)',
         true,
         `Note created with ID: ${response.data.data.id}`,
         duration,
@@ -256,7 +253,7 @@ export class OpenKeyEndpointsTestSuite {
     } catch (error: any) {
       const duration = Date.now() - startTime;
       this.resultManager.recordResult(
-        'Endpoint 2: Create Note (GET - Legacy)',
+        'Endpoint 2: Create Note (GET - Convenient URL)',
         false,
         `Failed: ${error.message}`,
         duration,
@@ -1302,7 +1299,7 @@ export class OpenKeyEndpointsTestSuite {
       // Endpoint 1: Create Note (POST)
       await this.test1_CreateNotePost();
 
-      // Endpoint 2: Create Note (GET - Legacy)
+      // Endpoint 2: Create Note (GET - Convenient URL)
       await this.test2_CreateNoteGet();
 
       // Endpoint 3: Create Article

@@ -7,14 +7,25 @@ export type PresignFileInput = {
   contentType?: string;
   size?: number;
   mediaKind?: 'image' | 'video' | 'livePhoto';
+  compressedContentType?: 'image/jpeg' | 'image/webp';
   pairedVideo?: {
     filename?: string;
     contentType?: string;
     size?: number;
   };
+  poster?: {
+    contentType?: 'image/jpeg';
+    size?: number;
+  };
+};
+
+export type PresignAttachmentInput = {
+  files: PresignFileInput[];
+  directFinalUpload?: boolean;
 };
 
 export type FinalizeAttachmentInput = {
+  clientId?: string;
   uuid: string;
   originalKey: string;
   compressedKey?: string;
@@ -28,6 +39,25 @@ export type FinalizeAttachmentInput = {
   mediaKind?: 'image' | 'video' | 'livePhoto';
   hash?: string;
   noteId?: string;
+};
+
+export type AttachmentBatchOrderReference =
+  | { attachmentId: string; clientId?: never }
+  | { attachmentId?: never; clientId: string };
+
+export type FinalizeAttachmentBatchInput = {
+  batchId: string;
+  reservationId?: string;
+  noteId: string;
+  attachments: FinalizeAttachmentInput[];
+  order: AttachmentBatchOrderReference[];
+};
+
+export type FinalizeAttachmentBatchResult = {
+  batchId: string;
+  attachments: unknown[];
+  clientIdMap: Record<string, string>;
+  orderedAttachmentIds: string[];
 };
 
 export function requireStorageAvailable() {

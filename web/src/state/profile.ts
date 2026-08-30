@@ -4,6 +4,11 @@ import { isTokenValid } from '@/utils/main';
 import { atom, useAtomValue, useSetAtom } from 'jotai';
 import { selectAtom } from 'jotai/utils';
 
+export type ProfileUpdateRequest = Partial<NonNullable<Profile>> & {
+  avatarAttachmentId?: string | null;
+  coverAttachmentId?: string | null;
+};
+
 // 全局 Profile 状态（初始为 undefined，沿用现有 Profile 类型定义）
 export const profileAtom = atom<Profile>(undefined as Profile);
 export const authReadyAtom = atom(false);
@@ -66,14 +71,10 @@ export const loadUserSettingsAtom = atom(null, async (_get, set) => {
 });
 
 // 局部更新 Profile（先请求后本地合并）
-export const patchProfileAtom = atom(
-  null,
-  async (get, set, patch: Partial<NonNullable<Profile>>) => {
-    await put('/users/me/profile', patch as any);
-    const cur = get(profileAtom);
-    if (cur) set(profileAtom, { ...cur, ...patch } as Profile);
-  }
-);
+export const patchProfileAtom = atom(null, async (_get, set, patch: ProfileUpdateRequest) => {
+  const response = await put('/users/me/profile', patch);
+  set(profileAtom, response.data as Profile);
+});
 
 // 字段级选择器：组件只订阅自身关心的字段，减少不必要渲染
 export const selectProfile = <T>(

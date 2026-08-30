@@ -1,9 +1,7 @@
 import { Hono } from 'hono';
 import {
   CAPABILITY_KEYS,
-  isCapabilityEffect,
   isCapabilityOverride,
-  type CapabilityEffect,
   type CapabilityKey,
   type CapabilityOverride,
 } from '../../authz/capabilities';
@@ -54,9 +52,9 @@ adminPermissionsRouter.put(
       throw new Error('Invalid role');
     }
     const body = await c.req.json();
-    const capabilities = parseCapabilities<CapabilityEffect>(
+    const capabilities = parseCapabilities<CapabilityOverride>(
       body?.capabilities,
-      isCapabilityEffect
+      isCapabilityOverride
     );
     return c.json(createResponse(await setRoleCapabilityPolicies(role, capabilities)), 200);
   }

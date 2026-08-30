@@ -65,6 +65,16 @@ export class SiteTestSuite {
       TestAssertions.assertNotNull(status.databaseConnected, 'databaseConnected should be present');
       TestAssertions.assertNotNull(status.site, 'Site info should be present');
       TestAssertions.assertNotNull(status.ai, 'AI status should be present');
+      TestAssertions.assertEquals(
+        status.ui?.attachmentUploadSessions,
+        false,
+        'Upload sessions must not be advertised until the recovery API exists'
+      );
+      TestAssertions.assertEquals(
+        status.ui?.attachmentDirectFinalUpload,
+        true,
+        'Direct final uploads should be advertised with batch finalization'
+      );
       TestAssertions.assertNotNull(
         typeof status.ai.available === 'boolean',
         'AI availability should be boolean'

@@ -378,7 +378,6 @@ Content-Disposition: attachment; filename=demo-2026-07-23-12-00-00.json
     {
       "id": "550e8400-e29b-41d4-a716-446655440000",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "笔记内容",
       "state": "private",
@@ -586,7 +585,7 @@ curl -X POST 'https://your-domain.com/v2/api/imports/attachments/migrate' \
 笔记支持以下字段：
 
 - 必填：`id`（UUID）、`content`（string）。
-- 可选：`title`、`type`、`tags`、`state`、`archived`、`articleId`、`pin`、`editor`、`createdAt`、`updatedAt`、`attachments`、`source`。
+- 可选：`title`、`tags`、`state`、`archived`、`articleId`、`pin`、`editor`、`createdAt`、`updatedAt`、`attachments`、`source`。
 - 单条笔记最多包含 100 个标签和 500 个附件。
 - `createdAt`、`updatedAt` 和 `source.sourceUpdatedAt` 使用 ISO 8601 日期时间字符串。笔记的 `createdAt`
   会保留；`updatedAt` 会被忽略并写为本次导入时间；`sourceUpdatedAt` 当前只参与格式校验，不会持久化或用于冲突判断。

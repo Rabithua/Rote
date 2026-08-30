@@ -1,115 +1,279 @@
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import type { z } from 'zod';
+import { articles, attachments, roteChanges, rotes, users, type Rote } from '../drizzle/schema';
 import {
-  createRote,
+  collectOwnedAttachmentObjectKeys,
+  enqueueStorageObjectCleanup,
+  releaseStorageObjectReferences,
+} from '../resources/service';
+import { notifyPublicNoteCreated } from '../utils/adminHooks';
+import { trackBackgroundTask } from '../utils/backgroundTask';
+import {
   deleteEmbeddingsForSource,
-  deleteRote,
-  deleteRoteAttachmentsByRoteId,
   deleteRoteLinkPreviewsByRoteId,
-  editRote,
   enqueueEmbeddingJob,
   findRoteById,
-  setNoteArticleId,
 } from '../utils/dbMethods';
-import { extractUrlsFromContent, parseAndStoreRoteLinkPreviews } from '../utils/linkPreview';
-import { trackBackgroundTask } from '../utils/backgroundTask';
+import db from '../utils/drizzle';
+import { validateRoteAttachmentDetails } from '../utils/fileValidation';
+import { parseAndStoreRoteLinkPreviews } from '../utils/linkPreview';
+import { NoteCreateZod, NoteUpdateZod } from '../utils/zod';
 
-type CreateUserNoteInput = {
-  content: string;
-  title?: string;
-  state?: string;
-  type?: string;
-  tags: string[];
-  pin?: boolean;
-  archived?: boolean;
-  editor?: string;
-  articleId?: string | null;
-  articleIds?: string[];
-};
+export type CreateUserNoteInput = z.infer<typeof NoteCreateZod>;
+export type UpdateUserNoteInput = z.infer<typeof NoteUpdateZod>;
 
-type UpdateUserNoteInput = Record<string, any> & {
-  articleId?: string | null;
-  articleIds?: string[];
-};
+type WritableNoteFields = Pick<
+  Rote,
+  'archived' | 'content' | 'editor' | 'pin' | 'state' | 'tags' | 'title'
+>;
 
-function firstArticleId(input: { articleId?: unknown; articleIds?: unknown }): string | null {
+function createArticleId(input: CreateUserNoteInput): string | null {
   if (typeof input.articleId === 'string') return input.articleId;
-  if (Array.isArray(input.articleIds) && input.articleIds.length > 0) return input.articleIds[0];
-  return null;
+  return input.articleIds?.[0] ?? null;
+}
+
+function updatedArticleId(input: UpdateUserNoteInput): string | null | undefined {
+  if (Object.prototype.hasOwnProperty.call(input, 'articleId')) {
+    return input.articleId ?? null;
+  }
+  if (Object.prototype.hasOwnProperty.call(input, 'articleIds')) {
+    return input.articleIds?.[0] ?? null;
+  }
+  return undefined;
+}
+
+function updateFields(input: UpdateUserNoteInput): Partial<WritableNoteFields> {
+  return {
+    ...(input.archived !== undefined ? { archived: input.archived } : {}),
+    ...(input.content !== undefined ? { content: input.content } : {}),
+    ...(input.editor !== undefined ? { editor: input.editor } : {}),
+    ...(input.pin !== undefined ? { pin: input.pin } : {}),
+    ...(input.state !== undefined ? { state: input.state } : {}),
+    ...(input.tags !== undefined ? { tags: input.tags } : {}),
+    ...(input.title !== undefined ? { title: input.title } : {}),
+  };
+}
+
+function normalizedCreateTags(tags: string[] | undefined): string[] {
+  return (tags ?? []).map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+}
+
+async function assertOwnedArticle(
+  transaction: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  userId: string,
+  articleId: string | null | undefined
+) {
+  if (!articleId) return;
+  const [article] = await transaction
+    .select({ id: articles.id })
+    .from(articles)
+    .where(and(eq(articles.id, articleId), eq(articles.authorId, userId)))
+    .limit(1);
+  if (!article) throw new Error('Article not found or permission denied');
+}
+
+function scheduleCreatedEffects(note: Rote) {
+  trackBackgroundTask(
+    enqueueEmbeddingJob('rote', note.id, note.authorid),
+    'rote_embedding_enqueue_failed'
+  );
+  if (!note.articleId) {
+    trackBackgroundTask(
+      parseAndStoreRoteLinkPreviews(note.id, note.content),
+      'link_preview_create_failed'
+    );
+  }
+  if (note.state === 'public') {
+    trackBackgroundTask(notifyPublicNoteCreated(note), 'admin_hook_public_note_failed');
+  }
+}
+
+function scheduleUpdatedEffects(note: Rote, previousState: string, refreshLinkPreviews: boolean) {
+  trackBackgroundTask(
+    enqueueEmbeddingJob('rote', note.id, note.authorid),
+    'rote_embedding_enqueue_failed'
+  );
+  if (refreshLinkPreviews) {
+    trackBackgroundTask(
+      (async () => {
+        await deleteRoteLinkPreviewsByRoteId(note.id);
+        if (!note.articleId) await parseAndStoreRoteLinkPreviews(note.id, note.content);
+      })(),
+      'link_preview_update_failed'
+    );
+  }
+  if (previousState !== 'public' && note.state === 'public') {
+    trackBackgroundTask(notifyPublicNoteCreated(note), 'admin_hook_public_note_failed');
+  }
 }
 
 export async function createUserNote(userId: string, input: CreateUserNoteInput) {
-  const result = await createRote({
-    content: input.content,
-    title: input.title || '',
-    state: input.state || 'private',
-    type: input.type || 'rote',
-    tags: input.tags,
-    pin: !!input.pin,
-    archived: !!input.archived,
-    editor: input.editor,
-    authorid: userId,
+  const articleId = createArticleId(input);
+  const attachmentIds = input.attachmentIds ?? [];
+  const rote = await db.transaction(async (transaction) => {
+    const [user] = await transaction
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+      .for('update');
+    if (!user) throw new Error('User not found');
+
+    await assertOwnedArticle(transaction, userId, articleId);
+
+    const attachmentRows =
+      attachmentIds.length > 0
+        ? await transaction
+            .select({ id: attachments.id, details: attachments.details })
+            .from(attachments)
+            .where(
+              and(
+                inArray(attachments.id, attachmentIds),
+                eq(attachments.userid, userId),
+                isNull(attachments.roteid)
+              )
+            )
+            .for('update')
+        : [];
+    if (attachmentRows.length !== attachmentIds.length) {
+      throw new Error('Some attachments not found or permission denied');
+    }
+    validateRoteAttachmentDetails(attachmentRows);
+
+    const [created] = await transaction
+      .insert(rotes)
+      .values({
+        articleId,
+        archived: input.archived ?? false,
+        authorid: userId,
+        content: input.content,
+        editor: input.editor ?? 'normal',
+        pin: input.pin ?? false,
+        state: input.state || 'private',
+        tags: normalizedCreateTags(input.tags),
+        title: input.title ?? '',
+        createdAt: sql`now()`,
+        updatedAt: sql`now()`,
+      })
+      .returning();
+    if (!created) throw new Error('Failed to create note');
+
+    await Promise.all(
+      attachmentIds.map((attachmentId, sortIndex) =>
+        transaction
+          .update(attachments)
+          .set({ roteid: created.id, sortIndex, updatedAt: new Date() })
+          .where(eq(attachments.id, attachmentId))
+      )
+    );
+    await transaction.insert(roteChanges).values({
+      originid: created.id,
+      roteid: created.id,
+      action: 'CREATE',
+      userid: userId,
+      createdAt: sql`now()`,
+    });
+    return created;
   });
 
-  trackBackgroundTask(
-    enqueueEmbeddingJob('rote', result.id, userId),
-    'rote_embedding_enqueue_failed'
-  );
-
-  const articleId = firstArticleId(input);
-  if (articleId) {
-    await setNoteArticleId(result.id, articleId, userId);
-    return result;
-  }
-
-  trackBackgroundTask(
-    parseAndStoreRoteLinkPreviews(result.id, result.content),
-    'link_preview_create_failed'
-  );
-  return result;
+  const note = (await findRoteById(rote.id, userId)) ?? rote;
+  scheduleCreatedEffects(note);
+  return note;
 }
 
 export async function updateUserNote(userId: string, id: string, input: UpdateUserNoteInput) {
-  await editRote({ ...input, id, authorid: userId });
-  trackBackgroundTask(enqueueEmbeddingJob('rote', id, userId), 'rote_embedding_enqueue_failed');
+  const articleId = updatedArticleId(input);
+  const fields = updateFields(input);
+  const result = await db.transaction(async (transaction) => {
+    const [existing] = await transaction
+      .select()
+      .from(rotes)
+      .where(and(eq(rotes.id, id), eq(rotes.authorid, userId)))
+      .limit(1)
+      .for('update');
+    if (!existing) throw new Error('Note not found');
 
-  let articleIdToSet: string | null | undefined;
-  if ('articleId' in input) {
-    articleIdToSet =
-      typeof input.articleId === 'string' ? input.articleId : (input.articleId ?? null);
-  } else if (Array.isArray(input.articleIds)) {
-    articleIdToSet = input.articleIds.length > 0 ? input.articleIds[0] : null;
-  }
+    await assertOwnedArticle(transaction, userId, articleId);
+    const [updated] = await transaction
+      .update(rotes)
+      .set({
+        ...fields,
+        ...(articleId !== undefined ? { articleId } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(rotes.id, id), eq(rotes.authorid, userId)))
+      .returning();
+    if (!updated) throw new Error('Note not found');
 
-  if (articleIdToSet !== undefined) {
-    await setNoteArticleId(id, articleIdToSet, userId);
-  }
+    await transaction.insert(roteChanges).values({
+      originid: id,
+      roteid: id,
+      action: 'UPDATE',
+      userid: userId,
+      createdAt: sql`now()`,
+    });
+    return { note: updated, previousState: existing.state };
+  });
 
-  const data = await findRoteById(id, userId);
-  const hasArticle = Boolean(data?.articleId || data?.article);
-  const contentProvided = Object.prototype.hasOwnProperty.call(input, 'content');
-  const contentForPreview = contentProvided ? input.content : data?.content;
-
-  if (hasArticle && articleIdToSet !== undefined) {
-    await deleteRoteLinkPreviewsByRoteId(id);
-  } else if (
-    (contentProvided || articleIdToSet !== undefined) &&
-    typeof contentForPreview === 'string'
-  ) {
-    const urls = extractUrlsFromContent(contentForPreview);
-    await deleteRoteLinkPreviewsByRoteId(id);
-    if (urls.length > 0 && !hasArticle) {
-      trackBackgroundTask(
-        parseAndStoreRoteLinkPreviews(id, contentForPreview),
-        'link_preview_update_failed'
-      );
-    }
-  }
-
-  return data;
+  const note = (await findRoteById(id, userId)) ?? result.note;
+  scheduleUpdatedEffects(
+    note,
+    result.previousState,
+    input.content !== undefined || articleId !== undefined
+  );
+  return note;
 }
 
 export async function deleteUserNote(userId: string, id: string) {
-  const data = await deleteRote({ id, authorid: userId });
-  await deleteRoteAttachmentsByRoteId(id, userId);
+  const deleted = await db.transaction(async (transaction) => {
+    const [user] = await transaction
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+      .for('update');
+    if (!user) throw new Error('User not found');
+
+    const [note] = await transaction
+      .select()
+      .from(rotes)
+      .where(and(eq(rotes.id, id), eq(rotes.authorid, userId)))
+      .limit(1)
+      .for('update');
+    if (!note) throw new Error('Note not found');
+
+    const attachmentRows = await transaction
+      .select({ details: attachments.details })
+      .from(attachments)
+      .where(eq(attachments.roteid, id))
+      .for('update');
+    const objectKeys = attachmentRows.flatMap(({ details }) =>
+      collectOwnedAttachmentObjectKeys(details, userId)
+    );
+    const trackedKeys = new Set(
+      await releaseStorageObjectReferences(userId, objectKeys, transaction)
+    );
+    await enqueueStorageObjectCleanup(
+      transaction,
+      objectKeys.filter((key) => !trackedKeys.has(key))
+    );
+
+    await transaction.insert(roteChanges).values({
+      originid: id,
+      roteid: id,
+      action: 'DELETE',
+      userid: userId,
+      createdAt: sql`now()`,
+    });
+    await transaction.delete(attachments).where(eq(attachments.roteid, id));
+    const [removed] = await transaction
+      .delete(rotes)
+      .where(and(eq(rotes.id, id), eq(rotes.authorid, userId)))
+      .returning();
+    if (!removed) throw new Error('Note not found');
+    return removed;
+  });
+
   trackBackgroundTask(deleteEmbeddingsForSource('rote', id), 'rote_embedding_delete_failed');
-  return data;
+  return deleted;
 }

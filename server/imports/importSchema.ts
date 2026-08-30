@@ -33,7 +33,6 @@ const noteSchema = z
   .object({
     id: z.uuid(),
     title: z.string().optional(),
-    type: z.string().max(100).optional(),
     tags: z.array(z.string()).max(100).optional(),
     content: z.string(),
     state: z.string().max(50).optional(),

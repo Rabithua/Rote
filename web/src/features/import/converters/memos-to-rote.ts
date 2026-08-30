@@ -236,7 +236,6 @@ function convertFromSQLite(
       const note: RoteNote = {
         id: uuidv4(),
         title: '',
-        type: 'Rote',
         tags: normalizeTags(memo.payload?.tags, memoContent),
         content: normalizeContent(memoContent, options),
         state,
@@ -371,7 +370,6 @@ function convertSingleMemo(
   const note: RoteNote = {
     id: uuidv4(),
     title: '',
-    type: 'Rote',
     tags: normalizeTags([...(memo.tags ?? []), ...(memo.property?.tags ?? [])], memo.content),
     content: appendLocation(normalizeContent(memo.content, options), memo.location),
     state,

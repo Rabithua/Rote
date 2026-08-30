@@ -60,7 +60,6 @@ export const NoteCreateZod = z.object({
     .string()
     .min(1, 'Content cannot be empty')
     .max(1000000, 'Content cannot exceed 1,000,000 characters'), // 约 1MB 文本
-  type: z.string().optional(),
   tags: z
     .array(
       z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
@@ -80,7 +79,6 @@ export const NoteCreateZod = z.object({
 export const NoteUpdateZod = z.object({
   title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),
   content: z.string().max(1000000, 'Content cannot exceed 1,000,000 characters').optional(),
-  type: z.string().optional(),
   tags: z
     .array(
       z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
@@ -132,6 +130,7 @@ export const ReactionCreateZod = z.object({
 
 // 附件文件名验证
 export const AttachmentPresignZod = z.object({
+  directFinalUpload: z.boolean().optional(),
   files: z
     .array(
       z.object({
@@ -144,6 +143,12 @@ export const AttachmentPresignZod = z.object({
             filename: z.string().max(255, 'Filename cannot exceed 255 characters').optional(),
             contentType: z.string().min(1, 'Content type cannot be empty'),
             size: z.number().int().positive('File size must be greater than 0'),
+          })
+          .optional(),
+        poster: z
+          .object({
+            contentType: z.literal('image/jpeg'),
+            size: z.number().int().positive('Poster size must be greater than 0'),
           })
           .optional(),
       })

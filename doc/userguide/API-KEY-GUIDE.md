@@ -49,7 +49,6 @@ When generating or updating an API Key, you can specify which permissions it sho
   "content": "Note content (required, max 1,000,000 characters)",
   "title": "Optional title (max 200 characters)",
   "state": "private|public",
-  "type": "rote|article|other",
   "tags": ["tag1", "tag2"], // Each tag max 50 characters, max 20 tags
   "pin": false,
   "articleId": "optional-article-uuid" // Bind to an existing article
@@ -67,7 +66,6 @@ When generating or updating an API Key, you can specify which permissions it sho
     "content": "Note content",
     "title": "Optional title",
     "state": "private",
-    "type": "rote",
     "tags": ["tag1", "tag2"],
     "pin": false,
     "authorid": "user_id",
@@ -79,20 +77,41 @@ When generating or updating an API Key, you can specify which permissions it sho
 
 **Required Permission**: `SENDROTE`
 
-### 2. Create Note (GET method - Legacy/Compatibility)
+### 2. Create Note (Convenient URL and Legacy POST)
 
-**Endpoint**: `GET /v2/api/openkey/notes/create`
+**Endpoints**:
+
+- `GET /v2/api/openkey/notes/create` (supported convenient URL)
+- `POST /v2/api/openkey/notes/create` (legacy compatibility)
+
+The GET endpoint is intentionally supported for browser bookmarks, Shortcuts, webhooks, and
+URL-only automation. Responses include `Cache-Control: no-store` so they are not cached.
+
+Because its query string contains the OpenKey and note content, only use the convenient URL in
+trusted environments and avoid sensitive content that could be retained in browser history or
+intermediary logs. Structured integrations should use `POST /v2/api/openkey/notes`.
+
+The legacy POST endpoint remains available, but new POST integrations should use
+`POST /v2/api/openkey/notes`. Successful legacy POST responses include:
+
+- `Deprecation: true`
+- `Link: </v2/api/openkey/notes>; rel="successor-version"`
+
+The legacy POST endpoint accepts the same JSON body as the recommended POST endpoint.
+The convenient GET endpoint accepts these query parameters:
 
 **Query Parameters**:
 
 - `openkey`: YOUR_API_KEY (Required)
 - `content`: Note content (required, max 1,000,000 characters)
 - `state`: Note state (private or public, defaults to private)
-- `type`: Note type (defaults to "Rote")
 - `title`: Optional title
 - `tag`: Tags (can be multiple, e.g., `tag=tag1&tag=tag2`, each tag max 50 characters, max 20 tags)
-- `pin`: Whether to pin the note (true/false)
+- `pin`: Whether to pin the note (`true`, `false`, `1`, or `0`)
+- `archived`: Whether to archive the note (`true`, `false`, `1`, or `0`)
 - `articleId`: Optional article ID to bind
+
+Other boolean values are rejected with HTTP 400.
 
 **Response**: Same as POST method
 
@@ -264,7 +283,6 @@ When generating or updating an API Key, you can specify which permissions it sho
       "content": "Note content 1",
       "title": "Note title 1",
       "state": "private",
-      "type": "rote",
       "tags": ["tag1"],
       "pin": false,
       "authorid": "user_id",
@@ -276,7 +294,6 @@ When generating or updating an API Key, you can specify which permissions it sho
       "content": "Note content 2",
       "title": "Note title 2",
       "state": "private",
-      "type": "rote",
       "tags": ["tag2"],
       "pin": true,
       "authorid": "user_id",

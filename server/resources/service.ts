@@ -1,4 +1,5 @@
-import { and, count, eq, sql } from 'drizzle-orm';
+import { randomUUID } from 'crypto';
+import { and, count, eq, inArray, sql } from 'drizzle-orm';
 import type { User } from '../drizzle/schema';
 import {
   attachments,
@@ -8,11 +9,14 @@ import {
   resourceStorageObjects,
   resourceCleanupOutbox,
   resourceUploadReservations,
+  rolePermissionPolicies,
+  userPermissionOverrides,
   userOpenKeys,
   users,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
 import { billingConfig } from '../billing/runtimeConfig';
+import { resolveCapabilitiesFromRecords } from '../authz/capabilityService';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from './errors';
 
 export const OFFICIAL_FREE_STORAGE_BYTES = BigInt(500_000_000);
@@ -75,7 +79,7 @@ export function collectOwnedAttachmentObjectKeys(details: unknown, userId: strin
   ];
 }
 
-async function enqueueCleanupKeys(
+export async function enqueueStorageObjectCleanup(
   transaction: any,
   objectKeys: readonly string[],
   nextAttemptAt = new Date()
@@ -108,24 +112,32 @@ export async function cancelPendingUploadReservationsForUser(
   transactionOverride?: any
 ) {
   const execute = async (transaction: any) => {
-    const pendingReservations = await transaction
+    const activeReservations = await transaction
       .select()
       .from(resourceUploadReservations)
       .where(
         and(
           eq(resourceUploadReservations.userId, userId),
-          eq(resourceUploadReservations.status, 'pending')
+          inArray(resourceUploadReservations.status, ['pending', 'finalizing'])
         )
       )
       .for('update');
-    if (pendingReservations.length === 0) return;
-    await enqueueCleanupKeys(
-      transaction,
-      pendingReservations.flatMap(({ manifest }: { manifest: unknown }) =>
-        reservationCleanupKeys(manifest as UploadReservationManifestItem[], true)
-      )
+    if (activeReservations.length === 0) return;
+    const cleanupNotBefore = activeReservations.reduce(
+      (latest: Date, reservation: { finalizingLeaseExpiresAt: Date | null }) =>
+        reservation.finalizingLeaseExpiresAt && reservation.finalizingLeaseExpiresAt > latest
+          ? reservation.finalizingLeaseExpiresAt
+          : latest,
+      new Date()
     );
-    const reservedBytes = pendingReservations.reduce(
+    await enqueueStorageObjectCleanup(
+      transaction,
+      activeReservations.flatMap(({ manifest }: { manifest: unknown }) =>
+        reservationCleanupKeys(manifest as UploadReservationManifestItem[], true)
+      ),
+      cleanupNotBefore
+    );
+    const reservedBytes = activeReservations.reduce(
       (total: bigint, reservation: { reservedBytes: bigint }) => total + reservation.reservedBytes,
       BigInt(0)
     );
@@ -138,11 +150,17 @@ export async function cancelPendingUploadReservationsForUser(
       .where(eq(resourceStorageAccounts.userId, userId));
     await transaction
       .update(resourceUploadReservations)
-      .set({ status: 'cancelled', completedAt: new Date() })
+      .set({
+        status: 'cancelled',
+        finalizingBatchId: null,
+        finalizingLeaseToken: null,
+        finalizingLeaseExpiresAt: null,
+        completedAt: new Date(),
+      })
       .where(
         and(
           eq(resourceUploadReservations.userId, userId),
-          eq(resourceUploadReservations.status, 'pending')
+          inArray(resourceUploadReservations.status, ['pending', 'finalizing'])
         )
       );
   };
@@ -179,6 +197,42 @@ export function reportedOfficialUsedBytes(
   return null;
 }
 
+export function resolveOfficialStorageState(params: {
+  enforcement: 'observe' | 'enforce';
+  reportedUsedBytes: string | null;
+  usedBytes: bigint;
+  reservedBytes: bigint;
+  limitBytes: bigint;
+  unlimited: boolean;
+}): ResourceState['storage'] {
+  if (params.unlimited) {
+    return {
+      enforcement: params.enforcement,
+      usedBytes: params.reportedUsedBytes,
+      reservedBytes: params.reservedBytes.toString(),
+      limitBytes: null,
+      overLimit: false,
+      canUpload: true,
+    };
+  }
+
+  const overLimit = params.usedBytes + params.reservedBytes >= params.limitBytes;
+  return {
+    enforcement: params.enforcement,
+    usedBytes: params.reportedUsedBytes,
+    reservedBytes: params.reservedBytes.toString(),
+    limitBytes: params.limitBytes.toString(),
+    overLimit,
+    canUpload: params.enforcement !== 'enforce' || !overLimit,
+  };
+}
+
+export function storageReservationDependsOnPro(
+  state: Pick<ResourceState, 'source' | 'storage'>
+): boolean {
+  return state.source === 'official_pro' && state.storage.limitBytes !== null;
+}
+
 function grantIsUsable(grant: typeof billingGrants.$inferSelect | null, now: Date): boolean {
   return Boolean(
     grant &&
@@ -195,23 +249,39 @@ async function resolveStateWithExecutor(
   now: Date
 ): Promise<ResourceState> {
   if (billingConfig.enabled) {
-    const [[grant], [account], [keyCount], [managementState]] = await Promise.all([
-      executor.select().from(billingGrants).where(eq(billingGrants.userId, user.id)).limit(1),
-      executor
-        .select()
-        .from(resourceStorageAccounts)
-        .where(eq(resourceStorageAccounts.userId, user.id))
-        .limit(1),
-      executor
-        .select({ value: count() })
-        .from(userOpenKeys)
-        .where(eq(userOpenKeys.userid, user.id)),
-      executor
-        .select({ reconciliationStatus: resourceManagementState.reconciliationStatus })
-        .from(resourceManagementState)
-        .where(eq(resourceManagementState.id, 'official'))
-        .limit(1),
-    ]);
+    const [[grant], [account], [keyCount], [managementState], rolePolicies, userOverrides] =
+      await Promise.all([
+        executor.select().from(billingGrants).where(eq(billingGrants.userId, user.id)).limit(1),
+        executor
+          .select()
+          .from(resourceStorageAccounts)
+          .where(eq(resourceStorageAccounts.userId, user.id))
+          .limit(1),
+        executor
+          .select({ value: count() })
+          .from(userOpenKeys)
+          .where(eq(userOpenKeys.userid, user.id)),
+        executor
+          .select({ reconciliationStatus: resourceManagementState.reconciliationStatus })
+          .from(resourceManagementState)
+          .where(eq(resourceManagementState.id, 'official'))
+          .limit(1),
+        executor
+          .select({
+            permission: rolePermissionPolicies.permission,
+            effect: rolePermissionPolicies.effect,
+          })
+          .from(rolePermissionPolicies)
+          .where(eq(rolePermissionPolicies.role, user.role)),
+        executor
+          .select({
+            permission: userPermissionOverrides.permission,
+            effect: userPermissionOverrides.effect,
+            expiresAt: userPermissionOverrides.expiresAt,
+          })
+          .from(userPermissionOverrides)
+          .where(eq(userPermissionOverrides.userid, user.id)),
+      ]);
     const existingCount = Number(keyCount?.value ?? 0);
     const enforcement = effectiveOfficialStorageEnforcement(
       requestedOfficialStorageEnforcement(),
@@ -221,45 +291,40 @@ async function resolveStateWithExecutor(
       account ?? null,
       managementState?.reconciliationStatus
     );
-    if (isRoleExempt(user.role)) {
-      return {
-        management: 'official',
-        source: 'role_exempt',
-        storage: {
-          enforcement,
-          usedBytes: reportedUsed,
-          reservedBytes: (account?.reservedBytes ?? BigInt(0)).toString(),
-          limitBytes: null,
-          overLimit: false,
-          canUpload: true,
-        },
-        openKey: { policy: 'unlimited', creationThreshold: null, existingCount, canCreate: true },
-      };
-    }
     const pro = grantIsUsable(grant ?? null, now);
     const limit = pro ? BigInt(grant!.benefits!.storage.quotaBytes) : OFFICIAL_FREE_STORAGE_BYTES;
     const used = account?.usedBytes ?? BigInt(0);
     const reserved = account?.reservedBytes ?? BigInt(0);
-    const overLimit = used + reserved >= limit;
+    const capabilities = resolveCapabilitiesFromRecords({
+      role: user.role,
+      rolePolicies,
+      userOverrides,
+      billingGrant: grant ?? null,
+      now,
+    });
+    const unlimitedStorage = capabilities['resource.storage.unlimited'].allowed;
+    const roleExempt = isRoleExempt(user.role);
     return {
       management: 'official',
-      source: pro ? 'official_pro' : 'official_free',
-      storage: {
+      source:
+        roleExempt && unlimitedStorage ? 'role_exempt' : pro ? 'official_pro' : 'official_free',
+      storage: resolveOfficialStorageState({
         enforcement,
-        usedBytes: reportedUsed,
-        reservedBytes: reserved.toString(),
-        limitBytes: limit.toString(),
-        overLimit,
-        canUpload: enforcement !== 'enforce' || !overLimit,
-      },
-      openKey: pro
-        ? { policy: 'unlimited', creationThreshold: null, existingCount, canCreate: true }
-        : {
-            policy: 'threshold',
-            creationThreshold: OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
-            existingCount,
-            canCreate: existingCount < OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
-          },
+        reportedUsedBytes: reportedUsed,
+        usedBytes: used,
+        reservedBytes: reserved,
+        limitBytes: limit,
+        unlimited: unlimitedStorage,
+      }),
+      openKey:
+        roleExempt || pro
+          ? { policy: 'unlimited', creationThreshold: null, existingCount, canCreate: true }
+          : {
+              policy: 'threshold',
+              creationThreshold: OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
+              existingCount,
+              canCreate: existingCount < OFFICIAL_FREE_OPENKEY_CREATION_THRESHOLD,
+            },
     };
   }
 
@@ -367,6 +432,226 @@ export type UploadReservationRecord = Omit<
   'manifest'
 > & { manifest: UploadReservationManifestItem[] };
 
+export type UploadReservationFinalizeClaim =
+  | { kind: 'completed'; result: unknown }
+  | {
+      kind: 'claimed';
+      leaseToken: string;
+      reservation: UploadReservationRecord;
+    };
+
+const FINALIZE_LEASE_DURATION_MS = 2 * 60 * 1000;
+
+async function cancelLockedUploadReservation(
+  transaction: any,
+  reservation: typeof resourceUploadReservations.$inferSelect,
+  now: Date
+): Promise<void> {
+  await transaction
+    .update(resourceStorageAccounts)
+    .set({
+      reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
+      updatedAt: now,
+    })
+    .where(eq(resourceStorageAccounts.userId, reservation.userId));
+  const cleanupAt =
+    reservation.status === 'finalizing' &&
+    reservation.finalizingLeaseExpiresAt !== null &&
+    reservation.finalizingLeaseExpiresAt.getTime() > now.getTime()
+      ? reservation.finalizingLeaseExpiresAt
+      : now;
+  await enqueueStorageObjectCleanup(
+    transaction,
+    reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true),
+    cleanupAt
+  );
+  await transaction
+    .update(resourceUploadReservations)
+    .set({
+      status: 'cancelled',
+      finalizingBatchId: null,
+      finalizingLeaseToken: null,
+      finalizingLeaseExpiresAt: null,
+      completedAt: now,
+    })
+    .where(eq(resourceUploadReservations.id, reservation.id));
+}
+
+async function cancelReservationIfGrantWasReplaced(
+  transaction: any,
+  reservation: typeof resourceUploadReservations.$inferSelect,
+  now: Date
+): Promise<boolean> {
+  if (
+    !billingConfig.enabled ||
+    !reservation.grantProDerived ||
+    reservation.grantRevision === null ||
+    reservation.grantEntitlementExpiresAt === null ||
+    reservation.grantEntitlementExpiresAt.getTime() <= now.getTime()
+  ) {
+    return false;
+  }
+  const [current] = await transaction
+    .select({
+      revision: billingGrants.revision,
+      status: billingGrants.status,
+    })
+    .from(billingGrants)
+    .where(eq(billingGrants.userId, reservation.userId))
+    .limit(1);
+  const replacedEarly = uploadReservationGrantWasReplaced(reservation, current, now);
+  if (!replacedEarly) return false;
+
+  await cancelLockedUploadReservation(transaction, reservation, now);
+  return true;
+}
+
+export function uploadReservationGrantWasReplaced(
+  reservation: Pick<
+    typeof resourceUploadReservations.$inferSelect,
+    'grantProDerived' | 'grantRevision' | 'grantEntitlementExpiresAt'
+  >,
+  current: Pick<typeof billingGrants.$inferSelect, 'revision' | 'status'> | undefined,
+  now: Date
+): boolean {
+  return Boolean(
+    reservation.grantProDerived &&
+    reservation.grantRevision !== null &&
+    reservation.grantEntitlementExpiresAt !== null &&
+    reservation.grantEntitlementExpiresAt.getTime() > now.getTime() &&
+    current &&
+    current.revision > reservation.grantRevision &&
+    current.status !== 'active' &&
+    current.status !== 'grace_period'
+  );
+}
+
+/** Revalidates a Pro-derived reservation after the caller has locked the user row. */
+export async function assertUploadReservationGrantCurrent(
+  transaction: any,
+  reservation: typeof resourceUploadReservations.$inferSelect,
+  now = new Date()
+): Promise<void> {
+  if (!billingConfig.enabled || !reservation.grantProDerived) return;
+  const [current] = await transaction
+    .select({ revision: billingGrants.revision, status: billingGrants.status })
+    .from(billingGrants)
+    .where(eq(billingGrants.userId, reservation.userId))
+    .limit(1);
+  if (uploadReservationGrantWasReplaced(reservation, current, now)) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+  }
+}
+
+/**
+ * Claims a short finalize lease without keeping a database transaction open
+ * while object storage is inspected and staging objects are promoted.
+ */
+export async function claimUploadReservationForFinalize(params: {
+  userId: string;
+  reservationId: string;
+  batchId: string;
+  now?: Date;
+}): Promise<UploadReservationFinalizeClaim> {
+  const now = params.now ?? new Date();
+  const outcome = await db.transaction(
+    async (transaction): Promise<UploadReservationFinalizeClaim | { kind: 'expired' }> => {
+      const [reservation] = await transaction
+        .select()
+        .from(resourceUploadReservations)
+        .where(
+          and(
+            eq(resourceUploadReservations.id, params.reservationId),
+            eq(resourceUploadReservations.userId, params.userId)
+          )
+        )
+        .limit(1)
+        .for('update');
+
+      if (!reservation) {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      }
+      if (reservation.status === 'completed') {
+        return { kind: 'completed', result: reservation.result };
+      }
+      if (reservation.expiresAt.getTime() <= now.getTime()) {
+        await cancelLockedUploadReservation(transaction, reservation, now);
+        return { kind: 'expired' } as const;
+      }
+      if (await cancelReservationIfGrantWasReplaced(transaction, reservation, now)) {
+        return { kind: 'expired' } as const;
+      }
+
+      const activeLease =
+        reservation.status === 'finalizing' &&
+        reservation.finalizingLeaseExpiresAt !== null &&
+        reservation.finalizingLeaseExpiresAt.getTime() > now.getTime();
+      if (activeLease) {
+        // Concurrent callers must retry the same idempotency key after the short
+        // lease holder commits; this is not a manifest corruption signal.
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+      }
+      if (reservation.status !== 'pending' && reservation.status !== 'finalizing') {
+        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+      }
+
+      const leaseToken = randomUUID();
+      const finalizingLeaseExpiresAt = new Date(now.getTime() + FINALIZE_LEASE_DURATION_MS);
+      await transaction
+        .update(resourceUploadReservations)
+        .set({
+          status: 'finalizing',
+          finalizingBatchId: params.batchId,
+          finalizingLeaseToken: leaseToken,
+          finalizingLeaseExpiresAt,
+        })
+        .where(eq(resourceUploadReservations.id, reservation.id));
+
+      return {
+        kind: 'claimed',
+        leaseToken,
+        reservation: {
+          ...reservation,
+          status: 'finalizing',
+          finalizingBatchId: params.batchId,
+          finalizingLeaseToken: leaseToken,
+          finalizingLeaseExpiresAt,
+          manifest: reservation.manifest as UploadReservationManifestItem[],
+        },
+      };
+    }
+  );
+  if (outcome.kind === 'expired') {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+  }
+  return outcome;
+}
+
+export async function releaseUploadReservationFinalizeClaim(params: {
+  userId: string;
+  reservationId: string;
+  batchId: string;
+  leaseToken: string;
+}): Promise<void> {
+  await db
+    .update(resourceUploadReservations)
+    .set({
+      status: 'pending',
+      finalizingBatchId: null,
+      finalizingLeaseToken: null,
+      finalizingLeaseExpiresAt: null,
+    })
+    .where(
+      and(
+        eq(resourceUploadReservations.id, params.reservationId),
+        eq(resourceUploadReservations.userId, params.userId),
+        eq(resourceUploadReservations.status, 'finalizing'),
+        eq(resourceUploadReservations.finalizingBatchId, params.batchId),
+        eq(resourceUploadReservations.finalizingLeaseToken, params.leaseToken)
+      )
+    );
+}
+
 export async function createUploadReservation(params: {
   id: string;
   userId: string;
@@ -415,7 +700,7 @@ export async function createUploadReservation(params: {
       id: params.id,
       userId: params.userId,
       grantRevision: grant?.revision ?? null,
-      grantProDerived: state.source === 'official_pro',
+      grantProDerived: storageReservationDependsOnPro(state),
       grantEntitlementExpiresAt: grant?.entitlementExpiresAt ?? null,
       manifest: params.manifest,
       reservedBytes,
@@ -472,7 +757,7 @@ export async function appendUploadReservation(params: {
           updatedAt: now,
         })
         .where(eq(resourceStorageAccounts.userId, params.userId));
-      await enqueueCleanupKeys(
+      await enqueueStorageObjectCleanup(
         transaction,
         reservationCleanupKeys(existing.manifest as UploadReservationManifestItem[], true)
       );
@@ -508,7 +793,7 @@ export async function appendUploadReservation(params: {
             updatedAt: now,
           })
           .where(eq(resourceStorageAccounts.userId, params.userId));
-        await enqueueCleanupKeys(
+        await enqueueStorageObjectCleanup(
           transaction,
           reservationCleanupKeys(existing.manifest as UploadReservationManifestItem[], true)
         );
@@ -557,7 +842,7 @@ export async function appendUploadReservation(params: {
         reservedBytes: params.reserveBytes,
         expiresAt: params.expiresAt,
         grantRevision: grant?.revision ?? null,
-        grantProDerived: state.source === 'official_pro',
+        grantProDerived: storageReservationDependsOnPro(state),
         grantEntitlementExpiresAt: grant?.entitlementExpiresAt ?? null,
       });
     }
@@ -601,7 +886,7 @@ export async function cancelUploadReservation(userId: string, id: string) {
       .update(resourceUploadReservations)
       .set({ status: 'cancelled', completedAt: new Date() })
       .where(eq(resourceUploadReservations.id, id));
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
     );
@@ -665,7 +950,7 @@ export async function getPendingUploadReservation(
             updatedAt: new Date(),
           })
           .where(eq(resourceStorageAccounts.userId, userId));
-        await enqueueCleanupKeys(
+        await enqueueStorageObjectCleanup(
           transactionOverride,
           reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
         );
@@ -779,7 +1064,7 @@ export async function completeUploadReservation(
           set: { actualBytes: object.actualBytes, updatedAt: new Date() },
         });
     }
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       params.objects
         .filter((object) => object.stagingKey !== object.finalKey)
@@ -787,7 +1072,7 @@ export async function completeUploadReservation(
       reservation.credentialExpiresAt ?? new Date()
     );
     const submittedStagingKeys = new Set(params.objects.map((object) => object.stagingKey));
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       (reservation.manifest as UploadReservationManifestItem[])
         .filter((object) => !submittedStagingKeys.has(object.stagingKey))
@@ -812,6 +1097,111 @@ export async function completeUploadReservation(
   };
   if (transactionOverride) await execute(transactionOverride);
   else await db.transaction(execute);
+}
+
+/** Completes a reservation previously claimed by the batch finalize path. */
+export async function completeClaimedUploadReservation(
+  params: {
+    userId: string;
+    reservationId: string;
+    batchId: string;
+    leaseToken: string;
+    result: unknown;
+    objects: Array<UploadReservationManifestItem & { actualBytes: bigint }>;
+  },
+  transactionOverride: any
+): Promise<unknown> {
+  const [reservation] = await transactionOverride
+    .select()
+    .from(resourceUploadReservations)
+    .where(
+      and(
+        eq(resourceUploadReservations.id, params.reservationId),
+        eq(resourceUploadReservations.userId, params.userId)
+      )
+    )
+    .limit(1)
+    .for('update');
+  if (!reservation) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  if (reservation.status === 'completed') {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+  }
+  if (
+    reservation.status !== 'finalizing' ||
+    reservation.finalizingBatchId !== params.batchId ||
+    reservation.finalizingLeaseToken !== params.leaseToken
+  ) {
+    if (reservation.status === 'finalizing') {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+    }
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  if (reservation.expiresAt.getTime() <= Date.now()) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired);
+  }
+
+  const actualBillable = params.objects.reduce(
+    (sum, object) => sum + (object.billable ? object.actualBytes : BigInt(0)),
+    BigInt(0)
+  );
+  if (actualBillable > reservation.reservedBytes) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  for (const object of params.objects) {
+    await transactionOverride
+      .insert(resourceStorageObjects)
+      .values({
+        ownerId: params.userId,
+        storageIdentity: 'primary',
+        objectKey: object.finalKey,
+        role: object.role,
+        actualBytes: object.actualBytes,
+        billable: object.billable,
+      })
+      .onConflictDoUpdate({
+        target: [resourceStorageObjects.storageIdentity, resourceStorageObjects.objectKey],
+        set: { actualBytes: object.actualBytes, updatedAt: new Date() },
+      });
+  }
+  await enqueueStorageObjectCleanup(
+    transactionOverride,
+    params.objects
+      .filter((object) => object.stagingKey !== object.finalKey)
+      .map((object) => object.stagingKey),
+    reservation.credentialExpiresAt ?? new Date()
+  );
+  const submittedStagingKeys = new Set(params.objects.map((object) => object.stagingKey));
+  await enqueueStorageObjectCleanup(
+    transactionOverride,
+    (reservation.manifest as UploadReservationManifestItem[])
+      .filter((object) => !submittedStagingKeys.has(object.stagingKey))
+      .map((object) => object.stagingKey),
+    reservation.credentialExpiresAt ?? new Date()
+  );
+  await transactionOverride
+    .insert(resourceStorageAccounts)
+    .values({ userId: params.userId, usedBytes: actualBillable })
+    .onConflictDoUpdate({
+      target: resourceStorageAccounts.userId,
+      set: {
+        usedBytes: sql`${resourceStorageAccounts.usedBytes} + ${actualBillable}`,
+        reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
+        updatedAt: new Date(),
+      },
+    });
+  await transactionOverride
+    .update(resourceUploadReservations)
+    .set({
+      status: 'completed',
+      result: params.result,
+      completedAt: new Date(),
+      finalizingLeaseExpiresAt: null,
+      finalizingLeaseToken: null,
+    })
+    .where(eq(resourceUploadReservations.id, reservation.id));
+  return params.result;
 }
 
 export function reservationIdFromStagingKey(key: string): string | null {
@@ -905,7 +1295,7 @@ export async function prepareAccountResourceDeletion(userId: string, transaction
       .select({ details: attachments.details })
       .from(attachments)
       .where(eq(attachments.userid, userId))) as Array<{ details: unknown }>;
-    await enqueueCleanupKeys(
+    await enqueueStorageObjectCleanup(
       transaction,
       legacyAttachments
         .flatMap(({ details }) => collectOwnedAttachmentObjectKeys(details, userId))

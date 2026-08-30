@@ -156,7 +156,6 @@ export interface RoteOutputData {
 export interface RoteNote {
   id: string;
   title: string;
-  type: string;
   tags: Array<string>;
   content: string;
   state: string;

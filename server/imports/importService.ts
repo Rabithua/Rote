@@ -224,7 +224,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
               target: rotes.id,
               set: {
                 title: sql`excluded."title"`,
-                type: sql`excluded."type"`,
                 tags: sql`excluded."tags"`,
                 content: sql`excluded."content"`,
                 state: sql`excluded."state"`,
@@ -502,7 +501,6 @@ function buildNoteData(
   return {
     id,
     title: note.title ?? '',
-    type: note.type ?? 'Rote',
     tags: note.tags ?? [],
     content: note.content,
     state:

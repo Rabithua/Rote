@@ -50,6 +50,11 @@ function appWithAiCapability(aiChat: EffectiveCapability) {
             role: UserRole.USER,
           },
           'ai.chat': aiChat,
+          'resource.storage.unlimited': {
+            allowed: false,
+            source: 'role_default',
+            role: UserRole.USER,
+          },
         },
       }),
     })

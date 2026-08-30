@@ -16,9 +16,6 @@
           "type": "string",
           "enum": ["private", "public"]
         },
-        "type": {
-          "type": "string"
-        },
         "tags": {
           "type": "array",
           "items": {
@@ -78,9 +75,6 @@
         "state": {
           "type": "string"
         },
-        "type": {
-          "type": "string"
-        },
         "pin": {
           "type": "boolean"
         }
@@ -117,9 +111,6 @@
           }
         },
         "state": {
-          "type": "string"
-        },
-        "type": {
           "type": "string"
         },
         "pin": {
@@ -181,9 +172,6 @@
           "type": "string"
         },
         "content": {
-          "type": "string"
-        },
-        "type": {
           "type": "string"
         },
         "tags": {
@@ -427,8 +415,16 @@
         "avatar": {
           "type": "string"
         },
+        "avatarAttachmentId": {
+          "type": "string",
+          "format": "uuid"
+        },
         "cover": {
           "type": "string"
+        },
+        "coverAttachmentId": {
+          "type": "string",
+          "format": "uuid"
         }
       },
       "required": [],

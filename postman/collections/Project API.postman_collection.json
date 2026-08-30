@@ -760,7 +760,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"content\": \"This is my note content\",\n  \"title\": \"My Note Title\",\n  \"type\": \"rote\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"state\": \"private\",\n  \"pin\": false,\n  \"archived\": false,\n  \"editor\": \"markdown\",\n  \"attachmentIds\": []\n}"
+              "raw": "{\n  \"content\": \"This is my note content\",\n  \"title\": \"My Note Title\",\n  \"tags\": [\"tag1\", \"tag2\"],\n  \"state\": \"private\",\n  \"pin\": false,\n  \"archived\": false,\n  \"editor\": \"markdown\",\n  \"attachmentIds\": []\n}"
             },
             "url": {
               "raw": "{{base_url}}/v2/api/notes",
@@ -1479,7 +1479,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&type=rote&title=My Title&tag=tag1&tag=tag2&openkey={{openkey}}",
+              "raw": "{{base_url}}/v2/api/openkey/notes/create?content=My note content&state=private&title=My Title&tag=tag1&tag=tag2&openkey={{openkey}}",
               "host": ["{{base_url}}"],
               "path": ["v2", "api", "openkey", "notes", "create"],
               "query": [
@@ -1494,10 +1494,6 @@
                 {
                   "key": "state",
                   "value": "private"
-                },
-                {
-                  "key": "type",
-                  "value": "rote"
                 },
                 {
                   "key": "title",
@@ -1530,7 +1526,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\n    \"tag1\",\n    \"tag2\"\n  ],\n  \"pin\": false\n}"
+              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"tags\": [\n    \"tag1\",\n    \"tag2\"\n  ],\n  \"pin\": false\n}"
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes/create?openkey={{openkey}}",
@@ -1560,7 +1556,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"type\": \"rote\",\n  \"tags\": [\n    \"tag1\",\n    \"tag2\"\n  ],\n  \"pin\": false\n}"
+              "raw": "{\n  \"openkey\": \"{{openkey}}\",\n  \"content\": \"My note content\",\n  \"title\": \"My Title\",\n  \"state\": \"private\",\n  \"tags\": [\n    \"tag1\",\n    \"tag2\"\n  ],\n  \"pin\": false\n}"
             },
             "url": {
               "raw": "{{base_url}}/v2/api/openkey/notes?openkey={{openkey}}",

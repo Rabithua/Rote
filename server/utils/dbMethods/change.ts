@@ -4,14 +4,18 @@ import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // RoteChange 相关方法
-export async function createRoteChange(data: {
-  originid: string;
-  roteid?: string;
-  action: 'CREATE' | 'UPDATE' | 'DELETE';
-  userid: string;
-}): Promise<any> {
+export async function createRoteChange(
+  data: {
+    originid: string;
+    roteid?: string;
+    action: 'CREATE' | 'UPDATE' | 'DELETE';
+    userid: string;
+  },
+  transactionOverride?: any
+): Promise<any> {
   try {
-    const [roteChange] = await db
+    const executor = transactionOverride ?? db;
+    const [roteChange] = await executor
       .insert(roteChanges)
       .values({
         // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
@@ -54,7 +58,6 @@ export async function findRoteChangesByOriginId(
             id: true,
             title: true,
             content: true,
-            type: true,
             tags: true,
             state: true,
             archived: true,
@@ -97,7 +100,6 @@ export async function findRoteChangesByRoteId(
             id: true,
             title: true,
             content: true,
-            type: true,
             tags: true,
             state: true,
             archived: true,
@@ -140,7 +142,6 @@ export async function findRoteChangesByUserId(
             id: true,
             title: true,
             content: true,
-            type: true,
             tags: true,
             state: true,
             archived: true,
@@ -195,7 +196,6 @@ export async function findRoteChangesAfterTimestamp(
             id: true,
             title: true,
             content: true,
-            type: true,
             tags: true,
             state: true,
             archived: true,

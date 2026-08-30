@@ -295,6 +295,12 @@ export const resourceUploadReservations = pgTable(
     manifest: jsonb('manifest').$type<unknown[]>().notNull(),
     reservedBytes: bigint('reserved_bytes', { mode: 'bigint' }).notNull(),
     status: varchar('status', { length: 32 }).notNull().default('pending'),
+    finalizingBatchId: uuid('finalizing_batch_id'),
+    finalizingLeaseToken: uuid('finalizing_lease_token'),
+    finalizingLeaseExpiresAt: timestamp('finalizing_lease_expires_at', {
+      withTimezone: true,
+      precision: 6,
+    }),
     expiresAt: timestamp('expires_at', { withTimezone: true, precision: 6 }).notNull(),
     credentialExpiresAt: timestamp('credential_expires_at', { withTimezone: true, precision: 6 }),
     result: jsonb('result'),
@@ -614,7 +620,6 @@ export const rotes = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     title: text('title').default(''),
-    type: varchar('type', { length: 100 }).default('Rote'),
     tags: text('tags').array().notNull().default([]),
     content: text('content').notNull(),
     state: varchar('state', { length: 50 }).notNull().default('private'),

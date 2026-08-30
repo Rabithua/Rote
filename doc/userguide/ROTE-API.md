@@ -12,7 +12,6 @@
 
 - **id**: 笔记 ID（UUID 格式）
 - **title**: 笔记标题（可选）
-- **type**: 笔记类型，可选值：`"Rote"`（默认）
 - **tags**: 标签数组（可选）
 - **content**: 笔记内容（必填）
 - **state**: 笔记状态，可选值：`"public"`（公开）、`"private"`（私有）、`"archived"`（归档）
@@ -96,7 +95,6 @@
 - **Body**:
   - `content`: string（必填，最大 1,000,000 个字符）
   - `title`: string（可选，最大 200 个字符）
-  - `type`: string（可选，默认 `"Rote"`）
   - `state`: string（可选，默认 `"private"`）
   - `editor`: string（可选）
   - `tags`: string[]（可选，每个标签最大 50 个字符，最多 20 个标签）
@@ -129,7 +127,6 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
   "data": {
     "id": "uuid",
     "title": "笔记标题",
-    "type": "Rote",
     "tags": ["标签1", "标签2"],
     "content": "这是一条笔记内容",
     "state": "public",
@@ -174,7 +171,7 @@ curl -X POST 'https://your-domain.com/v2/api/notes/' \
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选，是否只显示归档笔记）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `state`、`type` 等）
+  - 其他过滤参数（如 `state`、`pin` 等）
 
 **标签过滤说明**：
 
@@ -199,7 +196,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/?skip=0&limit=20&archived=fals
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "笔记内容",
       "state": "public",
@@ -254,7 +250,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
   "data": {
     "id": "uuid",
     "title": "笔记标题",
-    "type": "Rote",
     "tags": ["标签1"],
     "content": "笔记内容",
     "state": "public",
@@ -363,7 +358,6 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
     {
       "id": "uuid1",
       "title": "笔记标题1",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "笔记内容1",
       "state": "public",
@@ -387,7 +381,6 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
     {
       "id": "uuid2",
       "title": "笔记标题2",
-      "type": "Rote",
       "tags": ["标签2"],
       "content": "笔记内容2",
       "state": "private",
@@ -439,7 +432,6 @@ curl -X POST 'https://your-domain.com/v2/api/notes/batch' \
 - **Body**: 需要更新的字段（所有字段均为可选，长度限制与创建接口相同）
   - `content`: string（可选，最大 1,000,000 个字符）
   - `title`: string（可选，最大 200 个字符）
-  - `type`: string（可选）
   - `state`: string（可选）
   - `editor`: string（可选）
   - `tags`: string[]（可选，每个标签最大 50 个字符，最多 20 个标签）
@@ -472,7 +464,6 @@ curl -X PUT 'https://your-domain.com/v2/api/notes/<NOTE_ID>' \
   "data": {
     "id": "uuid",
     "title": "更新后的标题",
-    "type": "Rote",
     "tags": ["新标签1", "新标签2"],
     "content": "更新后的笔记内容",
     "state": "public",
@@ -564,7 +555,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
   "data": {
     "id": "uuid",
     "title": "随机笔记标题",
-    "type": "Rote",
     "tags": ["标签1"],
     "content": "随机笔记内容",
     "state": "public",
@@ -602,7 +592,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选，是否只搜索归档笔记）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `state`、`type` 等）
+  - 其他过滤参数（如 `state`、`pin` 等）
 
 **标签过滤说明**：
 
@@ -626,7 +616,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "包含关键词的笔记内容",
       "state": "public",
@@ -669,7 +658,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `type` 等）
+  - 其他过滤参数（如 `pin` 等）
 
 **标签过滤说明**：
 
@@ -692,7 +681,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "包含关键词的公开笔记内容",
       "state": "public",
@@ -760,7 +748,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "包含关键词的笔记内容",
       "state": "public",
@@ -805,7 +792,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `state`、`type` 等）
+  - 其他过滤参数（如 `pin` 等）
 
 **标签过滤说明**：
 
@@ -828,7 +815,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/users/demo?skip=0&limit=20'
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "公开笔记内容",
       "state": "public",
@@ -867,7 +853,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/users/demo?skip=0&limit=20'
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
-  - 其他过滤参数（如 `type` 等）
+  - 其他过滤参数（如 `pin` 等）
 
 **标签过滤说明**：
 
@@ -890,7 +876,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/public?skip=0&limit=20'
     {
       "id": "uuid",
       "title": "笔记标题",
-      "type": "Rote",
       "tags": ["标签1"],
       "content": "公开笔记内容",
       "state": "public",
