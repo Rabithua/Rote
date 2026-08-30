@@ -64,6 +64,11 @@ export class SiteTestSuite {
       TestAssertions.assertNotNull(status.isInitialized, 'isInitialized should be present');
       TestAssertions.assertNotNull(status.databaseConnected, 'databaseConnected should be present');
       TestAssertions.assertNotNull(status.site, 'Site info should be present');
+      TestAssertions.assertNotNull(status.system, 'System info should be present');
+      TestAssertions.assertNotNull(
+        status.system.releaseVersion,
+        'Server release version should be present'
+      );
       TestAssertions.assertNotNull(status.ai, 'AI status should be present');
       TestAssertions.assertEquals(
         status.ui?.attachmentUploadSessions,

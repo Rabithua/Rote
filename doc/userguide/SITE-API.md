@@ -97,6 +97,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
     },
     "system": {
       "version": "1.0.0",
+      "releaseVersion": "v2.1.0",
       "lastMigration": "1.0.0"
     },
     "notification": {
@@ -149,7 +150,8 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
     - `content`: string - 公告内容
     - `link`: string | undefined - 公告链接
 - `system`: object - 系统信息
-  - `version`: string - 系统版本
+  - `version`: string - 实例首次初始化时的版本（兼容旧客户端）
+  - `releaseVersion`: string - 当前运行镜像的 Release tag 或构建标识
   - `lastMigration`: string - 最后迁移版本
 - `notification`: object - 通知配置
   - `vapidPublicKey`: string | null - VAPID 公钥（用于 Web Push 通知）
@@ -212,7 +214,8 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
       "frontendUrl": "https://rote.ink"
     },
     "system": {
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "releaseVersion": "v2.1.0"
     }
   }
 }
@@ -240,7 +243,8 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
   - `description`: string - 站点描述
   - `frontendUrl`: string - 前端地址
 - `system`: object（仅当已初始化时返回）- 系统信息
-  - `version`: string - 系统版本
+  - `version`: string - 实例首次初始化时的版本（兼容旧客户端）
+  - `releaseVersion`: string - 当前运行镜像的 Release tag 或构建标识
 - `requiresSetup`: boolean（仅当未初始化时返回）- 是否需要设置
 - `setupSteps`: string[]（仅当未初始化时返回）- 需要完成的设置步骤列表
 

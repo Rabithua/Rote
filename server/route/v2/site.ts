@@ -21,6 +21,10 @@ import { billingConfig } from '../../billing/runtimeConfig';
 // 站点数据相关路由
 const siteRouter = new Hono<{ Variables: HonoVariables }>();
 
+function getReleaseVersion() {
+  return process.env.ROTE_RELEASE_VERSION?.trim() || 'unknown';
+}
+
 async function getPublicAiStatus() {
   const fallback = {
     enabled: false,
@@ -162,6 +166,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
       // 系统信息
       system: {
         version: (systemConfig as any)?.initializationVersion || '1.0.0',
+        releaseVersion: getReleaseVersion(),
         lastMigration: (systemConfig as any)?.lastMigrationVersion || 'unknown',
       },
 
@@ -262,6 +267,7 @@ siteRouter.get('/config-status', async (c: HonoContext) => {
           },
           system: {
             version: (systemConfig as any)?.initializationVersion || '1.0.0',
+            releaseVersion: getReleaseVersion(),
           },
         }),
         200

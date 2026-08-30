@@ -15,6 +15,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve backend release version
+        id: backend_release
+        run: echo "value=$(git describe --tags --match 'v[0-9]*' --always --dirty)" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -34,6 +40,8 @@ jobs:
           file: ./server/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            ROTE_RELEASE_VERSION=${{ steps.backend_release.outputs.value }}
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-backend:latest-dev
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-backend:develop

@@ -103,7 +103,9 @@ RUN rm -rf /app/node_modules/.cache /tmp/* /var/cache/apk/* && \
       -delete 2>/dev/null || true
 
 # 设置环境变量，提升性能
-ENV NODE_ENV=production
+ARG ROTE_RELEASE_VERSION=unknown
+ENV NODE_ENV=production \
+    ROTE_RELEASE_VERSION=${ROTE_RELEASE_VERSION}
 
 # 切换到非 root 用户
 USER bunuser
