@@ -84,6 +84,15 @@ git push origin main
 - `DOCKERHUB_TOKEN`: Docker Hub 访问令牌
 - `VITE_API_BASE`: 前端 API 基础 URL（生产环境必须配置）
 
+`develop` 分支的镜像构建成功后会触发 Dokploy dev 环境更新。仓库还需要配置以下 Actions Secrets：
+
+- `DOKPLOY_DEV_BACKEND_WEBHOOK_URL`: Dokploy dev 后端应用的专用部署 Webhook URL
+- `DOKPLOY_DEV_FRONTEND_WEBHOOK_URL`: Dokploy dev 前端应用的专用部署 Webhook URL
+
+Dokploy dev 应用应分别使用 `rabithua/rote-backend:develop` 和
+`rabithua/rote-frontend:develop`。部署任务依赖前后端两个镜像构建任务，仅在两者均成功后触发，
+避免 Dokploy 在新镜像推送完成前拉取旧 tag。
+
 ## 验证构建
 
 构建完成后，可以在以下位置验证：
