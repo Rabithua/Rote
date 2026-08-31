@@ -21,7 +21,6 @@
    ```
 
 2. **在 GitHub 上创建 Release**
-
    - 访问 GitHub 仓库页面
    - 点击右侧 "Releases" → "Draft a new release"
    - 选择刚创建的标签（如 `v1.0.0`）
@@ -38,7 +37,6 @@
 发布 `v1.0.0` 版本后，会生成以下镜像：
 
 - **后端镜像**:
-
   - `rote-backend:latest`
   - `rote-backend:v1.0.0`
 
@@ -75,6 +73,9 @@ git push origin main
 - `v1.1.0` - 新增功能
 - `v1.1.1` - 修复 bug
 - `v2.0.0` - 重大更新，不兼容旧版本
+
+只有非 Pre-release 的 GitHub Release 且 tag 严格匹配 `vMAJOR.MINOR.PATCH` 时，Server
+运行版本才使用该稳定 tag；`main`/`develop` 分支构建和 Pre-release 均使用 `dev-<git describe>`。
 
 ## 环境变量配置
 
