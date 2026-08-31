@@ -17,6 +17,7 @@ import {
 import { createResponse } from '../../utils/main';
 import { generateSitemapXML } from '../../utils/sitemap';
 import { billingConfig } from '../../billing/runtimeConfig';
+import { getReleaseVersion } from '../../release/releaseVersion';
 
 // 站点数据相关路由
 const siteRouter = new Hono<{ Variables: HonoVariables }>();
@@ -162,6 +163,7 @@ siteRouter.get('/status', async (c: HonoContext) => {
       // 系统信息
       system: {
         version: (systemConfig as any)?.initializationVersion || '1.0.0',
+        releaseVersion: getReleaseVersion(),
         lastMigration: (systemConfig as any)?.lastMigrationVersion || 'unknown',
       },
 
@@ -262,6 +264,7 @@ siteRouter.get('/config-status', async (c: HonoContext) => {
           },
           system: {
             version: (systemConfig as any)?.initializationVersion || '1.0.0',
+            releaseVersion: getReleaseVersion(),
           },
         }),
         200

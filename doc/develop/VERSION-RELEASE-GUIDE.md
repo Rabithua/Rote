@@ -21,7 +21,6 @@
    ```
 
 2. **在 GitHub 上创建 Release**
-
    - 访问 GitHub 仓库页面
    - 点击右侧 "Releases" → "Draft a new release"
    - 选择刚创建的标签（如 `v1.0.0`）
@@ -38,7 +37,6 @@
 发布 `v1.0.0` 版本后，会生成以下镜像：
 
 - **后端镜像**:
-
   - `rote-backend:latest`
   - `rote-backend:v1.0.0`
 
@@ -76,6 +74,9 @@ git push origin main
 - `v1.1.1` - 修复 bug
 - `v2.0.0` - 重大更新，不兼容旧版本
 
+只有非 Pre-release 的 GitHub Release 且 tag 严格匹配 `vMAJOR.MINOR.PATCH` 时，Server
+运行版本才使用该稳定 tag；`main`/`develop` 分支构建和 Pre-release 均使用 `dev-<git describe>`。
+
 ## 环境变量配置
 
 在 GitHub Repository Settings → Secrets 中配置：
@@ -83,6 +84,11 @@ git push origin main
 - `DOCKERHUB_USERNAME`: Docker Hub 用户名
 - `DOCKERHUB_TOKEN`: Docker Hub 访问令牌
 - `VITE_API_BASE`: 前端 API 基础 URL（生产环境必须配置）
+
+Dokploy dev 应用应分别使用 `rabithua/rote-backend:develop` 和
+`rabithua/rote-frontend:develop`，并在对应 Docker Hub repository 中配置应用专属的 Dokploy
+HTTPS Webhook URL。Docker Hub 在 `develop` tag 推送完成后通知 Dokploy；Dokploy 仅在 webhook 中的 tag
+与应用配置的镜像 tag 匹配时部署，因此不需要在 GitHub Actions 中保存 Dokploy 凭据。
 
 ## 验证构建
 
