@@ -17,13 +17,10 @@ import {
 import { createResponse } from '../../utils/main';
 import { generateSitemapXML } from '../../utils/sitemap';
 import { billingConfig } from '../../billing/runtimeConfig';
+import { getReleaseVersion } from '../../release/releaseVersion';
 
 // 站点数据相关路由
 const siteRouter = new Hono<{ Variables: HonoVariables }>();
-
-function getReleaseVersion() {
-  return process.env.ROTE_RELEASE_VERSION?.trim() || 'unknown';
-}
 
 async function getPublicAiStatus() {
   const fallback = {

@@ -103,7 +103,7 @@ RUN rm -rf /app/node_modules/.cache /tmp/* /var/cache/apk/* && \
       -delete 2>/dev/null || true
 
 # 设置环境变量，提升性能
-ARG ROTE_RELEASE_VERSION=unknown
+ARG ROTE_RELEASE_VERSION=dev-unknown
 ENV NODE_ENV=production \
     ROTE_RELEASE_VERSION=${ROTE_RELEASE_VERSION}
 

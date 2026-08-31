@@ -118,6 +118,13 @@ export class SiteTestSuite {
         typeof configStatus.isInitialized === 'boolean',
         'isInitialized should be boolean'
       );
+      if (configStatus.isInitialized) {
+        TestAssertions.assertNotNull(configStatus.system, 'System info should be present');
+        TestAssertions.assertNotNull(
+          configStatus.system.releaseVersion,
+          'Server release version should be present'
+        );
+      }
 
       const duration = Date.now() - startTime;
       this.resultManager.recordResult(
