@@ -84,11 +84,14 @@ git push origin main
 - `DOCKERHUB_USERNAME`: Docker Hub 用户名
 - `DOCKERHUB_TOKEN`: Docker Hub 访问令牌
 - `VITE_API_BASE`: 前端 API 基础 URL（生产环境必须配置）
+- `DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL`: Dokploy develop Compose 的专用 HTTPS 部署 Webhook URL
 
-Dokploy dev 应用应分别使用 `rabithua/rote-backend:develop` 和
-`rabithua/rote-frontend:develop`，并在对应 Docker Hub repository 中配置应用专属的 Dokploy
-HTTPS Webhook URL。Docker Hub 在 `develop` tag 推送完成后通知 Dokploy；Dokploy 仅在 webhook 中的 tag
-与应用配置的镜像 tag 匹配时部署，因此不需要在 GitHub Actions 中保存 Dokploy 凭据。
+Dokploy develop Compose 应同时使用 `rabithua/rote-backend:develop` 和
+`rabithua/rote-frontend:develop`。`develop-deploy.yml` 会等待两个镜像都推送完成，再调用一次 Compose
+专用 Webhook；workflow concurrency 会串行处理相邻的 `develop` 构建，避免任一 Docker Hub repository
+先完成或相邻构建交错时让 Compose 拉取到不一致的镜像。Webhook URL 必须使用 HTTPS、作为 GitHub
+Actions Secret 保存，且不得写入仓库或日志。不要为同一个 Compose 在两个 Docker Hub repository 中
+重复配置部署 Webhook；独立 Dokploy Application 仍可继续使用与其镜像 tag 匹配的 Docker Hub Webhook。
 
 ## 验证构建
 

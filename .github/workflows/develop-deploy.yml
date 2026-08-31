@@ -8,6 +8,10 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+concurrency:
+  group: rote-develop-images-and-compose
+  cancel-in-progress: false
+
 jobs:
   build-backend:
     runs-on: ubuntu-latest
@@ -79,3 +83,51 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:latest-dev
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:develop
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:develop-${{ github.sha }}
+
+  deploy-dokploy-compose:
+    needs:
+      - build-backend
+      - build-frontend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Trigger Dokploy develop Compose deployment
+        env:
+          DOKPLOY_COMPOSE_WEBHOOK_URL: ${{ secrets.DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL }}
+        run: |
+          bun -e '
+            const rawUrl = Bun.env.DOKPLOY_COMPOSE_WEBHOOK_URL;
+            let webhookUrl;
+            try {
+              webhookUrl = new URL(rawUrl || "");
+            } catch {
+              console.error("DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL is not configured");
+              process.exit(1);
+            }
+            if (webhookUrl.protocol !== "https:") {
+              console.error("DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL must use HTTPS");
+              process.exit(1);
+            }
+            const sha = Bun.env.GITHUB_SHA || "unknown";
+            const response = await fetch(webhookUrl, {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+                "x-github-event": "push",
+              },
+              body: JSON.stringify({
+                head_commit: {
+                  id: sha,
+                  message: `Deploy develop images ${sha}`,
+                },
+              }),
+            });
+            if (!response.ok) {
+              console.error(`Dokploy Compose webhook failed with HTTP ${response.status}`);
+              process.exit(1);
+            }
+            console.log("Dokploy develop Compose deployment queued");
+          '
