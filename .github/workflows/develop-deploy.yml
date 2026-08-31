@@ -79,23 +79,3 @@ jobs:
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:latest-dev
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:develop
             ${{ secrets.DOCKERHUB_USERNAME }}/rote-frontend:develop-${{ github.sha }}
-
-  deploy-dokploy-dev:
-    needs:
-      - build-backend
-      - build-frontend
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Trigger Dokploy dev deployments
-        env:
-          BACKEND_WEBHOOK_URL: ${{ secrets.DOKPLOY_DEV_BACKEND_WEBHOOK_URL }}
-          FRONTEND_WEBHOOK_URL: ${{ secrets.DOKPLOY_DEV_FRONTEND_WEBHOOK_URL }}
-        run: |
-          if [[ -z "$BACKEND_WEBHOOK_URL" || -z "$FRONTEND_WEBHOOK_URL" ]]; then
-            echo "Dokploy dev webhook URLs are not configured" >&2
-            exit 1
-          fi
-
-          curl --fail --silent --show-error --output /dev/null --request POST "$BACKEND_WEBHOOK_URL"
-          curl --fail --silent --show-error --output /dev/null --request POST "$FRONTEND_WEBHOOK_URL"
