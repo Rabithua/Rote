@@ -87,7 +87,7 @@ git push origin main
 
 Dokploy dev 应用应分别使用 `rabithua/rote-backend:develop` 和
 `rabithua/rote-frontend:develop`，并在对应 Docker Hub repository 中配置应用专属的 Dokploy
-Webhook URL。Docker Hub 在 `develop` tag 推送完成后通知 Dokploy；Dokploy 仅在 webhook 中的 tag
+HTTPS Webhook URL。Docker Hub 在 `develop` tag 推送完成后通知 Dokploy；Dokploy 仅在 webhook 中的 tag
 与应用配置的镜像 tag 匹配时部署，因此不需要在 GitHub Actions 中保存 Dokploy 凭据。
 
 ## 验证构建
