@@ -146,7 +146,13 @@ function LayoutDashboard({
 
   function IconRenderItem(icon: IconType) {
     return icon.link ? (
-      <Link key={icon.link} to={icon.link} aria-label={t(`leftNavBar.${icon.name}`)}>
+      <Link
+        key={icon.link}
+        to={icon.link}
+        // Account scripts must not survive a history navigation back to the reader.
+        reloadDocument={anonymousReader}
+        aria-label={t(`leftNavBar.${icon.name}`)}
+      >
         <div
           className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
             location.pathname === icon.link
