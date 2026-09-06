@@ -37,12 +37,13 @@ FROM nginx:alpine
 
 # 从构建阶段复制 Vite 的 /dist 目录产物到 Nginx 的服务目录
 COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 清理 Nginx 默认文件以减小镜像
 RUN rm -rf /usr/share/nginx/html/*.md && \
     rm -rf /etc/nginx/conf.d/default.conf.bak || true
 
-# 创建启动脚本（用于运行时注入 VITE_API_BASE 和配置 Nginx）
+# 创建启动脚本（用于运行时注入 VITE_API_BASE）
 RUN cat > /docker-entrypoint.sh << 'EOFSCRIPT' && chmod +x /docker-entrypoint.sh
 #!/bin/sh
 set -e
@@ -61,53 +62,6 @@ if [ -n "$VITE_API_BASE" ] && [ -f /usr/share/nginx/html/index.html ]; then
     echo "✓ 已插入配置脚本，VITE_API_BASE: ${VITE_API_BASE}"
   fi
 fi
-
-# 配置 Nginx（SPA 路由支持、静态资源缓存、Gzip 压缩）
-cat > /etc/nginx/conf.d/default.conf << 'NGINX_EOF'
-server {
-    listen 80;
-    server_name _;
-    root /usr/share/nginx/html;
-    index index.html;
-    
-    # 隐藏 Nginx 版本信息（安全）
-    server_tokens off;
-    
-    # SPA 路由支持
-    location ^~ /s/ {
-        access_log off;
-        add_header Cache-Control "no-store" always;
-        add_header Referrer-Policy "no-referrer" always;
-        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
-        try_files /index.html =404;
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-    
-    # 静态资源缓存（长期缓存）
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-        access_log off;
-    }
-    
-    # HTML 文件不缓存
-    location ~* \.html$ {
-        expires -1;
-        add_header Cache-Control "no-store, no-cache, must-revalidate";
-    }
-    
-    # Gzip 压缩（优化传输大小）
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_comp_level 6;
-    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml+rss;
-    gzip_disable "msie6";
-}
-NGINX_EOF
 
 # 启动 Nginx
 exec nginx -g "daemon off;"

@@ -43,8 +43,9 @@ registerRoute(
   new StaleWhileRevalidate({ cacheName: 'api-cache' })
 );
 
-// 导航回退到 index.html（由 Workbox 预缓存）
-const handler = async () => fetch('/index.html');
+// Resolve the current shell without reusing a previously long-lived HTTP cache.
+// Workbox's revisioned precache remains separate from this navigation request.
+const handler = async () => fetch('/index.html', { cache: 'no-store' });
 const navigationRoute = new NavigationRoute(handler, {
   denylist: [/^\/api\//, /\/sw\.js$/, /^\/\.well-known\//, /^\/s\//],
 });

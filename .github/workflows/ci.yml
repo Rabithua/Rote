@@ -44,6 +44,22 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: bun run build
 
+      - name: Verify frontend cache headers
+        if: matrix.path == 'web'
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id=$(docker run --rm -d -p 127.0.0.1:38081:80 \
+            -v "$PWD/dist:/usr/share/nginx/html:ro" \
+            -v "$PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine)
+          trap 'docker rm -f "$container_id" >/dev/null' EXIT
+          for attempt in {1..10}; do
+            if curl --silent --fail --head http://127.0.0.1:38081/ >/dev/null; then break; fi
+            sleep 1
+          done
+          bun run scripts/verify-cache-policy.ts http://127.0.0.1:38081
+
   note-sharing:
     runs-on: ubuntu-latest
     services:
