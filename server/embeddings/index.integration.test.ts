@@ -190,6 +190,26 @@ describe.serial('embedding configuration and index lifecycle', () => {
     await processEmbeddingJob(second!.job, second!.config, 3);
     expect(await db.select().from(documentEmbeddings)).toHaveLength(1);
   });
+  it('does not let an expired worker delete retained vectors when its source disappears', async () => {
+    const config = await saveConfig();
+    await note();
+    await ensurePgvectorReady();
+    await startIndexRebuild(config.revision);
+    await completeRebuild();
+    await enqueueEmbeddingJob('rote', noteId, ownerId, 'upsert', true);
+    const claim = await claimEmbeddingJob();
+    await db.delete(rotes).where(eq(rotes.id, noteId));
+    await db
+      .update(embeddingJobs)
+      .set({ leaseExpiresAt: new Date(0) })
+      .where(eq(embeddingJobs.id, claim!.job.id));
+    await expect(processEmbeddingJob(claim!.job, claim!.config, 3)).rejects.toMatchObject({
+      code: 'embedding_lease_lost',
+    });
+    expect(await db.select().from(documentEmbeddings)).toHaveLength(1);
+    await processPendingEmbeddingJobs();
+    expect(await db.select().from(documentEmbeddings)).toHaveLength(0);
+  });
   it('requeues a changed source and captures changes during rebuild with auto indexing disabled', async () => {
     const config = await saveConfig();
     await note();

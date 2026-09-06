@@ -22,23 +22,19 @@ import type { AiSourceType } from '../utils/dbMethods/ai/types';
 import { createEmbedding } from './client';
 import { canProcessIndex, lockIndexState, readAiSnapshot } from './configStore';
 import { renewClaim } from './jobClaims';
-import { deleteEmbeddingsForSource, queueSource } from './queue';
+import { queueSource } from './queue';
 
 export async function processEmbeddingJob(job: EmbeddingJob, config: AiConfig, dimensions: number) {
   const sourceType = job.sourceType as AiSourceType;
+  await renewClaim(job);
   const source = await getSourceDocument(sourceType, job.sourceId);
-  if (!source || !(await hasCapability(getSourceOwner(sourceType, source), 'ai.chat'))) {
-    await deleteEmbeddingsForSource(sourceType, job.sourceId);
-    return;
-  }
-  const ownerId = getSourceOwner(sourceType, source);
-  const document = buildSourceDocument(sourceType, source);
-  const sourceHash = hashText(JSON.stringify({ ownerId, document }));
-  const chunks = splitIntoChunks(
-    document.text,
-    config.indexing.chunkSize,
-    config.indexing.chunkOverlap
-  );
+  const ownerId = source ? getSourceOwner(sourceType, source) : job.ownerId;
+  const eligibleSource = source && (await hasCapability(ownerId, 'ai.chat'));
+  const document = eligibleSource ? buildSourceDocument(sourceType, source) : null;
+  const sourceHash = document ? hashText(JSON.stringify({ ownerId, document })) : null;
+  const chunks = document
+    ? splitIntoChunks(document.text, config.indexing.chunkSize, config.indexing.chunkOverlap)
+    : [];
   const vectors: NewDocumentEmbedding[] = [];
   for (const [chunkIndex, chunk] of chunks.entries()) {
     await renewClaim(job);
@@ -65,7 +61,7 @@ export async function processEmbeddingJob(job: EmbeddingJob, config: AiConfig, d
       embeddingDimensions: dimensions,
       embedding: JSON.stringify(result.embedding),
       text: chunk,
-      metadata: document.metadata,
+      metadata: document!.metadata,
     });
   }
   await db.transaction(async (tx) => {
