@@ -79,12 +79,13 @@ export default function NavBar({
           {(icon || title) && (
             <div className="flex min-w-0 items-center gap-2 p-3 [&>svg]:shrink-0">
               {icon}
-              <div
-                className="min-w-0 truncate"
-                title={typeof title === 'string' ? title : undefined}
-              >
-                {title}
-              </div>
+              {typeof title === 'string' ? (
+                <div className="min-w-0 truncate" title={title}>
+                  {title}
+                </div>
+              ) : (
+                title
+              )}
             </div>
           )}
         </div>
