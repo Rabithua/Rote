@@ -97,6 +97,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
     },
     "system": {
       "version": "1.0.0",
+      "releaseVersion": "v2.2.0",
       "lastMigration": "1.0.0"
     },
     "notification": {
@@ -149,7 +150,8 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
     - `content`: string - 公告内容
     - `link`: string | undefined - 公告链接
 - `system`: object - 系统信息
-  - `version`: string - 系统版本
+  - `version`: string - 实例首次初始化时的版本；为兼容旧客户端保留，不能用于判断当前 Server 镜像版本
+  - `releaseVersion`: string - 当前运行 Server 镜像的版本；稳定 Release 为 `vMAJOR.MINOR.PATCH`，开发构建为 `dev-<git describe>`，无法取得构建信息时为 `dev-unknown`
   - `lastMigration`: string - 最后迁移版本
 - `notification`: object - 通知配置
   - `vapidPublicKey`: string | null - VAPID 公钥（用于 Web Push 通知）
@@ -212,7 +214,8 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
       "frontendUrl": "https://rote.ink"
     },
     "system": {
-      "version": "1.0.0"
+      "version": "1.0.0",
+      "releaseVersion": "v2.2.0"
     }
   }
 }
@@ -240,7 +243,8 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
   - `description`: string - 站点描述
   - `frontendUrl`: string - 前端地址
 - `system`: object（仅当已初始化时返回）- 系统信息
-  - `version`: string - 系统版本
+  - `version`: string - 实例首次初始化时的版本；为兼容旧客户端保留，不能用于判断当前 Server 镜像版本
+  - `releaseVersion`: string - 当前运行 Server 镜像的版本；格式与 `/status` 中的同名字段一致
 - `requiresSetup`: boolean（仅当未初始化时返回）- 是否需要设置
 - `setupSteps`: string[]（仅当未初始化时返回）- 需要完成的设置步骤列表
 
@@ -267,6 +271,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
 - **存储配置**: 通过 `storage.r2Configured` 判断附件上传功能是否可用，通过 `storage.urlPrefix` 获取附件访问地址前缀
 - **Web Push**: 使用 `notification.vapidPublicKey` 实现 Web Push 通知功能
 - **OAuth 登录**: 根据 `oauth.enabled` 和 `oauth.providers` 动态显示 OAuth 登录按钮，支持多个提供商（如 GitHub、Apple 等）
+- **版本判断**: 只有当 `system.releaseVersion` 严格匹配 `^v\d+\.\d+\.\d+$` 时，才将其作为稳定版本与最新 Release 比较；`dev-*` 表示分支或本地开发镜像，客户端不应把它判定为落后的稳定版
 
 ---
 

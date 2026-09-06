@@ -13,6 +13,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -856,6 +857,7 @@ export const documentEmbeddings = pgTable(
   'document_embeddings',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    generationId: uuid('generationId'),
     ownerId: uuid('ownerId').notNull(),
     sourceType: varchar('sourceType', { length: 20 }).notNull(),
     sourceId: uuid('sourceId').notNull(),
@@ -880,7 +882,8 @@ export const documentEmbeddings = pgTable(
       table.embeddingModel,
       table.embeddingDimensions
     ),
-    uniqueSourceChunk: unique('document_embeddings_source_chunk_unique').on(
+    uniqueSourceChunk: unique('document_embeddings_generation_source_chunk_unique').on(
+      table.generationId,
       table.sourceType,
       table.sourceId,
       table.chunkIndex
@@ -899,6 +902,7 @@ export const embeddingJobs = pgTable(
   'embedding_jobs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
+    generationId: uuid('generationId'),
     ownerId: uuid('ownerId').notNull(),
     sourceType: varchar('sourceType', { length: 20 }).notNull(),
     sourceId: uuid('sourceId').notNull(),
@@ -907,10 +911,21 @@ export const embeddingJobs = pgTable(
     attempts: integer('attempts').notNull().default(0),
     error: text('error'),
     lockedAt: timestamp('lockedAt', { withTimezone: true, precision: 6 }),
+    leaseToken: uuid('leaseToken'),
+    leaseExpiresAt: timestamp('leaseExpiresAt', { withTimezone: true, precision: 6 }),
+    nextAttemptAt: timestamp('nextAttemptAt', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow(),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => ({
+    pendingSource: uniqueIndex('embedding_jobs_pending_source_idx')
+      .on(table.generationId, table.sourceType, table.sourceId)
+      .where(sql`${table.status} = 'pending'`),
+    runningSource: uniqueIndex('embedding_jobs_running_source_idx')
+      .on(table.generationId, table.sourceType, table.sourceId)
+      .where(sql`${table.status} = 'running'`),
     statusIdx: index('embedding_jobs_status_idx').on(table.status, table.createdAt),
     sourceIdx: index('embedding_jobs_source_idx').on(table.sourceType, table.sourceId),
     ownerIdx: index('embedding_jobs_ownerId_idx').on(table.ownerId),
@@ -1201,3 +1216,54 @@ export type BillingGrant = typeof billingGrants.$inferSelect;
 export type NewBillingGrant = typeof billingGrants.$inferInsert;
 export type BillingInboundDelivery = typeof billingInboundDeliveries.$inferSelect;
 export type NewBillingInboundDelivery = typeof billingInboundDeliveries.$inferInsert;
+
+// One authoritative state row; legacy vectors deliberately have no generation.
+export const embeddingIndexState = pgTable(
+  'embedding_index_state',
+  {
+    id: integer('id').primaryKey().default(1),
+    revision: integer('revision').notNull().default(0),
+    fingerprint: text('fingerprint'),
+    dimensions: integer('dimensions'),
+    generationId: uuid('generationId'),
+    generationFingerprint: text('generationFingerprint'),
+    generationDimensions: integer('generationDimensions'),
+    generationReusable: boolean('generationReusable').notNull().default(false),
+    status: text('status')
+      .$type<'needs_validation' | 'needs_rebuild' | 'rebuilding' | 'ready' | 'failed'>()
+      .notNull()
+      .default('needs_validation'),
+    scanSource: text('scanSource').$type<'rote' | 'article'>().notNull().default('rote'),
+    scanCursor: uuid('scanCursor'),
+    scanComplete: boolean('scanComplete').notNull().default(false),
+    errorCode: text('errorCode'),
+    errorDetails: jsonb('errorDetails').$type<Record<string, string | number>>(),
+    validatedAt: timestamp('validatedAt', { withTimezone: true, precision: 6 }),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    singleton: check('embedding_index_state_singleton', sql`${table.id} = 1`),
+    dimensionsRange: check(
+      'embedding_index_dimensions_range',
+      sql`${table.dimensions} BETWEEN 1 AND 2000`
+    ),
+  })
+);
+
+// Transactional source-change outbox, populated by database triggers.
+export const embeddingSourceEvents = pgTable(
+  'embedding_source_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    sourceType: text('sourceType').$type<'rote' | 'article'>().notNull(),
+    sourceId: uuid('sourceId').notNull(),
+    ownerId: uuid('ownerId').notNull(),
+    action: text('action').$type<'upsert' | 'delete'>().notNull(),
+    generationId: uuid('generationId'),
+    rebuilding: boolean('rebuilding').notNull().default(false),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pending: index('embedding_source_events_pending_idx').on(table.createdAt, table.id),
+  })
+);

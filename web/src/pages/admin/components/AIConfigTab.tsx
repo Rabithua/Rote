@@ -1,4 +1,5 @@
-import { Button } from '@/components/ui/button';
+import { formatEmbeddingError } from './embeddingErrors';
+import AIConfigSaveButton from './AIConfigSaveButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Divider from '@/components/ui/divider';
 import { Label } from '@/components/ui/label';
@@ -14,35 +15,6 @@ import AIConfigAdvancedSettings from './AIConfigAdvancedSettings';
 import AIConfigProviderForm from './AIConfigProviderForm';
 import type { EmbeddingJobStats, VectorStatus } from './AIIndexingStatus';
 
-const DEFAULT_AI_CONFIG: NonNullable<SystemConfig['ai']> = {
-  enabled: false,
-  vectorEnabled: false,
-  autoIndexEnabled: false,
-  publicExploreVectorEnabled: false,
-  chat: {
-    providerId: 'openai',
-    apiFormat: 'openai_compatible',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'gpt-4.1-mini',
-    apiKey: '',
-  },
-  embedding: {
-    providerId: 'openai',
-    apiFormat: 'openai_compatible',
-    baseUrl: 'https://api.openai.com/v1',
-    model: 'text-embedding-3-small',
-    dimensions: 1536,
-    apiKey: '',
-  },
-  indexing: {
-    chunkSize: 1800,
-    chunkOverlap: 200,
-    batchSize: 5,
-    maxRetries: 3,
-    paused: false,
-  },
-};
-
 interface AIConfigTabProps {
   aiConfig: SystemConfig['ai'] | undefined;
   setAiConfig: (config: SystemConfig['ai'] | undefined) => void;
@@ -51,19 +23,22 @@ interface AIConfigTabProps {
   onMutate: () => void;
 }
 
-function mergeAiConfig(config?: SystemConfig['ai']): NonNullable<SystemConfig['ai']> {
-  const chat = { ...DEFAULT_AI_CONFIG.chat, ...(config?.chat || {}) } as AiProviderConfig;
+function mergeAiConfig(
+  config: SystemConfig['ai'],
+  defaults: NonNullable<SystemConfig['ai']>
+): NonNullable<SystemConfig['ai']> {
+  const chat = { ...defaults.chat, ...(config?.chat || {}) } as AiProviderConfig;
   const embedding = {
-    ...DEFAULT_AI_CONFIG.embedding,
+    ...defaults.embedding,
     ...(config?.embedding || {}),
   } as NonNullable<SystemConfig['ai']>['embedding'];
 
   return {
-    ...DEFAULT_AI_CONFIG,
+    ...defaults,
     ...(config || {}),
     chat,
     embedding,
-    indexing: { ...DEFAULT_AI_CONFIG.indexing, ...(config?.indexing || {}) },
+    indexing: { ...defaults.indexing, ...(config?.indexing || {}) },
   };
 }
 
@@ -90,17 +65,36 @@ function MetricBlock({ label, value }: { label: string; value: string | number }
   );
 }
 
-export default function AIConfigTab({
+export default function AIConfigTab(props: AIConfigTabProps) {
+  const { t } = useTranslation();
+  const { data: defaults } = useSWR(
+    '/ai/defaults',
+    async () => (await get('/ai/defaults')).data as NonNullable<SystemConfig['ai']>
+  );
+  if (!defaults && !props.aiConfig) return <p>{t('pages.admin.ai.testing')}</p>;
+  return <AIConfigEditor {...props} defaults={defaults || props.aiConfig!} />;
+}
+
+function AIConfigEditor({
+  defaults,
   aiConfig,
   setAiConfig,
   isSaving,
   setIsSaving,
   onMutate,
-}: AIConfigTabProps) {
+}: AIConfigTabProps & { defaults: NonNullable<SystemConfig['ai']> }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const { mutate: mutateGlobal } = useSWRConfig();
   const [busyAction, setBusyAction] = useState<string | null>(null);
-  const config = useMemo(() => mergeAiConfig(aiConfig), [aiConfig]);
+  const config = useMemo(() => mergeAiConfig(aiConfig, defaults), [aiConfig, defaults]);
+
+  const { data: savedAi, mutate: mutateSavedAi } = useSWR(
+    '/admin/settings?group=ai',
+    async () =>
+      (await get('/admin/settings?group=ai')).data as { config: NonNullable<SystemConfig['ai']> }
+  );
+  const hasUnsavedChanges =
+    !savedAi || JSON.stringify(config) !== JSON.stringify(mergeAiConfig(savedAi.config, defaults));
 
   const { data: providers = [] } = useSWR<AiProviderPreset[]>('/ai/providers', async () => {
     const res = await get('/ai/providers');
@@ -111,26 +105,26 @@ export default function AIConfigTab({
     async () => {
       const res = await get('/ai/vector/status');
       return res.data;
-    }
+    },
+    { refreshInterval: 3000 }
   );
   const { data: jobStats, mutate: mutateJobStats } = useSWR<EmbeddingJobStats>(
     '/ai/index/stats',
     async () => {
       const res = await get('/ai/index/stats');
       return res.data;
-    }
+    },
+    { refreshInterval: 3000 }
   );
-  const isVectorReady = Boolean(
-    vectorStatus?.available && vectorStatus.installed && vectorStatus.indexName
-  );
+  const isVectorReady = Boolean(vectorStatus?.ready);
 
   const updateConfig = (next: Partial<NonNullable<SystemConfig['ai']>>) => {
-    setAiConfig(mergeAiConfig({ ...config, ...next }));
+    setAiConfig(mergeAiConfig({ ...config, ...next }, defaults));
   };
 
   const updateProvider = (
     target: 'chat' | 'embedding',
-    next: Partial<AiProviderConfig & { dimensions?: number }>
+    next: Partial<AiProviderConfig & { output: import('../types').EmbeddingOutput }>
   ) => {
     updateConfig({
       [target]: {
@@ -152,25 +146,31 @@ export default function AIConfigTab({
       baseUrl: preset.baseUrl,
       model,
       apiKey: '',
+      ...(target === 'embedding' ? { output: { mode: 'native' as const } } : {}),
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (snapshot: NonNullable<SystemConfig['ai']>): Promise<boolean> => {
     setIsSaving(true);
     try {
-      await put('/admin/settings', {
+      const res = await put('/admin/settings', {
         group: 'ai',
-        config,
+        config: snapshot,
       });
+      setAiConfig(res.data.config);
+      await mutateSavedAi();
       toast.success(t('saveSuccess'));
       await Promise.all([Promise.resolve(onMutate()), mutateGlobal('site-status')]);
+      await Promise.all([mutateVectorStatus(), mutateJobStats()]);
+      return true;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
         error?.response?.data?.error ||
         'Unknown error';
-      toast.error(t('saveFailed', { error: errorMessage }));
+      toast.error(t('saveFailed', { error: formatEmbeddingError(error, t) || errorMessage }));
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -179,16 +179,22 @@ export default function AIConfigTab({
   const runAction = async (key: string, action: () => Promise<any>, success: string) => {
     setBusyAction(key);
     try {
-      const res = await action();
-      toast.success(res?.message || success);
+      await action();
+      toast.success(success);
       await Promise.all([
         mutateVectorStatus(),
+        mutateSavedAi(),
         mutateJobStats(),
         Promise.resolve(onMutate()),
         mutateGlobal('site-status'),
       ]);
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || error?.message || 'Unknown error');
+      toast.error(
+        formatEmbeddingError(error, t) ||
+          error?.response?.data?.message ||
+          error?.message ||
+          t('ai.embeddingErrors.embedding_job_failed')
+      );
     } finally {
       setBusyAction(null);
     }
@@ -281,7 +287,6 @@ export default function AIConfigTab({
               busyAction={busyAction}
               updateProvider={updateProvider}
               applyPreset={applyPreset}
-              runAction={runAction}
             />
             <AIConfigProviderForm
               target="embedding"
@@ -290,13 +295,13 @@ export default function AIConfigTab({
               busyAction={busyAction}
               updateProvider={updateProvider}
               applyPreset={applyPreset}
-              runAction={runAction}
             />
           </div>
         </section>
 
         <AIConfigAdvancedSettings
           config={config}
+          hasUnsavedChanges={hasUnsavedChanges}
           vectorStatus={vectorStatus}
           jobStats={jobStats}
           busyAction={busyAction}
@@ -304,9 +309,11 @@ export default function AIConfigTab({
           runAction={runAction}
         />
 
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? t('saving') : t('save')}
-        </Button>
+        <AIConfigSaveButton
+          config={config}
+          disabled={isSaving || busyAction !== null}
+          onSave={handleSave}
+        />
       </CardContent>
     </Card>
   );

@@ -394,7 +394,11 @@
           },
           "overLimit": "使用量が上限に達しています。既存ファイルは削除されません。",
           "uploadBlocked": "新規添付は停止中です。閲覧・ダウンロード・削除は利用できます。",
-          "enforcement": { "off": "オフ", "observe": "監視中", "enforce": "適用中" }
+          "enforcement": {
+            "off": "オフ",
+            "observe": "監視中",
+            "enforce": "適用中"
+          }
         },
         "openKey": {
           "subtitle": "ショートカット、MCP、自動化ツールに接続",
@@ -574,20 +578,15 @@
       "clear": "チャットをクリア",
       "backToBottom": "一番下へ戻る",
       "model": {
-        "title": "モデルソース",
-        "site": "サイトモデル",
-        "local": "ローカルモデル",
-        "localDescription": "ローカルモデルのリクエストは、この端末とローカルブリッジ間だけで送信されます。",
-        "bridgeUrl": "ローカルブリッジ URL",
-        "modelName": "モデル名",
-        "token": "ローカルブリッジ Token",
-        "test": "ローカル接続をテスト",
-        "testing": "テスト中...",
-        "connected": "ローカルモデルに接続しました",
-        "connectionFailed": "ローカルモデル接続に失敗しました：{{error}}",
-        "toolsReady": "Rote ツール付きローカルモデル",
-        "chatOnly": "ローカルモデル、通常チャットのみ",
-        "localIncomplete": "ローカルモデル接続を設定してください"
+        "source": "モデルソース",
+        "model": "現在のモデル",
+        "site": "サイト / クラウド AI",
+        "local": "ローカル大規模モデル",
+        "personal": "自分のモデル/API",
+        "personalLocal": "自分のローカルモデル",
+        "personalRemote": "自分のリモート API",
+        "disabled": "無効",
+        "noModel": "未設定"
       },
       "saveAsArticle": "記事として保存",
       "saved": "保存済み",
@@ -635,17 +634,6 @@
         "permissionDenied": "このアカウントには AI チャット権限がありません",
         "unavailable": "AI チャットモデルが未設定です",
         "memoryUnavailable": "チャットモデルは設定済みですが、メモリーにはベクトル索引が必要です"
-      },
-      "model": {
-        "source": "モデルソース",
-        "model": "現在のモデル",
-        "site": "サイト / クラウド AI",
-        "local": "ローカル大規模モデル",
-        "personal": "自分のモデル/API",
-        "personalLocal": "自分のローカルモデル",
-        "personalRemote": "自分のリモート API",
-        "disabled": "無効",
-        "noModel": "未設定"
       },
       "personal": {
         "title": "個人 AI 設定",
@@ -1254,9 +1242,18 @@
       "description": "アカウント状態を選んで、Rote 公式サービスに表示されるストレージと OpenKey 情報を確認できます。",
       "scenarioLabel": "プレビューシナリオ",
       "scenarios": {
-        "free": { "title": "無料アカウント", "description": "500 MB と OpenKey 1個" },
-        "pro": { "title": "Rote Pro", "description": "容量アップ、OpenKey 無制限" },
-        "expired": { "title": "Pro 期限切れ", "description": "内容は保持、新規追加のみ停止" }
+        "free": {
+          "title": "無料アカウント",
+          "description": "500 MB と OpenKey 1個"
+        },
+        "pro": {
+          "title": "Rote Pro",
+          "description": "容量アップ、OpenKey 無制限"
+        },
+        "expired": {
+          "title": "Pro 期限切れ",
+          "description": "内容は保持、新規追加のみ停止"
+        }
       },
       "notice": "これはローカルプレビューです。課金サービスへ接続せず、アカウントデータも変更しません。"
     },
@@ -1383,12 +1380,19 @@
         "officialManaged": "公式特典ポリシー",
         "officialEnforcement": "ストレージ適用状態：{{mode}}",
         "modeLabel": "インスタンスのリソース管理",
-        "mode": { "unmanaged": "管理なし", "local": "ローカルポリシー" },
+        "mode": {
+          "unmanaged": "管理なし",
+          "local": "ローカルポリシー"
+        },
         "modeDescription": {
           "unmanaged": "ストレージと OpenKey を計測・制限しません。",
           "local": "公式課金に接続せず、Rote Pro 表示を使わない独自ポリシーです。"
         },
-        "enforcement": { "off": "オフ", "observe": "監視のみ", "enforce": "強制適用" },
+        "enforcement": {
+          "off": "オフ",
+          "observe": "監視のみ",
+          "enforce": "強制適用"
+        },
         "storage": {
           "title": "ローカルストレージクォータ",
           "enforcement": "適用方法",
@@ -1671,7 +1675,21 @@
           "pending": "保留中",
           "running": "実行中",
           "succeeded": "完了",
-          "failed": "失敗"
+          "failed": "失敗",
+          "lifecycle": {
+            "needs_validation": "検証が必要",
+            "needs_validationDescription": "更新または設定変更後にモデルを検証し、再構築を開始してください。旧ベクトルは再利用されません。",
+            "needs_rebuild": "再構築が必要",
+            "needs_rebuildDescription": "設定は検証済みです。再構築してベクトル検索を復元してください。",
+            "rebuilding": "再構築中",
+            "rebuildingDescription": "現在のモデルの索引を作成しています。ベクトル検索は停止中です。",
+            "failed": "再構築失敗",
+            "failedDescription": "エラーとモデル設定を確認し、失敗したタスクを再試行するか、設定を再検証してください。",
+            "ready": "利用可能",
+            "readyDescription": "ベクトル索引の準備ができました。"
+          },
+          "scanning": "ソースをスキャン中です。タスク数は増える場合があります。",
+          "scanComplete": "ソースのスキャン完了。この世代のタスク完了を待っています。"
         },
         "runtime": {
           "title": "モデルソース",
@@ -1692,6 +1710,44 @@
           "copySuccess": "コマンドをコピーしました",
           "copyFailed": "コピーに失敗しました",
           "embeddingNote": "メモリーには埋め込みモデルも必要です。pgvector HNSW インデックスは 2000 次元以下が必要です。ローカル埋め込みがそれ以上の次元を返す場合は、ベクトルメモリーをオフにするか、低次元の埋め込みモデルを使用してください。"
+        },
+        "outputMode": "出力次元数",
+        "nativeDimensions": "モデルの既定値を使用",
+        "requestedDimensions": "出力次元数を指定",
+        "detectedDimensions": "{{dimensions}} 次元を検出しました",
+        "dimensionTestRequired": "接続テストで出力次元数を確認してください。1〜2000 次元に対応します。",
+        "rebuild": "ベクトル索引を再構築",
+        "rebuildConfirmation": "再構築中はベクトル検索を停止します。通常のチャットは引き続き利用できます。権限のあるユーザーのノートと記事を再処理するため、モデル利用料金が発生します。完了後にベクトル検索を再開します。",
+        "rebuildCancel": "キャンセル",
+        "rebuildConfirm": "再構築を開始",
+        "rebuildStarted": "再構築を開始しました",
+        "saveBeforeRebuild": "再構築の前に設定を保存してください。",
+        "saveChangeTitle": "ベクトル設定を保存しますか？",
+        "saveChangeDescription": "新しい設定が既存の索引と互換性を持たない場合、保存後にベクトル検索が停止し、手動で全件再構築する必要があります。再構築にはモデル利用料金が発生します。保存だけでは再構築を開始しません。",
+        "saveChangeReuse": "保持中の世代と同じモデル、出力次元数、分割設定に戻すと、検証済みの索引を再利用し、その間の内容変更のみを反映します。チャットとキーワード検索は引き続き利用できます。",
+        "saveChangeCancel": "キャンセル",
+        "saveChangeConfirm": "保存する",
+        "saveImpactCheckFailed": "設定変更の影響を確認できませんでした。もう一度お試しください。",
+        "embeddingErrors": {
+          "embedding_config_invalid": "埋め込み設定が無効です。出力モード、次元数、分割設定を確認してください。",
+          "embedding_dimensions_limit": "モデルは {{actual}} 次元を返しました。索引の上限は {{limit}} 次元です。より小さい出力に対応するモデルを使用してください。",
+          "embedding_dimensions_mismatch": "要求した {{expected}} 次元ではなく {{actual}} 次元が返されました。",
+          "embedding_response_invalid": "モデルが無効なベクトルを返しました。設定を再確認してください。",
+          "embedding_parameter_rejected": "提供元が要求パラメータを拒否しました。モデル名を確認し、固定次元モデルでは既定値を使用してください。",
+          "embedding_auth_failed": "提供元の認証に失敗しました。API キーとモデルのアクセス権を確認してください。",
+          "embedding_timeout": "埋め込み要求がタイムアウトしました。",
+          "embedding_network_error": "埋め込みサービスに接続できませんでした。",
+          "embedding_rate_limited": "埋め込みサービスのレート制限に達しました。後で再試行してください。",
+          "embedding_provider_unavailable": "埋め込みサービスを一時的に利用できません。",
+          "embedding_database_unavailable": "再構築の前に pgvector をインストールして有効にしてください。",
+          "embedding_revision_conflict": "設定が変更されました。更新してから編集してください。",
+          "embedding_rebuild_required": "ベクトル検索は未準備です。設定を確認し、索引を再構築してください。",
+          "embedding_disabled": "先に AI とベクトル機能を有効にして設定を保存してください。",
+          "embedding_input_empty": "空でないテキストが必要です。",
+          "embedding_state_missing": "索引の状態がありません。データベース移行を確認してください。",
+          "embedding_settings_save_failed": "AI 設定をデータベースに保存できませんでした。以前の設定は保持されています。データベース移行とサーバーログを確認してください。",
+          "embedding_lease_lost": "このタスクは別のワーカーに引き継がれました。",
+          "embedding_job_failed": "埋め込み処理に失敗しました。索引の状態を確認して再試行してください。"
         }
       },
       "users": {
@@ -1986,11 +2042,6 @@
       "selectTags": "タグを選択...",
       "tagsCount": "{{count}}個のタグ",
       "searchTags": "タグを検索..."
-    },
-    "productHunt": {
-      "findUsOn": "Product Huntで見つける",
-      "scheduledDate": "予定日：{{date}}",
-      "votePrompt": "Product Huntで投票して応援してください！ 🥺"
     },
     "verifiedIcon": {
       "tooltip": "認証済み"

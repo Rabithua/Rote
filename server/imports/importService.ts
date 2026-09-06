@@ -12,9 +12,7 @@ import {
   type NewRote,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
-import { trackBackgroundTask } from '../utils/backgroundTask';
 import { releaseStorageObjectReferences } from '../resources/service';
-import { enqueueEmbeddingJobs } from '../utils/dbMethods/ai';
 import { DatabaseError } from '../utils/dbMethods/common';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
 import { r2deletehandler } from '../utils/r2';
@@ -60,7 +58,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
     updated: 0,
     deleted: 0,
   };
-  const changedNoteIds: string[] = [];
 
   try {
     for (let offset = 0; offset < payload.notes.length; offset += IMPORT_CHUNK_SIZE) {
@@ -142,7 +139,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
           const noteData = buildNoteData(note, targetId, userId, ownedArticleIds, payload);
           noteRows.push(noteData);
           changes.push({ id: targetId, action: existing ? 'UPDATE' : 'CREATE' });
-          changedNoteIds.push(targetId);
           if (existing) counts.updated += 1;
           else counts.created += 1;
 
@@ -341,11 +337,6 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
           });
         });
     }
-
-    trackBackgroundTask(
-      enqueueEmbeddingJobs('rote', changedNoteIds, userId),
-      'import_embedding_enqueue_failed'
-    );
 
     return {
       count: payload.notes.length,

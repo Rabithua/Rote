@@ -1,5 +1,4 @@
 import v2ReleaseSvg from '@/assets/v2.0.svg?raw';
-import ProductHunt from '@/components/others/ProductHunt';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useTypewriter } from '@/hooks/useTypewriter';
@@ -89,8 +88,6 @@ export function LandingHero() {
             <ArrowUpRight className="inline-block size-5" />
           </Link>
         </Button>
-
-        <ProductHunt />
       </div>
 
       <div className="group absolute right-10 bottom-0 flex flex-col items-center">

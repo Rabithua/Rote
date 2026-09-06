@@ -45,13 +45,15 @@ export interface SystemConfig {
     adminHooks?: AdminHooksConfig;
   };
   ai?: {
+    schemaVersion: 2;
+    revision: number;
     enabled?: boolean;
     vectorEnabled?: boolean;
     autoIndexEnabled?: boolean;
     publicExploreVectorEnabled?: boolean;
     chat?: AiProviderConfig;
     embedding?: AiProviderConfig & {
-      dimensions?: number;
+      output: EmbeddingOutput;
     };
     indexing?: {
       chunkSize?: number;
@@ -167,3 +169,5 @@ export interface DashboardStats {
     tokenUsage: number | string;
   }>;
 }
+
+export type EmbeddingOutput = { mode: 'native' } | { mode: 'dimensions'; dimensions: number };

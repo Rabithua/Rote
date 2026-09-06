@@ -3,6 +3,8 @@ import type { AiConfig } from '../types/config';
 import { executeClientRoteTool } from '../utils/ai/agent/clientRuntime';
 
 const config: AiConfig = {
+  schemaVersion: 2,
+  revision: 0,
   enabled: true,
   vectorEnabled: true,
   autoIndexEnabled: false,
@@ -12,7 +14,7 @@ const config: AiConfig = {
     providerId: 'test',
     baseUrl: 'http://test',
     model: 'test',
-    dimensions: 3,
+    output: { mode: 'dimensions', output: { mode: 'dimensions', dimensions: 3 } },
   },
   indexing: { chunkSize: 800, chunkOverlap: 100, batchSize: 1, maxRetries: 1 },
 };

@@ -14,12 +14,19 @@ import type { ChatMessage, ChatToolCall, ChatToolDefinition } from '../utils/ai/
 const AVAILABLE_TAGS = ['工作', '生活', '开心'];
 
 const config: AiConfig = {
+  schemaVersion: 2,
+  revision: 0,
   enabled: true,
   vectorEnabled: true,
   autoIndexEnabled: true,
   publicExploreVectorEnabled: false,
   chat: { providerId: 'test', baseUrl: 'http://test', model: 'test-chat' },
-  embedding: { providerId: 'test', baseUrl: 'http://test', model: 'test-embedding', dimensions: 3 },
+  embedding: {
+    providerId: 'test',
+    baseUrl: 'http://test',
+    model: 'test-embedding',
+    output: { mode: 'dimensions', dimensions: 3 },
+  },
   indexing: { chunkSize: 800, chunkOverlap: 100, batchSize: 10, maxRetries: 1 },
 };
 

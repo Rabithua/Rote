@@ -390,7 +390,11 @@
           },
           "overLimit": "Usage has reached or exceeded the quota. Existing files will not be deleted.",
           "uploadBlocked": "New attachments are paused; reading, downloading, and deleting remain available.",
-          "enforcement": { "off": "Off", "observe": "Observing", "enforce": "Enforcing" }
+          "enforcement": {
+            "off": "Off",
+            "observe": "Observing",
+            "enforce": "Enforcing"
+          }
         },
         "openKey": {
           "subtitle": "Connect shortcuts, MCP, and automations",
@@ -570,20 +574,15 @@
       "clear": "Clear chat",
       "backToBottom": "Back to bottom",
       "model": {
-        "title": "Model source",
-        "site": "Site model",
+        "source": "Model source",
+        "model": "Current model",
+        "site": "Site / cloud AI",
         "local": "Local model",
-        "localDescription": "Local model requests only travel between this device and the local bridge.",
-        "bridgeUrl": "Local bridge URL",
-        "modelName": "Model name",
-        "token": "Local bridge token",
-        "test": "Test local connection",
-        "testing": "Testing...",
-        "connected": "Local model connected",
-        "connectionFailed": "Local model connection failed: {{error}}",
-        "toolsReady": "Local model with Rote tools",
-        "chatOnly": "Local model, chat only",
-        "localIncomplete": "Complete the local model connection settings"
+        "personal": "My model/API",
+        "personalLocal": "My local model",
+        "personalRemote": "My remote API",
+        "disabled": "Disabled",
+        "noModel": "Not configured"
       },
       "saveAsArticle": "Save as article",
       "saved": "Saved",
@@ -631,17 +630,6 @@
         "permissionDenied": "This account does not have AI chat permission",
         "unavailable": "AI chat model is not configured",
         "memoryUnavailable": "The chat model is configured, but memory still needs vector indexing"
-      },
-      "model": {
-        "source": "Model source",
-        "model": "Current model",
-        "site": "Site / cloud AI",
-        "local": "Local model",
-        "personal": "My model/API",
-        "personalLocal": "My local model",
-        "personalRemote": "My remote API",
-        "disabled": "Disabled",
-        "noModel": "Not configured"
       },
       "personal": {
         "title": "Personal AI settings",
@@ -1250,9 +1238,18 @@
       "description": "Choose an account state to preview the storage and OpenKey details shown on the official Rote service.",
       "scenarioLabel": "Preview scenario",
       "scenarios": {
-        "free": { "title": "Free account", "description": "500 MB and 1 OpenKey" },
-        "pro": { "title": "Rote Pro", "description": "More space, unlimited OpenKeys" },
-        "expired": { "title": "Pro expired", "description": "Content stays, new items pause" }
+        "free": {
+          "title": "Free account",
+          "description": "500 MB and 1 OpenKey"
+        },
+        "pro": {
+          "title": "Rote Pro",
+          "description": "More space, unlimited OpenKeys"
+        },
+        "expired": {
+          "title": "Pro expired",
+          "description": "Content stays, new items pause"
+        }
       },
       "notice": "This is a local preview. It doesn't connect to billing or change any account data."
     },
@@ -1379,12 +1376,19 @@
         "officialManaged": "Official benefit policy",
         "officialEnforcement": "Storage enforcement: {{mode}}",
         "modeLabel": "Instance resource management",
-        "mode": { "unmanaged": "Unmanaged", "local": "Local policy" },
+        "mode": {
+          "unmanaged": "Unmanaged",
+          "local": "Local policy"
+        },
         "modeDescription": {
           "unmanaged": "Do not measure or limit storage and OpenKey creation.",
           "local": "Use this instance's own policy without connecting to official billing or using Rote Pro branding."
         },
-        "enforcement": { "off": "Off", "observe": "Observe only", "enforce": "Enforce" },
+        "enforcement": {
+          "off": "Off",
+          "observe": "Observe only",
+          "enforce": "Enforce"
+        },
         "storage": {
           "title": "Local storage quota",
           "enforcement": "Enforcement",
@@ -1667,7 +1671,21 @@
           "pending": "Pending",
           "running": "Running",
           "succeeded": "Completed",
-          "failed": "Failed"
+          "failed": "Failed",
+          "lifecycle": {
+            "needs_validation": "Verification required",
+            "needs_validationDescription": "Verify the model after an upgrade or configuration change, then explicitly start rebuilding. Old vectors are not reused.",
+            "needs_rebuild": "Rebuild required",
+            "needs_rebuildDescription": "The configuration is verified. Start rebuilding to restore vector search.",
+            "rebuilding": "Rebuilding",
+            "rebuildingDescription": "Building the current model index. Vector search is paused.",
+            "failed": "Rebuild failed",
+            "failedDescription": "Check the errors and model configuration, then retry failed jobs or verify the configuration again.",
+            "ready": "Ready",
+            "readyDescription": "The vector index is ready."
+          },
+          "scanning": "Scanning sources. More jobs may still be added.",
+          "scanComplete": "Source scan complete. Waiting for this generation’s jobs."
         },
         "runtime": {
           "title": "Model source",
@@ -1688,6 +1706,44 @@
           "copySuccess": "Command copied",
           "copyFailed": "Failed to copy",
           "embeddingNote": "Memory also needs an embedding model. pgvector HNSW indexes require 2000 dimensions or fewer; if local embeddings return more dimensions, keep vector memory off or use a lower-dimensional embedding model."
+        },
+        "outputMode": "Output dimensions",
+        "nativeDimensions": "Use model default",
+        "requestedDimensions": "Request dimensions",
+        "detectedDimensions": "Detected {{dimensions}} dimensions",
+        "dimensionTestRequired": "Test the connection to verify output dimensions. Supports 1–2000 dimensions.",
+        "rebuild": "Rebuild vector index",
+        "rebuildConfirmation": "Vector search will pause during rebuilding. Regular chat remains available. Notes and articles belonging to eligible users will be processed again, incurring model usage charges. Vector search resumes when rebuilding completes.",
+        "rebuildCancel": "Cancel",
+        "rebuildConfirm": "Start rebuilding",
+        "rebuildStarted": "Rebuild started",
+        "saveBeforeRebuild": "Save your configuration before rebuilding.",
+        "saveChangeTitle": "Save embedding configuration?",
+        "saveChangeDescription": "If the new configuration is incompatible with the existing index, saving pauses vector search and requires a manual full rebuild. Rebuilding incurs model usage charges; saving does not start it.",
+        "saveChangeReuse": "Returning to the model, output dimensions and chunk settings of the retained generation reuses its verified index and catches up on content changes. Chat and keyword search remain available.",
+        "saveChangeCancel": "Cancel",
+        "saveChangeConfirm": "Confirm save",
+        "saveImpactCheckFailed": "Could not check the configuration change. Please try again.",
+        "embeddingErrors": {
+          "embedding_config_invalid": "Invalid embedding configuration. Check the output mode, dimensions and chunk settings.",
+          "embedding_dimensions_limit": "The model returned {{actual}} dimensions; this index supports up to {{limit}}. Use a model that supports a smaller output.",
+          "embedding_dimensions_mismatch": "The model returned {{actual}} dimensions instead of {{expected}}.",
+          "embedding_response_invalid": "The model returned an invalid vector. Verify the model configuration.",
+          "embedding_parameter_rejected": "The provider rejected the request parameters. Check the model name; use the model default for fixed-dimension models.",
+          "embedding_auth_failed": "Provider authentication failed. Check your API key and model access.",
+          "embedding_timeout": "The embedding request timed out.",
+          "embedding_network_error": "Could not connect to the embedding service.",
+          "embedding_rate_limited": "The embedding service is rate limiting requests. Try again later.",
+          "embedding_provider_unavailable": "The embedding service is temporarily unavailable.",
+          "embedding_database_unavailable": "Install and enable pgvector before rebuilding.",
+          "embedding_revision_conflict": "The configuration has changed. Refresh before editing again.",
+          "embedding_rebuild_required": "Vector search is not ready. Verify the configuration and rebuild the index.",
+          "embedding_disabled": "Enable AI and vector features and save the configuration first.",
+          "embedding_input_empty": "Non-empty text is required.",
+          "embedding_state_missing": "Index state is missing. Check database migrations.",
+          "embedding_settings_save_failed": "The database could not save the AI configuration. Previous settings were preserved. Check database migrations and server logs.",
+          "embedding_lease_lost": "This job has been claimed by another worker.",
+          "embedding_job_failed": "Embedding processing failed. Check the index status before retrying."
         }
       },
       "users": {
@@ -1982,11 +2038,6 @@
       "selectTags": "Select tags...",
       "tagsCount": "{{count}} tags",
       "searchTags": "Search tags..."
-    },
-    "productHunt": {
-      "findUsOn": "FIND US ON",
-      "scheduledDate": "Scheduled for {{date}}",
-      "votePrompt": "Support us by voting on Product Hunt! 🥺 "
     },
     "verifiedIcon": {
       "tooltip": "Certified"

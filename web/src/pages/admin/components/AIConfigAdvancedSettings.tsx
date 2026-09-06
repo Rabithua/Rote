@@ -11,6 +11,7 @@ type AiConfig = NonNullable<SystemConfig['ai']>;
 
 interface AIConfigAdvancedSettingsProps {
   config: AiConfig;
+  hasUnsavedChanges: boolean;
   vectorStatus?: VectorStatus;
   jobStats?: EmbeddingJobStats;
   busyAction: string | null;
@@ -20,6 +21,7 @@ interface AIConfigAdvancedSettingsProps {
 
 export default function AIConfigAdvancedSettings({
   config,
+  hasUnsavedChanges,
   vectorStatus,
   jobStats,
   busyAction,
@@ -114,6 +116,7 @@ export default function AIConfigAdvancedSettings({
         />
 
         <AIIndexingActions
+          hasUnsavedChanges={hasUnsavedChanges}
           batchSize={config.indexing?.batchSize || 5}
           busyAction={busyAction}
           jobStats={jobStats}

@@ -21,7 +21,8 @@ type PgvectorStatus = {
   installed: boolean;
   version: string | null;
   indexName: string | null;
-  dimensions: number;
+  dimensions: number | null;
+  ready: boolean;
 };
 
 export function getAiAccessErrorFromAccess(access: AiAccess): string | null {
@@ -42,7 +43,8 @@ export function isAiMemoryAvailableForAccess(params: {
     getAiAccessErrorFromAccess(params.access) === null &&
     params.config.enabled === true &&
     params.config.vectorEnabled === true &&
-    params.vectorStatus.installed === true
+    params.vectorStatus.installed === true &&
+    params.vectorStatus.ready === true
   );
 }
 

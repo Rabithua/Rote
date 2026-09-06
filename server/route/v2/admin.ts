@@ -1,3 +1,5 @@
+import { saveAiSettings, getStoredAiConfig } from '../../embeddings/configStore';
+import { EmbeddingError } from '../../embeddings/errors';
 import { Hono } from 'hono';
 import {
   authenticateJWT,
@@ -15,7 +17,7 @@ import {
   refreshConfigCache,
   setConfig,
 } from '../../utils/config';
-import { resolveIncomingAiConfig, sanitizeAiConfig } from '../../utils/ai/providers';
+import { sanitizeAiConfig } from '../../utils/ai/providers';
 import {
   buildUserRegisteredEnvelope,
   findAdminHookChannel,
@@ -96,7 +98,7 @@ adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
 
     if (group) {
       // 获取指定分组的配置
-      const config = await getConfig(group as any);
+      const config = group === 'ai' ? await getStoredAiConfig() : await getConfig(group as any);
       if (!config) {
         return c.json(createResponse(null, 'Configuration group not found'), 404);
       }
@@ -111,6 +113,7 @@ adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
     } else {
       // 获取所有配置
       const allConfigs = await getAllConfigs();
+      allConfigs.ai = await getStoredAiConfig();
       return c.json(createResponse(sanitizeSettingsForAdmin(allConfigs)), 200);
     }
   } catch (error: any) {
@@ -253,16 +256,8 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
     }
 
     if (group === 'ai') {
-      const existing = await getConfig<AiConfig>('ai');
-      config = resolveIncomingAiConfig(config as Partial<AiConfig>, existing);
-      if (
-        config.embedding?.dimensions !== undefined &&
-        (typeof config.embedding.dimensions !== 'number' ||
-          config.embedding.dimensions < 1 ||
-          config.embedding.dimensions > 4000)
-      ) {
-        return c.json(createResponse(null, 'Embedding dimensions must be between 1 and 4000'), 400);
-      }
+      const saved = await saveAiSettings(config);
+      return c.json(createResponse({ group, config: sanitizeAiConfig(saved) }), 200);
     }
 
     if (group === 'notification') {
@@ -295,8 +290,9 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       200
     );
   } catch (error: any) {
+    if (error instanceof EmbeddingError) throw error;
     console.error('Failed to update settings:', error);
-    return c.json(createResponse(null, 'Failed to update settings'), 500);
+    return c.json(createResponse(null, 'Failed to update settings', 1), 500);
   }
 });
 

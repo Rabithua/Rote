@@ -16,7 +16,14 @@ export interface VectorStatus {
   installed: boolean;
   version: string | null;
   indexName: string | null;
-  dimensions: number;
+  dimensions: number | null;
+  ready: boolean;
+  status: 'needs_validation' | 'needs_rebuild' | 'rebuilding' | 'ready' | 'failed';
+  revision: number;
+  generationId: string | null;
+  scanComplete: boolean;
+  errorCode: string | null;
+  errorDetails?: Record<string, string | number> | null;
 }
 
 export interface EmbeddingJobStats {
@@ -96,9 +103,7 @@ export default function AIIndexingStatus({
   jobStats,
 }: AIIndexingStatusProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.ai.indexingStatus' });
-  const isVectorReady = Boolean(
-    vectorStatus?.available && vectorStatus.installed && vectorStatus.indexName
-  );
+  const isVectorReady = Boolean(vectorStatus?.ready);
   const stats = {
     pending: jobStats?.pending || 0,
     running: jobStats?.running || 0,
@@ -130,6 +135,13 @@ export default function AIIndexingStatus({
       tone: 'warning',
     };
   }
+
+  if (vectorStatus?.installed && !isVectorReady)
+    vectorSummary = {
+      description: t(`lifecycle.${vectorStatus.status}Description`),
+      label: t(`lifecycle.${vectorStatus.status}`),
+      tone: vectorStatus.status === 'failed' ? 'danger' : 'warning',
+    };
 
   let queueSummary = {
     description: t('checkingDescription'),
@@ -195,6 +207,20 @@ export default function AIIndexingStatus({
           <StatusBadge tone={vectorSummary.tone}>{vectorSummary.label}</StatusBadge>
         </div>
 
+        {vectorStatus?.errorCode && (
+          <p className="text-destructive mt-3 text-xs" role="alert">
+            {t(`pages.admin.ai.embeddingErrors.${vectorStatus.errorCode}`, {
+              keyPrefix: '',
+              ...(vectorStatus.errorDetails || {}),
+              defaultValue: t('lifecycle.failedDescription'),
+            })}
+          </p>
+        )}
+        {vectorStatus?.status === 'rebuilding' && (
+          <p className="text-muted-foreground mt-3 text-xs">
+            {t(vectorStatus.scanComplete ? 'scanComplete' : 'scanning')}
+          </p>
+        )}
         {vectorStatus ? (
           <div className="mt-4 divide-y rounded-md border px-3 py-2">
             <ReadinessRow label={t('extensionAvailable')} ready={vectorStatus.available} />
@@ -211,7 +237,9 @@ export default function AIIndexingStatus({
         {vectorStatus && (
           <div className="text-muted-foreground mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
             {vectorStatus.version && <span>{t('version', { version: vectorStatus.version })}</span>}
-            <span>{t('dimensions', { dimensions: vectorStatus.dimensions })}</span>
+            {vectorStatus.dimensions !== null && (
+              <span>{t('dimensions', { dimensions: vectorStatus.dimensions })}</span>
+            )}
           </div>
         )}
         {vectorStatus?.indexName && (

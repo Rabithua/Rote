@@ -2,7 +2,7 @@ import type { RetrievalSelection } from '../../ai/retrievalPlan';
 
 export type AiSourceType = 'rote' | 'article';
 export type EmbeddingJobAction = 'upsert' | 'delete' | 'reindex';
-export type EmbeddingJobStatus = 'pending' | 'running' | 'succeeded' | 'failed';
+export type EmbeddingJobStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled';
 
 export type {
   NormalizedTimeRange,

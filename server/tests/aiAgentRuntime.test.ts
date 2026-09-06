@@ -5,6 +5,8 @@ import type { RoteAgentStreamEvent } from '../utils/ai/agent/types';
 const originalFetch = globalThis.fetch;
 
 const config: AiConfig = {
+  schemaVersion: 2,
+  revision: 0,
   enabled: true,
   vectorEnabled: true,
   autoIndexEnabled: true,
@@ -14,7 +16,7 @@ const config: AiConfig = {
     providerId: 'test',
     baseUrl: 'http://test',
     model: 'test-embedding',
-    dimensions: 3,
+    output: { mode: 'dimensions', output: { mode: 'dimensions', dimensions: 3 } },
   },
   indexing: { chunkSize: 800, chunkOverlap: 100, batchSize: 10, maxRetries: 1 },
 };

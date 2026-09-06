@@ -20,7 +20,7 @@
 2. 保持 `POSTGRES_PASSWORD`、数据库卷名和 PostgreSQL 大版本不变。
 3. 将 PostgreSQL 镜像切到带 pgvector 扩展的镜像，例如 `pgvector/pgvector:pg17-trixie`。
 4. 先让新版后端执行数据库迁移，再在 Admin 后台启用 AI 与向量能力。
-5. 存量数据不会自动全部向量化，需要管理员执行 backfill。
+5. 存量数据不会自动全部向量化，需要管理员明确启动重建。
 
 ## 迁移前检查
 
@@ -149,22 +149,23 @@ docker exec rote-postgres psql -U rote -d rote -c "select to_regclass('public.do
 `启用 pgvector` 会执行：
 
 - `CREATE EXTENSION IF NOT EXISTS vector`
-- 为当前 embedding dimensions 创建 HNSW 向量索引
+
+保存并验证模型后，“重建向量索引”会按实际维度和新代次创建 HNSW 索引。
 
 可以用 SQL 检查扩展与索引：
 
 ```bash
 docker exec rote-postgres psql -U rote -d rote -c "select extname, extversion from pg_extension where extname = 'vector';"
-docker exec rote-postgres psql -U rote -d rote -c "select indexname from pg_indexes where tablename = 'document_embeddings' and indexname like 'document_embeddings_embedding_hnsw_%';"
+docker exec rote-postgres psql -U rote -d rote -c "select indexname from pg_indexes where tablename = 'document_embeddings' and indexname like 'embedding_%_idx';"
 ```
 
-如果你修改了 embedding dimensions，需要重新点击 `启用 pgvector` 以创建匹配维度的索引，并重新向量化存量数据。
+修改模型输出设置后，保存配置并明确启动重建。无需重新安装扩展。
 
 ## 向量化存量数据
 
 迁移只会创建表结构，不会立即把所有历史笔记和文章向量化。管理员需要在 `AI 相关` 页面执行：
 
-1. 点击 `索引存量数据`。
+1. 保存并验证配置后，点击 `重建向量索引`，确认模型调用费用。
 2. 观察任务统计中的 pending/running/succeeded/failed。
 3. 等待后台 worker 自动处理，或点击 `立即处理`。
 
@@ -181,7 +182,7 @@ docker exec rote-postgres psql -U rote -d rote -c "select count(*) as embeddings
 2. 修复配置后点击 `重试失败任务`。
 3. 再点击 `立即处理`，或等待 worker 自动处理。
 
-如果想完全重建索引，可以在 Admin 页面点击 `清空索引`，然后重新执行 `索引存量数据`。这只会清空 `document_embeddings` 和 `embedding_jobs`，不会删除原始笔记或文章。
+如需重新构建，请使用 `重建向量索引`；历史向量会保留。只有确实需要删除全部代次数据时才执行 `清空索引`，该操作不会删除原始笔记或文章。
 
 ## 迁移后验证
 
@@ -255,11 +256,19 @@ docker exec -i rote-postgres pg_restore -U rote -d rote --clean --if-exists < ro
 
 ### Embedding dimensions mismatch
 
-Embedding Provider 实际返回的向量维度和 Admin 中配置的 dimensions 不一致。请修正 dimensions，重新点击 `启用 pgvector`，然后清空索引并重新 backfill。
+模型实际输出与指定维度或已验证维度不一致。请检查模型能力，选择默认输出或模型支持的指定维度，保存验证后明确启动重建。
+
+### 模型测试成功，但保存配置失败
+
+从 Prisma 时期保留的旧数据库可能缺少 `settings.updatedAt` 的数据库默认值。模型测试不写配置，因此可以成功；保存、暂停或恢复队列时，PostgreSQL 会在 upsert 冲突处理前因非空约束拒绝写入。
+
+正式迁移 `0032_settings_updated_at_default` 将该字段默认值补齐为 `now()`，与当前 Drizzle schema 一致，不重写已有配置或向量。更新后端并完成正常数据库迁移后即可再次保存，无需修改模型或清空数据库。该迁移不调用模型，也不启动索引重建。
+
+数据库写入失败时，接口返回 HTTP 500、非零 `code` 和 `embedding_settings_save_failed`，原配置及索引状态保持不变；`data.databaseCode` 和服务端日志中的 SQLSTATE 可用于定位故障，响应与日志不会包含这次配置写入的 SQL 参数。
 
 ### backfill 很慢
 
-存量笔记多、文章长、模型供应商速率限制较低时，backfill 会比较慢。可以先保持站点正常使用，让后台 worker 慢慢处理；新创建或编辑的内容会在开启自动索引后进入任务队列。
+存量笔记多、文章长、模型供应商速率限制较低时，重建会比较慢。可以保持站点正常使用，让后台 worker 处理；重建期间创建或编辑的内容会通过数据库变更事件进入任务队列，即使日常自动索引关闭。
 
 ### 语义搜索没有结果
 
@@ -272,3 +281,58 @@ Embedding Provider 实际返回的向量维度和 Admin 中配置的 dimensions 
 5. `document_embeddings` 是否有数据。
 6. 当前用户是否有对应内容的访问权限。
 
+
+
+## 向量模型契约升级（Issue #318）
+
+升级到本次版本会执行正式数据库迁移。原有笔记、文章和向量记录都会保留；历史向量没有可靠的供应商配置标识，因此不会自动归入新的索引。迁移不调用模型，不安装 pgvector，不启动全量重建。
+
+升级后向量检索暂停，普通聊天仍可使用。管理员需要：
+
+1. 打开管理后台的 AI 配置。旧的维度设置会保留为“指定输出维度”，以保留原有降维意图。
+2. 对 BGE-M3 等固定维度模型选择“使用模型默认维度”，再测试连接。硅基流动的 `BAAI/bge-m3` 应返回 1024 维，原生模式不会发送 `dimensions` 参数。
+3. 只有需要并支持指定输出维度的模型才使用指定模式。当前全精度 HNSW 索引支持整数 1–2000 维；模型返回更高维度时需要配置模型支持的较小输出，系统不会截断向量。
+4. 保存配置。启用向量功能时，后端会实际验证模型响应，测试成功不等于已经保存。验证失败不会覆盖原配置。
+5. 如有需要，使用“启用 pgvector”安装扩展。这个动作不再创建未验证维度的索引。
+6. 点击“重建向量索引”，确认检索暂停和模型调用费用后启动。重建完成后自动恢复向量检索。
+
+更换供应商、地址、模型、输出模式或分块配置会要求新一轮重建。API Key 轮换需要验证，但输出契约一致时无需重建。多个管理员同时修改配置时，旧版本保存会返回冲突，刷新后再编辑。
+
+重建进度保存在数据库中，服务重启后继续处理。重建期间新增和修改的内容也会被处理，即使日常自动索引关闭。暂停队列会停止扫描和领取新任务；已经执行的请求可完成。失败任务显示失败状态，修复配置或供应商问题后重试；参数和向量格式错误不会自动更改参数重试。
+
+旧向量保留用于追溯，不参与当前检索。明确执行“清空索引”会删除所有代次向量和队列任务，并要求重建。切勿通过回退应用版本直接使用升级后的数据库；如需整体回滚，应同时恢复升级前的应用版本和数据库备份。
+
+### 管理接口变化
+
+- AI 配置为 `schemaVersion: 2`，包含服务端返回的 `revision`。保存必须携带当前版本。
+- `embedding.output` 为 `{ "mode": "native" }` 或 `{ "mode": "dimensions", "dimensions": 1024 }`。旧的 `embedding.dimensions` 不再接受写入。
+- `POST /v2/api/ai/test` 的向量结果包含实际维度、输出模式和数据库准备状态，不产生配置写入。
+- `POST /v2/api/ai/index/rebuild` 接收 `{ "revision": 1 }`，返回 HTTP 202 和持久化重建状态；重复请求同一轮重建不会重复启动。
+- `/v2/api/ai/vector/status` 返回当前代次、维度、配置版本、状态、错误码及 `ready`。`ready` 为真才表示向量检索已准备好。
+- 错误继续采用 `{ code, message, data }` 响应格式；`message` 为 `embedding_*` 错误码，`data` 提供相关数值和供应商 HTTP 状态，不返回原始供应商响应或认证信息。
+
+## 切换模型后返回原配置
+
+保存前会提示向量配置变化的影响。保存只验证配置，不启动全量重建。索引另外保存生成它时的供应商、地址、模型、输出设置、文本处理和分块配置指纹。切换后如果没有启动新的重建，切回完全匹配的配置并通过验证，可以复用保留的完整代次；暂停期间的内容变化会先补齐，即使自动索引关闭。凭据轮换不改变索引归属。索引损坏、输出契约错误或未完成的旧代次不能直接恢复。
+
+### 明确恢复升级前的旧向量
+
+没有代次的历史向量不会自动认领。只有管理员能确认它们来自当前供应商和模型时，才运行维护命令；不要手工将状态改成 `ready`。先保存原供应商、模型和输出设置（例如 DashScope `text-embedding-v4` 指定 1536 维），再使用保存接口返回的当前 revision。
+
+在 `server/` 目录执行预览，示例 revision 需要替换为实际值：
+
+```sh
+bun run scripts/recoverLegacyEmbeddings.ts --revision 3 --confirm-provider dashscope
+```
+
+预览会核对全部来源的归属、内容、分块和向量数值，并发送至多 3 次样本请求验证一致性，因此会产生少量模型调用费用。样本比对只是辅助检查，不能代替管理员对原供应商的确认。预览返回 `reusableChunks`、`incrementalSources` 等数量，不写入索引。
+
+确认数量后，显式执行。下面的限制值 `0` 表示不允许创建任何需要重新生成内容的任务；只有预览确认需要补齐时才调整为可接受的来源数量：
+
+```sh
+bun run scripts/recoverLegacyEmbeddings.ts --revision 3 --confirm-provider dashscope --apply --max-incremental-sources 0
+```
+
+正式执行重新检查配置版本、来源和数量，在事务中将合格向量原值复制到新代次、创建 HNSW 索引、登记缺失或变化来源的任务。旧行保留，失败整体回滚。该维护操作会短暂持有来源行锁，大库应在低峰执行。执行中途新增的内容由事务事件队列捕获。后台工作器完成必要的补齐和索引检查后恢复检索；队列暂停时需要管理员恢复队列。重新运行已完成的操作会拒绝重复认领。
+
+容器只有编译产物时，命令入口为 `bun dist/scripts/recoverLegacyEmbeddings.js`，参数相同。脚本使用后端已有数据库和模型配置，不接收或打印凭据，不应在迁移、部署或日常任务中自动调用。

@@ -1,3 +1,7 @@
+import { parseIncomingAiConfig } from '../../embeddings/configStore';
+import { getAiConfigurationImpact } from '../../embeddings/configImpact';
+import { startIndexRebuild } from '../../embeddings/indexLifecycle';
+import { DEFAULT_AI_CONFIG } from '../../utils/ai/providers';
 import type { Hono } from 'hono';
 import { authenticateJWT, requireAdmin } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
@@ -17,6 +21,20 @@ import {
 import { bodyTypeCheck, createResponse } from '../../utils/main';
 
 export function registerAdminAiRoutes(router: Hono<{ Variables: HonoVariables }>) {
+  router.post(
+    '/config/impact',
+    authenticateJWT,
+    requireAdmin,
+    bodyTypeCheck,
+    async (c: HonoContext) => {
+      const { config } = await c.req.json();
+      return c.json(createResponse(await getAiConfigurationImpact(config)), 200);
+    }
+  );
+  router.get('/defaults', authenticateJWT, requireAdmin, (c: HonoContext) =>
+    c.json(createResponse(DEFAULT_AI_CONFIG), 200)
+  );
+
   router.get('/providers', authenticateJWT, requireAdmin, (c: HonoContext) =>
     c.json(createResponse(AI_PROVIDER_PRESETS), 200)
   );
@@ -25,7 +43,11 @@ export function registerAdminAiRoutes(router: Hono<{ Variables: HonoVariables }>
     const body = await c.req.json();
     const target = body?.target as 'chat' | 'embedding';
     const storedConfig = await getStoredAiConfig();
-    const config = body?.config ? resolveIncomingAiConfig(body.config, storedConfig) : storedConfig;
+    const config = body?.config
+      ? target === 'embedding'
+        ? parseIncomingAiConfig(body.config, storedConfig)
+        : resolveIncomingAiConfig(body.config, storedConfig)
+      : storedConfig;
 
     if (target === 'chat') {
       await testChatProvider(config.chat);
@@ -33,10 +55,10 @@ export function registerAdminAiRoutes(router: Hono<{ Variables: HonoVariables }>
     }
 
     if (target === 'embedding') {
-      const result = await testEmbeddingProvider(config.embedding, config.embedding.dimensions);
+      const result = await testEmbeddingProvider(config.embedding);
       return c.json(
         createResponse(
-          { success: true, dimensions: result.dimensions },
+          { success: true, ...result, database: await getPgvectorStatus() },
           'Embedding provider test successful'
         ),
         200
@@ -60,6 +82,17 @@ export function registerAdminAiRoutes(router: Hono<{ Variables: HonoVariables }>
     const stats = await getEmbeddingJobStats();
     return c.json(createResponse(stats), 200);
   });
+
+  router.post(
+    '/index/rebuild',
+    authenticateJWT,
+    requireAdmin,
+    bodyTypeCheck,
+    async (c: HonoContext) => {
+      const { revision } = await c.req.json();
+      return c.json(createResponse(await startIndexRebuild(revision)), 202);
+    }
+  );
 
   router.post('/index/backfill', authenticateJWT, requireAdmin, async (c: HonoContext) => {
     const result = await enqueueBackfillEmbeddingJobs();

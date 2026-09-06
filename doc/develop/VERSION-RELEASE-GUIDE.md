@@ -21,7 +21,6 @@
    ```
 
 2. **在 GitHub 上创建 Release**
-
    - 访问 GitHub 仓库页面
    - 点击右侧 "Releases" → "Draft a new release"
    - 选择刚创建的标签（如 `v1.0.0`）
@@ -38,7 +37,6 @@
 发布 `v1.0.0` 版本后，会生成以下镜像：
 
 - **后端镜像**:
-
   - `rote-backend:latest`
   - `rote-backend:v1.0.0`
 
@@ -76,6 +74,9 @@ git push origin main
 - `v1.1.1` - 修复 bug
 - `v2.0.0` - 重大更新，不兼容旧版本
 
+只有非 Pre-release 的 GitHub Release 且 tag 严格匹配 `vMAJOR.MINOR.PATCH` 时，Server
+运行版本才使用该稳定 tag；`main`/`develop` 分支构建和 Pre-release 均使用 `dev-<git describe>`。
+
 ## 环境变量配置
 
 在 GitHub Repository Settings → Secrets 中配置：
@@ -83,6 +84,14 @@ git push origin main
 - `DOCKERHUB_USERNAME`: Docker Hub 用户名
 - `DOCKERHUB_TOKEN`: Docker Hub 访问令牌
 - `VITE_API_BASE`: 前端 API 基础 URL（生产环境必须配置）
+- `DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL`: Dokploy develop Compose 的专用 HTTPS 部署 Webhook URL
+
+Dokploy develop Compose 应同时使用 `rabithua/rote-backend:develop` 和
+`rabithua/rote-frontend:develop`。`develop-deploy.yml` 会等待两个镜像都推送完成，再调用一次 Compose
+专用 Webhook；workflow concurrency 会串行处理相邻的 `develop` 构建，避免任一 Docker Hub repository
+先完成或相邻构建交错时让 Compose 拉取到不一致的镜像。Webhook URL 必须使用 HTTPS、作为 GitHub
+Actions Secret 保存，且不得写入仓库或日志。不要为同一个 Compose 在两个 Docker Hub repository 中
+重复配置部署 Webhook；独立 Dokploy Application 仍可继续使用与其镜像 tag 匹配的 Docker Hub Webhook。
 
 ## 验证构建
 

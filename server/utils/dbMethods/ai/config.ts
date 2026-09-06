@@ -3,25 +3,16 @@ import { rotes } from '../../../drizzle/schema';
 import { hasCapability } from '../../../authz/capabilityService';
 import type { AiConfig } from '../../../types/config';
 import { DEFAULT_AI_CONFIG, mergeAiConfig } from '../../ai/providers';
-import { getConfig, getGlobalConfig, setConfig } from '../../config';
+import { getGlobalConfig } from '../../config';
 import db from '../../drizzle';
 import { DatabaseError } from '../common';
+import { readAiSnapshot } from '../../../embeddings/configStore';
 
 export function getRuntimeAiConfig(): AiConfig {
   return mergeAiConfig(getGlobalConfig<AiConfig>('ai') || DEFAULT_AI_CONFIG);
 }
 
-export async function getStoredAiConfig(): Promise<AiConfig> {
-  return mergeAiConfig(await getConfig<AiConfig>('ai'));
-}
-
-export async function updateStoredAiConfig(config: AiConfig): Promise<boolean> {
-  return setConfig('ai', mergeAiConfig(config), {
-    isRequired: false,
-    isSystem: false,
-    isInitialized: true,
-  });
-}
+export { getStoredAiConfig } from '../../../embeddings/configStore';
 
 export function isVectorUsable(config = getRuntimeAiConfig()): boolean {
   return config.enabled === true && config.vectorEnabled === true;
@@ -40,6 +31,7 @@ export async function getOwnerAiMemoryStats(ownerId: string): Promise<{
   indexedRoteCount: number;
 }> {
   try {
+    const { state } = await readAiSnapshot();
     const [[roteCountResult], indexedRoteRows] = await Promise.all([
       db.select({ count: count() }).from(rotes).where(eq(rotes.authorid, ownerId)),
       db.execute(sql`
@@ -47,6 +39,7 @@ export async function getOwnerAiMemoryStats(ownerId: string): Promise<{
         FROM "document_embeddings" de
         INNER JOIN "rotes" r ON r."id" = de."sourceId"
         WHERE de."ownerId" = ${ownerId}
+          AND de."generationId" = ${state.generationId}
           AND de."sourceType" = 'rote'
           AND r."authorid" = ${ownerId}
       `) as Promise<Array<{ count: number }>>,
