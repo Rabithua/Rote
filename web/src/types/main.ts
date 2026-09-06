@@ -101,6 +101,12 @@ export type Attachment = {
   updatedAt: string;
 };
 
+// Media rendering does not require ownership or storage bookkeeping fields.
+export type AttachmentMedia = Pick<
+  Attachment,
+  'id' | 'url' | 'compressUrl' | 'posterUrl' | 'sortIndex' | 'details'
+>;
+
 export type Rotes = Rote[];
 
 export type Article = {

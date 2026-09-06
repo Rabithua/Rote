@@ -1,9 +1,10 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import ScrollPositionManager from '@/components/ScrollPositionManager';
+import AppSession from '@/components/AppSession';
+import SharedNotePage from '@/features/note-sharing/SharedNotePage';
 import LayoutDashboard from '@/layout/dashboard';
 import { useAuthState } from '@/state/profile';
 import { getSafeLoginRedirect } from '@/utils/loginRedirect';
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useMatch } from 'react-router-dom';
 import { ProtectedRoute } from './protectedRoute';
 
 import NotFoundPage from '@/pages/404';
@@ -34,9 +35,10 @@ import UserPage from '@/pages/user/[username]';
  * 根路由组件，用于在 RouterProvider 内部渲染 ScrollPositionManager
  */
 function RootLayout() {
+  const isSharedNote = useMatch('/s/:token');
   return (
     <>
-      <ScrollPositionManager />
+      {!isSharedNote && <AppSession />}
       <Outlet />
     </>
   );
@@ -85,6 +87,10 @@ export default function GlobalRouterProvider() {
       errorElement: <RouteErrorPage />,
       children: [
         ...developmentRoutes,
+        {
+          path: 's/:token',
+          element: <SharedNotePage />,
+        },
         {
           path: 'landing',
           element: <Landing />,

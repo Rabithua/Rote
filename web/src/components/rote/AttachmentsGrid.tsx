@@ -1,4 +1,4 @@
-import type { Attachment } from '@/types/main';
+import type { AttachmentMedia } from '@/types/main';
 import {
   getAttachmentImagePreviewSrc,
   getAttachmentImageThumbnailSrc,
@@ -12,7 +12,7 @@ import 'react-photo-view/dist/react-photo-view.css';
 import { useTranslation } from 'react-i18next';
 
 interface AttachmentsGridProps {
-  attachments: Attachment[];
+  attachments: AttachmentMedia[];
   withTimeStamp?: boolean;
 }
 

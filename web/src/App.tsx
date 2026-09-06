@@ -1,30 +1,10 @@
 import { Toaster } from '@/components/ui/sonner';
-import { useSiteStatus } from '@/hooks/useSiteStatus';
-import { bootstrapAuthAtom } from '@/state/profile';
 import { getHttpStatus } from '@/utils/error';
-import { Helmet, HelmetProvider } from '@dr.pogodin/react-helmet';
-import { useSetAtom } from 'jotai';
+import { HelmetProvider } from '@dr.pogodin/react-helmet';
 import React from 'react';
-import { useEffect } from 'react';
 import { SWRConfig } from 'swr';
 import { ThemeProvider } from './components/theme-provider';
-import CustomHeadScripts from './components/CustomHeadScripts';
 import GlobalRouterProvider from './route/main';
-
-const AppHelmet = () => {
-  const { data: siteStatus } = useSiteStatus();
-  const siteName = siteStatus?.site?.name || 'Rote';
-  const siteDescription = siteStatus?.site?.description;
-
-  return (
-    <Helmet>
-      <title>{siteName}</title>
-      {siteDescription ? <meta name="description" content={siteDescription} /> : null}
-      <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      <link rel="apple-touch-startup-image" href="/logo.png" />
-    </Helmet>
-  );
-};
 
 const AppWrapper = () => (
   <React.StrictMode>
@@ -39,10 +19,7 @@ const AppWrapper = () => (
           },
         }}
       >
-        <AppHelmet />
-        <CustomHeadScripts />
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-          <AuthBootstrap />
           <GlobalRouterProvider />
         </ThemeProvider>
         <Toaster position="top-right" />
@@ -50,15 +27,5 @@ const AppWrapper = () => (
     </HelmetProvider>
   </React.StrictMode>
 );
-
-function AuthBootstrap() {
-  const bootstrapAuth = useSetAtom(bootstrapAuthAtom);
-
-  useEffect(() => {
-    bootstrapAuth();
-  }, [bootstrapAuth]);
-
-  return null;
-}
 
 export default AppWrapper;

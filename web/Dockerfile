@@ -74,6 +74,14 @@ server {
     server_tokens off;
     
     # SPA 路由支持
+    location ^~ /s/ {
+        access_log off;
+        add_header Cache-Control "no-store" always;
+        add_header Referrer-Policy "no-referrer" always;
+        add_header X-Robots-Tag "noindex, nofollow, noarchive" always;
+        try_files /index.html =404;
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }

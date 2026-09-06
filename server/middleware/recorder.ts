@@ -6,6 +6,7 @@ const INTERNAL_BILLING_GRANT_PATH = /^\/internal\/billing\/grants\/[^/]+\/?$/;
 
 export function normalizeRecordedPath(path: string): string {
   if (INTERNAL_BILLING_GRANT_PATH.test(path)) return '/internal/billing/grants/:userId';
+  if (/^\/v2\/api\/shares(?:\/|$)/.test(path)) return '/v2/api/shares/:token';
   return path;
 }
 

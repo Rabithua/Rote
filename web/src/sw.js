@@ -21,7 +21,7 @@ self.addEventListener('activate', (event) => {
 import { clientsClaim } from 'workbox-core';
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { CacheFirst, StaleWhileRevalidate } from 'workbox-strategies';
+import { CacheFirst, NetworkOnly, StaleWhileRevalidate } from 'workbox-strategies';
 
 clientsClaim();
 
@@ -29,6 +29,13 @@ clientsClaim();
 // 注意：必须存在对 self.__WB_MANIFEST 的引用，injectManifest 构建才会注入
 precacheAndRoute(self.__WB_MANIFEST || []);
 cleanupOutdatedCaches();
+
+// Anonymous share content and owner-only link metadata must never be cached.
+registerRoute(
+  ({ url }) =>
+    /^\/(?:v2\/api|api\/v2)\/(?:shares(?:\/|$)|notes\/[^/]+\/share(?:\/|$))/.test(url.pathname),
+  new NetworkOnly()
+);
 
 // API GET 缓存
 registerRoute(
@@ -39,7 +46,7 @@ registerRoute(
 // 导航回退到 index.html（由 Workbox 预缓存）
 const handler = async () => fetch('/index.html');
 const navigationRoute = new NavigationRoute(handler, {
-  denylist: [/^\/api\//, /\/sw\.js$/, /^\/\.well-known\//],
+  denylist: [/^\/api\//, /\/sw\.js$/, /^\/\.well-known\//, /^\/s\//],
 });
 registerRoute(navigationRoute);
 

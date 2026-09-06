@@ -26,6 +26,7 @@ import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
 import RoteActionsMenu from '@/components/rote/RoteActionsMenu';
+import { NoteShareDialog } from '@/features/note-sharing/NoteShareDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -208,11 +209,7 @@ function RoteItem({
               blockTarget={blockTarget}
               onBlockChanged={onBlockChanged}
               onEdit={onEdit}
-              onShare={() => {
-                const url = `${window.location.origin}/rote/${rote.id}`;
-                navigator.clipboard.writeText(url);
-                toast.success(t('linkCopied'));
-              }}
+              onShare={() => setModalType('share')}
               onNoticeCreate={() => setModalType('notice')}
             />
           )}
@@ -306,6 +303,14 @@ function RoteItem({
             <SmilePlus className="bg-foreground/5 ml-auto size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
           ))}
       </div>
+
+      {modalType === 'share' && isOwner && (
+        <NoteShareDialog
+          noteId={rote.id}
+          isPublic={rote.state === 'public'}
+          onClose={() => setModalType(null)}
+        />
+      )}
 
       {inView && (
         <>

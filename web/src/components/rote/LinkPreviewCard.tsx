@@ -2,7 +2,11 @@ import type { LinkPreview } from '@/types/main';
 import { ArrowUpRight, Link } from 'lucide-react';
 import { useMemo } from 'react';
 
-export function LinkPreviewCard({ preview }: { preview: LinkPreview }) {
+export function LinkPreviewCard({
+  preview,
+}: {
+  preview: Pick<LinkPreview, 'url' | 'title' | 'description' | 'contentExcerpt' | 'image'>;
+}) {
   const host = useMemo(() => {
     try {
       return new URL(preview.url).hostname.replace(/^www\./, '');

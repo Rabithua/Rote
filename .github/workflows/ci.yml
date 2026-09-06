@@ -44,6 +44,41 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: bun run build
 
+  note-sharing:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17-trixie
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: sharing_test
+          POSTGRES_DB: rote_sharing_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRESQL_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test
+      NOTE_SHARES_TEST_DATABASE_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - run: bun run db:migrate:programmatic
+        working-directory: server
+      - run: bun test noteShares middleware/recorder.test.ts
+        working-directory: server
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run test -- src/features/note-sharing src/components/rote src/components/AppSession.test.tsx
+        working-directory: web
+
   embedding-contract:
     runs-on: ubuntu-latest
     steps:

@@ -657,6 +657,16 @@ export const rotes = pgTable(
   })
 );
 
+// A note has at most one active anonymous read link. Ordinary note queries do
+// not include this table, so bearer tokens stay in the owner-only share API.
+export const noteShareLinks = pgTable('note_share_links', {
+  noteId: uuid('note_id')
+    .primaryKey()
+    .references(() => rotes.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+  token: varchar('token', { length: 43 }).notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+});
+
 // Attachments 表
 export const attachments = pgTable(
   'attachments',
