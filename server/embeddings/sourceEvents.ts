@@ -17,9 +17,13 @@ export async function consumeSourceEvents(pageSize = 100) {
   await db.transaction(async (tx) => {
     await lockIndexState(tx);
     const { config, state } = await readAiSnapshot(tx);
+    const canQueue = canQueueIndex(config, state);
+    const deferUpserts = state.generationReusable && !canQueue;
     const events = await tx
       .select()
       .from(embeddingSourceEvents)
+      // Deferred upserts must not occupy the page ahead of actionable deletions.
+      .where(deferUpserts ? eq(embeddingSourceEvents.action, 'delete') : undefined)
       .orderBy(asc(embeddingSourceEvents.createdAt), asc(embeddingSourceEvents.id))
       .limit(pageSize)
       .for('update', { skipLocked: true });
@@ -51,7 +55,7 @@ export async function consumeSourceEvents(pageSize = 100) {
             )
           );
       } else if (
-        canQueueIndex(config, state) &&
+        canQueue &&
         (config.autoIndexEnabled ||
           state.status !== 'ready' ||
           event.rebuilding ||
@@ -64,10 +68,6 @@ export async function consumeSourceEvents(pageSize = 100) {
           event.sourceId,
           source.ownerId
         );
-      } else if (state.generationReusable && !canQueueIndex(config, state)) {
-        // Keep changes while another model is configured. Returning to the
-        // retained generation must catch up even if auto indexing is disabled.
-        continue;
       }
       consumed.push(event.id);
     }

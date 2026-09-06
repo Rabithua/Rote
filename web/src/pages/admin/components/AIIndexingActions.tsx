@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { EmbeddingJobStats, VectorStatus } from './AIIndexingStatus';
 
 interface AIIndexingActionsProps {
+  vectorFeaturesEnabled: boolean;
   hasUnsavedChanges?: boolean;
   batchSize: number;
   busyAction: string | null;
@@ -21,6 +22,7 @@ function ActionIcon({ active, children }: { active: boolean; children: ReactNode
 }
 
 export default function AIIndexingActions({
+  vectorFeaturesEnabled,
   hasUnsavedChanges = false,
   batchSize,
   busyAction,
@@ -32,14 +34,17 @@ export default function AIIndexingActions({
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.ai' });
   const isBusy = busyAction !== null;
   const isVectorReady = Boolean(
-    vectorStatus?.available && vectorStatus.installed && vectorStatus.ready
+    vectorFeaturesEnabled && vectorStatus?.available && vectorStatus.installed && vectorStatus.ready
   );
   const canProcess = Boolean(
+    vectorFeaturesEnabled &&
     vectorStatus?.installed &&
     vectorStatus.generationId &&
     ['ready', 'rebuilding', 'failed'].includes(vectorStatus.status)
   );
-  const showRebuild = Boolean(vectorStatus?.installed && vectorStatus.status !== 'rebuilding');
+  const showRebuild = Boolean(
+    vectorFeaturesEnabled && vectorStatus?.installed && vectorStatus.status !== 'rebuilding'
+  );
   const pendingJobs = jobStats?.pending || 0;
   const failedJobs = jobStats?.failed || 0;
   const totalJobs = jobStats

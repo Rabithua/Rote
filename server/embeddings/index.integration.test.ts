@@ -287,7 +287,9 @@ describe.serial('embedding configuration and index lifecycle', () => {
     provider();
     await retryFailedEmbeddingJobs();
     await completeRebuild();
-    expect(await db.select().from(documentEmbeddings)).toHaveLength(2);
+    const retained = await db.select().from(documentEmbeddings);
+    expect(retained).toHaveLength(1);
+    expect(retained[0].generationId).not.toBe(oldGeneration);
   });
   it('discards deleted sources and results from an obsolete generation', async () => {
     const config = await saveConfig();

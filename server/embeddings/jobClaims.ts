@@ -11,6 +11,18 @@ export async function claimEmbeddingJob() {
     await lockIndexState(tx);
     const { config, state } = await readAiSnapshot(tx);
     if (!canProcessIndex(config, state) || config.indexing.paused) return null;
+    // An expired predecessor has no results worth retrying when a fresh source
+    // revision is already queued. Revoking its lease also fences late workers.
+    await tx.execute(sql`
+      UPDATE embedding_jobs r SET status = 'cancelled', "leaseToken" = NULL,
+        "leaseExpiresAt" = NULL, "lockedAt" = NULL, "updatedAt" = now()
+      WHERE r."generationId" = ${state.generationId} AND r.status = 'running'
+        AND r."leaseExpiresAt" < now() AND EXISTS (
+          SELECT 1 FROM embedding_jobs p WHERE p."generationId" = r."generationId"
+            AND p."sourceType" = r."sourceType" AND p."sourceId" = r."sourceId"
+            AND p.status = 'pending'
+        )
+    `);
     const rows = await tx.execute(sql`
       SELECT j.id FROM embedding_jobs j WHERE j."generationId" = ${state.generationId}
       AND ((j.status = 'pending' AND j."nextAttemptAt" <= now() AND NOT EXISTS (

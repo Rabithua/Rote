@@ -301,6 +301,9 @@ function AIConfigEditor({
 
         <AIConfigAdvancedSettings
           config={config}
+          vectorFeaturesEnabled={
+            savedAi?.config.enabled === true && savedAi.config.vectorEnabled === true
+          }
           hasUnsavedChanges={hasUnsavedChanges}
           vectorStatus={vectorStatus}
           jobStats={jobStats}
