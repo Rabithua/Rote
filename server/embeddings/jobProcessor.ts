@@ -31,7 +31,7 @@ export async function processEmbeddingJob(job: EmbeddingJob, config: AiConfig, d
   const ownerId = source ? getSourceOwner(sourceType, source) : job.ownerId;
   const eligibleSource = source && (await hasCapability(ownerId, 'ai.chat'));
   const document = eligibleSource ? buildSourceDocument(sourceType, source) : null;
-  const sourceHash = document ? hashText(JSON.stringify({ ownerId, document })) : null;
+  const sourceHash = document ? hashText(JSON.stringify({ ownerId, text: document.text })) : null;
   const chunks = document
     ? splitIntoChunks(document.text, config.indexing.chunkSize, config.indexing.chunkOverlap)
     : [];
@@ -102,7 +102,7 @@ export async function processEmbeddingJob(job: EmbeddingJob, config: AiConfig, d
       ? hashText(
           JSON.stringify({
             ownerId: liveOwner,
-            document: buildSourceDocument(sourceType, liveSource),
+            text: buildSourceDocument(sourceType, liveSource).text,
           })
         )
       : null;

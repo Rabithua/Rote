@@ -13,6 +13,7 @@ import { testEmbeddingProvider } from './client';
 import { lockIndexState, readAiSnapshot } from './configStore';
 import { embeddingFingerprint } from './contract';
 import { EmbeddingError, isEmbeddingContractFailure } from './errors';
+import { retireIndexGenerations } from './generationRetirement';
 
 export async function startIndexRebuild(revision: unknown) {
   const before = await readAiSnapshot();
@@ -114,6 +115,7 @@ export async function retryFailedEmbeddingJobs() {
 export async function clearAllEmbeddings() {
   await db.transaction(async (tx) => {
     const state = await lockIndexState(tx);
+    await retireIndexGenerations(tx, null);
     await tx.delete(documentEmbeddings);
     await tx.delete(embeddingJobs);
     await tx.delete(embeddingSourceEvents);
@@ -162,6 +164,7 @@ export async function finishIndexRebuild() {
       .from(embeddingSourceEvents)
       .limit(1);
     if (event) return;
+    await retireIndexGenerations(tx, state.generationId);
     await tx
       .update(embeddingIndexState)
       .set({
