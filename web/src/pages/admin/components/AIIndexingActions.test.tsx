@@ -28,13 +28,19 @@ function renderActions({
   jobStats = emptyJobs,
   paused = false,
   vectorStatus = readyVector,
+  vectorFeaturesEnabled = true,
+  hasUnsavedChanges = false,
 }: {
   jobStats?: EmbeddingJobStats;
   paused?: boolean;
   vectorStatus?: VectorStatus;
+  vectorFeaturesEnabled?: boolean;
+  hasUnsavedChanges?: boolean;
 } = {}) {
   return render(
     <AIIndexingActions
+      vectorFeaturesEnabled={vectorFeaturesEnabled}
+      hasUnsavedChanges={hasUnsavedChanges}
       batchSize={5}
       busyAction={null}
       jobStats={jobStats}
@@ -46,6 +52,25 @@ function renderActions({
 }
 
 describe('AIIndexingActions', () => {
+  it('hides rebuilding and processing when saved vector features are disabled', () => {
+    renderActions({ vectorFeaturesEnabled: false, jobStats: { ...emptyJobs, pending: 3 } });
+
+    expect(screen.queryByRole('button', { name: 'rebuild' })).not.toBeInTheDocument();
+    expect(screen.queryByText('processBatch')).not.toBeInTheDocument();
+    expect(screen.queryByText('pause')).not.toBeInTheDocument();
+    expect(screen.getByText('clearIndex')).toBeVisible();
+  });
+
+  it('requires saved changes before rebuilding an enabled configuration', () => {
+    renderActions({ hasUnsavedChanges: true });
+    expect(screen.getByRole('button', { name: 'rebuild' })).toBeDisabled();
+    expect(screen.getByText('saveBeforeRebuild')).toBeVisible();
+  });
+
+  it('offers rebuilding once vector features are saved as enabled', () => {
+    renderActions({ vectorStatus: { ...readyVector, ready: false, status: 'needs_rebuild' } });
+    expect(screen.getByRole('button', { name: 'rebuild' })).toBeEnabled();
+  });
   it('removes one-time and irrelevant task actions when the index is ready and idle', () => {
     renderActions({ jobStats: { ...emptyJobs, succeeded: 12 } });
 

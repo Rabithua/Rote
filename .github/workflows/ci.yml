@@ -53,7 +53,7 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
         working-directory: server
-      - run: bun test embeddings/client.test.ts tests/aiClient.test.ts tests/aiAccess.test.ts
+      - run: bun test embeddings/client.test.ts embeddings/migrationSnapshot.test.ts tests/aiClient.test.ts tests/aiAccess.test.ts
         working-directory: server
       - run: bun install --frozen-lockfile
         working-directory: web
@@ -98,4 +98,7 @@ jobs:
         run: bun run db:migrate:programmatic
         working-directory: server
       - run: bun test embeddings/${{ matrix.suite }}
+        working-directory: server
+      - if: matrix.suite == 'index.integration.test.ts'
+        run: bun test embeddings/review.integration.test.ts
         working-directory: server
