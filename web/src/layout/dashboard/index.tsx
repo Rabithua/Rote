@@ -12,7 +12,7 @@ import { tagsAtom } from '@/state/tags';
 import { authService } from '@/utils/auth';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { BrainCircuit, Globe2, Home, LogIn, LogOut, ScanFace, Shield, Snail } from 'lucide-react';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, Outlet, useLocation } from 'react-router-dom';
@@ -80,7 +80,13 @@ export const tabsData: IconType[][] = [
   ],
 ];
 
-function LayoutDashboard() {
+function LayoutDashboard({
+  children,
+  anonymousReader = false,
+}: {
+  children?: ReactNode;
+  anonymousReader?: boolean;
+}) {
   const location = useLocation();
   const loadProfile = useSetAtom(loadProfileAtom);
   const setProfile = useSetAtom(profileAtom);
@@ -90,10 +96,12 @@ function LayoutDashboard() {
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (authReady && tokenValid && !profile) {
+    // The anonymous reader may display the existing local session's navigation,
+    // but reading must never trigger profile loading or a login redirect.
+    if (!anonymousReader && authReady && tokenValid && !profile) {
       loadProfile();
     }
-  }, [authReady, loadProfile, profile, tokenValid]);
+  }, [anonymousReader, authReady, loadProfile, profile, tokenValid]);
 
   const { t } = useTranslation('translation', { keyPrefix: 'pages.mine' });
 
@@ -138,7 +146,13 @@ function LayoutDashboard() {
 
   function IconRenderItem(icon: IconType) {
     return icon.link ? (
-      <Link key={icon.link} to={icon.link}>
+      <Link
+        key={icon.link}
+        to={icon.link}
+        // Account scripts must not survive a history navigation back to the reader.
+        reloadDocument={anonymousReader}
+        aria-label={t(`leftNavBar.${icon.name}`)}
+      >
         <div
           className={`flex cursor-pointer items-center justify-center gap-2 rounded-full p-2 px-3 text-base duration-300 ${
             location.pathname === icon.link
@@ -177,14 +191,12 @@ function LayoutDashboard() {
           <div className="bg-background/90 text-primary fixed bottom-0 z-50 flex w-full shrink-0 flex-row items-start justify-around px-1 py-2 pb-6 backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 lg:w-[200px] lg:px-4">
             {tokenValid
               ? userTabs.map((icon) => IconRenderItem(icon))
-              : authReady
+              : authReady || anonymousReader
                 ? tabsData[1].map((icon) => IconRenderItem(icon))
                 : null}
           </div>
 
-          <div className="relative min-w-0 flex-1 overflow-visible">
-            <Outlet />
-          </div>
+          <div className="relative min-w-0 flex-1 overflow-visible">{children ?? <Outlet />}</div>
         </div>
 
         <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>

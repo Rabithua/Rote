@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import type { Attachment } from '@/types/main';
+import type { AttachmentMedia } from '@/types/main';
 import { getAttachmentLivePhotoPlaybackSrc } from '@/utils/directUpload';
 import { SunMedium } from 'lucide-react';
 import { useEffect, useMemo, useState, type ComponentProps, type SyntheticEvent } from 'react';
@@ -35,7 +35,7 @@ function getViewportSize() {
 }
 
 interface LivePhotoAttachmentPreviewProps {
-  attachment: Attachment;
+  attachment: AttachmentMedia;
   previewSrc: string;
   thumbnailSrc: string;
   className?: string;

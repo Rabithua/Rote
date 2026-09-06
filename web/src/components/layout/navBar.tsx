@@ -10,9 +10,17 @@ interface NavHeaderProps {
   children?: ReactNode;
   onNavClick?: () => void;
   onBack?: () => void;
+  showBack?: boolean;
 }
 
-export default function NavBar({ title, icon, children, onNavClick, onBack }: NavHeaderProps) {
+export default function NavBar({
+  title,
+  icon,
+  children,
+  onNavClick,
+  onBack,
+  showBack = true,
+}: NavHeaderProps) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.navBar',
   });
@@ -54,10 +62,10 @@ export default function NavBar({ title, icon, children, onNavClick, onBack }: Na
         className={`noScrollBar bg-background/99 sticky top-0 z-10 flex w-full items-center gap-2 overflow-x-scroll pr-4 text-lg font-semibold backdrop-blur-xl duration-300 ${onNavClick && 'cursor-pointer'}`}
         onClick={onNavClick}
       >
-        <div className="flex items-center divide-x">
-          {!isMainNavPage && (
+        <div className="flex min-w-0 items-center divide-x">
+          {showBack && !isMainNavPage && (
             <div
-              className="hover:text-theme flex cursor-pointer items-center gap-2 p-3 duration-300"
+              className="hover:text-theme flex shrink-0 cursor-pointer items-center gap-2 p-3 duration-300"
               onClick={(e) => {
                 e.stopPropagation();
                 back();
@@ -69,9 +77,15 @@ export default function NavBar({ title, icon, children, onNavClick, onBack }: Na
           )}
 
           {(icon || title) && (
-            <div className="flex items-center gap-2 p-3">
+            <div className="flex min-w-0 items-center gap-2 p-3 [&>svg]:shrink-0">
               {icon}
-              {title}
+              {typeof title === 'string' ? (
+                <div className="min-w-0 truncate" title={title}>
+                  {title}
+                </div>
+              ) : (
+                title
+              )}
             </div>
           )}
         </div>

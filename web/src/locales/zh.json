@@ -1843,6 +1843,24 @@
       "saving": "保存中...",
       "saveSuccess": "保存成功",
       "saveFailed": "保存失败: {{error}}"
+    },
+    "sharedNote": {
+      "sharedBy": "{{name}}分享的笔记",
+      "viewAuthor": "查看{{name}}的主页",
+      "about": "关于这篇笔记",
+      "readOnly": "只读分享",
+      "readOnlyDescription": "无需登录即可阅读。作者更新内容后，刷新页面即可查看。",
+      "updatedAt": "最近更新",
+      "title": "Rote · 分享的笔记",
+      "refresh": "刷新内容",
+      "loading": "正在读取笔记…",
+      "unavailableTitle": "分享链接已失效",
+      "unavailableDescription": "链接不存在、分享已停止，或笔记已被删除。",
+      "errorTitle": "暂时无法读取笔记",
+      "errorDescription": "请检查网络连接后重试。",
+      "retry": "重试",
+      "article": "关联文章",
+      "tags": "标签"
     }
   },
   "components": {
@@ -2040,6 +2058,25 @@
         "open": "打开 Live Photo",
         "videoLabel": "Live Photo 视频"
       }
+    },
+    "noteShare": {
+      "title": "链接分享",
+      "description": "任何持有链接的人都能查看最新内容，无需登录。",
+      "loading": "正在读取分享状态…",
+      "loadFailed": "无法读取分享状态，请重试。",
+      "retry": "重试",
+      "close": "关闭",
+      "linkLabel": "分享链接",
+      "attachmentNotice": "停止分享后链接将失效；已取得的附件链接仍可能可用。",
+      "publicNotice": "这篇笔记仍然公开。停止分享仅关闭此链接，不会取消笔记公开。",
+      "createAndCopy": "创建并复制链接",
+      "copy": "复制链接",
+      "stop": "停止分享",
+      "copied": "分享链接已复制",
+      "copyFailed": "未能复制，请手动选择并复制链接。",
+      "createFailed": "创建分享链接失败，请重试。",
+      "stopFailed": "停止分享失败，请重试。",
+      "stopped": "已停止分享"
     }
   },
   "article": {
