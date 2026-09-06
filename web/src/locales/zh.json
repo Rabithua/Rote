@@ -1845,8 +1845,7 @@
       "saveFailed": "保存失败: {{error}}"
     },
     "sharedNote": {
-      "readingNavigation": "阅读导航",
-      "note": "笔记",
+      "sharedBy": "{{name}}分享的笔记",
       "about": "关于这篇笔记",
       "readOnly": "只读分享",
       "readOnlyDescription": "无需登录即可阅读。作者更新内容后，刷新页面即可查看。",
