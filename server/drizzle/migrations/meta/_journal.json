@@ -225,6 +225,13 @@
       "when": 1788676603359,
       "tag": "0031_embedding_source_events",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1788683900000,
+      "tag": "0032_settings_updated_at_default",
+      "breakpoints": true
     }
   ]
 }

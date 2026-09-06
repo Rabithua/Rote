@@ -1725,6 +1725,7 @@
           "embedding_disabled": "请先启用 AI 和向量功能并保存配置。",
           "embedding_input_empty": "需要提供非空文本。",
           "embedding_state_missing": "索引状态缺失，请检查数据库迁移。",
+          "embedding_settings_save_failed": "数据库未能保存 AI 配置，原配置已保留。请检查数据库迁移和服务端日志。",
           "embedding_lease_lost": "任务已由其他执行者接管。",
           "embedding_job_failed": "向量处理失败，请查看索引状态后重试。"
         }
