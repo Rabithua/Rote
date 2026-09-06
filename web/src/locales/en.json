@@ -1855,6 +1855,12 @@
       "saveFailed": "Save failed: {{error}}"
     },
     "sharedNote": {
+      "readingNavigation": "Reading navigation",
+      "note": "Note",
+      "about": "About this note",
+      "readOnly": "Read-only sharing",
+      "readOnlyDescription": "Read without signing in. Refresh the page to see the author's latest changes.",
+      "updatedAt": "Last updated",
       "title": "Rote · Shared note",
       "refresh": "Refresh content",
       "loading": "Loading note…",

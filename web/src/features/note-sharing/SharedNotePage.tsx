@@ -12,13 +12,18 @@ import UserAvatar from '@/components/others/UserAvatar';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { useSharedNote } from './useSharedNote';
+import { SharedNoteLayout } from './SharedNoteLayout';
+import { SharedNoteSidebar } from './SharedNoteSidebar';
 
 function SharedNoteReader({ token }: { token: string }) {
   const { t, i18n } = useTranslation('translation', { keyPrefix: 'pages.sharedNote' });
   const { state, retry } = useSharedNote(token);
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-2xl divide-y sm:border-x">
+    <SharedNoteLayout
+      hasArticle={state.status === 'ready' && Boolean(state.note.article)}
+      sidebar={<SharedNoteSidebar note={state.note} />}
+    >
       <Helmet>
         <title>{t('title')}</title>
         <meta name="robots" content="noindex, nofollow, noarchive" />
@@ -77,8 +82,10 @@ function SharedNoteReader({ token }: { token: string }) {
           </div>
           {state.note.article && (
             <section
+              id="shared-article"
+              tabIndex={-1}
               aria-label={t('article')}
-              className="prose prose-sm dark:prose-invert max-w-full border-t pt-4 wrap-break-word"
+              className="prose prose-sm dark:prose-invert max-w-full scroll-mt-20 border-t pt-4 wrap-break-word focus:outline-none"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {state.note.article.content}
@@ -104,7 +111,7 @@ function SharedNoteReader({ token }: { token: string }) {
           )}
         </article>
       )}
-    </main>
+    </SharedNoteLayout>
   );
 }
 

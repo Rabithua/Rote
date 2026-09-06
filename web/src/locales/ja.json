@@ -1859,6 +1859,12 @@
       "saveFailed": "保存に失敗しました：{{error}}"
     },
     "sharedNote": {
+      "readingNavigation": "ページ内ナビゲーション",
+      "note": "ノート",
+      "about": "このノートについて",
+      "readOnly": "閲覧専用の共有",
+      "readOnlyDescription": "ログインせずに読めます。作者が内容を更新したら、ページを再読み込みしてください。",
+      "updatedAt": "最終更新",
       "title": "Rote · 共有ノート",
       "refresh": "内容を更新",
       "loading": "ノートを読み込み中…",
