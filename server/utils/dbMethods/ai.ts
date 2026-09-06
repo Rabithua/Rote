@@ -12,12 +12,7 @@ export type {
   SearchRotesArgs,
   SemanticSearchResult,
 } from './ai/types';
-export {
-  getOwnerAiMemoryStats,
-  getStoredAiConfig,
-  isAiEligibleUser,
-  updateStoredAiConfig,
-} from './ai/config';
+export { getOwnerAiMemoryStats, getStoredAiConfig, isAiEligibleUser } from './ai/config';
 export {
   clearAllEmbeddings,
   deleteEmbeddingsForOwner,

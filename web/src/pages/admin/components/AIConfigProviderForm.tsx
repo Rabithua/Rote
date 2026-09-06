@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { formatEmbeddingError } from './embeddingErrors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,11 +14,11 @@ import { post } from '@/utils/api';
 import { Brain, Copy, Database, Terminal } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import type { AiProviderConfig, AiProviderPreset, SystemConfig } from '../types';
+import type { AiProviderConfig, AiProviderPreset, SystemConfig, EmbeddingOutput } from '../types';
 
 type AiConfig = NonNullable<SystemConfig['ai']>;
 type ProviderTarget = 'chat' | 'embedding';
-type ProviderPatch = Partial<AiProviderConfig & { dimensions?: number }>;
+type ProviderPatch = Partial<AiProviderConfig & { output: EmbeddingOutput }>;
 
 const LOCAL_LLAMA_COMMAND =
   'llama-server --hf-repo google/gemma-4-12B-it-qat-q4_0-gguf:Q4_0 --host 127.0.0.1 --port 8080 --alias gemma-4-12b-it';
@@ -28,7 +30,6 @@ interface AIConfigProviderFormProps {
   busyAction: string | null;
   updateProvider: (target: ProviderTarget, next: ProviderPatch) => void;
   applyPreset: (target: ProviderTarget, providerId: string) => void;
-  runAction: (key: string, action: () => Promise<any>, success: string) => Promise<void>;
 }
 
 export default function AIConfigProviderForm({
@@ -38,10 +39,30 @@ export default function AIConfigProviderForm({
   busyAction,
   updateProvider,
   applyPreset,
-  runAction,
 }: AIConfigProviderFormProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const provider = target === 'chat' ? config.chat : config.embedding;
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ signature: string; dimensions: number } | null>(
+    null
+  );
+  const signature = JSON.stringify(provider);
+  const detectedDimensions = testResult?.signature === signature ? testResult.dimensions : null;
+  const testProvider = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await post('/ai/test', { target, config });
+      if (target === 'embedding') setTestResult({ signature, dimensions: res.data.dimensions });
+      toast.success(t('ai.testSuccess'));
+    } catch (error) {
+      toast.error(
+        formatEmbeddingError(error, t) || (error instanceof Error ? error.message : t('saveError'))
+      );
+    } finally {
+      setTesting(false);
+    }
+  };
   const capability = target === 'chat' ? 'chat' : 'embedding';
   const availableProviders = providers.filter((item) => item.capabilities.includes(capability));
   const showLlamaCppTip = target === 'chat' && provider?.providerId === 'llama-cpp';
@@ -68,16 +89,10 @@ export default function AIConfigProviderForm({
           type="button"
           variant="outline"
           size="sm"
-          disabled={busyAction === `test-${target}`}
-          onClick={() =>
-            runAction(
-              `test-${target}`,
-              () => post('/ai/test', { target, config }),
-              t('ai.testSuccess')
-            )
-          }
+          disabled={testing || busyAction !== null}
+          onClick={testProvider}
         >
-          {busyAction === `test-${target}` ? t('ai.testing') : t('ai.test')}
+          {testing ? t('ai.testing') : t('ai.test')}
         </Button>
       </div>
 
@@ -152,16 +167,49 @@ export default function AIConfigProviderForm({
           </div>
           {target === 'embedding' && (
             <div className="space-y-2">
-              <Label>{t('ai.dimensions')}</Label>
-              <Input
-                type="number"
-                min="1"
-                max="4000"
-                value={config.embedding?.dimensions || 1536}
-                onChange={(event) =>
-                  updateProvider('embedding', { dimensions: Number(event.target.value) || 1536 })
+              <Label htmlFor="embedding-output-mode">{t('ai.outputMode')}</Label>
+              <Select
+                value={config.embedding?.output.mode || 'native'}
+                onValueChange={(mode) =>
+                  updateProvider('embedding', {
+                    output:
+                      mode === 'native'
+                        ? { mode: 'native' }
+                        : { mode: 'dimensions', dimensions: detectedDimensions || 0 },
+                  })
                 }
-              />
+              >
+                <SelectTrigger id="embedding-output-mode" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="native">{t('ai.nativeDimensions')}</SelectItem>
+                  <SelectItem value="dimensions">{t('ai.requestedDimensions')}</SelectItem>
+                </SelectContent>
+              </Select>
+              {config.embedding?.output.mode === 'dimensions' && (
+                <>
+                  <Label htmlFor="embedding-dimensions">{t('ai.dimensions')}</Label>
+                  <Input
+                    id="embedding-dimensions"
+                    type="number"
+                    min="1"
+                    max="2000"
+                    step="1"
+                    value={config.embedding.output.dimensions || ''}
+                    onChange={(event) =>
+                      updateProvider('embedding', {
+                        output: { mode: 'dimensions', dimensions: Number(event.target.value) },
+                      })
+                    }
+                  />
+                </>
+              )}
+              <p className="text-muted-foreground text-xs" role="status">
+                {detectedDimensions
+                  ? t('ai.detectedDimensions', { dimensions: detectedDimensions })
+                  : t('ai.dimensionTestRequired')}
+              </p>
             </div>
           )}
         </div>

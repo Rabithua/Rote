@@ -1,3 +1,4 @@
+import { EmbeddingError } from '../embeddings/errors';
 import { HonoContext } from '../types/hono';
 import { ResourcePolicyError } from '../resources/errors';
 import { PushApiError } from '../push/errors';
@@ -17,6 +18,8 @@ function containsSensitiveServerDetails(message: string): boolean {
 }
 
 export const errorHandler = async (err: Error, c: HonoContext) => {
+  if (err instanceof EmbeddingError)
+    return c.json({ code: 1, message: err.code, data: err.details }, err.status);
   console.error('API Error:', err.message);
 
   // 只在开发环境下打印完整的错误堆栈

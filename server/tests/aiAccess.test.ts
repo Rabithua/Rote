@@ -17,7 +17,7 @@ const readyConfig: AiConfig = {
     providerId: 'test',
     baseUrl: 'http://test',
     model: 'test-embedding',
-    dimensions: 3,
+    output: { mode: 'dimensions', output: { mode: 'dimensions', dimensions: 3 } },
   },
   indexing: { chunkSize: 800, chunkOverlap: 100, batchSize: 10, maxRetries: 1 },
 };
@@ -27,6 +27,7 @@ const vectorReady = {
   installed: true,
   version: '0.8.0',
   indexName: 'document_embeddings_embedding_hnsw_3_idx',
+  ready: true,
   dimensions: 3,
 };
 

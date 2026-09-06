@@ -1,3 +1,4 @@
+import EmbeddingRebuildButton from './EmbeddingRebuildButton';
 import { Button } from '@/components/ui/button';
 import { post } from '@/utils/api';
 import { Database, LoaderCircle, Pause, Play, RefreshCw, Trash2 } from 'lucide-react';
@@ -6,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { EmbeddingJobStats, VectorStatus } from './AIIndexingStatus';
 
 interface AIIndexingActionsProps {
+  hasUnsavedChanges?: boolean;
   batchSize: number;
   busyAction: string | null;
   jobStats?: EmbeddingJobStats;
@@ -19,6 +21,7 @@ function ActionIcon({ active, children }: { active: boolean; children: ReactNode
 }
 
 export default function AIIndexingActions({
+  hasUnsavedChanges = false,
   batchSize,
   busyAction,
   jobStats,
@@ -29,8 +32,14 @@ export default function AIIndexingActions({
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.ai' });
   const isBusy = busyAction !== null;
   const isVectorReady = Boolean(
-    vectorStatus?.available && vectorStatus.installed && vectorStatus.indexName
+    vectorStatus?.available && vectorStatus.installed && vectorStatus.ready
   );
+  const canProcess = Boolean(
+    vectorStatus?.installed &&
+    vectorStatus.generationId &&
+    ['ready', 'rebuilding', 'failed'].includes(vectorStatus.status)
+  );
+  const showRebuild = Boolean(vectorStatus?.installed && vectorStatus.status !== 'rebuilding');
   const pendingJobs = jobStats?.pending || 0;
   const failedJobs = jobStats?.failed || 0;
   const totalJobs = jobStats
@@ -38,12 +47,12 @@ export default function AIIndexingActions({
     : 0;
   const processBatchSize = Math.min(pendingJobs, Math.max(batchSize, 1));
 
-  const showSetup = Boolean(vectorStatus?.available && !isVectorReady);
-  const showResume = isVectorReady && paused;
-  const showRetry = isVectorReady && failedJobs > 0;
-  const showProcess = isVectorReady && !paused && pendingJobs > 0;
-  const showRecommendedActions = showSetup || showResume || showRetry || showProcess;
-  const showMaintenanceActions = isVectorReady || totalJobs > 0;
+  const showSetup = Boolean(vectorStatus?.available && !vectorStatus.installed);
+  const showResume = canProcess && paused;
+  const showRetry = canProcess && failedJobs > 0;
+  const showProcess = canProcess && vectorStatus?.status !== 'failed' && !paused && pendingJobs > 0;
+  const showRecommendedActions = showSetup || showResume || showRetry || showProcess || showRebuild;
+  const showMaintenanceActions = canProcess || totalJobs > 0;
 
   if (!showRecommendedActions && !showMaintenanceActions) return null;
 
@@ -53,6 +62,16 @@ export default function AIIndexingActions({
         <section className="space-y-2">
           <h3 className="text-sm font-medium">{t('recommendedActions')}</h3>
           <div className="flex flex-wrap gap-2">
+            {showRebuild && vectorStatus && (
+              <EmbeddingRebuildButton
+                disabled={isBusy || hasUnsavedChanges}
+                revision={vectorStatus.revision}
+                runAction={runAction}
+              />
+            )}
+            {showRebuild && hasUnsavedChanges && (
+              <p className="text-muted-foreground w-full text-xs">{t('saveBeforeRebuild')}</p>
+            )}
             {showSetup && (
               <Button
                 type="button"
@@ -135,7 +154,7 @@ export default function AIIndexingActions({
               </Button>
             )}
 
-            {isVectorReady && !paused && (
+            {canProcess && !paused && (
               <Button
                 type="button"
                 variant="outline"

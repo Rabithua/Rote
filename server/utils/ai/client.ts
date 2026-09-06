@@ -38,41 +38,7 @@ export {
   type AiProviderStreamErrorCode,
 } from './clientStreamControl';
 
-export async function createEmbedding(
-  config: AiProviderConfig & { dimensions?: number },
-  input: string
-): Promise<{
-  embedding: number[];
-  usage?: { prompt_tokens: number; total_tokens: number };
-}> {
-  ensureProviderConfig(config);
-
-  const payload: any = {
-    model: config.model,
-    input: input.replace(/\s+/g, ' ').trim(),
-  };
-
-  if (config.dimensions && config.dimensions > 0) {
-    payload.dimensions = config.dimensions;
-  }
-
-  const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/embeddings`, {
-    method: 'POST',
-    headers: buildHeaders(config),
-    body: JSON.stringify(payload),
-  });
-  const body = await readJsonResponse(response);
-  const embedding = body?.data?.[0]?.embedding;
-
-  if (!Array.isArray(embedding) || embedding.some((value) => typeof value !== 'number')) {
-    throw new Error('Embedding provider returned an invalid embedding response');
-  }
-
-  return {
-    embedding,
-    usage: normalizeUsage(body?.usage),
-  };
-}
+export { createEmbedding, testEmbeddingProvider } from '../../embeddings/client';
 
 export async function createChatCompletion(
   config: AiProviderConfig,
@@ -255,19 +221,6 @@ export async function probeChatProviderToolCalling(
       error: error?.message || String(error),
     };
   }
-}
-
-export async function testEmbeddingProvider(
-  config: AiProviderConfig,
-  expectedDimensions?: number
-): Promise<{ dimensions: number }> {
-  const { embedding } = await createEmbedding(config, 'Rote embedding connectivity test.');
-  if (expectedDimensions && embedding.length !== expectedDimensions) {
-    throw new Error(
-      `Embedding dimensions mismatch: expected ${expectedDimensions}, got ${embedding.length}`
-    );
-  }
-  return { dimensions: embedding.length };
 }
 
 export function vectorToLiteral(vector: number[]): string {

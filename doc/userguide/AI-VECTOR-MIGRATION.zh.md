@@ -20,7 +20,7 @@
 2. 保持 `POSTGRES_PASSWORD`、数据库卷名和 PostgreSQL 大版本不变。
 3. 将 PostgreSQL 镜像切到带 pgvector 扩展的镜像，例如 `pgvector/pgvector:pg17-trixie`。
 4. 先让新版后端执行数据库迁移，再在 Admin 后台启用 AI 与向量能力。
-5. 存量数据不会自动全部向量化，需要管理员执行 backfill。
+5. 存量数据不会自动全部向量化，需要管理员明确启动重建。
 
 ## 迁移前检查
 
@@ -149,22 +149,23 @@ docker exec rote-postgres psql -U rote -d rote -c "select to_regclass('public.do
 `启用 pgvector` 会执行：
 
 - `CREATE EXTENSION IF NOT EXISTS vector`
-- 为当前 embedding dimensions 创建 HNSW 向量索引
+
+保存并验证模型后，“重建向量索引”会按实际维度和新代次创建 HNSW 索引。
 
 可以用 SQL 检查扩展与索引：
 
 ```bash
 docker exec rote-postgres psql -U rote -d rote -c "select extname, extversion from pg_extension where extname = 'vector';"
-docker exec rote-postgres psql -U rote -d rote -c "select indexname from pg_indexes where tablename = 'document_embeddings' and indexname like 'document_embeddings_embedding_hnsw_%';"
+docker exec rote-postgres psql -U rote -d rote -c "select indexname from pg_indexes where tablename = 'document_embeddings' and indexname like 'embedding_%_idx';"
 ```
 
-如果你修改了 embedding dimensions，需要重新点击 `启用 pgvector` 以创建匹配维度的索引，并重新向量化存量数据。
+修改模型输出设置后，保存配置并明确启动重建。无需重新安装扩展。
 
 ## 向量化存量数据
 
 迁移只会创建表结构，不会立即把所有历史笔记和文章向量化。管理员需要在 `AI 相关` 页面执行：
 
-1. 点击 `索引存量数据`。
+1. 保存并验证配置后，点击 `重建向量索引`，确认模型调用费用。
 2. 观察任务统计中的 pending/running/succeeded/failed。
 3. 等待后台 worker 自动处理，或点击 `立即处理`。
 
@@ -181,7 +182,7 @@ docker exec rote-postgres psql -U rote -d rote -c "select count(*) as embeddings
 2. 修复配置后点击 `重试失败任务`。
 3. 再点击 `立即处理`，或等待 worker 自动处理。
 
-如果想完全重建索引，可以在 Admin 页面点击 `清空索引`，然后重新执行 `索引存量数据`。这只会清空 `document_embeddings` 和 `embedding_jobs`，不会删除原始笔记或文章。
+如需重新构建，请使用 `重建向量索引`；历史向量会保留。只有确实需要删除全部代次数据时才执行 `清空索引`，该操作不会删除原始笔记或文章。
 
 ## 迁移后验证
 
@@ -255,11 +256,11 @@ docker exec -i rote-postgres pg_restore -U rote -d rote --clean --if-exists < ro
 
 ### Embedding dimensions mismatch
 
-Embedding Provider 实际返回的向量维度和 Admin 中配置的 dimensions 不一致。请修正 dimensions，重新点击 `启用 pgvector`，然后清空索引并重新 backfill。
+模型实际输出与指定维度或已验证维度不一致。请检查模型能力，选择默认输出或模型支持的指定维度，保存验证后明确启动重建。
 
 ### backfill 很慢
 
-存量笔记多、文章长、模型供应商速率限制较低时，backfill 会比较慢。可以先保持站点正常使用，让后台 worker 慢慢处理；新创建或编辑的内容会在开启自动索引后进入任务队列。
+存量笔记多、文章长、模型供应商速率限制较低时，重建会比较慢。可以保持站点正常使用，让后台 worker 处理；重建期间创建或编辑的内容会通过数据库变更事件进入任务队列，即使日常自动索引关闭。
 
 ### 语义搜索没有结果
 
@@ -272,3 +273,32 @@ Embedding Provider 实际返回的向量维度和 Admin 中配置的 dimensions 
 5. `document_embeddings` 是否有数据。
 6. 当前用户是否有对应内容的访问权限。
 
+
+
+## 向量模型契约升级（Issue #318）
+
+升级到本次版本会执行正式数据库迁移。原有笔记、文章和向量记录都会保留；历史向量没有可靠的供应商配置标识，因此不会自动归入新的索引。迁移不调用模型，不安装 pgvector，不启动全量重建。
+
+升级后向量检索暂停，普通聊天仍可使用。管理员需要：
+
+1. 打开管理后台的 AI 配置。旧的维度设置会保留为“指定输出维度”，以保留原有降维意图。
+2. 对 BGE-M3 等固定维度模型选择“使用模型默认维度”，再测试连接。硅基流动的 `BAAI/bge-m3` 应返回 1024 维，原生模式不会发送 `dimensions` 参数。
+3. 只有需要并支持指定输出维度的模型才使用指定模式。当前全精度 HNSW 索引支持整数 1–2000 维；模型返回更高维度时需要配置模型支持的较小输出，系统不会截断向量。
+4. 保存配置。启用向量功能时，后端会实际验证模型响应，测试成功不等于已经保存。验证失败不会覆盖原配置。
+5. 如有需要，使用“启用 pgvector”安装扩展。这个动作不再创建未验证维度的索引。
+6. 点击“重建向量索引”，确认检索暂停和模型调用费用后启动。重建完成后自动恢复向量检索。
+
+更换供应商、地址、模型、输出模式或分块配置会要求新一轮重建。API Key 轮换需要验证，但输出契约一致时无需重建。多个管理员同时修改配置时，旧版本保存会返回冲突，刷新后再编辑。
+
+重建进度保存在数据库中，服务重启后继续处理。重建期间新增和修改的内容也会被处理，即使日常自动索引关闭。暂停队列会停止扫描和领取新任务；已经执行的请求可完成。失败任务显示失败状态，修复配置或供应商问题后重试；参数和向量格式错误不会自动更改参数重试。
+
+旧向量保留用于追溯，不参与当前检索。明确执行“清空索引”会删除所有代次向量和队列任务，并要求重建。切勿通过回退应用版本直接使用升级后的数据库；如需整体回滚，应同时恢复升级前的应用版本和数据库备份。
+
+### 管理接口变化
+
+- AI 配置为 `schemaVersion: 2`，包含服务端返回的 `revision`。保存必须携带当前版本。
+- `embedding.output` 为 `{ "mode": "native" }` 或 `{ "mode": "dimensions", "dimensions": 1024 }`。旧的 `embedding.dimensions` 不再接受写入。
+- `POST /v2/api/ai/test` 的向量结果包含实际维度、输出模式和数据库准备状态，不产生配置写入。
+- `POST /v2/api/ai/index/rebuild` 接收 `{ "revision": 1 }`，返回 HTTP 202 和持久化重建状态；重复请求同一轮重建不会重复启动。
+- `/v2/api/ai/vector/status` 返回当前代次、维度、配置版本、状态、错误码及 `ready`。`ready` 为真才表示向量检索已准备好。
+- 错误继续采用 `{ code, message, data }` 响应格式；`message` 为 `embedding_*` 错误码，`data` 提供相关数值和供应商 HTTP 状态，不返回原始供应商响应或认证信息。

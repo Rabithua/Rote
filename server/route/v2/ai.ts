@@ -150,7 +150,7 @@ aiRouter.post('/site/test', authenticateJWT, async (c: HonoContext) => {
     config.enabled === true &&
     Boolean(config.chat?.baseUrl?.trim()) &&
     Boolean(config.chat?.model?.trim());
-  const vectorAvailable = config.vectorEnabled === true && vectorStatus.installed === true;
+  const vectorAvailable = config.vectorEnabled === true && vectorStatus.ready === true;
 
   const accessError = getAiAccessErrorFromAccess(access);
   if (accessError) {

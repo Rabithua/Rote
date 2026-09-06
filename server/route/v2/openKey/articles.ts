@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import type { HonoContext, HonoVariables } from '../../../types/hono';
-import { trackBackgroundTask } from '../../../utils/backgroundTask';
 import {
   createArticle,
   deleteArticle,
-  deleteEmbeddingsForSource,
   findArticleById,
   findRoteById,
   getNoteArticleCard,
@@ -82,7 +80,6 @@ router.delete('/articles/:id', requireOpenKeyPerm('EDITARTICLE'), async (c: Hono
   const id = assertUuid(c.req.param('id'), 'Invalid or missing ID');
   const article = await deleteArticle({ id, authorId: openKey.userid });
   if (!article) throw new Error('Article not found or permission denied');
-  trackBackgroundTask(deleteEmbeddingsForSource('article', id), 'article_embedding_delete_failed');
   return c.json(createResponse(article), 200);
 });
 
