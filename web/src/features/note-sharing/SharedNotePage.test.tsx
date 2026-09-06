@@ -44,7 +44,11 @@ describe('anonymous share reader', () => {
     expect(screen.getByRole('heading', { name: 'Article in full' })).toBeInTheDocument();
     expect(screen.getByText('Article body')).toBeInTheDocument();
     expect(screen.getByText('family').closest('a')).toBeNull();
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
+      '#shared-note',
+      '#shared-article',
+    ]);
+    expect(screen.getByText('@author')).toBeInTheDocument();
     expect(screen.queryByText('back')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /edit|delete|reaction/ })).not.toBeInTheDocument();
   });
@@ -60,6 +64,8 @@ describe('anonymous share reader', () => {
     await screen.findByText('unavailableTitle');
     expect(screen.queryByText('Latest edit')).not.toBeInTheDocument();
     expect(screen.queryByText('Article body')).not.toBeInTheDocument();
+    expect(screen.queryByText('@author')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'article' })).not.toBeInTheDocument();
   });
 
   it('shows retry for a network failure and fetches again', async () => {
