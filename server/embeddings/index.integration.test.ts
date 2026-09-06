@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'bun:test';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { DEFAULT_AI_CONFIG } from '../utils/ai/providers';
 
 if (
@@ -150,6 +150,47 @@ describe.serial('embedding configuration and index lifecycle', () => {
     });
     expect((await readAiSnapshot()).state.status).toBe('needs_rebuild');
     expect(await db.select().from(documentEmbeddings)).toHaveLength(1);
+  });
+  it('indexes and retrieves the full 2000-dimensional storage boundary', async () => {
+    provider(2000);
+    const config = await saveConfig();
+    await note();
+    await ensurePgvectorReady();
+    await startIndexRebuild(config.revision);
+    await completeRebuild();
+    expect((await getPgvectorStatus()).dimensions).toBe(2000);
+    expect(await semanticSearch({ query: 'fixture', ownerId, viewerId: ownerId })).toHaveLength(1);
+  });
+  it('rolls back replacement when the database rejects a generated source', async () => {
+    const config = await saveConfig();
+    await note();
+    await ensurePgvectorReady();
+    await startIndexRebuild(config.revision);
+    await completeRebuild();
+    const previous = await db.select().from(documentEmbeddings);
+    await note('changed source with rejected database insert');
+    await enqueueEmbeddingJob('rote', noteId, ownerId, 'upsert', true);
+    // Fault injection is confined to the explicitly disposable integration database.
+    await db.execute(
+      sql`CREATE FUNCTION reject_embedding_test_insert() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture insert failure'; END; $$`
+    );
+    try {
+      await db.execute(
+        sql`CREATE TRIGGER reject_embedding_test_insert BEFORE INSERT ON document_embeddings FOR EACH ROW EXECUTE FUNCTION reject_embedding_test_insert()`
+      );
+      await processPendingEmbeddingJobs();
+      expect(await db.select().from(documentEmbeddings)).toEqual(previous);
+      expect((await getEmbeddingJobStats()).failed).toBe(1);
+      expect((await readAiSnapshot()).state.status).toBe('ready');
+    } finally {
+      await db.execute(
+        sql`DROP TRIGGER IF EXISTS reject_embedding_test_insert ON document_embeddings`
+      );
+      await db.execute(sql`DROP FUNCTION reject_embedding_test_insert()`);
+    }
+    await retryFailedEmbeddingJobs();
+    await processPendingEmbeddingJobs();
+    expect((await db.select().from(documentEmbeddings))[0].text).toContain('changed source');
   });
   it('finishes an empty rebuild, and resumes scanning from its persisted cursor', async () => {
     const config = await saveConfig();
