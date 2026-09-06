@@ -139,6 +139,8 @@ export const AI_PROVIDER_PRESETS: AiProviderPreset[] = [
 ];
 
 export const DEFAULT_AI_CONFIG: AiConfig = {
+  schemaVersion: 2,
+  revision: 0,
   enabled: false,
   vectorEnabled: false,
   autoIndexEnabled: false,
@@ -155,7 +157,7 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
     apiFormat: 'openai_compatible',
     baseUrl: 'https://api.openai.com/v1',
     model: 'text-embedding-3-small',
-    dimensions: 1536,
+    output: { mode: 'native' },
     apiKey: '',
   },
   indexing: {

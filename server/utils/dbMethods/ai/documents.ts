@@ -5,6 +5,7 @@ import type { AiConfig } from '../../../types/config';
 import { DEFAULT_AI_CONFIG } from '../../ai/providers';
 import { normalizeTimeRangeInput, type NormalizedTimeRange } from '../../ai/retrievalPlan';
 import db from '../../drizzle';
+import { readAiSnapshot } from '../../../embeddings/configStore';
 import type { AiSourceType, SemanticSearchResult } from './types';
 
 export const VALID_SOURCE_TYPES = new Set<AiSourceType>(['rote', 'article']);
@@ -16,8 +17,8 @@ export function hashText(value: string): string {
 
 export function normalizeEmbeddingDimensions(value: number): number {
   const dimensions = Number(value);
-  if (!Number.isInteger(dimensions) || dimensions <= 0 || dimensions > 4000) {
-    throw new Error('Embedding dimensions must be an integer between 1 and 4000');
+  if (!Number.isInteger(dimensions) || dimensions <= 0 || dimensions > 2000) {
+    throw new Error('Embedding dimensions must be an integer between 1 and 2000');
   }
   return dimensions;
 }
@@ -44,8 +45,8 @@ export function buildTextArraySql(values: string[]) {
   )}]::text[]`;
 }
 
-export function vectorIndexName(dimensions: number): string {
-  return `document_embeddings_embedding_hnsw_${dimensions}_idx`;
+export function vectorIndexName(dimensions: number, generationId: string): string {
+  return `embedding_${generationId.replace(/-/g, '')}_${dimensions}_idx`;
 }
 
 export function fallbackAnswer(sources: SemanticSearchResult[]): string {
@@ -138,7 +139,9 @@ export async function sourceNeedsEmbeddingBackfill(
     config.indexing.chunkSize,
     config.indexing.chunkOverlap
   );
-  const expectedDimensions = normalizeEmbeddingDimensions(config.embedding.dimensions);
+  const { state } = await readAiSnapshot();
+  const expectedDimensions = state.dimensions;
+  if (!state.generationId || !expectedDimensions) return true;
   const sourceId = source.id;
   const rows = await db
     .select({
@@ -149,7 +152,11 @@ export async function sourceNeedsEmbeddingBackfill(
     })
     .from(documentEmbeddings)
     .where(
-      and(eq(documentEmbeddings.sourceType, sourceType), eq(documentEmbeddings.sourceId, sourceId))
+      and(
+        eq(documentEmbeddings.sourceType, sourceType),
+        eq(documentEmbeddings.sourceId, sourceId),
+        eq(documentEmbeddings.generationId, state.generationId)
+      )
     );
 
   if (chunks.length === 0) {

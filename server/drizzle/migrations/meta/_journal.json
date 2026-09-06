@@ -211,6 +211,20 @@
       "when": 1787749501889,
       "tag": "0029_talented_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1788674776412,
+      "tag": "0030_embedding_contract",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1788676603359,
+      "tag": "0031_embedding_source_events",
+      "breakpoints": true
     }
   ]
 }

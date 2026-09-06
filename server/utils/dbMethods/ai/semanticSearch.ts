@@ -1,14 +1,14 @@
 import { sql } from 'drizzle-orm';
 import type { SecurityConfig } from '../../../types/config';
-import { createEmbedding, vectorToLiteral } from '../../ai/client';
+import { vectorToLiteral } from '../../ai/client';
 import { getGlobalConfig } from '../../config';
 import db from '../../drizzle';
 import { logAiTokenUsage } from '../aiToken';
 import { subjectIsVisibleToViewer } from '../userBlock';
-import { getStoredAiConfig, isVectorUsable } from './config';
+import { requireReadyGeneration } from '../../../embeddings/queue';
+import { createQueryEmbedding } from '../../../embeddings/query';
 import {
   buildTextArraySql,
-  normalizeEmbeddingDimensions,
   normalizeLimit,
   normalizeSearchTimeRange,
   VALID_SOURCE_TYPES,
@@ -36,31 +36,23 @@ export async function semanticSearch(params: {
   exclude?: { sourceType: AiSourceType; sourceId: string };
   excludeIds?: string[];
 }): Promise<SemanticSearchResult[]> {
-  const config = await getStoredAiConfig();
-  if (!isVectorUsable(config)) {
-    throw new Error('AI vector search is disabled');
-  }
+  const { config, state } = await requireReadyGeneration();
   if (params.scope === 'public' && !config.publicExploreVectorEnabled) {
     throw new Error('Public semantic search is disabled');
   }
 
-  const dimensions = normalizeEmbeddingDimensions(config.embedding.dimensions);
+  const dimensions = state.dimensions!;
   const limit = normalizeLimit(params.limit);
   const { timeRange } = normalizeSearchTimeRange(params.timeRange);
   const dateField = params.dateField === 'updatedAt' ? 'updatedAt' : 'createdAt';
   const queryText = [params.query, ...(params.semanticScope || [])].filter(Boolean).join('\n');
 
-  let queryEmbedding: number[];
-  let usage: { prompt_tokens: number; total_tokens: number } | undefined;
-  if (queryText) {
-    const result = await createEmbedding(config.embedding, queryText);
-    queryEmbedding = result.embedding;
-    usage = result.usage;
-  } else {
-    const result = await createEmbedding(config.embedding, 'all notes');
-    queryEmbedding = result.embedding;
-    usage = result.usage;
-  }
+  const { embedding: queryEmbedding, usage } = await createQueryEmbedding(
+    config,
+    state.generationId!,
+    dimensions,
+    queryText || 'all notes'
+  );
   if (usage && params.ownerId) {
     await logAiTokenUsage({
       userid: params.ownerId,
@@ -71,12 +63,6 @@ export async function semanticSearch(params: {
       totalTokens: usage.total_tokens,
     });
   }
-  if (queryEmbedding.length !== dimensions) {
-    throw new Error(
-      `Embedding dimensions mismatch: expected ${dimensions}, got ${queryEmbedding.length}`
-    );
-  }
-
   const securityConfig = getGlobalConfig<SecurityConfig>('security');
   const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
   const sourceTypes = Array.from(
@@ -209,7 +195,9 @@ export async function semanticSearch(params: {
     FROM "document_embeddings" de
     LEFT JOIN "rotes" r ON de."sourceType" = 'rote' AND r."id" = de."sourceId"
     LEFT JOIN "articles" a ON de."sourceType" = 'article' AND a."id" = de."sourceId"
-    WHERE de."embeddingModel" = ${config.embedding.model}
+    WHERE de."generationId" = ${state.generationId}
+      AND EXISTS (SELECT 1 FROM "embedding_index_state" eis WHERE eis.id = 1 AND eis.status = 'ready' AND eis."generationId" = de."generationId")
+      AND de."embeddingModel" = ${config.embedding.model}
       AND de."embeddingDimensions" = ${dimensions}
       ${liveSourceSql}
       ${permissionSql}

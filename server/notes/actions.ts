@@ -8,12 +8,7 @@ import {
 } from '../resources/service';
 import { notifyPublicNoteCreated } from '../utils/adminHooks';
 import { trackBackgroundTask } from '../utils/backgroundTask';
-import {
-  deleteEmbeddingsForSource,
-  deleteRoteLinkPreviewsByRoteId,
-  enqueueEmbeddingJob,
-  findRoteById,
-} from '../utils/dbMethods';
+import { deleteRoteLinkPreviewsByRoteId, findRoteById } from '../utils/dbMethods';
 import db from '../utils/drizzle';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
 import { parseAndStoreRoteLinkPreviews } from '../utils/linkPreview';
@@ -73,10 +68,6 @@ async function assertOwnedArticle(
 }
 
 function scheduleCreatedEffects(note: Rote) {
-  trackBackgroundTask(
-    enqueueEmbeddingJob('rote', note.id, note.authorid),
-    'rote_embedding_enqueue_failed'
-  );
   if (!note.articleId) {
     trackBackgroundTask(
       parseAndStoreRoteLinkPreviews(note.id, note.content),
@@ -89,10 +80,6 @@ function scheduleCreatedEffects(note: Rote) {
 }
 
 function scheduleUpdatedEffects(note: Rote, previousState: string, refreshLinkPreviews: boolean) {
-  trackBackgroundTask(
-    enqueueEmbeddingJob('rote', note.id, note.authorid),
-    'rote_embedding_enqueue_failed'
-  );
   if (refreshLinkPreviews) {
     trackBackgroundTask(
       (async () => {
@@ -274,6 +261,5 @@ export async function deleteUserNote(userId: string, id: string) {
     return removed;
   });
 
-  trackBackgroundTask(deleteEmbeddingsForSource('rote', id), 'rote_embedding_delete_failed');
   return deleted;
 }

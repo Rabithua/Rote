@@ -43,3 +43,59 @@ jobs:
       - name: Type check
         working-directory: ${{ matrix.path }}
         run: bun run build
+
+  embedding-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - run: bun test embeddings/client.test.ts tests/aiClient.test.ts tests/aiAccess.test.ts
+        working-directory: server
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run test -- src/pages/admin/components/EmbeddingConfig.test.tsx src/pages/admin/components/AIIndexingActions.test.tsx
+        working-directory: web
+
+  embedding-database:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: pgvector/pgvector:pg17-trixie
+            database: rote_embedding_test
+            suite: index.integration.test.ts
+          - image: postgres:17
+            database: legacy_embedding_test
+            suite: migration.test.ts
+    services:
+      postgres:
+        image: ${{ matrix.image }}
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: embedding_test
+          POSTGRES_DB: ${{ matrix.database }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRESQL_URL: postgres://rote:embedding_test@127.0.0.1:5432/${{ matrix.database }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - if: matrix.suite == 'index.integration.test.ts'
+        run: bun run db:migrate:programmatic
+        working-directory: server
+      - run: bun test embeddings/${{ matrix.suite }}
+        working-directory: server

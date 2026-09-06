@@ -42,9 +42,7 @@ async function getPublicAiStatus() {
       Boolean(aiConfig.chat?.baseUrl?.trim()) &&
       Boolean(aiConfig.chat?.model?.trim());
     const memoryAvailable =
-      aiConfig.enabled === true &&
-      aiConfig.vectorEnabled === true &&
-      vectorStatus.installed === true;
+      aiConfig.enabled === true && aiConfig.vectorEnabled === true && vectorStatus.ready === true;
 
     return {
       enabled: aiConfig.enabled === true,

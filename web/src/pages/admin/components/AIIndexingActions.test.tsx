@@ -5,6 +5,12 @@ import type { EmbeddingJobStats, VectorStatus } from './AIIndexingStatus';
 
 const readyVector: VectorStatus = {
   available: true,
+  ready: true,
+  status: 'ready',
+  revision: 1,
+  generationId: 'test-generation',
+  errorCode: null,
+  scanComplete: true,
   dimensions: 1536,
   indexName: 'document_embeddings_embedding_hnsw_1536_idx',
   installed: true,

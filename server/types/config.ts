@@ -140,15 +140,21 @@ export interface AiIndexingConfig {
   paused?: boolean;
 }
 
+export type EmbeddingOutput = { mode: 'native' } | { mode: 'dimensions'; dimensions: number };
+
+export interface EmbeddingProviderConfig extends AiProviderConfig {
+  output: EmbeddingOutput;
+}
+
 export interface AiConfig {
+  schemaVersion: 2;
+  revision: number;
   enabled: boolean;
   vectorEnabled: boolean;
   autoIndexEnabled: boolean;
   publicExploreVectorEnabled: boolean;
   chat: AiProviderConfig;
-  embedding: AiProviderConfig & {
-    dimensions: number;
-  };
+  embedding: EmbeddingProviderConfig;
   indexing: AiIndexingConfig;
 }
 
