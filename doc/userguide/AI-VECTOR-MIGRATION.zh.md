@@ -310,3 +310,29 @@ docker exec -i rote-postgres pg_restore -U rote -d rote --clean --if-exists < ro
 - `POST /v2/api/ai/index/rebuild` 接收 `{ "revision": 1 }`，返回 HTTP 202 和持久化重建状态；重复请求同一轮重建不会重复启动。
 - `/v2/api/ai/vector/status` 返回当前代次、维度、配置版本、状态、错误码及 `ready`。`ready` 为真才表示向量检索已准备好。
 - 错误继续采用 `{ code, message, data }` 响应格式；`message` 为 `embedding_*` 错误码，`data` 提供相关数值和供应商 HTTP 状态，不返回原始供应商响应或认证信息。
+
+## 切换模型后返回原配置
+
+保存前会提示向量配置变化的影响。保存只验证配置，不启动全量重建。索引另外保存生成它时的供应商、地址、模型、输出设置、文本处理和分块配置指纹。切换后如果没有启动新的重建，切回完全匹配的配置并通过验证，可以复用保留的完整代次；暂停期间的内容变化会先补齐，即使自动索引关闭。凭据轮换不改变索引归属。索引损坏、输出契约错误或未完成的旧代次不能直接恢复。
+
+### 明确恢复升级前的旧向量
+
+没有代次的历史向量不会自动认领。只有管理员能确认它们来自当前供应商和模型时，才运行维护命令；不要手工将状态改成 `ready`。先保存原供应商、模型和输出设置（例如 DashScope `text-embedding-v4` 指定 1536 维），再使用保存接口返回的当前 revision。
+
+在 `server/` 目录执行预览，示例 revision 需要替换为实际值：
+
+```sh
+bun run scripts/recoverLegacyEmbeddings.ts --revision 3 --confirm-provider dashscope
+```
+
+预览会核对全部来源的归属、内容、分块和向量数值，并发送至多 3 次样本请求验证一致性，因此会产生少量模型调用费用。样本比对只是辅助检查，不能代替管理员对原供应商的确认。预览返回 `reusableChunks`、`incrementalSources` 等数量，不写入索引。
+
+确认数量后，显式执行。下面的限制值 `0` 表示不允许创建任何需要重新生成内容的任务；只有预览确认需要补齐时才调整为可接受的来源数量：
+
+```sh
+bun run scripts/recoverLegacyEmbeddings.ts --revision 3 --confirm-provider dashscope --apply --max-incremental-sources 0
+```
+
+正式执行重新检查配置版本、来源和数量，在事务中将合格向量原值复制到新代次、创建 HNSW 索引、登记缺失或变化来源的任务。旧行保留，失败整体回滚。该维护操作会短暂持有来源行锁，大库应在低峰执行。执行中途新增的内容由事务事件队列捕获。后台工作器完成必要的补齐和索引检查后恢复检索；队列暂停时需要管理员恢复队列。重新运行已完成的操作会拒绝重复认领。
+
+容器只有编译产物时，命令入口为 `bun dist/scripts/recoverLegacyEmbeddings.js`，参数相同。脚本使用后端已有数据库和模型配置，不接收或打印凭据，不应在迁移、部署或日常任务中自动调用。

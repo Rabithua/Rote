@@ -438,3 +438,202 @@ describe.serial('embedding configuration and index lifecycle', () => {
     expect((await read.json()).data.config.revision).toBe(config.revision);
   });
 });
+
+const { getAiConfigurationImpact } = await import('./configImpact');
+const { consumeSourceEvents } = await import('./sourceEvents');
+const { recoverLegacyIndex } = await import('./legacyIndexRecovery');
+
+async function legacyFixture() {
+  const config = await saveConfig();
+  await note();
+  await ensurePgvectorReady();
+  await startIndexRebuild(config.revision);
+  await completeRebuild();
+  await db.update(documentEmbeddings).set({ generationId: null });
+  await db
+    .update(embeddingIndexState)
+    .set({
+      generationId: null,
+      generationFingerprint: null,
+      generationDimensions: null,
+      generationReusable: false,
+      status: 'needs_rebuild',
+      scanComplete: false,
+    })
+    .where(eq(embeddingIndexState.id, 1));
+  return config;
+}
+
+describe.serial('configuration changes and retained index recovery', () => {
+  it('previews embedding changes without saving or calling a provider', async () => {
+    const saved = await saveConfig();
+    const count = requests.length;
+    for (const config of [
+      saved,
+      { ...saved, chat: { ...saved.chat, model: 'another-chat' } },
+      { ...saved, embedding: { ...saved.embedding, apiKey: 'rotated' } },
+      { ...saved, indexing: { ...saved.indexing, batchSize: 2 } },
+    ])
+      expect((await getAiConfigurationImpact(config)).requiresConfirmation).toBe(false);
+    for (const config of [
+      { ...saved, embedding: { ...saved.embedding, model: 'another-model' } },
+      {
+        ...saved,
+        embedding: { ...saved.embedding, output: { mode: 'dimensions' as const, dimensions: 3 } },
+      },
+      { ...saved, indexing: { ...saved.indexing, chunkOverlap: 100 } },
+    ])
+      expect((await getAiConfigurationImpact(config)).requiresConfirmation).toBe(true);
+    await expect(getAiConfigurationImpact({ ...saved, revision: 0 })).rejects.toMatchObject({
+      code: 'embedding_revision_conflict',
+    });
+    expect(requests).toHaveLength(count);
+    expect((await readAiSnapshot()).config).toEqual(saved);
+  });
+  it('restores the retained generation after switching back without regenerating content', async () => {
+    const original = await saveConfig();
+    await note();
+    await ensurePgvectorReady();
+    await startIndexRebuild(original.revision);
+    await completeRebuild();
+    const vectors = await db.select().from(documentEmbeddings);
+    const generation = (await readAiSnapshot()).state.generationId;
+    const changed = await saveAiSettings({
+      ...original,
+      embedding: { ...original.embedding, model: 'other-model' },
+    });
+    expect((await getPgvectorStatus()).ready).toBe(false);
+    const count = requests.length;
+    await saveAiSettings({ ...original, revision: changed.revision });
+    expect(requests).toHaveLength(count + 1); // Validation only.
+    expect((await readAiSnapshot()).state).toMatchObject({
+      status: 'ready',
+      generationId: generation,
+      generationReusable: true,
+    });
+    expect((await getPgvectorStatus()).ready).toBe(true);
+    expect(await db.select().from(documentEmbeddings)).toEqual(vectors);
+  });
+  it('retains edits while a different model is saved and catches up with auto indexing disabled', async () => {
+    const initial = await saveConfig();
+    const original = await saveAiSettings({ ...initial, autoIndexEnabled: false });
+    await note();
+    await ensurePgvectorReady();
+    await startIndexRebuild(original.revision);
+    await completeRebuild();
+    const generation = (await readAiSnapshot()).state.generationId;
+    await enqueueEmbeddingJob('rote', noteId, ownerId, 'upsert', true);
+    const expiredWorker = await claimEmbeddingJob();
+    expect(expiredWorker).toBeTruthy();
+    const changed = await saveAiSettings({
+      ...original,
+      embedding: { ...original.embedding, model: 'other-model' },
+    });
+    await note('edited while the model was different');
+    await consumeSourceEvents();
+    expect(await db.select().from(embeddingSourceEvents)).toHaveLength(1);
+    await saveAiSettings({ ...original, revision: changed.revision });
+    expect((await readAiSnapshot()).state).toMatchObject({
+      status: 'rebuilding',
+      generationId: generation,
+      scanComplete: true,
+    });
+    await expect(
+      processEmbeddingJob(
+        expiredWorker!.job,
+        expiredWorker!.config,
+        expiredWorker!.state.dimensions!
+      )
+    ).rejects.toMatchObject({ code: 'embedding_lease_lost' });
+    await completeRebuild();
+    const rows = await db.select().from(documentEmbeddings);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].text).toBe('edited while the model was different');
+    expect(rows[0].generationId).toBe(generation);
+  });
+  it('does not restore a generation without a valid physical index', async () => {
+    const original = await saveConfig();
+    await ensurePgvectorReady();
+    const index = await startIndexRebuild(original.revision);
+    await completeRebuild();
+    const changed = await saveAiSettings({
+      ...original,
+      embedding: { ...original.embedding, model: 'other-model' },
+    });
+    await db.execute(sql.raw(`DROP INDEX "${index.indexName}"`));
+    await saveAiSettings({ ...original, revision: changed.revision });
+    expect((await readAiSnapshot()).state.status).toBe('needs_rebuild');
+  });
+  it('explicitly adopts verified legacy vectors, preserving originals and only generating missing content', async () => {
+    const config = await legacyFixture();
+    const [old] = await db.select().from(documentEmbeddings);
+    await db
+      .insert(articles)
+      .values({ id: articleId, authorId: ownerId, content: 'a missing article' });
+    const options = { revision: config.revision, confirmedProvider: config.embedding.providerId };
+    const preview = await recoverLegacyIndex(options);
+    expect(preview).toMatchObject({ applied: false, reusableChunks: 1, incrementalSources: 1 });
+    expect(await db.select().from(documentEmbeddings)).toEqual([old]);
+    await expect(recoverLegacyIndex({ ...options, apply: true })).rejects.toMatchObject({
+      code: 'embedding_legacy_incremental_limit',
+    });
+    expect((await readAiSnapshot()).state.generationId).toBeNull();
+    const recovered = await recoverLegacyIndex({
+      ...options,
+      apply: true,
+      maxIncrementalSources: 1,
+    });
+    const copies = await db.select().from(documentEmbeddings);
+    expect(copies).toHaveLength(2);
+    expect(copies.find((row) => row.id === old.id)).toEqual(old);
+    expect(copies.find((row) => row.generationId === recovered.generationId)?.embedding).toBe(
+      old.embedding
+    );
+    const count = requests.length;
+    await completeRebuild();
+    expect(requests).toHaveLength(count + 1);
+    expect((await getPgvectorStatus()).ready).toBe(true);
+    expect(await semanticSearch({ query: 'fixture', ownerId, viewerId: ownerId })).toHaveLength(2);
+  });
+  it('rejects unconfirmed provenance, stale revisions and incompatible model samples without changing data', async () => {
+    const config = await legacyFixture();
+    const options = {
+      revision: config.revision,
+      confirmedProvider: config.embedding.providerId,
+      apply: true,
+    };
+    const previous = await db.select().from(documentEmbeddings);
+    await expect(
+      recoverLegacyIndex({ ...options, confirmedProvider: 'wrong-provider' })
+    ).rejects.toMatchObject({ code: 'embedding_legacy_recovery_unavailable' });
+    await expect(recoverLegacyIndex({ ...options, revision: 0 })).rejects.toMatchObject({
+      code: 'embedding_revision_conflict',
+    });
+    globalThis.fetch = (async () =>
+      Response.json({ data: [{ embedding: [1, 0, 0] }] })) as typeof fetch;
+    await expect(recoverLegacyIndex(options)).rejects.toMatchObject({
+      code: 'embedding_legacy_sample_mismatch',
+    });
+    expect(await db.select().from(documentEmbeddings)).toEqual(previous);
+    expect((await readAiSnapshot()).state.status).toBe('needs_rebuild');
+  });
+});
+
+it('rejects duplicate legacy chunks that conceal missing chunk coverage', async () => {
+  const config = await legacyFixture();
+  await note('a'.repeat(1900));
+  const { hashText } = await import('../utils/dbMethods/ai/documents');
+  const [old] = await db
+    .update(documentEmbeddings)
+    .set({ text: 'a'.repeat(1800), contentHash: hashText('a'.repeat(1800)) })
+    .returning();
+  await db.insert(documentEmbeddings).values({ ...old, id: crypto.randomUUID() });
+  await expect(
+    recoverLegacyIndex({
+      revision: config.revision,
+      confirmedProvider: config.embedding.providerId,
+      apply: true,
+    })
+  ).rejects.toMatchObject({ code: 'embedding_legacy_recovery_unavailable' });
+  expect((await readAiSnapshot()).state.generationId).toBeNull();
+});

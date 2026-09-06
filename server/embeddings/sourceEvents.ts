@@ -23,6 +23,7 @@ export async function consumeSourceEvents(pageSize = 100) {
       .orderBy(asc(embeddingSourceEvents.createdAt), asc(embeddingSourceEvents.id))
       .limit(pageSize)
       .for('update', { skipLocked: true });
+    const consumed: string[] = [];
     for (const event of events) {
       const table = event.sourceType === 'rote' ? rotes : articles;
       const owner = event.sourceType === 'rote' ? rotes.authorid : articles.authorId;
@@ -63,14 +64,14 @@ export async function consumeSourceEvents(pageSize = 100) {
           event.sourceId,
           source.ownerId
         );
+      } else if (state.generationReusable && !canQueueIndex(config, state)) {
+        // Keep changes while another model is configured. Returning to the
+        // retained generation must catch up even if auto indexing is disabled.
+        continue;
       }
+      consumed.push(event.id);
     }
-    if (events.length)
-      await tx.delete(embeddingSourceEvents).where(
-        inArray(
-          embeddingSourceEvents.id,
-          events.map((event) => event.id)
-        )
-      );
+    if (consumed.length)
+      await tx.delete(embeddingSourceEvents).where(inArray(embeddingSourceEvents.id, consumed));
   });
 }

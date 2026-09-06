@@ -52,6 +52,9 @@ export async function startIndexRebuild(revision: unknown) {
         fingerprint: embeddingFingerprint(before.config),
         dimensions: verified.dimensions,
         generationId,
+        generationFingerprint: embeddingFingerprint(before.config),
+        generationDimensions: verified.dimensions,
+        generationReusable: false,
         scanSource: 'rote',
         scanCursor: null,
         scanComplete: false,
@@ -92,7 +95,7 @@ export async function retryFailedEmbeddingJobs() {
         leaseToken: null,
         leaseExpiresAt: null,
         lockedAt: null,
-        nextAttemptAt: new Date(),
+        nextAttemptAt: sql`now()`,
         updatedAt: new Date(),
       })
       .where(
@@ -119,6 +122,9 @@ export async function clearAllEmbeddings() {
       .set({
         status: state.dimensions ? 'needs_rebuild' : 'needs_validation',
         generationId: null,
+        generationFingerprint: null,
+        generationDimensions: null,
+        generationReusable: false,
         scanComplete: false,
         scanCursor: null,
         errorCode: null,
@@ -158,7 +164,13 @@ export async function finishIndexRebuild() {
     if (event) return;
     await tx
       .update(embeddingIndexState)
-      .set({ status: 'ready', errorCode: null, errorDetails: null, updatedAt: new Date() })
+      .set({
+        status: 'ready',
+        generationReusable: true,
+        errorCode: null,
+        errorDetails: null,
+        updatedAt: new Date(),
+      })
       .where(eq(embeddingIndexState.id, 1));
   });
 }

@@ -1,3 +1,4 @@
+import AIConfigSaveButton from './AIConfigSaveButton';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import AIConfigProviderForm from './AIConfigProviderForm';
@@ -84,5 +85,71 @@ describe('embedding configuration', () => {
     expect(post).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'rebuildConfirm' }));
     await waitFor(() => expect(post).toHaveBeenCalledWith('/ai/index/rebuild', { revision: 7 }));
+  });
+});
+
+describe('saving embedding configuration', () => {
+  it('asks before saving an index change, and cancellation writes nothing', async () => {
+    vi.mocked(post).mockResolvedValue({ data: { requiresConfirmation: true } });
+    const onSave = vi.fn().mockResolvedValue(true);
+    render(<AIConfigSaveButton config={config} disabled={false} onSave={onSave} />);
+    const button = screen.getByRole('button', { name: 'save' });
+    fireEvent.click(button);
+    await screen.findByRole('dialog');
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'ai.saveChangeCancel' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(onSave).not.toHaveBeenCalled();
+    expect(button).toHaveFocus();
+  });
+  it('saves the reviewed configuration only after confirmation', async () => {
+    vi.mocked(post).mockResolvedValue({ data: { requiresConfirmation: true } });
+    const onSave = vi.fn().mockResolvedValue(true);
+    render(<AIConfigSaveButton config={config} disabled={false} onSave={onSave} />);
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'ai.saveChangeConfirm' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledExactlyOnceWith(config));
+    expect(post).toHaveBeenCalledExactlyOnceWith('/ai/config/impact', { config });
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+  it('directly saves unrelated changes and fails closed when the impact check fails', async () => {
+    vi.mocked(post)
+      .mockResolvedValueOnce({ data: { requiresConfirmation: false } })
+      .mockRejectedValueOnce(new Error('offline'));
+    const onSave = vi.fn().mockResolvedValue(true);
+    render(<AIConfigSaveButton config={config} disabled={false} onSave={onSave} />);
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'save' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'save' })).toBeEnabled());
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('discards an impact check when the form changes during the request', async () => {
+    let finish!: (value: { data: { requiresConfirmation: boolean } }) => void;
+    vi.mocked(post).mockReturnValue(
+      new Promise((resolve) => {
+        finish = resolve;
+      })
+    );
+    const onSave = vi.fn().mockResolvedValue(true);
+    const view = render(<AIConfigSaveButton config={config} disabled={false} onSave={onSave} />);
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+    view.rerender(
+      <AIConfigSaveButton config={{ ...config, revision: 2 }} disabled={false} onSave={onSave} />
+    );
+    finish({ data: { requiresConfirmation: false } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'save' })).toBeEnabled());
+    expect(onSave).not.toHaveBeenCalled();
+  });
+  it('keeps the confirmation open after a rejected save', async () => {
+    vi.mocked(post).mockResolvedValue({ data: { requiresConfirmation: true } });
+    const onSave = vi.fn().mockResolvedValue(false);
+    render(<AIConfigSaveButton config={config} disabled={false} onSave={onSave} />);
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'ai.saveChangeConfirm' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('dialog')).toBeVisible();
   });
 });

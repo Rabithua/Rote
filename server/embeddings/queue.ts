@@ -11,6 +11,7 @@ import {
 } from './configStore';
 import type { AiConfig } from '../types/config';
 import { EmbeddingError } from './errors';
+import { generationMatches } from './generationIdentity';
 import type {
   AiSourceType,
   EmbeddingJobAction,
@@ -24,6 +25,7 @@ export function canQueueIndex(config: AiConfig, state: IndexState) {
       state.status === 'failed') &&
     state.generationId !== null &&
     state.dimensions !== null &&
+    generationMatches(state, state.fingerprint, state.dimensions) &&
     ['ready', 'rebuilding', 'failed'].includes(state.status)
   );
 }
