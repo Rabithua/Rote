@@ -13,10 +13,13 @@ and share APIs remain excluded from offline caching.
 ## CDN configuration and rollout
 
 Origin headers alone cannot fix a CDN rule that forces a cache lifetime.
-For `rote.ink`, configure both the **node cache TTL** and **browser cache TTL**:
+`rote.ink` uses Tencent Cloud CDN (domain `cdn-brw4s7jx`), not EdgeOne.
+Configure both the **node cache TTL** and **browser cache TTL**:
 
-- `/assets/*`: respect origin caching; immutable versioned files may be cached.
-- All other paths: do not cache, preserving the origin's `no-store` response.
+- All files: respect origin caching, without heuristic caching when origin
+  headers are absent. This preserves immutable assets and the entry `no-store`.
+- Add higher-priority no-cache rules for stable entry files such as `/sw.js`,
+  `/registerSW.js`, `/index.html`, and `/manifest.json`, and share paths `/s/`.
 - Disable any rule that overwrites entry HTML or `/sw.js` with a positive
   `max-age`. The share paths must retain `no-referrer` and `noindex` headers.
 
@@ -47,5 +50,5 @@ the CDN configuration and purge. It uses only a synthetic share path and does
 not retrieve a real note or include a bearer token.
 
 References: [Vite PWA cache guidance](https://vite-pwa-org.netlify.app/deployment/),
-[EdgeOne node cache TTL](https://cloud.tencent.com/document/product/1552/70777),
-[EdgeOne browser cache TTL](https://edgeone.ai/document/46176).
+[Tencent CDN node cache TTL](https://cloud.tencent.com/document/product/228/47672),
+[Tencent CDN browser cache TTL](https://cloud.tencent.com/document/product/228/50114).
