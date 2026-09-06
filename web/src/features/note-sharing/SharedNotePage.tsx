@@ -4,7 +4,7 @@ import { RefreshCw, Share } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import { Button } from '@/components/ui/button';
@@ -63,14 +63,25 @@ function SharedNoteReader({ token }: { token: string }) {
       ) : (
         <article className="space-y-4 px-5 py-4">
           <div className="flex items-center gap-3">
-            <UserAvatar avatar={state.note.author.avatar || ''} className="size-10" />
+            <Link
+              to={`/${encodeURIComponent(state.note.author.username)}`}
+              reloadDocument
+              aria-label={t('viewAuthor', {
+                name: state.note.author.nickname || state.note.author.username,
+              })}
+              className="shrink-0 rounded-full"
+            >
+              <UserAvatar avatar={state.note.author.avatar || ''} className="size-10" />
+            </Link>
             <div className="min-w-0">
-              <p
-                className="truncate font-medium"
+              <Link
+                to={`/${encodeURIComponent(state.note.author.username)}`}
+                reloadDocument
+                className="block truncate font-medium hover:underline"
                 title={state.note.author.nickname || state.note.author.username}
               >
                 {state.note.author.nickname || state.note.author.username}
-              </p>
+              </Link>
               <time dateTime={state.note.createdAt} className="text-muted-foreground text-xs">
                 {new Date(state.note.createdAt).toLocaleString(i18n.language)}
               </time>

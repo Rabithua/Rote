@@ -67,6 +67,9 @@ describe('anonymous share reader', () => {
     expect(screen.getByText('family').closest('a')).toBeNull();
     expect(screen.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       '/login',
+      '/author',
+      '/author',
+      '/author',
     ]);
     expect(screen.getByRole('link', { name: 'leftNavBar.login' })).toBeInTheDocument();
     expect(screen.getByText('Shared by Author')).toBeInTheDocument();
@@ -103,6 +106,9 @@ describe('anonymous share reader', () => {
       '/ai',
       '/profile',
       '/experiment',
+      '/author',
+      '/author',
+      '/author',
     ]);
     expect(screen.getByText('leftNavBar.logout')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'leftNavBar.login' })).not.toBeInTheDocument();
@@ -145,6 +151,9 @@ describe('anonymous share reader', () => {
     expect(screen.queryByText('Article body')).not.toBeInTheDocument();
     expect(screen.queryByText('@author')).not.toBeInTheDocument();
     expect(screen.queryByText('Shared by Author')).not.toBeInTheDocument();
+    expect(
+      screen.queryAllByRole('link').some((link) => link.getAttribute('href') === '/author')
+    ).toBe(false);
     expect(screen.queryByRole('link', { name: 'article' })).not.toBeInTheDocument();
   });
 
