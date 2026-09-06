@@ -618,3 +618,22 @@ describe.serial('configuration changes and retained index recovery', () => {
     expect((await readAiSnapshot()).state.status).toBe('needs_rebuild');
   });
 });
+
+it('rejects duplicate legacy chunks that conceal missing chunk coverage', async () => {
+  const config = await legacyFixture();
+  await note('a'.repeat(1900));
+  const { hashText } = await import('../utils/dbMethods/ai/documents');
+  const [old] = await db
+    .update(documentEmbeddings)
+    .set({ text: 'a'.repeat(1800), contentHash: hashText('a'.repeat(1800)) })
+    .returning();
+  await db.insert(documentEmbeddings).values({ ...old, id: crypto.randomUUID() });
+  await expect(
+    recoverLegacyIndex({
+      revision: config.revision,
+      confirmedProvider: config.embedding.providerId,
+      apply: true,
+    })
+  ).rejects.toMatchObject({ code: 'embedding_legacy_recovery_unavailable' });
+  expect((await readAiSnapshot()).state.generationId).toBeNull();
+});

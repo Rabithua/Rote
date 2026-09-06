@@ -58,6 +58,7 @@ export async function auditLegacyIndex(
       const rows = bySource.get(`${sourceType}:${source.id}`) ?? [];
       const matches =
         rows.length === chunks.length &&
+        new Set(rows.map((row) => row.chunkIndex)).size === chunks.length &&
         rows.every((row) => {
           const chunk = chunks[row.chunkIndex];
           if (
