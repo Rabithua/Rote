@@ -10,9 +10,17 @@ interface NavHeaderProps {
   children?: ReactNode;
   onNavClick?: () => void;
   onBack?: () => void;
+  showBack?: boolean;
 }
 
-export default function NavBar({ title, icon, children, onNavClick, onBack }: NavHeaderProps) {
+export default function NavBar({
+  title,
+  icon,
+  children,
+  onNavClick,
+  onBack,
+  showBack = true,
+}: NavHeaderProps) {
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.navBar',
   });
@@ -55,7 +63,7 @@ export default function NavBar({ title, icon, children, onNavClick, onBack }: Na
         onClick={onNavClick}
       >
         <div className="flex items-center divide-x">
-          {!isMainNavPage && (
+          {showBack && !isMainNavPage && (
             <div
               className="hover:text-theme flex cursor-pointer items-center gap-2 p-3 duration-300"
               onClick={(e) => {

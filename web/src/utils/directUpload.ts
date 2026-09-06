@@ -1,4 +1,4 @@
-import type { Attachment } from '@/types/main';
+import type { AttachmentMedia } from '@/types/main';
 import axios, { type AxiosProgressEvent } from 'axios';
 import i18n from 'i18next';
 import { post } from './api';
@@ -200,7 +200,7 @@ export async function finalize(attachments: FinalizeAttachment[], noteId?: strin
   return (res.data as any[]) || [];
 }
 
-export function getAttachmentMediaKind(attachment: File | Attachment): MediaKind | null {
+export function getAttachmentMediaKind(attachment: File | AttachmentMedia): MediaKind | null {
   const mimetype = attachment instanceof File ? attachment.type : attachment.details?.mimetype;
   const mediaKind = attachment instanceof File ? undefined : attachment.details?.mediaKind;
   const pairedVideoKey =
@@ -215,7 +215,7 @@ export function getAttachmentMediaKind(attachment: File | Attachment): MediaKind
   return null;
 }
 
-export function isHeicLikeAttachment(attachment: File | Attachment) {
+export function isHeicLikeAttachment(attachment: File | AttachmentMedia) {
   const mimetype =
     (attachment instanceof File ? attachment.type : attachment.details?.mimetype)?.toLowerCase() ||
     '';
@@ -236,7 +236,7 @@ export function isHeicLikeAttachment(attachment: File | Attachment) {
   return candidateNames.some((name) => /\.(heic|heif)(\?|#|$)/i.test(name || ''));
 }
 
-export function getAttachmentImageThumbnailSrc(attachment: Attachment) {
+export function getAttachmentImageThumbnailSrc(attachment: AttachmentMedia) {
   const compatibleStill = attachment.compressUrl || attachment.posterUrl || '';
   if (isHeicLikeAttachment(attachment)) {
     return compatibleStill;
@@ -244,11 +244,11 @@ export function getAttachmentImageThumbnailSrc(attachment: Attachment) {
   return compatibleStill || attachment.url || '';
 }
 
-export function getAttachmentImagePreviewSrc(attachment: Attachment) {
+export function getAttachmentImagePreviewSrc(attachment: AttachmentMedia) {
   return getAttachmentImageThumbnailSrc(attachment);
 }
 
-export function getAttachmentLivePhotoPlaybackSrc(attachment: Attachment) {
+export function getAttachmentLivePhotoPlaybackSrc(attachment: AttachmentMedia) {
   if (getAttachmentMediaKind(attachment) !== 'livePhoto') {
     return '';
   }
@@ -256,7 +256,7 @@ export function getAttachmentLivePhotoPlaybackSrc(attachment: Attachment) {
   return attachment.details?.pairedVideoUrl || '';
 }
 
-export function isImageLikeAttachment(attachment: File | Attachment) {
+export function isImageLikeAttachment(attachment: File | AttachmentMedia) {
   const mediaKind = getAttachmentMediaKind(attachment);
   return mediaKind === 'image' || mediaKind === 'livePhoto';
 }

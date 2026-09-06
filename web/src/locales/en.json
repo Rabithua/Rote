@@ -1853,6 +1853,18 @@
       "saving": "Saving...",
       "saveSuccess": "Saved successfully",
       "saveFailed": "Save failed: {{error}}"
+    },
+    "sharedNote": {
+      "title": "Rote · Shared note",
+      "refresh": "Refresh content",
+      "loading": "Loading note…",
+      "unavailableTitle": "This share link is unavailable",
+      "unavailableDescription": "The link does not exist, sharing has stopped, or the note was deleted.",
+      "errorTitle": "Unable to load this note",
+      "errorDescription": "Check your connection and try again.",
+      "retry": "Try again",
+      "article": "Linked article",
+      "tags": "Tags"
     }
   },
   "components": {
@@ -2050,6 +2062,25 @@
         "open": "Open Live Photo",
         "videoLabel": "Live Photo video"
       }
+    },
+    "noteShare": {
+      "title": "Share a link",
+      "description": "Anyone with the link can read the latest content. No sign-in needed.",
+      "loading": "Loading share settings…",
+      "loadFailed": "Unable to load share settings. Please try again.",
+      "retry": "Try again",
+      "close": "Close",
+      "linkLabel": "Share link",
+      "attachmentNotice": "Stopping sharing disables this link. Previously obtained attachment links may still work.",
+      "publicNotice": "This note is public. Stopping sharing disables only this link; the note remains public.",
+      "createAndCopy": "Create and copy link",
+      "copy": "Copy link",
+      "stop": "Stop sharing",
+      "copied": "Share link copied",
+      "copyFailed": "Could not copy. Please select and copy the link manually.",
+      "createFailed": "Could not create the share link. Please try again.",
+      "stopFailed": "Could not stop sharing. Please try again.",
+      "stopped": "Sharing stopped"
     }
   },
   "article": {

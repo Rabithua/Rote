@@ -44,6 +44,27 @@ describe('RoteActionsMenu', () => {
     vi.clearAllMocks();
   });
 
+  it('opens share management directly for a private note', async () => {
+    const onShare = vi.fn();
+    render(
+      <MemoryRouter>
+        <RoteActionsMenu
+          rote={{ ...publicNote, state: 'private' }}
+          onEdit={vi.fn()}
+          onShare={onShare}
+        />
+      </MemoryRouter>
+    );
+    fireEvent.pointerDown(screen.getByRole('button', { name: 'actions' }), {
+      button: 0,
+      ctrlKey: false,
+    });
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'share' }));
+    expect(onShare).toHaveBeenCalledOnce();
+    const { put } = await import('@/utils/api');
+    expect(put).not.toHaveBeenCalled();
+  });
+
   it('shows block but not owner actions for another user public note', async () => {
     render(
       <MemoryRouter>

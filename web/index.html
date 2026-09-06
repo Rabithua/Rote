@@ -2,6 +2,20 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Apply share-page privacy before any external resource can be loaded. -->
+    <script>
+      if (window.location.pathname.startsWith('/s/')) {
+        for (const [name, content] of [
+          ['referrer', 'no-referrer'],
+          ['robots', 'noindex, nofollow, noarchive'],
+        ]) {
+          const meta = document.createElement('meta');
+          meta.name = name;
+          meta.content = content;
+          document.head.appendChild(meta);
+        }
+      }
+    </script>
     <title>Rote</title>
     <meta name="description" content="Personal note like twitter" />
     <link rel="icon" type="image/svg+xml" href="/ico.svg" />
@@ -31,7 +45,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/ios-pwa-splash@1.0.0/cdn.min.js"></script>
     <script>
-      iosPWASplash('logo.png', '#ffffff');
+      iosPWASplash('/logo.png', '#ffffff');
     </script>
     <!-- 运行时配置注入：容器启动脚本会替换此处的占位符 -->
     <!-- 注意：此脚本必须在 React 代码加载前执行，确保配置可用 -->
@@ -59,7 +73,7 @@
     </script>
     <!-- React Scan - Development only -->
     <script type="module">
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV && !window.location.pathname.startsWith('/s/')) {
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/react-scan/dist/auto.global.js';
         document.head.appendChild(script);
