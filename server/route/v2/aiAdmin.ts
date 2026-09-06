@@ -1,4 +1,5 @@
 import { parseIncomingAiConfig } from '../../embeddings/configStore';
+import { getAiConfigurationImpact } from '../../embeddings/configImpact';
 import { startIndexRebuild } from '../../embeddings/indexLifecycle';
 import { DEFAULT_AI_CONFIG } from '../../utils/ai/providers';
 import type { Hono } from 'hono';
@@ -20,6 +21,16 @@ import {
 import { bodyTypeCheck, createResponse } from '../../utils/main';
 
 export function registerAdminAiRoutes(router: Hono<{ Variables: HonoVariables }>) {
+  router.post(
+    '/config/impact',
+    authenticateJWT,
+    requireAdmin,
+    bodyTypeCheck,
+    async (c: HonoContext) => {
+      const { config } = await c.req.json();
+      return c.json(createResponse(await getAiConfigurationImpact(config)), 200);
+    }
+  );
   router.get('/defaults', authenticateJWT, requireAdmin, (c: HonoContext) =>
     c.json(createResponse(DEFAULT_AI_CONFIG), 200)
   );

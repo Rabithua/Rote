@@ -3,6 +3,7 @@ import db from '../../drizzle';
 import { readAiSnapshot } from '../../../embeddings/configStore';
 import { EmbeddingError } from '../../../embeddings/errors';
 import { vectorIndexName } from './documents';
+import { generationMatches } from '../../../embeddings/generationIdentity';
 
 export async function getPgvectorStatus() {
   const { config, state } = await readAiSnapshot();
@@ -35,6 +36,7 @@ export async function getPgvectorStatus() {
       config.enabled &&
       config.vectorEnabled &&
       state.status === 'ready' &&
+      generationMatches(state, state.fingerprint, state.dimensions) &&
       Boolean(row.installed && row.hasIndex),
   };
 }

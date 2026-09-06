@@ -9,6 +9,11 @@ import db from '../utils/drizzle';
 import { testEmbeddingProvider } from './client';
 import { embeddingFingerprint, embeddingOutputSchema } from './contract';
 import { EmbeddingError, isEmbeddingContractFailure } from './errors';
+import {
+  generationMatches,
+  restoreGenerationStatus,
+  revokeGenerationClaims,
+} from './generationIdentity';
 
 export type EmbeddingTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type EmbeddingExecutor = typeof db | EmbeddingTransaction;
@@ -83,6 +88,7 @@ export function canProcessIndex(config: AiConfig, state: IndexState) {
     config.vectorEnabled &&
     state.generationId !== null &&
     state.dimensions !== null &&
+    generationMatches(state, state.fingerprint, state.dimensions) &&
     (state.status === 'ready' || state.status === 'rebuilding')
   );
 }
@@ -126,6 +132,14 @@ export async function saveAiSettings(incoming: Partial<AiConfig>): Promise<AiCon
       const state = await lockIndexState(tx);
       if (state.revision !== incoming.revision)
         throw new EmbeddingError('embedding_revision_conflict', 409);
+      if (invalidatesIndex || (!enabledNow && needsValidation))
+        await revokeGenerationClaims(tx, state.generationId);
+      const restored =
+        verified &&
+        !contractFailed &&
+        (enabling || ['needs_rebuild', 'needs_validation'].includes(state.status))
+          ? await restoreGenerationStatus(tx, state, fingerprint, verified.dimensions)
+          : null;
       next.revision = state.revision + 1;
       await tx
         .insert(settings)
@@ -152,9 +166,10 @@ export async function saveAiSettings(incoming: Partial<AiConfig>): Promise<AiCon
                 errorCode: null,
                 errorDetails: null,
                 status:
-                  invalidatesIndex || contractFailed || state.status === 'needs_validation'
+                  restored ??
+                  (invalidatesIndex || contractFailed || state.status === 'needs_validation'
                     ? ('needs_rebuild' as const)
-                    : state.status,
+                    : state.status),
               }
             : needsValidation
               ? {

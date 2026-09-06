@@ -1226,6 +1226,9 @@ export const embeddingIndexState = pgTable(
     fingerprint: text('fingerprint'),
     dimensions: integer('dimensions'),
     generationId: uuid('generationId'),
+    generationFingerprint: text('generationFingerprint'),
+    generationDimensions: integer('generationDimensions'),
+    generationReusable: boolean('generationReusable').notNull().default(false),
     status: text('status')
       .$type<'needs_validation' | 'needs_rebuild' | 'rebuilding' | 'ready' | 'failed'>()
       .notNull()

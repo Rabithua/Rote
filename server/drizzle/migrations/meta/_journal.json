@@ -232,6 +232,13 @@
       "when": 1788683900000,
       "tag": "0032_settings_updated_at_default",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1788686228847,
+      "tag": "0033_embedding_generation_identity",
+      "breakpoints": true
     }
   ]
 }

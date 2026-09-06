@@ -1,5 +1,5 @@
 import { formatEmbeddingError } from './embeddingErrors';
-import { Button } from '@/components/ui/button';
+import AIConfigSaveButton from './AIConfigSaveButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Divider from '@/components/ui/divider';
 import { Label } from '@/components/ui/label';
@@ -150,17 +150,19 @@ function AIConfigEditor({
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (snapshot: NonNullable<SystemConfig['ai']>): Promise<boolean> => {
     setIsSaving(true);
     try {
       const res = await put('/admin/settings', {
         group: 'ai',
-        config,
+        config: snapshot,
       });
       setAiConfig(res.data.config);
       await mutateSavedAi();
       toast.success(t('saveSuccess'));
       await Promise.all([Promise.resolve(onMutate()), mutateGlobal('site-status')]);
+      await Promise.all([mutateVectorStatus(), mutateJobStats()]);
+      return true;
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
@@ -168,6 +170,7 @@ function AIConfigEditor({
         error?.response?.data?.error ||
         'Unknown error';
       toast.error(t('saveFailed', { error: formatEmbeddingError(error, t) || errorMessage }));
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -306,9 +309,11 @@ function AIConfigEditor({
           runAction={runAction}
         />
 
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? t('saving') : t('save')}
-        </Button>
+        <AIConfigSaveButton
+          config={config}
+          disabled={isSaving || busyAction !== null}
+          onSave={handleSave}
+        />
       </CardContent>
     </Card>
   );

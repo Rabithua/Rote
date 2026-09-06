@@ -30,6 +30,7 @@ export async function createQueryEmbedding(
         .set({
           status: 'needs_validation',
           fingerprint: null,
+          generationReusable: false,
           errorCode: error.code,
           errorDetails: error.details,
           updatedAt: new Date(),

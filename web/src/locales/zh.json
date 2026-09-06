@@ -1708,6 +1708,12 @@
         "rebuildConfirm": "开始重建",
         "rebuildStarted": "重建已启动",
         "saveBeforeRebuild": "请先保存当前配置，再启动重建。",
+        "saveChangeTitle": "保存向量配置？",
+        "saveChangeDescription": "如果新配置与现有索引不兼容，保存后向量检索将暂停，需要手动启动全量重建。重建会产生模型调用费用；保存本身不会启动重建。",
+        "saveChangeReuse": "切回同一代索引的原模型、输出维度和分块设置时，可复用经过验证的索引，仅补齐期间的内容变化。普通聊天和关键词搜索不受影响。",
+        "saveChangeCancel": "取消",
+        "saveChangeConfirm": "确认保存",
+        "saveImpactCheckFailed": "无法检查配置变更的影响，请稍后重试。",
         "embeddingErrors": {
           "embedding_config_invalid": "向量模型配置无效，请检查输出模式、维度和分块设置。",
           "embedding_dimensions_limit": "模型返回 {{actual}} 维，当前索引最多支持 {{limit}} 维。请使用支持指定较小维度的模型。",

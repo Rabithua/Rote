@@ -1722,6 +1722,12 @@
         "rebuildConfirm": "再構築を開始",
         "rebuildStarted": "再構築を開始しました",
         "saveBeforeRebuild": "再構築の前に設定を保存してください。",
+        "saveChangeTitle": "ベクトル設定を保存しますか？",
+        "saveChangeDescription": "新しい設定が既存の索引と互換性を持たない場合、保存後にベクトル検索が停止し、手動で全件再構築する必要があります。再構築にはモデル利用料金が発生します。保存だけでは再構築を開始しません。",
+        "saveChangeReuse": "保持中の世代と同じモデル、出力次元数、分割設定に戻すと、検証済みの索引を再利用し、その間の内容変更のみを反映します。チャットとキーワード検索は引き続き利用できます。",
+        "saveChangeCancel": "キャンセル",
+        "saveChangeConfirm": "保存する",
+        "saveImpactCheckFailed": "設定変更の影響を確認できませんでした。もう一度お試しください。",
         "embeddingErrors": {
           "embedding_config_invalid": "埋め込み設定が無効です。出力モード、次元数、分割設定を確認してください。",
           "embedding_dimensions_limit": "モデルは {{actual}} 次元を返しました。索引の上限は {{limit}} 次元です。より小さい出力に対応するモデルを使用してください。",

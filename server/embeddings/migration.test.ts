@@ -66,8 +66,14 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
     await client`INSERT INTO document_embeddings ("ownerId", "sourceType", "sourceId", "chunkIndex", "contentHash", "embeddingModel", "embeddingDimensions", embedding, text)
       VALUES (${ownerId}, 'rote', ${sourceId}, 0, 'old-hash', 'BAAI/bge-m3', 1024, ${vector}, 'legacy content')`;
     await client`INSERT INTO embedding_jobs ("ownerId", "sourceType", "sourceId", status) VALUES (${ownerId}, 'rote', ${sourceId}, 'running')`;
-    selectMigrations(32);
+    selectMigrations(34);
     await migrate(drizzle(client), { migrationsFolder: folder });
+    // The formal repair runs during upgrade, including ordinary PostgreSQL.
+    const [column] =
+      await client`SELECT column_default FROM information_schema.columns WHERE table_name='settings' AND column_name='updatedAt'`;
+    expect(column.column_default).not.toBeNull();
+    // Recreate the historical defect to exercise safe error handling independently.
+    await client`ALTER TABLE settings ALTER COLUMN "updatedAt" DROP DEFAULT`;
     const [setting] = await client`SELECT config FROM settings WHERE "group" = 'ai'`;
     expect(setting.config.schemaVersion).toBe(2);
     expect(setting.config.embedding.output).toEqual({ mode: 'dimensions', dimensions: 1024 });
@@ -81,6 +87,8 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
     const [state] = await client`SELECT * FROM embedding_index_state`;
     expect(state.status).toBe('needs_validation');
     expect(state.dimensions).toBeNull();
+    expect(state.generationFingerprint).toBeNull();
+    expect(state.generationReusable).toBe(false);
     expect(await client`SELECT 1 FROM pg_extension WHERE extname = 'vector'`).toHaveLength(0);
 
     const database = await import('../utils/drizzle');
@@ -143,6 +151,9 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
     );
     expect((await client`SELECT * FROM embedding_index_state`)[0]).toEqual(state);
 
+    await client.unsafe(
+      readFileSync(join(migrationFolder, '0032_settings_updated_at_default.sql'), 'utf8')
+    );
     await migrate(drizzle(client), { migrationsFolder: migrationFolder });
     const saved = await request('/admin/settings', 'PUT', { group: 'ai', config: incoming });
     expect(saved.status).toBe(200);

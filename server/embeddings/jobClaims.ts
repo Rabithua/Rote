@@ -103,6 +103,7 @@ export async function failClaim(job: EmbeddingJob, error: unknown, maxRetries: n
         .set({
           status: 'needs_validation',
           fingerprint: null,
+          generationReusable: false,
           errorCode: failure.code,
           errorDetails: failure.details,
           updatedAt: new Date(),
@@ -113,6 +114,7 @@ export async function failClaim(job: EmbeddingJob, error: unknown, maxRetries: n
         .update(embeddingIndexState)
         .set({
           status: 'failed',
+          ...(contractFailure ? { generationReusable: false } : {}),
           errorCode: failure.code,
           errorDetails: failure.details,
           updatedAt: new Date(),
