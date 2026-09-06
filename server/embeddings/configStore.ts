@@ -1,4 +1,5 @@
-import { eq } from 'drizzle-orm';
+import { DrizzleQueryError, eq } from 'drizzle-orm';
+import postgres from 'postgres';
 import { z } from 'zod';
 import { embeddingIndexState, settings } from '../drizzle/schema';
 import type { AiConfig } from '../types/config';
@@ -36,6 +37,19 @@ const configSchema = z.strictObject({
     paused: z.boolean().optional(),
   }),
 });
+function configurationWriteFailed(error: unknown): never {
+  if (error instanceof EmbeddingError) throw error;
+  const cause = error instanceof DrizzleQueryError ? error.cause : error;
+  const databaseCode = cause instanceof postgres.PostgresError ? cause.code : undefined;
+  // Query errors include configuration values and credentials; log metadata only.
+  // eslint-disable-next-line no-console -- Persistence failures need safe server diagnostics.
+  console.error('AI configuration transaction failed', { databaseCode });
+  throw new EmbeddingError(
+    'embedding_settings_save_failed',
+    500,
+    databaseCode ? { databaseCode } : {}
+  );
+}
 export async function readAiSnapshot(executor: EmbeddingExecutor = db) {
   const [row] = await executor
     .select({ config: settings.config, state: embeddingIndexState })
@@ -107,69 +121,76 @@ export async function saveAiSettings(incoming: Partial<AiConfig>): Promise<AiCon
     enabledNow && needsValidation ? await testEmbeddingProvider(next.embedding) : null;
   const invalidatesIndex =
     identityChanged || (verified !== null && verified.dimensions !== before.state.dimensions);
-  await db.transaction(async (tx) => {
-    const state = await lockIndexState(tx);
-    if (state.revision !== incoming.revision)
-      throw new EmbeddingError('embedding_revision_conflict', 409);
-    next.revision = state.revision + 1;
-    await tx
-      .insert(settings)
-      .values({
-        group: 'ai',
-        config: next,
-        isRequired: false,
-        isSystem: false,
-        isInitialized: true,
-      })
-      .onConflictDoUpdate({ target: settings.group, set: { config: next, updatedAt: new Date() } });
-    await tx
-      .update(embeddingIndexState)
-      .set({
-        revision: next.revision,
-        ...(verified
-          ? {
-              fingerprint,
-              dimensions: verified.dimensions,
-              validatedAt: new Date(),
-              errorCode: null,
-              errorDetails: null,
-              status:
-                invalidatesIndex || contractFailed || state.status === 'needs_validation'
-                  ? ('needs_rebuild' as const)
-                  : state.status,
-            }
-          : needsValidation
+  await db
+    .transaction(async (tx) => {
+      const state = await lockIndexState(tx);
+      if (state.revision !== incoming.revision)
+        throw new EmbeddingError('embedding_revision_conflict', 409);
+      next.revision = state.revision + 1;
+      await tx
+        .insert(settings)
+        .values({
+          group: 'ai',
+          config: next,
+          isRequired: false,
+          isSystem: false,
+          isInitialized: true,
+        })
+        .onConflictDoUpdate({
+          target: settings.group,
+          set: { config: next, updatedAt: new Date() },
+        });
+      await tx
+        .update(embeddingIndexState)
+        .set({
+          revision: next.revision,
+          ...(verified
             ? {
-                fingerprint: null,
-                dimensions: null,
-                status: 'needs_validation' as const,
-                validatedAt: null,
+                fingerprint,
+                dimensions: verified.dimensions,
+                validatedAt: new Date(),
                 errorCode: null,
                 errorDetails: null,
+                status:
+                  invalidatesIndex || contractFailed || state.status === 'needs_validation'
+                    ? ('needs_rebuild' as const)
+                    : state.status,
               }
-            : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(embeddingIndexState.id, 1));
-  });
+            : needsValidation
+              ? {
+                  fingerprint: null,
+                  dimensions: null,
+                  status: 'needs_validation' as const,
+                  validatedAt: null,
+                  errorCode: null,
+                  errorDetails: null,
+                }
+              : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(embeddingIndexState.id, 1));
+    })
+    .catch(configurationWriteFailed);
   await refreshConfigCache();
   return next;
 }
 export async function setIndexingPaused(paused: boolean): Promise<AiConfig> {
-  await db.transaction(async (tx) => {
-    await lockIndexState(tx);
-    const { config } = await readAiSnapshot(tx);
-    config.indexing.paused = paused;
-    config.revision += 1;
-    await tx
-      .insert(settings)
-      .values({ group: 'ai', config, isInitialized: true })
-      .onConflictDoUpdate({ target: settings.group, set: { config, updatedAt: new Date() } });
-    await tx
-      .update(embeddingIndexState)
-      .set({ revision: config.revision, updatedAt: new Date() })
-      .where(eq(embeddingIndexState.id, 1));
-  });
+  await db
+    .transaction(async (tx) => {
+      await lockIndexState(tx);
+      const { config } = await readAiSnapshot(tx);
+      config.indexing.paused = paused;
+      config.revision += 1;
+      await tx
+        .insert(settings)
+        .values({ group: 'ai', config, isInitialized: true })
+        .onConflictDoUpdate({ target: settings.group, set: { config, updatedAt: new Date() } });
+      await tx
+        .update(embeddingIndexState)
+        .set({ revision: config.revision, updatedAt: new Date() })
+        .where(eq(embeddingIndexState.id, 1));
+    })
+    .catch(configurationWriteFailed);
   await refreshConfigCache();
   return getStoredAiConfig();
 }

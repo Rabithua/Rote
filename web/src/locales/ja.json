@@ -1739,6 +1739,7 @@
           "embedding_disabled": "先に AI とベクトル機能を有効にして設定を保存してください。",
           "embedding_input_empty": "空でないテキストが必要です。",
           "embedding_state_missing": "索引の状態がありません。データベース移行を確認してください。",
+          "embedding_settings_save_failed": "AI 設定をデータベースに保存できませんでした。以前の設定は保持されています。データベース移行とサーバーログを確認してください。",
           "embedding_lease_lost": "このタスクは別のワーカーに引き継がれました。",
           "embedding_job_failed": "埋め込み処理に失敗しました。索引の状態を確認して再試行してください。"
         }

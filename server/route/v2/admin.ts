@@ -292,7 +292,7 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
   } catch (error: any) {
     if (error instanceof EmbeddingError) throw error;
     console.error('Failed to update settings:', error);
-    return c.json(createResponse(null, 'Failed to update settings'), 500);
+    return c.json(createResponse(null, 'Failed to update settings', 1), 500);
   }
 });
 

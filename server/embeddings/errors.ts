@@ -1,7 +1,7 @@
 export class EmbeddingError extends Error {
   constructor(
     public readonly code: string,
-    public readonly status: 400 | 409 | 422 | 502 | 503 | 504 = 422,
+    public readonly status: 400 | 409 | 422 | 500 | 502 | 503 | 504 = 422,
     public readonly details: Record<string, string | number> = {},
     public readonly retryable = false
   ) {

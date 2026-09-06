@@ -258,6 +258,14 @@ docker exec -i rote-postgres pg_restore -U rote -d rote --clean --if-exists < ro
 
 模型实际输出与指定维度或已验证维度不一致。请检查模型能力，选择默认输出或模型支持的指定维度，保存验证后明确启动重建。
 
+### 模型测试成功，但保存配置失败
+
+从 Prisma 时期保留的旧数据库可能缺少 `settings.updatedAt` 的数据库默认值。模型测试不写配置，因此可以成功；保存、暂停或恢复队列时，PostgreSQL 会在 upsert 冲突处理前因非空约束拒绝写入。
+
+正式迁移 `0032_settings_updated_at_default` 将该字段默认值补齐为 `now()`，与当前 Drizzle schema 一致，不重写已有配置或向量。更新后端并完成正常数据库迁移后即可再次保存，无需修改模型或清空数据库。该迁移不调用模型，也不启动索引重建。
+
+数据库写入失败时，接口返回 HTTP 500、非零 `code` 和 `embedding_settings_save_failed`，原配置及索引状态保持不变；`data.databaseCode` 和服务端日志中的 SQLSTATE 可用于定位故障，响应与日志不会包含这次配置写入的 SQL 参数。
+
 ### backfill 很慢
 
 存量笔记多、文章长、模型供应商速率限制较低时，重建会比较慢。可以保持站点正常使用，让后台 worker 处理；重建期间创建或编辑的内容会通过数据库变更事件进入任务队列，即使日常自动索引关闭。

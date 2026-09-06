@@ -1735,6 +1735,7 @@
           "embedding_disabled": "Enable AI and vector features and save the configuration first.",
           "embedding_input_empty": "Non-empty text is required.",
           "embedding_state_missing": "Index state is missing. Check database migrations.",
+          "embedding_settings_save_failed": "The database could not save the AI configuration. Previous settings were preserved. Check database migrations and server logs.",
           "embedding_lease_lost": "This job has been claimed by another worker.",
           "embedding_job_failed": "Embedding processing failed. Check the index status before retrying."
         }
