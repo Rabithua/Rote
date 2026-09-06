@@ -1,5 +1,6 @@
 import { Navigation } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import UserAvatar from '@/components/others/UserAvatar';
 import type { SharedNote } from './types';
 
@@ -17,7 +18,12 @@ export function SharedNoteSidebar({ note }: { note?: SharedNote }) {
         {t('about')}
       </div>
       {note && (
-        <div className="flex items-center gap-3 p-4">
+        <Link
+          to={`/${encodeURIComponent(note.author.username)}`}
+          reloadDocument
+          aria-label={t('viewAuthor', { name: note.author.nickname || note.author.username })}
+          className="hover:bg-foreground/5 flex items-center gap-3 p-4"
+        >
           <UserAvatar
             avatar={note.author.avatar}
             className="bg-foreground/5 text-primary size-12 shrink-0"
@@ -33,7 +39,7 @@ export function SharedNoteSidebar({ note }: { note?: SharedNote }) {
               @{note.author.username}
             </p>
           </div>
-        </div>
+        </Link>
       )}
       <div className="space-y-2 p-4 text-sm">
         <p className="font-medium">{t('readOnly')}</p>

@@ -4,7 +4,7 @@ import { RefreshCw, Share } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
 import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import { Button } from '@/components/ui/button';
@@ -18,18 +18,19 @@ import { SharedNoteSidebar } from './SharedNoteSidebar';
 function SharedNoteReader({ token }: { token: string }) {
   const { t, i18n } = useTranslation('translation', { keyPrefix: 'pages.sharedNote' });
   const { state, retry } = useSharedNote(token);
+  const heading =
+    state.status === 'ready'
+      ? t('sharedBy', { name: state.note.author.nickname || state.note.author.username })
+      : t('title');
 
   return (
-    <SharedNoteLayout
-      hasArticle={state.status === 'ready' && Boolean(state.note.article)}
-      sidebar={<SharedNoteSidebar note={state.note} />}
-    >
+    <SharedNoteLayout sidebar={<SharedNoteSidebar note={state.note} />}>
       <Helmet>
-        <title>{t('title')}</title>
+        <title>{heading}</title>
         <meta name="robots" content="noindex, nofollow, noarchive" />
         <meta name="referrer" content="no-referrer" />
       </Helmet>
-      <NavBar title={t('title')} icon={<Share className="size-5" />} showBack={false}>
+      <NavBar title={heading} icon={<Share className="size-5" />} showBack={false}>
         <Button
           variant="ghost"
           size="icon"
@@ -62,11 +63,25 @@ function SharedNoteReader({ token }: { token: string }) {
       ) : (
         <article className="space-y-4 px-5 py-4">
           <div className="flex items-center gap-3">
-            <UserAvatar avatar={state.note.author.avatar || ''} className="size-10" />
-            <div>
-              <p className="font-medium">
+            <Link
+              to={`/${encodeURIComponent(state.note.author.username)}`}
+              reloadDocument
+              aria-label={t('viewAuthor', {
+                name: state.note.author.nickname || state.note.author.username,
+              })}
+              className="shrink-0 rounded-full"
+            >
+              <UserAvatar avatar={state.note.author.avatar || ''} className="size-10" />
+            </Link>
+            <div className="min-w-0">
+              <Link
+                to={`/${encodeURIComponent(state.note.author.username)}`}
+                reloadDocument
+                className="block truncate font-medium hover:underline"
+                title={state.note.author.nickname || state.note.author.username}
+              >
                 {state.note.author.nickname || state.note.author.username}
-              </p>
+              </Link>
               <time dateTime={state.note.createdAt} className="text-muted-foreground text-xs">
                 {new Date(state.note.createdAt).toLocaleString(i18n.language)}
               </time>
@@ -82,10 +97,8 @@ function SharedNoteReader({ token }: { token: string }) {
           </div>
           {state.note.article && (
             <section
-              id="shared-article"
-              tabIndex={-1}
               aria-label={t('article')}
-              className="prose prose-sm dark:prose-invert max-w-full scroll-mt-20 border-t pt-4 wrap-break-word focus:outline-none"
+              className="prose prose-sm dark:prose-invert max-w-full border-t pt-4 wrap-break-word"
             >
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
                 {state.note.article.content}

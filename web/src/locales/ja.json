@@ -1859,8 +1859,8 @@
       "saveFailed": "保存に失敗しました：{{error}}"
     },
     "sharedNote": {
-      "readingNavigation": "ページ内ナビゲーション",
-      "note": "ノート",
+      "sharedBy": "{{name}}さんの共有ノート",
+      "viewAuthor": "{{name}}さんのプロフィールを見る",
       "about": "このノートについて",
       "readOnly": "閲覧専用の共有",
       "readOnlyDescription": "ログインせずに読めます。作者が内容を更新したら、ページを再読み込みしてください。",

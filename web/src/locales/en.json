@@ -1855,8 +1855,8 @@
       "saveFailed": "Save failed: {{error}}"
     },
     "sharedNote": {
-      "readingNavigation": "Reading navigation",
-      "note": "Note",
+      "sharedBy": "Note shared by {{name}}",
+      "viewAuthor": "View {{name}}'s profile",
       "about": "About this note",
       "readOnly": "Read-only sharing",
       "readOnlyDescription": "Read without signing in. Refresh the page to see the author's latest changes.",

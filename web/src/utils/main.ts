@@ -97,10 +97,13 @@ export function isTokenValid() {
     return false;
   }
 
-  const payload = jwtDecode(token) as { exp: number };
-  const isExpired = payload.exp * 1000 < Date.now();
-
-  return !isExpired;
+  try {
+    const { exp } = jwtDecode<{ exp?: number }>(token);
+    return typeof exp === 'number' && Number.isFinite(exp) && exp * 1000 > Date.now();
+  } catch {
+    // Malformed stored sessions are guests, including on anonymous reading pages.
+    return false;
+  }
 }
 
 export function formatBytes(bytes: number, decimals = 2) {
