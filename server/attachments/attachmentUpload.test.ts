@@ -314,7 +314,7 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('presigns the final attachment key without a preview for direct uploads', async () => {
+  it('presigns a staging key for direct browser uploads without a preview', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:
       | Parameters<
@@ -323,7 +323,7 @@ describe('attachment upload flow', () => {
       | undefined;
     const result = await presignAttachmentUploads(
       {
-        directFinalUpload: true,
+        browserDirectUpload: true,
         files: [
           {
             contentType: 'image/jpeg',
@@ -368,21 +368,21 @@ describe('attachment upload flow', () => {
       }
     );
 
-    expect(result.items[0].original.key).toBe(
-      `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`
-    );
+    const stagingKey = `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.jpg`;
+    expect(result.items[0].original.key).toBe(stagingKey);
     expect(result.items[0].compressed).toBeUndefined();
     expect(reservation?.manifest).toHaveLength(1);
-    expect(reservation?.manifest[0].stagingKey).toBe(reservation?.manifest[0].finalKey);
+    expect(reservation?.manifest[0].stagingKey).toBe(stagingKey);
+    expect(reservation?.manifest[0].finalKey).toBe(`users/${USER_ID}/uploads/${LIVE_UUID}.jpg`);
     expect(signed).toEqual([
       {
         contentLength: 1024,
-        key: `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`,
+        key: stagingKey,
       },
     ]);
   });
 
-  it('presigns a browser-generated preview directly at the final attachment key', async () => {
+  it('presigns a browser-generated preview at a reservation-scoped staging key', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:
       | Parameters<
@@ -391,7 +391,7 @@ describe('attachment upload flow', () => {
       | undefined;
     const result = await presignAttachmentUploads(
       {
-        directFinalUpload: true,
+        browserDirectUpload: true,
         files: [
           {
             compressed: { contentType: 'image/webp', size: 256 },
@@ -437,7 +437,8 @@ describe('attachment upload flow', () => {
       }
     );
 
-    const compressedKey = `users/${USER_ID}/attachments/${LIVE_UUID}/compressed.webp`;
+    const originalKey = `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.jpg`;
+    const compressedKey = `users/${USER_ID}/staging/${LIVE_UUID}/compressed/${LIVE_UUID}.webp`;
     expect(result.items[0].compressed?.key).toBe(compressedKey);
     expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
       ['original', '1024'],
@@ -446,101 +447,13 @@ describe('attachment upload flow', () => {
     expect(signed).toEqual([
       {
         contentLength: 1024,
-        key: `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`,
+        key: originalKey,
       },
       { contentLength: 256, key: compressedKey },
     ]);
   });
 
-  it('finalizes an unbound direct upload without reading or copying storage objects', async () => {
-    const originalKey = `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`;
-    const compressedKey = `users/${USER_ID}/attachments/${LIVE_UUID}/compressed.webp`;
-    const manifest = [
-      {
-        billable: true,
-        contentType: 'image/jpeg',
-        declaredBytes: '1024',
-        finalKey: originalKey,
-        role: 'original' as const,
-        stagingKey: originalKey,
-        uuid: LIVE_UUID,
-      },
-      {
-        billable: false,
-        contentType: 'image/webp',
-        declaredBytes: '256',
-        finalKey: compressedKey,
-        role: 'compressed' as const,
-        stagingKey: compressedKey,
-        uuid: LIVE_UUID,
-      },
-    ];
-    let completedObjects: Array<{ finalKey: string }> = [];
-    const managedTransaction = {
-      select: () => ({
-        from: () => ({
-          where: () => ({
-            limit: () => ({
-              for: async () => [{ id: USER_ID }],
-            }),
-          }),
-        }),
-      }),
-    };
-
-    const result = await finalizeAttachmentUploads(
-      {
-        attachments: [
-          {
-            mediaKind: 'image',
-            mimetype: 'image/jpeg',
-            compressedKey,
-            originalKey,
-            size: 1024,
-            uuid: LIVE_UUID,
-          },
-        ],
-        reservationId: LIVE_UUID,
-        scopes: [],
-        userId: USER_ID,
-      },
-      {
-        checkObjectExists: async () => {
-          throw new Error('direct final uploads must not HEAD storage');
-        },
-        completeUploadReservation: async ({ objects }) => {
-          completedObjects = objects;
-        },
-        copyObjectIfMatch: async () => {
-          throw new Error('direct final uploads must not COPY storage');
-        },
-        getAttachmentUploadPolicy: async () => uploadPolicy,
-        getObjectInfo: async () => {
-          throw new Error('direct final uploads must not inspect storage');
-        },
-        getPendingUploadReservation: async () =>
-          ({
-            manifest,
-            status: 'pending',
-          }) as never,
-        requireStorageAvailable: () => storageConfig,
-        upsertAttachmentsByOriginalKey: async (_userId, noteId, uploads, transaction) => {
-          expect(noteId).toBeUndefined();
-          expect(transaction).toBe(managedTransaction);
-          return uploads.map((upload) => ({ id: 'attachment-1', ...upload }));
-        },
-      },
-      managedTransaction,
-      { manageTransaction: false }
-    );
-
-    expect(result).toHaveLength(1);
-    expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
-    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${compressedKey}`);
-    expect(completedObjects.map(({ finalKey }) => finalKey)).toEqual([originalKey, compressedKey]);
-  });
-
-  it('presigns a direct video and its client-generated poster at final keys', async () => {
+  it('presigns a direct browser video and poster at reservation-scoped staging keys', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:
       | Parameters<
@@ -549,7 +462,7 @@ describe('attachment upload flow', () => {
       | undefined;
     const result = await presignAttachmentUploads(
       {
-        directFinalUpload: true,
+        browserDirectUpload: true,
         files: [
           {
             contentType: 'video/quicktime',
@@ -596,10 +509,10 @@ describe('attachment upload flow', () => {
     );
 
     expect(result.items[0].original.key).toBe(
-      `users/${USER_ID}/attachments/${LIVE_UUID}/original.mov`
+      `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.mov`
     );
     expect(result.items[0].poster?.key).toBe(
-      `users/${USER_ID}/attachments/${LIVE_UUID}/poster.jpg`
+      `users/${USER_ID}/staging/${LIVE_UUID}/posters/${LIVE_UUID}.jpg`
     );
     expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
       ['original', '2048'],
@@ -608,11 +521,11 @@ describe('attachment upload flow', () => {
     expect(signed).toEqual([
       {
         contentLength: 2048,
-        key: `users/${USER_ID}/attachments/${LIVE_UUID}/original.mov`,
+        key: `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.mov`,
       },
       {
         contentLength: 256,
-        key: `users/${USER_ID}/attachments/${LIVE_UUID}/poster.jpg`,
+        key: `users/${USER_ID}/staging/${LIVE_UUID}/posters/${LIVE_UUID}.jpg`,
       },
     ]);
   });

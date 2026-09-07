@@ -25,7 +25,7 @@ export type PresignFileInput = {
 
 export type PresignAttachmentInput = {
   files: PresignFileInput[];
-  directFinalUpload?: boolean;
+  browserDirectUpload?: boolean;
 };
 
 export type FinalizeAttachmentInput = {

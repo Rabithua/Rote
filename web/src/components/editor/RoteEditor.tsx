@@ -6,11 +6,12 @@ import type { Article, Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
 import {
   finalize as finalizeUpload,
-  finalizeDirect,
+  cancelUploadReservation,
+  finalizeReservedUpload,
   getUploadErrorMessage,
   isResourceUploadPolicyError,
   presign,
-  presignDirect,
+  presignBrowserUpload,
   uploadToSignedUrl,
 } from '@/utils/directUpload';
 // 压缩与并发工具
@@ -70,7 +71,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     siteStatus?.ui?.allowUploadFile !== false &&
     capabilities?.['attachment.upload'].allowed === true;
   const canUploadVideo = canUpload && capabilities?.['attachment.video.upload'].allowed === true;
-  const canUploadDirectlyToFinalKey = siteStatus?.ui?.attachmentDirectFinalUpload === true;
+  const canUploadDirectlyFromBrowser = siteStatus?.ui?.attachmentDirectBrowserUpload === true;
   const maxVideoUploadSizeMB =
     siteStatus?.ui?.maxVideoUploadSizeMB || DEFAULT_MAX_VIDEO_UPLOAD_SIZE_MB;
   const maxVideoUploadSizeBytes = maxVideoUploadSizeMB * 1024 * 1024;
@@ -313,9 +314,10 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         return next;
       });
 
+      let activeReservationId: string | null = null;
       try {
         const CONCURRENCY = 3;
-        const preparedFiles = canUploadDirectlyToFinalKey
+        const preparedFiles = canUploadDirectlyFromBrowser
           ? await runConcurrency(
               files,
               async (file) => ({
@@ -352,8 +354,11 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
             ? { poster: { contentType: 'image/jpeg' as const, size: posterBlob.size } }
             : {}),
         }));
-        const useDirectFinalUpload = canUploadDirectlyToFinalKey;
-        const directPresign = useDirectFinalUpload ? await presignDirect(presignFiles) : null;
+        const useBrowserDirectUpload = canUploadDirectlyFromBrowser;
+        const directPresign = useBrowserDirectUpload
+          ? await presignBrowserUpload(presignFiles)
+          : null;
+        activeReservationId = directPresign?.reservationId ?? null;
         const signItems = directPresign ? directPresign.items : await presign(presignFiles);
 
         const pairs = signItems.map((item, idx) => ({ item, prepared: preparedFiles[idx] }));
@@ -377,13 +382,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               throw new Error('Empty file');
             }
 
-            const derivedCompressedBlob = useDirectFinalUpload
+            const derivedCompressedBlob = useBrowserDirectUpload
               ? compressedBlob
               : await maybeCompressToWebp(file, {
                   maxWidthOrHeight: 2560,
                   initialQuality: qualityForSize(file.size),
                 });
-            const derivedPosterBlob = useDirectFinalUpload
+            const derivedPosterBlob = useBrowserDirectUpload
               ? posterBlob
               : isVideoFile(file)
                 ? await generateVideoPoster(file)
@@ -449,7 +454,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
         // 如果有部分文件失败，提示用户
         const failedCount = results.filter((r) => !r.success).length;
-        if (useDirectFinalUpload && failedCount > 0) {
+        if (useBrowserDirectUpload && failedCount > 0) {
           const firstFailure = results.find((result) => !result.success);
           throw firstFailure?.error || new Error(t('uploadFailed'));
         }
@@ -463,9 +468,14 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         // 批量 finalize，减少请求数
         const finalized = finalizeData.length
           ? directPresign
-            ? await finalizeDirect(finalizeData, directPresign.reservationId, rote.id || undefined)
+            ? await finalizeReservedUpload(
+                finalizeData,
+                directPresign.reservationId,
+                rote.id || undefined
+              )
             : await finalizeUpload(finalizeData, rote.id || undefined)
           : [];
+        activeReservationId = null;
 
         // 用后端返回结果替换本地 File 占位
         setRote((prev) => ({
@@ -481,6 +491,14 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           return next;
         });
       } catch (error: any) {
+        if (activeReservationId) {
+          try {
+            await cancelUploadReservation(activeReservationId);
+          } catch (cancellationError) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to cancel attachment upload reservation:', cancellationError);
+          }
+        }
         // Resource-policy failures are recoverable by deleting cloud files,
         // restoring Pro, or waiting for the instance administrator. Keep the
         // local File placeholders so a failed cloud upload never discards the
@@ -515,7 +533,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     },
     [
       canUploadVideo,
-      canUploadDirectlyToFinalKey,
+      canUploadDirectlyFromBrowser,
       maxVideoUploadSizeBytes,
       maxVideoUploadSizeMB,
       rote.attachments,

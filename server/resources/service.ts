@@ -123,12 +123,16 @@ export async function cancelPendingUploadReservationsForUser(
       )
       .for('update');
     if (activeReservations.length === 0) return;
+    const now = new Date();
     const cleanupNotBefore = activeReservations.reduce(
-      (latest: Date, reservation: { finalizingLeaseExpiresAt: Date | null }) =>
-        reservation.finalizingLeaseExpiresAt && reservation.finalizingLeaseExpiresAt > latest
-          ? reservation.finalizingLeaseExpiresAt
-          : latest,
-      new Date()
+      (
+        latest: Date,
+        reservation: {
+          credentialExpiresAt: Date | null;
+          finalizingLeaseExpiresAt: Date | null;
+        }
+      ) => reservationCleanupNotBefore(reservation, latest),
+      now
     );
     await enqueueStorageObjectCleanup(
       transaction,
@@ -442,6 +446,19 @@ export type UploadReservationFinalizeClaim =
 
 const FINALIZE_LEASE_DURATION_MS = 2 * 60 * 1000;
 
+export function reservationCleanupNotBefore(
+  reservation: {
+    credentialExpiresAt: Date | null;
+    finalizingLeaseExpiresAt: Date | null;
+  },
+  now: Date
+): Date {
+  return [reservation.credentialExpiresAt, reservation.finalizingLeaseExpiresAt].reduce(
+    (latest: Date, candidate) => (candidate && candidate > latest ? candidate : latest),
+    now
+  );
+}
+
 async function cancelLockedUploadReservation(
   transaction: any,
   reservation: typeof resourceUploadReservations.$inferSelect,
@@ -454,12 +471,7 @@ async function cancelLockedUploadReservation(
       updatedAt: now,
     })
     .where(eq(resourceStorageAccounts.userId, reservation.userId));
-  const cleanupAt =
-    reservation.status === 'finalizing' &&
-    reservation.finalizingLeaseExpiresAt !== null &&
-    reservation.finalizingLeaseExpiresAt.getTime() > now.getTime()
-      ? reservation.finalizingLeaseExpiresAt
-      : now;
+  const cleanupAt = reservationCleanupNotBefore(reservation, now);
   await enqueueStorageObjectCleanup(
     transaction,
     reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true),
@@ -888,7 +900,8 @@ export async function cancelUploadReservation(userId: string, id: string) {
       .where(eq(resourceUploadReservations.id, id));
     await enqueueStorageObjectCleanup(
       transaction,
-      reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
+      reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true),
+      reservationCleanupNotBefore(reservation, new Date())
     );
   });
 }

@@ -11,10 +11,11 @@ import { profileAtom } from '@/state/profile';
 import { createArticle, getArticleFull, updateArticle } from '@/utils/articleApi';
 import {
   finalize,
-  finalizeDirect,
+  cancelUploadReservation,
+  finalizeReservedUpload,
   getUploadErrorMessage,
   presign,
-  presignDirect,
+  presignBrowserUpload,
   uploadToSignedUrl,
 } from '@/utils/directUpload';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
@@ -47,7 +48,7 @@ export default function ArticleEditPage() {
   const [minRows, setMinRows] = useState(20);
   const profile = useAtomValue(profileAtom);
   const { data: siteStatus } = useSiteStatus();
-  const supportsDirectFinalUpload = siteStatus?.ui?.attachmentDirectFinalUpload === true;
+  const supportsBrowserDirectUpload = siteStatus?.ui?.attachmentDirectBrowserUpload === true;
 
   useEffect(() => {
     const lineHeight = 21; // font-mono text-sm ≈ 1.375 * 14px ≈ 21px
@@ -203,6 +204,7 @@ export default function ArticleEditPage() {
     });
 
     for (const { file, placeholder } of uploads) {
+      let activeReservationId: string | null = null;
       try {
         const compressed = await maybeCompressToWebp(file);
         const presignFiles = [
@@ -210,7 +212,7 @@ export default function ArticleEditPage() {
             filename: file.name,
             contentType: file.type,
             size: file.size,
-            ...(compressed && supportsDirectFinalUpload
+            ...(compressed && supportsBrowserDirectUpload
               ? {
                   compressed: {
                     contentType: compressed.type as 'image/jpeg' | 'image/webp',
@@ -220,7 +222,10 @@ export default function ArticleEditPage() {
               : {}),
           },
         ];
-        const directPresign = supportsDirectFinalUpload ? await presignDirect(presignFiles) : null;
+        const directPresign = supportsBrowserDirectUpload
+          ? await presignBrowserUpload(presignFiles)
+          : null;
+        activeReservationId = directPresign?.reservationId ?? null;
         const item = directPresign ? directPresign.items[0] : (await presign(presignFiles))[0];
 
         await uploadToSignedUrl(item.original.putUrl, file);
@@ -237,13 +242,22 @@ export default function ArticleEditPage() {
         };
 
         const [finalized] = directPresign
-          ? await finalizeDirect([finalizePayload], directPresign.reservationId)
+          ? await finalizeReservedUpload([finalizePayload], directPresign.reservationId)
           : await finalize([finalizePayload]);
+        activeReservationId = null;
         const finalUrl = finalized.compressUrl || finalized.url;
         const finalMarkdown = `![${file.name}](${finalUrl})`;
 
         setContent((prev) => prev.replace(placeholder, finalMarkdown));
       } catch (_err) {
+        if (activeReservationId) {
+          try {
+            await cancelUploadReservation(activeReservationId);
+          } catch (cancellationError) {
+            // eslint-disable-next-line no-console
+            console.error('Failed to cancel article upload reservation:', cancellationError);
+          }
+        }
         toast.error(`${t('uploadFailed', { name: file.name })}: ${getUploadErrorMessage(_err)}`);
         setContent((prev) =>
           prev.replace(placeholder, `![${t('uploadFailedPlaceholder', { name: file.name })}]()`)
