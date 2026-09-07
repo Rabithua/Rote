@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { HonoVariables } from '../../types/hono';
-import { isOpenKeyOk } from '../../utils/main';
+import { isOpenKeyOk } from '../../openKey/middleware';
 import accountRouter from './openKey/account';
 import articlesRouter from './openKey/articles';
 import attachmentsRouter from './openKey/attachments';

@@ -3,7 +3,6 @@ import type { User } from '../drizzle/schema';
 import type { SiteConfig } from '../types/config';
 import type { HonoContext } from '../types/hono';
 import { getGlobalConfig } from './config';
-import { getOneOpenKey, logOpenKeyUsage } from './dbMethods';
 
 export function getApiUrl(c: HonoContext): string {
   const protocol = c.req.header('x-forwarded-proto') || 'http';
@@ -110,38 +109,6 @@ export async function bodyTypeCheck(c: HonoContext, next: () => Promise<void>) {
   }
 
   await next();
-}
-
-// OpenKey permission validation middleware
-export async function isOpenKeyOk(c: HonoContext, next: () => Promise<void>) {
-  const body = await c.req.json().catch(() => ({}));
-  const openkey = body?.openkey || c.req.query('openkey');
-
-  if (!openkey) {
-    throw new Error('Need openkey!');
-  }
-
-  const startTime = Date.now();
-  let errorMessage: string | undefined;
-  try {
-    const openKey = await getOneOpenKey(openkey.toString());
-    c.set('openKey', openKey);
-    await next();
-  } catch (e: any) {
-    errorMessage = e?.message || String(e);
-    throw e;
-  } finally {
-    // 记录使用日志（无论成功或失败）
-    void logOpenKeyUsage(openkey.toString(), {
-      endpoint: c.req.path,
-      method: c.req.method,
-      clientIp: getClientIp(c),
-      userAgent: c.req.header('user-agent'),
-      statusCode: c.res?.status,
-      responseTime: Date.now() - startTime,
-      errorMessage,
-    });
-  }
 }
 
 export async function injectDynamicUrls(c: HonoContext, next: () => Promise<void>) {

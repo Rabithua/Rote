@@ -84,7 +84,7 @@ export async function deleteMyOneOpenKey(userid: string, id: string): Promise<an
     if (error instanceof DatabaseError) {
       throw error;
     }
-    throw new DatabaseError(`Failed to delete open key: ${id}`, error);
+    throw new DatabaseError('Failed to delete open key', error);
   }
 }
 
@@ -114,7 +114,7 @@ export async function editMyOneOpenKey(
     if (error instanceof DatabaseError) {
       throw error;
     }
-    throw new DatabaseError(`Failed to update open key: ${id}`, error);
+    throw new DatabaseError('Failed to update open key', error);
   }
 }
 
@@ -131,7 +131,7 @@ export async function getOneOpenKey(id: string): Promise<any> {
     if (error instanceof DatabaseError) {
       throw error;
     }
-    throw new DatabaseError(`Failed to get open key: ${id}`, error);
+    throw new DatabaseError('Failed to get open key', error);
   }
 }
 
@@ -148,8 +148,8 @@ export async function logOpenKeyUsage(openKeyId: string, data: UsageLogData): Pr
       responseTime: data.responseTime,
       errorMessage: data.errorMessage,
     });
-  } catch (error) {
-    console.error('Failed to log open key usage:', error);
+  } catch (_error) {
+    console.error('Failed to persist OpenKey usage audit');
   }
 }
 

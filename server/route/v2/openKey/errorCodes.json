@@ -1,3 +1,4 @@
 {
-  "invalidBooleanParameterPrefix": "invalid_boolean_parameter:"
+  "invalidBooleanParameterPrefix": "invalid_boolean_parameter:",
+  "invalidCredential": "openkey_invalid_credential"
 }
