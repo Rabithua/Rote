@@ -1,6 +1,12 @@
 import type { Attachment } from '@/types/main';
 import { del } from '@/utils/api';
-import { finalize, presign, uploadToSignedUrl } from '@/utils/directUpload';
+import {
+  finalize,
+  finalizeDirect,
+  presign,
+  presignDirect,
+  uploadToSignedUrl,
+} from '@/utils/directUpload';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
 import type { Area } from 'react-easy-crop';
 
@@ -56,128 +62,104 @@ export async function createCroppedImage(imageSrc: File | Blob, pixelCrop: Area)
   });
 }
 
+type ProfileImageUploadOptions = {
+  directFinalUpload?: boolean;
+  initialQuality: number;
+  maxWidthOrHeight: number;
+};
+
+async function uploadProfileImage(
+  file: File,
+  options: ProfileImageUploadOptions
+): Promise<Attachment> {
+  const contentType = file.type || 'image/jpeg';
+  const compressedBlob = await maybeCompressToWebp(file, {
+    maxWidthOrHeight: options.maxWidthOrHeight,
+    initialQuality: options.initialQuality,
+  });
+  const presignFiles = [
+    {
+      filename: file.name,
+      contentType,
+      size: file.size,
+      ...(compressedBlob && options.directFinalUpload
+        ? {
+            compressed: {
+              contentType: compressedBlob.type as 'image/jpeg' | 'image/webp',
+              size: compressedBlob.size,
+            },
+          }
+        : {}),
+    },
+  ];
+  const directPresign = options.directFinalUpload ? await presignDirect(presignFiles) : null;
+  const item = directPresign ? directPresign.items[0] : (await presign(presignFiles))[0];
+  if (!item) throw new Error('Failed to get presign URL');
+
+  await uploadToSignedUrl(item.original.putUrl, file);
+
+  let compressedKey: string | undefined;
+  if (compressedBlob && item.compressed) {
+    if (directPresign) {
+      await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+      compressedKey = item.compressed.key;
+    } else {
+      try {
+        await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+        compressedKey = item.compressed.key;
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.warn(`Compressed profile image upload failed for ${item.uuid}:`, error);
+      }
+    }
+  }
+
+  const finalizePayload = [
+    {
+      uuid: item.uuid,
+      originalKey: item.original.key,
+      compressedKey,
+      size: file.size,
+      mimetype: contentType,
+    },
+  ];
+  const finalized = directPresign
+    ? await finalizeDirect(finalizePayload, directPresign.reservationId)
+    : await finalize(finalizePayload);
+
+  if (!finalized?.length) throw new Error('Failed to finalize upload');
+  return finalized[0] as Attachment;
+}
+
 // 上传头像
 export async function uploadAvatar(
   croppedImageBlob: Blob,
-  options?: { maxWidthOrHeight?: number; initialQuality?: number }
+  options?: {
+    directFinalUpload?: boolean;
+    maxWidthOrHeight?: number;
+    initialQuality?: number;
+  }
 ): Promise<Attachment> {
-  // 将 Blob 转换为 File
   const croppedFile = new File([croppedImageBlob], 'cropped_image.png', {
     type: 'image/png',
   });
-
-  // 获取预签名 URL
-  const signItems = await presign([
-    {
-      filename: croppedFile.name,
-      contentType: croppedFile.type,
-      size: croppedFile.size,
-    },
-  ]);
-
-  const item = signItems[0];
-  if (!item) {
-    throw new Error('Failed to get presign URL');
-  }
-
-  // 压缩图片（用于压缩图）
-  const compressedBlob = await maybeCompressToWebp(croppedFile, {
+  return uploadProfileImage(croppedFile, {
+    directFinalUpload: options?.directFinalUpload,
     maxWidthOrHeight: options?.maxWidthOrHeight || 512,
     initialQuality: options?.initialQuality || 0.8,
   });
-
-  // 上传原图（必须成功）
-  await uploadToSignedUrl(item.original.putUrl, croppedFile);
-
-  // 上传压缩图（可选，失败不影响原图）
-  let compressedKey: string | undefined;
-  if (compressedBlob && item.compressed) {
-    try {
-      await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
-      // 只有上传成功才记录 compressedKey
-      compressedKey = item.compressed.key;
-    } catch (error) {
-      // 压缩图上传失败，但不影响原图，只记录警告
-      // eslint-disable-next-line no-console
-      console.warn(`Compressed avatar upload failed for ${item.uuid}:`, error);
-      // 不设置 compressedKey，表示压缩图未成功上传
-    }
-  }
-
-  // 完成上传
-  const finalized = await finalize([
-    {
-      uuid: item.uuid,
-      originalKey: item.original.key,
-      compressedKey,
-      size: croppedFile.size,
-      mimetype: croppedFile.type,
-    },
-  ]);
-
-  if (finalized && finalized.length > 0) {
-    return finalized[0] as Attachment;
-  } else {
-    throw new Error('Failed to finalize upload');
-  }
 }
 
 // 上传封面
-export async function uploadCover(file: File): Promise<Attachment> {
-  // 获取预签名 URL
-  const signItems = await presign([
-    {
-      filename: file.name,
-      contentType: file.type || 'image/jpeg',
-      size: file.size,
-    },
-  ]);
-
-  const item = signItems[0];
-  if (!item) {
-    throw new Error('Failed to get presign URL');
-  }
-
-  // 压缩图片（用于压缩图）
-  const compressedBlob = await maybeCompressToWebp(file, {
+export async function uploadCover(
+  file: File,
+  options?: { directFinalUpload?: boolean }
+): Promise<Attachment> {
+  return uploadProfileImage(file, {
+    directFinalUpload: options?.directFinalUpload,
     maxWidthOrHeight: 2560,
     initialQuality: 0.8,
   });
-
-  // 上传原图（必须成功）
-  await uploadToSignedUrl(item.original.putUrl, file);
-
-  // 上传压缩图（可选，失败不影响原图）
-  let compressedKey: string | undefined;
-  if (compressedBlob && item.compressed) {
-    try {
-      await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
-      // 只有上传成功才记录 compressedKey
-      compressedKey = item.compressed.key;
-    } catch (error) {
-      // 压缩图上传失败，但不影响原图，只记录警告
-      // eslint-disable-next-line no-console
-      console.warn(`Compressed cover upload failed for ${item.uuid}:`, error);
-      // 不设置 compressedKey，表示压缩图未成功上传
-    }
-  }
-
-  // 完成上传
-  const finalized = await finalize([
-    {
-      uuid: item.uuid,
-      originalKey: item.original.key,
-      compressedKey,
-      size: file.size,
-      mimetype: file.type || 'image/jpeg',
-    },
-  ]);
-
-  if (finalized && finalized.length > 0) {
-    return finalized[0] as Attachment;
-  } else {
-    throw new Error('Failed to finalize upload');
-  }
 }
 
 export async function deletePendingProfileAttachment(attachmentId: string): Promise<void> {

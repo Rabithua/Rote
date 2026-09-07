@@ -10,6 +10,7 @@ const RESERVATION_ID = '33333333-3333-4333-8333-333333333333';
 const NOTE_ID = '44444444-4444-4444-8444-444444444444';
 const CLIENT_ID = '55555555-5555-4555-8555-555555555555';
 const ORIGINAL_KEY = `users/${USER_ID}/attachments/${ATTACHMENT_ID}/original.jpg`;
+const COMPRESSED_KEY = `users/${USER_ID}/attachments/${ATTACHMENT_ID}/compressed.webp`;
 
 const manifest = (): UploadReservationManifestItem[] => [
   {
@@ -41,6 +42,19 @@ const input = (): FinalizeAttachmentBatchInput => ({
   reservationId: RESERVATION_ID,
 });
 
+const manifestWithCompressed = (): UploadReservationManifestItem[] => [
+  ...manifest(),
+  {
+    billable: false,
+    contentType: 'image/webp',
+    declaredBytes: '256',
+    finalKey: COMPRESSED_KEY,
+    role: 'compressed',
+    stagingKey: COMPRESSED_KEY,
+    uuid: ATTACHMENT_ID,
+  },
+];
+
 describe('direct final attachment upload', () => {
   it('builds database uploads entirely from the reservation manifest', () => {
     const prepared = prepareDirectFinalUpload(
@@ -65,6 +79,21 @@ describe('direct final attachment upload', () => {
     expect(() =>
       prepareDirectFinalUpload(mismatched, manifest(), USER_ID, 'https://cdn.example.com')
     ).toThrow('resource_upload_manifest_mismatch');
+  });
+
+  it('uses a required direct-upload preview from the reservation manifest', () => {
+    const withCompressed = input();
+    withCompressed.attachments[0].compressedKey = COMPRESSED_KEY;
+
+    const prepared = prepareDirectFinalUpload(
+      withCompressed,
+      manifestWithCompressed(),
+      USER_ID,
+      'https://cdn.example.com'
+    );
+
+    expect(prepared.objects.map(({ actualBytes }) => actualBytes)).toEqual([1024n, 256n]);
+    expect(prepared.uploads[0].compressUrl).toBe(`https://cdn.example.com/${COMPRESSED_KEY}`);
   });
 
   it('does not treat staging reservations as direct final uploads', () => {
