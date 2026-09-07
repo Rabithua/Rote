@@ -21,4 +21,11 @@ describe('note contract compatibility', () => {
     expect(input).toEqual({ title: 'updated title' });
     expect('type' in input).toBe(false);
   });
+
+  test('rejects empty note content on create and update', () => {
+    for (const content of ['', '   ']) {
+      expect(() => NoteCreateZod.parse({ content })).toThrow('Content cannot be empty');
+      expect(() => NoteUpdateZod.parse({ content })).toThrow('Content cannot be empty');
+    }
+  });
 });
