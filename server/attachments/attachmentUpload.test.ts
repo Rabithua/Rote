@@ -382,6 +382,164 @@ describe('attachment upload flow', () => {
     ]);
   });
 
+  it('presigns a browser-generated preview directly at the final attachment key', async () => {
+    const signed: Array<{ contentLength?: number; key: string }> = [];
+    let reservation:
+      | Parameters<
+          NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
+        >[0]
+      | undefined;
+    const result = await presignAttachmentUploads(
+      {
+        directFinalUpload: true,
+        files: [
+          {
+            compressed: { contentType: 'image/webp', size: 256 },
+            contentType: 'image/jpeg',
+            filename: 'photo.jpg',
+            mediaKind: 'image',
+            size: 1024,
+          },
+        ],
+        scopes: [],
+        userId: USER_ID,
+      },
+      {
+        createUploadReservation: async (input) => {
+          reservation = input;
+          return true;
+        },
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        getResourceStateForUserId: async () => ({
+          management: 'official',
+          source: 'official_pro',
+          storage: {
+            enforcement: 'enforce',
+            usedBytes: '0',
+            reservedBytes: '0',
+            limitBytes: '10000000000',
+            overLimit: false,
+            canUpload: true,
+          },
+          openKey: {
+            policy: 'unlimited',
+            creationThreshold: null,
+            existingCount: 2,
+            canCreate: true,
+          },
+        }),
+        presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
+          signed.push({ contentLength, key });
+          return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
+        },
+        randomUUID: () => LIVE_UUID,
+        requireStorageAvailable: () => storageConfig,
+      }
+    );
+
+    const compressedKey = `users/${USER_ID}/attachments/${LIVE_UUID}/compressed.webp`;
+    expect(result.items[0].compressed?.key).toBe(compressedKey);
+    expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
+      ['original', '1024'],
+      ['compressed', '256'],
+    ]);
+    expect(signed).toEqual([
+      {
+        contentLength: 1024,
+        key: `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`,
+      },
+      { contentLength: 256, key: compressedKey },
+    ]);
+  });
+
+  it('finalizes an unbound direct upload without reading or copying storage objects', async () => {
+    const originalKey = `users/${USER_ID}/attachments/${LIVE_UUID}/original.jpg`;
+    const compressedKey = `users/${USER_ID}/attachments/${LIVE_UUID}/compressed.webp`;
+    const manifest = [
+      {
+        billable: true,
+        contentType: 'image/jpeg',
+        declaredBytes: '1024',
+        finalKey: originalKey,
+        role: 'original' as const,
+        stagingKey: originalKey,
+        uuid: LIVE_UUID,
+      },
+      {
+        billable: false,
+        contentType: 'image/webp',
+        declaredBytes: '256',
+        finalKey: compressedKey,
+        role: 'compressed' as const,
+        stagingKey: compressedKey,
+        uuid: LIVE_UUID,
+      },
+    ];
+    let completedObjects: Array<{ finalKey: string }> = [];
+    const managedTransaction = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({
+              for: async () => [{ id: USER_ID }],
+            }),
+          }),
+        }),
+      }),
+    };
+
+    const result = await finalizeAttachmentUploads(
+      {
+        attachments: [
+          {
+            mediaKind: 'image',
+            mimetype: 'image/jpeg',
+            compressedKey,
+            originalKey,
+            size: 1024,
+            uuid: LIVE_UUID,
+          },
+        ],
+        reservationId: LIVE_UUID,
+        scopes: [],
+        userId: USER_ID,
+      },
+      {
+        checkObjectExists: async () => {
+          throw new Error('direct final uploads must not HEAD storage');
+        },
+        completeUploadReservation: async ({ objects }) => {
+          completedObjects = objects;
+        },
+        copyObjectIfMatch: async () => {
+          throw new Error('direct final uploads must not COPY storage');
+        },
+        getAttachmentUploadPolicy: async () => uploadPolicy,
+        getObjectInfo: async () => {
+          throw new Error('direct final uploads must not inspect storage');
+        },
+        getPendingUploadReservation: async () =>
+          ({
+            manifest,
+            status: 'pending',
+          }) as never,
+        requireStorageAvailable: () => storageConfig,
+        upsertAttachmentsByOriginalKey: async (_userId, noteId, uploads, transaction) => {
+          expect(noteId).toBeUndefined();
+          expect(transaction).toBe(managedTransaction);
+          return uploads.map((upload) => ({ id: 'attachment-1', ...upload }));
+        },
+      },
+      managedTransaction,
+      { manageTransaction: false }
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
+    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${compressedKey}`);
+    expect(completedObjects.map(({ finalKey }) => finalKey)).toEqual([originalKey, compressedKey]);
+  });
+
   it('presigns a direct video and its client-generated poster at final keys', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:

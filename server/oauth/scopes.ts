@@ -4,6 +4,7 @@ export const OAUTH_MCP_SCOPES = [
   'notes:read',
   'notes:write',
   'notes:delete',
+  'notes:share',
   'articles:read',
   'articles:write',
   'articles:delete',

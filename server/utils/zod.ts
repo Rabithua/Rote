@@ -138,6 +138,13 @@ export const AttachmentPresignZod = z.object({
         contentType: z.string().min(1, 'Content type cannot be empty'),
         size: z.number().int().positive('File size must be greater than 0'),
         mediaKind: z.enum(['image', 'video', 'livePhoto']).optional(),
+        compressedContentType: z.enum(['image/jpeg', 'image/webp']).optional(),
+        compressed: z
+          .object({
+            contentType: z.enum(['image/jpeg', 'image/webp']),
+            size: z.number().int().positive('Compressed image size must be greater than 0'),
+          })
+          .optional(),
         pairedVideo: z
           .object({
             filename: z.string().max(255, 'Filename cannot exceed 255 characters').optional(),

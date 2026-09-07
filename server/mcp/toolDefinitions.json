@@ -240,6 +240,54 @@
     }
   },
   {
+    "name": "notes_share_get",
+    "description": "Get the current share-link state for a note owned by the current user.",
+    "requiredScopes": ["notes:share"],
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "notes_share_create",
+    "description": "Create or return the share link for a note owned by the current user.",
+    "requiredScopes": ["notes:share"],
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "notes_share_revoke",
+    "description": "Revoke the share link for a note owned by the current user.",
+    "requiredScopes": ["notes:share"],
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    }
+  },
+  {
     "name": "articles_create",
     "description": "Create an article for the current user.",
     "requiredScopes": ["articles:write"],

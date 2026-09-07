@@ -6,9 +6,11 @@ import type { Article, Attachment, Rote } from '@/types/main';
 import { del, post, put } from '@/utils/api';
 import {
   finalize as finalizeUpload,
+  finalizeDirect,
   getUploadErrorMessage,
   isResourceUploadPolicyError,
   presign,
+  presignDirect,
   uploadToSignedUrl,
 } from '@/utils/directUpload';
 // 压缩与并发工具
@@ -68,6 +70,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     siteStatus?.ui?.allowUploadFile !== false &&
     capabilities?.['attachment.upload'].allowed === true;
   const canUploadVideo = canUpload && capabilities?.['attachment.video.upload'].allowed === true;
+  const canUploadDirectlyToFinalKey = siteStatus?.ui?.attachmentDirectFinalUpload === true;
   const maxVideoUploadSizeMB =
     siteStatus?.ui?.maxVideoUploadSizeMB || DEFAULT_MAX_VIDEO_UPLOAD_SIZE_MB;
   const maxVideoUploadSizeBytes = maxVideoUploadSizeMB * 1024 * 1024;
@@ -311,17 +314,50 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       });
 
       try {
-        const signItems = await presign(
-          files.map((f) => ({
-            filename: f.name,
-            contentType: f.type || 'application/octet-stream',
-            size: f.size,
-          }))
-        );
-
-        const pairs = signItems.map((item, idx) => ({ item, file: files[idx] }));
-
         const CONCURRENCY = 3;
+        const preparedFiles = canUploadDirectlyToFinalKey
+          ? await runConcurrency(
+              files,
+              async (file) => ({
+                compressedBlob: await maybeCompressToWebp(file, {
+                  maxWidthOrHeight: 2560,
+                  initialQuality: qualityForSize(file.size),
+                }),
+                file,
+                posterBlob: isVideoFile(file) ? await generateVideoPoster(file) : null,
+              }),
+              CONCURRENCY
+            ).then((results) =>
+              results.map((result) => {
+                if (!result.success || !result.result) {
+                  throw result.error || new Error(t('uploadFailed'));
+                }
+                return result.result;
+              })
+            )
+          : files.map((file) => ({ compressedBlob: null, file, posterBlob: null }));
+        const presignFiles = preparedFiles.map(({ compressedBlob, file, posterBlob }) => ({
+          filename: file.name,
+          contentType: file.type || 'application/octet-stream',
+          size: file.size,
+          ...(compressedBlob
+            ? {
+                compressed: {
+                  contentType: compressedBlob.type as 'image/jpeg' | 'image/webp',
+                  size: compressedBlob.size,
+                },
+              }
+            : {}),
+          ...(posterBlob
+            ? { poster: { contentType: 'image/jpeg' as const, size: posterBlob.size } }
+            : {}),
+        }));
+        const useDirectFinalUpload = canUploadDirectlyToFinalKey;
+        const directPresign = useDirectFinalUpload ? await presignDirect(presignFiles) : null;
+        const signItems = directPresign ? directPresign.items : await presign(presignFiles);
+
+        const pairs = signItems.map((item, idx) => ({ item, prepared: preparedFiles[idx] }));
+
         const toFinalize: Array<{
           uuid: string;
           originalKey: string;
@@ -334,19 +370,24 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         // 使用改进后的 runConcurrency，获取每个任务的成功/失败状态
         const results = await runConcurrency(
           pairs,
-          async ({ item, file }, _index) => {
+          async ({ item, prepared }, _index) => {
+            const { compressedBlob, file, posterBlob } = prepared;
             // 防御：空文件不上传
             if (!file || (file as File).size === 0) {
               throw new Error('Empty file');
             }
 
-            const posterBlob = isVideoFile(file) ? await generateVideoPoster(file) : null;
-
-            // 先压缩图片（如果支持）
-            const compressedBlob = await maybeCompressToWebp(file, {
-              maxWidthOrHeight: 2560,
-              initialQuality: qualityForSize(file.size),
-            });
+            const derivedCompressedBlob = useDirectFinalUpload
+              ? compressedBlob
+              : await maybeCompressToWebp(file, {
+                  maxWidthOrHeight: 2560,
+                  initialQuality: qualityForSize(file.size),
+                });
+            const derivedPosterBlob = useDirectFinalUpload
+              ? posterBlob
+              : isVideoFile(file)
+                ? await generateVideoPoster(file)
+                : null;
 
             // 原图上传（必须成功）
             await uploadToSignedUrl(item.original.putUrl, file, (progress) => {
@@ -357,30 +398,16 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
               });
             });
 
-            // 压缩图上传（可选，失败不影响原图）
             let compressedKey: string | undefined;
             let posterKey: string | undefined;
-            if (compressedBlob && item.compressed) {
-              try {
-                await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
-                // 只有上传成功才记录 compressedKey
-                compressedKey = item.compressed.key;
-              } catch (error) {
-                // 压缩图上传失败，但不影响原图，只记录错误
-                // eslint-disable-next-line no-console
-                console.warn(`Compressed image upload failed for ${item.uuid}:`, error);
-                // 不设置 compressedKey，表示压缩图未成功上传
-              }
+            if (derivedCompressedBlob && item.compressed) {
+              await uploadToSignedUrl(item.compressed.putUrl, derivedCompressedBlob);
+              compressedKey = item.compressed.key;
             }
 
-            if (posterBlob && item.poster) {
-              try {
-                await uploadToSignedUrl(item.poster.putUrl, posterBlob);
-                posterKey = item.poster.key;
-              } catch (error) {
-                // eslint-disable-next-line no-console
-                console.warn(`Video poster upload failed for ${item.uuid}:`, error);
-              }
+            if (derivedPosterBlob && item.poster) {
+              await uploadToSignedUrl(item.poster.putUrl, derivedPosterBlob);
+              posterKey = item.poster.key;
             }
 
             // 只有原图上传成功（且压缩图上传成功或不需要压缩）才添加到 toFinalize
@@ -422,6 +449,10 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
         // 如果有部分文件失败，提示用户
         const failedCount = results.filter((r) => !r.success).length;
+        if (useDirectFinalUpload && failedCount > 0) {
+          const firstFailure = results.find((result) => !result.success);
+          throw firstFailure?.error || new Error(t('uploadFailed'));
+        }
         if (failedCount > 0) {
           toast.warning(
             `${failedCount} file(s) failed to upload, ${toFinalize.length} file(s) uploaded successfully.`
@@ -431,7 +462,9 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         const finalizeData = toFinalize;
         // 批量 finalize，减少请求数
         const finalized = finalizeData.length
-          ? await finalizeUpload(finalizeData, rote.id || undefined)
+          ? directPresign
+            ? await finalizeDirect(finalizeData, directPresign.reservationId, rote.id || undefined)
+            : await finalizeUpload(finalizeData, rote.id || undefined)
           : [];
 
         // 用后端返回结果替换本地 File 占位
@@ -482,6 +515,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     },
     [
       canUploadVideo,
+      canUploadDirectlyToFinalKey,
       maxVideoUploadSizeBytes,
       maxVideoUploadSizeMB,
       rote.attachments,
