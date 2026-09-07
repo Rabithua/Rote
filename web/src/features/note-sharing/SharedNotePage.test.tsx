@@ -138,6 +138,41 @@ describe('anonymous share reader', () => {
     expect(await screen.findByText('Shared by author')).toBeInTheDocument();
   });
 
+  it('shows a link preview together with an attachment when no article is referenced', async () => {
+    vi.mocked(getSharedNote).mockResolvedValueOnce({
+      ...note,
+      article: null,
+      attachments: [
+        {
+          id: 'attachment-1',
+          url: 'https://cdn.example.com/photo.jpg',
+          compressUrl: 'https://cdn.example.com/photo-small.jpg',
+          posterUrl: null,
+          sortIndex: 0,
+          details: { mediaKind: 'image' },
+        },
+      ],
+      linkPreviews: [
+        {
+          id: 'preview-1',
+          url: 'https://example.com/story',
+          title: 'Example story',
+          description: 'Story description',
+          image: null,
+          contentExcerpt: null,
+        },
+      ],
+    });
+    renderPage();
+    expect(await screen.findByRole('link', { name: /Example story/ })).toHaveAttribute(
+      'href',
+      'https://example.com/story'
+    );
+    expect(
+      document.querySelector('img[src="https://cdn.example.com/photo-small.jpg"]')
+    ).not.toBeNull();
+  });
+
   it('refreshes changed content on focus and clears already-read content after revocation', async () => {
     renderPage();
     await screen.findByText(note.content);

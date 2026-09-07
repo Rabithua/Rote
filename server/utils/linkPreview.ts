@@ -1,4 +1,5 @@
 import { upsertRoteLinkPreview } from './dbMethods/linkPreview';
+import { parseSpecialLinkPreview, type LinkPreviewDraft } from './linkPreviewProviders';
 
 const MAX_LINK_PREVIEWS = 3;
 const FETCH_TIMEOUT_MS = 8000;
@@ -70,7 +71,7 @@ function calculateScore(data: {
   return score;
 }
 
-function getProxyUrl(originalUrl: string): string {
+export function getProxyUrl(originalUrl: string): string {
   try {
     const url = new URL(originalUrl);
     if (url.hostname === 'twitter.com' || url.hostname === 'www.twitter.com') {
@@ -86,12 +87,12 @@ function getProxyUrl(originalUrl: string): string {
   }
 }
 
-async function fetchHtml(url: string): Promise<string | null> {
+async function fetchHtml(url: string, fetcher: typeof fetch): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const proxyUrl = getProxyUrl(url);
-    const response = await fetch(proxyUrl, {
+    const response = await fetcher(proxyUrl, {
       signal: controller.signal,
       headers: {
         'User-Agent': 'Bot', // FxEmbed requires a bot-like UA or they might redirect normal users
@@ -113,9 +114,41 @@ async function fetchHtml(url: string): Promise<string | null> {
   }
 }
 
+export async function parseLinkPreview(
+  url: string,
+  fetcher: typeof fetch = fetch
+): Promise<LinkPreviewDraft | null> {
+  const specialPreview = await parseSpecialLinkPreview(url, fetcher);
+  if (specialPreview) return specialPreview;
+
+  const html = await fetchHtml(url, fetcher);
+  if (!html) return null;
+
+  const title = extractMetaContent(html, 'og:title') || extractTitle(html);
+  const description = extractDescription(html);
+  const image = resolveUrl(url, extractMetaContent(html, 'og:image'));
+  const siteName = extractMetaContent(html, 'og:site_name');
+  const score = calculateScore({ title, description, image, siteName });
+  if (score < MIN_SCORE) return null;
+
+  return {
+    url,
+    title,
+    description,
+    image,
+    siteName,
+    contentExcerpt: description || title || null,
+    score,
+  };
+}
+
 export async function parseAndStoreRoteLinkPreviews(
   roteid: string,
-  content: string
+  content: string,
+  dependencies: {
+    fetcher?: typeof fetch;
+    upsert?: typeof upsertRoteLinkPreview;
+  } = {}
 ): Promise<void> {
   const urls = extractUrlsFromContent(content);
   if (urls.length === 0) {
@@ -124,28 +157,11 @@ export async function parseAndStoreRoteLinkPreviews(
 
   await Promise.allSettled(
     urls.map(async (url) => {
-      const html = await fetchHtml(url);
-      if (!html) return;
-
-      const title = extractMetaContent(html, 'og:title') || extractTitle(html);
-      const description = extractDescription(html);
-      const image = resolveUrl(url, extractMetaContent(html, 'og:image'));
-      const siteName = extractMetaContent(html, 'og:site_name');
-      const score = calculateScore({ title, description, image, siteName });
-
-      if (score < MIN_SCORE) {
-        return;
-      }
-
-      await upsertRoteLinkPreview({
+      const preview = await parseLinkPreview(url, dependencies.fetcher);
+      if (!preview) return;
+      await (dependencies.upsert || upsertRoteLinkPreview)({
         roteid,
-        url,
-        title,
-        description,
-        image,
-        siteName,
-        contentExcerpt: description || title || null,
-        score,
+        ...preview,
       });
     })
   );
