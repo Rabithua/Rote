@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import type { UploadResult } from '../types/main';
 import { presignPutUrlForConfig } from '../utils/r2';
-import { presignAttachmentUploads, signedUploadLifetimeSeconds } from './presignUpload';
+import {
+  presignAttachmentUploads,
+  refreshAttachmentUploadReservation,
+  signedUploadLifetimeSeconds,
+} from './presignUpload';
+import { normalizeFinalizeAttachmentsFromManifest } from './finalizePayload';
 import { getUploadExtension } from './uploadKeys';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
@@ -120,6 +125,90 @@ describe('attachment upload flow', () => {
         manifest
       )
     ).toThrow();
+  });
+
+  it('derives persisted media metadata from the signed reservation manifest', () => {
+    const reservationId = LIVE_UUID;
+    const originalKey = `users/${USER_ID}/staging/${reservationId}/uploads/live.heic`;
+    const pairedVideoKey = `users/${USER_ID}/staging/${reservationId}/paired-videos/live.mov`;
+    const normalized = normalizeFinalizeAttachmentsFromManifest(
+      [
+        {
+          uuid: 'live',
+          originalKey,
+          pairedVideoKey,
+          mimetype: 'video/mp4',
+          mediaKind: 'video',
+          pairedVideoMimetype: 'image/jpeg',
+          pairedVideoSize: 1,
+        },
+      ],
+      [
+        {
+          uuid: 'live',
+          role: 'original',
+          stagingKey: originalKey,
+          finalKey: `users/${USER_ID}/uploads/live.heic`,
+          declaredBytes: '1024',
+          contentType: 'image/heic',
+          billable: true,
+        },
+        {
+          uuid: 'live',
+          role: 'paired_video',
+          stagingKey: pairedVideoKey,
+          finalKey: `users/${USER_ID}/paired-videos/live.mov`,
+          declaredBytes: '2048',
+          contentType: 'video/quicktime',
+          billable: true,
+        },
+      ]
+    );
+
+    expect(normalized[0]).toMatchObject({
+      mimetype: 'image/heic',
+      mediaKind: 'livePhoto',
+      size: 1024,
+      pairedVideoMimetype: 'video/quicktime',
+      pairedVideoSize: 2048,
+    });
+  });
+
+  it('cancels legacy direct-final reservations before refreshing credentials', async () => {
+    let cancelled = false;
+    let refreshed = false;
+    const finalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
+    await expect(
+      refreshAttachmentUploadReservation(USER_ID, LIVE_UUID, {
+        getPendingUploadReservation: async () =>
+          ({
+            id: LIVE_UUID,
+            manifest: [
+              {
+                uuid: LIVE_UUID,
+                role: 'original',
+                stagingKey: finalKey,
+                finalKey,
+                declaredBytes: '1024',
+                contentType: 'image/jpeg',
+                billable: true,
+              },
+            ],
+          }) as never,
+        cancelUploadReservation: async () => {
+          cancelled = true;
+        },
+        refreshUploadReservationCredentialExpiry: async () => {
+          refreshed = true;
+          throw new Error('must not refresh');
+        },
+      })
+    ).rejects.toMatchObject({
+      code: 'resource_upload_manifest_mismatch',
+      status: 409,
+    });
+    expect(cancelled).toBe(true);
+    expect(refreshed).toBe(false);
   });
   it('uses the signed Content-Type to choose the key extension', () => {
     expect(getUploadExtension('photo.webp', 'image/jpeg')).toBe('.jpg');

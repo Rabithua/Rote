@@ -16,6 +16,7 @@ import { upsertAttachmentsByOriginalKey } from '../utils/dbMethods';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
 import { isDirectFinalUploadManifest } from './directFinalUpload';
 import { completedLegacyFinalizeResult, finalizeAttachmentUploads } from './finalizeUpload';
+import { normalizeFinalizeAttachmentsFromManifest } from './finalizePayload';
 import type { FinalizeAttachmentInput } from './types';
 
 type ActiveFinalizeClaim = Extract<UploadReservationFinalizeClaim, { kind: 'claimed' }>;
@@ -147,7 +148,6 @@ export async function finalizeAttachmentReservation(
 ): Promise<any[]> {
   const dependencies = { ...defaultDependencies, ...dependencyOverrides };
   const reservationId = input.reservationId.toLowerCase();
-  const normalizedInput = { ...input, reservationId };
   const claimResult = await dependencies.claimUploadReservationForFinalize({
     batchId: reservationId,
     reservationId,
@@ -170,6 +170,14 @@ export async function finalizeAttachmentReservation(
   }
 
   try {
+    const normalizedInput = {
+      ...input,
+      reservationId,
+      attachments: normalizeFinalizeAttachmentsFromManifest(
+        input.attachments,
+        claim.reservation.manifest
+      ),
+    };
     const prepared = await dependencies.prepareReservationUpload(normalizedInput, claim);
     return await dependencies.persistPreparedReservationUpload({
       claim,
