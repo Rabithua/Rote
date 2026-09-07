@@ -109,7 +109,6 @@ function SharedNoteReader({ token }: { token: string }) {
             <AttachmentsGrid attachments={state.note.attachments} />
           )}
           {!state.note.article &&
-            state.note.attachments.length === 0 &&
             state.note.linkPreviews.map((preview) => (
               <LinkPreviewCard key={preview.id} preview={preview} />
             ))}
