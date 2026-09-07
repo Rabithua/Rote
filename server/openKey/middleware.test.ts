@@ -17,10 +17,15 @@ beforeAll(async () => {
 
 type UsageAudit = { openKeyId: string; data: UsageLogData };
 
-function createTestApp(options?: { missingOpenKey?: boolean; routeThrows?: boolean }) {
+function createTestApp(options?: {
+  missingOpenKey?: boolean;
+  routeThrows?: boolean;
+  lookupDurationMs?: number;
+}) {
   const openKeyId = randomUUID();
   const audits: UsageAudit[] = [];
   let lookupCount = 0;
+  let currentTime = 1_000;
   const openKeyRouter = new Hono<{ Variables: HonoVariables }>();
 
   openKeyRouter.use(
@@ -28,6 +33,7 @@ function createTestApp(options?: { missingOpenKey?: boolean; routeThrows?: boole
     createOpenKeyMiddleware({
       async getOneOpenKey(id) {
         lookupCount += 1;
+        currentTime += options?.lookupDurationMs ?? 0;
         if (options?.missingOpenKey) throw new DatabaseError('Open key not found');
         return {
           id,
@@ -39,6 +45,9 @@ function createTestApp(options?: { missingOpenKey?: boolean; routeThrows?: boole
       },
       async logOpenKeyUsage(id, data) {
         audits.push({ openKeyId: id, data });
+      },
+      now() {
+        return currentTime;
       },
     })
   );
@@ -69,12 +78,31 @@ describe('OpenKey authentication middleware', () => {
       );
 
       expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        code: 1,
+        message: 'openkey_invalid_credential',
+        data: null,
+      });
       expect(fixture.getLookupCount()).toBe(0);
       expect(fixture.audits).toHaveLength(0);
       expect(messages.join('\n')).not.toContain(credential);
     } finally {
       error.mockRestore();
     }
+  });
+
+  it('returns the same stable error code when the credential is missing', async () => {
+    const fixture = createTestApp();
+    const response = await fixture.app.request('/openkey/resource');
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      code: 1,
+      message: 'openkey_invalid_credential',
+      data: null,
+    });
+    expect(fixture.getLookupCount()).toBe(0);
+    expect(fixture.audits).toHaveLength(0);
   });
 
   it('does not write a foreign-key usage record for a missing credential', async () => {
@@ -97,13 +125,14 @@ describe('OpenKey authentication middleware', () => {
   });
 
   it('records the resolved credential and successful response status', async () => {
-    const fixture = createTestApp();
+    const fixture = createTestApp({ lookupDurationMs: 37 });
     const response = await fixture.app.request(`/openkey/resource?openkey=${fixture.openKeyId}`);
 
     expect(response.status).toBe(201);
     expect(fixture.audits).toHaveLength(1);
     expect(fixture.audits[0].openKeyId).toBe(fixture.openKeyId);
     expect(fixture.audits[0].data.statusCode).toBe(201);
+    expect(fixture.audits[0].data.responseTime).toBe(37);
     expect(fixture.audits[0].data.errorMessage).toBeUndefined();
   });
 
