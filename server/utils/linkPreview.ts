@@ -1,4 +1,4 @@
-import { upsertRoteLinkPreview } from './dbMethods/linkPreview';
+import type { upsertRoteLinkPreview } from './dbMethods/linkPreview';
 import { parseSpecialLinkPreview, type LinkPreviewDraft } from './linkPreviewProviders';
 
 const MAX_LINK_PREVIEWS = 3;
@@ -155,11 +155,14 @@ export async function parseAndStoreRoteLinkPreviews(
     return;
   }
 
+  const upsert =
+    dependencies.upsert || (await import('./dbMethods/linkPreview')).upsertRoteLinkPreview;
+
   await Promise.allSettled(
     urls.map(async (url) => {
       const preview = await parseLinkPreview(url, dependencies.fetcher);
       if (!preview) return;
-      await (dependencies.upsert || upsertRoteLinkPreview)({
+      await upsert({
         roteid,
         ...preview,
       });
