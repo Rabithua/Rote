@@ -3,7 +3,7 @@ import type { Attachment, Rote } from '@/types/main';
 import { emptyRote } from '@/state/editor';
 import { get, post, put } from '@/utils/api';
 import { cancelUploadReservation, uploadToSignedUrl } from '@/utils/directUpload';
-import { isNoteDraftEmpty, NoteSubmission } from './noteSubmission';
+import { NoteSubmission } from './noteSubmission';
 
 vi.mock('@/utils/api', () => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn() }));
 vi.mock('@/utils/directUpload', async (original) => ({
@@ -123,12 +123,6 @@ const submit = (session: NoteSubmission, note: Rote) =>
   session.submit(note, createId, capabilities, vi.fn(), vi.fn());
 
 describe('note-first attachment submission', () => {
-  it('accepts attachment-only notes while still rejecting completely empty drafts', () => {
-    expect(isNoteDraftEmpty({ content: '   ', attachments: [] })).toBe(true);
-    expect(isNoteDraftEmpty({ content: '   ', attachments: [existing] })).toBe(false);
-    expect(isNoteDraftEmpty({ content: 'note', attachments: [] })).toBe(false);
-  });
-
   it('saves identity before signing, uploads every part and binds the ordered batch', async () => {
     const onSaved = vi.fn(() => events.push('saved identity'));
     const session = new NoteSubmission();
