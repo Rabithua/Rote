@@ -851,9 +851,28 @@ export async function cancelUploadReservation(userId: string, id: string) {
       )
       .limit(1)
       .for('update');
-    if (!reservation || reservation.status !== 'pending') return;
-    await cancelLockedUploadReservation(transaction, reservation, new Date());
+    if (!reservation) return;
+    const now = new Date();
+    if (!uploadReservationCanBeCancelled(reservation, now)) return;
+    await cancelLockedUploadReservation(transaction, reservation, now);
   });
+}
+
+export function uploadReservationCanBeCancelled(
+  reservation: Pick<
+    typeof resourceUploadReservations.$inferSelect,
+    'status' | 'finalizingLeaseExpiresAt'
+  >,
+  now: Date
+): boolean {
+  const hasActiveFinalizeLease =
+    reservation.status === 'finalizing' &&
+    reservation.finalizingLeaseExpiresAt !== null &&
+    reservation.finalizingLeaseExpiresAt.getTime() > now.getTime();
+  if (hasActiveFinalizeLease) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+  }
+  return reservation.status === 'pending' || reservation.status === 'finalizing';
 }
 
 export async function getPendingUploadReservation(

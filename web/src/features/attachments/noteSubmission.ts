@@ -15,6 +15,10 @@ function noteFields(note: Rote) {
   };
 }
 
+export function isNoteDraftEmpty(note: Pick<Rote, 'content' | 'attachments'>): boolean {
+  return note.content.trim().length === 0 && note.attachments.length === 0;
+}
+
 /** Remote note identity is committed before starting any attachment requests. */
 export class NoteSubmission {
   private note?: Rote;

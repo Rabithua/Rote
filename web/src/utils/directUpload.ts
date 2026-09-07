@@ -7,6 +7,7 @@ const RESOURCE_UPLOAD_ERROR_TRANSLATIONS = {
   resource_storage_quota_exceeded: 'pages.profile.resources.errors.storageQuotaExceeded',
   resource_upload_reservation_expired: 'pages.profile.resources.errors.reservationExpired',
   resource_upload_manifest_mismatch: 'pages.profile.resources.errors.manifestMismatch',
+  attachment_batch_finalizing: 'pages.profile.resources.errors.attachmentBatchFinalizing',
   resource_storage_reconciliation_required: 'pages.profile.resources.errors.reconciliationRequired',
   resource_storage_backend_unsupported: 'pages.profile.resources.errors.backendUnsupported',
 } as const;

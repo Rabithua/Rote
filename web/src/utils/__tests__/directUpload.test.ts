@@ -26,7 +26,10 @@ beforeAll(async () => {
           pages: {
             profile: {
               resources: {
-                errors: { storageQuotaExceeded: 'Friendly quota guidance' },
+                errors: {
+                  storageQuotaExceeded: 'Friendly quota guidance',
+                  attachmentBatchFinalizing: 'Please retry discard shortly',
+                },
               },
             },
           },
@@ -54,6 +57,14 @@ describe('resource upload errors', () => {
 
     expect(getResourceUploadErrorCode(error)).toBe('resource_upload_reservation_expired');
     expect(isResourceUploadPolicyError(error)).toBe(true);
+  });
+
+  it('localizes an active-finalizer cancellation response', () => {
+    const error = {
+      response: { data: { message: 'attachment_batch_finalizing' } },
+    };
+
+    expect(getUploadErrorMessage(error)).toBe('Please retry discard shortly');
   });
 
   it('does not classify ordinary network failures as policy errors', () => {
