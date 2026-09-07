@@ -46,7 +46,9 @@ export type PresignFile = {
   contentType?: string;
   size?: number;
   mediaKind?: MediaKind;
+  compressed?: { contentType: 'image/jpeg' | 'image/webp'; size: number };
   pairedVideo?: { filename?: string; contentType?: string; size?: number };
+  poster?: { contentType: 'image/jpeg'; size: number };
 };
 
 export type PresignItem = {
@@ -67,13 +69,29 @@ export interface PresignResponse {
   message?: string;
   data: {
     items: PresignItem[];
+    reservationId?: string;
   };
 }
 
-export async function presign(files: PresignFile[]) {
-  const res = (await post('/attachments/presign', { files })) as PresignResponse;
+async function requestPresign(files: PresignFile[], directFinalUpload = false) {
+  const res = (await post('/attachments/presign', {
+    files,
+    ...(directFinalUpload ? { directFinalUpload: true } : {}),
+  })) as PresignResponse;
   if (res.code !== 0) throw new Error(res.message || 'presign failed');
-  return res.data.items as PresignItem[];
+  return res.data;
+}
+
+export async function presign(files: PresignFile[]) {
+  return (await requestPresign(files)).items;
+}
+
+export async function presignDirect(files: PresignFile[]) {
+  const data = await requestPresign(files, true);
+  if (!data.reservationId) {
+    throw new Error('resource_upload_manifest_mismatch');
+  }
+  return { items: data.items, reservationId: data.reservationId };
 }
 
 export type UploadProgressCallback = (_progress: number) => void;
@@ -196,6 +214,20 @@ export type FinalizeAttachment = {
 
 export async function finalize(attachments: FinalizeAttachment[], noteId?: string) {
   const res = (await post('/attachments/finalize', { attachments, noteId })) as Record<string, any>;
+  if (res.code !== 0) throw new Error(res.message || 'finalize failed');
+  return (res.data as any[]) || [];
+}
+
+export async function finalizeDirect(
+  attachments: FinalizeAttachment[],
+  reservationId: string,
+  noteId?: string
+) {
+  const res = (await post('/attachments/finalize', {
+    attachments,
+    noteId,
+    reservationId,
+  })) as Record<string, any>;
   if (res.code !== 0) throw new Error(res.message || 'finalize failed');
   return (res.data as any[]) || [];
 }

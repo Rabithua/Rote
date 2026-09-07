@@ -8,6 +8,10 @@ export type PresignFileInput = {
   size?: number;
   mediaKind?: 'image' | 'video' | 'livePhoto';
   compressedContentType?: 'image/jpeg' | 'image/webp';
+  compressed?: {
+    contentType: 'image/jpeg' | 'image/webp';
+    size: number;
+  };
   pairedVideo?: {
     filename?: string;
     contentType?: string;

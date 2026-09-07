@@ -230,7 +230,9 @@ function ProfilePage() {
       const generation = ++avatarUploadGenerationRef.current;
       setAvatarUploading(true);
       const croppedImage = await createCroppedImage(avatarFile, croppedAreaPixels);
-      const attachment = await uploadAvatar(croppedImage);
+      const attachment = await uploadAvatar(croppedImage, {
+        directFinalUpload: siteStatus?.ui?.attachmentDirectFinalUpload === true,
+      });
       const accepted = await acceptPendingAvatarAttachment(attachment, session, generation);
       if (!accepted) {
         setAvatarUploading(false);
@@ -324,7 +326,9 @@ function ProfilePage() {
     setCoverChangeing(true);
     let uploadedAttachment: Attachment | null = null;
     try {
-      uploadedAttachment = await uploadCover(selectedFile);
+      uploadedAttachment = await uploadCover(selectedFile, {
+        directFinalUpload: siteStatus?.ui?.attachmentDirectFinalUpload === true,
+      });
       if (!isMountedRef.current || generation !== coverUploadGenerationRef.current) {
         await deletePendingAttachmentQuietly(uploadedAttachment.id);
         return;

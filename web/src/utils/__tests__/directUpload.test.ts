@@ -1,10 +1,19 @@
 import i18n from 'i18next';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { post } from '../api';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
+  finalizeDirect,
   getResourceUploadErrorCode,
   getUploadErrorMessage,
   isResourceUploadPolicyError,
+  presignDirect,
 } from '../directUpload';
+
+vi.mock('../api', () => ({ post: vi.fn() }));
+
+afterEach(() => {
+  vi.mocked(post).mockReset();
+});
 
 beforeAll(async () => {
   await i18n.init({
@@ -49,5 +58,77 @@ describe('resource upload errors', () => {
     const error = new Error('Network Error');
     expect(getResourceUploadErrorCode(error)).toBeNull();
     expect(isResourceUploadPolicyError(error)).toBe(false);
+  });
+});
+
+describe('direct final uploads', () => {
+  it('requests final object keys and preserves the reservation identifier', async () => {
+    vi.mocked(post).mockResolvedValue({
+      code: 0,
+      data: {
+        items: [
+          {
+            original: {
+              key: 'users/user/attachments/upload/original.jpg',
+              putUrl: 'https://put.example.com/original.jpg',
+              url: 'https://cdn.example.com/original.jpg',
+            },
+            uuid: 'upload',
+          },
+        ],
+        reservationId: 'reservation',
+      },
+    });
+
+    const result = await presignDirect([
+      {
+        compressed: { contentType: 'image/webp', size: 256 },
+        contentType: 'image/jpeg',
+        filename: 'photo.jpg',
+        size: 1024,
+      },
+    ]);
+
+    expect(post).toHaveBeenCalledWith('/attachments/presign', {
+      directFinalUpload: true,
+      files: [
+        {
+          compressed: { contentType: 'image/webp', size: 256 },
+          contentType: 'image/jpeg',
+          filename: 'photo.jpg',
+          size: 1024,
+        },
+      ],
+    });
+    expect(result.reservationId).toBe('reservation');
+  });
+
+  it('passes the reservation identifier when finalizing an unbound attachment', async () => {
+    vi.mocked(post).mockResolvedValue({ code: 0, data: [{ id: 'attachment' }] });
+
+    await finalizeDirect(
+      [
+        {
+          mimetype: 'image/jpeg',
+          originalKey: 'users/user/attachments/upload/original.jpg',
+          size: 1024,
+          uuid: 'upload',
+        },
+      ],
+      'reservation'
+    );
+
+    expect(post).toHaveBeenCalledWith('/attachments/finalize', {
+      attachments: [
+        {
+          mimetype: 'image/jpeg',
+          originalKey: 'users/user/attachments/upload/original.jpg',
+          size: 1024,
+          uuid: 'upload',
+        },
+      ],
+      noteId: undefined,
+      reservationId: 'reservation',
+    });
   });
 });

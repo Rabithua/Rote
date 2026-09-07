@@ -2,8 +2,8 @@ import type { UploadResult } from '../types/main';
 import { inferAttachmentMediaKind } from '../utils/fileValidation';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 import type { UploadReservationManifestItem } from '../resources/service';
-import type { FinalizeAttachmentBatchInput, FinalizeAttachmentInput } from './types';
-import { assertCompleteRequiredManifest, toUploadResult } from './finalizeUpload';
+import type { FinalizeAttachmentInput } from './types';
+import { assertCompleteRequiredManifest, toUploadResult } from './finalizePayload';
 
 export type PreparedDirectFinalUpload = {
   objects: Array<UploadReservationManifestItem & { actualBytes: bigint }>;
@@ -35,7 +35,7 @@ function exactDeclaredBytes(
 }
 
 export function prepareDirectFinalUpload(
-  input: FinalizeAttachmentBatchInput,
+  input: { attachments: FinalizeAttachmentInput[] },
   manifest: readonly UploadReservationManifestItem[],
   userId: string,
   urlPrefix: string
@@ -58,7 +58,6 @@ export function prepareDirectFinalUpload(
     const paired = objects.find((item) => item.role === 'paired_video');
     const poster = objects.find((item) => item.role === 'poster');
     const compressed = objects.find((item) => item.role === 'compressed');
-    if (compressed) invalid();
 
     const size = exactDeclaredBytes(attachment.size, original);
     if (
@@ -89,7 +88,7 @@ export function prepareDirectFinalUpload(
 
     const normalized: FinalizeAttachmentInput = {
       ...attachment,
-      compressedKey: undefined,
+      compressedKey: compressed?.finalKey,
       mediaKind,
       mimetype: original.contentType,
       originalKey: original.finalKey,

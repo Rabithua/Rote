@@ -5,10 +5,18 @@ import { Button } from '@/components/ui/button';
 import { ArticleDeleteConfirmDialog } from '@/components/article/ArticleDeleteConfirmDialog';
 import { Textarea } from '@/components/ui/textarea';
 import { useArticleActions } from '@/hooks/useArticleActions';
+import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { profileAtom } from '@/state/profile';
 import { createArticle, getArticleFull, updateArticle } from '@/utils/articleApi';
-import { finalize, getUploadErrorMessage, presign, uploadToSignedUrl } from '@/utils/directUpload';
+import {
+  finalize,
+  finalizeDirect,
+  getUploadErrorMessage,
+  presign,
+  presignDirect,
+  uploadToSignedUrl,
+} from '@/utils/directUpload';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
 import { ArrowUpRight, Edit3, Eye, Heading1, Save, Signature, Trash2, X } from 'lucide-react';
@@ -38,6 +46,8 @@ export default function ArticleEditPage() {
   const [, startTransition] = useTransition();
   const [minRows, setMinRows] = useState(20);
   const profile = useAtomValue(profileAtom);
+  const { data: siteStatus } = useSiteStatus();
+  const supportsDirectFinalUpload = siteStatus?.ui?.attachmentDirectFinalUpload === true;
 
   useEffect(() => {
     const lineHeight = 21; // font-mono text-sm ≈ 1.375 * 14px ≈ 21px
@@ -195,9 +205,23 @@ export default function ArticleEditPage() {
     for (const { file, placeholder } of uploads) {
       try {
         const compressed = await maybeCompressToWebp(file);
-        const presignFiles = [{ filename: file.name, contentType: file.type, size: file.size }];
-        const presignResult = await presign(presignFiles);
-        const item = presignResult[0];
+        const presignFiles = [
+          {
+            filename: file.name,
+            contentType: file.type,
+            size: file.size,
+            ...(compressed && supportsDirectFinalUpload
+              ? {
+                  compressed: {
+                    contentType: compressed.type as 'image/jpeg' | 'image/webp',
+                    size: compressed.size,
+                  },
+                }
+              : {}),
+          },
+        ];
+        const directPresign = supportsDirectFinalUpload ? await presignDirect(presignFiles) : null;
+        const item = directPresign ? directPresign.items[0] : (await presign(presignFiles))[0];
 
         await uploadToSignedUrl(item.original.putUrl, file);
         if (compressed && item.compressed) {
@@ -212,7 +236,9 @@ export default function ArticleEditPage() {
           mimetype: file.type,
         };
 
-        const [finalized] = await finalize([finalizePayload]);
+        const [finalized] = directPresign
+          ? await finalizeDirect([finalizePayload], directPresign.reservationId)
+          : await finalize([finalizePayload]);
         const finalUrl = finalized.compressUrl || finalized.url;
         const finalMarkdown = `![${file.name}](${finalUrl})`;
 

@@ -52,20 +52,33 @@ function validatePresignFile(
   directFinalUpload: boolean
 ) {
   validateContentType(file.contentType);
+  const compressedContentType = file.compressed?.contentType ?? file.compressedContentType;
   if (
-    file.compressedContentType !== undefined &&
-    file.compressedContentType !== 'image/jpeg' &&
-    file.compressedContentType !== 'image/webp'
+    compressedContentType !== undefined &&
+    compressedContentType !== 'image/jpeg' &&
+    compressedContentType !== 'image/webp'
   ) {
     throw new Error(attachmentErrors.compressedContentTypeInvalid);
   }
-  if (directFinalUpload && file.compressedContentType !== undefined) {
+  if (
+    file.compressed &&
+    file.compressedContentType &&
+    file.compressed.contentType !== file.compressedContentType
+  ) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   const mediaKind =
     file.mediaKind === 'livePhoto' ? 'livePhoto' : getMediaKindFromContentType(file.contentType);
-  if (directFinalUpload && mediaKind === 'video') {
-    if (file.poster?.contentType !== 'image/jpeg' || !file.poster.size) {
+  if (directFinalUpload && file.compressed) {
+    if (mediaKind !== 'image' && mediaKind !== 'livePhoto') {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    validateFileSize(file.compressed.size, file.compressed.contentType, maxVideoUploadSizeMB);
+  } else if (directFinalUpload && file.compressedContentType !== undefined) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  if (directFinalUpload && file.poster) {
+    if (mediaKind !== 'video' || file.poster.contentType !== 'image/jpeg') {
       throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
     }
     validateFileSize(file.poster.size, file.poster.contentType, maxVideoUploadSizeMB);
@@ -135,8 +148,11 @@ export async function presignAttachmentUploads(
     const mediaKind =
       file.mediaKind === 'livePhoto' ? 'livePhoto' : getMediaKindFromContentType(file.contentType);
     const compressedContentType =
-      !directFinalUpload && (mediaKind === 'image' || mediaKind === 'livePhoto')
-        ? (file.compressedContentType ?? (mediaKind === 'livePhoto' ? 'image/jpeg' : 'image/webp'))
+      mediaKind === 'image' || mediaKind === 'livePhoto'
+        ? directFinalUpload
+          ? file.compressed?.contentType
+          : (file.compressedContentType ??
+            (mediaKind === 'livePhoto' ? 'image/jpeg' : 'image/webp'))
         : undefined;
     const finalPrefix = `users/${input.userId}`;
     const stagingPrefix = managed ? `${finalPrefix}/staging/${reservationId}` : finalPrefix;
@@ -164,15 +180,19 @@ export async function presignAttachmentUploads(
       const compressedExtension = compressedContentType === 'image/jpeg' ? 'jpg' : 'webp';
       compressed = {
         contentType: compressedContentType,
-        key: `${stagingPrefix}/compressed/${uuid}.${compressedExtension}`,
-        finalKey: `${finalPrefix}/compressed/${uuid}.${compressedExtension}`,
+        key: directFinalUpload
+          ? `${attachmentPrefix}/compressed.${compressedExtension}`
+          : `${stagingPrefix}/compressed/${uuid}.${compressedExtension}`,
+        finalKey: directFinalUpload
+          ? `${attachmentPrefix}/compressed.${compressedExtension}`
+          : `${finalPrefix}/compressed/${uuid}.${compressedExtension}`,
       };
       manifest.push({
         uuid,
         role: 'compressed',
         stagingKey: compressed.key,
         finalKey: compressed.finalKey,
-        declaredBytes: null,
+        declaredBytes: directFinalUpload ? String(file.compressed!.size) : null,
         contentType: compressed.contentType,
         billable: false,
       });
@@ -203,7 +223,7 @@ export async function presignAttachmentUploads(
       });
     }
     let poster: { key: string; finalKey: string; size: number } | undefined;
-    if (mediaKind === 'video') {
+    if (mediaKind === 'video' && (!directFinalUpload || file.poster)) {
       const posterSize = directFinalUpload ? (file.poster?.size ?? 0) : 0;
       poster = {
         key: directFinalUpload
@@ -258,19 +278,26 @@ export async function presignAttachmentUploads(
         };
 
         if ((mediaKind === 'image' || mediaKind === 'livePhoto') && compressed) {
-          const compressedUpload = managed
-            ? {
-                putUrl: dependencies.createDerivedUploadProxyUrl({
-                  reservationId: reservationId!,
-                  userId: input.userId,
-                  role: 'compressed',
-                  key: compressed.key,
-                  contentType: compressed.contentType,
-                  expiresAt: credentialExpiresAt,
-                }),
-                url: '',
-              }
-            : await dependencies.presignPutUrl(compressed.key, compressed.contentType, 15 * 60);
+          const compressedUpload = directFinalUpload
+            ? await dependencies.presignPutUrl(
+                compressed.key,
+                compressed.contentType,
+                15 * 60,
+                file.compressed!.size
+              )
+            : managed
+              ? {
+                  putUrl: dependencies.createDerivedUploadProxyUrl({
+                    reservationId: reservationId!,
+                    userId: input.userId,
+                    role: 'compressed',
+                    key: compressed.key,
+                    contentType: compressed.contentType,
+                    expiresAt: credentialExpiresAt,
+                  }),
+                  url: '',
+                }
+              : await dependencies.presignPutUrl(compressed.key, compressed.contentType, 15 * 60);
           result.compressed = {
             key: compressed.key,
             putUrl: compressedUpload.putUrl,
@@ -296,7 +323,7 @@ export async function presignAttachmentUploads(
         }
 
         if (mediaKind === 'video') {
-          if (!poster) throw new Error('Missing poster upload manifest');
+          if (!poster) return result;
           const posterUpload = directFinalUpload
             ? await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60, poster.size)
             : managed

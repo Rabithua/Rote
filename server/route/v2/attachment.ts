@@ -185,10 +185,14 @@ attachmentsRouter.post(
   requireStorageConfig,
   async (c: HonoContext) => {
     const user = c.get('user') as User;
-    const { attachments, noteId } = (await c.req.json()) as {
+    const { attachments, noteId, reservationId } = (await c.req.json()) as {
       attachments?: FinalizeAttachmentInput[];
       noteId?: string;
+      reservationId?: string;
     };
+    if (reservationId && !isValidUUID(reservationId)) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 400);
+    }
     const uploadPolicy = await getAttachmentUploadPolicy(user.id);
     if (!uploadPolicy.canUploadAttachments) {
       return c.json(createResponse(null, 'capability_required:attachment.upload'), 403);
@@ -203,6 +207,7 @@ attachmentsRouter.post(
     const result = await finalizeAttachmentUploads({
       attachments,
       noteId,
+      reservationId,
       scopes: ['video:upload'],
       userId: user.id,
     });
