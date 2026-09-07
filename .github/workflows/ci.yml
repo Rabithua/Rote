@@ -90,9 +90,16 @@ jobs:
         working-directory: server
       - run: bun test noteShares mcp/noteShares.test.ts middleware/recorder.test.ts
         working-directory: server
+      - name: Test note creation and attachment batch contracts
+        run: bun test notes/actions.integration.test.ts attachments/finalizeBatch.test.ts attachments/finalizeReservation.test.ts
+        working-directory: server
+        env:
+          NOTE_ACTIONS_TEST_DATABASE_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test
       - run: bun install --frozen-lockfile
         working-directory: web
       - run: bun run test -- src/features/note-sharing src/components/rote src/components/AppSession.test.tsx src/pages/oauth/authorize.test.ts
+        working-directory: web
+      - run: bun run test -- src/features/attachments
         working-directory: web
 
   embedding-contract:

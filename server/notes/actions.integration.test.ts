@@ -99,6 +99,35 @@ databaseDescribe('note write transactions', () => {
     expect(attachment?.roteid).toBeNull();
   });
 
+  it('replays concurrent note creates without duplicating the note or CREATE event', async () => {
+    const key = randomUUID();
+    const content = `idempotent-${key}`;
+    const results = await Promise.all([
+      actions.createUserNote(ownerId, { content }, key),
+      actions.createUserNote(ownerId, { content }, key),
+    ]);
+    expect(results.map((note) => note.id)).toEqual([key, key]);
+    const changes = await database
+      .select()
+      .from(schema.roteChanges)
+      .where(operators.eq(schema.roteChanges.originid, key));
+    expect(changes.map((change) => change.action)).toEqual(['CREATE']);
+    const replay = await actions.createUserNote(ownerId, { content: 'must not overwrite' }, key);
+    expect(replay.content).toBe(content);
+    await expect(actions.createUserNote(otherUserId, { content }, key)).rejects.toThrow(
+      'note_create_identity_conflict'
+    );
+  });
+
+  it('does not resurrect a deleted note when its create request is replayed', async () => {
+    const key = randomUUID();
+    await actions.createUserNote(ownerId, { content: 'delete before replay' }, key);
+    await actions.deleteUserNote(ownerId, key);
+    await expect(actions.createUserNote(ownerId, { content: 'stale create' }, key)).rejects.toThrow(
+      'note_create_identity_conflict'
+    );
+  });
+
   it('rolls back creation when an attachment is not owned by the author', async () => {
     const attachmentId = randomUUID();
     const content = `invalid-attachment-${randomUUID()}`;

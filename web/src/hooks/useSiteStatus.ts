@@ -49,6 +49,7 @@ interface SiteStatusData {
     allowUploadFile: boolean;
     maxVideoUploadSizeMB: number;
     attachmentDirectBrowserUpload?: boolean;
+    attachmentBatchFinalize?: boolean;
   };
   oauth?: {
     enabled: boolean;
