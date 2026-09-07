@@ -151,7 +151,8 @@ export async function presignAttachmentUploads(
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
   const reservationId = managed ? dependencies.randomUUID() : null;
-  const credentialExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  const signingDate = new Date();
+  const credentialExpiresAt = new Date(signingDate.getTime() + 15 * 60 * 1000);
   const prepared = input.files.map((file) => {
     const uuid = dependencies.randomUUID();
     const ext = getUploadExtension(file.filename, file.contentType);
@@ -254,8 +255,9 @@ export async function presignAttachmentUploads(
     dependencies.presignPutUrl(
       key,
       contentType,
-      signedUploadLifetimeSeconds(credentialExpiresAt),
-      contentLength
+      signedUploadLifetimeSeconds(credentialExpiresAt, signingDate),
+      contentLength,
+      signingDate
     );
   let items: Array<Record<string, any>>;
   try {
@@ -360,14 +362,15 @@ export async function presignAttachmentUploads(
 }
 
 export async function refreshAttachmentUploadReservation(userId: string, reservationId: string) {
+  const signingDate = new Date();
   const reservation = await refreshUploadReservationCredentialExpiry(
     userId,
     reservationId,
-    new Date(Date.now() + 15 * 60 * 1000)
+    new Date(signingDate.getTime() + 15 * 60 * 1000)
   );
   const expiresAt = reservation.credentialExpiresAt!;
   try {
-    signedUploadLifetimeSeconds(expiresAt);
+    signedUploadLifetimeSeconds(expiresAt, signingDate);
   } catch (error) {
     await cancelUploadReservation(userId, reservationId);
     throw error;
@@ -386,8 +389,9 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
       const signedOriginal = await presignPutUrl(
         original.stagingKey,
         original.contentType,
-        signedUploadLifetimeSeconds(expiresAt),
-        original.declaredBytes === null ? undefined : Number(original.declaredBytes)
+        signedUploadLifetimeSeconds(expiresAt, signingDate),
+        original.declaredBytes === null ? undefined : Number(original.declaredBytes),
+        signingDate
       );
       const response: Record<string, any> = {
         uuid,
@@ -406,8 +410,9 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
           const signed = await presignPutUrl(
             object.stagingKey,
             object.contentType,
-            signedUploadLifetimeSeconds(expiresAt),
-            object.declaredBytes === null ? undefined : Number(object.declaredBytes)
+            signedUploadLifetimeSeconds(expiresAt, signingDate),
+            object.declaredBytes === null ? undefined : Number(object.declaredBytes),
+            signingDate
           );
           return {
             key: object.stagingKey,
@@ -439,8 +444,9 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
         const signed = await presignPutUrl(
           paired.stagingKey,
           paired.contentType,
-          signedUploadLifetimeSeconds(expiresAt),
-          paired.declaredBytes === null ? undefined : Number(paired.declaredBytes)
+          signedUploadLifetimeSeconds(expiresAt, signingDate),
+          paired.declaredBytes === null ? undefined : Number(paired.declaredBytes),
+          signingDate
         );
         response.pairedVideo = {
           key: paired.stagingKey,

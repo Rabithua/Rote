@@ -134,7 +134,8 @@ async function presignPutUrlWithClient(
   key: string,
   contentType?: string,
   expiresIn: number = 3600,
-  contentLength?: number
+  contentLength?: number,
+  signingDate?: Date
 ): Promise<{ putUrl: string; url: string }> {
   const { s3, bucketName, urlPrefix } = clientConfig;
 
@@ -150,6 +151,7 @@ async function presignPutUrlWithClient(
 
   const putUrl = await getSignedUrl(s3, command, {
     expiresIn,
+    signingDate,
     // Bind the declared object media type into the signature so the key
     // extension, presign metadata, and actual upload header cannot diverge.
     signableHeaders: new Set(
@@ -201,7 +203,8 @@ export async function presignPutUrl(
   key: string,
   contentType?: string,
   expiresIn: number = 3600,
-  contentLength?: number
+  contentLength?: number,
+  signingDate?: Date
 ): Promise<{ putUrl: string; url: string }> {
   const r2Config = getR2Client();
   if (!r2Config) {
@@ -210,7 +213,7 @@ export async function presignPutUrl(
     );
   }
 
-  return presignPutUrlWithClient(r2Config, key, contentType, expiresIn, contentLength);
+  return presignPutUrlWithClient(r2Config, key, contentType, expiresIn, contentLength, signingDate);
 }
 
 export async function presignPutUrlForConfig(
@@ -218,14 +221,16 @@ export async function presignPutUrlForConfig(
   key: string,
   contentType?: string,
   expiresIn: number = 3600,
-  contentLength?: number
+  contentLength?: number,
+  signingDate?: Date
 ): Promise<{ putUrl: string; url: string }> {
   return presignPutUrlWithClient(
     createStorageClient(config),
     key,
     contentType,
     expiresIn,
-    contentLength
+    contentLength,
+    signingDate
   );
 }
 

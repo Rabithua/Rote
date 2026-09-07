@@ -137,6 +137,22 @@ describe('attachment upload flow', () => {
     expect(new URL(putUrl).searchParams.get('X-Amz-SignedHeaders')).toBe('content-type;host');
   });
 
+  it('signs from the same instant used to store the credential deadline', async () => {
+    const signingDate = new Date('2026-09-07T00:00:00.000Z');
+    const { putUrl } = await presignPutUrlForConfig(
+      storageConfig,
+      `users/${USER_ID}/staging/${LIVE_UUID}/uploads/photo.jpg`,
+      'image/jpeg',
+      900,
+      12,
+      signingDate
+    );
+    const query = new URL(putUrl).searchParams;
+
+    expect(query.get('X-Amz-Date')).toBe('20260907T000000Z');
+    expect(query.get('X-Amz-Expires')).toBe('900');
+  });
+
   it('presigns a client JPEG preview target for Live Photos', async () => {
     const signed: Array<{ contentType?: string; key: string }> = [];
     const result = await presignAttachmentUploads(
