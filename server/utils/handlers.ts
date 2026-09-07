@@ -3,6 +3,7 @@ import { ShareNoteNotFound } from '../noteShares/repository';
 import { HonoContext } from '../types/hono';
 import { ResourcePolicyError } from '../resources/errors';
 import { PushApiError } from '../push/errors';
+import { HTTPException } from 'hono/http-exception';
 
 function containsSensitiveServerDetails(message: string): boolean {
   const normalized = message.toLowerCase();
@@ -19,6 +20,9 @@ function containsSensitiveServerDetails(message: string): boolean {
 }
 
 export const errorHandler = async (err: Error, c: HonoContext) => {
+  if (err instanceof HTTPException) {
+    return c.json({ code: 1, message: err.message, data: null }, err.status);
+  }
   if (err instanceof ShareNoteNotFound) {
     return c.json({ code: 1, message: 'share_not_found', data: null }, 404);
   }

@@ -26,6 +26,8 @@ describe('request recorder path privacy', () => {
       expect(response.status).toBe(200);
       expect(messages).toHaveLength(1);
       expect(messages[0]).toContain('Path: /internal/billing/grants/:userId');
+      expect(messages[0]).toContain('Status: 200');
+      expect(messages[0]).toMatch(/DurationMs: \d+$/);
       expect(messages[0]).not.toContain(userId);
     } finally {
       log.mockRestore();
@@ -55,8 +57,53 @@ describe('request recorder path privacy', () => {
       expect(response.status).toBe(200);
       expect(messages).toHaveLength(1);
       expect(messages[0]).toContain('Path: /v2/api/billing/app-store/activate');
+      expect(messages[0]).toContain('Status: 200');
+      expect(messages[0]).toMatch(/DurationMs: \d+$/);
       expect(messages[0]).not.toContain(signedTransactionInfo);
       expect(messages[0]).not.toContain('signedTransactionInfo');
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it('records the final error status returned by the application handler', async () => {
+    const messages: string[] = [];
+    const log = spyOn(console, 'log').mockImplementation((message) => {
+      messages.push(String(message));
+    });
+    const app = new Hono<{ Variables: HonoVariables }>();
+    app.use('*', recorderIpAndTime);
+    app.get('/failure', () => {
+      throw new Error('expected test failure');
+    });
+    app.onError((_error, c) => c.text('failed', 503));
+
+    try {
+      const response = await app.request('/failure');
+
+      expect(response.status).toBe(503);
+      expect(messages).toHaveLength(1);
+      expect(messages[0]).toContain('Path: /failure');
+      expect(messages[0]).toContain('Status: 503');
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it('does not record routine health checks', async () => {
+    const messages: string[] = [];
+    const log = spyOn(console, 'log').mockImplementation((message) => {
+      messages.push(String(message));
+    });
+    const app = new Hono<{ Variables: HonoVariables }>();
+    app.use('*', recorderIpAndTime);
+    app.get('/v2/api/health', (c) => c.json({ ok: true }));
+
+    try {
+      const response = await app.request('/v2/api/health');
+
+      expect(response.status).toBe(200);
+      expect(messages).toHaveLength(0);
     } finally {
       log.mockRestore();
     }

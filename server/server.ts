@@ -85,6 +85,7 @@ app.use(
     allowHeaders: [
       'Content-Type',
       'Authorization',
+      'Idempotency-Key',
       'X-API-Key',
       'X-WeRead-API-Key',
       'X-Memos-Access-Token',

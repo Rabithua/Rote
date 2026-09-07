@@ -3,31 +3,20 @@ import { TagSelector } from '@/components/others/TagSelector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import type { Article, Attachment, Rote } from '@/types/main';
-import { del, post, put } from '@/utils/api';
-import {
-  finalize as finalizeUpload,
-  finalizeDirect,
-  getUploadErrorMessage,
-  isResourceUploadPolicyError,
-  presign,
-  presignDirect,
-  uploadToSignedUrl,
-} from '@/utils/directUpload';
-// 压缩与并发工具
+import { del } from '@/utils/api';
+import { NoteSubmission } from '@/features/attachments/noteSubmission';
+import type { EditorDraft } from '@/state/editor';
+import { getUploadErrorMessage } from '@/utils/directUpload';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { usePermissions } from '@/hooks/usePermissions';
 
 import { getAttachmentMediaKind } from '@/utils/directUpload';
-import { generateVideoPoster } from '@/utils/generateVideoPoster';
 import {
   DEFAULT_MAX_VIDEO_UPLOAD_SIZE_MB,
   IMAGE_ACCEPT,
   VIDEO_ACCEPT,
   isImageFile,
   isVideoFile,
-  maybeCompressToWebp,
-  qualityForSize,
-  runConcurrency,
 } from '@/utils/uploadHelpers';
 import { useAtom, type PrimitiveAtom } from 'jotai';
 import debounce from 'lodash/debounce';
@@ -47,7 +36,7 @@ import AttachmentList from './AttachmentList';
 // sessionStorage key for article creation context
 export const ARTICLE_CREATION_CONTEXT_KEY = 'article-creation-context';
 
-type RoteAtomType = PrimitiveAtom<Rote>;
+type RoteAtomType = PrimitiveAtom<EditorDraft>;
 
 function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?: () => void }) {
   const navigate = useNavigate();
@@ -59,8 +48,9 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [submiting, setSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<Map<File, number>>(new Map());
-  const [retryableFiles, setRetryableFiles] = useState<Set<File>>(new Set());
-  const activeUploadFiles = useRef<Set<File>>(new Set());
+  const [attachmentFailure, setAttachmentFailure] = useState(false);
+  const submittingRef = useRef(false);
+  const submission = useRef(new NoteSubmission());
   const [rote, setRote] = useAtom(roteAtom);
   const { data: siteStatus } = useSiteStatus();
   const { capabilities } = usePermissions();
@@ -70,7 +60,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     siteStatus?.ui?.allowUploadFile !== false &&
     capabilities?.['attachment.upload'].allowed === true;
   const canUploadVideo = canUpload && capabilities?.['attachment.video.upload'].allowed === true;
-  const canUploadDirectlyToFinalKey = siteStatus?.ui?.attachmentDirectFinalUpload === true;
+  const canUploadDirectlyFromBrowser = siteStatus?.ui?.attachmentDirectBrowserUpload === true;
   const maxVideoUploadSizeMB =
     siteStatus?.ui?.maxVideoUploadSizeMB || DEFAULT_MAX_VIDEO_UPLOAD_SIZE_MB;
   const maxVideoUploadSizeBytes = maxVideoUploadSizeMB * 1024 * 1024;
@@ -122,7 +112,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     setLocalContent('');
     setUploadingFiles(new Set());
     setUploadProgress(new Map());
-    setRetryableFiles(new Set());
+    setAttachmentFailure(false);
+    submission.current = new NoteSubmission();
   }, [setRote]);
 
   useEffect(() => {
@@ -200,48 +191,24 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     checkNewArticle();
   }, [location.pathname, selectArticle, t]);
 
-  // 删除附件：先本地移除（乐观），再静默调用后端删除
   const deleteFile = useCallback(
-    (indexToRemove: number) => {
+    async (indexToRemove: number) => {
+      if (submittingRef.current || attachmentFailure) return;
       const item = rote.attachments[indexToRemove];
-      // 先本地移除
-      setRote((prevRote) => ({
-        ...prevRote,
-        attachments: prevRote.attachments.filter((_, index) => index !== indexToRemove),
-      }));
-
-      if (item instanceof File) {
-        setRetryableFiles((prev) => {
-          const next = new Set(prev);
-          next.delete(item);
-          return next;
-        });
-        setUploadProgress((prev) => {
-          const next = new Map(prev);
-          next.delete(item);
-          return next;
-        });
-      }
-
-      // 异步静默请求后端删除（仅对已上传的附件）
-      if (!(item instanceof File)) {
-        void del(`/attachments/${item.id}`).catch(() => {});
+      try {
+        if (!(item instanceof File)) await del(`/attachments/${item.id}`);
+        setRote((prev) => ({ ...prev, attachments: prev.attachments.filter((a) => a !== item) }));
+      } catch (error) {
+        toast.error(getUploadErrorMessage(error));
       }
     },
-    [rote.attachments, setRote]
+    [rote.attachments, setRote, attachmentFailure]
   );
 
-  const uploadFiles = useCallback(
-    async (requestedFiles: File[], preserveOnFailure = false) => {
-      const files = requestedFiles.filter((file) => !activeUploadFiles.current.has(file));
-      if (!files?.length) return;
-
-      const existingAttachments = rote.attachments.filter(
-        (attachment) => !(attachment instanceof File && files.includes(attachment))
-      );
-      const existingMediaKinds = existingAttachments
-        .map((attachment) => getAttachmentMediaKind(attachment))
-        .filter(Boolean);
+  const addFiles = useCallback(
+    (files: File[]) => {
+      if (!files.length || submittingRef.current || attachmentFailure) return;
+      const existingMediaKinds = rote.attachments.map(getAttachmentMediaKind).filter(Boolean);
       const existingHasVideo = existingMediaKinds.includes('video');
       const existingImageCount = existingMediaKinds.filter(
         (kind) => kind === 'image' || kind === 'livePhoto'
@@ -289,333 +256,93 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         return;
       }
 
-      files.forEach((file) => activeUploadFiles.current.add(file));
-      setRetryableFiles((prev) => {
-        const next = new Set(prev);
-        files.forEach((file) => next.delete(file));
-        return next;
-      });
-      setRote((prev) => ({
-        ...prev,
-        attachments: [
-          ...prev.attachments,
-          ...files.filter((file) => !prev.attachments.includes(file)),
-        ],
-      }));
-      setUploadingFiles((prev) => {
-        const next = new Set(prev);
-        files.forEach((f) => next.add(f));
-        return next;
-      });
-      setUploadProgress((prev) => {
-        const next = new Map(prev);
-        files.forEach((f) => next.set(f, 0));
-        return next;
-      });
-
-      try {
-        const CONCURRENCY = 3;
-        const preparedFiles = canUploadDirectlyToFinalKey
-          ? await runConcurrency(
-              files,
-              async (file) => ({
-                compressedBlob: await maybeCompressToWebp(file, {
-                  maxWidthOrHeight: 2560,
-                  initialQuality: qualityForSize(file.size),
-                }),
-                file,
-                posterBlob: isVideoFile(file) ? await generateVideoPoster(file) : null,
-              }),
-              CONCURRENCY
-            ).then((results) =>
-              results.map((result) => {
-                if (!result.success || !result.result) {
-                  throw result.error || new Error(t('uploadFailed'));
-                }
-                return result.result;
-              })
-            )
-          : files.map((file) => ({ compressedBlob: null, file, posterBlob: null }));
-        const presignFiles = preparedFiles.map(({ compressedBlob, file, posterBlob }) => ({
-          filename: file.name,
-          contentType: file.type || 'application/octet-stream',
-          size: file.size,
-          ...(compressedBlob
-            ? {
-                compressed: {
-                  contentType: compressedBlob.type as 'image/jpeg' | 'image/webp',
-                  size: compressedBlob.size,
-                },
-              }
-            : {}),
-          ...(posterBlob
-            ? { poster: { contentType: 'image/jpeg' as const, size: posterBlob.size } }
-            : {}),
-        }));
-        const useDirectFinalUpload = canUploadDirectlyToFinalKey;
-        const directPresign = useDirectFinalUpload ? await presignDirect(presignFiles) : null;
-        const signItems = directPresign ? directPresign.items : await presign(presignFiles);
-
-        const pairs = signItems.map((item, idx) => ({ item, prepared: preparedFiles[idx] }));
-
-        const toFinalize: Array<{
-          uuid: string;
-          originalKey: string;
-          compressedKey?: string;
-          posterKey?: string;
-          size: number;
-          mimetype: string;
-        }> = [];
-
-        // 使用改进后的 runConcurrency，获取每个任务的成功/失败状态
-        const results = await runConcurrency(
-          pairs,
-          async ({ item, prepared }, _index) => {
-            const { compressedBlob, file, posterBlob } = prepared;
-            // 防御：空文件不上传
-            if (!file || (file as File).size === 0) {
-              throw new Error('Empty file');
-            }
-
-            const derivedCompressedBlob = useDirectFinalUpload
-              ? compressedBlob
-              : await maybeCompressToWebp(file, {
-                  maxWidthOrHeight: 2560,
-                  initialQuality: qualityForSize(file.size),
-                });
-            const derivedPosterBlob = useDirectFinalUpload
-              ? posterBlob
-              : isVideoFile(file)
-                ? await generateVideoPoster(file)
-                : null;
-
-            // 原图上传（必须成功）
-            await uploadToSignedUrl(item.original.putUrl, file, (progress) => {
-              setUploadProgress((prev) => {
-                const next = new Map(prev);
-                next.set(file, progress);
-                return next;
-              });
-            });
-
-            let compressedKey: string | undefined;
-            let posterKey: string | undefined;
-            if (derivedCompressedBlob && item.compressed) {
-              await uploadToSignedUrl(item.compressed.putUrl, derivedCompressedBlob);
-              compressedKey = item.compressed.key;
-            }
-
-            if (derivedPosterBlob && item.poster) {
-              await uploadToSignedUrl(item.poster.putUrl, derivedPosterBlob);
-              posterKey = item.poster.key;
-            }
-
-            // 只有原图上传成功（且压缩图上传成功或不需要压缩）才添加到 toFinalize
-            // 注意：这里不直接 push，而是通过返回值处理
-            return {
-              uuid: item.uuid,
-              originalKey: item.original.key,
-              compressedKey,
-              posterKey,
-              size: file.size,
-              mimetype: file.type,
-            };
-          },
-          CONCURRENCY
-        );
-
-        // 只处理成功上传的文件
-        for (const result of results) {
-          if (result.success && result.result) {
-            // result.result 是 worker 函数返回的数据
-            toFinalize.push(result.result);
-          } else {
-            // 记录失败的文件
-            // eslint-disable-next-line no-console
-            console.error(
-              `File upload failed for index ${result.index}:`,
-              result.error?.message || 'Unknown error'
-            );
-          }
-        }
-
-        // 如果没有成功上传的文件，抛出错误
-        if (toFinalize.length === 0) {
-          const failedCount = results.filter((r) => !r.success).length;
-          throw new Error(
-            `All ${failedCount} file(s) failed to upload. Please check your network connection and try again.`
-          );
-        }
-
-        // 如果有部分文件失败，提示用户
-        const failedCount = results.filter((r) => !r.success).length;
-        if (useDirectFinalUpload && failedCount > 0) {
-          const firstFailure = results.find((result) => !result.success);
-          throw firstFailure?.error || new Error(t('uploadFailed'));
-        }
-        if (failedCount > 0) {
-          toast.warning(
-            `${failedCount} file(s) failed to upload, ${toFinalize.length} file(s) uploaded successfully.`
-          );
-        }
-
-        const finalizeData = toFinalize;
-        // 批量 finalize，减少请求数
-        const finalized = finalizeData.length
-          ? directPresign
-            ? await finalizeDirect(finalizeData, directPresign.reservationId, rote.id || undefined)
-            : await finalizeUpload(finalizeData, rote.id || undefined)
-          : [];
-
-        // 用后端返回结果替换本地 File 占位
-        setRote((prev) => ({
-          ...prev,
-          attachments: [
-            ...prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
-            ...(Array.isArray(finalized) ? finalized : []),
-          ],
-        }));
-        setRetryableFiles((prev) => {
-          const next = new Set(prev);
-          files.forEach((file) => next.delete(file));
-          return next;
-        });
-      } catch (error: any) {
-        // Resource-policy failures are recoverable by deleting cloud files,
-        // restoring Pro, or waiting for the instance administrator. Keep the
-        // local File placeholders so a failed cloud upload never discards the
-        // user's draft attachments.
-        if (!isResourceUploadPolicyError(error) && !preserveOnFailure) {
-          setRote((prev) => ({
-            ...prev,
-            attachments: prev.attachments.filter((a) => !(a instanceof File && files.includes(a))),
-          }));
-        } else {
-          setRetryableFiles((prev) => {
-            const next = new Set(prev);
-            files.forEach((file) => next.add(file));
-            return next;
-          });
-        }
-        toast.error(`${t('uploadFailed')}: ${getUploadErrorMessage(error)}`);
-      } finally {
-        files.forEach((file) => activeUploadFiles.current.delete(file));
-        // 清理上传中标记
-        setUploadingFiles((prev) => {
-          const next = new Set(prev);
-          files.forEach((f) => next.delete(f));
-          return next;
-        });
-        setUploadProgress((prev) => {
-          const next = new Map(prev);
-          files.forEach((f) => next.delete(f));
-          return next;
-        });
-      }
+      setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
     },
     [
       canUploadVideo,
-      canUploadDirectlyToFinalKey,
       maxVideoUploadSizeBytes,
       maxVideoUploadSizeMB,
       rote.attachments,
-      rote.id,
       setRote,
       t,
+      attachmentFailure,
     ]
   );
 
-  const submit = useCallback(() => {
-    const contentToSubmit = localContent;
-
-    if (rote.attachments.some((attachment) => attachment instanceof File)) {
-      toast.error(t('pendingAttachments'));
-      return;
-    }
-
-    if (!contentToSubmit.trim() && rote.attachments.length === 0) {
+  const submit = useCallback(async () => {
+    if (submittingRef.current) return;
+    if (!localContent.trim()) {
       toast.error(t('error.emptyContent'));
       return;
     }
-
-    const toastId = toast.loading(t('sending'));
+    submittingRef.current = true;
+    debouncedUpdateContent.cancel();
     setSubmitting(true);
+    const createId = rote.createId || crypto.randomUUID();
+    const draft = { ...rote, content: localContent.trim(), createId };
+    setRote(draft);
+    const files = draft.attachments.filter((item): item is File => item instanceof File);
+    const toastId = toast.loading(t('sending'));
+    setUploadingFiles(new Set(files));
+    try {
+      const result = await submission.current.submit(
+        draft,
+        createId,
+        {
+          browserDirectUpload: canUploadDirectlyFromBrowser,
+          batchFinalize: siteStatus?.ui?.attachmentBatchFinalize === true,
+        },
+        (note) => setRote((prev) => ({ ...prev, id: note.id })),
+        (file, progress) => setUploadProgress((prev) => new Map(prev).set(file, progress))
+      );
+      toast.success(t('sendSuccess'), { id: toastId });
+      if (callback) {
+        resetEditor();
+        callback();
+      } else {
+        setRote(result);
+        setLocalContent(result.content);
+        setAttachmentFailure(false);
+        submission.current = new NoteSubmission();
+      }
+    } catch (error) {
+      setAttachmentFailure(files.length > 0);
+      toast.error(`${t('sendFailed')}: ${getUploadErrorMessage(error)}`, { id: toastId });
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+      setUploadingFiles(new Set());
+      setUploadProgress(new Map());
+    }
+  }, [
+    localContent,
+    rote,
+    t,
+    callback,
+    setRote,
+    resetEditor,
+    debouncedUpdateContent,
+    canUploadDirectlyFromBrowser,
+    siteStatus?.ui?.attachmentBatchFinalize,
+  ]);
 
-    // 对于新建场景，把未绑定的附件 id 带上，由后端绑定
-    const attachmentIds = (
-      rote.attachments.filter((a): a is Attachment => !(a instanceof File)) as Attachment[]
-    )
-      .filter((a) => !a.roteid)
-      .map((a) => a.id);
-
-    // 对于编辑场景，收集已绑定附件的排序信息
-    const existingAttachmentIds = (
-      rote.attachments.filter((a): a is Attachment => !(a instanceof File)) as Attachment[]
-    )
-      .filter((a) => a.roteid === rote.id)
-      .map((a) => a.id);
-
-    // 从 rote 中排除 article 字段，避免干扰请求
-
-    const { article: _article, ...roteWithoutArticle } = rote;
-
-    const submitData: any = {
-      ...roteWithoutArticle,
-      content: contentToSubmit.trim(),
-      id: rote.id || undefined,
-      attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined,
-      // 编辑时：如果 articleId 为 null，显式传 null 以删除绑定
-      // 新建时：如果 articleId 为 null，不传该字段
-      articleId: rote.id ? rote.articleId : rote.articleId || undefined,
-    };
-
-    const submitPromise = rote.id
-      ? put('/notes/' + rote.id, submitData).then(async (res) => {
-          // 更新笔记后，如果有附件排序变化，发送排序更新请求
-          if (existingAttachmentIds.length > 0) {
-            await put('/attachments/sort', {
-              roteId: rote.id,
-              attachmentIds: existingAttachmentIds,
-            });
-          }
-          return res;
-        })
-      : post('/notes', submitData);
-
-    submitPromise
-      .then(async (res) => {
-        toast.success(t('sendSuccess'), {
-          id: toastId,
-        });
-
-        // 执行回调
-        if (callback) {
-          callback();
-        }
-
-        // 清理编辑器状态
-        if (callback) {
-          // 有回调说明是在弹窗或组件中，需要重置编辑器
-          resetEditor();
-        } else if (!rote.id) {
-          // 新建笔记成功，重置编辑器为空状态
-          resetEditor();
-        } else if (res?.data) {
-          // 编辑现有笔记，更新为服务器返回的数据
-          setRote(res.data);
-          setLocalContent(res.data.content || '');
-        }
-      })
-      .catch((error) => {
-        const errorMessage = error.response?.data?.message || t('sendFailed');
-        toast.error(`${t('sendFailed')}: ${errorMessage}`, {
-          id: toastId,
-        });
-      })
-      .finally(() => {
-        setSubmitting(false);
-      });
-  }, [localContent, rote, t, callback, setRote, resetEditor]);
+  const discardAttachments = useCallback(async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      const attachments = rote.id
+        ? await submission.current.discardAttachments(rote.id)
+        : rote.attachments.filter((item) => !(item instanceof File));
+      setRote((prev) => ({ ...prev, attachments }));
+      setAttachmentFailure(false);
+    } catch (error) {
+      toast.error(getUploadErrorMessage(error));
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  }, [rote.id, rote.attachments, setRote]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -631,6 +358,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       const items = e.clipboardData?.items;
       if (!items) return;
 
+      const files: File[] = [];
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (item.type.startsWith('image/')) {
@@ -639,12 +367,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
             const file = new File([blob], `pasted-image-${Date.now()}.png`, {
               type: blob.type,
             });
-            uploadFiles([file]);
+            files.push(file);
           }
         }
       }
+      addFiles(files);
     },
-    [uploadFiles]
+    [addFiles]
   );
 
   const handleDrop = useCallback(
@@ -653,10 +382,10 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       const files = e.dataTransfer.files;
 
       if (files.length > 0) {
-        uploadFiles(Array.from(files));
+        addFiles(Array.from(files));
       }
     },
-    [uploadFiles]
+    [addFiles]
   );
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLTextAreaElement>) => {
@@ -702,27 +431,31 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   const handleFileAdd = useCallback(
     (newFileList: File[]) => {
-      uploadFiles(newFileList);
+      addFiles(newFileList);
     },
-    [uploadFiles]
+    [addFiles]
   );
 
   // 处理附件重新排序
   const handleAttachmentReorder = useCallback(
     (reorderedAttachments: (File | Attachment)[]) => {
+      if (submittingRef.current || attachmentFailure) return;
       setRote((prevRote) => ({
         ...prevRote,
         attachments: reorderedAttachments,
       }));
     },
-    [setRote]
+    [setRote, attachmentFailure]
   );
 
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
-  const hasPendingAttachments = rote.attachments.some((attachment) => attachment instanceof File);
 
   return (
-    <div className="bg-background grow space-y-2 overflow-hidden">
+    <div
+      className="bg-background grow space-y-2 overflow-hidden"
+      inert={submiting}
+      aria-busy={submiting}
+    >
       <Textarea
         value={localContent}
         placeholder={t('contentPlaceholder')}
@@ -748,24 +481,33 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           onReorder={handleAttachmentReorder}
           onFileAdd={handleFileAdd}
           roteId={rote.id}
-          disabled={submiting}
+          disabled={submiting || attachmentFailure}
           accept={uploadAccept}
           canAddMore={canAddMoreAttachments}
         />
       )}
 
-      {retryableFiles.size > 0 && (
+      {attachmentFailure && (
         <Alert className="animate-show">
           <AlertDescription className="flex items-center justify-between gap-3 font-light">
-            <span>{t('retryUploadDescription')}</span>
+            <span>{t(rote.id ? 'noteSavedAttachmentsPending' : 'retryUploadDescription')}</span>
             <Button
               type="button"
               size="sm"
               variant="outline"
-              disabled={uploadingFiles.size > 0}
-              onClick={() => void uploadFiles(Array.from(retryableFiles), true)}
+              disabled={submiting}
+              onClick={() => void submit()}
             >
               {t('retryUpload')}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              disabled={submiting}
+              onClick={() => void discardAttachments()}
+            >
+              {t('discardPendingAttachments')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -872,10 +614,10 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           type="button"
           className="ml-auto flex items-center gap-2 px-4 py-1 active:scale-95"
           onClick={submit}
-          disabled={submiting || hasPendingAttachments}
+          disabled={submiting}
         >
           <Send className="size-4" />
-          {t('send')}
+          {t(submiting ? 'sending' : 'send')}
         </Button>
       </div>
 

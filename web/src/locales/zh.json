@@ -348,6 +348,7 @@
           "storageQuotaExceeded": "当前空间不足；本页面打开期间，附件仍保留在当前草稿中。你可以删除一些云端附件、恢复 Rote Pro 后重试；若使用自定义实例，请联系管理员。",
           "reservationExpired": "本次上传凭证已过期；本页面打开期间，附件仍保留在当前草稿中。请重新上传。",
           "manifestMismatch": "服务器未能确认这次上传的完整性；本页面打开期间，附件仍保留在当前草稿中。请重新上传；若问题持续，请联系管理员。",
+          "attachmentBatchFinalizing": "服务器仍在完成这次上传，暂时无法丢弃。附件会保留在当前草稿中，请稍后重试。",
           "reconciliationRequired": "服务器正在核对存储用量，暂时不能上传。本页面打开期间，附件仍保留在当前草稿中，请稍后重试。",
           "backendUnsupported": "存储服务暂时无法完成上传；本页面打开期间，附件仍保留在当前草稿中。请稍后重试或联系管理员。"
         },
@@ -1973,6 +1974,9 @@
       "uploadFailed": "附件上传失败",
       "retryUpload": "重新上传",
       "retryUploadDescription": "这些附件还没有上传成功，处理提示的问题后可以重试。",
+      "noteSavedAttachmentsPending": "笔记已保存，附件尚未完成。可以继续上传，或放弃待上传附件。",
+      "discardPendingAttachments": "放弃待上传附件",
+      "deleteAttachment": "删除附件",
       "pendingAttachments": "请等待所有附件上传完成后再发送。",
       "sending": "发送中...",
       "sendSuccess": "发送成功",

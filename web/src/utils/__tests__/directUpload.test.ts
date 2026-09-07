@@ -1,18 +1,20 @@
 import i18n from 'i18next';
-import { post } from '../api';
+import { del, post } from '../api';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
-  finalizeDirect,
+  cancelUploadReservation,
+  finalizeReservedUpload,
   getResourceUploadErrorCode,
   getUploadErrorMessage,
   isResourceUploadPolicyError,
-  presignDirect,
+  presignBrowserUpload,
 } from '../directUpload';
 
-vi.mock('../api', () => ({ post: vi.fn() }));
+vi.mock('../api', () => ({ del: vi.fn(), post: vi.fn() }));
 
 afterEach(() => {
   vi.mocked(post).mockReset();
+  vi.mocked(del).mockReset();
 });
 
 beforeAll(async () => {
@@ -24,7 +26,10 @@ beforeAll(async () => {
           pages: {
             profile: {
               resources: {
-                errors: { storageQuotaExceeded: 'Friendly quota guidance' },
+                errors: {
+                  storageQuotaExceeded: 'Friendly quota guidance',
+                  attachmentBatchFinalizing: 'Please retry discard shortly',
+                },
               },
             },
           },
@@ -54,6 +59,14 @@ describe('resource upload errors', () => {
     expect(isResourceUploadPolicyError(error)).toBe(true);
   });
 
+  it('localizes an active-finalizer cancellation response', () => {
+    const error = {
+      response: { data: { message: 'attachment_batch_finalizing' } },
+    };
+
+    expect(getUploadErrorMessage(error)).toBe('Please retry discard shortly');
+  });
+
   it('does not classify ordinary network failures as policy errors', () => {
     const error = new Error('Network Error');
     expect(getResourceUploadErrorCode(error)).toBeNull();
@@ -61,8 +74,8 @@ describe('resource upload errors', () => {
   });
 });
 
-describe('direct final uploads', () => {
-  it('requests final object keys and preserves the reservation identifier', async () => {
+describe('direct browser uploads', () => {
+  it('requests reservation-scoped browser uploads and preserves the reservation identifier', async () => {
     vi.mocked(post).mockResolvedValue({
       code: 0,
       data: {
@@ -80,7 +93,7 @@ describe('direct final uploads', () => {
       },
     });
 
-    const result = await presignDirect([
+    const result = await presignBrowserUpload([
       {
         compressed: { contentType: 'image/webp', size: 256 },
         contentType: 'image/jpeg',
@@ -90,7 +103,7 @@ describe('direct final uploads', () => {
     ]);
 
     expect(post).toHaveBeenCalledWith('/attachments/presign', {
-      directFinalUpload: true,
+      browserDirectUpload: true,
       files: [
         {
           compressed: { contentType: 'image/webp', size: 256 },
@@ -106,7 +119,7 @@ describe('direct final uploads', () => {
   it('passes the reservation identifier when finalizing an unbound attachment', async () => {
     vi.mocked(post).mockResolvedValue({ code: 0, data: [{ id: 'attachment' }] });
 
-    await finalizeDirect(
+    await finalizeReservedUpload(
       [
         {
           mimetype: 'image/jpeg',
@@ -130,5 +143,13 @@ describe('direct final uploads', () => {
       noteId: undefined,
       reservationId: 'reservation',
     });
+  });
+
+  it('cancels an abandoned reservation', async () => {
+    vi.mocked(del).mockResolvedValue({ code: 0 });
+
+    await cancelUploadReservation('reservation');
+
+    expect(del).toHaveBeenCalledWith('/attachments/reservations/reservation');
   });
 });

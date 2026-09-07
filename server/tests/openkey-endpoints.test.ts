@@ -1130,13 +1130,7 @@ export class OpenKeyEndpointsTestSuite {
     try {
       const response = await this.openkeyClient.get('/notes?openkey=invalid-key-12345');
 
-      // 应该返回 401/400/403 或 500 (服务器行为)
-      if (
-        response.status === 401 ||
-        response.status === 400 ||
-        response.status === 403 ||
-        response.status === 500
-      ) {
+      if (response.status === 400) {
         const duration = Date.now() - startTime;
         this.resultManager.recordResult(
           'Error Test: Invalid OpenKey',
@@ -1145,7 +1139,7 @@ export class OpenKeyEndpointsTestSuite {
           duration
         );
       } else {
-        throw new Error(`Expected 401/400/403, got ${response.status}`);
+        throw new Error(`Expected 400, got ${response.status}`);
       }
     } catch (error: any) {
       const duration = Date.now() - startTime;

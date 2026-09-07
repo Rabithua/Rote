@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
 import { attachments as attachmentsTable, rotes, users } from '../drizzle/schema';
 import {
   assertUploadReservationGrantCurrent,
+  cancelUploadReservation,
   claimUploadReservationForFinalize,
   completeClaimedUploadReservation,
   releaseUploadReservationFinalizeClaim,
@@ -15,13 +16,13 @@ import { createRoteChange, upsertAttachmentsByOriginalKey } from '../utils/dbMet
 import { MAX_FILES, validateRoteAttachmentDetails } from '../utils/fileValidation';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 import { finalizeAttachmentUploads } from './finalizeUpload';
-import { isDirectFinalUploadManifest, prepareDirectFinalUpload } from './directFinalUpload';
+import { isDirectFinalUploadManifest } from './directFinalUpload';
+import { normalizeFinalizeAttachmentsFromManifest } from './finalizePayload';
 import type {
   AttachmentBatchOrderReference,
   FinalizeAttachmentBatchInput,
   FinalizeAttachmentBatchResult,
 } from './types';
-import { requireStorageAvailable } from './types';
 
 type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: bigint };
 
@@ -415,18 +416,29 @@ export async function finalizeAttachmentBatch(params: {
   }
   const claim: ActiveFinalizeClaim = claimResult;
 
+  if (isDirectFinalUploadManifest(claim.reservation.manifest)) {
+    await releaseUploadReservationFinalizeClaim({
+      batchId: normalizedBatchId,
+      leaseToken: claim.leaseToken,
+      reservationId: claim.reservation.id,
+      userId: params.userId,
+    });
+    await cancelUploadReservation(params.userId, claim.reservation.id);
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 409);
+  }
+
   try {
-    const prepared = isDirectFinalUploadManifest(claim.reservation.manifest)
-      ? prepareDirectFinalUpload(
-          input,
-          claim.reservation.manifest,
-          params.userId,
-          requireStorageAvailable().urlPrefix
-        )
-      : await prepareUploadsOutsideTransaction(input, claim, params.userId);
+    const normalizedInput = {
+      ...input,
+      attachments: normalizeFinalizeAttachmentsFromManifest(
+        input.attachments,
+        claim.reservation.manifest
+      ),
+    };
+    const prepared = await prepareUploadsOutsideTransaction(normalizedInput, claim, params.userId);
     const result = await persistBatch({
       claim,
-      input,
+      input: normalizedInput,
       objects: prepared.objects,
       uploads: prepared.uploads,
       userId: params.userId,

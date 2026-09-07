@@ -1,12 +1,13 @@
 import type { AttachmentMedia } from '@/types/main';
 import axios, { type AxiosProgressEvent } from 'axios';
 import i18n from 'i18next';
-import { post } from './api';
+import { del, post } from './api';
 
 const RESOURCE_UPLOAD_ERROR_TRANSLATIONS = {
   resource_storage_quota_exceeded: 'pages.profile.resources.errors.storageQuotaExceeded',
   resource_upload_reservation_expired: 'pages.profile.resources.errors.reservationExpired',
   resource_upload_manifest_mismatch: 'pages.profile.resources.errors.manifestMismatch',
+  attachment_batch_finalizing: 'pages.profile.resources.errors.attachmentBatchFinalizing',
   resource_storage_reconciliation_required: 'pages.profile.resources.errors.reconciliationRequired',
   resource_storage_backend_unsupported: 'pages.profile.resources.errors.backendUnsupported',
 } as const;
@@ -73,10 +74,10 @@ export interface PresignResponse {
   };
 }
 
-async function requestPresign(files: PresignFile[], directFinalUpload = false) {
+async function requestPresign(files: PresignFile[], browserDirectUpload = false) {
   const res = (await post('/attachments/presign', {
     files,
-    ...(directFinalUpload ? { directFinalUpload: true } : {}),
+    ...(browserDirectUpload ? { browserDirectUpload: true } : {}),
   })) as PresignResponse;
   if (res.code !== 0) throw new Error(res.message || 'presign failed');
   return res.data;
@@ -86,7 +87,7 @@ export async function presign(files: PresignFile[]) {
   return (await requestPresign(files)).items;
 }
 
-export async function presignDirect(files: PresignFile[]) {
+export async function presignBrowserUpload(files: PresignFile[]) {
   const data = await requestPresign(files, true);
   if (!data.reservationId) {
     throw new Error('resource_upload_manifest_mismatch');
@@ -218,7 +219,7 @@ export async function finalize(attachments: FinalizeAttachment[], noteId?: strin
   return (res.data as any[]) || [];
 }
 
-export async function finalizeDirect(
+export async function finalizeReservedUpload(
   attachments: FinalizeAttachment[],
   reservationId: string,
   noteId?: string
@@ -230,6 +231,11 @@ export async function finalizeDirect(
   })) as Record<string, any>;
   if (res.code !== 0) throw new Error(res.message || 'finalize failed');
   return (res.data as any[]) || [];
+}
+
+export async function cancelUploadReservation(reservationId: string) {
+  const res = (await del(`/attachments/reservations/${reservationId}`)) as Record<string, any>;
+  if (res.code !== 0) throw new Error(res.message || 'reservation cancellation failed');
 }
 
 export function getAttachmentMediaKind(attachment: File | AttachmentMedia): MediaKind | null {

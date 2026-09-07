@@ -231,7 +231,7 @@ function ProfilePage() {
       setAvatarUploading(true);
       const croppedImage = await createCroppedImage(avatarFile, croppedAreaPixels);
       const attachment = await uploadAvatar(croppedImage, {
-        directFinalUpload: siteStatus?.ui?.attachmentDirectFinalUpload === true,
+        browserDirectUpload: siteStatus?.ui?.attachmentDirectBrowserUpload === true,
       });
       const accepted = await acceptPendingAvatarAttachment(attachment, session, generation);
       if (!accepted) {
@@ -327,7 +327,7 @@ function ProfilePage() {
     let uploadedAttachment: Attachment | null = null;
     try {
       uploadedAttachment = await uploadCover(selectedFile, {
-        directFinalUpload: siteStatus?.ui?.attachmentDirectFinalUpload === true,
+        browserDirectUpload: siteStatus?.ui?.attachmentDirectBrowserUpload === true,
       });
       if (!isMountedRef.current || generation !== coverUploadGenerationRef.current) {
         await deletePendingAttachmentQuietly(uploadedAttachment.id);

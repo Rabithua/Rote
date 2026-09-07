@@ -123,46 +123,10 @@ export async function cancelPendingUploadReservationsForUser(
       )
       .for('update');
     if (activeReservations.length === 0) return;
-    const cleanupNotBefore = activeReservations.reduce(
-      (latest: Date, reservation: { finalizingLeaseExpiresAt: Date | null }) =>
-        reservation.finalizingLeaseExpiresAt && reservation.finalizingLeaseExpiresAt > latest
-          ? reservation.finalizingLeaseExpiresAt
-          : latest,
-      new Date()
-    );
-    await enqueueStorageObjectCleanup(
-      transaction,
-      activeReservations.flatMap(({ manifest }: { manifest: unknown }) =>
-        reservationCleanupKeys(manifest as UploadReservationManifestItem[], true)
-      ),
-      cleanupNotBefore
-    );
-    const reservedBytes = activeReservations.reduce(
-      (total: bigint, reservation: { reservedBytes: bigint }) => total + reservation.reservedBytes,
-      BigInt(0)
-    );
-    await transaction
-      .update(resourceStorageAccounts)
-      .set({
-        reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservedBytes})`,
-        updatedAt: new Date(),
-      })
-      .where(eq(resourceStorageAccounts.userId, userId));
-    await transaction
-      .update(resourceUploadReservations)
-      .set({
-        status: 'cancelled',
-        finalizingBatchId: null,
-        finalizingLeaseToken: null,
-        finalizingLeaseExpiresAt: null,
-        completedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(resourceUploadReservations.userId, userId),
-          inArray(resourceUploadReservations.status, ['pending', 'finalizing'])
-        )
-      );
+    const now = new Date();
+    for (const reservation of activeReservations) {
+      await cancelLockedUploadReservation(transaction, reservation, now);
+    }
   };
   if (transactionOverride) await execute(transactionOverride);
   else await db.transaction(execute);
@@ -442,24 +406,35 @@ export type UploadReservationFinalizeClaim =
 
 const FINALIZE_LEASE_DURATION_MS = 2 * 60 * 1000;
 
+export function reservationCleanupNotBefore(
+  reservation: {
+    credentialExpiresAt: Date | null;
+    finalizingLeaseExpiresAt: Date | null;
+  },
+  now: Date
+): Date {
+  return [reservation.credentialExpiresAt, reservation.finalizingLeaseExpiresAt].reduce(
+    (latest: Date, candidate) => (candidate && candidate > latest ? candidate : latest),
+    now
+  );
+}
+
 async function cancelLockedUploadReservation(
   transaction: any,
   reservation: typeof resourceUploadReservations.$inferSelect,
   now: Date
 ): Promise<void> {
-  await transaction
-    .update(resourceStorageAccounts)
-    .set({
-      reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
-      updatedAt: now,
-    })
-    .where(eq(resourceStorageAccounts.userId, reservation.userId));
-  const cleanupAt =
-    reservation.status === 'finalizing' &&
-    reservation.finalizingLeaseExpiresAt !== null &&
-    reservation.finalizingLeaseExpiresAt.getTime() > now.getTime()
-      ? reservation.finalizingLeaseExpiresAt
-      : now;
+  const cleanupAt = reservationCleanupNotBefore(reservation, now);
+  const releaseChargeNow = cleanupAt.getTime() <= now.getTime();
+  if (releaseChargeNow) {
+    await transaction
+      .update(resourceStorageAccounts)
+      .set({
+        reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
+        updatedAt: now,
+      })
+      .where(eq(resourceStorageAccounts.userId, reservation.userId));
+  }
   await enqueueStorageObjectCleanup(
     transaction,
     reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true),
@@ -468,11 +443,13 @@ async function cancelLockedUploadReservation(
   await transaction
     .update(resourceUploadReservations)
     .set({
-      status: 'cancelled',
+      status: releaseChargeNow ? 'cancelled' : 'cancelling',
       finalizingBatchId: null,
       finalizingLeaseToken: null,
       finalizingLeaseExpiresAt: null,
       completedAt: now,
+      expiresAt: releaseChargeNow ? reservation.expiresAt : cleanupAt,
+      reservedBytes: releaseChargeNow ? BigInt(0) : reservation.reservedBytes,
     })
     .where(eq(resourceUploadReservations.id, reservation.id));
 }
@@ -874,23 +851,28 @@ export async function cancelUploadReservation(userId: string, id: string) {
       )
       .limit(1)
       .for('update');
-    if (!reservation || reservation.status !== 'pending') return;
-    await transaction
-      .update(resourceStorageAccounts)
-      .set({
-        reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
-        updatedAt: new Date(),
-      })
-      .where(eq(resourceStorageAccounts.userId, userId));
-    await transaction
-      .update(resourceUploadReservations)
-      .set({ status: 'cancelled', completedAt: new Date() })
-      .where(eq(resourceUploadReservations.id, id));
-    await enqueueStorageObjectCleanup(
-      transaction,
-      reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
-    );
+    if (!reservation) return;
+    const now = new Date();
+    if (!uploadReservationCanBeCancelled(reservation, now)) return;
+    await cancelLockedUploadReservation(transaction, reservation, now);
   });
+}
+
+export function uploadReservationCanBeCancelled(
+  reservation: Pick<
+    typeof resourceUploadReservations.$inferSelect,
+    'status' | 'finalizingLeaseExpiresAt'
+  >,
+  now: Date
+): boolean {
+  const hasActiveFinalizeLease =
+    reservation.status === 'finalizing' &&
+    reservation.finalizingLeaseExpiresAt !== null &&
+    reservation.finalizingLeaseExpiresAt.getTime() > now.getTime();
+  if (hasActiveFinalizeLease) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.attachmentBatchFinalizing, 503);
+  }
+  return reservation.status === 'pending' || reservation.status === 'finalizing';
 }
 
 export async function getPendingUploadReservation(
@@ -943,21 +925,7 @@ export async function getPendingUploadReservation(
       current.status !== 'grace_period';
     if (replacedEarly) {
       if (transactionOverride) {
-        await transactionOverride
-          .update(resourceStorageAccounts)
-          .set({
-            reservedBytes: sql`GREATEST(0, ${resourceStorageAccounts.reservedBytes} - ${reservation.reservedBytes})`,
-            updatedAt: new Date(),
-          })
-          .where(eq(resourceStorageAccounts.userId, userId));
-        await enqueueStorageObjectCleanup(
-          transactionOverride,
-          reservationCleanupKeys(reservation.manifest as UploadReservationManifestItem[], true)
-        );
-        await transactionOverride
-          .update(resourceUploadReservations)
-          .set({ status: 'cancelled', completedAt: new Date() })
-          .where(eq(resourceUploadReservations.id, reservationId));
+        await cancelLockedUploadReservation(transactionOverride, reservation, new Date());
       } else {
         await cancelUploadReservation(userId, reservationId);
       }

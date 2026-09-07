@@ -9,12 +9,14 @@ import {
 } from '@/utils/directUpload';
 import { generateVideoPoster } from '@/utils/generateVideoPoster';
 import { X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AttachmentItemProps {
   attachment: File | Attachment;
   index: number;
   isUploading: boolean;
+  disabled?: boolean;
   uploadProgress?: number;
   onDelete: (_index: number) => void;
 }
@@ -23,18 +25,23 @@ function AttachmentItem({
   attachment,
   index,
   isUploading,
+  disabled,
   uploadProgress,
   onDelete,
 }: AttachmentItemProps) {
+  const { t } = useTranslation();
   const mediaKind = getAttachmentMediaKind(attachment);
   const isLivePhoto = mediaKind === 'livePhoto';
   const [localPosterSrc, setLocalPosterSrc] = useState<string | null>(null);
-  const objectUrl = useMemo(
-    () => (attachment instanceof File ? URL.createObjectURL(attachment) : null),
-    [attachment]
-  );
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
 
-  useEffect(() => (objectUrl ? () => URL.revokeObjectURL(objectUrl) : undefined), [objectUrl]);
+  useEffect(() => {
+    const url = attachment instanceof File ? URL.createObjectURL(attachment) : null;
+    setObjectUrl(url);
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [attachment]);
 
   useEffect(() => {
     if (!(attachment instanceof File) || mediaKind !== 'video') {
@@ -141,14 +148,14 @@ function AttachmentItem({
 
       <button
         type="button"
-        disabled={isUploading}
+        disabled={disabled || isUploading}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
           onDelete(index);
         }}
         className="absolute top-1.5 right-1.5 z-10 flex cursor-pointer items-center justify-center rounded-md bg-[#00000080] p-2 backdrop-blur-xl duration-300 hover:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100"
-        aria-label="Delete attachment"
+        aria-label={t('components.roteInputSimple.deleteAttachment')}
       >
         <X className="size-3 text-white" />
       </button>

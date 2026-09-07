@@ -76,9 +76,9 @@ export class SiteTestSuite {
         'Upload sessions must not be advertised until the recovery API exists'
       );
       TestAssertions.assertEquals(
-        status.ui?.attachmentDirectFinalUpload,
+        status.ui?.attachmentDirectBrowserUpload,
         true,
-        'Direct final uploads should be advertised with batch finalization'
+        'Direct browser uploads should be advertised with reservation finalization'
       );
       TestAssertions.assertNotNull(
         typeof status.ai.available === 'boolean',

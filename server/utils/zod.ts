@@ -54,12 +54,15 @@ export const UsernameUpdateZod = z.object({
 });
 
 // 笔记相关验证
+const NoteContentZod = z
+  .string()
+  .min(1, 'Content cannot be empty')
+  .max(1000000, 'Content cannot exceed 1,000,000 characters')
+  .refine((content) => content.trim().length > 0, { message: 'Content cannot be empty' });
+
 export const NoteCreateZod = z.object({
   title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),
-  content: z
-    .string()
-    .min(1, 'Content cannot be empty')
-    .max(1000000, 'Content cannot exceed 1,000,000 characters'), // 约 1MB 文本
+  content: NoteContentZod, // 约 1MB 文本
   tags: z
     .array(
       z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
@@ -78,7 +81,7 @@ export const NoteCreateZod = z.object({
 
 export const NoteUpdateZod = z.object({
   title: z.string().max(200, 'Title cannot exceed 200 characters').optional(),
-  content: z.string().max(1000000, 'Content cannot exceed 1,000,000 characters').optional(),
+  content: NoteContentZod.optional(),
   tags: z
     .array(
       z.string().min(1, 'Tag cannot be empty').max(50, 'Single tag cannot exceed 50 characters')
@@ -130,7 +133,7 @@ export const ReactionCreateZod = z.object({
 
 // 附件文件名验证
 export const AttachmentPresignZod = z.object({
-  directFinalUpload: z.boolean().optional(),
+  browserDirectUpload: z.boolean().optional(),
   files: z
     .array(
       z.object({

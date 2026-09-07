@@ -2,6 +2,8 @@ import type { Attachment, Rote } from '@/types/main';
 import { atom } from 'jotai';
 import { atomWithStorage, createJSONStorage } from 'jotai/utils';
 
+export type EditorDraft = Rote & { createId?: string };
+
 export const emptyRote: Rote = {
   content: '',
   tags: [],
@@ -32,7 +34,7 @@ function isStoredAttachment(value: unknown): value is Attachment {
   );
 }
 
-export function sanitizeStoredEditorDraft(value: Rote): Rote {
+export function sanitizeStoredEditorDraft(value: EditorDraft): EditorDraft {
   return {
     ...value,
     // Browser File objects cannot be restored from JSON. Keep them in the
@@ -43,19 +45,24 @@ export function sanitizeStoredEditorDraft(value: Rote): Rote {
   };
 }
 
-const jsonEditorStorage = createJSONStorage<Rote>(() => localStorage);
+const jsonEditorStorage = createJSONStorage<EditorDraft>(() => localStorage);
 const editorStorage = {
-  getItem: (key: string, initialValue: Rote) =>
+  getItem: (key: string, initialValue: EditorDraft) =>
     sanitizeStoredEditorDraft(jsonEditorStorage.getItem(key, initialValue)),
-  setItem: (key: string, value: Rote) =>
+  setItem: (key: string, value: EditorDraft) =>
     jsonEditorStorage.setItem(key, sanitizeStoredEditorDraft(value)),
   removeItem: (key: string) => jsonEditorStorage.removeItem(key),
 };
 
-const editor_newRoteAtom = atomWithStorage<Rote>('editor_newRoteAtom', emptyRote, editorStorage, {
-  getOnInit: true,
-});
-const editor_editRoteAtom = atom<Rote>(emptyRote);
+const editor_newRoteAtom = atomWithStorage<EditorDraft>(
+  'editor_newRoteAtom',
+  emptyRote,
+  editorStorage,
+  {
+    getOnInit: true,
+  }
+);
+const editor_editRoteAtom = atom<EditorDraft>(emptyRote);
 
 export function useEditor() {
   return { editor_newRoteAtom, editor_editRoteAtom };

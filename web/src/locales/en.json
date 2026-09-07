@@ -358,6 +358,7 @@
           "storageQuotaExceeded": "There isn't enough space for this upload. Your attachment remains in this draft while this page is open. Delete some cloud attachments or restore Rote Pro and try again; for a custom instance, contact its administrator.",
           "reservationExpired": "This upload authorization expired. Your attachment remains in this draft while this page is open. Please upload it again.",
           "manifestMismatch": "The server couldn't verify the complete upload. Your attachment remains in this draft while this page is open. Please upload it again, or contact the administrator if this continues.",
+          "attachmentBatchFinalizing": "The server is still finishing this upload, so it cannot be discarded yet. Your attachment remains in this draft; please try again shortly.",
           "reconciliationRequired": "The server is checking storage usage, so uploads are temporarily paused. Your attachment remains in this draft while this page is open; please try again shortly.",
           "backendUnsupported": "The storage service couldn't complete this upload. Your attachment remains in this draft while this page is open. Try again later or contact the administrator."
         },
@@ -1983,6 +1984,9 @@
       "uploadFailed": "Attachment upload failed",
       "retryUpload": "Retry upload",
       "retryUploadDescription": "These attachments have not been uploaded yet. Fix the reported issue, then retry.",
+      "noteSavedAttachmentsPending": "Your note is saved, but its attachments are unfinished. Resume the upload or discard pending attachments.",
+      "discardPendingAttachments": "Discard pending attachments",
+      "deleteAttachment": "Delete attachment",
       "pendingAttachments": "Please wait for all attachments to finish uploading before sending.",
       "sending": "Sending...",
       "sendSuccess": "Sent successfully",

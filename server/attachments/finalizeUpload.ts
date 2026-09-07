@@ -35,11 +35,6 @@ import db from '../utils/drizzle';
 import { users } from '../drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { assertCompleteRequiredManifest, toUploadResult } from './finalizePayload';
-import {
-  isDirectFinalUploadManifest,
-  prepareDirectFinalUpload,
-  type PreparedDirectFinalUpload,
-} from './directFinalUpload';
 
 export { assertCompleteRequiredManifest, toUploadResult } from './finalizePayload';
 
@@ -68,6 +63,7 @@ const defaultDependencies: FinalizeAttachmentDependencies = {
 };
 
 type FinalizedManagedObject = UploadReservationManifestItem & { actualBytes: bigint };
+const MANAGED_PROMOTION_CONCURRENCY = 6;
 
 export function completedLegacyFinalizeResult(result: unknown): any[] {
   if (Array.isArray(result)) return result;
@@ -132,11 +128,39 @@ async function promoteManagedObjects(
     objects.push({ ...expected, actualBytes: BigInt(info.contentLength) });
     return expected.finalKey;
   };
+  const promotionTasks = attachments.flatMap((item) => [
+    async () => {
+      item.originalKey = (await promote(item.originalKey))!;
+    },
+    async () => {
+      item.compressedKey = await promote(item.compressedKey);
+    },
+    async () => {
+      item.posterKey = await promote(item.posterKey);
+    },
+    async () => {
+      item.pairedVideoKey = await promote(item.pairedVideoKey);
+    },
+  ]);
+  let promotionCursor = 0;
+  const promoteNext = async () => {
+    while (promotionCursor < promotionTasks.length) {
+      const task = promotionTasks[promotionCursor++];
+      await task();
+    }
+  };
+  const promotionWorkers = await Promise.allSettled(
+    Array.from(
+      { length: Math.min(MANAGED_PROMOTION_CONCURRENCY, promotionTasks.length) },
+      promoteNext
+    )
+  );
+  const failedWorker = promotionWorkers.find(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  );
+  if (failedWorker) throw failedWorker.reason;
+
   for (const item of attachments) {
-    item.originalKey = (await promote(item.originalKey))!;
-    item.compressedKey = await promote(item.compressedKey);
-    item.posterKey = await promote(item.posterKey);
-    item.pairedVideoKey = await promote(item.pairedVideoKey);
     const original = objects.find(
       (object) => object.uuid === item.uuid && object.role === 'original'
     );
@@ -341,7 +365,6 @@ export async function finalizeAttachmentUploads(
   if (hasVideo && !uploadPolicy.canUploadVideo)
     throw new Error(attachmentErrors.capabilityVideoUpload);
 
-  let directFinalUpload: PreparedDirectFinalUpload | null = null;
   if (managedTransaction && requestedReservationIds.size === 1) {
     const [lockedUser] = await managedTransaction
       .select({ id: users.id })
@@ -359,46 +382,11 @@ export async function finalizeAttachmentUploads(
     );
     if (!claimed) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
     if (claimed.status === 'completed') return completedLegacyFinalizeResult(claimed.result);
-    if (isDirectFinalUploadManifest(claimed.manifest)) {
-      directFinalUpload = prepareDirectFinalUpload(
-        { attachments: input.attachments },
-        claimed.manifest,
-        input.userId,
-        storageConfig.urlPrefix
-      );
-    } else {
-      assertCompleteRequiredManifest(
-        input.attachments,
-        claimed.manifest,
-        behavior.strictValidation === true
-      );
-    }
-  }
-
-  if (directFinalUpload) {
-    if (input.noteId) {
-      const currentAttachments = await dependencies.getAttachmentDetailsByRoteId(input.noteId);
-      validateRoteAttachmentDetails([
-        ...currentAttachments,
-        ...directFinalUpload.uploads.map((upload) => ({ details: upload.details })),
-      ]);
-    }
-    const finalized = await dependencies.upsertAttachmentsByOriginalKey(
-      input.userId,
-      input.noteId,
-      directFinalUpload.uploads,
-      managedTransaction
+    assertCompleteRequiredManifest(
+      input.attachments,
+      claimed.manifest,
+      behavior.strictValidation === true
     );
-    await dependencies.completeUploadReservation(
-      {
-        userId: input.userId,
-        reservationId: [...requestedReservationIds][0]!,
-        result: finalized,
-        objects: directFinalUpload.objects,
-      },
-      managedTransaction
-    );
-    return finalized;
   }
 
   const validAttachments = await collectValidAttachments(

@@ -92,6 +92,7 @@
 - **Headers**:
   - `Authorization: Bearer <accessToken>`（必填）
   - `Content-Type: application/json`
+  - `Idempotency-Key: <UUID>`（可选）：客户端为一次创建生成并保留 UUID，服务端将其用作笔记 ID。同一作者重发会返回已有笔记，不重复创建或覆盖内容；后续修改使用 PUT。非法 UUID 返回 400，已属于其他作者或已删除的 ID 返回 409。不传时仍由服务端生成 ID。
 - **Body**:
   - `content`: string（必填，最大 1,000,000 个字符）
   - `title`: string（可选，最大 200 个字符）
