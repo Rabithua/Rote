@@ -17,6 +17,7 @@ import { MAX_FILES, validateRoteAttachmentDetails } from '../utils/fileValidatio
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 import { finalizeAttachmentUploads } from './finalizeUpload';
 import { isDirectFinalUploadManifest } from './directFinalUpload';
+import { normalizeFinalizeAttachmentsFromManifest } from './finalizePayload';
 import type {
   AttachmentBatchOrderReference,
   FinalizeAttachmentBatchInput,
@@ -427,10 +428,17 @@ export async function finalizeAttachmentBatch(params: {
   }
 
   try {
-    const prepared = await prepareUploadsOutsideTransaction(input, claim, params.userId);
+    const normalizedInput = {
+      ...input,
+      attachments: normalizeFinalizeAttachmentsFromManifest(
+        input.attachments,
+        claim.reservation.manifest
+      ),
+    };
+    const prepared = await prepareUploadsOutsideTransaction(normalizedInput, claim, params.userId);
     const result = await persistBatch({
       claim,
-      input,
+      input: normalizedInput,
       objects: prepared.objects,
       uploads: prepared.uploads,
       userId: params.userId,

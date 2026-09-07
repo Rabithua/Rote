@@ -1,7 +1,7 @@
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 import type { UploadReservationManifestItem } from '../resources/service';
 import type { UploadResult } from '../types/main';
-import { inferAttachmentMediaKind } from '../utils/fileValidation';
+import { getMediaKindFromContentType, inferAttachmentMediaKind } from '../utils/fileValidation';
 import type { FinalizeAttachmentInput } from './types';
 
 export function assertCompleteRequiredManifest(
@@ -51,6 +51,43 @@ export function assertCompleteRequiredManifest(
   ) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
+}
+
+export function normalizeFinalizeAttachmentsFromManifest(
+  attachments: readonly FinalizeAttachmentInput[],
+  manifest: readonly UploadReservationManifestItem[]
+): FinalizeAttachmentInput[] {
+  assertCompleteRequiredManifest(attachments, manifest, true);
+  return attachments.map((attachment) => {
+    const objects = manifest.filter((item) => item.uuid === attachment.uuid);
+    const original = objects.find((item) => item.role === 'original');
+    if (!original) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    const compressed = objects.find((item) => item.role === 'compressed');
+    const poster = objects.find((item) => item.role === 'poster');
+    const pairedVideo = objects.find((item) => item.role === 'paired_video');
+    const mediaKind = pairedVideo ? 'livePhoto' : getMediaKindFromContentType(original.contentType);
+    if (!mediaKind) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+    }
+    return {
+      ...attachment,
+      originalKey: original.stagingKey,
+      compressedKey: compressed?.stagingKey,
+      posterKey: poster?.stagingKey,
+      pairedVideoKey: pairedVideo?.stagingKey,
+      mimetype: original.contentType,
+      mediaKind,
+      size: original.declaredBytes === null ? attachment.size : Number(original.declaredBytes),
+      pairedVideoMimetype: pairedVideo?.contentType,
+      pairedVideoSize:
+        pairedVideo?.declaredBytes === null || pairedVideo === undefined
+          ? undefined
+          : Number(pairedVideo.declaredBytes),
+      pairedVideoFilename: undefined,
+    };
+  });
 }
 
 export function toUploadResult(urlPrefix: string, item: FinalizeAttachmentInput): UploadResult {

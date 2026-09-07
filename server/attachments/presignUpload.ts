@@ -17,12 +17,14 @@ import attachmentErrors from './errorCodes.json';
 import {
   createUploadReservation,
   cancelUploadReservation,
+  getPendingUploadReservation,
   getResourceStateForUserId,
   refreshUploadReservationCredentialExpiry,
   type UploadReservationManifestItem,
 } from '../resources/service';
 import { createDerivedUploadProxyUrl } from '../resources/uploadProxy';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
+import { isDirectFinalUploadManifest } from './directFinalUpload';
 
 export type PresignAttachmentDependencies = {
   createDerivedUploadProxyUrl: typeof createDerivedUploadProxyUrl;
@@ -44,6 +46,22 @@ const defaultDependencies: PresignAttachmentDependencies = {
   getResourceStateForUserId,
   createUploadReservation,
   cancelUploadReservation,
+};
+
+type RefreshAttachmentDependencies = {
+  cancelUploadReservation: typeof cancelUploadReservation;
+  createDerivedUploadProxyUrl: typeof createDerivedUploadProxyUrl;
+  getPendingUploadReservation: typeof getPendingUploadReservation;
+  presignPutUrl: typeof presignPutUrl;
+  refreshUploadReservationCredentialExpiry: typeof refreshUploadReservationCredentialExpiry;
+};
+
+const defaultRefreshDependencies: RefreshAttachmentDependencies = {
+  cancelUploadReservation,
+  createDerivedUploadProxyUrl,
+  getPendingUploadReservation,
+  presignPutUrl,
+  refreshUploadReservationCredentialExpiry,
 };
 
 const UPLOAD_RESERVATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
@@ -361,9 +379,22 @@ export async function presignAttachmentUploads(
   };
 }
 
-export async function refreshAttachmentUploadReservation(userId: string, reservationId: string) {
+export async function refreshAttachmentUploadReservation(
+  userId: string,
+  reservationId: string,
+  dependencyOverrides: Partial<RefreshAttachmentDependencies> = {}
+) {
+  const dependencies = { ...defaultRefreshDependencies, ...dependencyOverrides };
   const signingDate = new Date();
-  const reservation = await refreshUploadReservationCredentialExpiry(
+  const pending = await dependencies.getPendingUploadReservation(userId, reservationId);
+  if (!pending) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
+  }
+  if (isDirectFinalUploadManifest(pending.manifest)) {
+    await dependencies.cancelUploadReservation(userId, reservationId);
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 409);
+  }
+  const reservation = await dependencies.refreshUploadReservationCredentialExpiry(
     userId,
     reservationId,
     new Date(signingDate.getTime() + 15 * 60 * 1000)
@@ -372,7 +403,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
   try {
     signedUploadLifetimeSeconds(expiresAt, signingDate);
   } catch (error) {
-    await cancelUploadReservation(userId, reservationId);
+    await dependencies.cancelUploadReservation(userId, reservationId);
     throw error;
   }
   const manifest = reservation.manifest as UploadReservationManifestItem[];
@@ -386,7 +417,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
     [...byUuid.entries()].map(async ([uuid, objects]) => {
       const original = objects.find((item) => item.role === 'original');
       if (!original) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-      const signedOriginal = await presignPutUrl(
+      const signedOriginal = await dependencies.presignPutUrl(
         original.stagingKey,
         original.contentType,
         signedUploadLifetimeSeconds(expiresAt, signingDate),
@@ -407,7 +438,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
         const object = objects.find((item) => item.role === role);
         if (!object) return undefined;
         if (object.declaredBytes !== null) {
-          const signed = await presignPutUrl(
+          const signed = await dependencies.presignPutUrl(
             object.stagingKey,
             object.contentType,
             signedUploadLifetimeSeconds(expiresAt, signingDate),
@@ -423,7 +454,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
         }
         return {
           key: object.stagingKey,
-          putUrl: createDerivedUploadProxyUrl({
+          putUrl: dependencies.createDerivedUploadProxyUrl({
             reservationId,
             userId,
             role,
@@ -441,7 +472,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
       if (poster) response.poster = poster;
       const paired = objects.find((item) => item.role === 'paired_video');
       if (paired) {
-        const signed = await presignPutUrl(
+        const signed = await dependencies.presignPutUrl(
           paired.stagingKey,
           paired.contentType,
           signedUploadLifetimeSeconds(expiresAt, signingDate),

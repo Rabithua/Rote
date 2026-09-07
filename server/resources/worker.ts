@@ -289,7 +289,8 @@ export async function runResourceMaintenance(now = new Date()) {
       and(
         or(
           eq(resourceUploadReservations.status, 'pending'),
-          eq(resourceUploadReservations.status, 'finalizing')
+          eq(resourceUploadReservations.status, 'finalizing'),
+          eq(resourceUploadReservations.status, 'cancelling')
         ),
         lte(resourceUploadReservations.expiresAt, now)
       )
@@ -305,7 +306,7 @@ export async function runResourceMaintenance(now = new Date()) {
         .for('update');
       if (
         !locked ||
-        (locked.status !== 'pending' && locked.status !== 'finalizing') ||
+        !['pending', 'finalizing', 'cancelling'].includes(locked.status) ||
         locked.expiresAt > now
       )
         return;
@@ -336,7 +337,7 @@ export async function runResourceMaintenance(now = new Date()) {
       }
       await transaction
         .update(resourceUploadReservations)
-        .set({ status: 'expired', completedAt: now })
+        .set({ status: 'expired', completedAt: now, reservedBytes: BigInt(0) })
         .where(eq(resourceUploadReservations.id, locked.id));
     });
   }
@@ -404,6 +405,7 @@ export async function runResourceMaintenance(now = new Date()) {
     .where(
       and(
         sql`${resourceUploadReservations.status} <> 'pending'`,
+        sql`${resourceUploadReservations.status} <> 'cancelling'`,
         sql`COALESCE(${resourceUploadReservations.completedAt}, ${resourceUploadReservations.createdAt}) <= ${reservationRetention.toISOString()}::timestamptz`
       )
     );
