@@ -127,6 +127,7 @@ iOS App 支持连接到你自部署的后端。
 
 ### 社区项目
 
+- [Rote 网页收藏助手](https://github.com/Rabithua/rote-extension) - 将网页、选中文字和支持站点的内容保存到 Rote，支持图片附件、默认标签和可见性设置。
 - [Raycast 插件](https://github.com/aBER0724/rote-raycast) - Rote 的 Raycast 插件，由 [@aBER0724](https://github.com/aBER0724) 开发
 - [Rerote](https://github.com/Rabithua/Rerote) - 将其他平台（当前支持 Memos）的数据转换为 Rote 格式的数据转换工具
 - [Rotefeeder](https://github.com/Rabithua/Rotefeeder) - 基于 Deno 的 RSS/Atom 订阅转发服务，通过 OpenKey 定时将内容发送到 Rote
