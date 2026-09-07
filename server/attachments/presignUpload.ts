@@ -32,6 +32,7 @@ export type PresignAttachmentDependencies = {
   requireStorageAvailable: typeof requireStorageAvailable;
   getResourceStateForUserId: typeof getResourceStateForUserId;
   createUploadReservation: typeof createUploadReservation;
+  cancelUploadReservation: typeof cancelUploadReservation;
 };
 
 const defaultDependencies: PresignAttachmentDependencies = {
@@ -42,9 +43,18 @@ const defaultDependencies: PresignAttachmentDependencies = {
   requireStorageAvailable,
   getResourceStateForUserId,
   createUploadReservation,
+  cancelUploadReservation,
 };
 
 const UPLOAD_RESERVATION_LIFETIME_MS = 24 * 60 * 60 * 1000;
+
+export function signedUploadLifetimeSeconds(expiresAt: Date, now = new Date()): number {
+  const seconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000);
+  if (seconds < 1) {
+    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+  }
+  return seconds;
+}
 
 function validatePresignFile(
   file: PresignFileInput,
@@ -240,100 +250,108 @@ export async function presignAttachmentUploads(
     });
   }
 
-  const items = await Promise.all(
-    prepared.map(
-      async ({ file, uuid, mediaKind, originalKey, compressed, pairedVideo, poster }) => {
-        const original = await dependencies.presignPutUrl(
-          originalKey,
-          file.contentType || undefined,
-          15 * 60,
-          managed ? file.size : undefined
-        );
-        const result: Record<string, any> = {
-          uuid,
-          ...(managed ? { expiresAt: credentialExpiresAt.toISOString() } : {}),
-          original: {
-            key: originalKey,
-            putUrl: original.putUrl,
-            url: original.url,
-            contentType: file.contentType,
-          },
-        };
-
-        if ((mediaKind === 'image' || mediaKind === 'livePhoto') && compressed) {
-          const compressedUpload = browserDirectUpload
-            ? await dependencies.presignPutUrl(
-                compressed.key,
-                compressed.contentType,
-                15 * 60,
-                file.compressed!.size
-              )
-            : managed
-              ? {
-                  putUrl: dependencies.createDerivedUploadProxyUrl({
-                    reservationId: reservationId!,
-                    userId: input.userId,
-                    role: 'compressed',
-                    key: compressed.key,
-                    contentType: compressed.contentType,
-                    expiresAt: credentialExpiresAt,
-                  }),
-                  url: '',
-                }
-              : await dependencies.presignPutUrl(compressed.key, compressed.contentType, 15 * 60);
-          result.compressed = {
-            key: compressed.key,
-            putUrl: compressedUpload.putUrl,
-            url: compressedUpload.url,
-            contentType: compressed.contentType,
-          };
-        }
-
-        if (mediaKind === 'livePhoto') {
-          if (!pairedVideo) throw new Error(attachmentErrors.livePhotoPairedVideoRequired);
-          const pairedVideoUpload = await dependencies.presignPutUrl(
-            pairedVideo.key,
-            pairedVideo.contentType || undefined,
-            15 * 60,
-            managed ? pairedVideo.size : undefined
+  const signUpload = (key: string, contentType?: string, contentLength?: number) =>
+    dependencies.presignPutUrl(
+      key,
+      contentType,
+      signedUploadLifetimeSeconds(credentialExpiresAt),
+      contentLength
+    );
+  let items: Array<Record<string, any>>;
+  try {
+    items = await Promise.all(
+      prepared.map(
+        async ({ file, uuid, mediaKind, originalKey, compressed, pairedVideo, poster }) => {
+          const original = await signUpload(
+            originalKey,
+            file.contentType || undefined,
+            managed ? file.size : undefined
           );
-          result.pairedVideo = {
-            key: pairedVideo.key,
-            putUrl: pairedVideoUpload.putUrl,
-            url: pairedVideoUpload.url,
-            contentType: pairedVideo.contentType,
+          const result: Record<string, any> = {
+            uuid,
+            ...(managed ? { expiresAt: credentialExpiresAt.toISOString() } : {}),
+            original: {
+              key: originalKey,
+              putUrl: original.putUrl,
+              url: original.url,
+              contentType: file.contentType,
+            },
           };
-        }
 
-        if (mediaKind === 'video') {
-          if (!poster) return result;
-          const posterUpload = browserDirectUpload
-            ? await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60, poster.size)
-            : managed
-              ? {
-                  putUrl: dependencies.createDerivedUploadProxyUrl({
-                    reservationId: reservationId!,
-                    userId: input.userId,
-                    role: 'poster',
-                    key: poster.key,
-                    contentType: 'image/jpeg',
-                    expiresAt: credentialExpiresAt,
-                  }),
-                  url: '',
-                }
-              : await dependencies.presignPutUrl(poster.key, 'image/jpeg', 15 * 60);
-          result.poster = {
-            key: poster.key,
-            putUrl: posterUpload.putUrl,
-            url: posterUpload.url,
-            contentType: 'image/jpeg',
-          };
-        }
+          if ((mediaKind === 'image' || mediaKind === 'livePhoto') && compressed) {
+            const compressedUpload = browserDirectUpload
+              ? await signUpload(compressed.key, compressed.contentType, file.compressed!.size)
+              : managed
+                ? {
+                    putUrl: dependencies.createDerivedUploadProxyUrl({
+                      reservationId: reservationId!,
+                      userId: input.userId,
+                      role: 'compressed',
+                      key: compressed.key,
+                      contentType: compressed.contentType,
+                      expiresAt: credentialExpiresAt,
+                    }),
+                    url: '',
+                  }
+                : await signUpload(compressed.key, compressed.contentType);
+            result.compressed = {
+              key: compressed.key,
+              putUrl: compressedUpload.putUrl,
+              url: compressedUpload.url,
+              contentType: compressed.contentType,
+            };
+          }
 
-        return result;
-      }
-    )
-  );
+          if (mediaKind === 'livePhoto') {
+            if (!pairedVideo) throw new Error(attachmentErrors.livePhotoPairedVideoRequired);
+            const pairedVideoUpload = await signUpload(
+              pairedVideo.key,
+              pairedVideo.contentType || undefined,
+              managed ? pairedVideo.size : undefined
+            );
+            result.pairedVideo = {
+              key: pairedVideo.key,
+              putUrl: pairedVideoUpload.putUrl,
+              url: pairedVideoUpload.url,
+              contentType: pairedVideo.contentType,
+            };
+          }
+
+          if (mediaKind === 'video') {
+            if (!poster) return result;
+            const posterUpload = browserDirectUpload
+              ? await signUpload(poster.key, 'image/jpeg', poster.size)
+              : managed
+                ? {
+                    putUrl: dependencies.createDerivedUploadProxyUrl({
+                      reservationId: reservationId!,
+                      userId: input.userId,
+                      role: 'poster',
+                      key: poster.key,
+                      contentType: 'image/jpeg',
+                      expiresAt: credentialExpiresAt,
+                    }),
+                    url: '',
+                  }
+                : await signUpload(poster.key, 'image/jpeg');
+            result.poster = {
+              key: poster.key,
+              putUrl: posterUpload.putUrl,
+              url: posterUpload.url,
+              contentType: 'image/jpeg',
+            };
+          }
+
+          return result;
+        }
+      )
+    );
+  } catch (error) {
+    if (managed && reservationId) {
+      await dependencies.cancelUploadReservation(input.userId, reservationId);
+    }
+    throw error;
+  }
 
   return {
     items,
@@ -348,12 +366,12 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
     new Date(Date.now() + 15 * 60 * 1000)
   );
   const expiresAt = reservation.credentialExpiresAt!;
-  const remainingMs = expiresAt.getTime() - Date.now();
-  if (remainingMs < 1000) {
+  try {
+    signedUploadLifetimeSeconds(expiresAt);
+  } catch (error) {
     await cancelUploadReservation(userId, reservationId);
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadReservationExpired, 409);
+    throw error;
   }
-  const expiresIn = Math.floor(remainingMs / 1000);
   const manifest = reservation.manifest as UploadReservationManifestItem[];
   const byUuid = new Map<string, UploadReservationManifestItem[]>();
   for (const item of manifest) {
@@ -368,7 +386,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
       const signedOriginal = await presignPutUrl(
         original.stagingKey,
         original.contentType,
-        expiresIn,
+        signedUploadLifetimeSeconds(expiresAt),
         original.declaredBytes === null ? undefined : Number(original.declaredBytes)
       );
       const response: Record<string, any> = {
@@ -388,7 +406,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
           const signed = await presignPutUrl(
             object.stagingKey,
             object.contentType,
-            expiresIn,
+            signedUploadLifetimeSeconds(expiresAt),
             object.declaredBytes === null ? undefined : Number(object.declaredBytes)
           );
           return {
@@ -421,7 +439,7 @@ export async function refreshAttachmentUploadReservation(userId: string, reserva
         const signed = await presignPutUrl(
           paired.stagingKey,
           paired.contentType,
-          expiresIn,
+          signedUploadLifetimeSeconds(expiresAt),
           paired.declaredBytes === null ? undefined : Number(paired.declaredBytes)
         );
         response.pairedVideo = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import type { UploadResult } from '../types/main';
 import { presignPutUrlForConfig } from '../utils/r2';
-import { presignAttachmentUploads } from './presignUpload';
+import { presignAttachmentUploads, signedUploadLifetimeSeconds } from './presignUpload';
 import { getUploadExtension } from './uploadKeys';
 
 process.env.POSTGRESQL_URL ||= 'postgres://test:test@localhost:5432/rote_test';
@@ -28,6 +28,12 @@ const uploadPolicy = {
 };
 
 describe('attachment upload flow', () => {
+  it('bounds each signed URL by the stored credential deadline', () => {
+    const expiresAt = new Date('2026-09-07T00:15:00.999Z');
+    expect(signedUploadLifetimeSeconds(expiresAt, new Date('2026-09-07T00:00:00.000Z'))).toBe(900);
+    expect(signedUploadLifetimeSeconds(expiresAt, new Date('2026-09-07T00:00:02.500Z'))).toBe(898);
+  });
+
   it('rejects batch-shaped completion results on the legacy finalize path', () => {
     expect(() =>
       completedLegacyFinalizeResult({
