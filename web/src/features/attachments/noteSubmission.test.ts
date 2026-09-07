@@ -3,7 +3,7 @@ import type { Attachment, Rote } from '@/types/main';
 import { emptyRote } from '@/state/editor';
 import { get, post, put } from '@/utils/api';
 import { cancelUploadReservation, uploadToSignedUrl } from '@/utils/directUpload';
-import { NoteSubmission } from './noteSubmission';
+import { isNoteDraftEmpty, NoteSubmission } from './noteSubmission';
 
 vi.mock('@/utils/api', () => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn() }));
 vi.mock('@/utils/directUpload', async (original) => ({
@@ -123,6 +123,12 @@ const submit = (session: NoteSubmission, note: Rote) =>
   session.submit(note, createId, capabilities, vi.fn(), vi.fn());
 
 describe('note-first attachment submission', () => {
+  it('accepts attachment-only notes while still rejecting completely empty drafts', () => {
+    expect(isNoteDraftEmpty({ content: '   ', attachments: [] })).toBe(true);
+    expect(isNoteDraftEmpty({ content: '   ', attachments: [existing] })).toBe(false);
+    expect(isNoteDraftEmpty({ content: 'note', attachments: [] })).toBe(false);
+  });
+
   it('saves identity before signing, uploads every part and binds the ordered batch', async () => {
     const onSaved = vi.fn(() => events.push('saved identity'));
     const session = new NoteSubmission();
@@ -215,6 +221,7 @@ describe('note-first attachment submission', () => {
     );
     expect(uploadToSignedUrl).not.toHaveBeenCalled();
     expect(events).not.toContain('/attachments/finalize-batch');
+    expect(cancelUploadReservation).toHaveBeenCalledWith('reservation-1');
   });
 
   it('updates edited text on the saved note while retrying the same attachment batch', async () => {
@@ -267,5 +274,19 @@ describe('note-first attachment submission', () => {
     await expect(submit(session, draft([photo()]))).rejects.toThrow();
     expect(await session.discardAttachments(createId)).toEqual([existing]);
     expect(cancelUploadReservation).toHaveBeenCalledWith('reservation-1');
+  });
+
+  it('does not report attachments as discarded while finalization is still active', async () => {
+    const session = new NoteSubmission();
+    loseFinalize = true;
+    await expect(submit(session, draft([photo()]))).rejects.toThrow();
+    vi.mocked(cancelUploadReservation).mockRejectedValueOnce(
+      new Error('attachment_batch_finalizing')
+    );
+
+    await expect(session.discardAttachments(createId)).rejects.toThrow(
+      'attachment_batch_finalizing'
+    );
+    expect(get).not.toHaveBeenCalled();
   });
 });

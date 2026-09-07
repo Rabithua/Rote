@@ -8,6 +8,7 @@ import {
   reservationCleanupKeys,
   resolveOfficialStorageState,
   storageReservationDependsOnPro,
+  uploadReservationCanBeCancelled,
   uploadReservationGrantWasReplaced,
   type UploadReservationManifestItem,
 } from './service';
@@ -155,6 +156,37 @@ describe('attachment finalize leases', () => {
       code: RESOURCE_ERROR_CODES.attachmentBatchFinalizing,
       status: 503,
     });
+  });
+
+  it('does not report cancellation while a finalize lease is active', () => {
+    let thrown: unknown;
+    try {
+      uploadReservationCanBeCancelled(
+        {
+          status: 'finalizing',
+          finalizingLeaseExpiresAt: new Date('2026-09-07T00:02:00.000Z'),
+        },
+        new Date('2026-09-07T00:00:00.000Z')
+      );
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toMatchObject({
+      code: RESOURCE_ERROR_CODES.attachmentBatchFinalizing,
+      status: 503,
+    });
+  });
+
+  it('allows cancellation to supersede an expired finalize lease', () => {
+    expect(
+      uploadReservationCanBeCancelled(
+        {
+          status: 'finalizing',
+          finalizingLeaseExpiresAt: new Date('2026-09-06T23:59:59.000Z'),
+        },
+        new Date('2026-09-07T00:00:00.000Z')
+      )
+    ).toBe(true);
   });
 
   it('revalidates a Pro-derived reservation against a newer inactive grant', () => {

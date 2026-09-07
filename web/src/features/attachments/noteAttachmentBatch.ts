@@ -108,6 +108,9 @@ export class NoteAttachmentBatch {
         code === 'resource_upload_reservation_expired' ||
         code === 'resource_upload_manifest_mismatch'
       ) {
+        if (this.signed?.reservationId) {
+          await cancelUploadReservation(this.signed.reservationId);
+        }
         this.signed = undefined;
         this.completed.clear();
       } else {

@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import type { Article, Attachment, Rote } from '@/types/main';
 import { del } from '@/utils/api';
-import { NoteSubmission } from '@/features/attachments/noteSubmission';
+import { isNoteDraftEmpty, NoteSubmission } from '@/features/attachments/noteSubmission';
 import type { EditorDraft } from '@/state/editor';
 import { getUploadErrorMessage } from '@/utils/directUpload';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
@@ -271,7 +271,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   const submit = useCallback(async () => {
     if (submittingRef.current) return;
-    if (!localContent.trim()) {
+    if (isNoteDraftEmpty({ content: localContent, attachments: rote.attachments })) {
       toast.error(t('error.emptyContent'));
       return;
     }
