@@ -44,6 +44,10 @@ function formatGithubCount(value: unknown) {
 
 const communityProjects = [
   {
+    key: 'roteWebClipper',
+    href: 'https://github.com/Rabithua/rote-extension',
+  },
+  {
     key: 'roteSkill',
     href: 'https://github.com/Rabithua/rote-skill',
   },

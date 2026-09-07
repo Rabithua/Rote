@@ -835,6 +835,10 @@
         "title": "Community Projects",
         "subtitle": "Tools and integrations built around Rote",
         "items": {
+          "roteWebClipper": {
+            "title": "Rote Web Clipper",
+            "description": "Save webpages, text and images to Rote"
+          },
           "raycast": {
             "title": "Raycast Extension",
             "description": "Raycast extension for Rote (by @aBER0724)"

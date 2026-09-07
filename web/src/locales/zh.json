@@ -825,6 +825,10 @@
         "title": "社区项目",
         "subtitle": "围绕 Rote 的工具与集成",
         "items": {
+          "roteWebClipper": {
+            "title": "Rote 网页收藏助手",
+            "description": "将网页、文字摘录和图片保存到 Rote"
+          },
           "raycast": {
             "title": "Raycast 插件",
             "description": "Rote 的 Raycast Extension（by @aBER0724）"
