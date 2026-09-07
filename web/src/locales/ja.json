@@ -839,6 +839,10 @@
         "title": "コミュニティ プロジェクト",
         "subtitle": "Rote を拡張するツールと統合",
         "items": {
+          "roteWebClipper": {
+            "title": "Rote Web Clipper",
+            "description": "ウェブページ、選択したテキスト、画像を Rote に保存"
+          },
           "raycast": {
             "title": "Raycast Extension",
             "description": "Rote 用 Raycast 拡張（by @aBER0724）"
