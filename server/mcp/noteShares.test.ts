@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { DEFAULT_OAUTH_MCP_SCOPES } from '../oauth/scopes';
-import { createMcpNoteShare } from '../noteShares/mcpService';
+import { createMcpNoteShare, toPublicMcpNoteShareError } from '../noteShares/mcpService';
+import { ShareNoteNotFound } from '../noteShares/repository';
 import { normalizeFrontendOrigin, presentNoteShare } from '../noteShares/urls';
 import { getToolsForScopes } from './tools';
 
@@ -49,6 +50,14 @@ describe('MCP note-share contract', () => {
   it('fails before persistence when the frontend origin is unavailable', async () => {
     await expect(createMcpNoteShare('owner-not-queried', 'note-not-queried', null)).rejects.toThrow(
       'share_frontend_unavailable'
+    );
+  });
+
+  it('does not expose database errors through MCP responses', () => {
+    const notFound = new ShareNoteNotFound();
+    expect(toPublicMcpNoteShareError(notFound)).toBe(notFound);
+    expect(toPublicMcpNoteShareError(new Error('database connection details')).message).toBe(
+      'share_request_failed'
     );
   });
 });
