@@ -26,6 +26,14 @@ export async function testMetadata() {
     authServer.data.client_id_metadata_document_supported === true,
     'missing client_id metadata support marker'
   );
+  assert(
+    protectedResource.data.scopes_supported?.includes('notes:share'),
+    'protected resource metadata missing notes:share'
+  );
+  assert(
+    authServer.data.scopes_supported?.includes('notes:share'),
+    'authorization server metadata missing notes:share'
+  );
 }
 
 export async function testAuthorizeValidation(clientId: string, codeChallenge: string) {

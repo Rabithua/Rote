@@ -9,6 +9,7 @@ export const ALL_SCOPES = [
   'notes:read',
   'notes:write',
   'notes:delete',
+  'notes:share',
   'articles:read',
   'articles:write',
   'articles:delete',

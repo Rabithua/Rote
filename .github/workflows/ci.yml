@@ -88,7 +88,7 @@ jobs:
         working-directory: server
       - run: bun run db:migrate:programmatic
         working-directory: server
-      - run: bun test noteShares middleware/recorder.test.ts
+      - run: bun test noteShares mcp/noteShares.test.ts middleware/recorder.test.ts
         working-directory: server
       - run: bun install --frozen-lockfile
         working-directory: web

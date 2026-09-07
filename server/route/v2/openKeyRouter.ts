@@ -4,6 +4,7 @@ import { isOpenKeyOk } from '../../utils/main';
 import accountRouter from './openKey/account';
 import articlesRouter from './openKey/articles';
 import attachmentsRouter from './openKey/attachments';
+import noteSharesRouter from './openKey/noteShares';
 import notesRouter from './openKey/notes';
 import reactionsRouter from './openKey/reactions';
 
@@ -11,6 +12,7 @@ const router = new Hono<{ Variables: HonoVariables }>();
 
 router.use('*', isOpenKeyOk);
 router.route('/', articlesRouter);
+router.route('/', noteSharesRouter);
 router.route('/', notesRouter);
 router.route('/', reactionsRouter);
 router.route('/', accountRouter);

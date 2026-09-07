@@ -1,7 +1,7 @@
 {
   "name": "Rote MCP",
   "version": "1.0.0",
-  "instructions": "Use Rote MCP tools to manage notes, articles, reactions, profile, statistics, settings, and attachments.",
+  "instructions": "Use Rote MCP tools to manage notes, note share links, articles, reactions, profile, statistics, settings, and attachments.",
   "sseUnsupported": "SSE streams are not supported by this MCP endpoint",
   "statelessDeleteUnsupported": "MCP sessions are stateless and cannot be deleted"
 }

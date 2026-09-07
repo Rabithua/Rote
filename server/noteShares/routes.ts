@@ -1,19 +1,12 @@
 import { Hono } from 'hono';
 import type { HonoVariables } from '../types/hono';
-import type { MiddlewareHandler } from 'hono';
 import { authenticateJWT } from '../middleware/jwtAuth';
 import { createResponse, isValidUUID } from '../utils/main';
+import { shareHeaders } from './headers';
 import { manageNoteShare, readSharedNote, ShareNoteNotFound } from './repository';
 
 const router = new Hono<{ Variables: HonoVariables }>();
 
-// Set on errors as well as successes; browsers and proxies must re-check links.
-const shareHeaders: MiddlewareHandler = async (c, next) => {
-  c.header('Cache-Control', 'no-store');
-  c.header('Referrer-Policy', 'no-referrer');
-  c.header('X-Robots-Tag', 'noindex, nofollow, noarchive');
-  await next();
-};
 router.use('/notes/:id/share', shareHeaders);
 router.use('/shares/*', shareHeaders);
 

@@ -15,8 +15,12 @@ databaseDescribe('anonymous note sharing against a migrated, isolated database',
   let otherToken: string;
   const ownerId = randomUUID();
   const otherId = randomUUID();
+  const allowedOpenKeyId = randomUUID();
+  const deniedOpenKeyId = randomUUID();
+  const otherOpenKeyId = randomUUID();
   const articleId = randomUUID();
   const noteId = randomUUID();
+  const openKeyRequestCounts = new Map<string, number>();
 
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl;
@@ -42,6 +46,11 @@ databaseDescribe('anonymous note sharing against a migrated, isolated database',
       },
       { id: otherId, username: `shares-${otherId.slice(0, 8)}`, email: `${otherId}@example.test` },
     ]);
+    await db.insert(schema.userOpenKeys).values([
+      { id: allowedOpenKeyId, userid: ownerId, permissions: ['SHAREROTE'] },
+      { id: deniedOpenKeyId, userid: ownerId, permissions: ['GETROTE'] },
+      { id: otherOpenKeyId, userid: otherId, permissions: ['SHAREROTE'] },
+    ]);
     await db
       .insert(schema.articles)
       .values({ id: articleId, authorId: ownerId, content: '# Shared article' });
@@ -50,6 +59,7 @@ databaseDescribe('anonymous note sharing against a migrated, isolated database',
       authorid: ownerId,
       content: 'Private original',
       state: 'private',
+      archived: true,
       articleId,
       tags: ['family'],
     });
@@ -94,6 +104,26 @@ databaseDescribe('anonymous note sharing against a migrated, isolated database',
 
   afterAll(async () => {
     if (!db) return;
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const logs = await db
+        .select()
+        .from(schema.openKeyUsageLogs)
+        .where(eq(schema.openKeyUsageLogs.openKeyId, allowedOpenKeyId));
+      const deniedLogs = await db
+        .select()
+        .from(schema.openKeyUsageLogs)
+        .where(eq(schema.openKeyUsageLogs.openKeyId, deniedOpenKeyId));
+      const otherLogs = await db
+        .select()
+        .from(schema.openKeyUsageLogs)
+        .where(eq(schema.openKeyUsageLogs.openKeyId, otherOpenKeyId));
+      const expectedLogCount = Array.from(openKeyRequestCounts.values()).reduce(
+        (total, count) => total + count,
+        0
+      );
+      if (logs.length + deniedLogs.length + otherLogs.length >= expectedLogCount) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
     await db.delete(schema.attachments).where(eq(schema.attachments.userid, ownerId));
     await db.delete(schema.users).where(eq(schema.users.id, ownerId));
     await db.delete(schema.users).where(eq(schema.users.id, otherId));
@@ -106,6 +136,13 @@ databaseDescribe('anonymous note sharing against a migrated, isolated database',
       method,
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
+  }
+  function manageOpenKey(key: string, method: string, id = noteId) {
+    openKeyRequestCounts.set(key, (openKeyRequestCounts.get(key) ?? 0) + 1);
+    return app.request(
+      `/v2/api/openkey/notes/${encodeURIComponent(id)}/share?openkey=${encodeURIComponent(key)}`,
+      { method }
+    );
   }
   async function createShare(id = noteId) {
     const response = await manage('PUT', ownerToken, id);
@@ -129,6 +166,56 @@ databaseDescribe('anonymous note sharing against a migrated, isolated database',
     expect(
       await db.select().from(schema.noteShareLinks).where(eq(schema.noteShareLinks.noteId, noteId))
     ).toHaveLength(0);
+  });
+
+  it('requires SHAREROTE and applies author-only not-found behavior', async () => {
+    const denied = await manageOpenKey(deniedOpenKeyId, 'PUT');
+    expect(denied.status).toBe(403);
+    expect(denied.headers.get('Cache-Control')).toBe('no-store');
+    expect(
+      await db.select().from(schema.noteShareLinks).where(eq(schema.noteShareLinks.noteId, noteId))
+    ).toHaveLength(0);
+
+    expect((await manageOpenKey(allowedOpenKeyId, 'GET', 'invalid-id')).status).toBe(404);
+    expect((await manageOpenKey(otherOpenKeyId, 'PUT')).status).toBe(404);
+  });
+
+  it('manages private archived-note links through OpenKey without logging tokens', async () => {
+    const initial = await manageOpenKey(allowedOpenKeyId, 'GET');
+    expect(initial.status).toBe(200);
+    expect((await initial.json()).data).toBeNull();
+    expect(initial.headers.get('Cache-Control')).toBe('no-store');
+
+    const firstResponse = await manageOpenKey(allowedOpenKeyId, 'PUT');
+    const first = (await firstResponse.json()).data as { token: string; createdAt: string };
+    const second = (await (await manageOpenKey(allowedOpenKeyId, 'PUT')).json()).data as {
+      token: string;
+    };
+    expect(first.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(second.token).toBe(first.token);
+    expect((await read(first.token)).status).toBe(200);
+
+    expect((await manageOpenKey(allowedOpenKeyId, 'DELETE')).status).toBe(200);
+    expect((await manageOpenKey(allowedOpenKeyId, 'DELETE')).status).toBe(200);
+    expect((await read(first.token)).status).toBe(404);
+    const recreated = (await (await manageOpenKey(allowedOpenKeyId, 'PUT')).json()).data as {
+      token: string;
+    };
+    expect(recreated.token).not.toBe(first.token);
+
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const logs = await db
+        .select()
+        .from(schema.openKeyUsageLogs)
+        .where(eq(schema.openKeyUsageLogs.openKeyId, allowedOpenKeyId));
+      if (logs.length >= (openKeyRequestCounts.get(allowedOpenKeyId) ?? 0)) {
+        expect(JSON.stringify(logs)).not.toContain(first.token);
+        expect(JSON.stringify(logs)).not.toContain(recreated.token);
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    throw new Error('OpenKey share usage logs were not persisted');
   });
 
   it('serializes concurrent creation and keeps private state and normal APIs private', async () => {
