@@ -4,6 +4,7 @@ import {
   finalizeAttachmentBatch,
 } from '../../attachments/finalizeBatch';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
+import { finalizeAttachmentReservation } from '../../attachments/finalizeReservation';
 import {
   presignAttachmentUploads,
   refreshAttachmentUploadReservation,
@@ -28,6 +29,7 @@ import { createResponse, isValidUUID } from '../../utils/main';
 import { AttachmentPresignZod } from '../../utils/zod';
 import { uploadDerivedObject } from '../../resources/uploadProxy';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../../resources/errors';
+import { cancelUploadReservation } from '../../resources/service';
 
 const attachmentsRouter = new Hono<{ Variables: HonoVariables }>();
 
@@ -52,6 +54,20 @@ attachmentsRouter.post(
     const reservationId = c.req.param('reservationId');
     if (!isValidUUID(reservationId)) throw new Error('Invalid reservation ID');
     return c.json(createResponse(await refreshAttachmentUploadReservation(user.id, reservationId)));
+  }
+);
+
+attachmentsRouter.delete(
+  '/reservations/:reservationId',
+  authenticateJWT,
+  async (c: HonoContext) => {
+    const user = c.get('user') as User;
+    const reservationId = c.req.param('reservationId');
+    if (!isValidUUID(reservationId)) {
+      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 400);
+    }
+    await cancelUploadReservation(user.id, reservationId.toLowerCase());
+    return c.json(createResponse(null), 200);
   }
 );
 
@@ -161,7 +177,7 @@ attachmentsRouter.post(
     const user = c.get('user') as User;
     const body = await c.req.json();
     AttachmentPresignZod.parse(body);
-    const { files, directFinalUpload } = body as PresignAttachmentInput;
+    const { files, browserDirectUpload } = body as PresignAttachmentInput;
     const uploadPolicy = await getAttachmentUploadPolicy(user.id);
     if (!uploadPolicy.canUploadAttachments) {
       return c.json(createResponse(null, 'capability_required:attachment.upload'), 403);
@@ -170,7 +186,7 @@ attachmentsRouter.post(
       return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
     }
     const result = await presignAttachmentUploads({
-      directFinalUpload,
+      browserDirectUpload,
       files,
       scopes: ['video:upload'],
       userId: user.id,
@@ -204,13 +220,20 @@ attachmentsRouter.post(
     ) {
       return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
     }
-    const result = await finalizeAttachmentUploads({
-      attachments,
-      noteId,
-      reservationId,
-      scopes: ['video:upload'],
-      userId: user.id,
-    });
+    const result = reservationId
+      ? await finalizeAttachmentReservation({
+          attachments: attachments ?? [],
+          noteId,
+          reservationId,
+          scopes: ['video:upload'],
+          userId: user.id,
+        })
+      : await finalizeAttachmentUploads({
+          attachments,
+          noteId,
+          scopes: ['video:upload'],
+          userId: user.id,
+        });
     return c.json(createResponse(result), 201);
   }
 );

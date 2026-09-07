@@ -76,14 +76,21 @@ describe('resource maintenance isolation', () => {
     expect(cleanupRetryDelaySeconds(20)).toBe(1024);
   });
 
-  it('defers expired reservation cleanup until an active finalize lease ends', () => {
+  it('defers reservation cleanup until credentials and finalize leases expire', () => {
     const now = new Date('2026-08-26T00:00:00.000Z');
     const leaseEnd = new Date('2026-08-26T00:02:00.000Z');
+    const credentialEnd = new Date('2026-08-26T00:15:00.000Z');
     expect(
-      reservationCleanupNotBefore({ status: 'finalizing', finalizingLeaseExpiresAt: leaseEnd }, now)
-    ).toEqual(leaseEnd);
+      reservationCleanupNotBefore(
+        { credentialExpiresAt: credentialEnd, finalizingLeaseExpiresAt: leaseEnd },
+        now
+      )
+    ).toEqual(credentialEnd);
     expect(
-      reservationCleanupNotBefore({ status: 'pending', finalizingLeaseExpiresAt: null }, now)
+      reservationCleanupNotBefore(
+        { credentialExpiresAt: null, finalizingLeaseExpiresAt: null },
+        now
+      )
     ).toEqual(now);
   });
 });

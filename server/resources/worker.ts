@@ -10,7 +10,7 @@ import {
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
 import { getObjectInfo, r2deletehandler } from '../utils/r2';
-import type { UploadReservationManifestItem } from './service';
+import { reservationCleanupNotBefore, type UploadReservationManifestItem } from './service';
 import { billingConfig } from '../billing/runtimeConfig';
 import { runUnboundAttachmentCleanup } from '../attachments/unboundCleanup';
 
@@ -30,16 +30,7 @@ export function cleanupRetryDelaySeconds(attempts: number): number {
   return Math.min(3600, 2 ** Math.min(attempts, 10));
 }
 
-export function reservationCleanupNotBefore(
-  reservation: { status: string; finalizingLeaseExpiresAt: Date | null },
-  now: Date
-): Date {
-  return reservation.status === 'finalizing' &&
-    reservation.finalizingLeaseExpiresAt &&
-    reservation.finalizingLeaseExpiresAt > now
-    ? reservation.finalizingLeaseExpiresAt
-    : now;
-}
+export { reservationCleanupNotBefore } from './service';
 
 export async function inspectReconciledObjects(
   objects: readonly ReconciledObject[],

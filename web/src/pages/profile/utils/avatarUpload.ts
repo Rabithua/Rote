@@ -2,9 +2,10 @@ import type { Attachment } from '@/types/main';
 import { del } from '@/utils/api';
 import {
   finalize,
-  finalizeDirect,
+  cancelUploadReservation,
+  finalizeReservedUpload,
   presign,
-  presignDirect,
+  presignBrowserUpload,
   uploadToSignedUrl,
 } from '@/utils/directUpload';
 import { maybeCompressToWebp } from '@/utils/uploadHelpers';
@@ -63,7 +64,7 @@ export async function createCroppedImage(imageSrc: File | Blob, pixelCrop: Area)
 }
 
 type ProfileImageUploadOptions = {
-  directFinalUpload?: boolean;
+  browserDirectUpload?: boolean;
   initialQuality: number;
   maxWidthOrHeight: number;
 };
@@ -82,7 +83,7 @@ async function uploadProfileImage(
       filename: file.name,
       contentType,
       size: file.size,
-      ...(compressedBlob && options.directFinalUpload
+      ...(compressedBlob && options.browserDirectUpload
         ? {
             compressed: {
               contentType: compressedBlob.type as 'image/jpeg' | 'image/webp',
@@ -92,50 +93,64 @@ async function uploadProfileImage(
         : {}),
     },
   ];
-  const directPresign = options.directFinalUpload ? await presignDirect(presignFiles) : null;
+  const directPresign = options.browserDirectUpload
+    ? await presignBrowserUpload(presignFiles)
+    : null;
   const item = directPresign ? directPresign.items[0] : (await presign(presignFiles))[0];
   if (!item) throw new Error('Failed to get presign URL');
 
-  await uploadToSignedUrl(item.original.putUrl, file);
+  try {
+    await uploadToSignedUrl(item.original.putUrl, file);
 
-  let compressedKey: string | undefined;
-  if (compressedBlob && item.compressed) {
-    if (directPresign) {
-      await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
-      compressedKey = item.compressed.key;
-    } else {
-      try {
+    let compressedKey: string | undefined;
+    if (compressedBlob && item.compressed) {
+      if (directPresign) {
         await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
         compressedKey = item.compressed.key;
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.warn(`Compressed profile image upload failed for ${item.uuid}:`, error);
+      } else {
+        try {
+          await uploadToSignedUrl(item.compressed.putUrl, compressedBlob);
+          compressedKey = item.compressed.key;
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.warn(`Compressed profile image upload failed for ${item.uuid}:`, error);
+        }
       }
     }
+
+    const finalizePayload = [
+      {
+        uuid: item.uuid,
+        originalKey: item.original.key,
+        compressedKey,
+        size: file.size,
+        mimetype: contentType,
+      },
+    ];
+    const finalized = directPresign
+      ? await finalizeReservedUpload(finalizePayload, directPresign.reservationId)
+      : await finalize(finalizePayload);
+
+    if (!finalized?.length) throw new Error('Failed to finalize upload');
+    return finalized[0] as Attachment;
+  } catch (error) {
+    if (directPresign) {
+      try {
+        await cancelUploadReservation(directPresign.reservationId);
+      } catch (cancellationError) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to cancel profile image upload reservation:', cancellationError);
+      }
+    }
+    throw error;
   }
-
-  const finalizePayload = [
-    {
-      uuid: item.uuid,
-      originalKey: item.original.key,
-      compressedKey,
-      size: file.size,
-      mimetype: contentType,
-    },
-  ];
-  const finalized = directPresign
-    ? await finalizeDirect(finalizePayload, directPresign.reservationId)
-    : await finalize(finalizePayload);
-
-  if (!finalized?.length) throw new Error('Failed to finalize upload');
-  return finalized[0] as Attachment;
 }
 
 // 上传头像
 export async function uploadAvatar(
   croppedImageBlob: Blob,
   options?: {
-    directFinalUpload?: boolean;
+    browserDirectUpload?: boolean;
     maxWidthOrHeight?: number;
     initialQuality?: number;
   }
@@ -144,7 +159,7 @@ export async function uploadAvatar(
     type: 'image/png',
   });
   return uploadProfileImage(croppedFile, {
-    directFinalUpload: options?.directFinalUpload,
+    browserDirectUpload: options?.browserDirectUpload,
     maxWidthOrHeight: options?.maxWidthOrHeight || 512,
     initialQuality: options?.initialQuality || 0.8,
   });
@@ -153,10 +168,10 @@ export async function uploadAvatar(
 // 上传封面
 export async function uploadCover(
   file: File,
-  options?: { directFinalUpload?: boolean }
+  options?: { browserDirectUpload?: boolean }
 ): Promise<Attachment> {
   return uploadProfileImage(file, {
-    directFinalUpload: options?.directFinalUpload,
+    browserDirectUpload: options?.browserDirectUpload,
     maxWidthOrHeight: 2560,
     initialQuality: 0.8,
   });

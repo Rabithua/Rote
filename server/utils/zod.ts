@@ -130,7 +130,7 @@ export const ReactionCreateZod = z.object({
 
 // 附件文件名验证
 export const AttachmentPresignZod = z.object({
-  directFinalUpload: z.boolean().optional(),
+  browserDirectUpload: z.boolean().optional(),
   files: z
     .array(
       z.object({
