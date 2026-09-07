@@ -1,4 +1,5 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { HTTPException } from 'hono/http-exception';
 import type { z } from 'zod';
 import { articles, attachments, roteChanges, rotes, users, type Rote } from '../drizzle/schema';
 import {
@@ -94,10 +95,14 @@ function scheduleUpdatedEffects(note: Rote, previousState: string, refreshLinkPr
   }
 }
 
-export async function createUserNote(userId: string, input: CreateUserNoteInput) {
+export async function createUserNote(
+  userId: string,
+  input: CreateUserNoteInput,
+  idempotencyKey?: string
+) {
   const articleId = createArticleId(input);
   const attachmentIds = input.attachmentIds ?? [];
-  const rote = await db.transaction(async (transaction) => {
+  const result = await db.transaction(async (transaction) => {
     const [user] = await transaction
       .select({ id: users.id })
       .from(users)
@@ -105,6 +110,23 @@ export async function createUserNote(userId: string, input: CreateUserNoteInput)
       .limit(1)
       .for('update');
     if (!user) throw new Error('User not found');
+
+    // The existing author lock serializes concurrent creates using the same key.
+    if (idempotencyKey) {
+      const [existing] = await transaction.select().from(rotes).where(eq(rotes.id, idempotencyKey));
+      if (existing) {
+        if (existing.authorid !== userId) {
+          throw new HTTPException(409, { message: 'note_create_identity_conflict' });
+        }
+        return { note: existing, created: false };
+      }
+      const [deleted] = await transaction
+        .select({ id: roteChanges.id })
+        .from(roteChanges)
+        .where(and(eq(roteChanges.originid, idempotencyKey), eq(roteChanges.action, 'DELETE')))
+        .limit(1);
+      if (deleted) throw new HTTPException(409, { message: 'note_create_identity_conflict' });
+    }
 
     await assertOwnedArticle(transaction, userId, articleId);
 
@@ -130,6 +152,7 @@ export async function createUserNote(userId: string, input: CreateUserNoteInput)
     const [created] = await transaction
       .insert(rotes)
       .values({
+        ...(idempotencyKey ? { id: idempotencyKey } : {}),
         articleId,
         archived: input.archived ?? false,
         authorid: userId,
@@ -160,11 +183,11 @@ export async function createUserNote(userId: string, input: CreateUserNoteInput)
       userid: userId,
       createdAt: sql`now()`,
     });
-    return created;
+    return { note: created, created: true };
   });
 
-  const note = (await findRoteById(rote.id, userId)) ?? rote;
-  scheduleCreatedEffects(note);
+  const note = (await findRoteById(result.note.id, userId)) ?? result.note;
+  if (result.created) scheduleCreatedEffects(note);
   return note;
 }
 

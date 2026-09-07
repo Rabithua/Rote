@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import type { User } from '../../drizzle/schema';
 import { authenticateJWT, optionalJWT } from '../../middleware/jwtAuth';
 import { createUserNote, deleteUserNote, updateUserNote } from '../../notes/actions';
@@ -27,7 +28,11 @@ notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => 
   const body = await c.req.json();
   const input = NoteCreateZod.parse(body);
   const user = c.get('user') as User;
-  const note = await createUserNote(user.id, input);
+  const idempotencyKey = c.req.header('Idempotency-Key')?.toLowerCase();
+  if (idempotencyKey !== undefined && !isValidUUID(idempotencyKey)) {
+    throw new HTTPException(400, { message: 'invalid_note_create_identity' });
+  }
+  const note = await createUserNote(user.id, input, idempotencyKey);
   return c.json(createResponse(note), 201);
 });
 

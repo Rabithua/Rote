@@ -28,6 +28,7 @@ interface SortableAttachmentItemProps {
   onDelete: (_index: number) => void;
   uploadProgress?: number;
   id: string;
+  disabled?: boolean;
 }
 
 // 可排序的附件项组件
@@ -38,9 +39,11 @@ function SortableAttachmentItem({
   onDelete,
   uploadProgress,
   id,
+  disabled,
 }: SortableAttachmentItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
+    disabled,
   });
 
   const style = {
@@ -65,6 +68,7 @@ function SortableAttachmentItem({
         isUploading={isUploading}
         uploadProgress={uploadProgress}
         onDelete={onDelete}
+        disabled={disabled}
       />
     </div>
   );
@@ -140,6 +144,7 @@ function AttachmentList({
                   index={index}
                   isUploading={isUploading}
                   onDelete={onDelete}
+                  disabled={disabled}
                   uploadProgress={progress}
                 />
               );
