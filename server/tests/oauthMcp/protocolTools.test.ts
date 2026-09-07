@@ -28,6 +28,7 @@ export async function testProtocol(accessToken: string) {
   const names = tools.data.result?.tools?.map((tool: Json) => tool.name) || [];
   for (const expected of [
     'notes_create',
+    'notes_share_create',
     'articles_create',
     'reactions_add',
     'profile_get',
@@ -77,6 +78,16 @@ export async function testMcpTools(accessToken: string) {
     articleId: article.id,
     type: 'legacy-custom-type',
   });
+  const inactiveShare = await callTool(accessToken, 'notes_share_get', { id: note.id });
+  assert(inactiveShare.active === false, 'new note should not already have a share link');
+  const share = await callTool(accessToken, 'notes_share_create', { id: note.id });
+  assert(share.active === true, 'created share should be active');
+  assert(typeof share.token === 'string', 'created share token missing');
+  assert(share.url === `http://localhost:3001/s/${share.token}`, 'created share URL mismatch');
+  const currentShare = await callTool(accessToken, 'notes_share_get', { id: note.id });
+  assert(currentShare.token === share.token, 'share get should return the current token');
+  const revokedShare = await callTool(accessToken, 'notes_share_revoke', { id: note.id });
+  assert(revokedShare.active === false, 'revoked share should be inactive');
   await callTool(accessToken, 'articles_list', { limit: 10 });
   await callTool(accessToken, 'articles_get', { id: article.id });
   await callTool(accessToken, 'articles_get_by_note', { noteId: note.id });
@@ -147,9 +158,15 @@ export async function testInsufficientScope(appAccessToken: string) {
   const names = tools.data.result?.tools?.map((tool: Json) => tool.name) || [];
   assert(names.includes('notes_list'), 'limited scope should include notes_list');
   assert(!names.includes('notes_create'), 'limited scope must not include notes_create');
+  assert(!names.includes('notes_share_create'), 'limited scope must not include share tools');
   const denied = await mcp(token.accessToken, 'tools/call', {
     name: 'notes_create',
     arguments: { content: 'should not be created' },
   });
   assertStatus(denied.status, 403, 'insufficient scope tool call');
+  const deniedShare = await mcp(token.accessToken, 'tools/call', {
+    name: 'notes_share_create',
+    arguments: { id: crypto.randomUUID() },
+  });
+  assertStatus(deniedShare.status, 403, 'insufficient share scope tool call');
 }

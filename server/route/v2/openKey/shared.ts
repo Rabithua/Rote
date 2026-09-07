@@ -19,7 +19,7 @@ export function requireOpenKeyPerm(...permissions: string[]) {
       permissions.length > 0 &&
       !permissions.some((permission) => openKey.permissions.includes(permission))
     ) {
-      throw new Error('API key permission does not match');
+      throw new Error('Access denied: API key permission does not match');
     }
     await next();
   };

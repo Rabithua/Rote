@@ -2,6 +2,7 @@ import { articleTools } from './articles';
 import { attachmentTools } from './attachments';
 import { dataTools } from './data';
 import { noteTools } from './notes';
+import { noteShareTools } from './noteShares';
 import { profileTools } from './profile';
 import { reactionTools } from './reactions';
 import { settingTools } from './settings';
@@ -12,6 +13,7 @@ export type { McpTool, McpToolResult } from './types';
 
 export const mcpTools: McpTool[] = [
   ...noteTools,
+  ...noteShareTools,
   ...articleTools,
   ...reactionTools,
   ...profileTools,

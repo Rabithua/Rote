@@ -75,6 +75,7 @@
     "GETROTE",
     "EDITROTE",
     "DELETEROTE",
+    "SHAREROTE",
     "SENDARTICLE",
     "GETARTICLE",
     "EDITARTICLE",

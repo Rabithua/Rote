@@ -17,10 +17,10 @@ function getScopeLabelKey(scope: string) {
   return scope.replaceAll(':', '_');
 }
 
-const OAUTH_SCOPE_GROUPS = [
+export const OAUTH_SCOPE_GROUPS = [
   {
     key: 'notes',
-    scopes: ['notes:read', 'notes:write', 'notes:delete'],
+    scopes: ['notes:read', 'notes:write', 'notes:delete', 'notes:share'],
   },
   {
     key: 'articles',
