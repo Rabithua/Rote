@@ -11,8 +11,9 @@ import {
 } from '../../attachments/uploadMedia';
 import { getAttachmentUploadPolicy } from '../../attachments/uploadPolicy';
 import { requireStorageConfig } from '../../middleware/configCheck';
+import { isOpenKeyOk } from '../../openKey/middleware';
 import type { HonoContext, HonoVariables } from '../../types/hono';
-import { createResponse, isOpenKeyOk } from '../../utils/main';
+import { createResponse } from '../../utils/main';
 import { AttachmentPresignZod } from '../../utils/zod';
 
 const openKeyAttachmentRouter = new Hono<{ Variables: HonoVariables }>();
