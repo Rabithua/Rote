@@ -835,6 +835,10 @@
         "title": "Community Projects",
         "subtitle": "Tools and integrations built around Rote",
         "items": {
+          "roteWebClipper": {
+            "title": "Rote Web Clipper",
+            "description": "Save webpages, text and images to Rote"
+          },
           "raycast": {
             "title": "Raycast Extension",
             "description": "Raycast extension for Rote (by @aBER0724)"
@@ -1982,10 +1986,6 @@
       "articleReference": "Reference Article",
       "send": "Send",
       "uploadFailed": "Attachment upload failed",
-      "retryUpload": "Retry upload",
-      "retryUploadDescription": "These attachments have not been uploaded yet. Fix the reported issue, then retry.",
-      "noteSavedAttachmentsPending": "Your note is saved, but its attachments are unfinished. Resume the upload or discard pending attachments.",
-      "discardPendingAttachments": "Discard pending attachments",
       "deleteAttachment": "Delete attachment",
       "pendingAttachments": "Please wait for all attachments to finish uploading before sending.",
       "sending": "Sending...",

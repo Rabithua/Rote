@@ -89,6 +89,89 @@ databaseDescribe('OpenKey note routes', () => {
     await closeDatabase();
   });
 
+  it('advertises authenticated ownership without profile permissions', async () => {
+    const response = await request(`/permissions?openkey=${openKeyId}`);
+    expect(await response.json()).toMatchObject({
+      data: {
+        ownerId: userId,
+        capabilities: { noteCreateIdempotency: 1 },
+      },
+    });
+  });
+
+  it('does not let a send-only key read existing notes through replay identities', async () => {
+    const secret = `private-note-${randomUUID()}`;
+    const original = (await (await post('/notes', { content: secret })).json()) as NoteResponse;
+    await database
+      .update(schema.userOpenKeys)
+      .set({ permissions: ['SENDROTE'] })
+      .where(operators.eq(schema.userOpenKeys.id, openKeyId));
+    try {
+      const permissions = await request(`/permissions?openkey=${openKeyId}`);
+      expect(await permissions.json()).toMatchObject({ data: { capabilities: {} } });
+      for (const path of ['/notes', '/notes/create']) {
+        for (const identity of [original.data.id, randomUUID()]) {
+          const response = await request(path, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'Idempotency-Key': identity },
+            body: JSON.stringify({ openkey: openKeyId, content: 'unrelated input' }),
+          });
+          expect(response.status).toBe(403);
+          expect(await response.text()).not.toContain(secret);
+        }
+      }
+      // Existing write-only integrations can still create normally without a replay identity.
+      expect((await post('/notes', { content: 'send-only new note' })).status).toBe(201);
+      const originalRows = await database
+        .select()
+        .from(schema.rotes)
+        .where(operators.eq(schema.rotes.id, original.data.id));
+      expect(originalRows[0]?.content).toBe(secret);
+    } finally {
+      await database
+        .update(schema.userOpenKeys)
+        .set({ permissions: ['SENDROTE', 'GETROTE', 'EDITROTE', 'DELETEROTE'] })
+        .where(operators.eq(schema.userOpenKeys.id, openKeyId));
+    }
+  });
+
+  it('replays concurrent and lost-response creates with one CREATE event', async () => {
+    const id = randomUUID();
+    const create = (content: string) =>
+      request('/notes', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'Idempotency-Key': id },
+        body: JSON.stringify({ openkey: openKeyId, content }),
+      });
+    const responses = await Promise.all([create('original'), create('original')]);
+    for (const response of responses) {
+      expect(response.status).toBe(201);
+      expect(await response.json()).toMatchObject({ data: { id, content: 'original' } });
+    }
+    // Discard a committed response, then replay with the original identity.
+    await create('must not overwrite');
+    expect(await (await create('again')).json()).toMatchObject({
+      data: { id, content: 'original' },
+    });
+    const events = await database
+      .select()
+      .from(schema.roteChanges)
+      .where(operators.eq(schema.roteChanges.originid, id));
+    expect(events.map((event) => event.action)).toEqual(['CREATE']);
+    const deleted = await request(`/notes/${id}?openkey=${openKeyId}`, { method: 'DELETE' });
+    expect(deleted.status).toBe(200);
+    expect((await create('stale')).status).toBe(409);
+  });
+
+  it('rejects invalid creation identities before creating', async () => {
+    const response = await request('/notes', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Idempotency-Key': 'invalid' },
+      body: JSON.stringify({ openkey: openKeyId, content: 'invalid identity' }),
+    });
+    expect(response.status).toBe(400);
+  });
+
   it('creates notes through the recommended route without deprecation headers', async () => {
     const response = await post('/notes', {
       content: `modern-${randomUUID()}`,

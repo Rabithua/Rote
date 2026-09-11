@@ -2,10 +2,10 @@ import { eq } from 'drizzle-orm';
 import { attachments as attachmentsTable, users } from '../drizzle/schema';
 import {
   assertUploadReservationGrantCurrent,
-  cancelUploadReservation,
   claimUploadReservationForFinalize,
   completeClaimedUploadReservation,
   releaseUploadReservationFinalizeClaim,
+  reservationIdFromStagingKey,
   type UploadReservationFinalizeClaim,
   type UploadReservationManifestItem,
 } from '../resources/service';
@@ -14,7 +14,8 @@ import type { UploadResult } from '../types/main';
 import db from '../utils/drizzle';
 import { upsertAttachmentsByOriginalKey } from '../utils/dbMethods';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
-import { isDirectFinalUploadManifest } from './directFinalUpload';
+import { finalizeDirectUpload } from './directUploadTransaction';
+import { persistDirectAttachments } from './persistDirectAttachments';
 import { completedLegacyFinalizeResult, finalizeAttachmentUploads } from './finalizeUpload';
 import { normalizeFinalizeAttachmentsFromManifest } from './finalizePayload';
 import type { FinalizeAttachmentInput } from './types';
@@ -36,7 +37,7 @@ type FinalizeReservationInput = {
 };
 
 export type FinalizeAttachmentReservationDependencies = {
-  cancelUploadReservation: typeof cancelUploadReservation;
+  finalizeDirectUpload: typeof finalizeDirectUpload;
   claimUploadReservationForFinalize: typeof claimUploadReservationForFinalize;
   persistPreparedReservationUpload: typeof persistPreparedReservationUpload;
   prepareReservationUpload: typeof prepareReservationUpload;
@@ -131,7 +132,7 @@ async function persistPreparedReservationUpload(params: {
 }
 
 const defaultDependencies: FinalizeAttachmentReservationDependencies = {
-  cancelUploadReservation,
+  finalizeDirectUpload,
   claimUploadReservationForFinalize,
   persistPreparedReservationUpload,
   prepareReservationUpload,
@@ -148,6 +149,13 @@ export async function finalizeAttachmentReservation(
 ): Promise<any[]> {
   const dependencies = { ...defaultDependencies, ...dependencyOverrides };
   const reservationId = input.reservationId.toLowerCase();
+  if (input.attachments.every((item) => !reservationIdFromStagingKey(item.originalKey))) {
+    return dependencies.finalizeDirectUpload(
+      { ...input, reservationId },
+      (transaction, uploads) => persistDirectAttachments(transaction, input, uploads),
+      completedLegacyFinalizeResult
+    );
+  }
   const claimResult = await dependencies.claimUploadReservationForFinalize({
     batchId: reservationId,
     reservationId,
@@ -157,17 +165,6 @@ export async function finalizeAttachmentReservation(
     return completedLegacyFinalizeResult(claimResult.result);
   }
   const claim: ActiveFinalizeClaim = claimResult;
-
-  if (isDirectFinalUploadManifest(claim.reservation.manifest)) {
-    await dependencies.releaseUploadReservationFinalizeClaim({
-      batchId: reservationId,
-      leaseToken: claim.leaseToken,
-      reservationId,
-      userId: input.userId,
-    });
-    await dependencies.cancelUploadReservation(input.userId, reservationId);
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 409);
-  }
 
   try {
     const normalizedInput = {
