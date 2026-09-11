@@ -99,6 +99,42 @@ databaseDescribe('OpenKey note routes', () => {
     });
   });
 
+  it('does not let a send-only key read existing notes through replay identities', async () => {
+    const secret = `private-note-${randomUUID()}`;
+    const original = (await (await post('/notes', { content: secret })).json()) as NoteResponse;
+    await database
+      .update(schema.userOpenKeys)
+      .set({ permissions: ['SENDROTE'] })
+      .where(operators.eq(schema.userOpenKeys.id, openKeyId));
+    try {
+      const permissions = await request(`/permissions?openkey=${openKeyId}`);
+      expect(await permissions.json()).toMatchObject({ data: { capabilities: {} } });
+      for (const path of ['/notes', '/notes/create']) {
+        for (const identity of [original.data.id, randomUUID()]) {
+          const response = await request(path, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'Idempotency-Key': identity },
+            body: JSON.stringify({ openkey: openKeyId, content: 'unrelated input' }),
+          });
+          expect(response.status).toBe(403);
+          expect(await response.text()).not.toContain(secret);
+        }
+      }
+      // Existing write-only integrations can still create normally without a replay identity.
+      expect((await post('/notes', { content: 'send-only new note' })).status).toBe(201);
+      const originalRows = await database
+        .select()
+        .from(schema.rotes)
+        .where(operators.eq(schema.rotes.id, original.data.id));
+      expect(originalRows[0]?.content).toBe(secret);
+    } finally {
+      await database
+        .update(schema.userOpenKeys)
+        .set({ permissions: ['SENDROTE', 'GETROTE', 'EDITROTE', 'DELETEROTE'] })
+        .where(operators.eq(schema.userOpenKeys.id, openKeyId));
+    }
+  });
+
   it('replays concurrent and lost-response creates with one CREATE event', async () => {
     const id = randomUUID();
     const create = (content: string) =>

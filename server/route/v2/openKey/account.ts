@@ -54,7 +54,7 @@ router.get('/permissions', async (c: HonoContext) => {
     createResponse({
       permissions: openKey.permissions,
       ownerId: openKey.userid,
-      capabilities: { noteCreateIdempotency: 1 },
+      capabilities: openKey.permissions.includes('GETROTE') ? { noteCreateIdempotency: 1 } : {},
     }),
     200
   );

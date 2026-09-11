@@ -42,6 +42,11 @@ async function createNoteFromBody(c: HonoContext) {
   const identity = c.req.header('Idempotency-Key')?.toLowerCase();
   if (identity !== undefined && !isValidUUID(identity))
     throw new HTTPException(400, { message: 'invalid_note_create_identity' });
+  // A replay can return a note created by another client of this account.
+  // It therefore needs the same read permission as GET /notes/:id.
+  if (identity !== undefined && !openKey.permissions.includes('GETROTE')) {
+    throw new HTTPException(403, { message: 'Missing required permission: GETROTE' });
+  }
   const note = await createUserNote(openKey.userid, input, identity);
   return c.json(createResponse(note), 201);
 }
