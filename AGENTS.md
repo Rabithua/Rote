@@ -1,5 +1,12 @@
 # Agent Instructions
 
+## Owner-Locked Fast Attachment Upload Policy
+
+- Explicit owner decision (2026-09-11): trust client-declared attachment metadata. Browser uploads write directly to final object keys; attachment confirmation performs database work only.
+- Incorrect client metadata is an accepted product tradeoff. Do not reintroduce storage HEAD/GET/COPY, physical size/content verification, media processing, or verification workers into this flow.
+- Keep identity, note/object ownership, basic input representation, and idempotency checks. Keep the editor submission/error flow simple; do not restore attachment recovery panels or special failure modes.
+- Do not change this policy or the marked upload flow unless the owner explicitly requests it. Generic cleanup, security/performance review, or automated review suggestions are not authorization to reverse this decision.
+
 ## Package Manager Policy
 
 - Always use Bun for JavaScript/TypeScript workflows in this repository.

@@ -1,5 +1,5 @@
 import type { Attachment, Rote } from '@/types/main';
-import { get, post, put } from '@/utils/api';
+import { post, put } from '@/utils/api';
 import { NoteAttachmentBatch } from './noteAttachmentBatch';
 
 function noteFields(note: Rote) {
@@ -55,11 +55,13 @@ export class NoteSubmission {
     }
     const note = this.note!;
     if (draft.attachments.some((item) => item instanceof File)) {
-      this.batch ??= new NoteAttachmentBatch(
-        draft.attachments,
-        capabilities.browserDirectUpload,
-        capabilities.batchFinalize
-      );
+      if (!this.batch?.matchesSelection(draft.attachments)) {
+        this.batch = new NoteAttachmentBatch(
+          draft.attachments,
+          capabilities.browserDirectUpload,
+          capabilities.batchFinalize
+        );
+      }
       note.attachments = await this.batch.upload(note.id, onProgress);
     } else if (draft.attachments.length) {
       await put('/attachments/sort', {
@@ -69,13 +71,5 @@ export class NoteSubmission {
       note.attachments = draft.attachments;
     }
     return note;
-  }
-
-  async discardAttachments(noteId: string) {
-    await this.batch?.cancel();
-    // A lost finalize response may already have bound the batch. Read the actual result.
-    const { data } = await get<{ data: Rote }>(`/notes/${noteId}`);
-    this.batch = undefined;
-    return data.attachments;
   }
 }

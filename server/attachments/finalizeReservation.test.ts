@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'bun:test';
 import { finalizeAttachmentReservation } from './finalizeReservation';
-import { RESOURCE_ERROR_CODES } from '../resources/errors';
 
 const USER_ID = '11111111-1111-4111-8111-111111111111';
 const RESERVATION_ID = '22222222-2222-4222-8222-222222222222';
@@ -79,28 +78,21 @@ describe('reservation attachment finalization', () => {
     expect(released).toBe(true);
   });
 
-  it('cancels previously issued direct-final reservations instead of accepting them', async () => {
-    let cancelled = false;
-    let released = false;
-    const finalKey = `users/${USER_ID}/attachments/${UPLOAD_ID}/original.jpg`;
-    await expect(
-      finalizeAttachmentReservation(
-        { ...input, attachments: [{ ...input.attachments[0], originalKey: finalKey }] },
-        {
-          cancelUploadReservation: async () => {
-            cancelled = true;
-          },
-          claimUploadReservationForFinalize: async () => claim(finalKey, finalKey),
-          releaseUploadReservationFinalizeClaim: async () => {
-            released = true;
-          },
-        }
-      )
-    ).rejects.toMatchObject({
-      code: RESOURCE_ERROR_CODES.uploadManifestMismatch,
-      status: 409,
-    });
-    expect(released).toBe(true);
-    expect(cancelled).toBe(true);
+  it('finalizes direct uploads without claiming a storage-processing lease', async () => {
+    let claimed = false;
+    const finalKey = `users/${USER_ID}/uploads/${UPLOAD_ID}.jpg`;
+    const result = await finalizeAttachmentReservation(
+      { ...input, attachments: [{ ...input.attachments[0], originalKey: finalKey }] },
+      {
+        claimUploadReservationForFinalize: async () => {
+          claimed = true;
+          throw new Error('unexpected lease');
+        },
+        finalizeDirectUpload: async (_input, _persist, restore) =>
+          restore([{ id: 'direct-attachment' }]),
+      }
+    );
+    expect(result).toEqual([{ id: 'direct-attachment' }]);
+    expect(claimed).toBe(false);
   });
 });
