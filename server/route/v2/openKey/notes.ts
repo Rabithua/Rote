@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
+import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { createUserNote, deleteUserNote, updateUserNote } from '../../../notes/actions';
 import type { HonoContext, HonoVariables } from '../../../types/hono';
 import { findMyRote, findRoteById, findRotesByIds, searchMyRotes } from '../../../utils/dbMethods';
 import { MAX_BATCH_SIZE } from '../../../utils/fileValidation';
-import { createResponse } from '../../../utils/main';
+import { createResponse, isValidUUID } from '../../../utils/main';
 import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../../utils/zod';
 import {
   assertUuid,
@@ -38,7 +39,10 @@ function parsedArchived(value: string | undefined): boolean | undefined {
 async function createNoteFromBody(c: HonoContext) {
   const openKey = requireOpenKey(c);
   const input = NoteCreateZod.parse(await c.req.json());
-  const note = await createUserNote(openKey.userid, input);
+  const identity = c.req.header('Idempotency-Key')?.toLowerCase();
+  if (identity !== undefined && !isValidUUID(identity))
+    throw new HTTPException(400, { message: 'invalid_note_create_identity' });
+  const note = await createUserNote(openKey.userid, input, identity);
   return c.json(createResponse(note), 201);
 }
 
@@ -130,7 +134,7 @@ router.get('/notes/:id', requireOpenKeyPerm('GETROTE'), async (c: HonoContext) =
   const openKey = requireOpenKey(c);
   const id = assertUuid(c.req.param('id'), 'Invalid or missing ID');
   const note = await findRoteById(id, openKey.userid);
-  if (!note) throw new Error('Note not found');
+  if (!note) throw new HTTPException(404, { message: 'Note not found' });
   if (note.state !== 'public' && note.authorid !== openKey.userid) {
     throw new Error('Access denied: note is private');
   }

@@ -89,6 +89,53 @@ databaseDescribe('OpenKey note routes', () => {
     await closeDatabase();
   });
 
+  it('advertises authenticated ownership without profile permissions', async () => {
+    const response = await request(`/permissions?openkey=${openKeyId}`);
+    expect(await response.json()).toMatchObject({
+      data: {
+        ownerId: userId,
+        capabilities: { noteCreateIdempotency: 1 },
+      },
+    });
+  });
+
+  it('replays concurrent and lost-response creates with one CREATE event', async () => {
+    const id = randomUUID();
+    const create = (content: string) =>
+      request('/notes', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'Idempotency-Key': id },
+        body: JSON.stringify({ openkey: openKeyId, content }),
+      });
+    const responses = await Promise.all([create('original'), create('original')]);
+    for (const response of responses) {
+      expect(response.status).toBe(201);
+      expect(await response.json()).toMatchObject({ data: { id, content: 'original' } });
+    }
+    // Discard a committed response, then replay with the original identity.
+    await create('must not overwrite');
+    expect(await (await create('again')).json()).toMatchObject({
+      data: { id, content: 'original' },
+    });
+    const events = await database
+      .select()
+      .from(schema.roteChanges)
+      .where(operators.eq(schema.roteChanges.originid, id));
+    expect(events.map((event) => event.action)).toEqual(['CREATE']);
+    const deleted = await request(`/notes/${id}?openkey=${openKeyId}`, { method: 'DELETE' });
+    expect(deleted.status).toBe(200);
+    expect((await create('stale')).status).toBe(409);
+  });
+
+  it('rejects invalid creation identities before creating', async () => {
+    const response = await request('/notes', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'Idempotency-Key': 'invalid' },
+      body: JSON.stringify({ openkey: openKeyId, content: 'invalid identity' }),
+    });
+    expect(response.status).toBe(400);
+  });
+
   it('creates notes through the recommended route without deprecation headers', async () => {
     const response = await post('/notes', {
       content: `modern-${randomUUID()}`,

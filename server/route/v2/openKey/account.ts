@@ -50,7 +50,14 @@ function validateDateRange(startDate: string | undefined, endDate: string | unde
 
 router.get('/permissions', async (c: HonoContext) => {
   const openKey = requireOpenKey(c);
-  return c.json(createResponse({ permissions: openKey.permissions }), 200);
+  return c.json(
+    createResponse({
+      permissions: openKey.permissions,
+      ownerId: openKey.userid,
+      capabilities: { noteCreateIdempotency: 1 },
+    }),
+    200
+  );
 });
 
 router.get('/profile', requireOpenKeyPerm('EDITPROFILE'), async (c: HonoContext) => {
