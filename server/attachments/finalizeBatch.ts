@@ -1,23 +1,18 @@
-import { and, asc, eq, inArray, or, sql } from 'drizzle-orm';
-import { attachments as attachmentsTable, rotes, users } from '../drizzle/schema';
 import {
-  assertUploadReservationGrantCurrent,
-  cancelUploadReservation,
   claimUploadReservationForFinalize,
-  completeClaimedUploadReservation,
   releaseUploadReservationFinalizeClaim,
   reservationIdFromStagingKey,
   type UploadReservationFinalizeClaim,
   type UploadReservationManifestItem,
 } from '../resources/service';
 import type { UploadResult } from '../types/main';
-import db from '../utils/drizzle';
-import { createRoteChange, upsertAttachmentsByOriginalKey } from '../utils/dbMethods';
-import { MAX_FILES, validateRoteAttachmentDetails } from '../utils/fileValidation';
+import { MAX_FILES } from '../utils/fileValidation';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
 import { finalizeAttachmentUploads } from './finalizeUpload';
-import { isDirectFinalUploadManifest } from './directFinalUpload';
 import { normalizeFinalizeAttachmentsFromManifest } from './finalizePayload';
+import { finalizeDirectUpload } from './directUploadTransaction';
+import { persistAttachmentBatch } from './persistAttachmentBatch';
+export { assertAttachmentBindingAllowed } from './persistAttachmentBatch';
 import type {
   AttachmentBatchOrderReference,
   FinalizeAttachmentBatchInput,
@@ -146,15 +141,6 @@ function orderReferenceKey(reference: AttachmentBatchOrderReference): string | n
   return attachmentId ? `attachment:${attachmentId}` : `client:${clientId}`;
 }
 
-export function assertAttachmentBindingAllowed(
-  existingNoteId: string | null | undefined,
-  targetNoteId: string
-) {
-  if (existingNoteId && existingNoteId !== targetNoteId) {
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-  }
-}
-
 function completedBatchResult(
   claim: Extract<UploadReservationFinalizeClaim, { kind: 'completed' }>,
   batchId: string
@@ -216,159 +202,6 @@ async function prepareUploadsOutsideTransaction(
   return { objects, uploads };
 }
 
-async function persistBatch(params: {
-  claim: ActiveFinalizeClaim | null;
-  input: FinalizeAttachmentBatchInput;
-  objects: FinalizedManagedObject[];
-  uploads: UploadResult[];
-  userId: string;
-}): Promise<FinalizeAttachmentBatchResult> {
-  return db.transaction(async (transaction) => {
-    const [user] = await transaction
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.id, params.userId))
-      .limit(1)
-      .for('update');
-    if (!user) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    if (params.claim) {
-      await assertUploadReservationGrantCurrent(transaction, params.claim.reservation, new Date());
-    }
-
-    const [note] = await transaction
-      .select({ id: rotes.id })
-      .from(rotes)
-      .where(and(eq(rotes.id, params.input.noteId), eq(rotes.authorid, params.userId)))
-      .limit(1)
-      .for('update');
-    if (!note) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-
-    for (const upload of params.uploads) {
-      if (!upload.url) {
-        throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-      }
-      const originalKey = (upload.details as { key?: string } | undefined)?.key;
-      const matcher = originalKey
-        ? or(
-            sql`${attachmentsTable.details}->>'key' = ${originalKey}`,
-            eq(attachmentsTable.url, upload.url)
-          )
-        : eq(attachmentsTable.url, upload.url);
-      const [existing] = await transaction
-        .select({ roteid: attachmentsTable.roteid })
-        .from(attachmentsTable)
-        .where(and(eq(attachmentsTable.userid, params.userId), matcher))
-        .limit(1)
-        .for('update');
-      assertAttachmentBindingAllowed(existing?.roteid, params.input.noteId);
-    }
-
-    const finalized = await upsertAttachmentsByOriginalKey(
-      params.userId,
-      params.input.noteId,
-      params.uploads,
-      transaction
-    );
-    if (finalized.length !== params.input.attachments.length) {
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    }
-
-    const clientIdMap: Record<string, string> = {};
-    params.input.attachments.forEach((attachment, index) => {
-      const clientId = attachment.clientId!;
-      const attachmentId = finalized[index]?.id as string | undefined;
-      if (!attachmentId) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-      clientIdMap[clientId] = attachmentId;
-    });
-
-    const orderedAttachmentIds = params.input.order.map((reference) => {
-      if (reference.attachmentId) return reference.attachmentId.toLowerCase();
-      const attachmentId = reference.clientId ? clientIdMap[reference.clientId] : undefined;
-      if (!attachmentId) throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-      return attachmentId;
-    });
-    const uniqueOrderedIds = new Set(orderedAttachmentIds);
-    if (uniqueOrderedIds.size !== orderedAttachmentIds.length) {
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    }
-
-    const boundAttachments = await transaction
-      .select()
-      .from(attachmentsTable)
-      .where(
-        and(
-          eq(attachmentsTable.userid, params.userId),
-          eq(attachmentsTable.roteid, params.input.noteId)
-        )
-      )
-      .for('update');
-    if (
-      boundAttachments.length !== orderedAttachmentIds.length ||
-      boundAttachments.some((attachment) => !uniqueOrderedIds.has(attachment.id))
-    ) {
-      throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-    }
-    validateRoteAttachmentDetails(boundAttachments);
-
-    for (const [sortIndex, attachmentId] of orderedAttachmentIds.entries()) {
-      await transaction
-        .update(attachmentsTable)
-        .set({ sortIndex, updatedAt: new Date() })
-        .where(
-          and(
-            eq(attachmentsTable.id, attachmentId),
-            eq(attachmentsTable.userid, params.userId),
-            eq(attachmentsTable.roteid, params.input.noteId)
-          )
-        );
-    }
-    await transaction
-      .update(rotes)
-      .set({ updatedAt: new Date() })
-      .where(eq(rotes.id, params.input.noteId));
-
-    const orderedAttachments = orderedAttachmentIds.length
-      ? await transaction
-          .select()
-          .from(attachmentsTable)
-          .where(inArray(attachmentsTable.id, orderedAttachmentIds))
-          .orderBy(asc(attachmentsTable.sortIndex))
-      : [];
-    const result: FinalizeAttachmentBatchResult = {
-      batchId: params.input.batchId,
-      attachments: orderedAttachments,
-      clientIdMap,
-      orderedAttachmentIds,
-    };
-
-    await createRoteChange(
-      {
-        action: 'UPDATE',
-        originid: params.input.noteId,
-        roteid: params.input.noteId,
-        userid: params.userId,
-      },
-      transaction
-    );
-
-    if (params.claim) {
-      const completed = await completeClaimedUploadReservation(
-        {
-          batchId: params.input.batchId,
-          leaseToken: params.claim.leaseToken,
-          objects: params.objects,
-          reservationId: params.claim.reservation.id,
-          result,
-          userId: params.userId,
-        },
-        transaction
-      );
-      return completed as FinalizeAttachmentBatchResult;
-    }
-    return result;
-  });
-}
-
 export async function finalizeAttachmentBatch(params: {
   input: FinalizeAttachmentBatchInput;
   scopes: string[];
@@ -406,6 +239,18 @@ export async function finalizeAttachmentBatch(params: {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
   }
 
+  if (inferredReservationIds.size === 0) {
+    return finalizeDirectUpload(
+      { userId: params.userId, reservationId, attachments: input.attachments },
+      (transaction, uploads) =>
+        persistAttachmentBatch(
+          { claim: null, input, objects: [], uploads, userId: params.userId },
+          transaction
+        ),
+      (result) => completedBatchResult({ kind: 'completed', result }, normalizedBatchId)
+    );
+  }
+
   const claimResult = await claimUploadReservationForFinalize({
     batchId: normalizedBatchId,
     reservationId,
@@ -416,17 +261,6 @@ export async function finalizeAttachmentBatch(params: {
   }
   const claim: ActiveFinalizeClaim = claimResult;
 
-  if (isDirectFinalUploadManifest(claim.reservation.manifest)) {
-    await releaseUploadReservationFinalizeClaim({
-      batchId: normalizedBatchId,
-      leaseToken: claim.leaseToken,
-      reservationId: claim.reservation.id,
-      userId: params.userId,
-    });
-    await cancelUploadReservation(params.userId, claim.reservation.id);
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 409);
-  }
-
   try {
     const normalizedInput = {
       ...input,
@@ -436,7 +270,7 @@ export async function finalizeAttachmentBatch(params: {
       ),
     };
     const prepared = await prepareUploadsOutsideTransaction(normalizedInput, claim, params.userId);
-    const result = await persistBatch({
+    const result = await persistAttachmentBatch({
       claim,
       input: normalizedInput,
       objects: prepared.objects,

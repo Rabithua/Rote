@@ -24,7 +24,6 @@ import {
 } from '../resources/service';
 import { createDerivedUploadProxyUrl } from '../resources/uploadProxy';
 import { RESOURCE_ERROR_CODES, ResourcePolicyError } from '../resources/errors';
-import { isDirectFinalUploadManifest } from './directFinalUpload';
 
 export type PresignAttachmentDependencies = {
   createDerivedUploadProxyUrl: typeof createDerivedUploadProxyUrl;
@@ -184,7 +183,11 @@ export async function presignAttachmentUploads(
             (mediaKind === 'livePhoto' ? 'image/jpeg' : 'image/webp'))
         : undefined;
     const finalPrefix = `users/${input.userId}`;
-    const stagingPrefix = managed ? `${finalPrefix}/staging/${reservationId}` : finalPrefix;
+    // Owner decision (2026-09-11): browser uploads go straight to their final keys.
+    // Trust declared metadata; never restore staging/copy/verification to this path
+    // without the owner's explicit instruction. Older clients keep their protocol.
+    const stagingPrefix =
+      managed && !browserDirectUpload ? `${finalPrefix}/staging/${reservationId}` : finalPrefix;
     const manifest: UploadReservationManifestItem[] = [];
     const originalFinalKey = `${finalPrefix}/uploads/${uuid}${ext}`;
     const originalKey = `${stagingPrefix}/uploads/${uuid}${ext}`;
@@ -389,10 +392,6 @@ export async function refreshAttachmentUploadReservation(
   const pending = await dependencies.getPendingUploadReservation(userId, reservationId);
   if (!pending) {
     throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-  }
-  if (isDirectFinalUploadManifest(pending.manifest)) {
-    await dependencies.cancelUploadReservation(userId, reservationId);
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch, 409);
   }
   const reservation = await dependencies.refreshUploadReservationCredentialExpiry(
     userId,

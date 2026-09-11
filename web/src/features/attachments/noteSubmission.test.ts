@@ -163,7 +163,7 @@ describe('note-first attachment submission', () => {
     await submit(session, note);
     expect(events.filter((event) => event === '/notes')).toHaveLength(1);
     expect(events.filter((event) => event.includes('cos.test/original'))).toHaveLength(1);
-    expect(events).toContain('/attachments/reservations/reservation-1/refresh');
+    expect(events).not.toContain('/attachments/reservations/reservation-1/refresh');
     expect(cancelUploadReservation).not.toHaveBeenCalled();
   });
 
@@ -215,7 +215,7 @@ describe('note-first attachment submission', () => {
     );
     expect(uploadToSignedUrl).not.toHaveBeenCalled();
     expect(events).not.toContain('/attachments/finalize-batch');
-    expect(cancelUploadReservation).toHaveBeenCalledWith('reservation-1');
+    expect(cancelUploadReservation).not.toHaveBeenCalled();
   });
 
   it('updates edited text on the saved note while retrying the same attachment batch', async () => {
@@ -262,25 +262,15 @@ describe('note-first attachment submission', () => {
     expect(events.slice(-2)).toEqual(['/attachments/finalize', '/attachments/sort']);
   });
 
-  it('cancels only on explicit discard and reads attachments already bound by a lost finalize', async () => {
+  it('allows changing the file selection after an ordinary upload error', async () => {
     const session = new NoteSubmission();
-    loseFinalize = true;
-    await expect(submit(session, draft([photo()]))).rejects.toThrow();
-    expect(await session.discardAttachments(createId)).toEqual([existing]);
-    expect(cancelUploadReservation).toHaveBeenCalledWith('reservation-1');
-  });
-
-  it('does not report attachments as discarded while finalization is still active', async () => {
-    const session = new NoteSubmission();
-    loseFinalize = true;
-    await expect(submit(session, draft([photo()]))).rejects.toThrow();
-    vi.mocked(cancelUploadReservation).mockRejectedValueOnce(
-      new Error('attachment_batch_finalizing')
-    );
-
-    await expect(session.discardAttachments(createId)).rejects.toThrow(
-      'attachment_batch_finalizing'
-    );
+    failUpload = 'compressed';
+    await expect(submit(session, draft([photo()]))).rejects.toThrow('offline');
+    await submit(session, draft([new File(['new'], 'new.jpg', { type: 'image/jpeg' })]));
+    expect(events.filter((event) => event === '/notes')).toHaveLength(1);
+    expect(presigns).toBe(2);
     expect(get).not.toHaveBeenCalled();
+    expect(cancelUploadReservation).not.toHaveBeenCalled();
+    expect(events.some((event) => event.endsWith('/refresh'))).toBe(false);
   });
 });

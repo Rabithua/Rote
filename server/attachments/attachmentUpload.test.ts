@@ -174,41 +174,37 @@ describe('attachment upload flow', () => {
     });
   });
 
-  it('cancels legacy direct-final reservations before refreshing credentials', async () => {
-    let cancelled = false;
-    let refreshed = false;
+  it('refreshes direct-final credentials without cancelling the reservation', async () => {
     const finalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
-    await expect(
-      refreshAttachmentUploadReservation(USER_ID, LIVE_UUID, {
-        getPendingUploadReservation: async () =>
-          ({
-            id: LIVE_UUID,
-            manifest: [
-              {
-                uuid: LIVE_UUID,
-                role: 'original',
-                stagingKey: finalKey,
-                finalKey,
-                declaredBytes: '1024',
-                contentType: 'image/jpeg',
-                billable: true,
-              },
-            ],
-          }) as never,
-        cancelUploadReservation: async () => {
-          cancelled = true;
+    const pending = {
+      id: LIVE_UUID,
+      manifest: [
+        {
+          uuid: LIVE_UUID,
+          role: 'original',
+          stagingKey: finalKey,
+          finalKey,
+          declaredBytes: '1024',
+          contentType: 'image/jpeg',
+          billable: true,
         },
-        refreshUploadReservationCredentialExpiry: async () => {
-          refreshed = true;
-          throw new Error('must not refresh');
-        },
-      })
-    ).rejects.toMatchObject({
-      code: 'resource_upload_manifest_mismatch',
-      status: 409,
+      ],
+    };
+    let cancelled = false;
+    const refreshed = await refreshAttachmentUploadReservation(USER_ID, LIVE_UUID, {
+      getPendingUploadReservation: async () => pending as never,
+      refreshUploadReservationCredentialExpiry: async () =>
+        ({ ...pending, credentialExpiresAt: new Date(Date.now() + 900_000) }) as never,
+      cancelUploadReservation: async () => {
+        cancelled = true;
+      },
+      presignPutUrl: async (key) => ({
+        putUrl: `https://storage.test/${key}`,
+        url: `${URL_PREFIX}/${key}`,
+      }),
     });
-    expect(cancelled).toBe(true);
-    expect(refreshed).toBe(false);
+    expect(refreshed.items[0].original.key).toBe(finalKey);
+    expect(cancelled).toBe(false);
   });
   it('uses the signed Content-Type to choose the key extension', () => {
     expect(getUploadExtension('photo.webp', 'image/jpeg')).toBe('.jpg');
@@ -425,7 +421,7 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('presigns a staging key for direct browser uploads without a preview', async () => {
+  it('presigns a final key for direct browser uploads without a preview', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:
       | Parameters<
@@ -479,7 +475,7 @@ describe('attachment upload flow', () => {
       }
     );
 
-    const stagingKey = `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.jpg`;
+    const stagingKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
     expect(result.items[0].original.key).toBe(stagingKey);
     expect(result.items[0].compressed).toBeUndefined();
     expect(reservation?.manifest).toHaveLength(1);
@@ -493,7 +489,7 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('presigns a browser-generated preview at a reservation-scoped staging key', async () => {
+  it('presigns a browser-generated preview at its final key', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:
       | Parameters<
@@ -548,8 +544,8 @@ describe('attachment upload flow', () => {
       }
     );
 
-    const originalKey = `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.jpg`;
-    const compressedKey = `users/${USER_ID}/staging/${LIVE_UUID}/compressed/${LIVE_UUID}.webp`;
+    const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
+    const compressedKey = `users/${USER_ID}/compressed/${LIVE_UUID}.webp`;
     expect(result.items[0].compressed?.key).toBe(compressedKey);
     expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
       ['original', '1024'],
@@ -564,7 +560,7 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('presigns a direct browser video and poster at reservation-scoped staging keys', async () => {
+  it('presigns a direct browser video and poster at final keys', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
     let reservation:
       | Parameters<
@@ -619,12 +615,8 @@ describe('attachment upload flow', () => {
       }
     );
 
-    expect(result.items[0].original.key).toBe(
-      `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.mov`
-    );
-    expect(result.items[0].poster?.key).toBe(
-      `users/${USER_ID}/staging/${LIVE_UUID}/posters/${LIVE_UUID}.jpg`
-    );
+    expect(result.items[0].original.key).toBe(`users/${USER_ID}/uploads/${LIVE_UUID}.mov`);
+    expect(result.items[0].poster?.key).toBe(`users/${USER_ID}/posters/${LIVE_UUID}.jpg`);
     expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
       ['original', '2048'],
       ['poster', '256'],
@@ -632,11 +624,11 @@ describe('attachment upload flow', () => {
     expect(signed).toEqual([
       {
         contentLength: 2048,
-        key: `users/${USER_ID}/staging/${LIVE_UUID}/uploads/${LIVE_UUID}.mov`,
+        key: `users/${USER_ID}/uploads/${LIVE_UUID}.mov`,
       },
       {
         contentLength: 256,
-        key: `users/${USER_ID}/staging/${LIVE_UUID}/posters/${LIVE_UUID}.jpg`,
+        key: `users/${USER_ID}/posters/${LIVE_UUID}.jpg`,
       },
     ]);
   });

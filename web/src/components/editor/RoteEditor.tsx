@@ -48,7 +48,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [submiting, setSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<File>>(new Set());
   const [uploadProgress, setUploadProgress] = useState<Map<File, number>>(new Map());
-  const [attachmentFailure, setAttachmentFailure] = useState(false);
   const submittingRef = useRef(false);
   const submission = useRef(new NoteSubmission());
   const [rote, setRote] = useAtom(roteAtom);
@@ -112,7 +111,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     setLocalContent('');
     setUploadingFiles(new Set());
     setUploadProgress(new Map());
-    setAttachmentFailure(false);
     submission.current = new NoteSubmission();
   }, [setRote]);
 
@@ -193,7 +191,7 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
   const deleteFile = useCallback(
     async (indexToRemove: number) => {
-      if (submittingRef.current || attachmentFailure) return;
+      if (submittingRef.current) return;
       const item = rote.attachments[indexToRemove];
       try {
         if (!(item instanceof File)) await del(`/attachments/${item.id}`);
@@ -202,12 +200,12 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
         toast.error(getUploadErrorMessage(error));
       }
     },
-    [rote.attachments, setRote, attachmentFailure]
+    [rote.attachments, setRote]
   );
 
   const addFiles = useCallback(
     (files: File[]) => {
-      if (!files.length || submittingRef.current || attachmentFailure) return;
+      if (!files.length || submittingRef.current) return;
       const existingMediaKinds = rote.attachments.map(getAttachmentMediaKind).filter(Boolean);
       const existingHasVideo = existingMediaKinds.includes('video');
       const existingImageCount = existingMediaKinds.filter(
@@ -258,17 +256,11 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
 
       setRote((prev) => ({ ...prev, attachments: [...prev.attachments, ...files] }));
     },
-    [
-      canUploadVideo,
-      maxVideoUploadSizeBytes,
-      maxVideoUploadSizeMB,
-      rote.attachments,
-      setRote,
-      t,
-      attachmentFailure,
-    ]
+    [canUploadVideo, maxVideoUploadSizeBytes, maxVideoUploadSizeMB, rote.attachments, setRote, t]
   );
 
+  // Owner decision (2026-09-11): ordinary submit + error toast only. Do not
+  // restore attachment failure locks/recovery panels without explicit owner approval.
   const submit = useCallback(async () => {
     if (submittingRef.current) return;
     if (!localContent.trim()) {
@@ -302,11 +294,9 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
       } else {
         setRote(result);
         setLocalContent(result.content);
-        setAttachmentFailure(false);
         submission.current = new NoteSubmission();
       }
     } catch (error) {
-      setAttachmentFailure(files.length > 0);
       toast.error(`${t('sendFailed')}: ${getUploadErrorMessage(error)}`, { id: toastId });
     } finally {
       submittingRef.current = false;
@@ -325,24 +315,6 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
     canUploadDirectlyFromBrowser,
     siteStatus?.ui?.attachmentBatchFinalize,
   ]);
-
-  const discardAttachments = useCallback(async () => {
-    if (submittingRef.current) return;
-    submittingRef.current = true;
-    setSubmitting(true);
-    try {
-      const attachments = rote.id
-        ? await submission.current.discardAttachments(rote.id)
-        : rote.attachments.filter((item) => !(item instanceof File));
-      setRote((prev) => ({ ...prev, attachments }));
-      setAttachmentFailure(false);
-    } catch (error) {
-      toast.error(getUploadErrorMessage(error));
-    } finally {
-      submittingRef.current = false;
-      setSubmitting(false);
-    }
-  }, [rote.id, rote.attachments, setRote]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -439,13 +411,13 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   // 处理附件重新排序
   const handleAttachmentReorder = useCallback(
     (reorderedAttachments: (File | Attachment)[]) => {
-      if (submittingRef.current || attachmentFailure) return;
+      if (submittingRef.current) return;
       setRote((prevRote) => ({
         ...prevRote,
         attachments: reorderedAttachments,
       }));
     },
-    [setRote, attachmentFailure]
+    [setRote]
   );
 
   const showPublicWarning = useMemo(() => rote.state === 'public', [rote.state]);
@@ -481,36 +453,10 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
           onReorder={handleAttachmentReorder}
           onFileAdd={handleFileAdd}
           roteId={rote.id}
-          disabled={submiting || attachmentFailure}
+          disabled={submiting}
           accept={uploadAccept}
           canAddMore={canAddMoreAttachments}
         />
-      )}
-
-      {attachmentFailure && (
-        <Alert className="animate-show">
-          <AlertDescription className="flex items-center justify-between gap-3 font-light">
-            <span>{t(rote.id ? 'noteSavedAttachmentsPending' : 'retryUploadDescription')}</span>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={submiting}
-              onClick={() => void submit()}
-            >
-              {t('retryUpload')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={submiting}
-              onClick={() => void discardAttachments()}
-            >
-              {t('discardPendingAttachments')}
-            </Button>
-          </AlertDescription>
-        </Alert>
       )}
 
       {/* 绑定的文章 - 一对一，只在有绑定时显示 */}
