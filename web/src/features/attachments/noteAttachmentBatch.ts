@@ -5,7 +5,7 @@ import { runConcurrency } from '@/utils/uploadHelpers';
 import { noteFileManifest, prepareNoteFiles, type PreparedNoteFile } from './preparedNoteFiles';
 
 type Part = 'original' | 'compressed' | 'poster';
-type SignedBatch = { items: PresignItem[]; reservationId?: string };
+type SignedBatch = { items: PresignItem[]; reservationId?: string; expiresAt?: string };
 type BatchResult = { attachments: Attachment[] };
 
 /** One selection and batch identity; an ordinary resubmit cannot bind it twice. */
@@ -15,6 +15,7 @@ export class NoteAttachmentBatch {
   private signed?: SignedBatch;
   private completed = new Map<File, Set<Part>>();
   private finalized?: Attachment[];
+  private finalizeStarted = false;
   private readonly selection: (File | Attachment)[];
   private readonly browserDirectUpload: boolean;
   private readonly batchFinalize: boolean;
@@ -35,7 +36,21 @@ export class NoteAttachmentBatch {
       this.selection.filter((item): item is File => item instanceof File)
     );
     // Owner-locked policy (2026-09-11): propagate failures to the ordinary
-    // editor error toast. No automatic refresh, cancellation or recovery modes.
+    // editor error toast. Only an explicit resubmit refreshes expired credentials;
+    // do not add automatic retries, cancellation or recovery modes without owner approval.
+    if (
+      !this.finalizeStarted &&
+      this.signed?.reservationId &&
+      this.signed.expiresAt &&
+      Date.parse(this.signed.expiresAt) <= Date.now()
+    ) {
+      this.signed = (
+        await post<{ data: SignedBatch }>(
+          `/attachments/reservations/${this.signed.reservationId}/refresh`,
+          {}
+        )
+      ).data;
+    }
     this.signed ??= (
       await post<{ data: SignedBatch }>('/attachments/presign', {
         files: this.prepared.map(noteFileManifest),
@@ -99,6 +114,7 @@ export class NoteAttachmentBatch {
     const order = this.selection.map((item) =>
       item instanceof File ? { clientId: clientIds.get(item)! } : { attachmentId: item.id }
     );
+    this.finalizeStarted = true;
     if (this.batchFinalize) {
       const response = await post<{ data: BatchResult }>('/attachments/finalize-batch', {
         batchId: this.id,
@@ -118,6 +134,16 @@ export class NoteAttachmentBatch {
     return (
       selection.length === this.selection.length &&
       selection.every((item, index) => item === this.selection[index])
+    );
+  }
+
+  get needsConfirmation() {
+    return this.finalizeStarted;
+  }
+
+  get confirmedFiles(): [File, Attachment][] {
+    return this.selection.flatMap((item, index) =>
+      item instanceof File && this.finalized ? [[item, this.finalized[index]]] : []
     );
   }
 

@@ -1,5 +1,5 @@
 import type { Attachment, Rote } from '@/types/main';
-import { post, put } from '@/utils/api';
+import { del, post, put } from '@/utils/api';
 import { NoteAttachmentBatch } from './noteAttachmentBatch';
 
 function noteFields(note: Rote) {
@@ -20,6 +20,7 @@ export class NoteSubmission {
   private note?: Rote;
   private batch?: NoteAttachmentBatch;
   private submittedFields?: string;
+  private uploaded = new Map<File, Attachment>();
 
   async submit(
     draft: Rote,
@@ -54,21 +55,47 @@ export class NoteSubmission {
       onNoteSaved(data);
     }
     const note = this.note!;
-    if (draft.attachments.some((item) => item instanceof File)) {
-      if (!this.batch?.matchesSelection(draft.attachments)) {
+    const currentSelection = () =>
+      draft.attachments.map((item) =>
+        item instanceof File ? (this.uploaded.get(item) ?? item) : item
+      );
+    let selection = currentSelection();
+    if (this.batch && !this.batch.matchesSelection(selection)) {
+      // Owner-locked fast flow: a lost response can still mean a committed batch.
+      // Resolve its database result before replacing it; never probe stored files
+      // or add recovery UI here without explicit owner approval.
+      if (this.batch.needsConfirmation) {
+        await this.batch.upload(note.id, onProgress);
+        for (const [file, attachment] of this.batch.confirmedFiles) {
+          this.uploaded.set(file, attachment);
+        }
+        selection = currentSelection();
+      }
+      this.batch = undefined;
+    }
+    for (const [file, attachment] of this.uploaded) {
+      if (!selection.some((item) => !(item instanceof File) && item.id === attachment.id)) {
+        await del(`/attachments/${attachment.id}`);
+        this.uploaded.delete(file);
+      }
+    }
+    if (selection.some((item) => item instanceof File)) {
+      if (!this.batch) {
         this.batch = new NoteAttachmentBatch(
-          draft.attachments,
+          selection,
           capabilities.browserDirectUpload,
           capabilities.batchFinalize
         );
       }
       note.attachments = await this.batch.upload(note.id, onProgress);
-    } else if (draft.attachments.length) {
-      await put('/attachments/sort', {
-        roteId: note.id,
-        attachmentIds: (draft.attachments as Attachment[]).map((item) => item.id),
-      });
-      note.attachments = draft.attachments;
+    } else {
+      if (selection.length) {
+        await put('/attachments/sort', {
+          roteId: note.id,
+          attachmentIds: (selection as Attachment[]).map((item) => item.id),
+        });
+      }
+      note.attachments = selection;
     }
     return note;
   }
