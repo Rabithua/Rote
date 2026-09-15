@@ -3,6 +3,7 @@ import type { Attachment, Rote } from '@/types/main';
 import { emptyRote } from '@/state/editor';
 import { get, post, put } from '@/utils/api';
 import { cancelUploadReservation, uploadToSignedUrl } from '@/utils/directUpload';
+import { generateImageThumbnail, type ImageThumbnail } from '@/utils/uploadHelpers';
 import { NoteSubmission } from './noteSubmission';
 
 vi.mock('@/utils/api', () => ({ get: vi.fn(), post: vi.fn(), put: vi.fn(), del: vi.fn() }));
@@ -123,6 +124,24 @@ const submit = (session: NoteSubmission, note: Rote) =>
   session.submit(note, createId, capabilities, vi.fn(), vi.fn());
 
 describe('note-first attachment submission', () => {
+  it.each([false, true])('declares PNG for browserDirectUpload=%s', async (browserDirectUpload) => {
+    const thumbnail = new Blob(['png'], { type: 'image/png' }) as ImageThumbnail;
+    vi.mocked(generateImageThumbnail).mockResolvedValueOnce(thumbnail);
+    await new NoteSubmission().submit(
+      draft([photo()]),
+      createId,
+      { browserDirectUpload, batchFinalize: browserDirectUpload },
+      vi.fn(),
+      vi.fn()
+    );
+    const [, body] = vi.mocked(post).mock.calls.find(([url]) => url === '/attachments/presign')!;
+    expect(body.files[0].compressedContentType).toBe('image/png');
+    expect(body.files[0].compressed).toEqual({ contentType: 'image/png', size: thumbnail.size });
+    expect(vi.mocked(uploadToSignedUrl).mock.calls.some(([, blob]) => blob === thumbnail)).toBe(
+      true
+    );
+  });
+
   it('saves identity before signing, uploads every part and binds the ordered batch', async () => {
     const onSaved = vi.fn(() => events.push('saved identity'));
     const session = new NoteSubmission();

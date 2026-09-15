@@ -29,7 +29,10 @@ export function noteFileManifest(item: PreparedNoteFile): PresignFile {
     contentType: item.file.type,
     size: item.file.size,
     ...(item.compressed
-      ? { compressed: { contentType: item.compressed.type, size: item.compressed.size } }
+      ? {
+          compressedContentType: item.compressed.type,
+          compressed: { contentType: item.compressed.type, size: item.compressed.size },
+        }
       : {}),
     ...(item.poster
       ? { poster: { contentType: 'image/jpeg' as const, size: item.poster.size } }
