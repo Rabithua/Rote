@@ -299,54 +299,62 @@ describe('attachment upload flow', () => {
     ).toBe(true);
   });
 
-  it('honors an iOS JPEG preview preference for standalone images', async () => {
-    const result = await presignAttachmentUploads(
-      {
-        files: [
-          {
-            compressedContentType: 'image/jpeg',
-            contentType: 'image/heic',
-            filename: 'IMG_0002.HEIC',
-            mediaKind: 'image',
-            size: 1024,
-          },
-        ],
-        scopes: [],
-        userId: USER_ID,
-      },
-      {
-        createUploadReservation: async () => false,
-        getAttachmentUploadPolicy: async () => uploadPolicy,
-        getResourceStateForUserId: async () => ({
-          management: 'unmanaged',
-          source: 'unmanaged',
-          storage: {
-            enforcement: 'off',
-            usedBytes: null,
-            reservedBytes: null,
-            limitBytes: null,
-            overLimit: null,
-            canUpload: true,
-          },
-          openKey: {
-            policy: 'unmanaged',
-            creationThreshold: null,
-            existingCount: 0,
-            canCreate: true,
-          },
-        }),
-        presignPutUrl: async (key) => ({
-          putUrl: `https://put.example.com/${key}`,
-          url: `${URL_PREFIX}/${key}`,
-        }),
-        randomUUID: () => LIVE_UUID,
-        requireStorageAvailable: () => storageConfig,
-      }
-    );
+  it.each([
+    ['image/jpeg', '.jpg'],
+    ['image/webp', '.webp'],
+  ] as const)(
+    'honors a client %s preview for a standalone HEIC image',
+    async (contentType, extension) => {
+      const result = await presignAttachmentUploads(
+        {
+          files: [
+            {
+              compressedContentType: contentType,
+              contentType: 'image/heic',
+              filename: 'IMG_0002.HEIC',
+              mediaKind: 'image',
+              size: 1024,
+            },
+          ],
+          scopes: [],
+          userId: USER_ID,
+        },
+        {
+          createUploadReservation: async () => false,
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          getResourceStateForUserId: async () => ({
+            management: 'unmanaged',
+            source: 'unmanaged',
+            storage: {
+              enforcement: 'off',
+              usedBytes: null,
+              reservedBytes: null,
+              limitBytes: null,
+              overLimit: null,
+              canUpload: true,
+            },
+            openKey: {
+              policy: 'unmanaged',
+              creationThreshold: null,
+              existingCount: 0,
+              canCreate: true,
+            },
+          }),
+          presignPutUrl: async (key) => ({
+            putUrl: `https://put.example.com/${key}`,
+            url: `${URL_PREFIX}/${key}`,
+          }),
+          randomUUID: () => LIVE_UUID,
+          requireStorageAvailable: () => storageConfig,
+        }
+      );
 
-    expect(result.items[0].compressed.key).toEndWith('.jpg');
-    expect(result.items[0].compressed.contentType).toBe('image/jpeg');
-  });
+      expect(result.items[0].compressed.key).toEndWith(extension);
+      expect(result.items[0].compressed.contentType).toBe(contentType);
+      expect(result.items[0].original.key).toEndWith('.heic');
+      expect(result.items[0].original.contentType).toBe('image/heic');
+    }
+  );
 
   it('uses length-bound staging objects and one atomic reservation for managed uploads', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
