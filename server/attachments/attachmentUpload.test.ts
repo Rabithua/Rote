@@ -238,7 +238,7 @@ describe('attachment upload flow', () => {
     expect(query.get('X-Amz-Expires')).toBe('900');
   });
 
-  it('presigns a client JPEG preview target for Live Photos', async () => {
+  it('presigns a client PNG preview target for Live Photos', async () => {
     const signed: Array<{ contentType?: string; key: string }> = [];
     const result = await presignAttachmentUploads(
       {
@@ -288,18 +288,19 @@ describe('attachment upload flow', () => {
       }
     );
 
-    expect(result.items[0].compressed.key).toEndWith('.jpg');
-    expect(result.items[0].compressed.contentType).toBe('image/jpeg');
+    expect(result.items[0].compressed.key).toEndWith('.png');
+    expect(result.items[0].compressed.contentType).toBe('image/png');
     expect(result.items[0].original.key).toEndWith('.heic');
     expect(result.items[0].original.contentType).toBe('image/heic');
     expect(result.items[0].pairedVideo.key).toEndWith('.mov');
     expect(result.items[0].pairedVideo.contentType).toBe('video/quicktime');
     expect(
-      signed.some(({ contentType, key }) => contentType === 'image/jpeg' && key.endsWith('.jpg'))
+      signed.some(({ contentType, key }) => contentType === 'image/png' && key.endsWith('.png'))
     ).toBe(true);
   });
 
   it.each([
+    ['image/png', '.png'],
     ['image/jpeg', '.jpg'],
     ['image/webp', '.webp'],
   ] as const)(
@@ -497,76 +498,84 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('presigns a browser-generated preview at its final key', async () => {
-    const signed: Array<{ contentLength?: number; key: string }> = [];
-    let reservation:
-      | Parameters<
-          NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
-        >[0]
-      | undefined;
-    const result = await presignAttachmentUploads(
-      {
-        browserDirectUpload: true,
-        files: [
-          {
-            compressed: { contentType: 'image/webp', size: 256 },
-            contentType: 'image/jpeg',
-            filename: 'photo.jpg',
-            mediaKind: 'image',
-            size: 1024,
-          },
-        ],
-        scopes: [],
-        userId: USER_ID,
-      },
-      {
-        createUploadReservation: async (input) => {
-          reservation = input;
-          return true;
+  it.each([
+    ['image/png', 'png'],
+    ['image/webp', 'webp'],
+  ] as const)(
+    'presigns a browser-generated %s preview at its final key',
+    async (contentType, extension) => {
+      const signed: Array<{ contentLength?: number; key: string }> = [];
+      let reservation:
+        | Parameters<
+            NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
+          >[0]
+        | undefined;
+      const result = await presignAttachmentUploads(
+        {
+          browserDirectUpload: true,
+          files: [
+            {
+              compressed: { contentType, size: 256 },
+              contentType: 'image/jpeg',
+              filename: 'photo.jpg',
+              mediaKind: 'image',
+              size: 1024,
+            },
+          ],
+          scopes: [],
+          userId: USER_ID,
         },
-        getAttachmentUploadPolicy: async () => uploadPolicy,
-        getResourceStateForUserId: async () => ({
-          management: 'official',
-          source: 'official_pro',
-          storage: {
-            enforcement: 'enforce',
-            usedBytes: '0',
-            reservedBytes: '0',
-            limitBytes: '10000000000',
-            overLimit: false,
-            canUpload: true,
+        {
+          createUploadReservation: async (input) => {
+            reservation = input;
+            return true;
           },
-          openKey: {
-            policy: 'unlimited',
-            creationThreshold: null,
-            existingCount: 2,
-            canCreate: true,
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          getResourceStateForUserId: async () => ({
+            management: 'official',
+            source: 'official_pro',
+            storage: {
+              enforcement: 'enforce',
+              usedBytes: '0',
+              reservedBytes: '0',
+              limitBytes: '10000000000',
+              overLimit: false,
+              canUpload: true,
+            },
+            openKey: {
+              policy: 'unlimited',
+              creationThreshold: null,
+              existingCount: 2,
+              canCreate: true,
+            },
+          }),
+          presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
+            signed.push({ contentLength, key });
+            return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
           },
-        }),
-        presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
-          signed.push({ contentLength, key });
-          return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
-        },
-        randomUUID: () => LIVE_UUID,
-        requireStorageAvailable: () => storageConfig,
-      }
-    );
+          randomUUID: () => LIVE_UUID,
+          requireStorageAvailable: () => storageConfig,
+        }
+      );
 
-    const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
-    const compressedKey = `users/${USER_ID}/compressed/${LIVE_UUID}.webp`;
-    expect(result.items[0].compressed?.key).toBe(compressedKey);
-    expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual([
-      ['original', '1024'],
-      ['compressed', '256'],
-    ]);
-    expect(signed).toEqual([
-      {
-        contentLength: 1024,
-        key: originalKey,
-      },
-      { contentLength: 256, key: compressedKey },
-    ]);
-  });
+      const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
+      const compressedKey = `users/${USER_ID}/compressed/${LIVE_UUID}.${extension}`;
+      expect(result.items[0].compressed?.key).toBe(compressedKey);
+      expect(reservation?.manifest.map(({ role, declaredBytes }) => [role, declaredBytes])).toEqual(
+        [
+          ['original', '1024'],
+          ['compressed', '256'],
+        ]
+      );
+      expect(signed).toEqual([
+        {
+          contentLength: 1024,
+          key: originalKey,
+        },
+        { contentLength: 256, key: compressedKey },
+      ]);
+    }
+  );
 
   it('presigns a direct browser video and poster at final keys', async () => {
     const signed: Array<{ contentLength?: number; key: string }> = [];
@@ -641,50 +650,53 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('finalizes a client-provided Live Photo preview without media processing', async () => {
-    const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
-    const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
-    const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.jpg`;
-    let persisted: UploadResult[] = [];
+  it.each(['png', 'webp', 'jpg'])(
+    'finalizes a client %s Live Photo preview without media processing',
+    async (extension) => {
+      const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;
+      const pairedVideoKey = `users/${USER_ID}/paired-videos/${LIVE_UUID}.mov`;
+      const coverKey = `users/${USER_ID}/compressed/${LIVE_UUID}.${extension}`;
+      let persisted: UploadResult[] = [];
 
-    const result = await finalizeAttachmentUploads(
-      {
-        attachments: [
-          {
-            mimetype: 'image/heic',
-            mediaKind: 'livePhoto',
-            originalKey,
-            compressedKey: coverKey,
-            pairedVideoKey,
-            pairedVideoMimetype: 'video/quicktime',
-            pairedVideoSize: 2048,
-            size: 1024,
-            uuid: LIVE_UUID,
-          },
-        ],
-        scopes: ['video:upload'],
-        userId: USER_ID,
-      },
-      {
-        checkObjectExists: async (key) =>
-          key === originalKey || key === coverKey || key === pairedVideoKey,
-        getAttachmentUploadPolicy: async () => uploadPolicy,
-        requireStorageAvailable: () => storageConfig,
-        upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => {
-          persisted = uploads;
-          return uploads.map((upload, index) => ({ id: `attachment-${index}`, ...upload }));
+      const result = await finalizeAttachmentUploads(
+        {
+          attachments: [
+            {
+              mimetype: 'image/heic',
+              mediaKind: 'livePhoto',
+              originalKey,
+              compressedKey: coverKey,
+              pairedVideoKey,
+              pairedVideoMimetype: 'video/quicktime',
+              pairedVideoSize: 2048,
+              size: 1024,
+              uuid: LIVE_UUID,
+            },
+          ],
+          scopes: ['video:upload'],
+          userId: USER_ID,
         },
-      }
-    );
+        {
+          checkObjectExists: async (key) =>
+            key === originalKey || key === coverKey || key === pairedVideoKey,
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          requireStorageAvailable: () => storageConfig,
+          upsertAttachmentsByOriginalKey: async (_userId, _noteId, uploads) => {
+            persisted = uploads;
+            return uploads.map((upload, index) => ({ id: `attachment-${index}`, ...upload }));
+          },
+        }
+      );
 
-    expect(persisted[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
-    expect(persisted[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
-    expect(persisted[0].posterUrl).toBeNull();
-    expect(persisted[0].details.compressKey).toBe(coverKey);
-    expect(persisted[0].details.pairedVideoKey).toBe(pairedVideoKey);
-    expect(persisted[0].details.pairedVideoUrl).toBe(`${URL_PREFIX}/${pairedVideoKey}`);
-    expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
-  });
+      expect(persisted[0].url).toBe(`${URL_PREFIX}/${originalKey}`);
+      expect(persisted[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+      expect(persisted[0].posterUrl).toBeNull();
+      expect(persisted[0].details.compressKey).toBe(coverKey);
+      expect(persisted[0].details.pairedVideoKey).toBe(pairedVideoKey);
+      expect(persisted[0].details.pairedVideoUrl).toBe(`${URL_PREFIX}/${pairedVideoKey}`);
+      expect(result[0].compressUrl).toBe(`${URL_PREFIX}/${coverKey}`);
+    }
+  );
 
   it('does not generate a server-side cover when a legacy HEIC upload omits one', async () => {
     const originalKey = `users/${USER_ID}/uploads/${LIVE_UUID}.heic`;

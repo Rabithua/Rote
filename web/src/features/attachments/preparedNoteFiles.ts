@@ -1,11 +1,12 @@
 import { generateVideoPoster } from '@/utils/generateVideoPoster';
-import { isVideoFile, maybeCompressToWebp, runConcurrency } from '@/utils/uploadHelpers';
+import { isVideoFile, generateImageThumbnail, runConcurrency } from '@/utils/uploadHelpers';
+import type { ImageThumbnail } from '@/utils/uploadHelpers';
 import type { PresignFile } from '@/utils/directUpload';
 
 export type PreparedNoteFile = {
   file: File;
   clientId: string;
-  compressed: Blob | null;
+  compressed: ImageThumbnail | null;
   poster: Blob | null;
 };
 
@@ -13,7 +14,7 @@ export async function prepareNoteFiles(files: File[]): Promise<PreparedNoteFile[
   const results = await runConcurrency(files, async (file) => ({
     file,
     clientId: crypto.randomUUID(),
-    compressed: await maybeCompressToWebp(file),
+    compressed: await generateImageThumbnail(file),
     poster: isVideoFile(file) ? await generateVideoPoster(file) : null,
   }));
   return results.map((result) => {
@@ -28,7 +29,7 @@ export function noteFileManifest(item: PreparedNoteFile): PresignFile {
     contentType: item.file.type,
     size: item.file.size,
     ...(item.compressed
-      ? { compressed: { contentType: 'image/webp' as const, size: item.compressed.size } }
+      ? { compressed: { contentType: item.compressed.type, size: item.compressed.size } }
       : {}),
     ...(item.poster
       ? { poster: { contentType: 'image/jpeg' as const, size: item.poster.size } }

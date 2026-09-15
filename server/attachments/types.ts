@@ -7,9 +7,10 @@ export type PresignFileInput = {
   contentType?: string;
   size?: number;
   mediaKind?: 'image' | 'video' | 'livePhoto';
-  compressedContentType?: 'image/jpeg' | 'image/webp';
+  // JPEG is accepted only for compatibility with already-released clients.
+  compressedContentType?: 'image/png' | 'image/webp' | 'image/jpeg';
   compressed?: {
-    contentType: 'image/jpeg' | 'image/webp';
+    contentType: 'image/png' | 'image/webp' | 'image/jpeg';
     size: number;
   };
   pairedVideo?: {

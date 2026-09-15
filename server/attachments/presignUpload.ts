@@ -82,6 +82,7 @@ function validatePresignFile(
   const compressedContentType = file.compressed?.contentType ?? file.compressedContentType;
   if (
     compressedContentType !== undefined &&
+    compressedContentType !== 'image/png' &&
     compressedContentType !== 'image/jpeg' &&
     compressedContentType !== 'image/webp'
   ) {
@@ -179,8 +180,7 @@ export async function presignAttachmentUploads(
       mediaKind === 'image' || mediaKind === 'livePhoto'
         ? browserDirectUpload
           ? file.compressed?.contentType
-          : (file.compressedContentType ??
-            (mediaKind === 'livePhoto' ? 'image/jpeg' : 'image/webp'))
+          : (file.compressedContentType ?? (mediaKind === 'livePhoto' ? 'image/png' : 'image/webp'))
         : undefined;
     const finalPrefix = `users/${input.userId}`;
     // Owner decision (2026-09-11): browser uploads go straight to their final keys.
@@ -201,10 +201,15 @@ export async function presignAttachmentUploads(
       billable: true,
     });
     let compressed:
-      | { contentType: 'image/jpeg' | 'image/webp'; key: string; finalKey: string }
+      | { contentType: 'image/png' | 'image/webp' | 'image/jpeg'; key: string; finalKey: string }
       | undefined;
     if (compressedContentType) {
-      const compressedExtension = compressedContentType === 'image/jpeg' ? 'jpg' : 'webp';
+      const compressedExtension =
+        compressedContentType === 'image/jpeg'
+          ? 'jpg'
+          : compressedContentType === 'image/png'
+            ? 'png'
+            : 'webp';
       compressed = {
         contentType: compressedContentType,
         key: `${stagingPrefix}/compressed/${uuid}.${compressedExtension}`,

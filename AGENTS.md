@@ -63,5 +63,6 @@
   background workers, backfill scripts, or automatic repair paths.
 - The attachment service only authorizes uploads, signs destinations, validates upload metadata,
   and stores references to client-generated assets. Preserve existing stored previews.
-- Clients must declare a thumbnail format they can encode (`image/jpeg` or `image/webp`) and
+- Clients must declare a thumbnail format they can encode (`image/png` or `image/webp`) and
   upload bytes matching that content type. Missing previews must be supplied by a client.
+- Accept JPEG thumbnails from already-released clients for compatibility; new clients select PNG or WebP.

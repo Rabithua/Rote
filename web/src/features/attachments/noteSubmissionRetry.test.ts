@@ -9,7 +9,7 @@ vi.mock('@/utils/api', () => ({ post: vi.fn(), put: vi.fn(), del: vi.fn() }));
 vi.mock('@/utils/directUpload', () => ({ uploadToSignedUrl: vi.fn() }));
 vi.mock('@/utils/uploadHelpers', async (original) => ({
   ...(await original<typeof import('@/utils/uploadHelpers')>()),
-  maybeCompressToWebp: vi.fn(async () => new Blob(['preview'], { type: 'image/webp' })),
+  generateImageThumbnail: vi.fn(async () => new Blob(['preview'], { type: 'image/webp' })),
 }));
 
 const noteId = 'note';

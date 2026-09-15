@@ -258,8 +258,9 @@ resize, compress, transcode, or backfill media, including HEIC/HEIF images. Hist
 covers remain valid stored objects; missing previews must be supplied by a client.
 
 For legacy presign requests, image clients should explicitly send `compressedContentType` as
-`image/jpeg` or `image/webp`, matching a format they can encode. The legacy default remains WebP
-for standalone images and JPEG for Live Photos. iOS clients should request JPEG.
+`image/png` or `image/webp`, matching a format they can encode. The legacy default remains WebP
+for standalone images; Live Photos default to PNG. iOS clients should request PNG.
+Explicit JPEG requests remain accepted for compatibility with already-released clients.
 
 For browser direct uploads, generate the preview first and declare its actual content type and
 byte size in `compressed: { contentType, size }`. Upload those bytes to the returned destination

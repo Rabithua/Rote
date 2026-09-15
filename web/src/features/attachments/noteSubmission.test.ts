@@ -16,7 +16,7 @@ vi.mock('@/utils/generateVideoPoster', () => ({
 }));
 vi.mock('@/utils/uploadHelpers', async (original) => ({
   ...(await original<typeof import('@/utils/uploadHelpers')>()),
-  maybeCompressToWebp: vi.fn(async (file: File) =>
+  generateImageThumbnail: vi.fn(async (file: File) =>
     file.type.startsWith('image/') ? new Blob(['preview'], { type: 'image/webp' }) : null
   ),
 }));
