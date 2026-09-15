@@ -91,7 +91,7 @@ jobs:
       - run: bun test noteShares mcp/noteShares.test.ts middleware/recorder.test.ts
         working-directory: server
       - name: Test note creation and attachment batch contracts
-        run: bun test notes/actions.integration.test.ts attachments/finalizeBatch.test.ts attachments/finalizeReservation.test.ts
+        run: bun test notes/actions.integration.test.ts attachments/finalizeBatch.test.ts attachments/finalizeReservation.test.ts attachments/attachmentPresignContract.test.ts attachments/attachmentUpload.test.ts attachments/directFinalUpload.test.ts
         working-directory: server
         env:
           NOTE_ACTIONS_TEST_DATABASE_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test
@@ -99,7 +99,7 @@ jobs:
         working-directory: web
       - run: bun run test -- src/features/note-sharing src/components/rote src/components/AppSession.test.tsx src/pages/oauth/authorize.test.ts
         working-directory: web
-      - run: bun run test -- src/features/attachments
+      - run: bun run test -- src/features/attachments src/utils/uploadHelpers.test.ts src/utils/__tests__/directUpload.test.ts src/utils/directUpload.test.ts
         working-directory: web
 
   embedding-contract:
