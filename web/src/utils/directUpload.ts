@@ -47,7 +47,8 @@ export type PresignFile = {
   contentType?: string;
   size?: number;
   mediaKind?: MediaKind;
-  compressed?: { contentType: 'image/jpeg' | 'image/webp'; size: number };
+  compressedContentType?: 'image/png' | 'image/webp';
+  compressed?: { contentType: 'image/png' | 'image/webp'; size: number };
   pairedVideo?: { filename?: string; contentType?: string; size?: number };
   poster?: { contentType: 'image/jpeg'; size: number };
 };
@@ -59,7 +60,7 @@ export type PresignItem = {
     key: string;
     putUrl: string;
     url: string;
-    contentType: 'image/jpeg' | 'image/webp';
+    contentType: 'image/png' | 'image/webp' | 'image/jpeg';
   };
   poster?: { key: string; putUrl: string; url: string; contentType: 'image/jpeg' };
   pairedVideo?: { key: string; putUrl: string; url: string; contentType?: string };

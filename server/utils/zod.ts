@@ -141,10 +141,10 @@ export const AttachmentPresignZod = z.object({
         contentType: z.string().min(1, 'Content type cannot be empty'),
         size: z.number().int().positive('File size must be greater than 0'),
         mediaKind: z.enum(['image', 'video', 'livePhoto']).optional(),
-        compressedContentType: z.enum(['image/jpeg', 'image/webp']).optional(),
+        compressedContentType: z.enum(['image/png', 'image/webp', 'image/jpeg']).optional(),
         compressed: z
           .object({
-            contentType: z.enum(['image/jpeg', 'image/webp']),
+            contentType: z.enum(['image/png', 'image/webp', 'image/jpeg']),
             size: z.number().int().positive('Compressed image size must be greater than 0'),
           })
           .optional(),

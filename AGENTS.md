@@ -55,3 +55,14 @@
 - Do not add `workaround`, `hack`, `temporary fix`, `quick fix`, `monkey patch`, or broad compatibility shims as normal implementation.
 - If a temporary mitigation is unavoidable, keep it narrow, document the triggering issue, and include a removal condition.
 - Do not hide failing behavior behind broad `try/catch`, silent fallbacks, sleeps, retries, or feature flags without a clear reason.
+
+## Media Processing Policy
+
+- All image compression, resizing, format conversion, thumbnail generation, and video poster
+  extraction belong to clients. Never add server-side media processing, including startup jobs,
+  background workers, backfill scripts, or automatic repair paths.
+- The attachment service only authorizes uploads, signs destinations, validates upload metadata,
+  and stores references to client-generated assets. Preserve existing stored previews.
+- Clients must declare a thumbnail format they can encode (`image/png` or `image/webp`) and
+  upload bytes matching that content type. Missing previews must be supplied by a client.
+- Accept JPEG thumbnails from already-released clients for compatibility; new clients select PNG or WebP.
