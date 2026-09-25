@@ -1,0 +1,42 @@
+.post-media-rail {
+  --media-height: clamp(180px, 60vw, 255px);
+  display: flex;
+  width: 100%;
+  gap: 5px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-right: 44px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  cursor: grab;
+  user-select: none;
+}
+
+.post-media-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.post-media-rail-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+}
+
+.post-media-rail .post-media-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--media-height) * var(--display-ratio));
+  height: var(--media-height);
+  overflow: hidden;
+  border-radius: 16px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+  scroll-snap-align: start;
+}
+
+.post-media-item img,
+.post-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -2004,6 +2004,7 @@
       "mixedMediaNotAllowed": "Images and videos cannot be uploaded together",
       "singleVideoOnly": "Only one video can be uploaded per Rote",
       "imageLimitExceeded": "You can upload up to {{count}} images",
+      "mediaLimitExceeded": "You can upload up to {{count}} media attachments",
       "unsupportedFileType": "Unsupported file type included",
       "videoTooLarge": "Video must be {{size}}MB or smaller",
       "articleLinked": "Article linked"
@@ -2069,6 +2070,10 @@
     "attachments": {
       "imageUnavailable": "Image unavailable",
       "sourcePreviewUnavailable": "Source access prevents preview",
+      "playVideo": "Play video",
+      "pauseVideo": "Pause video",
+      "muteVideo": "Mute",
+      "unmuteVideo": "Unmute",
       "livePhoto": {
         "badge": "LIVE",
         "open": "Open Live Photo",

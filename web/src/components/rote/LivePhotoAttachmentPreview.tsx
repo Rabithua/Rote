@@ -42,6 +42,7 @@ interface LivePhotoAttachmentPreviewProps {
   imageClassName?: string;
   badgeClassName?: string;
   crossOrigin?: 'anonymous';
+  onStillLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
 }
 
 function LivePhotoStill({
@@ -92,6 +93,7 @@ export function LivePhotoAttachmentPreview({
   imageClassName,
   badgeClassName,
   crossOrigin,
+  onStillLoad,
 }: LivePhotoAttachmentPreviewProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.attachments.livePhoto' });
   const [stillSize, setStillSize] = useState(DEFAULT_PREVIEW_SIZE);
@@ -119,6 +121,7 @@ export function LivePhotoAttachmentPreview({
   }, []);
 
   const handleStillLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+    onStillLoad?.(event);
     const { naturalWidth, naturalHeight } = event.currentTarget;
     if (!naturalWidth || !naturalHeight) return;
 

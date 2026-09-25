@@ -41,6 +41,8 @@ export type FinalizeAttachmentInput = {
   pairedVideoFilename?: string;
   size?: number;
   mimetype?: string;
+  width?: number;
+  height?: number;
   mediaKind?: 'image' | 'video' | 'livePhoto';
   hash?: string;
   noteId?: string;

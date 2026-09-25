@@ -739,6 +739,8 @@ describe('attachment upload flow', () => {
             mediaKind: 'image',
             originalKey,
             size: 1024,
+            width: 1600,
+            height: 900,
             uuid: 'mislabelled-standalone',
           },
         ],
@@ -754,6 +756,7 @@ describe('attachment upload flow', () => {
     );
 
     expect(result[0].details.mimetype).toBe('image/jpeg');
+    expect(result[0].details).toMatchObject({ width: 1600, height: 900 });
     expect(result[0].compressUrl).toBeNull();
   });
 
@@ -833,7 +836,7 @@ describe('attachment upload flow', () => {
           },
         }
       )
-    ).rejects.toThrow('Maximum 9 images');
+    ).rejects.toThrow('Maximum 9 media attachments');
   });
 
   it('preserves JPEG, PNG, GIF, and video attachment behavior', async () => {

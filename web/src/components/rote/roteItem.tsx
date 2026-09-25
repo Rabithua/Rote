@@ -21,7 +21,7 @@ import RoteEditor from '@/components/editor/RoteEditor';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import { SoftBottom } from '@/components/others/SoftBottom';
 import UserAvatar from '@/components/others/UserAvatar';
-import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
+import PostMedia from '@/components/rote/PostMedia';
 import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
@@ -277,7 +277,7 @@ function RoteItem({
 
         {/* Attachments */}
         {rote.attachments?.length > 0 && (
-          <AttachmentsGrid
+          <PostMedia
             attachments={rote.attachments.filter((a): a is Attachment => !(a instanceof File))}
           />
         )}

@@ -124,6 +124,22 @@ const submit = (session: NoteSubmission, note: Rote) =>
   session.submit(note, createId, capabilities, vi.fn(), vi.fn());
 
 describe('note-first attachment submission', () => {
+  it('sends client-measured media dimensions with finalized attachments', async () => {
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(async () => ({ width: 1600, height: 900, close: vi.fn() }))
+    );
+    try {
+      await submit(new NoteSubmission(), draft([photo()]));
+      const [, body] = vi
+        .mocked(post)
+        .mock.calls.find(([url]) => url === '/attachments/finalize-batch')!;
+      expect(body.attachments[0]).toMatchObject({ width: 1600, height: 900 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it.each([false, true])('declares PNG for browserDirectUpload=%s', async (browserDirectUpload) => {
     const thumbnail = new Blob(['png'], { type: 'image/png' }) as ImageThumbnail;
     vi.mocked(generateImageThumbnail).mockResolvedValueOnce(thumbnail);

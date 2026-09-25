@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Link, useParams } from 'react-router-dom';
-import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
+import PostMedia from '@/components/rote/PostMedia';
 import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import { Button } from '@/components/ui/button';
 import UserAvatar from '@/components/others/UserAvatar';
@@ -105,9 +105,7 @@ function SharedNoteReader({ token }: { token: string }) {
               </ReactMarkdown>
             </section>
           )}
-          {state.note.attachments.length > 0 && (
-            <AttachmentsGrid attachments={state.note.attachments} />
-          )}
+          {state.note.attachments.length > 0 && <PostMedia attachments={state.note.attachments} />}
           {!state.note.article &&
             state.note.attachments.length === 0 &&
             state.note.linkPreviews.map((preview) => (
