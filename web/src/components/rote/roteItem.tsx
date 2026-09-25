@@ -111,7 +111,7 @@ function RoteItem({
         </Link>
       )}
 
-      <div className="flex grow flex-col space-y-2 overflow-hidden">
+      <div className="flex min-w-0 grow flex-col space-y-2">
         {/* Header */}
         <div className="flex w-full cursor-default items-center gap-2">
           <Link
@@ -279,6 +279,7 @@ function RoteItem({
         {rote.attachments?.length > 0 && (
           <PostMedia
             attachments={rote.attachments.filter((a): a is Attachment => !(a instanceof File))}
+            avatarInset={showAvatar}
           />
         )}
 

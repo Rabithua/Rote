@@ -1,15 +1,28 @@
+.post-media-bleed {
+  --post-media-start-inset: 1.25rem;
+  --post-media-end-inset: 1.25rem;
+  width: calc(100% + var(--post-media-start-inset) + var(--post-media-end-inset));
+  margin-left: calc(-1 * var(--post-media-start-inset));
+}
+
+@media (min-width: 80rem) {
+  .post-media-bleed--avatar {
+    --post-media-start-inset: 4.75rem;
+  }
+}
+
 .post-media-rail {
   --media-height: clamp(180px, 60vw, 255px);
   display: flex;
   width: 100%;
-  gap: 5px;
+  gap: 4px;
   overflow-x: auto;
   overflow-y: hidden;
+  padding-left: var(--post-media-start-inset);
   padding-right: 44px;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
   cursor: grab;
   user-select: none;
 }
@@ -20,7 +33,6 @@
 
 .post-media-rail-dragging {
   cursor: grabbing;
-  scroll-snap-type: none;
 }
 
 .post-media-rail .post-media-item {
@@ -31,7 +43,6 @@
   overflow: hidden;
   border-radius: 16px;
   background: color-mix(in srgb, currentColor 3%, transparent);
-  scroll-snap-align: start;
 }
 
 .post-media-item img,

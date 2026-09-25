@@ -148,6 +148,13 @@ describe('PostMedia', () => {
     expect(container.querySelector('.post-media-rail')).not.toBeInTheDocument();
   });
 
+  it('expands a multi-media rail to the card edges while keeping the avatar inset inside', () => {
+    const { container } = render(<PostMedia attachments={mockAttachments} avatarInset />);
+
+    expect(container.firstElementChild).toHaveClass('post-media-bleed', 'post-media-bleed--avatar');
+    expect(container.firstElementChild).not.toHaveClass('max-w-[500px]');
+  });
+
   it('clamps media ratios and keeps images and videos in the same rail', () => {
     const images = mockAttachments.map((item, index) => ({
       ...item,
