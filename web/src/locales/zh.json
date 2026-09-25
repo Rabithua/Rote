@@ -1994,6 +1994,7 @@
       "mixedMediaNotAllowed": "图片和视频不能同时上传",
       "singleVideoOnly": "一个动态最多只能上传 1 个视频",
       "imageLimitExceeded": "最多只能上传 {{count}} 张图片",
+      "mediaLimitExceeded": "最多只能上传 {{count}} 个媒体附件",
       "unsupportedFileType": "包含不支持的文件类型",
       "videoTooLarge": "视频大小不能超过 {{size}}MB",
       "articleLinked": "文章已关联"
@@ -2059,6 +2060,10 @@
     "attachments": {
       "imageUnavailable": "图片暂不可用",
       "sourcePreviewUnavailable": "来源限制，无法预览",
+      "playVideo": "播放视频",
+      "pauseVideo": "暂停视频",
+      "muteVideo": "静音",
+      "unmuteVideo": "取消静音",
       "livePhoto": {
         "badge": "LIVE",
         "open": "打开 Live Photo",

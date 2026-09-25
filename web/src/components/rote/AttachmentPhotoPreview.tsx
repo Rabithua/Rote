@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type SyntheticEvent } from 'react';
 import { PhotoView } from 'react-photo-view';
 import { AttachmentImage } from './AttachmentImage';
 
@@ -12,6 +12,7 @@ interface AttachmentPhotoPreviewProps {
   src: string;
   width?: number;
   unavailableLabel?: string;
+  onImageLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
 }
 
 export function AttachmentPhotoPreview({
@@ -24,6 +25,7 @@ export function AttachmentPhotoPreview({
   src,
   width,
   unavailableLabel,
+  onImageLoad,
 }: AttachmentPhotoPreviewProps) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const unavailable = !previewSrc || !src || failedSrc === src;
@@ -36,7 +38,9 @@ export function AttachmentPhotoPreview({
         width={width}
         src={unavailable ? '' : src}
         alt={alt}
+        draggable={false}
         onUnavailable={() => setFailedSrc(src)}
+        onLoad={onImageLoad}
         unavailableLabel={unavailableLabel}
       />
     </div>

@@ -210,6 +210,8 @@ export type FinalizeAttachment = {
   pairedVideoFilename?: string;
   size?: number;
   mimetype?: string;
+  width?: number;
+  height?: number;
   mediaKind?: MediaKind;
   hash?: string;
 };

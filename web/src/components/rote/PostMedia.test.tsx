@@ -1,8 +1,9 @@
 import type { Attachment } from '@/types/main';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import type React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import AttachmentsGrid from './AttachmentsGrid';
+import PostMedia from './PostMedia';
+import { displayMediaRatio } from './postMediaModel';
 
 vi.mock('react-photo-view', () => ({
   PhotoProvider: ({ children }: { children: React.ReactNode }) => (
@@ -101,7 +102,7 @@ const mockAttachments: Attachment[] = [
   },
 ];
 
-describe('AttachmentsGrid Live Photo mix', () => {
+describe('PostMedia', () => {
   beforeEach(() => {
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined);
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined);
@@ -112,7 +113,7 @@ describe('AttachmentsGrid Live Photo mix', () => {
   });
 
   it('keeps Live Photo motion isolated from normal image preview items', () => {
-    const { container } = render(<AttachmentsGrid attachments={mockAttachments} />);
+    const { container } = render(<PostMedia attachments={mockAttachments} />);
     const photoViews = screen.getAllByTestId('photo-view');
     const livePhotoFrame = screen.getByLabelText('videoLabel');
 
@@ -129,6 +130,8 @@ describe('AttachmentsGrid Live Photo mix', () => {
       photoViews.some((view) => view.getAttribute('data-src') === mockAttachments[1].compressUrl)
     ).toBe(true);
     expect(container.querySelectorAll('video')).toHaveLength(1);
+    expect(container.querySelector('.post-media-rail')).toBeInTheDocument();
+    expect(container.querySelectorAll('.post-media-item')).toHaveLength(2);
   });
 
   it('keeps a full-width preview frame when a single Live Photo cover is unavailable', () => {
@@ -137,10 +140,56 @@ describe('AttachmentsGrid Live Photo mix', () => {
       compressUrl: '',
       posterUrl: '',
     };
-    const { container } = render(<AttachmentsGrid attachments={[attachment]} />);
+    const { container } = render(<PostMedia attachments={[attachment]} />);
 
     expect(container.querySelector('img')).not.toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
     expect(container.firstElementChild).toHaveClass('w-full', 'max-w-[500px]');
+    expect(container.querySelector('.post-media-rail')).not.toBeInTheDocument();
+  });
+
+  it('clamps media ratios and keeps images and videos in the same rail', () => {
+    const images = mockAttachments.map((item, index) => ({
+      ...item,
+      sortIndex: index,
+      details: { ...item.details, width: index === 0 ? 900 : 300, height: 1000 },
+    }));
+    const video = {
+      ...mockAttachments[1],
+      id: 'video',
+      sortIndex: 2,
+      posterUrl: 'https://example.test/poster.jpg',
+      details: {
+        ...mockAttachments[1].details,
+        mediaKind: 'video' as const,
+        width: 1920,
+        height: 1080,
+      },
+    };
+    const { container } = render(<PostMedia attachments={[video, ...images]} />);
+    const items = container.querySelectorAll<HTMLElement>('.post-media-item');
+
+    expect(items).toHaveLength(3);
+    expect(items[0].style.getPropertyValue('--display-ratio')).toBe('0.9');
+    expect(items[1].style.getPropertyValue('--display-ratio')).toBe('0.6');
+    expect(items[2].style.getPropertyValue('--display-ratio')).toBe('1.25');
+    expect(items[2]).toHaveAttribute('data-media-type', 'video');
+    expect(screen.getByTestId('video-preview')).toBeInTheDocument();
+    expect(displayMediaRatio(Number.NaN)).toBe(1);
+  });
+
+  it('updates a legacy image ratio after its dimensions load', () => {
+    const { container } = render(<PostMedia attachments={mockAttachments} />);
+    const image = container.querySelector<HTMLImageElement>('.post-media-item:nth-child(2) img')!;
+    Object.defineProperties(image, {
+      naturalWidth: { value: 1600 },
+      naturalHeight: { value: 900 },
+    });
+    fireEvent.load(image);
+    expect(
+      container
+        .querySelectorAll<HTMLElement>('.post-media-item')[1]
+        .style.getPropertyValue('--display-ratio')
+    ).toBe('1.25');
   });
 });

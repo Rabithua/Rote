@@ -117,6 +117,17 @@ export function toUploadResult(urlPrefix: string, item: FinalizeAttachmentInput)
     if (item.pairedVideoFilename) details.pairedVideoFilename = item.pairedVideoFilename;
   }
   if (item.hash) details.hash = item.hash;
+  if (
+    Number.isSafeInteger(item.width) &&
+    Number.isSafeInteger(item.height) &&
+    item.width! > 0 &&
+    item.height! > 0 &&
+    item.width! <= 100000 &&
+    item.height! <= 100000
+  ) {
+    details.width = item.width;
+    details.height = item.height;
+  }
 
   return {
     url: urlPrefix + '/' + item.originalKey,
