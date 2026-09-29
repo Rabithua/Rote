@@ -97,14 +97,21 @@ const grantDeliverySchema = z
 
     if (
       snapshot.planId !== BILLING_PLAN_ID ||
-      snapshot.productId === null ||
-      snapshot.entitlementExpiresAt === null ||
       snapshot.leaseExpiresAt === null ||
       snapshot.benefits === null
     ) {
       context.addIssue({
         code: 'custom',
-        message: 'active grants require plan, product, entitlement expiry, and lease expiry',
+        message: 'active grants require plan, lease expiry, and benefits',
+      });
+      return;
+    }
+
+    const complimentary = snapshot.productId === null && snapshot.entitlementExpiresAt === null;
+    if (!complimentary && (snapshot.productId === null || snapshot.entitlementExpiresAt === null)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Apple grants require product and entitlement expiry',
       });
       return;
     }
@@ -125,7 +132,10 @@ const grantDeliverySchema = z
       });
     }
 
-    if (Date.parse(snapshot.leaseExpiresAt) > Date.parse(snapshot.entitlementExpiresAt)) {
+    if (
+      snapshot.entitlementExpiresAt !== null &&
+      Date.parse(snapshot.leaseExpiresAt) > Date.parse(snapshot.entitlementExpiresAt)
+    ) {
       context.addIssue({
         code: 'custom',
         message: 'leaseExpiresAt must not exceed entitlementExpiresAt',

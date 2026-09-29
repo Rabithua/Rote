@@ -463,8 +463,8 @@ async function cancelReservationIfGrantWasReplaced(
     !billingConfig.enabled ||
     !reservation.grantProDerived ||
     reservation.grantRevision === null ||
-    reservation.grantEntitlementExpiresAt === null ||
-    reservation.grantEntitlementExpiresAt.getTime() <= now.getTime()
+    (reservation.grantEntitlementExpiresAt !== null &&
+      reservation.grantEntitlementExpiresAt.getTime() <= now.getTime())
   ) {
     return false;
   }
@@ -494,8 +494,8 @@ export function uploadReservationGrantWasReplaced(
   return Boolean(
     reservation.grantProDerived &&
     reservation.grantRevision !== null &&
-    reservation.grantEntitlementExpiresAt !== null &&
-    reservation.grantEntitlementExpiresAt.getTime() > now.getTime() &&
+    (reservation.grantEntitlementExpiresAt === null ||
+      reservation.grantEntitlementExpiresAt.getTime() > now.getTime()) &&
     current &&
     current.revision > reservation.grantRevision &&
     current.status !== 'active' &&
@@ -906,8 +906,8 @@ export async function getPendingUploadReservation(
     billingConfig.enabled &&
     reservation.grantProDerived &&
     reservation.grantRevision !== null &&
-    reservation.grantEntitlementExpiresAt !== null &&
-    reservation.grantEntitlementExpiresAt.getTime() > Date.now()
+    (reservation.grantEntitlementExpiresAt === null ||
+      reservation.grantEntitlementExpiresAt.getTime() > Date.now())
   ) {
     const [current] = await executor
       .select({

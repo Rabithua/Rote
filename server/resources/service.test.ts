@@ -203,6 +203,13 @@ describe('attachment finalize leases', () => {
     expect(
       uploadReservationGrantWasReplaced(reservation, { revision: 5, status: 'active' }, now)
     ).toBe(false);
+    expect(
+      uploadReservationGrantWasReplaced(
+        { ...reservation, grantEntitlementExpiresAt: null },
+        { revision: 5, status: 'none' },
+        now
+      )
+    ).toBe(true);
   });
 });
 
