@@ -28,7 +28,6 @@ export function MediaRail({ media, withTimeStamp }: MediaRailProps) {
       scrollLeft: event.currentTarget.scrollLeft,
       moved: false,
     };
-    event.currentTarget.setPointerCapture(event.pointerId);
     setDragging(true);
   };
 
@@ -39,6 +38,7 @@ export function MediaRail({ media, withTimeStamp }: MediaRailProps) {
     if (!drag.moved && Math.abs(distance) < 5) return;
     if (!drag.moved) {
       drag.moved = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
     }
     event.currentTarget.scrollLeft = drag.scrollLeft - distance;
     event.preventDefault();
