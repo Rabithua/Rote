@@ -38,7 +38,12 @@ export default defineConfig({
       injectRegister: 'auto',
       strategies: 'injectManifest',
       injectManifest: {
-        globIgnores: ['**/jszip.min-*.js', '**/sql-wasm-browser-*.js', '**/sql-wasm-*.wasm'],
+        globIgnores: [
+          '**/jszip.min-*.js',
+          '**/sql-wasm-browser-*.js',
+          '**/sql-wasm-*.wasm',
+          '**/heicPreviewWorker-*.js',
+        ],
       },
       srcDir: 'src',
       filename: 'sw.js',

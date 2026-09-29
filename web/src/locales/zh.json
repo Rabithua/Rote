@@ -2060,6 +2060,8 @@
     "attachments": {
       "imageUnavailable": "图片暂不可用",
       "sourcePreviewUnavailable": "来源限制，无法预览",
+      "heicConverting": "HEIC 转换中…",
+      "heicPreviewFailed": "高清预览失败，当前显示缩略图",
       "playVideo": "播放视频",
       "pauseVideo": "暂停视频",
       "muteVideo": "静音",

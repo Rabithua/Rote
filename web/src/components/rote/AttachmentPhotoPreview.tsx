@@ -1,12 +1,14 @@
 import { useState, type SyntheticEvent } from 'react';
 import { PhotoView } from 'react-photo-view';
 import { AttachmentImage } from './AttachmentImage';
+import { HeicPhotoViewer } from './HeicPhotoViewer';
 
 interface AttachmentPhotoPreviewProps {
   alt: string;
   containerClassName: string;
   crossOrigin?: 'anonymous';
   height?: number;
+  heicOriginalSrc?: string;
   imageClassName: string;
   previewSrc: string;
   src: string;
@@ -20,6 +22,7 @@ export function AttachmentPhotoPreview({
   containerClassName,
   crossOrigin,
   height,
+  heicOriginalSrc,
   imageClassName,
   previewSrc,
   src,
@@ -46,5 +49,23 @@ export function AttachmentPhotoPreview({
     </div>
   );
 
-  return unavailable ? content : <PhotoView src={previewSrc}>{content}</PhotoView>;
+  if (unavailable) return content;
+
+  if (heicOriginalSrc) {
+    const viewerWidth = typeof window === 'undefined' ? 1280 : Math.max(1, window.innerWidth - 32);
+    const viewerHeight = typeof window === 'undefined' ? 960 : Math.max(1, window.innerHeight - 64);
+    return (
+      <PhotoView
+        width={viewerWidth}
+        height={viewerHeight}
+        render={({ attrs }) => (
+          <HeicPhotoViewer attrs={attrs} originalSrc={heicOriginalSrc} thumbnailSrc={previewSrc} />
+        )}
+      >
+        {content}
+      </PhotoView>
+    );
+  }
+
+  return <PhotoView src={previewSrc}>{content}</PhotoView>;
 }

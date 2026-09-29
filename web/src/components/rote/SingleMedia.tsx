@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { getAttachmentImagePreviewSrc } from '@/utils/directUpload';
+import { getAttachmentImagePreviewSrc, isHeicLikeAttachment } from '@/utils/directUpload';
 import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from './LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from './VideoAttachmentPreview';
@@ -45,6 +45,7 @@ export function SingleMedia({ media, withTimeStamp }: SingleMediaProps) {
       containerClassName="relative w-full overflow-hidden rounded-2xl border-[0.5px]"
       crossOrigin={withTimeStamp ? 'anonymous' : undefined}
       imageClassName="bg-foreground/3 block w-full object-cover"
+      heicOriginalSrc={isHeicLikeAttachment(attachment) ? attachment.url : undefined}
       previewSrc={previewSrc}
       src={media.thumbnail || ''}
       unavailableLabel={

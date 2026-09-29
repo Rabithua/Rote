@@ -2070,6 +2070,8 @@
     "attachments": {
       "imageUnavailable": "Image unavailable",
       "sourcePreviewUnavailable": "Source access prevents preview",
+      "heicConverting": "Converting HEIC…",
+      "heicPreviewFailed": "Full-size preview unavailable; showing thumbnail",
       "playVideo": "Play video",
       "pauseVideo": "Pause video",
       "muteVideo": "Mute",
