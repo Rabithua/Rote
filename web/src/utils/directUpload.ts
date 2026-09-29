@@ -286,7 +286,11 @@ export function getAttachmentImageThumbnailSrc(attachment: AttachmentMedia) {
 }
 
 export function getAttachmentImagePreviewSrc(attachment: AttachmentMedia) {
-  return getAttachmentImageThumbnailSrc(attachment);
+  const thumbnailSrc = getAttachmentImageThumbnailSrc(attachment);
+  const requiresWebSafeStill =
+    getAttachmentMediaKind(attachment) === 'livePhoto' || isHeicLikeAttachment(attachment);
+
+  return requiresWebSafeStill ? thumbnailSrc : attachment.url || thumbnailSrc;
 }
 
 export function getAttachmentLivePhotoPlaybackSrc(attachment: AttachmentMedia) {

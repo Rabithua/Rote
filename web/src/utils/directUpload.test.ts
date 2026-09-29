@@ -93,7 +93,7 @@ describe('attachment image display sources', () => {
     );
   });
 
-  it('uses compressUrl before posterUrl and the original URL', () => {
+  it('uses the original URL for previews and compressUrl for thumbnails', () => {
     const attachment = makeAttachment({
       url: 'https://cdn.example.com/users/u/uploads/photo.jpg',
       compressUrl: 'https://cdn.example.com/users/u/compressed/photo.webp',
@@ -105,20 +105,23 @@ describe('attachment image display sources', () => {
     });
 
     expect(getAttachmentImagePreviewSrc(attachment)).toBe(
-      'https://cdn.example.com/users/u/compressed/photo.webp'
+      'https://cdn.example.com/users/u/uploads/photo.jpg'
     );
     expect(getAttachmentImageThumbnailSrc(attachment)).toBe(
       'https://cdn.example.com/users/u/compressed/photo.webp'
     );
   });
 
-  it('uses posterUrl when compressUrl is empty', () => {
+  it('keeps the original image preview and uses posterUrl as a thumbnail fallback', () => {
     const attachment = makeAttachment({
       compressUrl: '',
       posterUrl: 'https://cdn.example.com/users/u/posters/photo.jpg',
     });
 
     expect(getAttachmentImagePreviewSrc(attachment)).toBe(
+      'https://cdn.example.com/users/u/uploads/file.jpg'
+    );
+    expect(getAttachmentImageThumbnailSrc(attachment)).toBe(
       'https://cdn.example.com/users/u/posters/photo.jpg'
     );
   });

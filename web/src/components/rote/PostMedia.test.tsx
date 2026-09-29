@@ -127,7 +127,7 @@ describe('PostMedia', () => {
     );
     expect(within(screen.getByTestId('photo-provider')).getByText('badge')).toBeVisible();
     expect(
-      photoViews.some((view) => view.getAttribute('data-src') === mockAttachments[1].compressUrl)
+      photoViews.some((view) => view.getAttribute('data-src') === mockAttachments[1].url)
     ).toBe(true);
     expect(container.querySelectorAll('video')).toHaveLength(1);
     expect(container.querySelector('.post-media-rail')).toBeInTheDocument();
