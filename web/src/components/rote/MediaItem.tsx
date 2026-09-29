@@ -1,7 +1,7 @@
 import type { CSSProperties, SyntheticEvent } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getAttachmentImagePreviewSrc } from '@/utils/directUpload';
+import { getAttachmentImagePreviewSrc, isHeicLikeAttachment } from '@/utils/directUpload';
 import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from './LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from './VideoAttachmentPreview';
@@ -57,6 +57,7 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
           containerClassName="h-full w-full overflow-hidden"
           crossOrigin={withTimeStamp ? 'anonymous' : undefined}
           imageClassName="h-full w-full object-cover"
+          heicOriginalSrc={isHeicLikeAttachment(attachment) ? attachment.url : undefined}
           previewSrc={previewSrc}
           src={media.thumbnail || ''}
           onImageLoad={measureImage}
