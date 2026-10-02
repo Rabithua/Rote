@@ -674,13 +674,13 @@ function buildSearchConditions(
   viewerId?: string
 ) {
   return (rotes: any, { eq, and, or, ilike, sql }: any) => {
-    // ilike() 使用参数化查询，会自动处理转义，所以使用原始 keyword
-    // 只有 sql.raw() 需要手动转义，防止 SQL 注入
-    const escapedKeyword = String(keyword).replace(/'/g, "''");
     const searchConditions = [
       ilike(rotes.content, `%${keyword}%`),
       ilike(rotes.title, `%${keyword}%`),
-      sql`${rotes.tags} @> ARRAY[${sql.raw(`'${escapedKeyword}'`)}]::text[]`,
+      sql`EXISTS (
+        SELECT 1 FROM unnest(${rotes.tags}) AS tag
+        WHERE tag ILIKE ${`%${keyword}%`}
+      )`,
     ];
 
     const conditions = [or(...searchConditions)];

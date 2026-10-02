@@ -39,7 +39,7 @@ export default function TagMap() {
               key={item.name}
               to={'/filter'}
               state={{
-                tags: [item.name],
+                initialKeyword: item.name,
               }}
             >
               <div className="bg-foreground/5 divide-foreground/3 flex grow items-center justify-between divide-x rounded-sm px-2 text-xs duration-300 hover:scale-95">

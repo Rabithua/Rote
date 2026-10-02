@@ -557,8 +557,6 @@
     },
     "filter": {
       "title": "フィルター",
-      "includeTags": "含むタグ：",
-      "allTags": "すべてのタグ：",
       "none": "なし",
       "data": "データ統計",
       "note": "ノート",
@@ -1966,7 +1964,7 @@
       }
     },
     "sidebarSearch": {
-      "placeholder": "ノートを検索..."
+      "placeholder": "タイトル・本文・タグを検索…"
     },
     "aiSourceList": {
       "empty": "ソースなし",
