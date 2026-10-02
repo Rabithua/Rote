@@ -102,7 +102,7 @@ jobs:
           NOTE_SEARCH_TEST_DATABASE_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test
       - run: bun install --frozen-lockfile
         working-directory: web
-      - run: bun run test -- src/features/note-sharing src/components/rote src/components/AppSession.test.tsx src/pages/oauth/authorize.test.ts
+      - run: bun run test -- src/features/note-sharing src/components/rote src/components/AppSession.test.tsx src/pages/oauth/authorize.test.ts src/pages/filter
         working-directory: web
       - run: bun run test -- src/features/attachments src/utils/uploadHelpers.test.ts src/utils/__tests__/directUpload.test.ts src/utils/directUpload.test.ts
         working-directory: web
