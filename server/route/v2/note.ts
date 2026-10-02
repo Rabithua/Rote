@@ -58,7 +58,7 @@ notesRouter.get('/search', authenticateJWT, async (c: HonoContext) => {
   const archived = c.req.query('archived');
   const user = c.get('user') as User;
 
-  // 验证搜索关键词长度
+  // 验证搜索关键词
   if (keyword && typeof keyword === 'string') {
     SearchKeywordZod.parse({ keyword });
   } else {
@@ -116,7 +116,7 @@ notesRouter.get('/search/public', optionalJWT, async (c: HonoContext) => {
   const skip = c.req.query('skip');
   const limit = c.req.query('limit');
 
-  // 验证搜索关键词长度
+  // 验证搜索关键词
   if (keyword && typeof keyword === 'string') {
     SearchKeywordZod.parse({ keyword });
   } else {
@@ -174,7 +174,7 @@ notesRouter.get('/search/users/:username', optionalJWT, async (c: HonoContext) =
     throw new Error('Username is required');
   }
 
-  // 验证搜索关键词长度
+  // 验证搜索关键词
   if (keyword && typeof keyword === 'string') {
     SearchKeywordZod.parse({ keyword });
   } else {

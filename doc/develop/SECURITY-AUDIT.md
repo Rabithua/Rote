@@ -481,7 +481,7 @@ username: z
 
 2. **搜索关键词验证** (`SearchKeywordZod`):
 
-   - `keyword`: 最大 200 个字符
+   - `keyword`: 必须是非空字符串。笔记搜索为支持完整导入标签名，已移除原有的 200 字符限制；查询仍使用参数化 SQL。
 
 3. **反应相关验证** (`ReactionCreateZod`):
 
