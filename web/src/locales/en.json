@@ -1723,6 +1723,7 @@
         "rebuildStarted": "Rebuild started",
         "saveBeforeRebuild": "Save your configuration before rebuilding.",
         "saveChangeTitle": "Save embedding configuration?",
+        "saveInitializeDescription": "Saving will automatically enable pgvector and build the first vector index for existing notes and articles in the background. Indexing calls the configured embedding model and may incur usage charges. Later content changes follow the automatic indexing setting.",
         "saveChangeDescription": "If the new configuration is incompatible with the existing index, saving pauses vector search and requires a manual full rebuild. Rebuilding incurs model usage charges; saving does not start it.",
         "saveChangeReuse": "Returning to the model, output dimensions and chunk settings of the retained generation reuses its verified index and catches up on content changes. Chat and keyword search remain available.",
         "saveChangeCancel": "Cancel",

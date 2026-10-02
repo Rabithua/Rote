@@ -142,8 +142,8 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
   schemaVersion: 2,
   revision: 0,
   enabled: false,
-  vectorEnabled: false,
-  autoIndexEnabled: false,
+  vectorEnabled: true,
+  autoIndexEnabled: true,
   publicExploreVectorEnabled: false,
   chat: {
     providerId: 'openai',

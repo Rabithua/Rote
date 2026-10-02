@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import {
   documentEmbeddings,
@@ -7,11 +6,10 @@ import {
   embeddingSourceEvents,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
-import { vectorIndexName } from '../utils/dbMethods/ai/documents';
 import { getPgvectorStatus } from '../utils/dbMethods/ai/vector';
 import { testEmbeddingProvider } from './client';
 import { lockIndexState, readAiSnapshot } from './configStore';
-import { embeddingFingerprint } from './contract';
+import { createIndexGeneration } from './indexGeneration';
 import { EmbeddingError, isEmbeddingContractFailure } from './errors';
 import { retireIndexGenerations } from './generationRetirement';
 
@@ -29,42 +27,7 @@ export async function startIndexRebuild(revision: unknown) {
     const state = await lockIndexState(tx);
     if (state.revision !== revision) throw new EmbeddingError('embedding_revision_conflict', 409);
     if (state.status === 'rebuilding') return;
-    const generationId = randomUUID();
-    const indexName = vectorIndexName(verified.dimensions, generationId);
-    await tx.execute(
-      sql.raw(`CREATE INDEX "${indexName}" ON "document_embeddings"
-      USING hnsw (("embedding"::vector(${verified.dimensions})) vector_cosine_ops)
-      WHERE "generationId" = '${generationId}'::uuid AND "embeddingDimensions" = ${verified.dimensions}`)
-    );
-    await tx
-      .update(embeddingJobs)
-      .set({
-        status: 'cancelled',
-        leaseToken: null,
-        leaseExpiresAt: null,
-        lockedAt: null,
-        updatedAt: new Date(),
-      })
-      .where(inArray(embeddingJobs.status, ['pending', 'running']));
-    await tx
-      .update(embeddingIndexState)
-      .set({
-        status: 'rebuilding',
-        fingerprint: embeddingFingerprint(before.config),
-        dimensions: verified.dimensions,
-        generationId,
-        generationFingerprint: embeddingFingerprint(before.config),
-        generationDimensions: verified.dimensions,
-        generationReusable: false,
-        scanSource: 'rote',
-        scanCursor: null,
-        scanComplete: false,
-        errorCode: null,
-        errorDetails: null,
-        validatedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .where(eq(embeddingIndexState.id, 1));
+    await createIndexGeneration(tx, before.config, verified.dimensions);
   });
   return getPgvectorStatus();
 }
