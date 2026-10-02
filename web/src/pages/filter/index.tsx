@@ -16,8 +16,8 @@ import { get, post } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { format } from 'date-fns';
-import { ActivityIcon, AlertCircle, Filter, MessageSquareDashed, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIcon, AlertCircle, Filter, MessageSquareDashed } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -80,7 +80,8 @@ function MineFilter() {
   }, [canUseAi, searchMode]);
 
   const getProps = useCallback(
-    (pageIndex: number, _previousPageData: any): ApiGetRotesParams => {
+    (pageIndex: number, _previousPageData: any): ApiGetRotesParams | null => {
+      if (searchMode !== 'keyword') return null;
       const params: any = {
         skip: pageIndex * 20,
         limit: 20,
@@ -99,14 +100,15 @@ function MineFilter() {
         params,
       };
     },
-    [filter.keyword, filter.date]
+    [filter.keyword, filter.date, searchMode]
   );
 
-  const { data, mutate, loadMore, isLoading, isValidating, error, setSize } = useAPIInfinite(
+  const { data, mutate, loadMore, isLoading, isValidating, error } = useAPIInfinite(
     getProps,
     getRotesV2,
     {
       initialSize: 1,
+      persistSize: false,
       revalidateFirstPage: false,
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
@@ -173,62 +175,6 @@ function MineFilter() {
       revalidateOnReconnect: false,
     }
   );
-
-  // 当 filter 变化时，重置分页并重新验证
-  const prevFilterRef = useRef<{
-    keyword: string;
-    date: string;
-    mode: SearchMode;
-  } | null>(null);
-  const isInitialMount = useRef(true);
-
-  useEffect(() => {
-    // 跳过初始挂载
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      prevFilterRef.current = {
-        keyword: filter.keyword,
-        date: filter.date,
-        mode: searchMode,
-      };
-      return;
-    }
-
-    const currentKeyword = filter.keyword;
-    const currentDate = filter.date;
-    const currentMode = searchMode;
-    const prevFilter = prevFilterRef.current;
-
-    if (!prevFilter) {
-      prevFilterRef.current = {
-        keyword: currentKeyword,
-        date: currentDate,
-        mode: currentMode,
-      };
-      return;
-    }
-
-    // 检查是否真的发生了变化
-    const keywordChanged = currentKeyword !== prevFilter.keyword;
-    const dateChanged = currentDate !== prevFilter.date;
-    const modeChanged = currentMode !== prevFilter.mode;
-
-    if (keywordChanged || dateChanged || modeChanged) {
-      // 更新引用
-      prevFilterRef.current = {
-        keyword: currentKeyword,
-        date: currentDate,
-        mode: currentMode,
-      };
-      if (currentMode === 'keyword') {
-        // 重置到第一页并重新验证
-        setSize(1);
-        mutate();
-      } else {
-        void mutateSemantic();
-      }
-    }
-  }, [filter.keyword, filter.date, searchMode, setSize, mutate, mutateSemantic]);
 
   // 处理错误提示
   useEffect(() => {
@@ -313,7 +259,10 @@ function MineFilter() {
       }
     >
       <NavBar title={t('title')} icon={<Filter className="size-5" />} onNavClick={refreshData}>
-        <div className="ml-auto flex items-center gap-3">
+        <div
+          className="ml-auto flex items-center gap-3"
+          onClick={(event) => event.stopPropagation()}
+        >
           {canUseAi && (
             <ToggleGroup
               type="single"
@@ -333,11 +282,6 @@ function MineFilter() {
                 {t('searchMode.semantic')}
               </ToggleGroupItem>
             </ToggleGroup>
-          )}
-          {(searchMode === 'semantic'
-            ? semanticLoading || semanticValidating
-            : isLoading || isValidating) && (
-            <RefreshCw className="text-primary size-4 animate-spin duration-300" />
           )}
         </div>
       </NavBar>
