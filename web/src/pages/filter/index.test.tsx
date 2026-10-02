@@ -35,9 +35,10 @@ vi.mock('@/components/layout/navBar', () => ({
   ),
 }));
 vi.mock('@/components/rote/roteList', () => ({
-  default: ({ loadMore }: { loadMore: () => void }) => (
+  default: ({ data, loadMore }: { data?: unknown[][]; loadMore: () => void }) => (
     <div>
       keyword results
+      <span>pages:{data?.length ?? 0}</span>
       <button type="button" onClick={loadMore}>
         more
       </button>
@@ -75,6 +76,62 @@ async function renderSearch(keyword = '设计') {
 }
 
 describe('search mode loading', () => {
+  it('refreshes cached keyword results when returning from semantic mode', async () => {
+    await renderSearch();
+    fireEvent.click(screen.getByText('searchMode.semantic'));
+    await screen.findByText('semantic.empty');
+    getRotesV2.mockClear();
+
+    fireEvent.click(screen.getByText('searchMode.keyword'));
+    await waitFor(() => expect(getRotesV2).toHaveBeenCalledTimes(1));
+    expect(getRotesV2).toHaveBeenLastCalledWith(
+      expect.objectContaining({ params: expect.objectContaining({ skip: 0 }) })
+    );
+  });
+
+  it('resets pagination and refreshes the first page when returning to a cached query', async () => {
+    await renderSearch();
+    fireEvent.click(screen.getByText('more'));
+    await waitFor(() => expect(getRotesV2).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'search' })).toBeEnabled());
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'GitHub' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => expect(getRotesV2).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'search' })).toBeEnabled());
+    getRotesV2.mockClear();
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '设计' } });
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    await waitFor(() => expect(getRotesV2).toHaveBeenCalledTimes(1));
+    expect(getRotesV2).toHaveBeenLastCalledWith(
+      expect.objectContaining({ params: expect.objectContaining({ keyword: '设计', skip: 0 }) })
+    );
+    await waitFor(() => expect(screen.getByRole('button', { name: 'search' })).toBeEnabled());
+    expect(screen.getByText('pages:1')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('more'));
+    await screen.findByText('pages:2');
+    expect(getRotesV2).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([{ notes: [] }, { notes: [{ id: 'note', content: '设计' }] }])(
+    'shows one result-area spinner when refreshing a finished keyword list (%j)',
+    async ({ notes }) => {
+      getRotesV2.mockResolvedValue(notes);
+      const { container } = await renderSearch();
+      let finishRefresh!: (results: typeof notes) => void;
+      getRotesV2.mockReturnValue(
+        new Promise<typeof notes>((resolve) => {
+          finishRefresh = resolve;
+        })
+      );
+      fireEvent.click(screen.getByText('refresh'));
+      await waitFor(() => expect(screen.getByRole('button', { name: 'search' })).toBeDisabled());
+      expect(container.querySelectorAll('.animate-spin')).toHaveLength(1);
+      await act(async () => finishRefresh(notes));
+      await waitFor(() => expect(container.querySelectorAll('.animate-spin')).toHaveLength(0));
+    }
+  );
+
   it('shows one result-area spinner and keeps the search icon while semantic search is pending', async () => {
     let finishSearch!: (results: []) => void;
     aiSearch.mockReturnValue(

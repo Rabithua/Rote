@@ -17,7 +17,7 @@ import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { format } from 'date-fns';
 import { ActivityIcon, AlertCircle, Filter, MessageSquareDashed } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -103,7 +103,7 @@ function MineFilter() {
     [filter.keyword, filter.date, searchMode]
   );
 
-  const { data, mutate, loadMore, isLoading, isValidating, error } = useAPIInfinite(
+  const { data, mutate, loadMore, isLoading, isValidating, error, setSize } = useAPIInfinite(
     getProps,
     getRotesV2,
     {
@@ -114,6 +114,25 @@ function MineFilter() {
       revalidateOnReconnect: false,
     }
   );
+
+  const keywordRequest = JSON.stringify([searchMode, filter.keyword, filter.date]);
+  const previousKeywordRequest = useRef<string | null>(null);
+  const hasKeywordData = Boolean(data);
+
+  useEffect(() => {
+    if (previousKeywordRequest.current === keywordRequest) return;
+    previousKeywordRequest.current = keywordRequest;
+    // New queries load through SWR; cached queries need an explicit first-page refresh.
+    if (searchMode !== 'keyword' || !hasKeywordData) return;
+
+    let cancelled = false;
+    void setSize(1).then(() => {
+      if (!cancelled) return mutate();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [keywordRequest, searchMode, hasKeywordData, setSize, mutate]);
 
   const semanticKey =
     canUseAi && searchMode === 'semantic' && filter.keyword.trim()
@@ -319,7 +338,18 @@ function MineFilter() {
       {searchMode === 'semantic' ? (
         renderSemanticResults()
       ) : (
-        <RoteList data={data} loadMore={loadMore} mutate={mutate} error={error} />
+        <>
+          {isValidating && data && data[data.length - 1]?.length < 20 && (
+            <LoadingPlaceholder className="py-8" size={6} />
+          )}
+          <RoteList
+            data={data}
+            loadMore={loadMore}
+            mutate={mutate}
+            error={error}
+            isValidating={isValidating}
+          />
+        </>
       )}
     </ContainerWithSideBar>
   );
