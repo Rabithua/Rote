@@ -27,9 +27,11 @@ export default function AIConfigSaveButton({
 }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const [busy, setBusy] = useState(false);
-  const [pending, setPending] = useState<{ config: AiConfiguration; signature: string } | null>(
-    null
-  );
+  const [pending, setPending] = useState<{
+    config: AiConfiguration;
+    signature: string;
+    initializesIndex: boolean;
+  } | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const signature = JSON.stringify(config);
   const currentSignature = useRef(signature);
@@ -51,7 +53,12 @@ export default function AIConfigSaveButton({
     try {
       const result = await post('/ai/config/impact', { config: snapshot });
       if (currentSignature.current !== signature) return;
-      if (result.data.requiresConfirmation) setPending({ config: snapshot, signature });
+      if (result.data.requiresConfirmation)
+        setPending({
+          config: snapshot,
+          signature,
+          initializesIndex: result.data.initializesIndex === true,
+        });
       else await onSave(snapshot);
     } catch (error) {
       toast.error(formatEmbeddingError(error, t) || t('ai.saveImpactCheckFailed'));
@@ -79,10 +86,16 @@ export default function AIConfigSaveButton({
         <DialogHeader>
           <DialogTitle>{t('ai.saveChangeTitle')}</DialogTitle>
           <DialogDescription className="text-pretty">
-            {t('ai.saveChangeDescription')}
+            {t(
+              pending?.initializesIndex
+                ? 'ai.saveInitializeDescription'
+                : 'ai.saveChangeDescription'
+            )}
           </DialogDescription>
         </DialogHeader>
-        <p className="text-muted-foreground text-sm">{t('ai.saveChangeReuse')}</p>
+        {!pending?.initializesIndex && (
+          <p className="text-muted-foreground text-sm">{t('ai.saveChangeReuse')}</p>
+        )}
         <DialogFooter className="flex-row gap-2">
           <Button
             variant="outline"

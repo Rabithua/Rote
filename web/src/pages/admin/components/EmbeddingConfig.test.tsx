@@ -89,6 +89,19 @@ describe('embedding configuration', () => {
 });
 
 describe('saving embedding configuration', () => {
+  it('explains automatic first indexing before saving a new AI configuration', async () => {
+    vi.mocked(post).mockResolvedValue({
+      data: { requiresConfirmation: true, initializesIndex: true },
+    });
+    const onSave = vi.fn().mockResolvedValue(true);
+    render(<AIConfigSaveButton config={config} disabled={false} onSave={onSave} />);
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+    expect(await screen.findByText('ai.saveInitializeDescription')).toBeVisible();
+    expect(screen.queryByText('ai.saveChangeDescription')).not.toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'ai.saveChangeConfirm' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledExactlyOnceWith(config));
+  });
   it('asks before saving an index change, and cancellation writes nothing', async () => {
     vi.mocked(post).mockResolvedValue({ data: { requiresConfirmation: true } });
     const onSave = vi.fn().mockResolvedValue(true);

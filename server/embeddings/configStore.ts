@@ -9,6 +9,7 @@ import db from '../utils/drizzle';
 import { testEmbeddingProvider } from './client';
 import { embeddingFingerprint, embeddingOutputSchema } from './contract';
 import { EmbeddingError, isEmbeddingContractFailure } from './errors';
+import { canInitializeIndex, createIndexGeneration } from './indexGeneration';
 import {
   generationMatches,
   restoreGenerationStatus,
@@ -184,6 +185,8 @@ export async function saveAiSettings(incoming: Partial<AiConfig>): Promise<AiCon
           updatedAt: new Date(),
         })
         .where(eq(embeddingIndexState.id, 1));
+      if (enabling && verified && (await canInitializeIndex(state, tx)))
+        await createIndexGeneration(tx, next, verified.dimensions);
     })
     .catch(configurationWriteFailed);
   await refreshConfigCache();
