@@ -588,7 +588,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/random' \
 - **URL**: `/v2/api/notes/search`
 - **Headers**: `Authorization: Bearer <accessToken>`（必填）
 - **Query 参数**:
-  - `keyword`: string（必填，搜索关键词，最大 200 个字符）
+  - `keyword`: string（必填，非空搜索关键词，支持完整的导入标签名）
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选，是否只搜索归档笔记）
@@ -645,7 +645,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
 
 - 401 未认证（需要登录）
 - 400 关键词参数缺失
-- 400 搜索关键词超过 200 个字符
 
 ---
 
@@ -655,7 +654,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search?keyword=关键词&skip=
 - **URL**: `/v2/api/notes/search/public`
 - **Headers**: 无需认证
 - **Query 参数**:
-  - `keyword`: string（必填，搜索关键词，最大 200 个字符）
+  - `keyword`: string（必填，非空搜索关键词，支持完整的导入标签名）
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `tag`: string | string[]（可选，按标签过滤，支持 `tag` 或 `tag[]` 两种格式）
@@ -709,7 +708,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
 可能的错误：
 
 - 400 关键词参数缺失
-- 400 搜索关键词超过 200 个字符
 
 ---
 
@@ -721,7 +719,7 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/public?keyword=关键�
 - **路径参数**:
   - `username`: string（用户名）
 - **Query 参数**:
-  - `keyword`: string（必填，搜索关键词，最大 200 个字符）
+  - `keyword`: string（必填，非空搜索关键词，支持完整的导入标签名）
   - `skip`: number（可选，分页偏移量）
   - `limit`: number（可选，每页数量）
   - `archived`: boolean（可选）
@@ -776,7 +774,6 @@ curl -X GET 'https://your-domain.com/v2/api/notes/search/users/demo?keyword=关�
 可能的错误：
 
 - 400 关键词参数缺失
-- 400 搜索关键词超过 200 个字符
 - 404 用户不存在
 
 ---

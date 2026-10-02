@@ -674,12 +674,13 @@ function buildSearchConditions(
   viewerId?: string
 ) {
   return (rotes: any, { eq, and, or, ilike, sql }: any) => {
+    const pattern = `%${keyword.replace(/[\\%_]/g, '\\$&')}%`;
     const searchConditions = [
-      ilike(rotes.content, `%${keyword}%`),
-      ilike(rotes.title, `%${keyword}%`),
+      ilike(rotes.content, pattern),
+      ilike(rotes.title, pattern),
       sql`EXISTS (
         SELECT 1 FROM unnest(${rotes.tags}) AS tag
-        WHERE tag ILIKE ${`%${keyword}%`}
+        WHERE tag ILIKE ${pattern}
       )`,
     ];
 

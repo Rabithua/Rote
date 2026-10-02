@@ -113,10 +113,8 @@ export const ArticleUpdateZod = z.object({
 
 // 搜索关键词验证
 export const SearchKeywordZod = z.object({
-  keyword: z
-    .string()
-    .min(1, 'Search keyword cannot be empty')
-    .max(200, 'Search keyword cannot exceed 200 characters'),
+  // Imported tags have no per-tag length cap, so search must accept their full names.
+  keyword: z.string().min(1, 'Search keyword cannot be empty'),
 });
 
 // 反应相关验证

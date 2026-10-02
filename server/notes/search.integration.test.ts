@@ -7,6 +7,7 @@ const databaseDescribe = databaseUrl ? describe : describe.skip;
 databaseDescribe('note keyword search', () => {
   const ownerId = randomUUID();
   const otherUserId = randomUUID();
+  const longTag = '导入标签'.repeat(70);
   const ids = {
     tag: randomUUID(),
     title: randomUUID(),
@@ -17,11 +18,19 @@ databaseDescribe('note keyword search', () => {
     empty: randomUUID(),
     archived: randomUUID(),
     otherOwner: randomUUID(),
+    underscore: randomUUID(),
+    percent: randomUUID(),
+    backslash: randomUUID(),
+    combined: randomUUID(),
+    contentUnderscore: randomUUID(),
+    titlePercent: randomUUID(),
+    longTag: randomUUID(),
   };
   let database: typeof import('../utils/drizzle').default;
   let schema: typeof import('../drizzle/schema');
   let search: typeof import('../utils/dbMethods/note');
   let operators: typeof import('drizzle-orm');
+  let notesRouter: typeof import('../route/v2/note').default;
 
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl;
@@ -31,6 +40,7 @@ databaseDescribe('note keyword search', () => {
       import('drizzle-orm'),
       import('../utils/drizzle'),
     ]);
+    notesRouter = (await import('../route/v2/note')).default;
     await database.insert(schema.users).values(
       [ownerId, otherUserId].map((id) => ({
         id,
@@ -62,6 +72,25 @@ databaseDescribe('note keyword search', () => {
       { id: ids.empty, authorid: ownerId, content: 'unrelated', tags: [] },
       { id: ids.archived, authorid: ownerId, content: 'archived', tags: ['设计'], archived: true },
       { id: ids.otherOwner, authorid: otherUserId, content: 'other owner', tags: ['设计'] },
+      { id: ids.underscore, authorid: ownerId, content: 'underscore tag', tags: ['_'] },
+      { id: ids.percent, authorid: ownerId, content: 'percent tag', tags: ['%'] },
+      { id: ids.backslash, authorid: ownerId, content: 'backslash tag', tags: ['folder\\'] },
+      { id: ids.combined, authorid: ownerId, content: 'combined tag', tags: ['100%_done\\'] },
+      { id: ids.contentUnderscore, authorid: ownerId, content: 'literal _ in content', tags: [] },
+      {
+        id: ids.titlePercent,
+        authorid: ownerId,
+        title: '100% complete',
+        content: 'title',
+        tags: [],
+      },
+      {
+        id: ids.longTag,
+        authorid: ownerId,
+        content: 'imported tag',
+        tags: [longTag],
+        state: 'public',
+      },
     ]);
   });
 
@@ -91,6 +120,24 @@ databaseDescribe('note keyword search', () => {
     expect(await matchingIds("O'Rei")).toEqual([ids.quote]);
     expect(await matchingIds('🐱')).toEqual([ids.emoji]);
     expect(await matchingIds("' OR TRUE --")).toEqual([]);
+  });
+
+  it('treats LIKE metacharacters literally across tags, title, and content', async () => {
+    expect(await matchingIds('_')).toEqual(
+      [ids.underscore, ids.combined, ids.contentUnderscore].sort()
+    );
+    expect(await matchingIds('%')).toEqual([ids.percent, ids.combined, ids.titlePercent].sort());
+    expect(await matchingIds('folder\\')).toEqual([ids.backslash]);
+    expect(await matchingIds('100%_done\\')).toEqual([ids.combined]);
+  });
+
+  it('accepts a full imported tag longer than 200 characters through the search route', async () => {
+    const response = await notesRouter.request(
+      `/search/public?keyword=${encodeURIComponent(longTag)}`
+    );
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as { data: { id: string }[] };
+    expect(body.data.map((note) => note.id)).toEqual([ids.longTag]);
   });
 
   it('combines tag text matching with the existing date filter', async () => {
