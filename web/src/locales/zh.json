@@ -543,8 +543,6 @@
     },
     "filter": {
       "title": "筛选 / Filter",
-      "includeTags": "包含标签：",
-      "allTags": "所有标签：",
       "none": "无",
       "data": "数据统计",
       "note": "笔记",
@@ -1952,7 +1950,7 @@
       }
     },
     "sidebarSearch": {
-      "placeholder": "搜索笔记..."
+      "placeholder": "搜索标题、正文或标签…"
     },
     "aiSourceList": {
       "empty": "暂无来源",

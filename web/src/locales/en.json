@@ -553,8 +553,6 @@
     },
     "filter": {
       "title": "Filter",
-      "includeTags": "Including Tags:",
-      "allTags": "All Tags:",
       "none": "NONE",
       "data": "Data Statistics",
       "note": "Note",
@@ -1962,7 +1960,7 @@
       }
     },
     "sidebarSearch": {
-      "placeholder": "Search notes..."
+      "placeholder": "Search titles, content, or tags…"
     },
     "aiSourceList": {
       "empty": "No sources",

@@ -1,4 +1,3 @@
-import { StarsBackground } from '@/components/animate-ui/backgrounds/stars';
 import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import NavBar from '@/components/layout/navBar';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
@@ -10,7 +9,6 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
-import { loadTagsAtom, tagsAtom } from '@/state/tags';
 import type { ApiGetRotesParams, Rote, Rotes, Statistics } from '@/types/main';
 import type { AiSemanticResult } from '@/utils/aiApi';
 import { aiSearch } from '@/utils/aiApi';
@@ -18,9 +16,8 @@ import { get, post } from '@/utils/api';
 import { useAPIGet, useAPIInfinite } from '@/utils/fetcher';
 import { getRotesV2 } from '@/utils/roteApi';
 import { format } from 'date-fns';
-import { useAtomValue, useSetAtom } from 'jotai';
 import { ActivityIcon, AlertCircle, Filter, MessageSquareDashed, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -63,23 +60,14 @@ function SideBar() {
 function MineFilter() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.filter' });
 
-  const tags = useAtomValue(tagsAtom);
-  const loadTags = useSetAtom(loadTagsAtom);
   const { data: siteStatus } = useSiteStatus();
   const { capabilities } = usePermissions();
   const canUseAi =
     siteStatus?.ai?.memoryAvailable === true && capabilities?.['ai.chat']?.allowed === true;
 
-  useEffect(() => {
-    if (tags === null) loadTags();
-  }, [tags, loadTags]);
-
   const location = useLocation();
 
   const [filter, setFilter] = useState({
-    tags: {
-      hasEvery: location.state?.tags || [],
-    },
     keyword: location.state?.initialKeyword || '',
     date: location.state?.date || '',
   });
@@ -98,10 +86,6 @@ function MineFilter() {
         limit: 20,
       };
 
-      if (filter.tags.hasEvery.length > 0) {
-        params.tag = filter.tags.hasEvery;
-      }
-
       if (filter.keyword.trim()) {
         params.keyword = filter.keyword.trim();
       }
@@ -115,7 +99,7 @@ function MineFilter() {
         params,
       };
     },
-    [filter.tags.hasEvery, filter.keyword, filter.date]
+    [filter.keyword, filter.date]
   );
 
   const { data, mutate, loadMore, isLoading, isValidating, error, setSize } = useAPIInfinite(
@@ -134,7 +118,6 @@ function MineFilter() {
       ? {
           key: 'ai-semantic-search',
           keyword: filter.keyword.trim(),
-          tags: filter.tags.hasEvery.join('|'),
           date: filter.date,
         }
       : null;
@@ -153,10 +136,6 @@ function MineFilter() {
         scope: 'mine',
         sourceTypes: ['rote'],
         limit: 50,
-        tags:
-          filter.tags.hasEvery.length > 0
-            ? { include: filter.tags.hasEvery, match: 'all' }
-            : undefined,
         timeRange: filter.date
           ? {
               from: `${filter.date}T00:00:00.000Z`,
@@ -165,15 +144,11 @@ function MineFilter() {
           : undefined,
       });
       const filteredResults = results.filter((result) => {
-        const tags = Array.isArray(result.metadata?.tags) ? result.metadata.tags : [];
-        const tagsMatched =
-          filter.tags.hasEvery.length === 0 ||
-          filter.tags.hasEvery.every((tag: string) => tags.includes(tag));
         const dateMatched =
           !filter.date ||
           (typeof result.metadata?.createdAt === 'string' &&
             result.metadata.createdAt.startsWith(filter.date));
-        return tagsMatched && dateMatched;
+        return dateMatched;
       });
       const ids = filteredResults.map((result) => result.sourceId);
 
@@ -201,7 +176,6 @@ function MineFilter() {
 
   // 当 filter 变化时，重置分页并重新验证
   const prevFilterRef = useRef<{
-    tags: string[];
     keyword: string;
     date: string;
     mode: SearchMode;
@@ -213,7 +187,6 @@ function MineFilter() {
     if (isInitialMount.current) {
       isInitialMount.current = false;
       prevFilterRef.current = {
-        tags: filter.tags.hasEvery,
         keyword: filter.keyword,
         date: filter.date,
         mode: searchMode,
@@ -221,7 +194,6 @@ function MineFilter() {
       return;
     }
 
-    const currentTags = filter.tags.hasEvery;
     const currentKeyword = filter.keyword;
     const currentDate = filter.date;
     const currentMode = searchMode;
@@ -229,7 +201,6 @@ function MineFilter() {
 
     if (!prevFilter) {
       prevFilterRef.current = {
-        tags: currentTags,
         keyword: currentKeyword,
         date: currentDate,
         mode: currentMode,
@@ -238,17 +209,13 @@ function MineFilter() {
     }
 
     // 检查是否真的发生了变化
-    const tagsChanged =
-      currentTags.length !== prevFilter.tags.length ||
-      currentTags.some((tag: string, index: number) => tag !== prevFilter.tags[index]);
     const keywordChanged = currentKeyword !== prevFilter.keyword;
     const dateChanged = currentDate !== prevFilter.date;
     const modeChanged = currentMode !== prevFilter.mode;
 
-    if (tagsChanged || keywordChanged || dateChanged || modeChanged) {
+    if (keywordChanged || dateChanged || modeChanged) {
       // 更新引用
       prevFilterRef.current = {
-        tags: currentTags,
         keyword: currentKeyword,
         date: currentDate,
         mode: currentMode,
@@ -261,15 +228,7 @@ function MineFilter() {
         void mutateSemantic();
       }
     }
-  }, [
-    filter.tags.hasEvery,
-    filter.keyword,
-    filter.date,
-    searchMode,
-    setSize,
-    mutate,
-    mutateSemantic,
-  ]);
+  }, [filter.keyword, filter.date, searchMode, setSize, mutate, mutateSemantic]);
 
   // 处理错误提示
   useEffect(() => {
@@ -295,65 +254,6 @@ function MineFilter() {
       mutate();
     }
   };
-
-  const tagsClickHandler = useCallback((tag: string) => {
-    setFilter((prevState) => {
-      const newTags = prevState.tags.hasEvery.includes(tag)
-        ? prevState.tags.hasEvery.filter((t: any) => t !== tag)
-        : [...prevState.tags.hasEvery, tag];
-
-      return {
-        ...prevState,
-        tags: {
-          ...prevState.tags,
-          hasEvery: newTags,
-        },
-      };
-    });
-  }, []);
-
-  const TagsBlock = useMemo(
-    () => (
-      <StarsBackground
-        pointerEvents={false}
-        starColor="#3ECF4A"
-        className="relative h-auto max-h-[25vh] overflow-hidden bg-none"
-      >
-        <div className="noScrollBar relative max-h-[25vh] space-y-4 overflow-y-scroll bg-none mask-[linear-gradient(180deg,#000000_calc(100%-20%),transparent)] p-4 font-semibold">
-          <div className="relative flex flex-wrap items-center gap-2">
-            {t('includeTags')}
-            {filter.tags.hasEvery.length > 0
-              ? filter.tags.hasEvery.map((tag: any, index: any) => (
-                  <div
-                    className="bg-foreground/5 cursor-pointer rounded-md px-2 py-1 text-xs font-normal duration-300 hover:scale-95"
-                    key={`tag-${index}`}
-                    onClick={() => tagsClickHandler(tag)}
-                  >
-                    {tag}
-                  </div>
-                ))
-              : t('none')}
-          </div>
-          <div className="text-info relative flex flex-wrap items-center gap-2 font-normal">
-            {t('allTags')}
-            {tags && tags.length > 0
-              ? tags.map((tag) => (
-                  <div key={tag.name} onClick={() => tagsClickHandler(tag.name)}>
-                    <div className="bg-foreground/5 divide-foreground/3 flex grow cursor-pointer items-center justify-between divide-x rounded-sm px-2 text-xs duration-300 hover:scale-95">
-                      <div className="py-1 pr-1">{tag.name}</div>
-                      {tag.count > 0 && (
-                        <div className="text-theme py-1 pl-1 font-mono">{tag.count}</div>
-                      )}
-                    </div>
-                  </div>
-                ))
-              : t('none')}
-          </div>
-        </div>
-      </StarsBackground>
-    ),
-    [t, filter.tags.hasEvery, tags, tagsClickHandler]
-  );
 
   const renderSemanticResults = () => {
     if (!filter.keyword.trim()) {
@@ -472,7 +372,6 @@ function MineFilter() {
           />
         </div>
       </div>
-      {TagsBlock}
       {searchMode === 'semantic' ? (
         renderSemanticResults()
       ) : (
@@ -482,4 +381,7 @@ function MineFilter() {
   );
 }
 
-export default MineFilter;
+export default function FilterPage() {
+  const location = useLocation();
+  return <MineFilter key={location.key} />;
+}

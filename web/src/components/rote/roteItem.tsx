@@ -287,7 +287,7 @@ function RoteItem({
         {rote.tags?.length > 0 && (
           <div className="my-2 flex flex-wrap items-center gap-2">
             {rote.tags.map((tag) => (
-              <Link key={tag} to="/filter" state={{ tags: [tag] }}>
+              <Link key={tag} to="/filter" state={{ initialKeyword: tag }}>
                 <div className="bg-foreground/5 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
                   {tag}
                 </div>
