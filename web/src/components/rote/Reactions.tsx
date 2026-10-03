@@ -1,4 +1,3 @@
-import { SlidingNumber } from '@/components/animate-ui/text/sliding-number';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -35,9 +34,10 @@ interface ReactionsPartProps {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
+  isInView?: boolean;
 }
 
-export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps) {
+export function ReactionsPart({ rote, mutate, mutateSingle, isInView = true }: ReactionsPartProps) {
   const { authReady, isAuthenticated, isAuthPending, profile } = useAuthState();
   const { data: siteStatus } = useSiteStatus();
   const { t } = useTranslation('translation', {
@@ -58,6 +58,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   const isReactionIdentityReady = isAuthenticated || Boolean(visitorId);
   const [isLoading, setIsLoading] = useState(false);
   const [isVisitorIdLoading, setIsVisitorIdLoading] = useState(false);
+  const isVisitorIdInitializingRef = React.useRef(false);
 
   const [showInlineInput, setShowInlineInput] = useState(false);
   const [customReaction, setCustomReaction] = useState('');
@@ -138,13 +139,23 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
   };
 
   React.useEffect(() => {
-    if (authReady && !isAuthenticated && !visitorId) {
+    if (
+      isInView &&
+      authReady &&
+      !isAuthenticated &&
+      !visitorId &&
+      !isVisitorIdInitializingRef.current
+    ) {
+      isVisitorIdInitializingRef.current = true;
       setIsVisitorIdLoading(true);
       import('@/utils/deviceFingerprint')
         .then(({ generateVisitorId }) => generateVisitorId().then(setVisitorId))
-        .finally(() => setIsVisitorIdLoading(false));
+        .finally(() => {
+          isVisitorIdInitializingRef.current = false;
+          setIsVisitorIdLoading(false);
+        });
     }
-  }, [authReady, isAuthenticated, visitorId, setVisitorId]);
+  }, [isInView, authReady, isAuthenticated, visitorId, setVisitorId]);
 
   React.useEffect(() => {
     if (!isAuthenticated) {
@@ -153,13 +164,17 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
     }
   }, [isAuthenticated]);
 
-  const groupedReactions = rote.reactions.reduce(
-    (acc, reaction) => {
-      acc[reaction.type] = acc[reaction.type] || [];
-      acc[reaction.type].push(reaction);
-      return acc;
-    },
-    {} as Record<string, Reaction[]>
+  const groupedReactions = React.useMemo(
+    () =>
+      rote.reactions.reduce(
+        (acc, reaction) => {
+          acc[reaction.type] = acc[reaction.type] || [];
+          acc[reaction.type].push(reaction);
+          return acc;
+        },
+        {} as Record<string, Reaction[]>
+      ),
+    [rote.reactions]
   );
 
   const handleReactionClick = async (reactionType: string) => {
@@ -268,12 +283,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
               } items-center gap-1.5 rounded-full ${
                 firstUser ? 'pr-2.5 pl-1' : 'px-2 pr-3'
               } text-xs duration-300 ${
-                (
-                  isAuthenticated
-                    ? rote.reactions.some((r) => r.type === type && r.userid === profile?.id)
-                    : Boolean(visitorId) &&
-                      rote.reactions.some((r) => r.type === type && r.visitorId === visitorId)
-                )
+                hasOwnReaction
                   ? 'border-theme/30 bg-theme/10 text-theme hover:bg-theme/30 border-[0.5px]'
                   : 'bg-foreground/5 hover:bg-foreground/5'
               }`}
@@ -295,7 +305,7 @@ export function ReactionsPart({ rote, mutate, mutateSingle }: ReactionsPartProps
                 </Link>
               )}
               <span>{type}</span>
-              <SlidingNumber className="text-xs" number={reactionGroup.length} />
+              <span className="text-xs leading-none tabular-nums">{reactionGroup.length}</span>
             </div>
           );
 

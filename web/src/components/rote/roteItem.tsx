@@ -1,15 +1,7 @@
 // RoteItem.tsx（合并优化版）
 import { useAtom } from 'jotai';
 import Linkify from 'linkify-react';
-import {
-  Archive,
-  ArrowDownLeft,
-  Edit,
-  Globe2Icon,
-  LinkIcon,
-  PinIcon,
-  SmilePlus,
-} from 'lucide-react';
+import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon } from 'lucide-react';
 import moment from 'moment';
 import { memo, useCallback, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
@@ -296,13 +288,15 @@ function RoteItem({
           </div>
         )}
 
-        {/* Reactions */}
-        {showReactions &&
-          (inView ? (
-            <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
-          ) : (
-            <SmilePlus className="bg-foreground/5 ml-auto size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
-          ))}
+        {/* Preserve reaction layout and local state across viewport changes. */}
+        {showReactions && (
+          <ReactionsPart
+            rote={rote}
+            mutate={mutate}
+            mutateSingle={mutateSingle}
+            isInView={inView}
+          />
+        )}
       </div>
 
       {modalType === 'share' && isOwner && (
