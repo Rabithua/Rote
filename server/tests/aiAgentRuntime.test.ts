@@ -165,3 +165,168 @@ describe('agent tool decision output', () => {
     });
   });
 });
+
+describe('multi-pass evidence delivery', () => {
+  it('puts both batches in the actual later provider request and emits 40 cumulative references', async () => {
+    const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
+    const { deliverSearchEvidence } = await import('../utils/ai/agent/evidenceDelivery');
+    let calls = 0;
+    const requests: Array<{ messages: Array<{ role: string; content: string }> }> = [];
+    globalThis.fetch = (async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)));
+      const step = requests.length;
+      if (step <= 2)
+        return sseResponse([
+          {
+            choices: [
+              {
+                delta: {
+                  tool_calls: [
+                    {
+                      index: 0,
+                      id: `search-${step}`,
+                      function: { name: 'rote_search_notes', arguments: '{}' },
+                    },
+                  ],
+                },
+                finish_reason: 'tool_calls',
+              },
+            ],
+          },
+        ]);
+      return sseResponse([
+        {
+          choices: [
+            {
+              delta: { content: step === 3 ? 'ready' : 'answer [1][21][40]' },
+              finish_reason: 'stop',
+            },
+          ],
+        },
+      ]);
+    }) as typeof fetch;
+    const events: RoteAgentStreamEvent[] = [];
+    await runRoteAgentStream({
+      userId: 'owner',
+      request: { message: 'review' },
+      config,
+      emit: (event) => {
+        events.push(event);
+      },
+      tools: [
+        {
+          definition: {
+            type: 'function',
+            function: {
+              name: 'rote_search_notes',
+              description: 'search',
+              parameters: { type: 'object' },
+            },
+          },
+          execute: async (_args, ctx) => {
+            const start = calls++ * 20;
+            const found = Array.from({ length: 20 }, (_, i) => ({
+              sourceType: 'rote' as const,
+              sourceId: `note-${start + i + 1}`,
+              text: `evidence-${start + i + 1}`,
+              similarity: 1,
+              metadata: {},
+            }));
+            const result = deliverSearchEvidence(ctx, found);
+            return {
+              ...result,
+              observations: [],
+              statePatch: { seenSourceIds: ctx.sourceBudget.keys() },
+            };
+          },
+        },
+      ],
+    });
+    const sources = events.filter((event) => event.type === 'sources');
+    expect(sources.map((event) => event.sources.length)).toEqual([20, 40]);
+    expect(sources[1].retrieval).toMatchObject({ addedCount: 20, totalCount: 40 });
+    const evidenceMessages = requests
+      .at(-1)!
+      .messages.filter((m) => m.role === 'tool')
+      .map((m) => JSON.parse(m.content));
+    expect(evidenceMessages[0].sources[0]).toMatchObject({ citation: 1, excerpt: 'evidence-1' });
+    expect(evidenceMessages[1].sources[0]).toMatchObject({ citation: 21, excerpt: 'evidence-21' });
+    expect(evidenceMessages[1].sources.at(-1)).toMatchObject({
+      citation: 40,
+      excerpt: 'evidence-40',
+    });
+  });
+
+  it('stops tools after exhaustion and supplies a result for every pending tool call', async () => {
+    const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
+    const { deliverSearchEvidence } = await import('../utils/ai/agent/evidenceDelivery');
+    let toolExecutions = 0;
+    const requests: Array<{ messages: Array<{ role: string; content: string }> }> = [];
+    globalThis.fetch = (async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)));
+      if (requests.length === 1)
+        return sseResponse([
+          {
+            choices: [
+              {
+                delta: {
+                  tool_calls: [0, 1, 2].map((index) => ({
+                    index,
+                    id: `call-${index}`,
+                    function: { name: 'rote_search_notes', arguments: '{}' },
+                  })),
+                },
+                finish_reason: 'tool_calls',
+              },
+            ],
+          },
+        ]);
+      return sseResponse([
+        { choices: [{ delta: { content: 'limited answer' }, finish_reason: 'stop' }] },
+      ]);
+    }) as typeof fetch;
+    const events: RoteAgentStreamEvent[] = [];
+    await runRoteAgentStream({
+      userId: 'owner',
+      request: { message: 'review' },
+      config,
+      policy: { maxSourceChars: 300 },
+      emit: (event) => {
+        events.push(event);
+      },
+      tools: [
+        {
+          definition: {
+            type: 'function',
+            function: {
+              name: 'rote_search_notes',
+              description: 'search',
+              parameters: { type: 'object' },
+            },
+          },
+          execute: async (_args, ctx) => {
+            toolExecutions++;
+            return {
+              ...deliverSearchEvidence(ctx, [
+                {
+                  sourceType: 'rote',
+                  sourceId: 'id',
+                  text: 'a'.repeat(3000),
+                  metadata: { title: 't'.repeat(80) },
+                  similarity: 1,
+                },
+              ]),
+              observations: [],
+            };
+          },
+        },
+      ],
+    });
+    expect(toolExecutions).toBe(1);
+    expect(requests).toHaveLength(2);
+    expect(requests[1].messages.filter((m) => m.role === 'tool')).toHaveLength(3);
+    expect(
+      events.some((event) => event.type === 'sources' && event.retrieval?.budgetExhausted)
+    ).toBe(true);
+  });
+});

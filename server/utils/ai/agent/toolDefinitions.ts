@@ -150,11 +150,7 @@ export function createSearchNotesToolDefinition(params: {
           limit: {
             type: 'number',
             description:
-              'Final source count to return. Choose a larger value for broad pattern analysis and a smaller value for focused lookup.',
-          },
-          cursor: {
-            type: 'string',
-            description: 'Opaque cursor returned by a previous rote_search_notes call.',
+              'Maximum candidate count for this call; delivered excerpts depend on the shared text budget. Choose a larger value for broad pattern analysis and a smaller value for focused lookup.',
           },
         },
         required: ['query'],
@@ -167,13 +163,20 @@ export const GET_NOTE_TOOL_DEFINITION: ChatToolDefinition = {
   type: 'function',
   function: {
     name: 'rote_get_note',
-    description: 'Read more context for one Rote source owned by the current user.',
+    description:
+      'Read a bounded page of a Rote source. Continue with nextOffset when truncated; omitted offset continues automatically.',
     parameters: {
       type: 'object',
       properties: {
         sourceType: { type: 'string', enum: ['rote', 'article'] },
         sourceId: { type: 'string' },
         reason: { type: 'string' },
+        offset: {
+          type: 'integer',
+          minimum: 0,
+          description:
+            'Unicode character offset. Use the previous nextOffset; omit to continue automatically.',
+        },
       },
       required: ['sourceType', 'sourceId'],
     },

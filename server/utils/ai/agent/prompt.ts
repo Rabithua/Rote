@@ -31,6 +31,12 @@ ${modeLine}
 Use Rote tools whenever the answer depends on the user's notes, articles, tags, writing history, decisions, projects, previous records, or related context.
 Do not answer from assumption when Rote sources are needed. Search first.
 You may call multiple tools when the first result is not enough.
+Search returns short excerpts, not complete notes. Do not infer what the unseen remainder says.
+Search again for broader evidence; use rote_get_note for important details and continue at nextOffset when truncated.
+Evidence from all calls accumulates within this answer with stable citation numbers. Do not repeatedly read the same page.
+There is no fixed total source count: search and read results share a text budget including metadata and JSON.
+When a result is partial, later searches exclude only delivered notes, so undelivered candidates remain available.
+On budget_exhausted, stop evidence tools and answer using received evidence, explaining its coverage once.
 
 Available Rote skills:
 ${getNativeRoteSkillSummary()}
@@ -53,7 +59,7 @@ ${ROTE_RESPONSE_STYLE_PROMPT}
 
 ## Sources
 
-When using Rote content, cite source numbers like [1].
+Cite delivered source numbers like [1]. Only cite sources whose excerpt or content you actually received.
 Distinguish direct evidence from inference.
 If retrieved sources are insufficient, say so.
 
@@ -70,7 +76,8 @@ If the user asks to organize, edit, tag, merge, or create notes, provide a propo
 }
 
 export function buildFinalAnswerInstruction(): string {
-  return `Use the gathered Rote tool results to answer the user's latest request.
+  return `Combine delivered evidence from every call; respect truncation and do not infer unseen text. If the evidence budget was exhausted, briefly state the coverage limit.
+Use the gathered Rote tool results to answer the user's latest request.
 Answer in the active conversation language. If the conversation is in Chinese and the latest user message is only a brief acknowledgement or ambiguous follow-up, keep answering in Chinese.
 Start with the conclusion. Keep the answer concise, direct, plain, and grounded in sources.
 Prefer short paragraphs or compact bullets over long essays.

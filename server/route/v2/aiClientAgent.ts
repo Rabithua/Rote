@@ -79,18 +79,6 @@ function sanitizeClientPlan(plan: any) {
   };
 }
 
-function sanitizeClientModelContent(value: string): string {
-  try {
-    const parsed = JSON.parse(value);
-    if (parsed?.plan?.warnings) {
-      parsed.plan.warnings = sanitizeWarningArray(parsed.plan.warnings);
-    }
-    return JSON.stringify(parsed, null, 2);
-  } catch {
-    return value;
-  }
-}
-
 async function getClientToolConfig(user: User) {
   const [config, vectorStatus, access] = await Promise.all([
     getStoredAiConfig(),
@@ -119,7 +107,9 @@ export function registerClientAgentRoutes(router: Hono<{ Variables: HonoVariable
     const policy = {
       maxIterations: DEFAULT_AGENT_POLICY.maxIterations,
       maxToolCalls: DEFAULT_AGENT_POLICY.maxToolCalls,
-      maxSources: DEFAULT_AGENT_POLICY.maxSources,
+      maxSearchResultChars: DEFAULT_AGENT_POLICY.maxSearchResultChars,
+      maxSearchExcerptChars: DEFAULT_AGENT_POLICY.maxSearchExcerptChars,
+      maxReadChars: DEFAULT_AGENT_POLICY.maxReadChars,
       maxSourceChars: DEFAULT_AGENT_POLICY.maxSourceChars,
     };
 
@@ -157,13 +147,16 @@ export function registerClientAgentRoutes(router: Hono<{ Variables: HonoVariable
         state: body?.state,
         sourceKeys: body?.sourceKeys,
         sourceCharsUsed: body?.sourceCharsUsed,
+        readOffsets: body?.readOffsets,
       });
 
       return c.json(
         createResponse({
           observations: result.observations.map(sanitizeClientWarning),
           displaySummary: result.displaySummary,
-          modelContent: sanitizeClientModelContent(result.modelContent),
+          modelContent: result.modelContent,
+          retrieval: result.retrieval,
+          readOffsets: result.readOffsets,
           sources: Array.isArray(result.sources) ? result.sources.map(toClientSource) : [],
           plan: sanitizeClientPlan(result.plan),
           statePatch: result.statePatch,

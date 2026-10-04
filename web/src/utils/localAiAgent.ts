@@ -59,6 +59,8 @@ export async function localAiAgentStream(params: {
   const sourceMap = new Map<string, AiSemanticResult>();
   let sourceKeys: string[] = [];
   let sourceCharsUsed = 0;
+  let readOffsets: Record<string, number> = {};
+  let evidenceExhausted = false;
   let state: AiAgentClientState = payload.state || { stateVersion: 1, seenSourceIds: [] };
   let toolCallCount = 0;
   let hasAnswer = false;
@@ -131,13 +133,13 @@ export async function localAiAgentStream(params: {
     messages.push({ role: 'assistant', content: null, tool_calls: validCalls });
 
     for (const call of validCalls) {
-      if (toolCallCount >= bootstrap.policy.maxToolCalls) {
+      if (toolCallCount >= bootstrap.policy.maxToolCalls || evidenceExhausted) {
         messages.push({
           role: 'tool',
           tool_call_id: call.id,
           content: JSON.stringify({
             status: 'skipped',
-            reason: 'tool_budget_exceeded',
+            reason: evidenceExhausted ? 'budget_exhausted' : 'tool_budget_exceeded',
             toolName: call.function.name,
           }),
         });
@@ -154,16 +156,22 @@ export async function localAiAgentStream(params: {
         state,
         sourceKeys,
         sourceCharsUsed,
+        readOffsets,
       });
       state = result.state;
+      readOffsets = result.readOffsets || {};
+      evidenceExhausted ||= result.retrieval?.budgetExhausted === true;
       sourceKeys = result.sourceKeys;
       sourceCharsUsed = Number.isFinite(result.sourceCharsUsed)
         ? Math.min(Math.max(Math.floor(result.sourceCharsUsed), 0), bootstrap.policy.maxSourceChars)
         : sourceCharsUsed;
       if (result.plan) params.handlers.onPlan?.(result.plan);
       if (result.statePatch) params.handlers.onStatePatch?.(result.statePatch);
-      if (result.sources.length) {
-        params.handlers.onSources?.(mergeSources(sourceMap, result.sources, sourceKeys));
+      if (result.sources.length || result.retrieval) {
+        params.handlers.onSources?.(
+          mergeSources(sourceMap, result.sources, sourceKeys),
+          result.retrieval
+        );
       }
       params.handlers.onToolFinished?.(
         call.function.name,
@@ -183,7 +191,7 @@ export async function localAiAgentStream(params: {
       }
     }
 
-    if (toolCallCount >= bootstrap.policy.maxToolCalls) break;
+    if (toolCallCount >= bootstrap.policy.maxToolCalls || evidenceExhausted) break;
   }
 
   if (!hasAnswer) {

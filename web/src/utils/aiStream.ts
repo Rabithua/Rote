@@ -5,6 +5,7 @@ import type {
   AiChatStreamHandlers,
   AiClarification,
   AiSemanticResult,
+  AiRetrievalSummary,
   AiStreamFailure,
   AiThinkingPhase,
   AiTokenUsage,
@@ -140,8 +141,8 @@ export async function readAiStreamResponse(
       const clarification = parsed.data as AiClarification;
       if (clarification?.question) handlers.onClarification?.(clarification);
     } else if (parsed.event === 'sources') {
-      const sources = (parsed.data as { sources?: AiSemanticResult[] })?.sources;
-      handlers.onSources?.(Array.isArray(sources) ? sources : []);
+      const data = parsed.data as { sources?: AiSemanticResult[]; retrieval?: AiRetrievalSummary };
+      handlers.onSources?.(Array.isArray(data.sources) ? data.sources : [], data.retrieval);
     } else if (parsed.event === 'thinking') {
       const data = parsed.data as { phase?: AiThinkingPhase; text?: string };
       if (

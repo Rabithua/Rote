@@ -52,4 +52,36 @@ describe('client agent tool runtime', () => {
     expect(result.sourceCharsUsed).toBe(200);
     expect(result.state.stateVersion).toBe(1);
   });
+  it('restores more than 20 references and read progress, then resets both for a new answer', async () => {
+    const keys = Array.from(
+      { length: 40 },
+      (_, i) => `rote:00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`
+    );
+    const resumed = await executeClientRoteTool({
+      userId: 'user',
+      config,
+      toolName: 'rote_skill_view',
+      arguments: {},
+      request: { message: 'help' },
+      state: {},
+      sourceKeys: keys,
+      sourceCharsUsed: 7000,
+      readOffsets: { [keys[0]]: 2000 },
+    });
+    expect(resumed.sourceKeys).toEqual(keys);
+    expect(resumed.sourceCharsUsed).toBe(7000);
+    expect(resumed.readOffsets).toEqual({ [keys[0]]: 2000 });
+    const fresh = await executeClientRoteTool({
+      userId: 'user',
+      config,
+      toolName: 'rote_skill_view',
+      arguments: {},
+      request: { message: 'help' },
+      state: {},
+      sourceKeys: [],
+    });
+    expect(fresh.sourceKeys).toEqual([]);
+    expect(fresh.readOffsets).toEqual({});
+    expect(fresh.sourceCharsUsed).toBe(0);
+  });
 });

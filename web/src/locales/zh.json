@@ -743,7 +743,7 @@
       },
       "timeline": {
         "title": "进度",
-        "sourcesFound": "找到 {{count}} 条相关记录",
+        "sourcesFound": "累计参考 {{count}} 条",
         "phases": {
           "understanding": "正在理解问题",
           "planning": "正在判断是否需要读取记录",
@@ -772,7 +772,9 @@
           "rote_find_related_notes": "已找到相关记录",
           "rote_get_tags": "已读取标签",
           "rote_skill_view": "已确定处理方式"
-        }
+        },
+        "sourcesAdded": "本次新增 {{added}} 条，累计参考 {{total}} 条",
+        "evidenceLimit": "已达到本次阅读额度，正在整理回答"
       },
       "thinkingTrace": {
         "route_decision": "正在判断是否需要查询 Rote",

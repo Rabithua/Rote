@@ -115,3 +115,22 @@ describe('interrupted AI message state', () => {
     ]);
   });
 });
+
+it('preserves retrieval statistics and accepts legacy source events', async () => {
+  const onSources = vi.fn();
+  await readAiStreamResponse(
+    streamResponse([
+      'event: sources\ndata: {"sources":[],"retrieval":{"foundCount":20,"addedCount":20,"totalCount":40,"budgetExhausted":false}}',
+      'event: sources\ndata: {"sources":[]}',
+      'event: done\ndata: {}',
+    ]),
+    { onSources }
+  );
+  expect(onSources).toHaveBeenNthCalledWith(1, [], {
+    foundCount: 20,
+    addedCount: 20,
+    totalCount: 40,
+    budgetExhausted: false,
+  });
+  expect(onSources).toHaveBeenNthCalledWith(2, [], undefined);
+});

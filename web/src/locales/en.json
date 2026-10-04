@@ -753,7 +753,7 @@
       },
       "timeline": {
         "title": "Progress",
-        "sourcesFound": "Found {{count}} related source(s)",
+        "sourcesFound": "{{count}} references total",
         "phases": {
           "understanding": "Understanding the question",
           "planning": "Deciding whether to read Rote",
@@ -782,7 +782,9 @@
           "rote_find_related_notes": "Related records found",
           "rote_get_tags": "Tags loaded",
           "rote_skill_view": "Workflow selected"
-        }
+        },
+        "sourcesAdded": "Added {{added}} sources; {{total}} references total",
+        "evidenceLimit": "Reached this answer’s reading limit; preparing the response"
       },
       "thinkingTrace": {
         "route_decision": "Deciding whether to query Rote",

@@ -757,7 +757,7 @@
       },
       "timeline": {
         "title": "進捗",
-        "sourcesFound": "関連ソースを {{count}} 件見つけました",
+        "sourcesFound": "参考資料は合計 {{count}} 件",
         "phases": {
           "understanding": "質問を理解中",
           "planning": "Rote を読む必要があるか判断中",
@@ -786,7 +786,9 @@
           "rote_find_related_notes": "関連記録を見つけました",
           "rote_get_tags": "タグを読み込みました",
           "rote_skill_view": "処理方法を決定しました"
-        }
+        },
+        "sourcesAdded": "今回 {{added}} 件追加、参考資料は合計 {{total}} 件",
+        "evidenceLimit": "今回の読み取り上限に達しました。回答をまとめています"
       },
       "thinkingTrace": {
         "route_decision": "Rote を検索するか判断中",

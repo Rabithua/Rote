@@ -51,7 +51,7 @@ const config = {
 };
 
 beforeEach(() => {
-  vi.clearAllMocks();
+  vi.resetAllMocks();
 });
 
 describe('local AI agent', () => {
@@ -86,7 +86,14 @@ describe('local AI agent', () => {
           function: { name: 'rote_get_tags', description: 'tags', parameters: {} },
         },
       ],
-      policy: { maxIterations: 2, maxToolCalls: 2, maxSources: 20, maxSourceChars: 12_000 },
+      policy: {
+        maxIterations: 2,
+        maxToolCalls: 2,
+        maxSearchResultChars: 4000,
+        maxSearchExcerptChars: 300,
+        maxReadChars: 2000,
+        maxSourceChars: 12_000,
+      },
     });
     mocks.complete
       .mockResolvedValueOnce({
@@ -160,7 +167,14 @@ describe('local AI agent', () => {
           function: { name: 'rote_search_notes', description: 'search', parameters: {} },
         },
       ],
-      policy: { maxIterations: 2, maxToolCalls: 1, maxSources: 20, maxSourceChars: 12_000 },
+      policy: {
+        maxIterations: 2,
+        maxToolCalls: 1,
+        maxSearchResultChars: 4000,
+        maxSearchExcerptChars: 300,
+        maxReadChars: 2000,
+        maxSourceChars: 12_000,
+      },
     });
     mocks.complete
       .mockResolvedValueOnce({
@@ -218,4 +232,125 @@ describe('local AI agent', () => {
 
     expect(mocks.executeTool).toHaveBeenCalledTimes(1);
   });
+});
+
+it('merges two batches, restores reading state and sends both batches to the provider', async () => {
+  mocks.bootstrap.mockResolvedValue({
+    systemPrompt: 'Rote',
+    finalAnswerInstruction: 'Answer',
+    tools: [
+      {
+        type: 'function',
+        function: { name: 'rote_search_notes', description: 'search', parameters: {} },
+      },
+    ],
+    policy: { maxIterations: 4, maxToolCalls: 8, maxSourceChars: 12000 },
+  });
+  const call = (id: string) => ({
+    message: {
+      role: 'assistant',
+      content: null,
+      tool_calls: [
+        { id, type: 'function', function: { name: 'rote_search_notes', arguments: '{}' } },
+      ],
+    },
+  });
+  mocks.complete
+    .mockResolvedValueOnce(call('a'))
+    .mockResolvedValueOnce(call('b'))
+    .mockResolvedValueOnce({ message: { role: 'assistant', content: 'ready' } })
+    .mockImplementationOnce(async ({ onContent }) => {
+      onContent?.('answer');
+      return { message: { role: 'assistant', content: 'answer' } };
+    });
+  const sources = Array.from({ length: 40 }, (_, i) => ({
+    sourceType: 'rote',
+    sourceId: `note-${i + 1}`,
+    metadata: {},
+    similarity: 1,
+  }));
+  const keys = sources.map((s) => `rote:${s.sourceId}`);
+  const result = (start: number, end: number) => ({
+    sources: sources.slice(start, end),
+    sourceKeys: keys.slice(0, end),
+    sourceCharsUsed: end * 150,
+    readOffsets: { [keys[0]]: 100 },
+    state: {},
+    observations: [],
+    modelContent: `evidence-${end}`,
+    retrieval: { foundCount: 20, addedCount: 20, totalCount: end, budgetExhausted: false },
+  });
+  mocks.executeTool.mockResolvedValueOnce(result(0, 20)).mockResolvedValueOnce(result(20, 40));
+  const onSources = vi.fn();
+  await localAiAgentStream({
+    config,
+    payload: { message: 'review' },
+    handlers: { onSources },
+    toolsAvailable: true,
+    enableThinking: false,
+  });
+  expect(onSources.mock.calls.map(([rows]) => rows.length)).toEqual([20, 40]);
+  expect(onSources.mock.calls[1][1].totalCount).toBe(40);
+  expect(mocks.executeTool.mock.calls[1][0]).toMatchObject({
+    sourceCharsUsed: 3000,
+    readOffsets: { [keys[0]]: 100 },
+  });
+  expect(
+    mocks.complete.mock.calls
+      .at(-1)?.[0]
+      .messages.filter((m: { role: string }) => m.role === 'tool')
+      .map((m: { content: string }) => m.content)
+  ).toEqual(['evidence-20', 'evidence-40']);
+});
+it('stops further local tools after evidence exhaustion', async () => {
+  mocks.bootstrap.mockResolvedValue({
+    systemPrompt: 'Rote',
+    finalAnswerInstruction: 'Answer',
+    tools: [
+      {
+        type: 'function',
+        function: { name: 'rote_search_notes', description: 'search', parameters: {} },
+      },
+    ],
+    policy: { maxIterations: 4, maxToolCalls: 8, maxSourceChars: 12000 },
+  });
+  mocks.complete
+    .mockResolvedValueOnce({
+      message: {
+        role: 'assistant',
+        content: null,
+        tool_calls: ['a', 'b'].map((id) => ({
+          id,
+          type: 'function',
+          function: { name: 'rote_search_notes', arguments: '{}' },
+        })),
+      },
+    })
+    .mockImplementationOnce(async ({ onContent }) => {
+      onContent?.('limited');
+      return { message: { role: 'assistant', content: 'limited' } };
+    });
+  mocks.executeTool.mockResolvedValue({
+    sources: [],
+    sourceKeys: [],
+    sourceCharsUsed: 11990,
+    state: {},
+    observations: [],
+    modelContent: '{"status":"budget_exhausted"}',
+    retrieval: { foundCount: 0, addedCount: 0, totalCount: 0, budgetExhausted: true },
+  });
+  const onSources = vi.fn();
+  await localAiAgentStream({
+    config,
+    payload: { message: 'review' },
+    handlers: { onSources },
+    toolsAvailable: true,
+    enableThinking: false,
+  });
+  expect(mocks.executeTool).toHaveBeenCalledTimes(1);
+  expect(mocks.complete).toHaveBeenCalledTimes(2);
+  expect(onSources).toHaveBeenCalledWith([], expect.objectContaining({ budgetExhausted: true }));
+  expect(
+    mocks.complete.mock.calls[1][0].messages.filter((m: { role: string }) => m.role === 'tool')
+  ).toHaveLength(2);
 });

@@ -1,91 +1,109 @@
 import type { SemanticSearchResult } from '../../dbMethods/ai';
 import type { RoteAgentSourceRegistration } from './types';
 
-function sourceKey(source: SemanticSearchResult): string {
-  return `${source.sourceType}:${source.sourceId}`;
-}
+// Lower bound for a one-character note with the smallest valid source envelope.
+export const MIN_EVIDENCE_MESSAGE_CHARS = Array.from(
+  JSON.stringify({
+    status: 'ok',
+    foundCount: 1,
+    sources: [
+      {
+        citation: 1,
+        sourceType: 'rote',
+        sourceId: '00000000-0000-4000-8000-000000000001',
+        excerpt: 'x',
+        truncated: false,
+      },
+    ],
+  })
+).length;
+export const sourceKey = (source: SemanticSearchResult) =>
+  `${source.sourceType}:${source.sourceId}`;
+export const unicodeLength = (value: string) => Array.from(value).length;
+export const unicodeSlice = (value: string, start: number, end?: number) =>
+  Array.from(value).slice(start, end).join('');
 
-function normalizeUsedChars(value: unknown, maxSourceChars: number): number {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 0;
-  return Math.min(Math.max(Math.floor(numeric), 0), maxSourceChars);
-}
-
+/** Run-local reference registry and accounting of final serialized evidence messages. */
 export class AgentSourceBudget {
-  private readonly maxSources: number;
   private readonly maxSourceChars: number;
   private readonly sourceKeys: string[];
-  private readonly indexByKey = new Map<string, number>();
   private readonly sourcesByKey = new Map<string, SemanticSearchResult>();
   private sourceCharsUsed: number;
+  private readonly readOffsets: Record<string, number> = {};
 
   constructor(params: {
-    maxSources: number;
     maxSourceChars: number;
     sourceKeys?: string[];
     sourceCharsUsed?: number;
+    readOffsets?: unknown;
   }) {
-    this.maxSources = Math.max(0, Math.floor(params.maxSources));
     this.maxSourceChars = Math.max(0, Math.floor(params.maxSourceChars));
-    this.sourceKeys = Array.from(new Set(params.sourceKeys || [])).slice(0, this.maxSources);
-    this.sourceKeys.forEach((key, index) => this.indexByKey.set(key, index + 1));
-    this.sourceCharsUsed = normalizeUsedChars(params.sourceCharsUsed, this.maxSourceChars);
+    this.sourceKeys = Array.from(new Set(params.sourceKeys || []));
+    const used = Number(params.sourceCharsUsed);
+    this.sourceCharsUsed = Number.isFinite(used)
+      ? Math.min(Math.max(Math.floor(used), 0), this.maxSourceChars)
+      : 0;
+    if (params.readOffsets && typeof params.readOffsets === 'object') {
+      for (const [key, offset] of Object.entries(params.readOffsets)) {
+        if (this.sourceKeys.includes(key) && Number.isSafeInteger(offset) && offset >= 0)
+          this.readOffsets[key] = offset;
+      }
+    }
   }
 
-  register(sources: SemanticSearchResult[]): RoteAgentSourceRegistration[] {
-    const registrations: RoteAgentSourceRegistration[] = [];
+  has(source: SemanticSearchResult): boolean {
+    return this.sourceKeys.includes(sourceKey(source));
+  }
+
+  preview(sources: SemanticSearchResult[]): RoteAgentSourceRegistration[] {
+    const keys = [...this.sourceKeys];
+    return sources.map((source) => {
+      const key = sourceKey(source);
+      const existing = keys.indexOf(key);
+      if (existing >= 0) return { index: existing + 1, source, isNew: false };
+      keys.push(key);
+      return { index: keys.length, source, isNew: true };
+    });
+  }
+
+  commit(modelContent: string, sources: SemanticSearchResult[]): void {
+    const chars = unicodeLength(modelContent);
+    if (chars > this.snapshot().remainingSourceChars)
+      throw new Error('Evidence text budget exceeded');
+    this.sourceCharsUsed += chars;
     for (const source of sources) {
       const key = sourceKey(source);
-      const existingIndex = this.indexByKey.get(key);
-      if (existingIndex !== undefined) {
-        const existing = this.sourcesByKey.get(key);
-        if (!existing || source.similarity > existing.similarity)
-          this.sourcesByKey.set(key, source);
-        registrations.push({
-          index: existingIndex,
-          source: this.sourcesByKey.get(key) || source,
-          isNew: false,
-        });
-        continue;
-      }
-
-      if (this.sourceKeys.length >= this.maxSources) continue;
-      this.sourceKeys.push(key);
-      const index = this.sourceKeys.length;
-      this.indexByKey.set(key, index);
+      if (!this.sourceKeys.includes(key)) this.sourceKeys.push(key);
       this.sourcesByKey.set(key, source);
-      registrations.push({ index, source, isNew: true });
     }
-    return registrations;
   }
 
-  consumeText(value: string, requestedChars = Number.POSITIVE_INFINITY): string {
-    const remaining = this.maxSourceChars - this.sourceCharsUsed;
-    if (remaining <= 0 || requestedChars <= 0) return '';
-    const limit = Math.min(remaining, Math.max(0, Math.floor(requestedChars)));
-    const consumed = value.slice(0, limit).trim();
-    this.sourceCharsUsed += consumed.length;
-    return consumed;
+  readOffset(key: string): number {
+    return this.readOffsets[key] || 0;
   }
-
+  recordRead(key: string, offset: number): void {
+    this.readOffsets[key] = offset;
+  }
+  readingState(): Record<string, number> {
+    return { ...this.readOffsets };
+  }
   list(): SemanticSearchResult[] {
     return this.sourceKeys
       .map((key) => this.sourcesByKey.get(key))
       .filter((source): source is SemanticSearchResult => Boolean(source));
   }
-
   keys(): string[] {
     return [...this.sourceKeys];
   }
-
   snapshot() {
     return {
       sourceCount: this.sourceKeys.length,
-      maxSources: this.maxSources,
       sourceCharsUsed: this.sourceCharsUsed,
       maxSourceChars: this.maxSourceChars,
-      remainingSources: Math.max(0, this.maxSources - this.sourceKeys.length),
       remainingSourceChars: Math.max(0, this.maxSourceChars - this.sourceCharsUsed),
     };
+  }
+  exhausted(): boolean {
+    return this.snapshot().remainingSourceChars < MIN_EVIDENCE_MESSAGE_CHARS;
   }
 }
