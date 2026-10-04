@@ -2,6 +2,23 @@ import type { SemanticSearchResult } from '../../dbMethods/ai';
 import { sourceKey, unicodeLength, unicodeSlice } from './sourceBudget';
 import type { RoteAgentContext, RoteAgentRetrieval, RoteAgentSourceRegistration } from './types';
 
+function searchBody(source: SemanticSearchResult): string {
+  const text = source.text.trim();
+  if (source.sourceType !== 'rote' || source.chunkIndex !== 0) return text;
+  const title = source.metadata?.title || '';
+  const tags = source.metadata?.tags || [];
+  // Text search always adds both headers; indexed first chunks omit empty headers.
+  const prefix = source.id.startsWith('text:rote:')
+    ? `Title: ${title}\nTags: ${tags.join(', ')}\n`
+    : `${title ? `Title: ${title}\n` : ''}${tags.length ? `Tags: ${tags.join(', ')}\n` : ''}`;
+  if (prefix) {
+    if (text.startsWith(prefix)) return text.slice(prefix.length).trim();
+    // An indexed chunk may end inside an unusually long metadata prefix.
+    if (prefix.trimEnd().startsWith(text)) return '';
+  }
+  return text;
+}
+
 function metadata({ index, source }: RoteAgentSourceRegistration) {
   const value = source.metadata || {};
   return {
@@ -56,7 +73,11 @@ function controlEvidence(
 
 export function deliverSearchEvidence(ctx: RoteAgentContext, found: SemanticSearchResult[]) {
   if (ctx.sourceBudget.exhausted()) return exhaustedEvidence(ctx);
-  const unique = [...new Map(found.map((source) => [sourceKey(source), source])).values()];
+  const unique = [
+    ...new Map(
+      found.map((source) => [sourceKey(source), { ...source, text: searchBody(source) }])
+    ).values(),
+  ];
   const candidates = unique.filter((source) => !ctx.sourceBudget.has(source) && source.text.trim());
   const limit = Math.min(
     ctx.policy.maxSearchResultChars,
@@ -126,7 +147,7 @@ export function deliverReadEvidence(
   if (!Number.isSafeInteger(offset) || offset < 0 || offset > previousOffset)
     throw new Error('Invalid reading offset; use the returned nextOffset');
   const length = unicodeLength(content);
-  if (offset < previousOffset || offset >= length) {
+  if (offset < previousOffset || offset >= length || !content.trim()) {
     return controlEvidence(ctx, { status: 'no_new_content', nextOffset: previousOffset }, 1);
   }
   const [registration] = ctx.sourceBudget.preview([source]);

@@ -74,6 +74,34 @@ describe('serialized evidence budget', () => {
     expect(second.retrieval.addedCount).toBeGreaterThan(0);
     expect(JSON.parse(second.modelContent).sources[0].citation).toBe(first.sources.length + 1);
   });
+  it('delivers body text without generated metadata prefixes or metadata-only references', () => {
+    const ctx = context();
+    const title = 'title'.repeat(100);
+    const metadata = { title, tags: ['one', 'two'] };
+    const rows = [
+      { ...source(1, `Title: ${title}\nTags: one, two\n正文`), metadata },
+      { ...source(2, 'Title: \nTags: \n'), id: 'text:rote:2', metadata: {} },
+      { ...source(3, `Title: ${title.slice(0, 300)}`), metadata },
+      source(4, 'Title: part of the actual body\ntext'),
+      source(5, 'T'),
+    ];
+    const result = deliverSearchEvidence(ctx, rows);
+    expect(result.retrieval).toMatchObject({ foundCount: 5, addedCount: 3, totalCount: 3 });
+    expect(JSON.parse(result.modelContent).sources.map((item: any) => item.excerpt)).toEqual([
+      '正文',
+      'Title: part of the actual body\ntext',
+      'T',
+    ]);
+    expect(ctx.sourceBudget.keys()).toEqual([
+      sourceKey(rows[0]),
+      sourceKey(rows[3]),
+      sourceKey(rows[4]),
+    ]);
+    expect(JSON.parse(deliverReadEvidence(ctx, source(6), ' \n ').modelContent).status).toBe(
+      'no_new_content'
+    );
+    expect(ctx.sourceBudget.keys()).toHaveLength(3);
+  });
   it('does not register evidence after exhaustion and does not overshoot the run limit', () => {
     const ctx = context(new AgentSourceBudget({ maxSourceChars: 12000, sourceCharsUsed: 11990 }));
     const result = deliverSearchEvidence(ctx, [source(1)]);
