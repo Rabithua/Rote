@@ -167,6 +167,151 @@ describe('agent tool decision output', () => {
 });
 
 describe('multi-pass evidence delivery', () => {
+  it('tells the final provider about exhaustion after a successful single delivery', async () => {
+    const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
+    const { deliverSearchEvidence } = await import('../utils/ai/agent/evidenceDelivery');
+    const requests: any[] = [];
+    globalThis.fetch = (async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)));
+      return sseResponse([
+        {
+          choices: [
+            {
+              delta:
+                requests.length === 1
+                  ? {
+                      tool_calls: [
+                        {
+                          index: 0,
+                          id: 'search',
+                          function: { name: 'rote_search_notes', arguments: '{}' },
+                        },
+                      ],
+                    }
+                  : { content: 'limited answer' },
+              finish_reason: requests.length === 1 ? 'tool_calls' : 'stop',
+            },
+          ],
+        },
+      ]);
+    }) as typeof fetch;
+    const events: RoteAgentStreamEvent[] = [];
+    await runRoteAgentStream({
+      userId: 'owner',
+      request: { message: 'review' },
+      config,
+      policy: { maxSourceChars: 200 },
+      emit: (event) => {
+        events.push(event);
+      },
+      tools: [
+        {
+          definition: {
+            type: 'function',
+            function: { name: 'rote_search_notes', description: 'search', parameters: {} },
+          },
+          execute: async (_args, ctx) => ({
+            ...deliverSearchEvidence(ctx, [
+              {
+                id: 'fixture',
+                ownerId: 'owner',
+                sourceType: 'rote',
+                chunkIndex: 0,
+                sourceId: '00000000-0000-4000-8000-000000000001',
+                text: 'short note',
+                similarity: 1,
+                metadata: {},
+              },
+            ]),
+            observations: [],
+          }),
+        },
+      ],
+    });
+    expect(requests).toHaveLength(2);
+    expect(
+      JSON.parse(requests[1].messages.find((m: any) => m.role === 'tool').content).status
+    ).toBe('ok');
+    expect(requests[1].messages.at(-1).content).toContain(
+      'The evidence text budget has been exhausted.'
+    );
+    expect(events.some((e) => e.type === 'sources' && e.retrieval?.budgetExhausted)).toBe(true);
+  });
+
+  it('continues sequential reads beyond 6000 characters with the default iteration policy', async () => {
+    const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
+    const { deliverSearchEvidence, deliverReadEvidence } =
+      await import('../utils/ai/agent/evidenceDelivery');
+    const requests: any[] = [];
+    const offsets: number[] = [];
+    const note = {
+      id: 'fixture',
+      ownerId: 'owner',
+      sourceType: 'rote' as const,
+      chunkIndex: 0,
+      sourceId: '00000000-0000-4000-8000-000000000001',
+      text: 'short note',
+      similarity: 1,
+      metadata: {},
+    };
+    const body = 'x'.repeat(7000) + 'IMPORTANT LATE EVIDENCE' + 'x'.repeat(1200);
+    globalThis.fetch = (async (_url, init) => {
+      requests.push(JSON.parse(String(init?.body)));
+      const step = requests.length;
+      return sseResponse([
+        {
+          choices: [
+            {
+              delta:
+                step <= 5
+                  ? {
+                      tool_calls: [
+                        {
+                          index: 0,
+                          id: `call-${step}`,
+                          function: {
+                            name: step === 1 ? 'rote_search_notes' : 'rote_get_note',
+                            arguments: '{}',
+                          },
+                        },
+                      ],
+                    }
+                  : { content: 'answer' },
+              finish_reason: step <= 5 ? 'tool_calls' : 'stop',
+            },
+          ],
+        },
+      ]);
+    }) as typeof fetch;
+    await runRoteAgentStream({
+      userId: 'owner',
+      request: { message: 'read the note' },
+      config,
+      emit: () => {},
+      tools: ['rote_search_notes', 'rote_get_note'].map((name) => ({
+        definition: { type: 'function', function: { name, description: name, parameters: {} } },
+        execute: async (_args, ctx) => {
+          const result =
+            name === 'rote_search_notes'
+              ? deliverSearchEvidence(ctx, [note])
+              : deliverReadEvidence(ctx, note, body);
+          const next = JSON.parse(result.modelContent).nextOffset;
+          if (next !== undefined) offsets.push(next);
+          expect(ctx.sourceBudget.snapshot().sourceCharsUsed).toBeLessThanOrEqual(12000);
+          return { ...result, observations: [] };
+        },
+      })),
+    });
+    expect(offsets).toEqual([2000, 4000, 6000, 8000]);
+    expect(
+      requests
+        .at(-1)
+        .messages.some(
+          (m: any) => m.role === 'tool' && m.content.includes('IMPORTANT LATE EVIDENCE')
+        )
+    ).toBe(true);
+  });
+
   it('puts both batches in the actual later provider request and emits 40 cumulative references', async () => {
     const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
     const { deliverSearchEvidence } = await import('../utils/ai/agent/evidenceDelivery');

@@ -3,6 +3,7 @@ import { deliverReadEvidence, deliverSearchEvidence } from '../utils/ai/agent/ev
 import { AgentSourceBudget, sourceKey, unicodeLength } from '../utils/ai/agent/sourceBudget';
 import { DEFAULT_AGENT_POLICY, type RoteAgentContext } from '../utils/ai/agent/types';
 import type { SemanticSearchResult } from '../utils/dbMethods/ai';
+import { canonicalizeSearchRotesArgs } from '../utils/ai/retrievalScope';
 
 export function source(index: number, text = `note-${index}`): SemanticSearchResult {
   return {
@@ -33,6 +34,37 @@ export function context(
 }
 
 describe('serialized evidence budget', () => {
+  it('includes actual search filters and warnings in the charged tool text, including empty results', () => {
+    const { scope, warnings } = canonicalizeSearchRotesArgs({
+      ownerId: 'owner',
+      availableTags: ['known'],
+      message: 'review project',
+      args: { query: 'project', tags: ['missing'], from: 'bad', to: 'bad' },
+    });
+    const { ownerId: _owner, cursor: _cursor, excludeIds: _excluded, ...actualScope } = scope;
+    const ctx = context();
+    const result = deliverSearchEvidence(ctx, [source(1)], { scope: actualScope, warnings });
+    const payload = JSON.parse(result.modelContent);
+    expect(payload.scope).toMatchObject({ tags: [], semanticScope: ['missing'], timeRange: null });
+    expect(payload.warnings).toEqual([
+      'unknown_tag_downgraded:missing',
+      'invalid_time_range_ignored',
+    ]);
+    expect(payload.scope).not.toHaveProperty('ownerId');
+    expect(payload.scope).not.toHaveProperty('cursor');
+    expect(payload.scope).not.toHaveProperty('excludeIds');
+    expect(unicodeLength(result.modelContent)).toBeLessThanOrEqual(4000);
+    expect(ctx.sourceBudget.snapshot().sourceCharsUsed).toBe(unicodeLength(result.modelContent));
+    const empty = deliverSearchEvidence(ctx, [], { scope: actualScope, warnings });
+    expect(JSON.parse(empty.modelContent)).toMatchObject({
+      status: 'no_new_content',
+      scope: actualScope,
+      warnings,
+    });
+    expect(ctx.sourceBudget.snapshot().sourceCharsUsed).toBe(
+      unicodeLength(result.modelContent) + unicodeLength(empty.modelContent)
+    );
+  });
   it('delivers two batches of 20 and preserves numbering and duplicate references', () => {
     const ctx = context();
     const first = deliverSearchEvidence(

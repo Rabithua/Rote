@@ -401,7 +401,7 @@ export async function runRoteAgentStream(params: {
     }
 
     if (!hasFinalAnswer) {
-      messages.push({ role: 'user', content: buildFinalAnswerInstruction() });
+      messages.push({ role: 'user', content: buildFinalAnswerInstruction(evidenceExhausted) });
       const finalAnswer = await streamFinalAnswer(ctx, messages, params.signal);
       hasFinalAnswer = finalAnswer.emittedText;
       recordUsage(finalAnswer.usage);

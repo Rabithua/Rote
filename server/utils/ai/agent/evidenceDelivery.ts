@@ -1,6 +1,12 @@
 import type { SemanticSearchResult } from '../../dbMethods/ai';
 import { sourceKey, unicodeLength, unicodeSlice } from './sourceBudget';
 import type { RoteAgentContext, RoteAgentRetrieval, RoteAgentSourceRegistration } from './types';
+import type { RetrievalScope } from '../retrievalTypes';
+
+type SearchEvidenceContext = {
+  scope: Omit<RetrievalScope, 'ownerId' | 'cursor' | 'excludeIds'>;
+  warnings: string[];
+};
 
 function searchBody(source: SemanticSearchResult): string {
   const text = source.text.trim();
@@ -58,11 +64,11 @@ export function exhaustedEvidence(ctx: RoteAgentContext) {
 function controlEvidence(
   ctx: RoteAgentContext,
   payload: Record<string, unknown>,
-  foundCount: number
+  foundCount: number,
+  maxChars = ctx.sourceBudget.snapshot().remainingSourceChars
 ) {
   const modelContent = JSON.stringify(payload);
-  if (unicodeLength(modelContent) > ctx.sourceBudget.snapshot().remainingSourceChars)
-    return exhaustedEvidence(ctx);
+  if (unicodeLength(modelContent) > maxChars) return exhaustedEvidence(ctx);
   ctx.sourceBudget.commit(modelContent, []);
   return {
     modelContent,
@@ -71,7 +77,11 @@ function controlEvidence(
   };
 }
 
-export function deliverSearchEvidence(ctx: RoteAgentContext, found: SemanticSearchResult[]) {
+export function deliverSearchEvidence(
+  ctx: RoteAgentContext,
+  found: SemanticSearchResult[],
+  search?: SearchEvidenceContext
+) {
   if (ctx.sourceBudget.exhausted()) return exhaustedEvidence(ctx);
   const unique = [
     ...new Map(
@@ -87,6 +97,7 @@ export function deliverSearchEvidence(ctx: RoteAgentContext, found: SemanticSear
   const payload = (sources: SemanticSearchResult[], snippetChars: number) => ({
     status: sources.length === candidates.length ? 'ok' : 'partial',
     foundCount: found.length,
+    ...search,
     sources: ctx.sourceBudget.preview(sources).map((registration) => {
       const text = registration.source.text.trim();
       const excerpt = unicodeSlice(text, 0, snippetChars);
@@ -110,8 +121,9 @@ export function deliverSearchEvidence(ctx: RoteAgentContext, found: SemanticSear
       };
     return controlEvidence(
       ctx,
-      { status: 'no_new_content', foundCount: found.length },
-      found.length
+      { status: 'no_new_content', foundCount: found.length, ...search },
+      found.length,
+      limit
     );
   }
   let low = 80;

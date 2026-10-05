@@ -75,8 +75,11 @@ In the current version, you cannot modify notes directly.
 If the user asks to organize, edit, tag, merge, or create notes, provide a proposed plan first.`;
 }
 
-export function buildFinalAnswerInstruction(): string {
-  return `Combine delivered evidence from every call; respect truncation and do not infer unseen text. If the evidence budget was exhausted, briefly state the coverage limit.
+export function buildFinalAnswerInstruction(budgetExhausted = false): string {
+  const stopReason = budgetExhausted
+    ? 'The evidence text budget has been exhausted. No further evidence tools are available. Briefly state this coverage limit.\n'
+    : '';
+  return `${stopReason}Combine delivered evidence from every call; respect truncation and do not infer unseen text. If the evidence budget was exhausted, briefly state the coverage limit.
 Use the gathered Rote tool results to answer the user's latest request.
 Answer in the active conversation language. If the conversation is in Chinese and the latest user message is only a brief acknowledgement or ambiguous follow-up, keep answering in Chinese.
 Start with the conclusion. Keep the answer concise, direct, plain, and grounded in sources.

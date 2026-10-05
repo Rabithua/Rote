@@ -163,7 +163,7 @@ export function isAgentToolCallingUnavailableError(
 }
 
 export const DEFAULT_AGENT_POLICY: RoteAgentPolicy = {
-  maxIterations: 4,
+  maxIterations: 6,
   maxToolCalls: 8,
   maxSearchResultChars: 4_000,
   maxSearchExcerptChars: 300,

@@ -10,7 +10,6 @@ import {
   sanitizeExcludeIds,
   toPlannerAgentDto,
   type AiSourceType,
-  type PlannerAgentResult,
   type SemanticSearchResult,
 } from '../../dbMethods';
 import {
@@ -124,10 +123,7 @@ function buildSeenSourceIds(
   );
 }
 
-async function executeAgentSearch(
-  input: SearchRotesArgs,
-  ctx: RoteAgentContext
-): Promise<PlannerAgentResult> {
+async function executeAgentSearch(input: SearchRotesArgs, ctx: RoteAgentContext) {
   const availableTags = await getUserRoteTags(ctx.userId);
   const { scope, warnings } = canonicalizeSearchRotesArgs({
     ownerId: ctx.userId,
@@ -180,7 +176,11 @@ async function executeSearchNotes(
     toolName: 'rote_search_notes',
     status: 'retrieving_sources',
   });
-  const delivery = deliverSearchEvidence(ctx, plan.sources as SemanticSearchResult[]);
+  const { ownerId: _owner, cursor: _cursor, excludeIds: _excluded, ...scope } = plan.scope;
+  const delivery = deliverSearchEvidence(ctx, plan.sources as SemanticSearchResult[], {
+    scope,
+    warnings: plan.toolResult.warnings,
+  });
   const planDto = toPlannerAgentDto(plan);
   // Probe cursors include undelivered hits; agent continuation uses delivered IDs.
   const statePatch = {

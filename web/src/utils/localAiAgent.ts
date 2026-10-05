@@ -196,7 +196,10 @@ export async function localAiAgentStream(params: {
 
   if (!hasAnswer) {
     params.handlers.onProgress?.('answering');
-    messages.push({ role: 'user', content: bootstrap.finalAnswerInstruction });
+    const stopReason = evidenceExhausted
+      ? 'The evidence text budget has been exhausted. No further evidence tools are available. Briefly state this coverage limit.\n'
+      : '';
+    messages.push({ role: 'user', content: stopReason + bootstrap.finalAnswerInstruction });
     const response = await streamLocalChatCompletion({
       config: params.config,
       messages,

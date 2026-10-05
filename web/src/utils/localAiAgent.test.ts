@@ -354,3 +354,57 @@ it('stops further local tools after evidence exhaustion', async () => {
     mocks.complete.mock.calls[1][0].messages.filter((m: { role: string }) => m.role === 'tool')
   ).toHaveLength(2);
 });
+
+it('tells the final local provider when a successful single result exhausts the evidence budget', async () => {
+  mocks.bootstrap.mockResolvedValue({
+    systemPrompt: 'Rote',
+    finalAnswerInstruction: 'Answer',
+    tools: [
+      {
+        type: 'function',
+        function: { name: 'rote_search_notes', description: 'search', parameters: {} },
+      },
+    ],
+    policy: { maxIterations: 6, maxToolCalls: 8, maxSourceChars: 12000 },
+  });
+  mocks.complete
+    .mockResolvedValueOnce({
+      message: {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'search',
+            type: 'function',
+            function: { name: 'rote_search_notes', arguments: '{}' },
+          },
+        ],
+      },
+    })
+    .mockResolvedValueOnce({ message: { role: 'assistant', content: 'limited answer' } });
+  const modelContent = JSON.stringify({
+    status: 'ok',
+    sources: [{ citation: 1, excerpt: 'evidence' }],
+  });
+  mocks.executeTool.mockResolvedValue({
+    sources: [{ sourceType: 'rote', sourceId: 'note', metadata: {}, similarity: 1 }],
+    sourceKeys: ['rote:note'],
+    sourceCharsUsed: 11990,
+    state: {},
+    observations: [],
+    modelContent,
+    retrieval: { foundCount: 1, addedCount: 1, totalCount: 1, budgetExhausted: true },
+  });
+  await localAiAgentStream({
+    config,
+    payload: { message: 'review' },
+    handlers: {},
+    toolsAvailable: true,
+    enableThinking: false,
+  });
+  expect(mocks.complete).toHaveBeenCalledTimes(2);
+  const messages = mocks.complete.mock.calls[1][0].messages;
+  expect(messages.filter((m: { role: string }) => m.role === 'tool')).toHaveLength(1);
+  expect(messages.find((m: { role: string }) => m.role === 'tool').content).toBe(modelContent);
+  expect(messages.at(-1).content).toContain('The evidence text budget has been exhausted.');
+});
