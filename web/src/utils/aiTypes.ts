@@ -200,13 +200,20 @@ export type AiChatStreamHandlers = {
   onToolFinished?: (toolName: string, summary?: string) => void;
   onPlan?: (plan: PlannerAgentDto) => void;
   onClarification?: (clarification: AiClarification) => void;
-  onSources?: (sources: AiSemanticResult[]) => void;
+  onSources?: (sources: AiSemanticResult[], retrieval?: AiRetrievalSummary) => void;
   onThinking?: (phase: AiThinkingPhase, text: string) => void;
   onDelta?: (text: string) => void;
   onStatePatch?: (state: Partial<AiAgentClientState>) => void;
   onUsage?: (usage: AiTokenUsage, phase: AiUsagePhase) => void;
   onDone?: () => void;
   onError?: (failure: AiStreamFailure) => void;
+};
+
+export type AiRetrievalSummary = {
+  foundCount: number;
+  addedCount: number;
+  totalCount: number;
+  budgetExhausted: boolean;
 };
 
 export type ClientAgentBootstrap = {
@@ -219,7 +226,9 @@ export type ClientAgentBootstrap = {
   policy: {
     maxIterations: number;
     maxToolCalls: number;
-    maxSources: number;
+    maxSearchResultChars: number;
+    maxSearchExcerptChars: number;
+    maxReadChars: number;
     maxSourceChars: number;
   };
 };
@@ -234,6 +243,8 @@ export type ClientAgentToolResult = {
   state: AiAgentClientState;
   sourceKeys: string[];
   sourceCharsUsed: number;
+  readOffsets?: Record<string, number>;
+  retrieval?: AiRetrievalSummary;
   clarification?: AiClarification;
 };
 

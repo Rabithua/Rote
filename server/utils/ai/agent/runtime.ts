@@ -16,6 +16,7 @@ import {
   type RoteAgentPhase,
   type RoteAgentPolicy,
   type RoteAgentRequest,
+  type RoteAgentTool,
 } from './types';
 import { classifyAiStreamError, createAiRunId, logAiStreamLifecycle } from './observability';
 import { AgentSourceBudget } from './sourceBudget';
@@ -183,14 +184,14 @@ export async function runRoteAgentStream(params: {
   policy?: Partial<RoteAgentPolicy>;
   runId?: string;
   signal?: AbortSignal;
+  tools?: RoteAgentTool[];
 }): Promise<void> {
   const request = params.request;
   const runId = params.runId || createAiRunId('agent');
   const policy = { ...DEFAULT_AGENT_POLICY, ...(params.policy || {}) };
-  const tools = getNativeRoteTools();
+  const tools = params.tools ?? getNativeRoteTools();
   const toolByName = new Map(tools.map((tool) => [tool.definition.function.name, tool]));
   const sourceBudget = new AgentSourceBudget({
-    maxSources: policy.maxSources,
     maxSourceChars: policy.maxSourceChars,
   });
   const state = sanitizeAgentState(request);
@@ -209,14 +210,12 @@ export async function runRoteAgentStream(params: {
     policy,
     state,
     emit,
-    registerSources: (sources) => sourceBudget.register(sources),
-    consumeSourceText: (value, requestedChars) => sourceBudget.consumeText(value, requestedChars),
-    getSourceBudget: () => sourceBudget.snapshot(),
-    getSources: () => sourceBudget.list(),
+    sourceBudget,
   };
 
   const messages = buildInitialMessages(request, state);
   let toolCallCount = 0;
+  let evidenceExhausted = false;
   let hasFinalAnswer = false;
   let totalTokens = 0;
   const startedAt = Date.now();
@@ -321,14 +320,16 @@ export async function runRoteAgentStream(params: {
       });
 
       for (const toolCall of validToolCalls) {
-        if (toolCallCount >= policy.maxToolCalls) {
+        if (toolCallCount >= policy.maxToolCalls || evidenceExhausted) {
           messages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
             content: JSON.stringify({
               status: 'skipped',
-              reason: 'tool_budget_exceeded',
-              message: `Tool call ${toolCall.function.name} was skipped because the agent reached the maximum tool call budget.`,
+              reason: evidenceExhausted ? 'budget_exhausted' : 'tool_budget_exceeded',
+              message: evidenceExhausted
+                ? 'Evidence text budget exhausted; answer from delivered evidence.'
+                : `Tool call ${toolCall.function.name} exceeded the tool call budget.`,
             }),
           });
           await emit({
@@ -348,8 +349,14 @@ export async function runRoteAgentStream(params: {
           tool!.execute(args, ctx, toolCall)
         );
 
+        evidenceExhausted ||= result.retrieval?.budgetExhausted === true;
         if (result.plan) await emit({ type: 'plan', plan: result.plan });
-        if (result.sources) await emit({ type: 'sources', sources: ctx.getSources() });
+        if (result.sources)
+          await emit({
+            type: 'sources',
+            sources: ctx.sourceBudget.list(),
+            retrieval: result.retrieval,
+          });
         if (result.statePatch) {
           Object.assign(ctx.state, result.statePatch);
           await emit({ type: 'state_patch', state: result.statePatch });
@@ -390,11 +397,11 @@ export async function runRoteAgentStream(params: {
         }
       }
 
-      if (toolCallCount >= policy.maxToolCalls) break;
+      if (toolCallCount >= policy.maxToolCalls || evidenceExhausted) break;
     }
 
     if (!hasFinalAnswer) {
-      messages.push({ role: 'user', content: buildFinalAnswerInstruction() });
+      messages.push({ role: 'user', content: buildFinalAnswerInstruction(evidenceExhausted) });
       const finalAnswer = await streamFinalAnswer(ctx, messages, params.signal);
       hasFinalAnswer = finalAnswer.emittedText;
       recordUsage(finalAnswer.usage);
@@ -402,7 +409,9 @@ export async function runRoteAgentStream(params: {
 
     if (!hasFinalAnswer) {
       const errorCode =
-        ctx.getSources().length > 0 ? 'error_no_answer_with_sources' : 'error_no_answer_no_sources';
+        ctx.sourceBudget.list().length > 0
+          ? 'error_no_answer_with_sources'
+          : 'error_no_answer_no_sources';
       await emit({
         type: 'error',
         message: errorCode,

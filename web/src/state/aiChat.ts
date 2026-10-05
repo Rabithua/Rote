@@ -2,6 +2,7 @@ import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import type {
   AiAgentPhase,
+  AiRetrievalSummary,
   AiAgentToolProgressStatus,
   AiThinkingPhase,
   AiTokenUsage,
@@ -37,6 +38,7 @@ export type AiMemoryMessage = {
   role: 'user' | 'assistant';
   content: string;
   sources?: AiSemanticResult[];
+  retrieval?: AiRetrievalSummary;
   plan?: PlannerAgentDto;
   pendingPlan?: PlannerAgentDto;
   clarification?: boolean;

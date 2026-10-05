@@ -101,6 +101,7 @@ export async function executeClientRoteTool(params: {
   state: unknown;
   sourceKeys: unknown;
   sourceCharsUsed?: unknown;
+  readOffsets?: unknown;
 }) {
   const toolName = typeof params.toolName === 'string' ? params.toolName.trim() : '';
   const tool = getNativeRoteTools().find(
@@ -114,10 +115,10 @@ export async function executeClientRoteTool(params: {
     state.clientContext = request.clientContext;
   }
   const sourceBudget = new AgentSourceBudget({
-    maxSources: DEFAULT_AGENT_POLICY.maxSources,
     maxSourceChars: DEFAULT_AGENT_POLICY.maxSourceChars,
     sourceKeys: sanitizeExcludeIds(params.sourceKeys) || [],
     sourceCharsUsed: Number(params.sourceCharsUsed),
+    readOffsets: params.readOffsets,
   });
   const call: ChatToolCall = {
     id: `client_${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -136,10 +137,7 @@ export async function executeClientRoteTool(params: {
     policy: DEFAULT_AGENT_POLICY,
     state,
     emit: () => {},
-    registerSources: (sources) => sourceBudget.register(sources),
-    consumeSourceText: (value, requestedChars) => sourceBudget.consumeText(value, requestedChars),
-    getSourceBudget: () => sourceBudget.snapshot(),
-    getSources: () => sourceBudget.list(),
+    sourceBudget,
   };
 
   const result = await tool.execute(params.arguments ?? {}, ctx, call);
@@ -150,5 +148,6 @@ export async function executeClientRoteTool(params: {
     state,
     sourceKeys: sourceBudget.keys(),
     sourceCharsUsed: sourceBudget.snapshot().sourceCharsUsed,
+    readOffsets: sourceBudget.readingState(),
   };
 }

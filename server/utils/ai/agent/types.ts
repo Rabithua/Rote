@@ -1,3 +1,4 @@
+import type { AgentSourceBudget } from './sourceBudget';
 import type { AiConfig } from '../../../types/config';
 import type { ChatCompletionUsage, ChatMessage, ChatToolCall, ChatToolDefinition } from '../client';
 import type { PlannerAgentDto, SemanticSearchResult } from '../../dbMethods/ai';
@@ -69,7 +70,9 @@ export type RoteAgentRequest = {
 export type RoteAgentPolicy = {
   maxIterations: number;
   maxToolCalls: number;
-  maxSources: number;
+  maxSearchResultChars: number;
+  maxSearchExcerptChars: number;
+  maxReadChars: number;
   maxSourceChars: number;
   heartbeatMs: number;
   allowWrite: boolean;
@@ -83,7 +86,7 @@ export type RoteAgentStreamEvent =
   | { type: 'tool_started'; toolName: string; args?: unknown }
   | { type: 'tool_progress'; toolName: string; status: RoteAgentToolProgressStatus }
   | { type: 'tool_finished'; toolName: string; summary?: unknown }
-  | { type: 'sources'; sources: SemanticSearchResult[] }
+  | { type: 'sources'; sources: SemanticSearchResult[]; retrieval?: RoteAgentRetrieval }
   | { type: 'plan'; plan: PlannerAgentDto }
   | { type: 'clarification'; question: string; pendingPlan?: PlannerAgentDto | null }
   | { type: 'thinking'; phase: RoteAgentThinkingPhase; text: string }
@@ -107,13 +110,11 @@ export type RoteAgentSourceRegistration = {
   isNew: boolean;
 };
 
-export type RoteAgentSourceBudgetSnapshot = {
-  sourceCount: number;
-  maxSources: number;
-  sourceCharsUsed: number;
-  maxSourceChars: number;
-  remainingSources: number;
-  remainingSourceChars: number;
+export type RoteAgentRetrieval = {
+  foundCount: number;
+  addedCount: number;
+  totalCount: number;
+  budgetExhausted: boolean;
 };
 
 export type RoteAgentContext = {
@@ -125,10 +126,7 @@ export type RoteAgentContext = {
   policy: RoteAgentPolicy;
   state: RoteAgentClientState;
   emit: RoteAgentEmitter;
-  registerSources: (sources: SemanticSearchResult[]) => RoteAgentSourceRegistration[];
-  consumeSourceText: (value: string, requestedChars?: number) => string;
-  getSourceBudget: () => RoteAgentSourceBudgetSnapshot;
-  getSources: () => SemanticSearchResult[];
+  sourceBudget: AgentSourceBudget;
 };
 
 export type RoteAgentToolResult = {
@@ -136,6 +134,7 @@ export type RoteAgentToolResult = {
   displaySummary?: unknown;
   modelContent: string;
   sources?: SemanticSearchResult[];
+  retrieval?: RoteAgentRetrieval;
   plan?: PlannerAgentDto;
   statePatch?: Partial<RoteAgentClientState>;
   clarification?: { question: string; pendingPlan?: PlannerAgentDto | null };
@@ -164,9 +163,11 @@ export function isAgentToolCallingUnavailableError(
 }
 
 export const DEFAULT_AGENT_POLICY: RoteAgentPolicy = {
-  maxIterations: 4,
+  maxIterations: 6,
   maxToolCalls: 8,
-  maxSources: 20,
+  maxSearchResultChars: 4_000,
+  maxSearchExcerptChars: 300,
+  maxReadChars: 2_000,
   maxSourceChars: 12_000,
   heartbeatMs: 2_000,
   allowWrite: false,
