@@ -61,4 +61,29 @@ describe('OpenKey formal import authorization', () => {
     expect(() => parseOpenKeyImport(input, permissions, true)).not.toThrow();
     expect(() => parseOpenKeyImport(input, permissions)).toThrow('UPLOADATTACHMENT');
   });
+  test('video and live photo metadata require UPLOADVIDEO at commit, while plan stays metadata-only', () => {
+    for (const details of [
+      { mimetype: 'video/mp4' },
+      { mediaKind: 'video' },
+      { mediaKind: 'image', mimetype: 'video/webm' },
+      { mediaKind: 'livePhoto' },
+      { mimetype: 'image/jpeg', pairedVideoKey: 'paired.mov' },
+    ]) {
+      const input = {
+        notes: [
+          {
+            ...note,
+            attachments: [{ url: 'https://fixture.test/media', storage: 'REMOTE', details }],
+          },
+        ],
+      };
+      expect(() => parseOpenKeyImport(input, permissions, true)).not.toThrow();
+      expect(() => parseOpenKeyImport(input, [...permissions, 'UPLOADATTACHMENT'])).toThrow(
+        'UPLOADVIDEO'
+      );
+      expect(() =>
+        parseOpenKeyImport(input, [...permissions, 'UPLOADATTACHMENT', 'UPLOADVIDEO'])
+      ).not.toThrow();
+    }
+  });
 });

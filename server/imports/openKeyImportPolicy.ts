@@ -1,7 +1,30 @@
 import { HTTPException } from 'hono/http-exception';
+import { isVideoContentType, inferAttachmentMediaKind } from '../utils/fileValidation';
 import { parseImportPayload } from './importSchema';
 
 export const OPENKEY_IMPORT_BATCH_SIZE = 50;
+
+export function importAttachmentIncludesVideo(details: Record<string, unknown>) {
+  const mimetype = typeof details.mimetype === 'string' ? details.mimetype : undefined;
+  const contentType = typeof details.contentType === 'string' ? details.contentType : undefined;
+  const kind = inferAttachmentMediaKind({
+    mimetype,
+    contentType,
+    key: typeof details.key === 'string' ? details.key : undefined,
+    posterKey: typeof details.posterKey === 'string' ? details.posterKey : undefined,
+    pairedVideoKey: typeof details.pairedVideoKey === 'string' ? details.pairedVideoKey : undefined,
+    livePhotoVideoKey:
+      typeof details.livePhotoVideoKey === 'string' ? details.livePhotoVideoKey : undefined,
+  });
+  return (
+    details.mediaKind === 'video' ||
+    details.mediaKind === 'livePhoto' ||
+    isVideoContentType(mimetype) ||
+    isVideoContentType(contentType) ||
+    kind === 'video' ||
+    kind === 'livePhoto'
+  );
+}
 
 export function requireImportPermissions(permissions: string[], required: string[]) {
   const missing = required.find((permission) => !permissions.includes(permission));
@@ -30,6 +53,13 @@ export function parseOpenKeyImport(data: unknown, permissions: string[], plannin
   }
   if (!planning && payload.notes.some((note) => (note.attachments?.length ?? 0) > 0)) {
     requireImportPermissions(permissions, ['UPLOADATTACHMENT']);
+    if (
+      payload.notes.some((note) =>
+        note.attachments?.some((attachment) => importAttachmentIncludesVideo(attachment.details))
+      )
+    ) {
+      requireImportPermissions(permissions, ['UPLOADVIDEO']);
+    }
   }
   return payload;
 }
