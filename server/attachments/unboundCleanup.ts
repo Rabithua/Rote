@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, lte, sql } from 'drizzle-orm';
 import { attachments, users } from '../drizzle/schema';
 import {
   collectOwnedAttachmentObjectKeys,
@@ -48,16 +48,16 @@ function isNotReferencedByProfile() {
   )`;
 }
 
-function eligibleUnboundAttachment(cutoff: Date) {
+function eligibleUnboundAttachment(cutoff?: Date) {
   return and(
     isNull(attachments.roteid),
     isNotNull(attachments.userid),
-    lte(attachments.updatedAt, cutoff),
+    cutoff ? lte(attachments.updatedAt, cutoff) : undefined,
     isNotReferencedByProfile()
   );
 }
 
-async function deleteCandidate(candidate: CleanupCandidate, cutoff: Date): Promise<boolean> {
+async function deleteCandidate(candidate: CleanupCandidate, cutoff?: Date): Promise<boolean> {
   return await db.transaction(async (transaction) => {
     await transaction
       .select({ id: users.id })
@@ -138,4 +138,19 @@ export async function runUnboundAttachmentCleanup(
     });
   }
   return { mode, scanned: candidates.length, deleted, declaredBytes };
+}
+
+// Explicit cancellation/retry cleanup shares the same ownership and profile guards as maintenance.
+export async function deleteUnboundAttachments(userId: string, ids: string[]) {
+  const candidates = (await db
+    .select({ id: attachments.id, userId: attachments.userid, details: attachments.details })
+    .from(attachments)
+    .where(
+      and(eq(attachments.userid, userId), inArray(attachments.id, ids), eligibleUnboundAttachment())
+    )) as CleanupCandidate[];
+  let deleted = 0;
+  for (const candidate of candidates) {
+    if (await deleteCandidate(candidate)) deleted += 1;
+  }
+  return { deleted };
 }

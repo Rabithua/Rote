@@ -35,6 +35,7 @@ interface ImportCounts {
 }
 
 export interface ImportResult {
+  results: Array<{ index: number; id: string; status: 'created' | 'updated' | 'skipped' }>;
   count: number;
   created: number;
   updated: number;
@@ -51,6 +52,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
   const payload = parsedPayload;
   const articleResult = await importArticles(userId, payload);
   const ownedArticleIds = await getOwnedArticleIds(userId, payload.notes);
+  const results: ImportResult['results'] = [];
   const counts: ImportCounts = { created: 0, updated: 0, unchanged: 0 };
   const attachmentCounts = {
     total: payload.notes.reduce((total, note) => total + (note.attachments?.length ?? 0), 0),
@@ -114,7 +116,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
         const managedAttachmentIdsToDelete = new Set<string>();
         const changes: Array<{ id: string; action: 'CREATE' | 'UPDATE' }> = [];
 
-        for (const note of chunk) {
+        for (const [chunkIndex, note] of chunk.entries()) {
           const mapping = note.source ? mappingsBySource.get(sourceKey(note.source)) : undefined;
           const targetId = mapping?.roteId ?? (note.source ? randomUUID() : note.id);
           const existing = existingById.get(targetId);
@@ -125,6 +127,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
 
           if (existing && payload.importOptions.existingStrategy === 'skip') {
             counts.unchanged += 1;
+            results.push({ index: offset + chunkIndex, id: targetId, status: 'skipped' });
             (note.attachments ?? []).forEach((attachment) => {
               const pending = attachment.id
                 ? incomingAttachmentsById.get(attachment.id)
@@ -138,6 +141,11 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
 
           const noteData = buildNoteData(note, targetId, userId, ownedArticleIds, payload);
           noteRows.push(noteData);
+          results.push({
+            index: offset + chunkIndex,
+            id: targetId,
+            status: existing ? 'updated' : 'created',
+          });
           changes.push({ id: targetId, action: existing ? 'UPDATE' : 'CREATE' });
           if (existing) counts.updated += 1;
           else counts.created += 1;
@@ -339,6 +347,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
     }
 
     return {
+      results,
       count: payload.notes.length,
       created: counts.created,
       updated: counts.updated,

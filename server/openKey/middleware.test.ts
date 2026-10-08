@@ -64,6 +64,19 @@ function createTestApp(options?: {
 }
 
 describe('OpenKey authentication middleware', () => {
+  it('accepts header credentials without putting them in the URL', async () => {
+    for (const header of ['Authorization', 'X-API-Key']) {
+      const fixture = createTestApp();
+      const response = await fixture.app.request('/openkey/resource', {
+        headers: {
+          [header]: header === 'Authorization' ? `Bearer ${fixture.openKeyId}` : fixture.openKeyId,
+        },
+      });
+      expect(response.status).toBe(201);
+      expect(fixture.audits[0].data.endpoint).toBe('/openkey/resource');
+    }
+  });
+
   it('rejects malformed credentials before querying or writing usage records', async () => {
     const credential = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxx';
     const messages: string[] = [];

@@ -165,10 +165,7 @@ export async function presignAttachmentUploads(
   const resourceState = await dependencies.getResourceStateForUserId(input.userId);
   const managed =
     resourceState.management !== 'unmanaged' && resourceState.storage.enforcement !== 'off';
-  if (browserDirectUpload && !managed) {
-    throw new ResourcePolicyError(RESOURCE_ERROR_CODES.uploadManifestMismatch);
-  }
-  const reservationId = managed ? dependencies.randomUUID() : null;
+  const reservationId = managed || browserDirectUpload ? dependencies.randomUUID() : null;
   const signingDate = new Date();
   const credentialExpiresAt = new Date(signingDate.getTime() + 15 * 60 * 1000);
   const prepared = input.files.map((file) => {
@@ -267,13 +264,14 @@ export async function presignAttachmentUploads(
     return { file, uuid, mediaKind, originalKey, manifest, compressed, pairedVideo, poster };
   });
 
-  if (managed && reservationId) {
+  if (reservationId) {
     await dependencies.createUploadReservation({
       id: reservationId,
       userId: input.userId,
       manifest: prepared.flatMap((item) => item.manifest),
       expiresAt: new Date(Date.now() + UPLOAD_RESERVATION_LIFETIME_MS),
       credentialExpiresAt,
+      trackUnmanaged: browserDirectUpload,
     });
   }
 
@@ -293,11 +291,11 @@ export async function presignAttachmentUploads(
           const original = await signUpload(
             originalKey,
             file.contentType || undefined,
-            managed ? file.size : undefined
+            managed || browserDirectUpload ? file.size : undefined
           );
           const result: Record<string, any> = {
             uuid,
-            ...(managed ? { expiresAt: credentialExpiresAt.toISOString() } : {}),
+            ...(reservationId ? { expiresAt: credentialExpiresAt.toISOString() } : {}),
             original: {
               key: originalKey,
               putUrl: original.putUrl,
@@ -335,7 +333,7 @@ export async function presignAttachmentUploads(
             const pairedVideoUpload = await signUpload(
               pairedVideo.key,
               pairedVideo.contentType || undefined,
-              managed ? pairedVideo.size : undefined
+              managed || browserDirectUpload ? pairedVideo.size : undefined
             );
             result.pairedVideo = {
               key: pairedVideo.key,
@@ -375,7 +373,7 @@ export async function presignAttachmentUploads(
       )
     );
   } catch (error) {
-    if (managed && reservationId) {
+    if (reservationId) {
       await dependencies.cancelUploadReservation(input.userId, reservationId);
     }
     throw error;
