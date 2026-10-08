@@ -37,7 +37,7 @@ export function attachmentDeclaredBytes(details: unknown): bigint {
   return BigInt(size);
 }
 
-function isNotReferencedByProfile() {
+export function isNotReferencedByProfile() {
   return sql`NOT EXISTS (
     SELECT 1
     FROM ${users}

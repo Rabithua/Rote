@@ -4,15 +4,15 @@ All endpoints are under `/v2/api/openkey`. Send the OpenKey through `Authorizati
 
 | Endpoint | Purpose | OpenKey permissions |
 | --- | --- | --- |
-| `POST /imports/connect` | Minimal owner profile and protocol/capability handshake | GETROTE, SENDROTE |
+| `GET /permissions` (extended existing endpoint) | Key permissions, minimal owner identity and protocol/capability discovery | Any valid OpenKey |
 | `POST /imports/plan` | Existing source filtering via planImportData | GETROTE, SENDROTE |
 | `POST /imports` | Formal commit via importData | GETROTE, SENDROTE |
 | `POST /imports/attachments/cleanup` | Queue deletion of owned, unbound, non-profile attachments (`ids`, max 100) | UPLOADATTACHMENT |
 | `DELETE /imports/reservations/:id` | Cancel upload; recover unbound ids from completed finalize results after response loss | UPLOADATTACHMENT |
 
-Plan and commit use the existing formatVersion 2 payload. Maximum 50 notes and 50 articles per request. Defaults are `existingStrategy: "skip"`, `visibilityStrategy: "private"`. Explicit overwrite additionally requires EDITROTE. Articles use the formal importer's upsert semantics and require both SENDARTICLE and EDITARTICLE. A commit containing attachments additionally requires UPLOADATTACHMENT. Presign/finalize enforce account attachment/video capabilities and UPLOADVIDEO as before.
+Plan and commit use the existing formatVersion 2 payload. Maximum 50 notes and 50 articles per request. Defaults are `existingStrategy: "skip"`, `visibilityStrategy: "private"`. Explicit overwrite additionally requires EDITROTE. Articles use the formal importer's upsert semantics and require both SENDARTICLE and EDITARTICLE. A commit containing attachments additionally requires UPLOADATTACHMENT and the account's effective attachment capability. Video/live photo commits additionally require UPLOADVIDEO and the effective video capability, including when binding an existing attachment by ID. Stored metadata is checked so the caller cannot relabel an existing video as an image. Presign/finalize retain the same permission and capability checks.
 
-Connect reports protocolVersion 1, formalImport 2, source identity, historical createdAt, unbound binding, browser direct upload, cleanup, MIME/size/count limits and permission-dependent attachment/video/overwrite/article capabilities. Consumers must check this before importing, including the actual browser's cross-origin request.
+The existing permissions response keeps `permissions`, `ownerId`, and conditional `capabilities.noteCreateIdempotency` unchanged. It adds `owner` (id, username, nickname), protocolVersion 1, formalImport 2, source identity, historical createdAt, unbound binding, browser direct upload, cleanup, MIME/size/count limits and permission-dependent attachment/video/overwrite/article capabilities. Protocol flags describe supported features; they do not grant permissions. Restricted keys can still introspect, and clients must separately require GETROTE and SENDROTE before import. Responses use `Cache-Control: no-store`. Consumers must check this before importing, including the actual browser's cross-origin request. The separate `/imports/connect` route is removed.
 
 Plan returns `noteIndexes`. Commit adds per-note `results: [{ index, id, status }]`, where status is created, updated or skipped, alongside existing counts. Source mapping, historical dates, default privacy and current-owner unbound attachment binding remain owned by the existing formal importer.
 

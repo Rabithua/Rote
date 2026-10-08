@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'crypto';
 import { and, eq, inArray, or, sql } from 'drizzle-orm';
+import { isNotReferencedByProfile } from '../attachments/unboundCleanup';
 import {
   articles,
   attachments,
@@ -246,7 +247,13 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
           for (const ids of chunkValues([...managedAttachmentIdsToDelete], 500)) {
             const deleted = await tx
               .delete(attachments)
-              .where(and(eq(attachments.userid, userId), inArray(attachments.id, ids)))
+              .where(
+                and(
+                  eq(attachments.userid, userId),
+                  inArray(attachments.id, ids),
+                  isNotReferencedByProfile()
+                )
+              )
               .returning({
                 id: attachments.id,
                 details: attachments.details,

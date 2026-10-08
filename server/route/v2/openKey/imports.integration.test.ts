@@ -86,19 +86,120 @@ integration('OpenKey formal imports with PostgreSQL', () => {
     const { closeDatabase } = await import('../../../utils/drizzle');
     await closeDatabase();
   });
-  test('connect verifies owner without requiring profile edit and rejects missing read/create permissions', async () => {
-    const connection = await post('/imports/connect', {});
+  test('permissions preserves the existing contract and adds import capabilities without requiring profile edit', async () => {
+    const connection = await app.request('http://localhost/v2/api/openkey/permissions', {
+      headers: { Authorization: `Bearer ${keyId}` },
+    });
     expect(connection.status).toBe(200);
+    expect(connection.headers.get('Cache-Control')).toBe('no-store');
     expect(await connection.json()).toMatchObject({
       data: {
+        permissions: ['GETROTE', 'SENDROTE', 'UPLOADATTACHMENT'],
+        ownerId: userId,
         owner: { id: userId },
         protocolVersion: 1,
-        capabilities: { formalImport: 2, batchSize: 50, cleanupUnbound: true },
+        capabilities: {
+          noteCreateIdempotency: 1,
+          formalImport: 2,
+          batchSize: 50,
+          cleanupUnbound: true,
+        },
       },
     });
+    expect((await post('/imports/connect', {})).status).toBe(404);
     await permissions(['SENDROTE']);
+    const limited = await app.request('http://localhost/v2/api/openkey/permissions', {
+      headers: { Authorization: `Bearer ${keyId}` },
+    });
+    expect(limited.status).toBe(200);
+    const limitedBody = await limited.json();
+    expect(limitedBody).toMatchObject({
+      data: {
+        ownerId: userId,
+        permissions: ['SENDROTE'],
+        capabilities: { formalImport: 2, attachments: false, video: false },
+      },
+    });
+    expect(limitedBody.data.capabilities).not.toHaveProperty('noteCreateIdempotency');
     expect((await post('/imports/plan', { notes: [note] })).status).toBe(403);
     expect((await post('/imports', { notes: [note] })).status).toBe(403);
+    await permissions(['GETROTE']);
+    const readOnly = await app.request('http://localhost/v2/api/openkey/permissions', {
+      headers: { Authorization: `Bearer ${keyId}` },
+    });
+    expect(readOnly.status).toBe(200);
+    expect(await readOnly.json()).toMatchObject({
+      data: {
+        ownerId: userId,
+        permissions: ['GETROTE'],
+        capabilities: { noteCreateIdempotency: 1 },
+      },
+    });
+    expect((await post('/imports', { notes: [note] })).status).toBe(403);
+    await permissions(['GETROTE', 'SENDROTE', 'UPLOADATTACHMENT']);
+  });
+  test('commit enforces video permission and effective account capabilities including stored attachment metadata', async () => {
+    const id = randomUUID();
+    const attachment = {
+      id,
+      url: `https://fixture.test/${id}.mp4`,
+      storage: 'REMOTE',
+      details: { mimetype: 'video/mp4', mediaKind: 'video', size: 100 },
+    };
+    const incoming = {
+      ...note,
+      source: { ...note.source, externalId: randomUUID() },
+      attachments: [attachment],
+    };
+    expect((await post('/imports', { notes: [incoming] })).status).toBe(403);
+    await database
+      .insert(schema.attachments)
+      .values({ ...attachment, userid: userId, roteid: null });
+    const disguised = {
+      ...incoming,
+      attachments: [{ ...attachment, details: { mimetype: 'image/png' } }],
+    };
+    expect((await post('/imports', { notes: [disguised] })).status).toBe(403);
+    await permissions(['GETROTE', 'SENDROTE', 'UPLOADATTACHMENT', 'UPLOADVIDEO']);
+    const denied = await post('/imports', { notes: [incoming] });
+    expect(denied.status).toBe(403);
+    expect(await denied.json()).toMatchObject({
+      message: 'capability_required:attachment.video.upload',
+    });
+    await database
+      .insert(schema.userPermissionOverrides)
+      .values({ userid: userId, permission: 'attachment.video.upload', effect: 'allow' });
+    expect((await post('/imports', { notes: [incoming] })).status).toBe(200);
+    await database
+      .update(schema.userPermissionOverrides)
+      .set({ effect: 'deny' })
+      .where(eq(schema.userPermissionOverrides.userid, userId));
+    const revoked = await post('/imports', {
+      notes: [{ ...disguised, source: { ...note.source, externalId: randomUUID() } }],
+    });
+    expect(revoked.status).toBe(403);
+    await database
+      .insert(schema.userPermissionOverrides)
+      .values({ userid: userId, permission: 'attachment.upload', effect: 'deny' });
+    const image = {
+      ...note,
+      source: { ...note.source, externalId: randomUUID() },
+      attachments: [
+        {
+          url: 'https://fixture.test/image.png',
+          storage: 'REMOTE',
+          details: { mimetype: 'image/png' },
+        },
+      ],
+    };
+    const blockedImage = await post('/imports', { notes: [image] });
+    expect(blockedImage.status).toBe(403);
+    expect(await blockedImage.json()).toMatchObject({
+      message: 'capability_required:attachment.upload',
+    });
+    await database
+      .delete(schema.userPermissionOverrides)
+      .where(eq(schema.userPermissionOverrides.userid, userId));
     await permissions(['GETROTE', 'SENDROTE', 'UPLOADATTACHMENT']);
   });
   test('formal plan and import keep historical creation, privacy and stable source mapping', async () => {
@@ -215,5 +316,39 @@ integration('OpenKey formal imports with PostgreSQL', () => {
     expect(
       await database.select().from(schema.attachments).where(eq(schema.attachments.id, id))
     ).toHaveLength(0);
+  });
+  test('duplicate import cleanup preserves avatar and cover while deleting ordinary unbound attachments', async () => {
+    const ids = [randomUUID(), randomUUID(), randomUUID()];
+    const rows = ids.map((id) => ({
+      id,
+      userid: userId,
+      roteid: null,
+      url: `https://fixture.test/${id}.png`,
+      compressUrl: `https://fixture.test/${id}.webp`,
+      storage: 'REMOTE',
+      details: { mimetype: 'image/png', size: 100 },
+    }));
+    await database.insert(schema.attachments).values(rows);
+    await database
+      .update(schema.users)
+      .set({ avatar: rows[0].url, cover: rows[1].compressUrl })
+      .where(eq(schema.users.id, userId));
+    const duplicate = await post('/imports', { notes: [{ ...note, attachments: rows }] });
+    expect(duplicate.status).toBe(200);
+    expect(await duplicate.json()).toMatchObject({
+      data: { unchanged: 1, attachments: { deleted: 1 } },
+    });
+    for (const id of ids.slice(0, 2)) {
+      expect(
+        await database.select().from(schema.attachments).where(eq(schema.attachments.id, id))
+      ).toHaveLength(1);
+    }
+    expect(
+      await database.select().from(schema.attachments).where(eq(schema.attachments.id, ids[2]))
+    ).toHaveLength(0);
+    await database
+      .update(schema.users)
+      .set({ avatar: null, cover: null })
+      .where(eq(schema.users.id, userId));
   });
 });
