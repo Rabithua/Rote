@@ -635,6 +635,7 @@ export async function createUploadReservation(params: {
   manifest: UploadReservationManifestItem[];
   expiresAt: Date;
   credentialExpiresAt?: Date;
+  trackUnmanaged?: boolean;
 }): Promise<boolean> {
   await assertManagedStorageWritable();
   return db.transaction(async (transaction) => {
@@ -646,7 +647,11 @@ export async function createUploadReservation(params: {
       .for('update');
     if (!user) throw new Error('User not found');
     const state = await resolveStateWithExecutor(transaction as any, user as User, new Date());
-    if (state.management === 'unmanaged' || state.storage.enforcement === 'off') return false;
+    if (
+      (state.management === 'unmanaged' || state.storage.enforcement === 'off') &&
+      !params.trackUnmanaged
+    )
+      return false;
     const reservedBytes = params.manifest.reduce(
       (sum, item) => sum + (item.billable ? BigInt(item.declaredBytes ?? '0') : BigInt(0)),
       BigInt(0)

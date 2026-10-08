@@ -430,73 +430,78 @@ describe('attachment upload flow', () => {
     ]);
   });
 
-  it('presigns a final key for direct browser uploads without a preview', async () => {
-    const signed: Array<{ contentLength?: number; key: string }> = [];
-    let reservation:
-      | Parameters<
-          NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
-        >[0]
-      | undefined;
-    const result = await presignAttachmentUploads(
-      {
-        browserDirectUpload: true,
-        files: [
-          {
-            contentType: 'image/jpeg',
-            filename: 'IMG_0002.JPG',
-            mediaKind: 'image',
-            size: 1024,
-          },
-        ],
-        scopes: [],
-        userId: USER_ID,
-      },
-      {
-        createUploadReservation: async (input) => {
-          reservation = input;
-          return true;
+  it.each(['official', 'unmanaged'] as const)(
+    'tracks direct browser uploads on %s storage for cancellation',
+    async (management) => {
+      const signed: Array<{ contentLength?: number; key: string }> = [];
+      let reservation:
+        | Parameters<
+            NonNullable<Parameters<typeof presignAttachmentUploads>[1]['createUploadReservation']>
+          >[0]
+        | undefined;
+      const result = await presignAttachmentUploads(
+        {
+          browserDirectUpload: true,
+          files: [
+            {
+              contentType: 'image/jpeg',
+              filename: 'IMG_0002.JPG',
+              mediaKind: 'image',
+              size: 1024,
+            },
+          ],
+          scopes: [],
+          userId: USER_ID,
         },
-        getAttachmentUploadPolicy: async () => uploadPolicy,
-        getResourceStateForUserId: async () => ({
-          management: 'official',
-          source: 'official_pro',
-          storage: {
-            enforcement: 'enforce',
-            usedBytes: '0',
-            reservedBytes: '0',
-            limitBytes: '10000000000',
-            overLimit: false,
-            canUpload: true,
+        {
+          createUploadReservation: async (input) => {
+            reservation = input;
+            return true;
           },
-          openKey: {
-            policy: 'unlimited',
-            creationThreshold: null,
-            existingCount: 2,
-            canCreate: true,
+          getAttachmentUploadPolicy: async () => uploadPolicy,
+          getResourceStateForUserId: async () => ({
+            management,
+            source: management === 'official' ? 'official_pro' : 'unmanaged',
+            storage: {
+              enforcement: management === 'official' ? 'enforce' : 'off',
+              usedBytes: '0',
+              reservedBytes: '0',
+              limitBytes: '10000000000',
+              overLimit: false,
+              canUpload: true,
+            },
+            openKey: {
+              policy: 'unlimited',
+              creationThreshold: null,
+              existingCount: 2,
+              canCreate: true,
+            },
+          }),
+          presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
+            signed.push({ contentLength, key });
+            return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
           },
-        }),
-        presignPutUrl: async (key, _contentType, _expiresIn, contentLength) => {
-          signed.push({ contentLength, key });
-          return { putUrl: `https://put.example.com/${key}`, url: `${URL_PREFIX}/${key}` };
-        },
-        randomUUID: () => LIVE_UUID,
-        requireStorageAvailable: () => storageConfig,
-      }
-    );
+          randomUUID: () => LIVE_UUID,
+          requireStorageAvailable: () => storageConfig,
+        }
+      );
 
-    const stagingKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
-    expect(result.items[0].original.key).toBe(stagingKey);
-    expect(result.items[0].compressed).toBeUndefined();
-    expect(reservation?.manifest).toHaveLength(1);
-    expect(reservation?.manifest[0].stagingKey).toBe(stagingKey);
-    expect(reservation?.manifest[0].finalKey).toBe(`users/${USER_ID}/uploads/${LIVE_UUID}.jpg`);
-    expect(signed).toEqual([
-      {
-        contentLength: 1024,
-        key: stagingKey,
-      },
-    ]);
-  });
+      const stagingKey = `users/${USER_ID}/uploads/${LIVE_UUID}.jpg`;
+      expect(result.items[0].original.key).toBe(stagingKey);
+      expect(result.items[0].compressed).toBeUndefined();
+      expect(result.reservationId).toBe(LIVE_UUID);
+      expect(reservation?.trackUnmanaged).toBe(true);
+      expect(reservation?.manifest).toHaveLength(1);
+      expect(reservation?.manifest[0].stagingKey).toBe(stagingKey);
+      expect(reservation?.manifest[0].finalKey).toBe(`users/${USER_ID}/uploads/${LIVE_UUID}.jpg`);
+      expect(signed).toEqual([
+        {
+          contentLength: 1024,
+          key: stagingKey,
+        },
+      ]);
+    }
+  );
 
   it.each([
     ['image/png', 'png'],
