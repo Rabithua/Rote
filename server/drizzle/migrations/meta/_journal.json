@@ -253,6 +253,13 @@
       "when": 1788698004166,
       "tag": "0035_anonymous_note_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791512313240,
+      "tag": "0036_ai_usage_statistics",
+      "breakpoints": true
     }
   ]
 }

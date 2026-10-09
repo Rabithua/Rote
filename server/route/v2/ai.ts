@@ -29,7 +29,6 @@ import {
   findRoteById,
   getPgvectorStatus,
   getStoredAiConfig,
-  logAiTokenUsage,
   prepareRoteChatContext,
   searchMemory,
 } from '../../utils/dbMethods';
@@ -97,6 +96,7 @@ async function streamToolPlannedChatResponse(
   let emittedText = false;
   let lastUsage: any = null;
   for await (const part of createChatCompletionStreamParts(config.chat, messages, {
+    usageContext: { userId: user.id, purpose: 'chat_answer' },
     enableThinking: body?.enableThinking === true,
     signal,
   })) {
@@ -112,14 +112,6 @@ async function streamToolPlannedChatResponse(
 
   if (lastUsage) {
     addAiChatStreamUsage(metrics, lastUsage);
-    await logAiTokenUsage({
-      userid: user.id,
-      model: config.chat.model,
-      type: 'chat',
-      promptTokens: lastUsage.prompt_tokens,
-      completionTokens: lastUsage.completion_tokens,
-      totalTokens: lastUsage.total_tokens,
-    });
     await writeSseEvent(stream, 'usage', { phase: 'answer', usage: lastUsage });
   }
 

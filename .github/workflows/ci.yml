@@ -121,7 +121,7 @@ jobs:
           bun-version: latest
       - run: bun install --frozen-lockfile
         working-directory: server
-      - run: bun test tests/aiAgentRuntime.test.ts tests/aiAgentBudget.test.ts tests/aiClient.test.ts tests/aiSse.test.ts tests/aiClientRuntime.test.ts
+      - run: bun test --preload ./tests/aiUsageUnitPreload.ts tests/aiAgentRuntime.test.ts tests/aiAgentBudget.test.ts tests/aiClient.test.ts tests/aiSse.test.ts tests/aiClientRuntime.test.ts
         working-directory: server
         env:
           POSTGRESQL_URL: postgres://test:test@127.0.0.1:1/test
@@ -188,3 +188,35 @@ jobs:
       - if: matrix.suite == 'index.integration.test.ts'
         run: bun test embeddings/review.integration.test.ts
         working-directory: server
+
+  ai-usage-statistics:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17-trixie
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: usage_test
+          POSTGRES_DB: ai_usage_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRESQL_URL: postgres://rote:usage_test@127.0.0.1:5432/ai_usage_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - run: bun test aiUsage/recording.test.ts aiUsage/integration.test.ts
+        working-directory: server
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run test -- src/pages/admin/aiUsage
+        working-directory: web

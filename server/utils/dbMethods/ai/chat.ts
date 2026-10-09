@@ -6,7 +6,6 @@ import {
   lifecycleScopeToArchived,
   toPlannerAgentDto,
 } from '../../ai/retrievalPlan';
-import { logAiTokenUsage } from '../aiToken';
 import { getStoredAiConfig } from './config';
 import { fallbackAnswer } from './documents';
 import { searchMemory } from './search';
@@ -26,21 +25,6 @@ function formatEvidenceDate(value: unknown): string | null {
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toISOString().slice(0, 10);
-}
-
-async function logChatTokenUsage(
-  ownerId: string,
-  model: string,
-  usage: ChatCompletionUsage
-): Promise<void> {
-  await logAiTokenUsage({
-    userid: ownerId,
-    model,
-    type: 'chat',
-    promptTokens: usage.prompt_tokens,
-    completionTokens: usage.completion_tokens,
-    totalTokens: usage.total_tokens,
-  });
 }
 
 function sourceToSnippet(source: SemanticSearchResult): RetrievalSnippet {
@@ -231,10 +215,9 @@ export async function chatWithRoteContext(params: {
     };
   }
 
-  const { content, usage } = await createChatCompletion(config.chat, messages);
-  if (usage) {
-    await logChatTokenUsage(params.ownerId, config.chat.model, usage);
-  }
+  const { content } = await createChatCompletion(config.chat, messages, {
+    usageContext: { userId: params.ownerId, purpose: 'chat_answer' },
+  });
   const answer = content.trim() || fallbackAnswer(sources);
 
   return { answer, sources, plan };
@@ -276,7 +259,6 @@ export async function prepareRoteChatContext(params: {
     onThinkingDelta: params.onPlanThinkingDelta,
     signal: params.signal,
     onUsage: async (usage) => {
-      await logChatTokenUsage(params.ownerId, config.chat.model, usage);
       await params.onPlanUsage?.(usage);
     },
   });

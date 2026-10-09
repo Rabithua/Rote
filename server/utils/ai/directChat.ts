@@ -5,7 +5,6 @@ import {
   type ChatCompletionUsage,
 } from './client';
 import { getStoredAiConfig } from '../dbMethods/ai';
-import { logAiTokenUsage } from '../dbMethods/aiToken';
 import type { RetrievalTimeContext } from './retrievalPlan';
 
 function buildMessages(
@@ -51,17 +50,6 @@ function buildTimeContextMessage(clientContext?: RetrievalTimeContext | null): s
   return lines.join('\n');
 }
 
-async function logUsage(userId: string, model: string, usage: ChatCompletionUsage) {
-  await logAiTokenUsage({
-    userid: userId,
-    model,
-    type: 'chat',
-    promptTokens: usage.prompt_tokens,
-    completionTokens: usage.completion_tokens,
-    totalTokens: usage.total_tokens,
-  });
-}
-
 export async function createDirectSiteChat(params: {
   userId: string;
   message: string;
@@ -75,11 +63,11 @@ export async function createDirectSiteChat(params: {
     config.chat,
     buildMessages(params.message, params.history, params.clientContext),
     {
+      usageContext: { userId: params.userId, purpose: 'chat_answer' },
       enableThinking: params.enableThinking,
       signal: params.signal,
     }
   );
-  if (result.usage) await logUsage(params.userId, config.chat.model, result.usage);
   return result.content;
 }
 
@@ -99,14 +87,17 @@ export async function streamDirectSiteChat(params: {
   for await (const part of createChatCompletionStreamParts(
     config.chat,
     buildMessages(params.message, params.history, params.clientContext),
-    { enableThinking: params.enableThinking, signal: params.signal }
+    {
+      usageContext: { userId: params.userId, purpose: 'chat_answer' },
+      enableThinking: params.enableThinking,
+      signal: params.signal,
+    }
   )) {
     if (part.type === 'reasoning') await params.onReasoning(part.text);
     if (part.type === 'content') await params.onContent(part.text);
     if (part.type === 'usage') usage = part.usage;
   }
   if (usage) {
-    await logUsage(params.userId, config.chat.model, usage);
     await params.onUsage(usage);
   }
   return usage;

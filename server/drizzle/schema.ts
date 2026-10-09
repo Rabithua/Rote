@@ -399,12 +399,20 @@ export const aiTokenUsageLogs = pgTable(
   'ai_token_usage_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userid: uuid('userid').notNull(),
+    userid: uuid('userid'),
     model: varchar('model', { length: 255 }).notNull(),
     type: varchar('type', { length: 20 }).notNull(), // 'chat' | 'embedding'
-    promptTokens: integer('promptTokens').notNull().default(0),
-    completionTokens: integer('completionTokens').notNull().default(0),
-    totalTokens: integer('totalTokens').notNull().default(0),
+    promptTokens: integer('promptTokens'),
+    completionTokens: integer('completionTokens'),
+    totalTokens: integer('totalTokens'),
+    requestId: uuid('request_id').unique(),
+    providerId: varchar('provider_id', { length: 100 }),
+    purpose: varchar('purpose', { length: 40 }),
+    status: varchar('status', { length: 20 }),
+    usageStatus: varchar('usage_status', { length: 20 }).notNull().default('legacy'),
+    cacheHitTokens: integer('cache_hit_tokens'),
+    cacheMissTokens: integer('cache_miss_tokens'),
+    reasoningTokens: integer('reasoning_tokens'),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => ({
@@ -414,7 +422,7 @@ export const aiTokenUsageLogs = pgTable(
       columns: [table.userid],
       foreignColumns: [users.id],
     })
-      .onDelete('cascade')
+      .onDelete('set null')
       .onUpdate('cascade'),
   })
 );

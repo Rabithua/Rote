@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import { InvalidAiUsageFilter, parseAiUsageFilters } from '../../aiUsage/filters';
+import { getAiUsageStatistics } from '../../aiUsage/statistics';
 import { authenticateJWT, requireAdmin, requireSuperAdmin } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { UserRole } from '../../types/main';
@@ -50,6 +52,19 @@ adminUsersRouter.get('/stats/dashboard', authenticateJWT, requireAdmin, async (c
     console.error('Failed to get dashboard stats:', error);
     return c.json(createResponse(null, 'Failed to get dashboard stats'), 500);
   }
+});
+
+adminUsersRouter.get('/stats/ai-usage', authenticateJWT, requireAdmin, async (c: HonoContext) => {
+  let filters;
+  try {
+    filters = parseAiUsageFilters(c.req.query());
+  } catch (error) {
+    if (error instanceof InvalidAiUsageFilter)
+      return c.json(createResponse(null, 'invalid_ai_usage_filter'), 400);
+    throw error;
+  }
+  const stats = await getAiUsageStatistics(filters);
+  return c.json(createResponse(stats), 200);
 });
 
 // 获取所有用户列表（管理员）

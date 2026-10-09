@@ -280,6 +280,10 @@ export async function createRetrievalPlan(params: {
     let response: Awaited<ReturnType<typeof createChatCompletionWithToolsStreaming>>;
     try {
       response = await completeWithTools(params.config.chat, messages, toolDefinitions, {
+        usageContext: {
+          userId: params.ownerId,
+          purpose: step === 0 ? 'chat_plan' : 'chat_tool_decision',
+        },
         temperature: 0,
         enableThinking: params.enableThinking === true,
         onReasoning: params.onThinkingDelta,

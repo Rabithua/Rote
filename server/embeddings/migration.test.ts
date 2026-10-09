@@ -144,7 +144,17 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
         data: { databaseCode: '23502' },
       });
     }
-    expect(log.mock.calls).toHaveLength(2);
+    const configurationErrors = log.mock.calls.filter(
+      ([event]) => event === 'AI configuration transaction failed'
+    );
+    expect(configurationErrors).toHaveLength(2);
+    // These probes run before migration 0036, so usage writes fail safely while
+    // provider testing remains available. Assert the new operational signal too.
+    const usageErrors = log.mock.calls.filter(([event]) => event === 'ai_usage_persist_failed');
+    expect(usageErrors).toHaveLength(2);
+    for (const [, metadata] of usageErrors) {
+      expect(Object.keys(metadata as object).sort()).toEqual(['errorType', 'requestId']);
+    }
     expect(JSON.stringify(log.mock.calls)).not.toContain('migration-placeholder');
     expect((await client`SELECT config FROM settings WHERE "group" = 'ai'`)[0].config).toEqual(
       setting.config
