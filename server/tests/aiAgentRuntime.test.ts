@@ -1,5 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
-import * as usageRepository from '../aiUsage/repository';
+import { afterEach, describe, expect, it } from 'bun:test';
 import type { AiConfig } from '../types/config';
 import type { RoteAgentStreamEvent } from '../utils/ai/agent/types';
 
@@ -38,11 +37,7 @@ function sseResponse(events: unknown[]) {
   );
 }
 
-beforeEach(() => {
-  spyOn(usageRepository, 'saveAiUsage').mockResolvedValue(undefined);
-});
 afterEach(() => {
-  mock.restore();
   globalThis.fetch = originalFetch;
 });
 

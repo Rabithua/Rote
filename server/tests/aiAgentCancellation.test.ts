@@ -1,5 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock, spyOn } from 'bun:test';
-import * as usageRepository from '../aiUsage/repository';
+import { afterEach, describe, expect, it, mock, spyOn } from 'bun:test';
 import { DEFAULT_AI_CONFIG } from '../utils/ai/providers';
 import {
   DEFAULT_AGENT_POLICY,
@@ -11,9 +10,6 @@ import { AgentSourceBudget } from '../utils/ai/agent/sourceBudget';
 import { createEmbedding } from '../embeddings/client';
 
 const originalFetch = globalThis.fetch;
-beforeEach(() => {
-  spyOn(usageRepository, 'saveAiUsage').mockResolvedValue(undefined);
-});
 afterEach(() => {
   mock.restore();
   globalThis.fetch = originalFetch;
