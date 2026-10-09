@@ -41,19 +41,20 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-describe('agent tool decision output', () => {
-  it('does not emit tool-decision draft content before the final answer', async () => {
-    process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:5432/test';
+describe('agent streamed output', () => {
+  it('streams process text and reuses the following answer without a third request', async () => {
+    process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:1/test';
     const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
     let requestCount = 0;
     globalThis.fetch = (async () => {
       requestCount += 1;
-      if (requestCount === 1) {
+      if (requestCount === 1)
         return sseResponse([
           {
             choices: [
               {
                 delta: {
+                  reasoning_content: 'I need the Rote skill.',
                   content: 'Let me inspect that first.',
                   tool_calls: [
                     {
@@ -68,95 +69,213 @@ describe('agent tool decision output', () => {
             ],
           },
         ]);
-      }
-      if (requestCount === 2) {
-        return sseResponse([
-          {
-            choices: [{ delta: { content: 'I can answer now.' }, finish_reason: 'stop' }],
-          },
-        ]);
-      }
       return sseResponse([
-        { choices: [{ delta: { content: 'Final ' } }] },
+        {
+          choices: [
+            { delta: { reasoning_content: 'The evidence is sufficient.', content: 'Final ' } },
+          ],
+        },
         { choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] },
       ]);
     }) as typeof fetch;
     const events: RoteAgentStreamEvent[] = [];
-
     await runRoteAgentStream({
-      userId: '00000000-0000-4000-8000-000000000001',
-      request: { message: 'Analyze my notes', enableThinking: true },
+      userId: 'owner',
+      request: { message: 'Analyze my notes', streamOutputs: true },
       config,
       emit: (event) => {
         events.push(event);
       },
     });
-
-    expect(events.filter((event) => event.type === 'delta')).toEqual([
-      { type: 'delta', text: 'Final ' },
-      { type: 'delta', text: 'answer' },
+    expect(requestCount).toBe(2);
+    expect(events.filter((event) => event.type === 'output_started')).toEqual([
+      { type: 'output_started', outputId: 'step-0', phase: 'planning' },
+      { type: 'output_started', outputId: 'step-1', phase: 'tool_calling' },
     ]);
-    expect(requestCount).toBe(3);
+    expect(events.filter((event) => event.type === 'thinking')).toEqual([
+      {
+        type: 'thinking',
+        outputId: 'step-0',
+        phase: 'route_decision',
+        text: 'I need the Rote skill.',
+      },
+      {
+        type: 'thinking',
+        outputId: 'step-1',
+        phase: 'evidence_decision',
+        text: 'The evidence is sufficient.',
+      },
+    ]);
+    expect(events.findIndex((event) => event.type === 'output_started')).toBeLessThan(
+      events.findIndex((event) => event.type === 'thinking')
+    );
+    expect(events.filter((event) => event.type === 'delta')).toEqual([
+      { type: 'delta', outputId: 'step-0', phase: 'planning', text: 'Let me inspect that first.' },
+      { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: 'Final ' },
+      { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: 'answer' },
+    ]);
+    expect(events.filter((event) => event.type === 'output_finished')).toEqual([
+      { type: 'output_finished', outputId: 'step-0', phase: 'planning', kind: 'process' },
+      { type: 'output_finished', outputId: 'step-1', phase: 'tool_calling', kind: 'answer' },
+    ]);
     expect(events.filter((event) => event.type === 'done')).toHaveLength(1);
     expect(events.some((event) => event.type === 'error')).toBe(false);
   });
 
-  it('streams the final answer after a no-tool decision instead of flushing decision content', async () => {
-    process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:5432/test';
+  it('delivers direct answer chunks before the provider completes and calls it only once', async () => {
+    process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:1/test';
+    const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
+    let requestCount = 0;
+    let releaseProvider!: () => void;
+    const firstChunkDelivered = new Promise<void>((resolve) => {
+      releaseProvider = resolve;
+    });
+    const encoder = new TextEncoder();
+    let providerCompleted = false;
+    globalThis.fetch = (async () => {
+      requestCount += 1;
+      return new Response(
+        new ReadableStream({
+          async start(controller) {
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ choices: [{ delta: { content: 'Direct ' } }] })}\n\n`
+              )
+            );
+            await firstChunkDelivered;
+            providerCompleted = true;
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`
+              )
+            );
+            controller.close();
+          },
+        }),
+        { headers: { 'Content-Type': 'text/event-stream' } }
+      );
+    }) as typeof fetch;
+    const events: RoteAgentStreamEvent[] = [];
+    await runRoteAgentStream({
+      userId: 'owner',
+      request: { message: 'Say hello', streamOutputs: true },
+      config,
+      emit: (event) => {
+        events.push(event);
+        if (event.type === 'delta' && event.text === 'Direct ') {
+          expect(providerCompleted).toBe(false);
+          releaseProvider();
+        }
+      },
+    });
+    expect(requestCount).toBe(1);
+    expect(events.filter((event) => event.type === 'delta').map((event) => event.text)).toEqual([
+      'Direct ',
+      'answer',
+    ]);
+    expect(events.filter((event) => event.type === 'output_finished')).toEqual([
+      { type: 'output_finished', outputId: 'step-0', phase: 'planning', kind: 'answer' },
+    ]);
+    expect(events.filter((event) => event.type === 'done')).toHaveLength(1);
+  });
+
+  it('keeps old clients on answer-only events and still reuses the answer', async () => {
     const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
     let requestCount = 0;
     globalThis.fetch = (async () => {
       requestCount += 1;
-      if (requestCount === 1) {
-        return sseResponse([
-          {
-            choices: [{ delta: { content: 'Cached direct answer' }, finish_reason: 'stop' }],
-          },
-        ]);
-      }
-      return sseResponse([
-        { choices: [{ delta: { content: 'Direct ' } }] },
-        { choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] },
-      ]);
+      return sseResponse(
+        requestCount === 1
+          ? [
+              {
+                choices: [
+                  {
+                    delta: {
+                      content: 'I will search.',
+                      tool_calls: [
+                        {
+                          index: 0,
+                          id: 'skill',
+                          function: { name: 'rote_skill_view', arguments: '{}' },
+                        },
+                      ],
+                    },
+                    finish_reason: 'tool_calls',
+                  },
+                ],
+              },
+            ]
+          : [
+              { choices: [{ delta: { content: 'Final ' } }] },
+              { choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] },
+            ]
+      );
     }) as typeof fetch;
     const events: RoteAgentStreamEvent[] = [];
-
     await runRoteAgentStream({
-      userId: '00000000-0000-4000-8000-000000000001',
-      request: { message: 'Say hello', enableThinking: true },
+      userId: 'owner',
+      request: { message: 'Review my notes' },
       config,
       emit: (event) => {
         events.push(event);
       },
     });
-
+    expect(requestCount).toBe(2);
     expect(events.filter((event) => event.type === 'delta')).toEqual([
-      { type: 'delta', text: 'Direct ' },
+      { type: 'delta', text: 'Final ' },
       { type: 'delta', text: 'answer' },
     ]);
-    expect(
-      events.some((event) => event.type === 'delta' && event.text === 'Cached direct answer')
-    ).toBe(false);
-    expect(requestCount).toBe(2);
-    expect(events.filter((event) => event.type === 'done')).toHaveLength(1);
+    expect(events.some((event) => event.type === 'output_finished')).toBe(false);
+    expect(events.some((event) => event.type === 'output_started')).toBe(false);
   });
 
-  it('uses error as the only terminal event when no answer is produced', async () => {
-    process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:5432/test';
+  it('preserves partial streamed text but never retries or completes an interrupted output', async () => {
     const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
-    globalThis.fetch = (async () =>
-      sseResponse([{ choices: [{ delta: {}, finish_reason: 'stop' }] }])) as typeof fetch;
+    let requestCount = 0;
+    globalThis.fetch = (async () => {
+      requestCount += 1;
+      return new Response('data: {"choices":[{"delta":{"content":"Partial answer"}}]}\n\n', {
+        headers: { 'Content-Type': 'text/event-stream' },
+      });
+    }) as typeof fetch;
     const events: RoteAgentStreamEvent[] = [];
+    await expect(
+      runRoteAgentStream({
+        userId: 'owner',
+        request: { message: 'Say hello', streamOutputs: true },
+        config,
+        emit: (event) => {
+          events.push(event);
+        },
+      })
+    ).rejects.toMatchObject({ code: 'ai_provider_stream_incomplete' });
+    expect(requestCount).toBe(1);
+    expect(events.filter((event) => event.type === 'delta')).toEqual([
+      { type: 'delta', outputId: 'step-0', phase: 'planning', text: 'Partial answer' },
+    ]);
+    expect(events.some((event) => event.type === 'output_finished' || event.type === 'done')).toBe(
+      false
+    );
+  });
 
+  it('reports an empty no-tool answer without a second generation', async () => {
+    process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:1/test';
+    const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
+    let requestCount = 0;
+    globalThis.fetch = (async () => {
+      requestCount += 1;
+      return sseResponse([{ choices: [{ delta: {}, finish_reason: 'stop' }] }]);
+    }) as typeof fetch;
+    const events: RoteAgentStreamEvent[] = [];
     await runRoteAgentStream({
-      userId: '00000000-0000-4000-8000-000000000001',
-      request: { message: 'Analyze my notes' },
+      userId: 'owner',
+      request: { message: 'Analyze my notes', streamOutputs: true },
       config,
       emit: (event) => {
         events.push(event);
       },
     });
-
+    expect(requestCount).toBe(1);
     expect(events.filter((event) => event.type === 'error')).toHaveLength(1);
     expect(events.filter((event) => event.type === 'done')).toHaveLength(0);
     expect(events.find((event) => event.type === 'error')).toMatchObject({

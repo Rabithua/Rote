@@ -10,6 +10,9 @@ import type {
   AiThinkingPhase,
   AiTokenUsage,
   AiUsagePhase,
+  AiOutputDelta,
+  AiOutputStarted,
+  AiOutputFinished,
   PlannerAgentDto,
 } from './aiTypes';
 
@@ -144,7 +147,7 @@ export async function readAiStreamResponse(
       const data = parsed.data as { sources?: AiSemanticResult[]; retrieval?: AiRetrievalSummary };
       handlers.onSources?.(Array.isArray(data.sources) ? data.sources : [], data.retrieval);
     } else if (parsed.event === 'thinking') {
-      const data = parsed.data as { phase?: AiThinkingPhase; text?: string };
+      const data = parsed.data as { phase?: AiThinkingPhase; text?: string; outputId?: string };
       if (
         (data.phase === 'route_decision' ||
           data.phase === 'evidence_decision' ||
@@ -152,11 +155,28 @@ export async function readAiStreamResponse(
           data.phase === 'answer') &&
         typeof data.text === 'string'
       ) {
-        handlers.onThinking?.(data.phase, data.text);
+        handlers.onThinking?.(data.phase, data.text, data.outputId);
       }
+    } else if (parsed.event === 'output_started') {
+      const data = parsed.data as Partial<AiOutputStarted>;
+      if (data.outputId && data.phase)
+        handlers.onOutputStarted?.({ outputId: data.outputId, phase: data.phase });
     } else if (parsed.event === 'delta') {
-      const text = (parsed.data as { text?: string })?.text;
-      if (typeof text === 'string') handlers.onDelta?.(text);
+      const data = parsed.data as Partial<AiOutputDelta>;
+      if (typeof data.text === 'string') {
+        if (data.outputId && data.phase && handlers.onOutputDelta) {
+          handlers.onOutputDelta({ outputId: data.outputId, phase: data.phase, text: data.text });
+        } else handlers.onDelta?.(data.text);
+      }
+    } else if (parsed.event === 'output_finished') {
+      const data = parsed.data as Partial<AiOutputFinished>;
+      if (data.outputId && data.phase && (data.kind === 'process' || data.kind === 'answer')) {
+        handlers.onOutputFinished?.({
+          outputId: data.outputId,
+          phase: data.phase,
+          kind: data.kind,
+        });
+      }
     } else if (parsed.event === 'state_patch') {
       const state = (parsed.data as { state?: Partial<AiAgentClientState> })?.state;
       if (state) handlers.onStatePatch?.(state);
