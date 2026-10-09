@@ -127,7 +127,7 @@ jobs:
           POSTGRESQL_URL: postgres://test:test@127.0.0.1:1/test
       - run: bun install --frozen-lockfile
         working-directory: web
-      - run: bun run test -- src/utils/localAi.test.ts src/utils/localAiAgent.test.ts src/utils/aiStream.test.ts src/state/aiRunManager.test.ts src/components/ai/AgentOutputTrace.test.tsx
+      - run: bun run test -- src/utils/localAi.test.ts src/utils/localAiAgent.test.ts src/utils/aiStream.test.ts src/state/aiRunManager.test.ts src/components/ai/AgentOutputTrace.test.tsx src/components/ai/AiStreamingMarkdown.test.ts src/components/ai/AiStreamingMarkdown.render.test.tsx
         working-directory: web
 
   embedding-contract:
