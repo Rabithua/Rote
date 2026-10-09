@@ -1253,6 +1253,12 @@
       "title": "管理员仪表盘",
       "accessDenied": "访问被拒绝",
       "adminOnly": "此页面仅限管理员访问",
+      "updateBanner": {
+        "title": "发现新版本",
+        "versions": "当前版本 {{current}}，新版本 {{latest}}",
+        "viewRelease": "查看更新",
+        "dismiss": "关闭新版本提示"
+      },
       "tabs": {
         "dashboard": "数据看板",
         "site": "站点设置",

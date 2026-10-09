@@ -1263,6 +1263,12 @@
       "title": "Admin Dashboard",
       "accessDenied": "Access Denied",
       "adminOnly": "This page is only accessible to administrators",
+      "updateBanner": {
+        "title": "New version available",
+        "versions": "Current version {{current}}, new version {{latest}}",
+        "viewRelease": "View release",
+        "dismiss": "Dismiss update notice"
+      },
       "tabs": {
         "dashboard": "Dashboard",
         "site": "Site Settings",
