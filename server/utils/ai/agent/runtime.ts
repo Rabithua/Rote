@@ -341,8 +341,7 @@ export async function runRoteAgentStream(params: {
       if (validToolCalls.length === 0) continue;
 
       messages.push({
-        role: 'assistant',
-        content: null,
+        ...assistantMessage,
         tool_calls: validToolCalls,
       });
 

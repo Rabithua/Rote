@@ -2,6 +2,7 @@ import type { SemanticSearchResult } from '../../dbMethods/ai';
 import { sourceKey, unicodeLength, unicodeSlice } from './sourceBudget';
 import type { RoteAgentContext, RoteAgentRetrieval, RoteAgentSourceRegistration } from './types';
 import type { RetrievalScope } from '../retrievalTypes';
+import { serializeSearchEvidence } from './evidenceFormat';
 
 type SearchEvidenceContext = {
   scope: Omit<RetrievalScope, 'ownerId' | 'cursor' | 'excludeIds'>;
@@ -111,7 +112,7 @@ export function deliverSearchEvidence(
   // Admit minimum useful snippets first, then divide space fairly between them.
   for (const source of candidates) {
     const next = [...selected, source];
-    if (unicodeLength(JSON.stringify(payload(next, 80))) <= limit) selected.push(source);
+    if (unicodeLength(serializeSearchEvidence(payload(next, 80))) <= limit) selected.push(source);
   }
   if (!selected.length) {
     if (candidates.length && limit < ctx.policy.maxSearchResultChars)
@@ -130,10 +131,10 @@ export function deliverSearchEvidence(
   let high = ctx.policy.maxSearchExcerptChars;
   while (low < high) {
     const mid = Math.ceil((low + high) / 2);
-    if (unicodeLength(JSON.stringify(payload(selected, mid))) <= limit) low = mid;
+    if (unicodeLength(serializeSearchEvidence(payload(selected, mid))) <= limit) low = mid;
     else high = mid - 1;
   }
-  const modelContent = JSON.stringify(payload(selected, low));
+  const modelContent = serializeSearchEvidence(payload(selected, low));
   const delivered = selected.map((source) => ({
     ...source,
     text: unicodeSlice(source.text.trim(), 0, low),

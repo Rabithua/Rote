@@ -4,6 +4,7 @@ import {
   createChatCompletion,
   createChatCompletionStreamParts,
   createChatCompletionWithToolsStreaming,
+  createChatCompletionWithTools,
   probeChatProviderToolCalling,
   type ChatToolDefinition,
 } from '../utils/ai/client';
@@ -52,6 +53,48 @@ afterEach(() => {
 });
 
 describe('ai client streaming', () => {
+  it.each(['reasoning_content', 'reasoning'] as const)(
+    'keeps complete streamed %s for the next tool round, including empty reasoning',
+    async (field) => {
+      globalThis.fetch = (async () =>
+        sseResponse([
+          { choices: [{ delta: { [field]: '' } }] },
+          { choices: [{ delta: { [field]: 'First ' } }] },
+          { choices: [{ delta: { [field]: 'thought.' } }] },
+        ])) as typeof fetch;
+      const chunks: string[] = [];
+      const response = await createChatCompletionWithToolsStreaming(config, [], tools, {
+        onReasoning: (text) => {
+          chunks.push(text);
+        },
+      });
+      expect(response.message[field]).toBe('First thought.');
+      expect(chunks).toEqual(['First ', 'thought.']);
+      globalThis.fetch = (async () =>
+        sseResponse([{ choices: [{ delta: { [field]: '' } }] }])) as typeof fetch;
+      expect((await createChatCompletionWithToolsStreaming(config, [], tools)).message[field]).toBe(
+        ''
+      );
+    }
+  );
+
+  it('retains reasoning fields in non-streamed tool responses', async () => {
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          choices: [
+            { message: { content: 'Process text', reasoning_content: 'Thought', reasoning: '' } },
+          ],
+        }),
+        { headers: { 'Content-Type': 'application/json' } }
+      )) as typeof fetch;
+    expect((await createChatCompletionWithTools(config, [], tools)).message).toMatchObject({
+      content: 'Process text',
+      reasoning_content: 'Thought',
+      reasoning: '',
+    });
+  });
+
   it('appends chunked streamed tool function names', async () => {
     globalThis.fetch = (async () =>
       sseResponse([

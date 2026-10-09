@@ -17,7 +17,6 @@ export function useAiRunLabels() {
         }),
       sourcesFound: (count: number) => t('timeline.sourcesFound', { count }),
       sourcesAdded: (added: number, total: number) => t('timeline.sourcesAdded', { added, total }),
-      evidenceLimit: t('timeline.evidenceLimit'),
       askFailed: t('messages.askFailed'),
       streamInterrupted: t('messages.streamInterrupted'),
       streamTimeout: t('messages.streamTimeout'),

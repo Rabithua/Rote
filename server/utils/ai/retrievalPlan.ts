@@ -302,11 +302,7 @@ export async function createRetrievalPlan(params: {
       trace.fallbackReason = 'assistant_returned_no_tool_call';
       return noRetrievalResult(params.message, trace, 'assistant_returned_no_tool_call');
     }
-    messages.push({
-      role: 'assistant',
-      content: response.message.content || null,
-      tool_calls: calls,
-    });
+    messages.push(response.message);
 
     for (const call of calls) {
       if (toolCallCount >= maxToolCalls) {

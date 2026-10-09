@@ -4,6 +4,7 @@ import { AgentSourceBudget, sourceKey, unicodeLength } from '../utils/ai/agent/s
 import { DEFAULT_AGENT_POLICY, type RoteAgentContext } from '../utils/ai/agent/types';
 import type { SemanticSearchResult } from '../utils/dbMethods/ai';
 import { canonicalizeSearchRotesArgs } from '../utils/ai/retrievalScope';
+import { parseSearchEvidence } from './aiEvidenceFixtures';
 
 export function source(index: number, text = `note-${index}`): SemanticSearchResult {
   return {
@@ -34,6 +35,73 @@ export function context(
 }
 
 describe('serialized evidence budget', () => {
+  it('packs batch fields once while preserving IDs, dates, false values and escaped text', () => {
+    const ctx = context();
+    const found = Array.from({ length: 20 }, (_, i) => ({
+      ...source(i + 1, '正文含换行\n引号"和 | 😀。'.repeat(60)),
+      sourceType: i % 2 ? ('article' as const) : ('rote' as const),
+      metadata: {
+        title: i === 0 ? '' : '记录标题',
+        tags: i === 0 ? [] : ['产品', '任务'],
+        createdAt: '2026-10-01T01:02:03.000Z',
+        updatedAt: '2026-10-09T08:09:10.000Z',
+        state: 'private',
+        archived: i % 2 === 1,
+      },
+    }));
+    const result = deliverSearchEvidence(ctx, found);
+    const payload = JSON.parse(result.modelContent);
+    expect(payload.columns).toEqual([
+      'citation',
+      'sourceType',
+      'sourceId',
+      'title',
+      'tags',
+      'createdAt',
+      'updatedAt',
+      'state',
+      'archived',
+      'excerpt',
+      'truncated',
+    ]);
+    expect(payload).not.toHaveProperty('sources');
+    expect(payload.rows.every((row: unknown[]) => row.length === payload.columns.length)).toBe(
+      true
+    );
+    const records = parseSearchEvidence(result.modelContent).sources;
+    expect(records[0]).toMatchObject({
+      citation: 1,
+      sourceType: 'rote',
+      sourceId: found[0].sourceId,
+      title: null,
+      tags: [],
+      archived: false,
+      createdAt: found[0].metadata.createdAt,
+      updatedAt: found[0].metadata.updatedAt,
+      state: 'private',
+      truncated: true,
+    });
+    expect(records[1]).toMatchObject({ sourceType: 'article', archived: true, title: '记录标题' });
+    expect(records.map((record: any) => record.excerpt)).toEqual(result.sources.map((s) => s.text));
+    expect(records[0].excerpt).toContain('正文含换行\n引号"和 | 😀。');
+    expect(unicodeLength(result.modelContent)).toBeLessThanOrEqual(4000);
+    expect(ctx.sourceBudget.snapshot().sourceCharsUsed).toBe(unicodeLength(result.modelContent));
+    expect(ctx.sourceBudget.keys()).toHaveLength(records.length);
+    const { columns: _columns, rows: _rows, ...envelope } = payload;
+    expect(unicodeLength(result.modelContent)).toBeLessThan(
+      unicodeLength(JSON.stringify({ ...envelope, sources: records }))
+    );
+    expect(result.sources[0].metadata).toEqual(found[0].metadata);
+  });
+
+  it('keeps single sources and batches whose object format is shorter in the original format', () => {
+    const one = deliverSearchEvidence(context(), [source(1, '短')]);
+    expect(JSON.parse(one.modelContent)).toHaveProperty('sources');
+    const two = deliverSearchEvidence(context(), [source(1, '短'), source(2, '短')]);
+    expect(JSON.parse(two.modelContent)).toHaveProperty('sources');
+    expect(JSON.parse(two.modelContent)).not.toHaveProperty('columns');
+  });
+
   it('includes actual search filters and warnings in the charged tool text, including empty results', () => {
     const { scope, warnings } = canonicalizeSearchRotesArgs({
       ownerId: 'owner',
@@ -77,7 +145,7 @@ describe('serialized evidence budget', () => {
     );
     expect(first.retrieval).toMatchObject({ addedCount: 20, totalCount: 20 });
     expect(second.retrieval).toMatchObject({ addedCount: 20, totalCount: 40 });
-    expect(JSON.parse(second.modelContent).sources[0].citation).toBe(21);
+    expect(parseSearchEvidence(second.modelContent).sources[0].citation).toBe(21);
     const duplicate = deliverSearchEvidence(ctx, [source(1)]);
     expect(duplicate.retrieval.addedCount).toBe(0);
     expect(ctx.sourceBudget.keys()).toHaveLength(40);
@@ -95,7 +163,7 @@ describe('serialized evidence budget', () => {
     }));
     const first = deliverSearchEvidence(ctx, [source(999, ' '), ...rows]);
     expect(unicodeLength(first.modelContent)).toBeLessThanOrEqual(4000);
-    for (const s of JSON.parse(first.modelContent).sources) {
+    for (const s of parseSearchEvidence(first.modelContent).sources) {
       expect(unicodeLength(s.excerpt)).toBeGreaterThanOrEqual(80);
       expect(unicodeLength(s.excerpt)).toBeLessThanOrEqual(300);
       expect(s.truncated).toBe(true);
@@ -104,7 +172,9 @@ describe('serialized evidence budget', () => {
     const remainder = rows.filter((s) => !ctx.sourceBudget.has(s));
     const second = deliverSearchEvidence(ctx, remainder);
     expect(second.retrieval.addedCount).toBeGreaterThan(0);
-    expect(JSON.parse(second.modelContent).sources[0].citation).toBe(first.sources.length + 1);
+    expect(parseSearchEvidence(second.modelContent).sources[0].citation).toBe(
+      first.sources.length + 1
+    );
   });
   it('delivers body text without generated metadata prefixes or metadata-only references', () => {
     const ctx = context();
@@ -119,11 +189,9 @@ describe('serialized evidence budget', () => {
     ];
     const result = deliverSearchEvidence(ctx, rows);
     expect(result.retrieval).toMatchObject({ foundCount: 5, addedCount: 3, totalCount: 3 });
-    expect(JSON.parse(result.modelContent).sources.map((item: any) => item.excerpt)).toEqual([
-      '正文',
-      'Title: part of the actual body\ntext',
-      'T',
-    ]);
+    expect(
+      parseSearchEvidence(result.modelContent).sources.map((item: any) => item.excerpt)
+    ).toEqual(['正文', 'Title: part of the actual body\ntext', 'T']);
     expect(ctx.sourceBudget.keys()).toEqual([
       sourceKey(rows[0]),
       sourceKey(rows[3]),

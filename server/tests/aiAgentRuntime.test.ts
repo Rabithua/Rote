@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test';
 import type { AiConfig } from '../types/config';
 import type { RoteAgentStreamEvent } from '../utils/ai/agent/types';
+import { parseSearchEvidence } from './aiEvidenceFixtures';
 
 const originalFetch = globalThis.fetch;
 
@@ -46,7 +47,7 @@ describe('agent streamed output', () => {
     process.env.POSTGRESQL_URL ||= 'postgres://test:test@127.0.0.1:1/test';
     const { runRoteAgentStream } = await import('../utils/ai/agent/runtime');
     let requestCount = 0;
-    globalThis.fetch = (async () => {
+    globalThis.fetch = (async (_url, init) => {
       requestCount += 1;
       if (requestCount === 1)
         return sseResponse([
@@ -69,6 +70,12 @@ describe('agent streamed output', () => {
             ],
           },
         ]);
+      const messages = JSON.parse(String(init?.body)).messages;
+      expect(messages.find((message: any) => message.role === 'assistant')).toMatchObject({
+        content: 'Let me inspect that first.',
+        reasoning_content: 'I need the Rote skill.',
+        tool_calls: [{ id: 'call_skill' }],
+      });
       return sseResponse([
         {
           choices: [
@@ -352,7 +359,7 @@ describe('multi-pass evidence delivery', () => {
       JSON.parse(requests[1].messages.find((m: any) => m.role === 'tool').content).status
     ).toBe('ok');
     expect(requests[1].messages.at(-1).content).toContain(
-      'The evidence text budget has been exhausted.'
+      'without mentioning internal reading or tool budgets'
     );
     expect(events.some((e) => e.type === 'sources' && e.retrieval?.budgetExhausted)).toBe(true);
   });
@@ -512,7 +519,7 @@ describe('multi-pass evidence delivery', () => {
     const evidenceMessages = requests
       .at(-1)!
       .messages.filter((m) => m.role === 'tool')
-      .map((m) => JSON.parse(m.content));
+      .map((m) => parseSearchEvidence(m.content));
     expect(evidenceMessages[0].sources[0]).toMatchObject({ citation: 1, excerpt: 'evidence-1' });
     expect(evidenceMessages[1].sources[0]).toMatchObject({ citation: 21, excerpt: 'evidence-21' });
     expect(evidenceMessages[1].sources.at(-1)).toMatchObject({

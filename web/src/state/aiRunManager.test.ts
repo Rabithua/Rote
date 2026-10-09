@@ -12,7 +12,6 @@ const labels: AiRunLabels = {
   toolFinished: (toolName) => toolName,
   sourcesFound: (count) => String(count),
   sourcesAdded: (added, total) => `${added}/${total}`,
-  evidenceLimit: 'reading limit',
   askFailed: 'failed',
   streamInterrupted: 'interrupted',
   streamTimeout: 'timeout',
@@ -198,7 +197,7 @@ it('batches frequent text and thinking fragments into one storage update per fra
   vi.restoreAllMocks();
 });
 
-it('uses cumulative references and localizes exhaustion', () => {
+it('keeps retrieval counts and the normal answer phase when evidence is exhausted', () => {
   let messages: import('@/state/aiChat').AiMemoryMessage[] = [
     { id: 'answer', role: 'assistant', content: '' },
   ];
@@ -243,7 +242,11 @@ it('uses cumulative references and localizes exhaustion', () => {
     budgetExhausted: true,
   });
   handlers.onProgress?.('answering');
-  expect(messages[0].timeline?.at(-1)?.message).toBe('reading limit');
+  expect(messages[0].timeline?.at(-1)?.message).toBe('answering');
+  expect(messages[0].timeline?.find((item) => item.id === 'tool-rote_search_notes')?.message).toBe(
+    '0/40'
+  );
+  expect(messages[0].retrieval?.budgetExhausted).toBe(true);
   handlers.onSources?.(sources);
   expect(messages[0].timeline?.find((item) => item.id === 'tool-rote_search_notes')?.message).toBe(
     '40'

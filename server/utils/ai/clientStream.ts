@@ -45,12 +45,14 @@ function parseProviderSseLine(line: string): ProviderSseData {
 function buildToolStreamResult(
   content: string,
   toolCallsByIndex: Map<number, ChatToolCall>,
+  reasoning: Pick<ChatMessage, 'reasoning_content' | 'reasoning'>,
   usage?: ChatCompletionUsage
 ) {
   return {
     message: {
       role: 'assistant' as const,
       content: content || null,
+      ...reasoning,
       tool_calls: normalizeToolCalls(Array.from(toolCallsByIndex.values())),
     },
     usage,
@@ -102,6 +104,7 @@ export async function createChatCompletionWithToolsStreaming(
     const toolCallsByIndex = new Map<number, ChatToolCall>();
     let buffer = '';
     let content = '';
+    const reasoningFields: Pick<ChatMessage, 'reasoning_content' | 'reasoning'> = {};
     let usage: ChatCompletionUsage | undefined;
     let doneReceived = false;
     let finishReason: string | null = null;
@@ -123,6 +126,10 @@ export async function createChatCompletionWithToolsStreaming(
       }
 
       const delta = chunk?.choices?.[0]?.delta || {};
+      for (const field of ['reasoning_content', 'reasoning'] as const) {
+        if (typeof delta[field] === 'string')
+          reasoningFields[field] = (reasoningFields[field] ?? '') + delta[field];
+      }
       const reasoning = delta.reasoning_content || delta.reasoning;
       if (typeof reasoning === 'string' && reasoning.length > 0) {
         await options.onReasoning?.(reasoning);
@@ -188,7 +195,7 @@ export async function createChatCompletionWithToolsStreaming(
     if (!doneReceived && buffer.trim()) await processLine(buffer);
     assertProviderStreamComplete({ doneReceived, finishReason });
     status = 'completed';
-    return buildToolStreamResult(content, toolCallsByIndex, usage);
+    return buildToolStreamResult(content, toolCallsByIndex, reasoningFields, usage);
   } catch (error) {
     status = options.signal?.aborted ? 'cancelled' : 'failed';
     throw control.normalizeError(error);

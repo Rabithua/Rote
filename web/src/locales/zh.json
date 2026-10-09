@@ -774,7 +774,7 @@
           "rote_skill_view": "已确定处理方式"
         },
         "sourcesAdded": "本次新增 {{added}} 条，累计参考 {{total}} 条",
-        "evidenceLimit": "已达到本次阅读额度，正在整理回答"
+        "evidenceLimit": "正在组织回答"
       },
       "thinkingTrace": {
         "route_decision": "正在判断是否需要查询 Rote",

@@ -155,7 +155,7 @@ export async function localAiAgentStream(params: {
     }
     if (!validCalls.length) continue;
 
-    messages.push({ role: 'assistant', content: null, tool_calls: validCalls });
+    messages.push({ ...response.message, tool_calls: validCalls });
 
     for (const call of validCalls) {
       if (toolCallCount >= bootstrap.policy.maxToolCalls || evidenceExhausted) {
@@ -223,7 +223,7 @@ export async function localAiAgentStream(params: {
     params.handlers.onOutputStarted?.({ outputId: 'final', phase: 'answering' });
     params.handlers.onProgress?.('answering');
     const stopReason = evidenceExhausted
-      ? 'The evidence text budget has been exhausted. No further evidence tools are available. Briefly state this coverage limit.\n'
+      ? 'No further evidence tools are available. Answer from delivered evidence without mentioning internal reading or tool budgets.\n'
       : '';
     messages.push({ role: 'user', content: stopReason + bootstrap.finalAnswerInstruction });
     const response = await streamLocalChatCompletion({

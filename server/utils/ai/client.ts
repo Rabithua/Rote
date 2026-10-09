@@ -134,6 +134,10 @@ export async function createChatCompletionWithTools(
       message: {
         role: 'assistant',
         content: typeof message.content === 'string' ? message.content : null,
+        ...(typeof message.reasoning_content === 'string'
+          ? { reasoning_content: message.reasoning_content }
+          : {}),
+        ...(typeof message.reasoning === 'string' ? { reasoning: message.reasoning } : {}),
         tool_calls: normalizeToolCalls(message.tool_calls),
       },
       usage: normalizeUsage(body?.usage),
