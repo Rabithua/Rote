@@ -160,7 +160,12 @@ async function streamFinalAnswer(
     signal,
   })) {
     if (part.type === 'reasoning') {
-      await ctx.emit({ type: 'thinking', phase: 'answer', text: part.text });
+      await ctx.emit({
+        type: 'thinking',
+        phase: 'answer',
+        text: part.text,
+        ...(ctx.request.streamOutputs ? { outputId: 'final' } : {}),
+      });
     } else if (part.type === 'usage') {
       lastUsage = part.usage;
     } else if (part.type === 'content') {
@@ -219,15 +224,12 @@ export async function runRoteAgentStream(params: {
   let evidenceExhausted = false;
   let hasFinalAnswer = false;
   let endedWithoutTools = false;
-  let lastOutputId: string | undefined;
   const emitOutput = async (outputId: string, phase: RoteAgentPhase, text: string) => {
     if (!request.streamOutputs) {
       await emit({ type: 'delta', text });
       return;
     }
-    const separator = lastOutputId && lastOutputId !== outputId ? '\n\n' : '';
-    lastOutputId = outputId;
-    await emit({ type: 'delta', outputId, phase, text: separator + text });
+    await emit({ type: 'delta', outputId, phase, text });
   };
   let totalTokens = 0;
   const startedAt = Date.now();
@@ -251,6 +253,7 @@ export async function runRoteAgentStream(params: {
       const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
       const outputId = `step-${step}`;
       const contentChunks: string[] = [];
+      if (request.streamOutputs) await emit({ type: 'output_started', outputId, phase });
       let assistantMessage: ChatMessage;
       let responseUsage: Awaited<
         ReturnType<typeof createChatCompletionWithToolsStreaming>
@@ -274,6 +277,7 @@ export async function runRoteAgentStream(params: {
                   type: 'thinking',
                   phase: step === 0 ? 'route_decision' : 'evidence_decision',
                   text,
+                  ...(request.streamOutputs ? { outputId } : {}),
                 }),
             }
           )
@@ -435,6 +439,8 @@ export async function runRoteAgentStream(params: {
 
     if (!hasFinalAnswer && !endedWithoutTools) {
       messages.push({ role: 'user', content: buildFinalAnswerInstruction(evidenceExhausted) });
+      if (request.streamOutputs)
+        await emit({ type: 'output_started', outputId: 'final', phase: 'answering' });
       const finalAnswer = await streamFinalAnswer(
         ctx,
         messages,

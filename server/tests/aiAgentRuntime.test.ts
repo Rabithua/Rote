@@ -54,6 +54,7 @@ describe('agent streamed output', () => {
             choices: [
               {
                 delta: {
+                  reasoning_content: 'I need the Rote skill.',
                   content: 'Let me inspect that first.',
                   tool_calls: [
                     {
@@ -69,7 +70,11 @@ describe('agent streamed output', () => {
           },
         ]);
       return sseResponse([
-        { choices: [{ delta: { content: 'Final ' } }] },
+        {
+          choices: [
+            { delta: { reasoning_content: 'The evidence is sufficient.', content: 'Final ' } },
+          ],
+        },
         { choices: [{ delta: { content: 'answer' }, finish_reason: 'stop' }] },
       ]);
     }) as typeof fetch;
@@ -83,9 +88,30 @@ describe('agent streamed output', () => {
       },
     });
     expect(requestCount).toBe(2);
+    expect(events.filter((event) => event.type === 'output_started')).toEqual([
+      { type: 'output_started', outputId: 'step-0', phase: 'planning' },
+      { type: 'output_started', outputId: 'step-1', phase: 'tool_calling' },
+    ]);
+    expect(events.filter((event) => event.type === 'thinking')).toEqual([
+      {
+        type: 'thinking',
+        outputId: 'step-0',
+        phase: 'route_decision',
+        text: 'I need the Rote skill.',
+      },
+      {
+        type: 'thinking',
+        outputId: 'step-1',
+        phase: 'evidence_decision',
+        text: 'The evidence is sufficient.',
+      },
+    ]);
+    expect(events.findIndex((event) => event.type === 'output_started')).toBeLessThan(
+      events.findIndex((event) => event.type === 'thinking')
+    );
     expect(events.filter((event) => event.type === 'delta')).toEqual([
       { type: 'delta', outputId: 'step-0', phase: 'planning', text: 'Let me inspect that first.' },
-      { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: '\n\nFinal ' },
+      { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: 'Final ' },
       { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: 'answer' },
     ]);
     expect(events.filter((event) => event.type === 'output_finished')).toEqual([
@@ -200,6 +226,7 @@ describe('agent streamed output', () => {
       { type: 'delta', text: 'answer' },
     ]);
     expect(events.some((event) => event.type === 'output_finished')).toBe(false);
+    expect(events.some((event) => event.type === 'output_started')).toBe(false);
   });
 
   it('preserves partial streamed text but never retries or completes an interrupted output', async () => {

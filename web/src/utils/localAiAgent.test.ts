@@ -64,7 +64,14 @@ describe('local AI agent', () => {
     });
     const onOutputDelta = vi.fn();
     const onOutputFinished = vi.fn();
-    mocks.complete.mockImplementationOnce(async ({ onContent }) => {
+    const onOutputStarted = vi.fn();
+    const onThinking = vi.fn();
+    mocks.complete.mockImplementationOnce(async ({ onContent, onReasoning }) => {
+      expect(onOutputStarted).toHaveBeenCalledExactlyOnceWith({
+        outputId: 'step-0',
+        phase: 'planning',
+      });
+      onReasoning('Thinking');
       onContent('First ');
       expect(onOutputDelta).toHaveBeenCalledExactlyOnceWith({
         outputId: 'step-0',
@@ -78,12 +85,13 @@ describe('local AI agent', () => {
     await localAiAgentStream({
       config,
       payload: { message: 'hello' },
-      handlers: { onOutputDelta, onOutputFinished },
+      handlers: { onOutputDelta, onOutputFinished, onOutputStarted, onThinking },
       toolsAvailable: true,
       enableThinking: false,
     });
     expect(mocks.complete).toHaveBeenCalledTimes(1);
     expect(onOutputDelta).toHaveBeenCalledTimes(2);
+    expect(onThinking).toHaveBeenCalledExactlyOnceWith('route_decision', 'Thinking', 'step-0');
     expect(onOutputFinished).toHaveBeenCalledExactlyOnceWith({
       outputId: 'step-0',
       phase: 'planning',
@@ -181,11 +189,12 @@ describe('local AI agent', () => {
       sourceCharsUsed: 250,
     });
     const onDelta = vi.fn();
+    const onOutputDelta = vi.fn();
 
     await localAiAgentStream({
       config,
       payload: { message: 'show tags' },
-      handlers: { onDelta },
+      handlers: { onDelta, onOutputDelta },
       toolsAvailable: true,
       enableThinking: true,
     });
@@ -210,11 +219,12 @@ describe('local AI agent', () => {
       messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>;
     };
     expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBeNull();
-    expect(onDelta.mock.calls.map(([text]) => text)).toEqual([
+    expect(onOutputDelta.mock.calls.map(([output]) => output.text)).toEqual([
       'I will inspect the tags first.',
-      '\n\nfinal ',
+      'final ',
       'answer',
     ]);
+    expect(onDelta).not.toHaveBeenCalled();
     expect(mocks.complete).toHaveBeenCalledTimes(2);
   });
 

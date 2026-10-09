@@ -12,7 +12,9 @@ import {
   mergeAiTokenUsageByPhase,
   settleAiMessageTimeline,
   type AiMemoryMessage,
+  type AiOutputStatus,
 } from '@/state/aiChat';
+import { createAiOutputStream } from '@/state/aiOutputStream';
 
 export type AiRunLabels = {
   phase: (phase: AiAgentPhase) => string;
@@ -64,6 +66,7 @@ function updateTimeline(
     toolName?: string;
     toolStatus?: AiAgentToolProgressStatus;
     message: string;
+    outputStatus: AiOutputStatus;
     status?: 'running' | 'done' | 'error';
   }
 ) {
@@ -90,7 +93,15 @@ function updateTimeline(
               index === existingIndex ? { ...entry, ...nextItem } : entry
             )
           : [...current, nextItem];
-      return { ...message, timeline: next.slice(-10) };
+      return {
+        ...message,
+        timeline: next.slice(-10),
+        outputs: message.outputs?.map((output, index, outputs) =>
+          index === outputs.length - 1 && output.kind !== 'answer'
+            ? { ...output, status: item.outputStatus }
+            : output
+        ),
+      };
     })
   );
 }
@@ -112,8 +123,32 @@ function addUsage(ctx: AiRunHandlerContext, usage: AiTokenUsage, phase: AiUsageP
   );
 }
 
-export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandlers {
+export type AiRunHandlers = AiChatStreamHandlers & {
+  flushOutputs: () => void;
+  cancelOutputs: () => void;
+};
+
+export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
+  const outputs = createAiOutputStream({
+    isActive: () => ctx.isActiveRun(ctx.assistantId),
+    firstToken: () => (ctx.progress.firstTokenTime ??= performance.now() - ctx.startedAt),
+    updateMessage: (updater) => {
+      if (!ctx.isActiveRun(ctx.assistantId)) return;
+      ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
+        prev.map((message) => {
+          if (message.id !== ctx.assistantId) return message;
+          const next = updater(message);
+          return {
+            ...next,
+            metrics: { ...next.metrics, firstTokenTime: ctx.progress.firstTokenTime },
+          };
+        })
+      );
+    },
+  });
   return {
+    flushOutputs: outputs.flush,
+    cancelOutputs: outputs.cancel,
     onRunStarted: (runId) => {
       if (!ctx.isActiveRun(ctx.assistantId)) return;
       ctx.mergeAgentState({ conversationId: runId });
@@ -127,6 +162,10 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
           phase === 'answering' && ctx.progress.evidenceExhausted
             ? ctx.labels.evidenceLimit
             : ctx.labels.phase(phase),
+        outputStatus:
+          phase === 'answering' && ctx.progress.evidenceExhausted
+            ? { type: 'evidence_limit' }
+            : { type: 'phase', phase },
       });
     },
     onToolStarted: (toolName) => {
@@ -135,6 +174,7 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
         type: 'tool',
         toolName,
         message: ctx.labels.toolStarted(toolName),
+        outputStatus: { type: 'tool_started', toolName },
       });
     },
     onToolProgress: (toolName, status) => {
@@ -144,6 +184,7 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
         toolName,
         toolStatus: status,
         message: ctx.labels.toolStatus(status),
+        outputStatus: { type: 'tool_progress', status },
       });
     },
     onToolFinished: (toolName) => {
@@ -153,6 +194,7 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
         type: 'tool',
         toolName,
         message: ctx.labels.toolFinished(toolName),
+        outputStatus: { type: 'tool_finished', toolName },
         status: 'done',
       });
     },
@@ -221,6 +263,13 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
           : retrieval
             ? ctx.labels.sourcesAdded(retrieval.addedCount, retrieval.totalCount)
             : ctx.labels.sourcesFound(sources.length),
+        outputStatus: retrieval?.budgetExhausted
+          ? { type: 'evidence_limit' }
+          : {
+              type: 'sources',
+              count: retrieval?.totalCount ?? sources.length,
+              added: retrieval?.addedCount,
+            },
         status: 'done',
       });
       ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
@@ -231,7 +280,11 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
         )
       );
     },
-    onThinking: (phase, text) => {
+    onThinking: (phase, text, outputId) => {
+      if (outputId) {
+        outputs.thinking(outputId, phase, text);
+        return;
+      }
       ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
         prev.map((message) =>
           message.id === ctx.assistantId
@@ -263,42 +316,9 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
       }
       ctx.queueStreamDelta(ctx.assistantId, text);
     },
-    onOutputDelta: (output) => {
-      if (!ctx.isActiveRun(ctx.assistantId)) return;
-      ctx.progress.firstTokenTime ??= performance.now() - ctx.startedAt;
-      ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
-        prev.map((message) => {
-          if (message.id !== ctx.assistantId) return message;
-          const outputs = message.outputs || [];
-          const existing = outputs.find((item) => item.outputId === output.outputId);
-          const next = { ...output, text: `${existing?.text || ''}${output.text}` };
-          return {
-            ...message,
-            content: next.text,
-            outputs: existing
-              ? outputs.map((item) => (item.outputId === output.outputId ? next : item))
-              : [...outputs, next],
-            metrics: { ...message.metrics, firstTokenTime: ctx.progress.firstTokenTime },
-          };
-        })
-      );
-    },
-    onOutputFinished: (output) => {
-      if (!ctx.isActiveRun(ctx.assistantId)) return;
-      ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
-        prev.map((message) => {
-          if (message.id !== ctx.assistantId) return message;
-          const outputs = message.outputs?.map((item) =>
-            item.outputId === output.outputId ? { ...item, kind: output.kind } : item
-          );
-          return {
-            ...message,
-            outputs,
-            content: output.kind === 'process' ? '' : message.content,
-          };
-        })
-      );
-    },
+    onOutputStarted: outputs.start,
+    onOutputDelta: outputs.text,
+    onOutputFinished: outputs.finish,
     onUsage: (usage, phase) => {
       addUsage(ctx, usage, phase);
     },

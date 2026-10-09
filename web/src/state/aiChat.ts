@@ -33,6 +33,13 @@ export type AiMessageTimelineItem = {
   updatedAt: number;
 };
 
+export type AiOutputStatus =
+  | { type: 'phase'; phase: AiAgentPhase }
+  | { type: 'tool_started' | 'tool_finished'; toolName: string }
+  | { type: 'tool_progress'; status: AiAgentToolProgressStatus }
+  | { type: 'sources'; count: number; added?: number }
+  | { type: 'evidence_limit' };
+
 export type AiMemoryMessage = {
   id: string;
   role: 'user' | 'assistant';
@@ -40,7 +47,10 @@ export type AiMemoryMessage = {
   outputs?: {
     outputId: string;
     phase: AiAgentPhase;
-    text: string;
+    text?: string;
+    thinking?: string;
+    thinkingPhase?: AiThinkingPhase;
+    status?: AiOutputStatus;
     kind?: 'process' | 'answer';
   }[];
   sources?: AiSemanticResult[];
@@ -140,6 +150,18 @@ export function sanitizeAiChatMessages(
     if (next.timeline?.some((entry) => entry.status === 'running')) {
       changed = true;
       next = settleAiMessageTimeline(next, 'error');
+    }
+
+    if (next.outputs?.some((output) => output.kind === 'answer' && output.text === next.content)) {
+      changed = true;
+      next = {
+        ...next,
+        outputs: next.outputs.map((output) => {
+          if (output.kind !== 'answer' || output.text !== next.content) return output;
+          const { text: _text, ...metadata } = output;
+          return metadata;
+        }),
+      };
     }
 
     return next;

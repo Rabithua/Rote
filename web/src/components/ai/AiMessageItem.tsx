@@ -37,6 +37,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
   const hasAssistantStatus =
     message.role === 'assistant' && ((message.timeline?.length || 0) > 0 || hasThinking);
   const tokenBreakdown = formatTokenBreakdown(message);
+  const hasOutputBody = message.outputs?.some((output) => output.kind !== 'process');
   const copyAnswer = async () => {
     const sourceLines = (message.sources || [])
       .map((source, index) => `[${index + 1}] ${window.location.origin}${getAiSourcePath(source)}`)
@@ -56,8 +57,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
   return (
     <div className={`px-4 py-4 ${message.role === 'assistant' ? 'bg-foreground/2' : ''}`}>
       <div className="mx-auto flex max-w-3xl flex-col gap-2 text-sm">
-        {message.role === 'assistant' && <AgentOutputTrace message={message} />}
-        {message.role === 'assistant' && (
+        {message.role === 'assistant' && !message.outputs?.length && (
           <AgentTimeline message={message} title={t('timeline.title')} />
         )}
         {message.role === 'assistant' && (
@@ -67,6 +67,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
           <PlannerDebugSummary message={message} title={t('debug.title')} />
         )}
         {message.role === 'assistant' && <ThinkingTrace message={message} />}
+        {message.role === 'assistant' && <AgentOutputTrace message={message} />}
         {message.role === 'assistant' && (message.sources?.length || 0) > 0 && (
           <div className="relative flex w-full items-center gap-1.5 text-xs">
             <AiStatusTitle icon={<LinkIcon className="size-3 shrink-0" />}>
@@ -103,35 +104,36 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
             </div>
           </div>
         )}
-        {message.role === 'assistant' && (!message.error || message.errorDetail) ? (
-          message.content ? (
-            <AiStreamingMarkdown
-              content={message.content}
-              isStreaming={message.isStreaming}
-              sources={message.sources}
-            />
-          ) : (
-            !message.error &&
-            !hasAssistantStatus && (
-              <div className="text-info flex items-center gap-2">
-                <Loader className="size-4 animate-spin" />
-                {!message.plan
-                  ? t('messages.thinking')
-                  : !(message.sources && message.sources.length > 0)
-                    ? t('messages.searching')
-                    : t('messages.reading')}
-              </div>
+        {!hasOutputBody &&
+          (message.role === 'assistant' && (!message.error || message.errorDetail) ? (
+            message.content ? (
+              <AiStreamingMarkdown
+                content={message.content}
+                isStreaming={message.isStreaming}
+                sources={message.sources}
+              />
+            ) : (
+              !message.error &&
+              !hasAssistantStatus && (
+                <div className="text-info flex items-center gap-2">
+                  <Loader className="size-4 animate-spin" />
+                  {!message.plan
+                    ? t('messages.thinking')
+                    : !(message.sources && message.sources.length > 0)
+                      ? t('messages.searching')
+                      : t('messages.reading')}
+                </div>
+              )
             )
-          )
-        ) : (
-          <div
-            className={`wrap-break-word whitespace-pre-line ${
-              message.error ? 'text-destructive' : ''
-            }`}
-          >
-            {message.content}
-          </div>
-        )}
+          ) : (
+            <div
+              className={`wrap-break-word whitespace-pre-line ${
+                message.error ? 'text-destructive' : ''
+              }`}
+            >
+              {message.content}
+            </div>
+          ))}
         {message.error && message.errorDetail && (
           <div className="text-destructive text-xs wrap-break-word whitespace-pre-line">
             {message.errorDetail}

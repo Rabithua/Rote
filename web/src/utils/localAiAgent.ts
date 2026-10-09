@@ -73,9 +73,9 @@ export async function localAiAgentStream(params: {
   ) => {
     const separator = lastOutputId && lastOutputId !== outputId ? '\n\n' : '';
     lastOutputId = outputId;
-    const output = { outputId, phase, text: separator + text };
+    const output = { outputId, phase, text };
     if (params.handlers.onOutputDelta) params.handlers.onOutputDelta(output);
-    else params.handlers.onDelta?.(output.text);
+    else params.handlers.onDelta?.(separator + text);
   };
   const availableToolNames = new Set(bootstrap?.tools.map((tool) => tool.function.name) || []);
 
@@ -103,6 +103,7 @@ export async function localAiAgentStream(params: {
   for (let step = 0; step < bootstrap.policy.maxIterations; step += 1) {
     const phase = step === 0 ? 'planning' : 'tool_calling';
     const outputId = `step-${step}`;
+    params.handlers.onOutputStarted?.({ outputId, phase });
     params.handlers.onProgress?.(phase);
     const response = await streamLocalChatCompletion({
       config: params.config,
@@ -112,7 +113,11 @@ export async function localAiAgentStream(params: {
       signal: params.signal,
       onContent: (text) => emitOutput(outputId, phase, text),
       onReasoning: (text) =>
-        params.handlers.onThinking?.(step === 0 ? 'route_decision' : 'evidence_decision', text),
+        params.handlers.onThinking?.(
+          step === 0 ? 'route_decision' : 'evidence_decision',
+          text,
+          outputId
+        ),
     });
     const calls = response.message.tool_calls || [];
     hasAnswer = !calls.length && !!response.message.content?.trim();
@@ -215,6 +220,7 @@ export async function localAiAgentStream(params: {
   }
 
   if (!hasAnswer && !endedWithoutTools) {
+    params.handlers.onOutputStarted?.({ outputId: 'final', phase: 'answering' });
     params.handlers.onProgress?.('answering');
     const stopReason = evidenceExhausted
       ? 'The evidence text budget has been exhausted. No further evidence tools are available. Briefly state this coverage limit.\n'
@@ -225,7 +231,7 @@ export async function localAiAgentStream(params: {
       messages,
       enableThinking: params.enableThinking,
       signal: params.signal,
-      onReasoning: (text) => params.handlers.onThinking?.('answer', text),
+      onReasoning: (text) => params.handlers.onThinking?.('answer', text, 'final'),
       onContent: (text) => emitOutput('final', 'answering', text),
     });
     if (!response.message.content?.trim()) {

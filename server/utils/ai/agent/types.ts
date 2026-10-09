@@ -91,7 +91,8 @@ export type RoteAgentStreamEvent =
   | { type: 'sources'; sources: SemanticSearchResult[]; retrieval?: RoteAgentRetrieval }
   | { type: 'plan'; plan: PlannerAgentDto }
   | { type: 'clarification'; question: string; pendingPlan?: PlannerAgentDto | null }
-  | { type: 'thinking'; phase: RoteAgentThinkingPhase; text: string }
+  | { type: 'thinking'; phase: RoteAgentThinkingPhase; text: string; outputId?: string }
+  | { type: 'output_started'; outputId: string; phase: RoteAgentPhase }
   | { type: 'delta'; text: string; outputId?: string; phase?: RoteAgentPhase }
   | {
       type: 'output_finished';
