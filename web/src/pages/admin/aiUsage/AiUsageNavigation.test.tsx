@@ -86,7 +86,12 @@ function mount(path = '/admin') {
 beforeEach(() => {
   vi.mocked(get).mockReset();
   vi.mocked(get).mockImplementation(async (url) => ({
-    data: url === '/admin/stats/dashboard' ? dashboard : usage,
+    data:
+      url === '/admin/stats/dashboard'
+        ? dashboard
+        : String(url).includes('/ai-usage/users?')
+          ? { users: [], pagination: { page: 1, limit: 20, total: 0, pages: 0 } }
+          : usage,
   }));
   vi.mocked(useAuthState).mockReturnValue({
     authReady: true,
@@ -106,10 +111,10 @@ describe('AI usage navigation', () => {
     expect(get).toHaveBeenCalledWith('/admin/stats/dashboard');
 
     fireEvent.click(within(link).getByText('test-user'));
-    await screen.findByText('system');
-    expect(screen.getAllByRole('combobox')).toHaveLength(3);
-    expect(screen.getByText('unattributed')).toBeVisible();
-    expect(get).toHaveBeenCalledTimes(2);
+    await screen.findByText('statisticsNotes');
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    expect(screen.getByText('unattributed')).not.toBeVisible();
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(3));
     expect(String(vi.mocked(get).mock.calls[1][0])).toContain('/admin/stats/ai-usage?');
 
     fireEvent.click(screen.getByText('back'));
@@ -130,8 +135,8 @@ describe('AI usage navigation', () => {
       typeof useAuthState
     >);
     mount('/admin/ai-usage');
-    await screen.findByText('system');
-    expect(get).toHaveBeenCalledTimes(1);
+    await screen.findByText('statisticsNotes');
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
     fireEvent.click(screen.getByText('back'));
     await waitFor(() => expect(get).toHaveBeenCalledWith('/admin/stats/dashboard'));
   });

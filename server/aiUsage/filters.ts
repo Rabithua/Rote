@@ -7,6 +7,26 @@ export interface AiUsageFilters {
 
 export class InvalidAiUsageFilter extends Error {}
 
+export interface AiUsagePagination {
+  page: number;
+  limit: number;
+}
+
+export function parseAiUsagePagination(query: Record<string, string>): AiUsagePagination {
+  const page = Number(query.page ?? '1');
+  const limit = Number(query.limit ?? '20');
+  if (
+    !Number.isSafeInteger(page) ||
+    page < 1 ||
+    !Number.isSafeInteger(limit) ||
+    limit < 1 ||
+    limit > 100 ||
+    !Number.isSafeInteger((page - 1) * limit)
+  )
+    throw new InvalidAiUsageFilter('invalid_ai_usage_filter');
+  return { page, limit };
+}
+
 export function parseAiUsageFilters(
   query: Record<string, string>,
   now = new Date()

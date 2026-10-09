@@ -11,6 +11,7 @@ import { registerHttpErrorUsageTests } from './testCases/httpErrorUsage.test';
 import { registerAgentCaptureTests } from './testCases/agentCapture.test';
 import { saveAiUsage } from './repository';
 import { getAiUsageStatistics } from './statistics';
+import { getAiUsageUserStatistics } from './userStatistics';
 import { parseAiUsageFilters } from './filters';
 import type { AiUsageRecord } from './types';
 
@@ -172,6 +173,53 @@ it('matches SQL totals across boundaries, model/type filters, legacy and unknown
   expect(selected.availableModels).toEqual(['embedding-test']);
 });
 
+it('paginates every user beyond the top ten with stable totals and the same attribution filters', async () => {
+  const ids = Array.from(
+    { length: 23 },
+    (_, i) => `b1000000-0000-4000-8000-${String(i).padStart(12, '0')}`
+  );
+  for (const [i, id] of ids.entries()) {
+    await client`INSERT INTO users (id, email, username) VALUES (${id}, ${`usage-${i}@example.test`}, ${`usage-${i}`})`;
+    await saveAiUsage(record({ userid: id, totalTokens: (23 - i) * 120 }));
+  }
+  await saveAiUsage(
+    record({
+      userid: ids[22],
+      type: 'embedding',
+      model: 'embedding-test',
+      purpose: 'embedding_index',
+      totalTokens: 9,
+    })
+  );
+  await saveAiUsage(record({ userid: owner, purpose: 'provider_test', totalTokens: 100000 }));
+  await saveAiUsage(record({ userid: null, totalTokens: 100000 }));
+  await saveAiUsage(record({ userid: owner, createdAt: new Date('2026-10-31T16:00:00Z') }));
+  const filters = parseAiUsageFilters({
+    startAt: '2026-09-30T16:00:00Z',
+    endAt: '2026-10-31T16:00:00Z',
+  });
+  const pages = await Promise.all(
+    [1, 2, 3].map((page) => getAiUsageUserStatistics(filters, { page, limit: 10 }))
+  );
+  expect(pages.map((page) => page.pagination)).toEqual(
+    [1, 2, 3].map((page) => ({ page, limit: 10, total: 23, pages: 3 }))
+  );
+  const users = pages.flatMap(
+    (page) => page.users as { id: string; metrics: { totalTokens: string; calls: number } }[]
+  );
+  expect(users.map((user) => user.id)).toEqual(ids);
+  expect(users[22].metrics).toMatchObject({ totalTokens: '129', calls: 2 });
+  const selected = await getAiUsageUserStatistics(
+    { ...filters, type: 'embedding', model: 'embedding-test' },
+    { page: 1, limit: 20 }
+  );
+  expect(selected.pagination.total).toBe(1);
+  expect(selected.users).toMatchObject([{ id: ids[22], metrics: { totalTokens: '9', calls: 1 } }]);
+  const beyond = await getAiUsageUserStatistics(filters, { page: 4, limit: 10 });
+  expect(beyond.users).toEqual([]);
+  expect(beyond.pagination.total).toBe(23);
+});
+
 it('attributes private and public query embeddings to the requester independently of content ownership', async () => {
   const { DEFAULT_AI_CONFIG } = await import('../utils/ai/providers');
   const { semanticSearch } = await import('../utils/dbMethods/ai/semanticSearch');
@@ -227,12 +275,21 @@ it('serves the aggregate API only to admins, validates filters, and keeps the le
   expect((await response.json()).data.summary).toMatchObject({ totalTokens: '120', calls: 1 });
   expect((await router.request('/stats/ai-usage')).status).toBe(401);
   expect((await router.request('/stats/ai-usage?type=invalid', { headers })).status).toBe(400);
+  const usersResponse = await router.request(`/stats/ai-usage/users?${query}`, { headers });
+  expect(usersResponse.status).toBe(200);
+  expect((await usersResponse.json()).data).toMatchObject({
+    users: [{ id: owner, metrics: { totalTokens: '120', calls: 1 } }],
+    pagination: { page: 1, limit: 20, total: 1, pages: 1 },
+  });
+  expect((await router.request('/stats/ai-usage/users')).status).toBe(401);
+  expect((await router.request('/stats/ai-usage/users?page=0', { headers })).status).toBe(400);
   const legacy = await router.request('/stats/dashboard', { headers });
   expect(legacy.status).toBe(200);
   expect(Array.isArray((await legacy.json()).data.topUsersByTokenUsage)).toBe(true);
   await client`UPDATE users SET role='user' WHERE id=${owner}`;
   try {
     expect((await router.request('/stats/ai-usage', { headers })).status).toBe(403);
+    expect((await router.request('/stats/ai-usage/users', { headers })).status).toBe(403);
   } finally {
     await client`UPDATE users SET role='admin' WHERE id=${owner}`;
   }
