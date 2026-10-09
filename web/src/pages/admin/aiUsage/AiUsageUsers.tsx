@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -63,12 +64,16 @@ export default function AiUsageUsers({
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">
                       <a
-                        className="hover:underline"
+                        className="inline-flex items-center gap-2 hover:underline"
                         href={`/${user.username}`}
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {user.username}
+                        <Avatar aria-hidden="true">
+                          <AvatarImage src={user.avatar || undefined} alt="" />
+                          <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span>{user.username}</span>
                       </a>
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
