@@ -1,6 +1,11 @@
 import { Hono } from 'hono';
-import { InvalidAiUsageFilter, parseAiUsageFilters } from '../../aiUsage/filters';
+import {
+  InvalidAiUsageFilter,
+  parseAiUsageFilters,
+  parseAiUsagePagination,
+} from '../../aiUsage/filters';
 import { getAiUsageStatistics } from '../../aiUsage/statistics';
+import { getAiUsageUserStatistics } from '../../aiUsage/userStatistics';
 import { authenticateJWT, requireAdmin, requireSuperAdmin } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { UserRole } from '../../types/main';
@@ -66,6 +71,28 @@ adminUsersRouter.get('/stats/ai-usage', authenticateJWT, requireAdmin, async (c:
   const stats = await getAiUsageStatistics(filters);
   return c.json(createResponse(stats), 200);
 });
+
+// 获取完整 AI 用户用量（管理员）
+adminUsersRouter.get(
+  '/stats/ai-usage/users',
+  authenticateJWT,
+  requireAdmin,
+  async (c: HonoContext) => {
+    let filters;
+    let pagination;
+    try {
+      const query = c.req.query();
+      filters = parseAiUsageFilters(query);
+      pagination = parseAiUsagePagination(query);
+    } catch (error) {
+      if (error instanceof InvalidAiUsageFilter)
+        return c.json(createResponse(null, 'invalid_ai_usage_filter'), 400);
+      throw error;
+    }
+    const stats = await getAiUsageUserStatistics(filters, pagination);
+    return c.json(createResponse(stats), 200);
+  }
+);
 
 // 获取所有用户列表（管理员）
 adminUsersRouter.get('/users', authenticateJWT, requireAdmin, async (c: HonoContext) => {

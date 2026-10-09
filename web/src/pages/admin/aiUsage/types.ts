@@ -25,3 +25,8 @@ export interface AiUsageStatistics {
   topUsers: { id: string; username: string; avatar: string | null; metrics: AiUsageMetrics }[];
   availableModels: string[];
 }
+
+export interface AiUsageUsersResponse {
+  users: AiUsageStatistics['topUsers'];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}

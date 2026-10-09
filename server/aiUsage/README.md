@@ -25,6 +25,13 @@ decimal strings. `calls` excludes legacy rows; new-call coverage uses only
 `reportedCalls / calls`. System and anonymous groups are subsets of the overview.
 The existing dashboard's `topUsersByTokenUsage` response remains available.
 
+`GET /admin/stats/ai-usage/users` provides the complete user usage table with the
+same admin requirement and range/type/model filters. It accepts `page` (starting
+at 1) and `limit` (1–100, default 20), and returns `users` and `pagination`
+(`page`, `limit`, `total`, `pages`). All users with records in the selected window
+are reachable, ordered by total tokens descending and user ID to break ties.
+System checks and anonymous/deleted accounts remain in their summary groups.
+
 Run unit tests with `bun test aiUsage/recording.test.ts`. The integration suite
 requires an **empty, disposable** PostgreSQL database named `ai_usage_test` with
 pgvector available. Set `POSTGRESQL_URL` to that database and run

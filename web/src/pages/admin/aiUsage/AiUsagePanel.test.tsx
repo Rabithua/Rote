@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SWRConfig } from 'swr';
 import { createInstance } from 'i18next';
 import { get } from '@/utils/api';
@@ -48,13 +48,22 @@ function mount() {
     </SWRConfig>
   );
 }
+const summaryCalls = () =>
+  vi.mocked(get).mock.calls.filter(([url]) => String(url).startsWith('/admin/stats/ai-usage?'));
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-09T00:00:00Z'));
   vi.mocked(get).mockReset();
-  vi.mocked(get).mockResolvedValue({ data: fixture });
+  vi.mocked(get).mockImplementation(async (url) => ({
+    data: String(url).includes('/ai-usage/users?')
+      ? { users: fixture.topUsers, pagination: { page: 1, limit: 20, total: 1, pages: 1 } }
+      : fixture,
+  }));
 });
+afterEach(() => vi.useRealTimers());
 
 describe('AI usage dashboard', () => {
-  it('sends explicit identical range boundaries while type/model filters change', async () => {
+  it('fetches all usage for the selected period and refreshes the same window', async () => {
     mount();
     await screen.findByText('test-user');
     const first = new URLSearchParams(String(vi.mocked(get).mock.calls[0][0]).split('?')[1]);
@@ -62,32 +71,65 @@ describe('AI usage dashboard', () => {
     expect(
       new Date(first.get('endAt')!).getTime() - new Date(first.get('startAt')!).getTime()
     ).toBe(30 * 86400_000);
-    fireEvent.change(screen.getByLabelText('type'), { target: { value: 'embedding' } });
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
-    const second = new URLSearchParams(String(vi.mocked(get).mock.calls[1][0]).split('?')[1]);
-    expect(second.get('type')).toBe('embedding');
-    expect(second.get('startAt')).toBe(first.get('startAt'));
+    expect(first.has('model')).toBe(false);
+    expect(screen.getAllByRole('combobox')).toHaveLength(1);
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'period' }), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('option', { name: '7d' }));
+    await waitFor(() => expect(summaryCalls()).toHaveLength(2));
+    const second = new URLSearchParams(String(summaryCalls()[1][0]).split('?')[1]);
+    expect(second.get('type')).toBe('all');
+    expect(
+      new Date(second.get('endAt')!).getTime() - new Date(second.get('startAt')!).getTime()
+    ).toBe(7 * 86400_000);
     expect(second.get('endAt')).toBe(first.get('endAt'));
     await screen.findByText('test-user');
-    fireEvent.change(screen.getByLabelText('model'), { target: { value: 'embedding-test' } });
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(3));
-    expect(String(vi.mocked(get).mock.calls[2][0])).toContain('model=embedding-test');
-    fireEvent.change(screen.getByLabelText('period'), { target: { value: '7d' } });
-    await waitFor(() => expect(get).toHaveBeenCalledTimes(4));
-    const last = new URLSearchParams(String(vi.mocked(get).mock.calls[3][0]).split('?')[1]);
-    expect(new Date(last.get('endAt')!).getTime() - new Date(last.get('startAt')!).getTime()).toBe(
-      7 * 86400_000
+    fireEvent.keyDown(screen.getByRole('combobox', { name: 'period' }), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('option', { name: 'month' }));
+    await waitFor(() => expect(summaryCalls()).toHaveLength(3));
+    const month = new URLSearchParams(String(summaryCalls()[2][0]).split('?')[1]);
+    expect(month.get('startAt')).toBe('2026-09-30T16:00:00.000Z');
+    await screen.findByText('test-user');
+    vi.setSystemTime(new Date('2026-10-09T00:01:00Z'));
+    fireEvent.click(screen.getByRole('button', { name: 'refresh' }));
+    await waitFor(() => expect(summaryCalls()).toHaveLength(4));
+    const last = new URLSearchParams(String(summaryCalls()[3][0]).split('?')[1]);
+    expect(last.get('startAt')).toBe(month.get('startAt'));
+    expect(last.get('endAt')).toBe('2026-10-09T00:01:00.000Z');
+    await screen.findByText('test-user');
+    fireEvent.click(screen.getByRole('button', { name: 'refresh' }));
+    await waitFor(() => expect(summaryCalls()).toHaveLength(5));
+    expect(summaryCalls()[4][0]).toBe(summaryCalls()[3][0]);
+    await waitFor(() =>
+      expect(
+        vi.mocked(get).mock.calls.filter(([url]) => String(url).includes('/ai-usage/users?'))
+      ).toHaveLength(5)
     );
   });
-  it('keeps missing details unknown and distinguishes legacy records and system groups', async () => {
+  it('shows common metrics and model usage while keeping diagnostics expandable', async () => {
     mount();
     await screen.findByText('test-user');
+    expect(screen.getByText('totalUsage')).toBeVisible();
+    screen.getAllByText('promptTokens').forEach((element) => expect(element).toBeVisible());
+    screen.getAllByText('completionTokens').forEach((element) => expect(element).toBeVisible());
+    screen.getAllByText('calls').forEach((element) => expect(element).toBeVisible());
+    screen.getAllByText('usage').forEach((element) => expect(element).toBeVisible());
+    expect(screen.getByText('modelUsage')).toBeVisible();
+    expect(screen.getAllByText('deepseek-flash')[0]).toBeVisible();
+    const notes = screen.getByRole('button', { name: 'statisticsNotes' });
+    expect(notes).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.getByText('system')).not.toBeVisible();
+    expect(screen.getByText('coverage')).not.toBeVisible();
+    fireEvent.click(notes);
+    expect(notes).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getAllByText(/unknown/).length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText('legacyProvider')).toBeVisible();
     expect(screen.getByText('legacyCount')).toBeVisible();
     expect(screen.getByText('system')).toBeVisible();
     expect(screen.getByText('unattributed')).toBeVisible();
     expect(screen.getByText('detailNote')).toBeVisible();
+    expect(get).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByText('statisticsNotes'));
+    expect(screen.getByText('system')).not.toBeVisible();
   });
   it('shows load failures explicitly', async () => {
     vi.mocked(get).mockRejectedValue(new Error('failed'));

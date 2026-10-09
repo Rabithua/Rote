@@ -1,7 +1,7 @@
 import { describe, expect, it, spyOn } from 'bun:test';
 import { createAiUsageRecorder } from './recording';
 import { readAiUsage } from './values';
-import { parseAiUsageFilters } from './filters';
+import { parseAiUsageFilters, parseAiUsagePagination } from './filters';
 import type { AiUsageRecord } from './types';
 
 const provider = {
@@ -125,5 +125,20 @@ it('uses half-open explicit ranges and rejects invalid filters', () => {
     { startAt: now.toISOString(), endAt: '2026-10-08T00:00:00Z' },
   ]) {
     expect(() => parseAiUsageFilters(query)).toThrow('invalid_ai_usage_filter');
+  }
+});
+
+it('validates user usage pagination without silently capping or resetting it', () => {
+  expect(parseAiUsagePagination({})).toEqual({ page: 1, limit: 20 });
+  expect(parseAiUsagePagination({ page: '3', limit: '25' })).toEqual({ page: 3, limit: 25 });
+  for (const query of [
+    { page: '0' },
+    { page: '1.5' },
+    { page: 'no' },
+    { limit: '0' },
+    { limit: '101' },
+    { page: '9007199254740991' },
+  ]) {
+    expect(() => parseAiUsagePagination(query)).toThrow('invalid_ai_usage_filter');
   }
 });

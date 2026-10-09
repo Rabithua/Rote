@@ -14,57 +14,32 @@ export default function AiUsageModels({ models }: { models: AiUsageStatistics['m
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.dashboard.aiUsage' });
   return (
     <div className="overflow-x-auto rounded-md border">
-      <Table className="min-w-[760px] text-xs whitespace-nowrap">
+      <Table className="text-sm">
         <TableHeader>
           <TableRow>
-            {[
-              'model',
-              'type',
-              'calls',
-              'promptTokens',
-              'completionTokens',
-              'totalTokens',
-              'details',
-            ].map((key) => (
-              <TableHead key={key}>{t(key)}</TableHead>
-            ))}
+            <TableHead>{t('modelName')}</TableHead>
+            <TableHead className="text-right whitespace-normal">{t('usage')}</TableHead>
+            <TableHead className="text-right whitespace-normal">{t('calls')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {models.map(({ providerId, model, type, metrics }) => (
             <TableRow key={JSON.stringify([providerId, model, type])}>
-              <TableCell className="font-medium">
+              <TableCell className="font-medium break-all whitespace-normal">
                 {model}
-                <div className="text-muted-foreground">{providerId ?? t('legacyProvider')}</div>
+                <div className="text-muted-foreground text-xs font-normal">{t(type)}</div>
               </TableCell>
-              <TableCell>{t(type)}</TableCell>
-              <TableCell>
+              <TableCell className="text-right tabular-nums">
+                {formatTokenCount(metrics.totalTokens)}
+              </TableCell>
+              <TableCell className="text-right tabular-nums">
                 {metrics.calls.toLocaleString()}
-                <div className="text-muted-foreground">
-                  {t('legacyCount', { count: metrics.legacyRecords })}
-                </div>
-              </TableCell>
-              <TableCell>{formatTokenCount(metrics.promptTokens)}</TableCell>
-              <TableCell>{formatTokenCount(metrics.completionTokens)}</TableCell>
-              <TableCell>{formatTokenCount(metrics.totalTokens)}</TableCell>
-              <TableCell className="min-w-48">
-                {(['cacheHit', 'cacheMiss', 'reasoning'] as const).map((key) => (
-                  <div key={key}>
-                    {t(key)}: {formatTokenCount(metrics[`${key}Tokens`]) ?? t('unknown')}
-                    {metrics[`${key}Tokens`] !== null && (
-                      <span className="text-muted-foreground">
-                        {' '}
-                        · {t('detailCoverage', { count: metrics[`${key}ReportedCalls`] })}
-                      </span>
-                    )}
-                  </div>
-                ))}
               </TableCell>
             </TableRow>
           ))}
           {!models.length && (
             <TableRow>
-              <TableCell colSpan={7} className="text-muted-foreground py-6 text-center">
+              <TableCell colSpan={3} className="text-muted-foreground py-6 text-center">
                 {t('empty')}
               </TableCell>
             </TableRow>
