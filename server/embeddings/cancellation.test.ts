@@ -40,7 +40,6 @@ describe('interactive embedding cancellation', () => {
     const reason = new DOMException('Stopped', 'AbortError');
     let queryStarted!: () => void;
     let queryAborted!: () => void;
-    let release!: () => void;
     const started = new Promise<void>((resolve) => {
       queryStarted = resolve;
     });
@@ -50,15 +49,24 @@ describe('interactive embedding cancellation', () => {
     const service = Bun.serve({
       hostname: '127.0.0.1',
       port: 0,
-      async fetch(request) {
+      fetch(request) {
         request.signal.addEventListener('abort', queryAborted, { once: true });
-        await new Promise<void>((resolve) => {
-          release = resolve;
-          queryStarted();
-        });
-        return Response.json({ data: [{ embedding: [0.1, 0.2, 0.3] }] });
+        return new Response(
+          new ReadableStream({
+            start(body) {
+              body.enqueue(new TextEncoder().encode('{"data":['));
+            },
+            cancel: queryAborted,
+          }),
+          { headers: { 'Content-Type': 'application/json' } }
+        );
       },
     });
+    globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+      const response = await originalFetch(...args);
+      queryStarted();
+      return response;
+    }) as typeof fetch;
     const save = spyOn(usageRepository, 'saveAiUsage').mockResolvedValue(undefined);
     try {
       const pending = createEmbedding(
@@ -81,7 +89,6 @@ describe('interactive embedding cancellation', () => {
         purpose: 'embedding_query',
       });
     } finally {
-      release?.();
       service.stop(true);
       save.mockRestore();
     }
