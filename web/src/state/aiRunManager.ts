@@ -8,6 +8,7 @@ import {
   createAiRunHandlers,
   type AiRunLabels,
   type AiRunProgressState,
+  type AiRunHandlers,
 } from '@/state/aiRunHandlers';
 import {
   aiChatMessagesAtom,
@@ -31,6 +32,7 @@ type ActiveStream = {
 type ActiveRun = {
   assistantId: string;
   controller: AbortController;
+  cancelOutputs?: () => void;
 };
 
 type StartAiRunParams = {
@@ -197,6 +199,7 @@ export function syncAiRunStateFromMessages(messages: AiMemoryMessage[]) {
 
 export function clearAiRun() {
   activeRun?.controller.abort();
+  activeRun?.cancelOutputs?.();
   if (activeStream?.frame !== null && activeStream?.frame !== undefined) {
     window.cancelAnimationFrame(activeStream.frame);
   }
@@ -274,6 +277,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
     },
   ]);
 
+  let agentHandlers: AiRunHandlers | undefined;
   try {
     const previousPlan = params.ignorePendingPlan
       ? null
@@ -302,7 +306,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       },
     };
 
-    const agentHandlers = createAiRunHandlers({
+    agentHandlers = createAiRunHandlers({
       assistantId,
       labels: params.labels,
       progress,
@@ -313,6 +317,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       queueStreamDelta,
       mergeAgentState,
     });
+    activeRun.cancelOutputs = agentHandlers.cancelOutputs;
 
     if (isPersonalAgent) {
       await localAiAgentStream({
@@ -329,6 +334,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       await aiChatStream(agentPayload, agentHandlers, controller.signal);
     }
 
+    agentHandlers.flushOutputs();
     if (!progress.receivedClarification) {
       await drainStreamContent(assistantId);
     }
@@ -349,6 +355,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       );
     });
   } catch (error: any) {
+    agentHandlers?.flushOutputs();
     const aborted = controller.signal.aborted || error?.name === 'AbortError';
     if (aborted) return true;
 
@@ -379,6 +386,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       toast.error(fallbackMessage);
     }
   } finally {
+    agentHandlers?.cancelOutputs();
     const finishingActiveRun = activeRun?.assistantId === assistantId;
     if (activeStream?.id === assistantId && activeStream.frame !== null) {
       window.cancelAnimationFrame(activeStream.frame);

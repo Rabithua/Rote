@@ -148,7 +148,8 @@ export type AiAgentToolProgressStatus =
   | 'finding_related'
   | 'loading_tags';
 export type AiUsagePhase = 'planning' | 'tool_decision' | 'answer';
-export type AiOutputDelta = { outputId: string; phase: AiAgentPhase; text: string };
+export type AiOutputStarted = { outputId: string; phase: AiAgentPhase };
+export type AiOutputDelta = AiOutputStarted & { text: string };
 export type AiOutputFinished = {
   outputId: string;
   phase: AiAgentPhase;
@@ -207,8 +208,9 @@ export type AiChatStreamHandlers = {
   onPlan?: (plan: PlannerAgentDto) => void;
   onClarification?: (clarification: AiClarification) => void;
   onSources?: (sources: AiSemanticResult[], retrieval?: AiRetrievalSummary) => void;
-  onThinking?: (phase: AiThinkingPhase, text: string) => void;
+  onThinking?: (phase: AiThinkingPhase, text: string, outputId?: string) => void;
   onDelta?: (text: string) => void;
+  onOutputStarted?: (output: AiOutputStarted) => void;
   onOutputDelta?: (output: AiOutputDelta) => void;
   onOutputFinished?: (output: AiOutputFinished) => void;
   onStatePatch?: (state: Partial<AiAgentClientState>) => void;

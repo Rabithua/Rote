@@ -40,7 +40,10 @@ export type AiMemoryMessage = {
   outputs?: {
     outputId: string;
     phase: AiAgentPhase;
-    text: string;
+    text?: string;
+    thinking?: string;
+    thinkingPhase?: AiThinkingPhase;
+    statusText?: string;
     kind?: 'process' | 'answer';
   }[];
   sources?: AiSemanticResult[];
@@ -140,6 +143,18 @@ export function sanitizeAiChatMessages(
     if (next.timeline?.some((entry) => entry.status === 'running')) {
       changed = true;
       next = settleAiMessageTimeline(next, 'error');
+    }
+
+    if (next.outputs?.some((output) => output.kind === 'answer' && output.text === next.content)) {
+      changed = true;
+      next = {
+        ...next,
+        outputs: next.outputs.map((output) => {
+          if (output.kind !== 'answer' || output.text !== next.content) return output;
+          const { text: _text, ...metadata } = output;
+          return metadata;
+        }),
+      };
     }
 
     return next;

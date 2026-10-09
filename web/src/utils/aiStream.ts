@@ -11,6 +11,7 @@ import type {
   AiTokenUsage,
   AiUsagePhase,
   AiOutputDelta,
+  AiOutputStarted,
   AiOutputFinished,
   PlannerAgentDto,
 } from './aiTypes';
@@ -146,7 +147,7 @@ export async function readAiStreamResponse(
       const data = parsed.data as { sources?: AiSemanticResult[]; retrieval?: AiRetrievalSummary };
       handlers.onSources?.(Array.isArray(data.sources) ? data.sources : [], data.retrieval);
     } else if (parsed.event === 'thinking') {
-      const data = parsed.data as { phase?: AiThinkingPhase; text?: string };
+      const data = parsed.data as { phase?: AiThinkingPhase; text?: string; outputId?: string };
       if (
         (data.phase === 'route_decision' ||
           data.phase === 'evidence_decision' ||
@@ -154,8 +155,12 @@ export async function readAiStreamResponse(
           data.phase === 'answer') &&
         typeof data.text === 'string'
       ) {
-        handlers.onThinking?.(data.phase, data.text);
+        handlers.onThinking?.(data.phase, data.text, data.outputId);
       }
+    } else if (parsed.event === 'output_started') {
+      const data = parsed.data as Partial<AiOutputStarted>;
+      if (data.outputId && data.phase)
+        handlers.onOutputStarted?.({ outputId: data.outputId, phase: data.phase });
     } else if (parsed.event === 'delta') {
       const data = parsed.data as Partial<AiOutputDelta>;
       if (typeof data.text === 'string') {

@@ -20,15 +20,19 @@ describe('AI server stream reader', () => {
     const onOutputDelta = vi.fn();
     const onOutputFinished = vi.fn();
     const onDelta = vi.fn();
+    const onOutputStarted = vi.fn();
+    const onThinking = vi.fn();
     await readAiStreamResponse(
       streamResponse([
+        'event: output_started\ndata: {"outputId":"step-0","phase":"planning"}',
+        'event: thinking\ndata: {"outputId":"step-0","phase":"route_decision","text":"Reasoning"}',
         'event: delta\ndata: {"outputId":"step-0","phase":"planning","text":"Looking up notes"}',
         'event: output_finished\ndata: {"outputId":"step-0","phase":"planning","kind":"process"}',
         'event: delta\ndata: {"outputId":"step-1","phase":"tool_calling","text":"Answer"}',
         'event: output_finished\ndata: {"outputId":"step-1","phase":"tool_calling","kind":"answer"}',
         'event: done\ndata: {}',
       ]),
-      { onOutputDelta, onOutputFinished, onDelta }
+      { onOutputStarted, onThinking, onOutputDelta, onOutputFinished, onDelta }
     );
     expect(onOutputDelta.mock.calls.map(([output]) => output.text)).toEqual([
       'Looking up notes',
@@ -39,6 +43,11 @@ describe('AI server stream reader', () => {
       'answer',
     ]);
     expect(onDelta).not.toHaveBeenCalled();
+    expect(onOutputStarted).toHaveBeenCalledExactlyOnceWith({
+      outputId: 'step-0',
+      phase: 'planning',
+    });
+    expect(onThinking).toHaveBeenCalledExactlyOnceWith('route_decision', 'Reasoning', 'step-0');
   });
 
   it('keeps identified delta text readable by older handlers', async () => {
@@ -114,6 +123,25 @@ describe('AI server stream reader', () => {
 });
 
 describe('interrupted AI message state', () => {
+  it('removes duplicated answer text from previously saved output records', () => {
+    const [message] = sanitizeAiChatMessages(
+      [
+        {
+          id: 'answer',
+          role: 'assistant',
+          content: 'Answer',
+          outputs: [
+            { outputId: 'step-0', phase: 'planning', text: 'Process', kind: 'process' },
+            { outputId: 'step-1', phase: 'answering', text: 'Answer', kind: 'answer' },
+          ],
+        },
+      ],
+      'interrupted'
+    );
+    expect(message.outputs?.[0].text).toBe('Process');
+    expect(message.outputs?.[1].text).toBeUndefined();
+    expect(message.content).toBe('Answer');
+  });
   it('preserves partial content and marks it as an error', () => {
     const messages: AiMemoryMessage[] = [
       {
