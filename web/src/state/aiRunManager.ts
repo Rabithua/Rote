@@ -105,11 +105,13 @@ function flushStreamContent(assistantId: string, options: { force?: boolean } = 
     );
   }
 
-  setMessagesForActiveRun(assistantId, (prev) =>
-    prev.map((message) =>
-      message.id === assistantId ? { ...message, content: stream.content } : message
-    )
-  );
+  if (stream.targetContent) {
+    setMessagesForActiveRun(assistantId, (prev) =>
+      prev.map((message) =>
+        message.id === assistantId ? { ...message, content: stream.content } : message
+      )
+    );
+  }
 
   if (!options.force && stream.content.length < stream.targetContent.length) {
     stream.frame = window.requestAnimationFrame(() => flushStreamContent(assistantId));
@@ -284,6 +286,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
     }
 
     const agentPayload = {
+      streamOutputs: true,
       message: question,
       pendingPlan: activePendingPlan,
       clarificationAnswer: activePendingPlan ? question : undefined,
@@ -358,7 +361,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
           ? settleAiMessageTimeline(
               {
                 ...message,
-                content: streamContent,
+                content: streamContent || message.content,
                 error: true,
                 errorDetail: fallbackMessage,
                 isStreaming: false,

@@ -148,6 +148,7 @@ function buildInitialMessages(
 async function streamFinalAnswer(
   ctx: RoteAgentContext,
   messages: ChatMessage[],
+  emitText: (text: string) => Promise<void>,
   signal?: AbortSignal
 ): Promise<{ emittedText: boolean; usage: any }> {
   await ctx.emit({ type: 'progress', phase: 'answering' });
@@ -164,7 +165,7 @@ async function streamFinalAnswer(
       lastUsage = part.usage;
     } else if (part.type === 'content') {
       emittedText = true;
-      await ctx.emit({ type: 'delta', text: part.text });
+      await emitText(part.text);
     }
   }
 
@@ -217,6 +218,17 @@ export async function runRoteAgentStream(params: {
   let toolCallCount = 0;
   let evidenceExhausted = false;
   let hasFinalAnswer = false;
+  let endedWithoutTools = false;
+  let lastOutputId: string | undefined;
+  const emitOutput = async (outputId: string, phase: RoteAgentPhase, text: string) => {
+    if (!request.streamOutputs) {
+      await emit({ type: 'delta', text });
+      return;
+    }
+    const separator = lastOutputId && lastOutputId !== outputId ? '\n\n' : '';
+    lastOutputId = outputId;
+    await emit({ type: 'delta', outputId, phase, text: separator + text });
+  };
   let totalTokens = 0;
   const startedAt = Date.now();
   const recordUsage = (usage: any) => {
@@ -237,6 +249,8 @@ export async function runRoteAgentStream(params: {
 
     for (let step = 0; step < policy.maxIterations; step += 1) {
       const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
+      const outputId = `step-${step}`;
+      const contentChunks: string[] = [];
       let assistantMessage: ChatMessage;
       let responseUsage: Awaited<
         ReturnType<typeof createChatCompletionWithToolsStreaming>
@@ -251,6 +265,10 @@ export async function runRoteAgentStream(params: {
               temperature: 0.2,
               enableThinking: request.enableThinking === true,
               signal: params.signal,
+              onContent: (text) => {
+                if (request.streamOutputs) return emitOutput(outputId, phase, text);
+                contentChunks.push(text);
+              },
               onReasoning: (text) =>
                 emit({
                   type: 'thinking',
@@ -276,11 +294,26 @@ export async function runRoteAgentStream(params: {
       }
 
       const toolCalls = assistantMessage.tool_calls || [];
+      hasFinalAnswer = !toolCalls.length && !!assistantMessage.content?.trim();
+      if (request.streamOutputs)
+        await emit({
+          type: 'output_finished',
+          outputId,
+          phase,
+          kind: hasFinalAnswer ? 'answer' : 'process',
+        });
       if (!toolCalls.length) {
+        endedWithoutTools = true;
+        if (hasFinalAnswer) {
+          await emit({ type: 'progress', phase: 'answering' });
+          if (!request.streamOutputs) {
+            for (const text of contentChunks) await emit({ type: 'delta', text });
+          }
+        }
         if (responseUsage) {
           await emit({
             type: 'usage',
-            phase: step === 0 ? 'planning' : 'tool_decision',
+            phase: hasFinalAnswer ? 'answer' : step === 0 ? 'planning' : 'tool_decision',
             usage: responseUsage,
           });
         }
@@ -400,10 +433,22 @@ export async function runRoteAgentStream(params: {
       if (toolCallCount >= policy.maxToolCalls || evidenceExhausted) break;
     }
 
-    if (!hasFinalAnswer) {
+    if (!hasFinalAnswer && !endedWithoutTools) {
       messages.push({ role: 'user', content: buildFinalAnswerInstruction(evidenceExhausted) });
-      const finalAnswer = await streamFinalAnswer(ctx, messages, params.signal);
+      const finalAnswer = await streamFinalAnswer(
+        ctx,
+        messages,
+        (text) => emitOutput('final', 'answering', text),
+        params.signal
+      );
       hasFinalAnswer = finalAnswer.emittedText;
+      if (request.streamOutputs)
+        await emit({
+          type: 'output_finished',
+          outputId: 'final',
+          phase: 'answering',
+          kind: 'answer',
+        });
       recordUsage(finalAnswer.usage);
     }
 

@@ -263,6 +263,42 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiChatStreamHandl
       }
       ctx.queueStreamDelta(ctx.assistantId, text);
     },
+    onOutputDelta: (output) => {
+      if (!ctx.isActiveRun(ctx.assistantId)) return;
+      ctx.progress.firstTokenTime ??= performance.now() - ctx.startedAt;
+      ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
+        prev.map((message) => {
+          if (message.id !== ctx.assistantId) return message;
+          const outputs = message.outputs || [];
+          const existing = outputs.find((item) => item.outputId === output.outputId);
+          const next = { ...output, text: `${existing?.text || ''}${output.text}` };
+          return {
+            ...message,
+            content: next.text,
+            outputs: existing
+              ? outputs.map((item) => (item.outputId === output.outputId ? next : item))
+              : [...outputs, next],
+            metrics: { ...message.metrics, firstTokenTime: ctx.progress.firstTokenTime },
+          };
+        })
+      );
+    },
+    onOutputFinished: (output) => {
+      if (!ctx.isActiveRun(ctx.assistantId)) return;
+      ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
+        prev.map((message) => {
+          if (message.id !== ctx.assistantId) return message;
+          const outputs = message.outputs?.map((item) =>
+            item.outputId === output.outputId ? { ...item, kind: output.kind } : item
+          );
+          return {
+            ...message,
+            outputs,
+            content: output.kind === 'process' ? '' : message.content,
+          };
+        })
+      );
+    },
     onUsage: (usage, phase) => {
       addUsage(ctx, usage, phase);
     },

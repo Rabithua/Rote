@@ -55,6 +55,61 @@ beforeEach(() => {
 });
 
 describe('local AI agent', () => {
+  it('streams a direct agent answer once while the provider is still running', async () => {
+    mocks.bootstrap.mockResolvedValue({
+      systemPrompt: 'Rote',
+      finalAnswerInstruction: 'Answer',
+      tools: [],
+      policy: { maxIterations: 6, maxToolCalls: 8, maxSourceChars: 12000 },
+    });
+    const onOutputDelta = vi.fn();
+    const onOutputFinished = vi.fn();
+    mocks.complete.mockImplementationOnce(async ({ onContent }) => {
+      onContent('First ');
+      expect(onOutputDelta).toHaveBeenCalledExactlyOnceWith({
+        outputId: 'step-0',
+        phase: 'planning',
+        text: 'First ',
+      });
+      expect(onOutputFinished).not.toHaveBeenCalled();
+      onContent('answer');
+      return { message: { role: 'assistant', content: 'First answer' } };
+    });
+    await localAiAgentStream({
+      config,
+      payload: { message: 'hello' },
+      handlers: { onOutputDelta, onOutputFinished },
+      toolsAvailable: true,
+      enableThinking: false,
+    });
+    expect(mocks.complete).toHaveBeenCalledTimes(1);
+    expect(onOutputDelta).toHaveBeenCalledTimes(2);
+    expect(onOutputFinished).toHaveBeenCalledExactlyOnceWith({
+      outputId: 'step-0',
+      phase: 'planning',
+      kind: 'answer',
+    });
+  });
+
+  it('does not retry an empty agent answer as another generation', async () => {
+    mocks.bootstrap.mockResolvedValue({
+      systemPrompt: 'Rote',
+      finalAnswerInstruction: 'Answer',
+      tools: [],
+      policy: { maxIterations: 6, maxToolCalls: 8, maxSourceChars: 12000 },
+    });
+    mocks.complete.mockResolvedValue({ message: { role: 'assistant', content: null } });
+    await expect(
+      localAiAgentStream({
+        config,
+        payload: { message: 'hello' },
+        handlers: {},
+        toolsAvailable: true,
+        enableThinking: false,
+      })
+    ).rejects.toThrow('error_no_answer_no_sources');
+    expect(mocks.complete).toHaveBeenCalledTimes(1);
+  });
   it('keeps ordinary local chat independent from Rote tools', async () => {
     mocks.complete.mockImplementation(async ({ onContent }) => {
       onContent?.('private reply');
@@ -96,21 +151,26 @@ describe('local AI agent', () => {
       },
     });
     mocks.complete
-      .mockResolvedValueOnce({
-        message: {
-          role: 'assistant',
-          content: 'I will inspect the tags first.',
-          tool_calls: [
-            {
-              id: 'call_1',
-              type: 'function',
-              function: { name: 'rote_get_tags', arguments: '{}' },
-            },
-          ],
-        },
+      .mockImplementationOnce(async ({ onContent }) => {
+        onContent?.('I will inspect the tags first.');
+        return {
+          message: {
+            role: 'assistant',
+            content: 'I will inspect the tags first.',
+            tool_calls: [
+              {
+                id: 'call_1',
+                type: 'function',
+                function: { name: 'rote_get_tags', arguments: '{}' },
+              },
+            ],
+          },
+        };
       })
-      .mockResolvedValueOnce({
-        message: { role: 'assistant', content: 'final answer', tool_calls: [] },
+      .mockImplementationOnce(async ({ onContent }) => {
+        onContent?.('final ');
+        onContent?.('answer');
+        return { message: { role: 'assistant', content: 'final answer', tool_calls: [] } };
       });
     mocks.executeTool.mockResolvedValue({
       observations: ['Loaded tags'],
@@ -150,7 +210,12 @@ describe('local AI agent', () => {
       messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>;
     };
     expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBeNull();
-    expect(onDelta).toHaveBeenCalledWith('final answer');
+    expect(onDelta.mock.calls.map(([text]) => text)).toEqual([
+      'I will inspect the tags first.',
+      '\n\nfinal ',
+      'answer',
+    ]);
+    expect(mocks.complete).toHaveBeenCalledTimes(2);
   });
 
   it('adds tool messages for calls skipped after the tool budget is exhausted', async () => {

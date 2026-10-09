@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getDefaultStore } from 'jotai';
+import { aiChatMessagesAtom } from '@/state/aiChat';
 import { createAiRunHandlers, type AiRunLabels } from '@/state/aiRunHandlers';
-import { getAiRunFailureMessage } from '@/state/aiRunManager';
+import { clearAiRun, getAiRunFailureMessage, startAiRun } from '@/state/aiRunManager';
 import { AiStreamError } from '@/utils/aiStream';
 
 const labels: AiRunLabels = {
@@ -19,6 +21,47 @@ const labels: AiRunLabels = {
   fallbackNoAnswerNoSources: 'no-answer-no-sources',
 };
 
+afterEach(() => {
+  clearAiRun();
+  vi.unstubAllGlobals();
+});
+
+it.each([false, true])(
+  'keeps identified output after run cleanup (interrupted: %s)',
+  async (interrupted) => {
+    clearAiRun();
+    const blocks = [
+      'event: delta\ndata: {"outputId":"step-0","phase":"planning","text":"I will search."}',
+      'event: output_finished\ndata: {"outputId":"step-0","phase":"planning","kind":"process"}',
+      'event: delta\ndata: {"outputId":"step-1","phase":"tool_calling","text":"The answer"}',
+      ...(interrupted
+        ? []
+        : [
+            'event: output_finished\ndata: {"outputId":"step-1","phase":"tool_calling","kind":"answer"}',
+            'event: done\ndata: {}',
+          ]),
+    ];
+    const request = vi.fn(async () => new Response(blocks.join('\n\n') + '\n\n'));
+    vi.stubGlobal('fetch', request);
+    await startAiRun({
+      question: 'Review notes',
+      messages: [],
+      pendingPlan: null,
+      unavailable: false,
+      mode: 'site',
+      toolsAvailable: true,
+      labels,
+    });
+    const answer = getDefaultStore().get(aiChatMessagesAtom).at(-1)!;
+    expect(answer.content).toBe('The answer');
+    expect(answer.outputs?.[0]).toMatchObject({ text: 'I will search.', kind: 'process' });
+    expect(answer.isStreaming).toBe(false);
+    expect(answer.error).toBe(interrupted ? true : undefined);
+    if (interrupted) expect(answer.errorDetail).toBe('interrupted');
+    expect(request).toHaveBeenCalledTimes(1);
+  }
+);
+
 describe('AI run failure labels', () => {
   it.each([
     ['ai_stream_incomplete', 'interrupted'],
@@ -33,6 +76,39 @@ describe('AI run failure labels', () => {
     const error = new AiStreamError({ code, message: 'raw server message', retryable: true });
     expect(getAiRunFailureMessage(error, labels)).toBe(expected);
   });
+});
+
+it('keeps streamed process text out of the answer and does not replay final chunks', () => {
+  let messages: import('@/state/aiChat').AiMemoryMessage[] = [
+    { id: 'answer', role: 'assistant', content: '', isStreaming: true },
+  ];
+  let queuedChunks = 0;
+  const handlers = createAiRunHandlers({
+    assistantId: 'answer',
+    labels,
+    progress: { currentIsMore: false, receivedClarification: false },
+    startedAt: performance.now(),
+    seenSourceIds: new Set(),
+    isActiveRun: () => true,
+    setMessagesForActiveRun: (_id, updater) => {
+      messages = updater(messages);
+    },
+    queueStreamDelta: () => {
+      queuedChunks += 1;
+    },
+    mergeAgentState: () => {},
+  });
+  handlers.onOutputDelta?.({ outputId: 'step-0', phase: 'planning', text: 'I will search.' });
+  expect(messages[0].content).toBe('I will search.');
+  handlers.onOutputFinished?.({ outputId: 'step-0', phase: 'planning', kind: 'process' });
+  expect(messages[0].content).toBe('');
+  expect(messages[0].outputs?.[0]).toMatchObject({ text: 'I will search.', kind: 'process' });
+  handlers.onOutputDelta?.({ outputId: 'step-1', phase: 'tool_calling', text: 'The answer ' });
+  expect(messages[0].content).toBe('The answer ');
+  handlers.onOutputDelta?.({ outputId: 'step-1', phase: 'tool_calling', text: 'is here.' });
+  handlers.onOutputFinished?.({ outputId: 'step-1', phase: 'tool_calling', kind: 'answer' });
+  expect(messages[0].content).toBe('The answer is here.');
+  expect(queuedChunks).toBe(0);
 });
 
 it('uses cumulative references and localizes exhaustion', () => {

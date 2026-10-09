@@ -16,6 +16,43 @@ function streamResponse(blocks: string[], options: { close?: boolean } = {}) {
 }
 
 describe('AI server stream reader', () => {
+  it('streams identified outputs once and preserves their process/answer classification', async () => {
+    const onOutputDelta = vi.fn();
+    const onOutputFinished = vi.fn();
+    const onDelta = vi.fn();
+    await readAiStreamResponse(
+      streamResponse([
+        'event: delta\ndata: {"outputId":"step-0","phase":"planning","text":"Looking up notes"}',
+        'event: output_finished\ndata: {"outputId":"step-0","phase":"planning","kind":"process"}',
+        'event: delta\ndata: {"outputId":"step-1","phase":"tool_calling","text":"Answer"}',
+        'event: output_finished\ndata: {"outputId":"step-1","phase":"tool_calling","kind":"answer"}',
+        'event: done\ndata: {}',
+      ]),
+      { onOutputDelta, onOutputFinished, onDelta }
+    );
+    expect(onOutputDelta.mock.calls.map(([output]) => output.text)).toEqual([
+      'Looking up notes',
+      'Answer',
+    ]);
+    expect(onOutputFinished.mock.calls.map(([output]) => output.kind)).toEqual([
+      'process',
+      'answer',
+    ]);
+    expect(onDelta).not.toHaveBeenCalled();
+  });
+
+  it('keeps identified delta text readable by older handlers', async () => {
+    const onDelta = vi.fn();
+    await readAiStreamResponse(
+      streamResponse([
+        'event: delta\ndata: {"outputId":"step-0","phase":"planning","text":"Answer"}',
+        'event: output_finished\ndata: {"outputId":"step-0","phase":"planning","kind":"answer"}',
+        'event: done\ndata: {}',
+      ]),
+      { onDelta }
+    );
+    expect(onDelta).toHaveBeenCalledExactlyOnceWith('Answer');
+  });
   it('finishes exactly once after an explicit done event', async () => {
     const onDelta = vi.fn();
     const onDone = vi.fn();

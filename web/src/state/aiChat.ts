@@ -37,6 +37,12 @@ export type AiMemoryMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  outputs?: {
+    outputId: string;
+    phase: AiAgentPhase;
+    text: string;
+    kind?: 'process' | 'answer';
+  }[];
   sources?: AiSemanticResult[];
   retrieval?: AiRetrievalSummary;
   plan?: PlannerAgentDto;

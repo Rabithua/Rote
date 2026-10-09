@@ -7,6 +7,7 @@ import {
 } from '@/components/ai/AiMessageStatus';
 import { cleanSourceText, getAiSourcePath } from '@/components/ai/AiSourceList';
 import AiStreamingMarkdown from '@/components/ai/AiStreamingMarkdown';
+import { AgentOutputTrace } from '@/components/ai/AgentOutputTrace';
 import { useAiAnswerExport } from '@/hooks/useAiAnswerExport';
 import { useProfile } from '@/state/profile';
 import type { AiMemoryMessage } from '@/state/aiChat';
@@ -55,6 +56,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
   return (
     <div className={`px-4 py-4 ${message.role === 'assistant' ? 'bg-foreground/2' : ''}`}>
       <div className="mx-auto flex max-w-3xl flex-col gap-2 text-sm">
+        {message.role === 'assistant' && <AgentOutputTrace message={message} />}
         {message.role === 'assistant' && (
           <AgentTimeline message={message} title={t('timeline.title')} />
         )}
@@ -150,15 +152,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
               </span>
             )}
             {message.metrics.firstTokenTime && (
-              <span>
-                First Token:{' '}
-                {(
-                  (message.metrics.firstTokenTime -
-                    (message.metrics.sourcesTime || message.metrics.planTime || 0)) /
-                  1000
-                ).toFixed(2)}
-                s
-              </span>
+              <span>First Token: {(message.metrics.firstTokenTime / 1000).toFixed(2)}s</span>
             )}
             {message.metrics.totalTime && (
               <span>Total: {(message.metrics.totalTime / 1000).toFixed(2)}s</span>
