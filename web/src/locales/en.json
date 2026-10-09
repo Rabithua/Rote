@@ -1311,6 +1311,7 @@
           "noTokenUsage": "No token usage yet"
         },
         "aiUsage": {
+          "viewDetails": "View details",
           "title": "Recorded AI usage",
           "description": "Provider calls and received usage. Missing usage and failed writes can leave gaps; provider billing remains authoritative.",
           "period": "Time range",

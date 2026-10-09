@@ -1,4 +1,4 @@
-import AiUsagePanel from '../aiUsage/AiUsagePanel';
+import AiUsageRanking from '../aiUsage/AiUsageRanking';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,7 +63,8 @@ export default function DashboardTab() {
 
   if (!data) return null;
 
-  const { globalStats, topUsersByNotes, topUsersByApi, topUsersByStorage } = data;
+  const { globalStats, topUsersByNotes, topUsersByApi, topUsersByStorage, topUsersByTokenUsage } =
+    data;
 
   return (
     <Card className="rounded-none border-none shadow-none">
@@ -262,8 +263,8 @@ export default function DashboardTab() {
               </Table>
             </div>
           </section>
+          <AiUsageRanking users={topUsersByTokenUsage} />
         </div>
-        <AiUsagePanel />
       </CardContent>
     </Card>
   );
