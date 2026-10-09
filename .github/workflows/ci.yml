@@ -112,6 +112,24 @@ jobs:
       - run: bun run test -- src/features/attachments src/utils/uploadHelpers.test.ts src/utils/__tests__/directUpload.test.ts src/utils/directUpload.test.ts
         working-directory: web
 
+  ai-agent-streaming:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - run: bun test tests/aiAgentRuntime.test.ts tests/aiAgentBudget.test.ts tests/aiClient.test.ts tests/aiSse.test.ts tests/aiClientRuntime.test.ts
+        working-directory: server
+        env:
+          POSTGRESQL_URL: postgres://test:test@127.0.0.1:1/test
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run test -- src/utils/localAiAgent.test.ts src/utils/aiStream.test.ts src/state/aiRunManager.test.ts
+        working-directory: web
+
   embedding-contract:
     runs-on: ubuntu-latest
     steps:

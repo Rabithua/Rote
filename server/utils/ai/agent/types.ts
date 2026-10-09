@@ -65,6 +65,8 @@ export type RoteAgentRequest = {
   pendingPlan?: PlannerAgentDto | null;
   clarificationAnswer?: string;
   enableThinking?: boolean;
+  /** Opt into per-output streaming; existing clients receive only the reused answer. */
+  streamOutputs?: boolean;
 };
 
 export type RoteAgentPolicy = {
@@ -90,7 +92,13 @@ export type RoteAgentStreamEvent =
   | { type: 'plan'; plan: PlannerAgentDto }
   | { type: 'clarification'; question: string; pendingPlan?: PlannerAgentDto | null }
   | { type: 'thinking'; phase: RoteAgentThinkingPhase; text: string }
-  | { type: 'delta'; text: string }
+  | { type: 'delta'; text: string; outputId?: string; phase?: RoteAgentPhase }
+  | {
+      type: 'output_finished';
+      outputId: string;
+      phase: RoteAgentPhase;
+      kind: 'process' | 'answer';
+    }
   | { type: 'state_patch'; state: Partial<RoteAgentClientState> }
   | { type: 'usage'; phase: RoteAgentUsagePhase; usage: ChatCompletionUsage }
   | { type: 'done' }

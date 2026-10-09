@@ -148,6 +148,12 @@ export type AiAgentToolProgressStatus =
   | 'finding_related'
   | 'loading_tags';
 export type AiUsagePhase = 'planning' | 'tool_decision' | 'answer';
+export type AiOutputDelta = { outputId: string; phase: AiAgentPhase; text: string };
+export type AiOutputFinished = {
+  outputId: string;
+  phase: AiAgentPhase;
+  kind: 'process' | 'answer';
+};
 export type AiThinkingPhase =
   | 'route_decision'
   | 'evidence_decision'
@@ -203,6 +209,8 @@ export type AiChatStreamHandlers = {
   onSources?: (sources: AiSemanticResult[], retrieval?: AiRetrievalSummary) => void;
   onThinking?: (phase: AiThinkingPhase, text: string) => void;
   onDelta?: (text: string) => void;
+  onOutputDelta?: (output: AiOutputDelta) => void;
+  onOutputFinished?: (output: AiOutputFinished) => void;
   onStatePatch?: (state: Partial<AiAgentClientState>) => void;
   onUsage?: (usage: AiTokenUsage, phase: AiUsagePhase) => void;
   onDone?: () => void;
@@ -249,6 +257,7 @@ export type ClientAgentToolResult = {
 };
 
 export type AiChatPayload = {
+  streamOutputs?: boolean;
   message: string;
   mode?: 'chat' | 'review' | 'organize';
   limit?: number;

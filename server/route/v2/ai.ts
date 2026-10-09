@@ -373,6 +373,7 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
           pendingPlan: body?.pendingPlan,
           clarificationAnswer: body?.clarificationAnswer,
           enableThinking: body?.enableThinking === true,
+          streamOutputs: body?.streamOutputs === true,
         },
         config,
         emit: (event) => writeAgentSseEvent(stream, event),
