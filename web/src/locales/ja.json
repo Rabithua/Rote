@@ -1315,6 +1315,7 @@
           "noTokenUsage": "Token 使用記録なし"
         },
         "aiUsage": {
+          "viewDetails": "詳細を見る",
           "title": "記録済み AI 使用量",
           "description": "プロバイダー呼び出しと受信した usage を集計します。usage の欠落や保存失敗による不足があり得ます。料金はプロバイダーの請求を参照してください。",
           "period": "期間",

@@ -1302,6 +1302,7 @@
         },
         "aiUsage": {
           "title": "AI 已记录用量",
+          "viewDetails": "查看详情",
           "description": "统计供应商调用与收到的 usage。缺失 usage 或写入失败仍可能形成缺口，完整费用以供应商账单为准。",
           "period": "时间范围",
           "7d": "最近 7 天（滚动）",
