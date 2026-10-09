@@ -37,20 +37,20 @@ export function linkifyCitations(content: string, sources: AiSemanticResult[]): 
 }
 
 function linkifyCitationText(content: string, sources: AiSemanticResult[]): string {
-  // Match [N] or comma-separated groups such as [N,M], but not markers
-  // preceded by [ or followed by (, [, or ].
-  // This avoids matching inside existing markdown links like [text](url)
-  // or [text][label], and reference-style [^1] footnotes.
-  return content.replace(/(?<!\[)\[(\d+(?:\s*[,，]\s*\d+)*)\](?![([\]])/g, (_, group) =>
-    group
-      .split(/(\s*[,，]\s*)/)
-      .map((part: string) => {
-        if (!/^\d+$/.test(part)) return part;
+  // Preserve nested brackets, inline links, and nonnumeric reference labels.
+  // A following numeric marker is another citation, as in [1][2] or [1,2][3].
+  return content.replace(
+    /(?<!\[)\[(\d+(?:\s*[,，]\s*\d+)*)\](?!\(|\]|\[(?!\d+(?:\s*[,，]\s*\d+)*\]))/g,
+    (_, group) =>
+      group
+        .split(/(\s*[,，]\s*)/)
+        .map((part: string) => {
+          if (!/^\d+$/.test(part)) return part;
 
-        const citation = linkifyCitation(part, sources);
-        return citation || `[${part}]`;
-      })
-      .join('')
+          const citation = linkifyCitation(part, sources);
+          return citation || `[${part}]`;
+        })
+        .join('')
   );
 }
 
