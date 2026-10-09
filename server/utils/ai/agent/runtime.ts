@@ -191,8 +191,10 @@ export async function runRoteAgentStream(params: {
   const mode = request.mode || 'chat';
   let currentPhase: RoteAgentPhase = 'understanding';
   const emit: RoteAgentEmitter = async (event) => {
+    params.signal?.throwIfAborted();
     if (event.type === 'progress') currentPhase = event.phase;
     await params.emit(event);
+    params.signal?.throwIfAborted();
   };
   const ctx: RoteAgentContext = {
     userId: params.userId,
@@ -204,6 +206,7 @@ export async function runRoteAgentStream(params: {
     state,
     emit,
     sourceBudget,
+    signal: params.signal,
   };
 
   const messages = buildInitialMessages(request, state);
@@ -237,6 +240,7 @@ export async function runRoteAgentStream(params: {
     await emit({ type: 'progress', phase: 'understanding' });
 
     for (let step = 0; step < policy.maxIterations; step += 1) {
+      params.signal?.throwIfAborted();
       const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
       const outputId = `step-${step}`;
       const contentChunks: string[] = [];
@@ -347,6 +351,7 @@ export async function runRoteAgentStream(params: {
       });
 
       for (const toolCall of validToolCalls) {
+        params.signal?.throwIfAborted();
         if (toolCallCount >= policy.maxToolCalls || evidenceExhausted) {
           messages.push({
             role: 'tool',
@@ -375,6 +380,7 @@ export async function runRoteAgentStream(params: {
         const result = await emitWithHeartbeat(emit, policy, 'tool_calling', () =>
           tool!.execute(args, ctx, toolCall)
         );
+        params.signal?.throwIfAborted();
 
         evidenceExhausted ||= result.retrieval?.budgetExhausted === true;
         if (result.plan) await emit({ type: 'plan', plan: result.plan });

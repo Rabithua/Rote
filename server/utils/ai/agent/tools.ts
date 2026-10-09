@@ -136,7 +136,7 @@ async function executeAgentSearch(input: SearchRotesArgs, ctx: RoteAgentContext)
     ]),
     timeContext: ctx.state.clientContext,
   });
-  const probe = await searchRotesProbe(scope);
+  const probe = await searchRotesProbe(scope, ctx.signal);
   const toolResult = {
     ...probe.toolResult,
     warnings: Array.from(new Set([...warnings, ...probe.toolResult.warnings])),
@@ -296,6 +296,7 @@ async function executeFindRelatedNotes(
   });
   const { content } = await loadOwnedSource(ctx, sourceType, sourceId);
   const { sources: foundSources, warnings } = await searchMemory({
+    signal: ctx.signal,
     query: content,
     ownerId: ctx.userId,
     sourceTypes: ['rote'],

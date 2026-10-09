@@ -13,16 +13,21 @@ export async function createQueryEmbedding(
   generationId: string,
   dimensions: number,
   input: string,
-  usageContext: AiUsageContext
+  usageContext: AiUsageContext,
+  signal?: AbortSignal
 ) {
+  signal?.throwIfAborted();
   if (!(await getPgvectorStatus()).ready)
     throw new EmbeddingError('embedding_rebuild_required', 503);
   try {
     const result = await createEmbedding(config.embedding, input, {
       expectedDimensions: dimensions,
       usageContext,
+      signal,
     });
+    signal?.throwIfAborted();
     const current = await requireReadyGeneration();
+    signal?.throwIfAborted();
     if (current.state.generationId !== generationId)
       throw new EmbeddingError('embedding_rebuild_required', 503);
     return result;

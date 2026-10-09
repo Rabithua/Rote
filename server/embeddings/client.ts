@@ -8,21 +8,29 @@ import { EmbeddingError } from './errors';
 export async function createEmbedding(
   config: EmbeddingProviderConfig,
   input: string,
-  options: { expectedDimensions?: number; timeoutMs?: number; usageContext?: AiUsageContext } = {}
+  options: {
+    expectedDimensions?: number;
+    timeoutMs?: number;
+    usageContext?: AiUsageContext;
+    signal?: AbortSignal;
+  } = {}
 ): Promise<{ embedding: number[]; usage?: { prompt_tokens: number; total_tokens: number } }> {
+  options.signal?.throwIfAborted();
   const output = embeddingOutputSchema.safeParse(config.output);
   if (!output.success || !config.baseUrl.trim() || !config.model.trim()) {
     throw new EmbeddingError('embedding_config_invalid', 400);
   }
   const text = input.replace(/\s+/g, ' ').trim();
   if (!text) throw new EmbeddingError('embedding_input_empty', 400);
-  const signal = AbortSignal.timeout(options.timeoutMs ?? 30_000);
+  const timeout = AbortSignal.timeout(options.timeoutMs ?? 30_000);
+  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
   const recorder = createAiUsageRecorder(config, 'embedding', options.usageContext);
   let status: AiUsageRecord['status'] = 'failed';
   try {
     let response: Response;
     let raw: string;
     try {
+      options.signal?.throwIfAborted();
       recorder.dispatch();
       response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/embeddings`, {
         method: 'POST',
@@ -36,6 +44,7 @@ export async function createEmbedding(
       });
       raw = await response.text();
     } catch {
+      options.signal?.throwIfAborted();
       throw new EmbeddingError(
         signal.aborted ? 'embedding_timeout' : 'embedding_network_error',
         signal.aborted ? 504 : 502,
@@ -51,6 +60,7 @@ export async function createEmbedding(
       if (response.ok) throw new EmbeddingError('embedding_response_invalid');
     }
     recorder.observe(body?.usage);
+    options.signal?.throwIfAborted();
     if (!response.ok) {
       const retryable =
         response.status === 408 || response.status === 429 || response.status >= 500;
@@ -71,6 +81,9 @@ export async function createEmbedding(
       validateVector(embedding, options.expectedDimensions);
     status = 'completed';
     return { embedding, usage: normalizeUsage(body?.usage) };
+  } catch (error) {
+    status = options.signal?.aborted ? 'cancelled' : 'failed';
+    throw error;
   } finally {
     await recorder.finish(status);
   }

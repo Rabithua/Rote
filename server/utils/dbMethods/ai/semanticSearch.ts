@@ -20,6 +20,7 @@ import type {
 } from './types';
 
 export async function semanticSearch(params: {
+  signal?: AbortSignal;
   query: string;
   ownerId?: string;
   viewerId?: string;
@@ -35,6 +36,7 @@ export async function semanticSearch(params: {
   exclude?: { sourceType: AiSourceType; sourceId: string };
   excludeIds?: string[];
 }): Promise<SemanticSearchResult[]> {
+  params.signal?.throwIfAborted();
   const { config, state } = await requireReadyGeneration();
   if (params.scope === 'public' && !config.publicExploreVectorEnabled) {
     throw new Error('Public semantic search is disabled');
@@ -51,7 +53,8 @@ export async function semanticSearch(params: {
     state.generationId!,
     dimensions,
     queryText || 'all notes',
-    { userId: params.viewerId ?? params.ownerId, purpose: 'embedding_query' }
+    { userId: params.viewerId ?? params.ownerId, purpose: 'embedding_query' },
+    params.signal
   );
   const securityConfig = getGlobalConfig<SecurityConfig>('security');
   const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
