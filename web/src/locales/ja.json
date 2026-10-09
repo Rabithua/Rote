@@ -1267,6 +1267,12 @@
       "title": "管理ダッシュボード",
       "accessDenied": "アクセス拒否",
       "adminOnly": "このページは管理者のみアクセス可能です",
+      "updateBanner": {
+        "title": "新しいバージョンがあります",
+        "versions": "現在のバージョン {{current}}、新しいバージョン {{latest}}",
+        "viewRelease": "更新内容",
+        "dismiss": "更新のお知らせを閉じる"
+      },
       "tabs": {
         "dashboard": "ダッシュボード",
         "site": "サイト設定",

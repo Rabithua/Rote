@@ -35,6 +35,7 @@ interface SiteStatusData {
   };
   system: {
     version: string;
+    releaseVersion?: string;
     lastMigration: string;
   };
   notification: {
