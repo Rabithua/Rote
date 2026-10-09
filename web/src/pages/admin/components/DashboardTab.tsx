@@ -1,3 +1,4 @@
+import AiUsagePanel from '../aiUsage/AiUsagePanel';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { get } from '@/utils/api';
 import { formatBytes } from '@/utils/main';
-import { Activity, AlertTriangle, Cpu, HardDrive, Loader, ServerCrash } from 'lucide-react';
+import { Activity, AlertTriangle, HardDrive, Loader, ServerCrash } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import type { DashboardStats } from '../types';
@@ -30,18 +31,6 @@ function MetricBlock({
       <div className="mt-1 truncate text-sm font-medium">{value}</div>
     </div>
   );
-}
-
-function formatIntegerValue(value: number | string) {
-  const raw = String(value ?? 0).trim();
-  if (!/^-?\d+$/.test(raw)) {
-    return Number(value || 0).toLocaleString();
-  }
-
-  const sign = raw.startsWith('-') ? '-' : '';
-  const digits = sign ? raw.slice(1) : raw;
-  const normalized = digits.replace(/^0+(?=\d)/, '') || '0';
-  return `${sign}${normalized.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 }
 
 export default function DashboardTab() {
@@ -74,8 +63,7 @@ export default function DashboardTab() {
 
   if (!data) return null;
 
-  const { globalStats, topUsersByNotes, topUsersByApi, topUsersByStorage, topUsersByTokenUsage } =
-    data;
+  const { globalStats, topUsersByNotes, topUsersByApi, topUsersByStorage } = data;
 
   return (
     <Card className="rounded-none border-none shadow-none">
@@ -274,58 +262,8 @@ export default function DashboardTab() {
               </Table>
             </div>
           </section>
-
-          {/* Top Token Users */}
-          <section className="flex h-full flex-col space-y-3">
-            <div className="flex items-center gap-2">
-              <Cpu className="size-4" />
-              <h3 className="font-medium">
-                {t('tables.topTokenUsage', 'Top AI Token Usage (30 days)')}
-              </h3>
-            </div>
-
-            <div className="h-[260px] overflow-auto rounded-md border">
-              <Table className="text-xs [&_td]:px-3 [&_td]:py-2 [&_th]:h-9 [&_th]:px-3">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('table.username', 'Username')}</TableHead>
-                    <TableHead className="text-right">
-                      {t('table.tokenUsage', 'Tokens Used')}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topUsersByTokenUsage?.slice(0, 10).map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell
-                        className="cursor-pointer font-medium hover:underline"
-                        onClick={() => window.open(`/${user.username}`, '_blank')}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Avatar className="size-5">
-                            <AvatarImage src={user.avatar || undefined} alt={user.username} />
-                            <AvatarFallback>{user.username.charAt(0).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                          <span>{user.username}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right font-bold">
-                        {formatIntegerValue(user.tokenUsage)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!topUsersByTokenUsage || topUsersByTokenUsage.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={2} className="text-muted-foreground py-6 text-center">
-                        {t('empty.noTokenUsage', 'No token usage yet')}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </section>
         </div>
+        <AiUsagePanel />
       </CardContent>
     </Card>
   );

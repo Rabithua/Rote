@@ -4,7 +4,6 @@ import {
   type ChatMessage,
   type ChatToolCall,
 } from '../client';
-import { logAiTokenUsage } from '../../dbMethods';
 import { buildFinalAnswerInstruction, buildRoteAgentSystemPrompt } from './prompt';
 import { getNativeRoteTools } from './tools';
 import {
@@ -70,18 +69,6 @@ async function emitWithHeartbeat<T>(
   } finally {
     clearInterval(timer);
   }
-}
-
-async function logChatUsage(userId: string, model: string, usage: any): Promise<void> {
-  if (!usage) return;
-  await logAiTokenUsage({
-    userid: userId,
-    model,
-    type: 'chat',
-    promptTokens: usage.prompt_tokens,
-    completionTokens: usage.completion_tokens,
-    totalTokens: usage.total_tokens,
-  });
 }
 
 function buildRequestTimeContextMessage(state: RoteAgentClientState): ChatMessage {
@@ -155,6 +142,7 @@ async function streamFinalAnswer(
   let lastUsage: any = null;
 
   for await (const part of createChatCompletionStreamParts(ctx.config.chat, messages, {
+    usageContext: { userId: ctx.userId, purpose: 'chat_answer' },
     enableThinking: ctx.request.enableThinking === true,
     signal,
   })) {
@@ -169,7 +157,6 @@ async function streamFinalAnswer(
   }
 
   if (lastUsage) {
-    await logChatUsage(ctx.userId, ctx.config.chat.model, lastUsage);
     await ctx.emit({ type: 'usage', phase: 'answer', usage: lastUsage });
   }
 
@@ -248,6 +235,10 @@ export async function runRoteAgentStream(params: {
             messages,
             tools.map((tool) => tool.definition),
             {
+              usageContext: {
+                userId: params.userId,
+                purpose: step === 0 ? 'chat_plan' : 'chat_tool_decision',
+              },
               temperature: 0.2,
               enableThinking: request.enableThinking === true,
               signal: params.signal,
@@ -264,7 +255,6 @@ export async function runRoteAgentStream(params: {
         responseUsage = response.usage;
         if (response.usage) {
           recordUsage(response.usage);
-          await logChatUsage(params.userId, params.config.chat.model, response.usage);
         }
       } catch (error: any) {
         if (step === 0 && isLikelyToolUnsupportedError(error)) {

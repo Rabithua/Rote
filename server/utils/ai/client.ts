@@ -1,3 +1,5 @@
+import { createAiUsageRecorder } from '../../aiUsage/recording';
+import type { AiUsageRecord } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
 import {
   buildChatRequestBody,
@@ -50,8 +52,12 @@ export async function createChatCompletion(
 }> {
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'failed';
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -65,20 +71,24 @@ export async function createChatCompletion(
       signal: control.signal,
     });
     const body = await readJsonResponse(response);
+    recorder.observe(body?.usage);
     const content = body?.choices?.[0]?.message?.content;
 
     if (typeof content !== 'string') {
       throw new Error('Chat provider returned an invalid chat completion response');
     }
 
+    status = 'completed';
     return {
       content,
       usage: normalizeUsage(body?.usage),
     };
   } catch (error) {
+    if (options.signal?.aborted) status = 'cancelled';
     throw control.normalizeError(error);
   } finally {
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 
@@ -93,8 +103,12 @@ export async function createChatCompletionWithTools(
 }> {
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'failed';
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -110,12 +124,14 @@ export async function createChatCompletionWithTools(
       signal: control.signal,
     });
     const body = await readJsonResponse(response);
+    recorder.observe(body?.usage);
     const message = body?.choices?.[0]?.message;
 
     if (!message || typeof message !== 'object') {
       throw new Error('Chat provider returned an invalid tool completion response');
     }
 
+    status = 'completed';
     return {
       message: {
         role: 'assistant',
@@ -125,9 +141,11 @@ export async function createChatCompletionWithTools(
       usage: normalizeUsage(body?.usage),
     };
   } catch (error) {
+    if (options.signal?.aborted) status = 'cancelled';
     throw control.normalizeError(error);
   } finally {
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 

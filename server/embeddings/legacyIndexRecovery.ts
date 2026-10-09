@@ -59,6 +59,7 @@ export async function recoverLegacyIndex(options: LegacyRecoveryOptions) {
     const old = validateVector(JSON.parse(row.embedding), before.state.dimensions!);
     const { embedding: current } = await createEmbedding(before.config.embedding, row.text, {
       expectedDimensions: old.length,
+      usageContext: { purpose: 'index_validation' },
     });
     let dot = 0,
       oldNorm = 0,

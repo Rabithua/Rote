@@ -3,7 +3,6 @@ import type { SecurityConfig } from '../../../types/config';
 import { vectorToLiteral } from '../../ai/client';
 import { getGlobalConfig } from '../../config';
 import db from '../../drizzle';
-import { logAiTokenUsage } from '../aiToken';
 import { subjectIsVisibleToViewer } from '../userBlock';
 import { requireReadyGeneration } from '../../../embeddings/queue';
 import { createQueryEmbedding } from '../../../embeddings/query';
@@ -47,22 +46,13 @@ export async function semanticSearch(params: {
   const dateField = params.dateField === 'updatedAt' ? 'updatedAt' : 'createdAt';
   const queryText = [params.query, ...(params.semanticScope || [])].filter(Boolean).join('\n');
 
-  const { embedding: queryEmbedding, usage } = await createQueryEmbedding(
+  const { embedding: queryEmbedding } = await createQueryEmbedding(
     config,
     state.generationId!,
     dimensions,
-    queryText || 'all notes'
+    queryText || 'all notes',
+    { userId: params.viewerId ?? params.ownerId, purpose: 'embedding_query' }
   );
-  if (usage && params.ownerId) {
-    await logAiTokenUsage({
-      userid: params.ownerId,
-      model: config.embedding.model,
-      type: 'embedding',
-      promptTokens: usage.prompt_tokens,
-      completionTokens: 0,
-      totalTokens: usage.total_tokens,
-    });
-  }
   const securityConfig = getGlobalConfig<SecurityConfig>('security');
   const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
   const sourceTypes = Array.from(

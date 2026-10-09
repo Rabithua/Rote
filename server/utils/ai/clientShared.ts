@@ -1,3 +1,4 @@
+import type { AiUsageContext } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
 
 export type ChatToolCall = {
@@ -37,6 +38,7 @@ export type ChatToolChoice =
     };
 
 export type ChatCompletionOptions = {
+  usageContext?: AiUsageContext;
   temperature?: number;
   enableThinking?: boolean;
   toolChoice?: ChatToolChoice;

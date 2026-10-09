@@ -1,3 +1,5 @@
+import { createAiUsageRecorder } from '../../aiUsage/recording';
+import type { AiUsageRecord } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
 import {
   buildChatRequestBody,
@@ -69,9 +71,13 @@ export async function createChatCompletionWithToolsStreaming(
 }> {
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'cancelled';
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -109,6 +115,7 @@ export async function createChatCompletionWithToolsStreaming(
       }
 
       const chunk = parsed.chunk;
+      recorder.observe(chunk?.usage);
       const nextFinishReason = readProviderFinishReason(chunk);
       if (nextFinishReason) {
         assertProviderFinishReason(nextFinishReason);
@@ -180,12 +187,15 @@ export async function createChatCompletionWithToolsStreaming(
     buffer += decoder.decode();
     if (!doneReceived && buffer.trim()) await processLine(buffer);
     assertProviderStreamComplete({ doneReceived, finishReason });
+    status = 'completed';
     return buildToolStreamResult(content, toolCallsByIndex, usage);
   } catch (error) {
+    status = options.signal?.aborted ? 'cancelled' : 'failed';
     throw control.normalizeError(error);
   } finally {
     reader?.releaseLock();
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 
@@ -196,9 +206,13 @@ export async function* createChatCompletionStreamParts(
 ): AsyncGenerator<ChatCompletionStreamPart> {
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'cancelled';
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -252,6 +266,7 @@ export async function* createChatCompletionStreamParts(
         }
 
         const chunk = parsed.chunk;
+        recorder.observe(chunk?.usage);
         const nextFinishReason = readProviderFinishReason(chunk);
         if (nextFinishReason) {
           assertProviderFinishReason(nextFinishReason);
@@ -279,6 +294,7 @@ export async function* createChatCompletionStreamParts(
       if (parsed?.done) {
         doneReceived = true;
       } else if (parsed && !parsed.done) {
+        recorder.observe(parsed.chunk?.usage);
         const nextFinishReason = readProviderFinishReason(parsed.chunk);
         if (nextFinishReason) {
           assertProviderFinishReason(nextFinishReason);
@@ -298,11 +314,14 @@ export async function* createChatCompletionStreamParts(
     }
 
     assertProviderStreamComplete({ doneReceived, finishReason });
+    status = 'completed';
   } catch (error) {
+    status = options.signal?.aborted ? 'cancelled' : 'failed';
     throw control.normalizeError(error);
   } finally {
     reader?.releaseLock();
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 
