@@ -788,7 +788,7 @@
           "rote_skill_view": "処理方法を決定しました"
         },
         "sourcesAdded": "今回 {{added}} 件追加、参考資料は合計 {{total}} 件",
-        "evidenceLimit": "今回の読み取り上限に達しました。回答をまとめています"
+        "evidenceLimit": "回答を整理中"
       },
       "thinkingTrace": {
         "route_decision": "Rote を検索するか判断中",

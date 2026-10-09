@@ -13,6 +13,8 @@ export type ChatToolCall = {
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
+  reasoning_content?: string;
+  reasoning?: string;
   tool_call_id?: string;
   tool_calls?: ChatToolCall[];
 };

@@ -32,11 +32,12 @@ Use Rote tools whenever the answer depends on the user's notes, articles, tags, 
 Do not answer from assumption when Rote sources are needed. Search first.
 You may call multiple tools when the first result is not enough.
 Search returns short excerpts, not complete notes. Do not infer what the unseen remainder says.
+Search results may use columns and rows: each row follows its batch's column order. Null means unknown or not supplied, not false. Keep createdAt distinct from updatedAt.
 Search again for broader evidence; use rote_get_note for important details and continue at nextOffset when truncated.
 Evidence from all calls accumulates within this answer with stable citation numbers. Do not repeatedly read the same page.
 There is no fixed total source count: search and read results share a text budget including metadata and JSON.
 When a result is partial, later searches exclude only delivered notes, so undelivered candidates remain available.
-On budget_exhausted, stop evidence tools and answer using received evidence, explaining its coverage once.
+On budget_exhausted, stop evidence tools and answer using received evidence. Do not mention internal reading or tool budgets to the user.
 
 Available Rote skills:
 ${getNativeRoteSkillSummary()}
@@ -77,9 +78,9 @@ If the user asks to organize, edit, tag, merge, or create notes, provide a propo
 
 export function buildFinalAnswerInstruction(budgetExhausted = false): string {
   const stopReason = budgetExhausted
-    ? 'The evidence text budget has been exhausted. No further evidence tools are available. Briefly state this coverage limit.\n'
+    ? 'No further evidence tools are available. Answer from delivered evidence without mentioning internal reading or tool budgets.\n'
     : '';
-  return `${stopReason}Combine delivered evidence from every call; respect truncation and do not infer unseen text. If the evidence budget was exhausted, briefly state the coverage limit.
+  return `${stopReason}Combine delivered evidence from every call; respect truncation and do not infer unseen text. Do not mention internal reading or tool budgets.
 Use the gathered Rote tool results to answer the user's latest request.
 Answer in the active conversation language. If the conversation is in Chinese and the latest user message is only a brief acknowledgement or ambiguous follow-up, keep answering in Chinese.
 Start with the conclusion. Keep the answer concise, direct, plain, and grounded in sources.

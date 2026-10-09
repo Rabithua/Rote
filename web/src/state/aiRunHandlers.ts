@@ -23,7 +23,6 @@ export type AiRunLabels = {
   toolFinished: (toolName: string) => string;
   sourcesFound: (count: number) => string;
   sourcesAdded: (added: number, total: number) => string;
-  evidenceLimit: string;
   askFailed: string;
   streamInterrupted: string;
   streamTimeout: string;
@@ -34,7 +33,6 @@ export type AiRunLabels = {
 
 export type AiRunProgressState = {
   currentIsMore: boolean;
-  evidenceExhausted?: boolean;
   receivedClarification: boolean;
   firstTokenTime?: number;
 };
@@ -158,14 +156,8 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
         id: `progress-${phase}`,
         type: 'progress',
         phase,
-        message:
-          phase === 'answering' && ctx.progress.evidenceExhausted
-            ? ctx.labels.evidenceLimit
-            : ctx.labels.phase(phase),
-        outputStatus:
-          phase === 'answering' && ctx.progress.evidenceExhausted
-            ? { type: 'evidence_limit' }
-            : { type: 'phase', phase },
+        message: ctx.labels.phase(phase),
+        outputStatus: { type: 'phase', phase },
       });
     },
     onToolStarted: (toolName) => {
@@ -245,7 +237,6 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
     },
     onSources: (sources, retrieval) => {
       if (!ctx.isActiveRun(ctx.assistantId)) return;
-      ctx.progress.evidenceExhausted = retrieval?.budgetExhausted;
       sources.forEach((source) => ctx.seenSourceIds.add(getAiSourceKey(source)));
       ctx.mergeAgentState(
         {
@@ -258,18 +249,14 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
         id: 'tool-rote_search_notes',
         type: 'tool',
         toolName: 'rote_search_notes',
-        message: retrieval?.budgetExhausted
-          ? ctx.labels.evidenceLimit
-          : retrieval
-            ? ctx.labels.sourcesAdded(retrieval.addedCount, retrieval.totalCount)
-            : ctx.labels.sourcesFound(sources.length),
-        outputStatus: retrieval?.budgetExhausted
-          ? { type: 'evidence_limit' }
-          : {
-              type: 'sources',
-              count: retrieval?.totalCount ?? sources.length,
-              added: retrieval?.addedCount,
-            },
+        message: retrieval
+          ? ctx.labels.sourcesAdded(retrieval.addedCount, retrieval.totalCount)
+          : ctx.labels.sourcesFound(sources.length),
+        outputStatus: {
+          type: 'sources',
+          count: retrieval?.totalCount ?? sources.length,
+          added: retrieval?.addedCount,
+        },
         status: 'done',
       });
       ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>

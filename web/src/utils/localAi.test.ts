@@ -64,12 +64,13 @@ describe('local AI client', () => {
   it('parses streamed content, tool calls, and usage', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       sseResponse([
-        { choices: [{ delta: { content: 'Hello ' } }] },
+        { choices: [{ delta: { content: 'Hello ', reasoning_content: 'First ' } }] },
         {
           choices: [
             {
               delta: {
                 content: 'Rote',
+                reasoning_content: 'thought.',
                 tool_calls: [
                   {
                     index: 0,
@@ -104,6 +105,7 @@ describe('local AI client', () => {
 
     expect(chunks).toEqual(['Hello ', 'Rote']);
     expect(result.message.content).toBe('Hello Rote');
+    expect(result.message.reasoning_content).toBe('First thought.');
     expect(result.message.tool_calls?.[0]).toMatchObject({
       id: 'call_1',
       function: { name: 'rote_get_tags', arguments: '{"limit":5}' },

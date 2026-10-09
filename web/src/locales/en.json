@@ -784,7 +784,7 @@
           "rote_skill_view": "Workflow selected"
         },
         "sourcesAdded": "Added {{added}} sources; {{total}} references total",
-        "evidenceLimit": "Reached this answer’s reading limit; preparing the response"
+        "evidenceLimit": "Organizing the answer"
       },
       "thinkingTrace": {
         "route_decision": "Deciding whether to query Rote",

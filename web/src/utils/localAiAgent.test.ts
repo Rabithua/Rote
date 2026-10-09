@@ -218,7 +218,9 @@ describe('local AI agent', () => {
     const secondRequest = mocks.complete.mock.calls[1][0] as {
       messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>;
     };
-    expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBeNull();
+    expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBe(
+      'I will inspect the tags first.'
+    );
     expect(onOutputDelta.mock.calls.map(([output]) => output.text)).toEqual([
       'I will inspect the tags first.',
       'final ',
@@ -324,7 +326,8 @@ it('merges two batches, restores reading state and sends both batches to the pro
   const call = (id: string) => ({
     message: {
       role: 'assistant',
-      content: null,
+      content: `Process ${id}`,
+      reasoning_content: `Thought ${id}`,
       tool_calls: [
         { id, type: 'function', function: { name: 'rote_search_notes', arguments: '{}' } },
       ],
@@ -376,6 +379,14 @@ it('merges two batches, restores reading state and sends both batches to the pro
       .messages.filter((m: { role: string }) => m.role === 'tool')
       .map((m: { content: string }) => m.content)
   ).toEqual(['evidence-20', 'evidence-40']);
+  expect(
+    mocks.complete.mock.calls
+      .at(-1)?.[0]
+      .messages.filter((m: { role: string }) => m.role === 'assistant')
+  ).toMatchObject([
+    { content: 'Process a', reasoning_content: 'Thought a' },
+    { content: 'Process b', reasoning_content: 'Thought b' },
+  ]);
 });
 it('stops further local tools after evidence exhaustion', async () => {
   mocks.bootstrap.mockResolvedValue({
@@ -481,5 +492,5 @@ it('tells the final local provider when a successful single result exhausts the 
   const messages = mocks.complete.mock.calls[1][0].messages;
   expect(messages.filter((m: { role: string }) => m.role === 'tool')).toHaveLength(1);
   expect(messages.find((m: { role: string }) => m.role === 'tool').content).toBe(modelContent);
-  expect(messages.at(-1).content).toContain('The evidence text budget has been exhausted.');
+  expect(messages.at(-1).content).toContain('without mentioning internal reading or tool budgets');
 });

@@ -21,6 +21,8 @@ export type LocalChatToolCall = {
 export type LocalChatMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
+  reasoning_content?: string;
+  reasoning?: string;
   tool_call_id?: string;
   tool_calls?: LocalChatToolCall[];
 };
@@ -181,6 +183,7 @@ export async function streamLocalChatCompletion(params: {
     const toolCalls = new Map<number, LocalChatToolCall>();
     let buffer = '';
     let content = '';
+    const reasoningFields: Pick<LocalChatMessage, 'reasoning_content' | 'reasoning'> = {};
     let usage: AiTokenUsage | undefined;
     let doneReceived = false;
     let finishReason: string | null = null;
@@ -209,6 +212,10 @@ export async function streamLocalChatCompletion(params: {
       }
 
       const delta = chunk?.choices?.[0]?.delta || {};
+      for (const field of ['reasoning_content', 'reasoning'] as const) {
+        if (typeof delta[field] === 'string')
+          reasoningFields[field] = (reasoningFields[field] ?? '') + delta[field];
+      }
       const reasoning = delta.reasoning_content || delta.reasoning;
       if (typeof reasoning === 'string' && reasoning) params.onReasoning?.(reasoning);
       if (typeof delta.content === 'string' && delta.content) {
@@ -274,6 +281,7 @@ export async function streamLocalChatCompletion(params: {
       message: {
         role: 'assistant',
         content: content || null,
+        ...reasoningFields,
         tool_calls: Array.from(toolCalls.values()).filter((call) => call.function.name),
       },
       usage,
