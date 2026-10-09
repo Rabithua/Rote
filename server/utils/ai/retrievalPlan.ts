@@ -259,6 +259,7 @@ export async function createRetrievalPlan(params: {
   onUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
   signal?: AbortSignal;
 }): Promise<PlannerAgentResult> {
+  params.signal?.throwIfAborted();
   const trace = createEmptyTrace();
   const availableTags = params.availableTags || (await getUserRoteTags(params.ownerId));
   const messages: ChatMessage[] = [
@@ -277,6 +278,7 @@ export async function createRetrievalPlan(params: {
   const maxToolCalls = params.maxToolCalls ?? MAX_TOOL_CALLS;
 
   for (let step = 0; step < maxSteps; step += 1) {
+    params.signal?.throwIfAborted();
     let response: Awaited<ReturnType<typeof createChatCompletionWithToolsStreaming>>;
     try {
       response = await completeWithTools(params.config.chat, messages, toolDefinitions, {
@@ -305,6 +307,7 @@ export async function createRetrievalPlan(params: {
     messages.push(response.message);
 
     for (const call of calls) {
+      params.signal?.throwIfAborted();
       if (toolCallCount >= maxToolCalls) {
         trace.fallbackReason = 'tool_call_budget_exceeded';
         return lastSearch

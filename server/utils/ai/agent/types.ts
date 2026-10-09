@@ -136,6 +136,7 @@ export type RoteAgentContext = {
   state: RoteAgentClientState;
   emit: RoteAgentEmitter;
   sourceBudget: AgentSourceBudget;
+  signal?: AbortSignal;
 };
 
 export type RoteAgentToolResult = {

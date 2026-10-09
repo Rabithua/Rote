@@ -65,13 +65,17 @@ function decodeRetrievalCursor(cursor: string | null): string[] {
   }
 }
 
-export async function searchRotesProbe(scope: RetrievalScope): Promise<SearchRotesProbeResult> {
+export async function searchRotesProbe(
+  scope: RetrievalScope,
+  signal?: AbortSignal
+): Promise<SearchRotesProbeResult> {
   const warnings: string[] = [];
   const cursorExcludeIds = decodeRetrievalCursor(scope.cursor);
   if (scope.cursor && cursorExcludeIds.length === 0) warnings.push('invalid_cursor_ignored');
   const excludeIds = sanitizeExcludeIds([...scope.excludeIds, ...cursorExcludeIds]);
 
   const { sources, warnings: searchWarnings } = await searchMemory({
+    signal,
     query: scope.query,
     ownerId: scope.ownerId,
     sourceTypes: scope.sourceTypes,
@@ -252,7 +256,7 @@ export async function prepareRoteChatContext(params: {
     message: params.message,
     config,
     history: params.history,
-    executeSearch: searchRotesProbe,
+    executeSearch: (scope) => searchRotesProbe(scope, params.signal),
     excludeIds: sanitizeExcludeIds(params.excludeIds),
     enableThinking: params.enableThinking === true,
     timeContext: params.clientContext,
