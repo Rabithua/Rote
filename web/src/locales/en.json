@@ -695,7 +695,7 @@
         "title": "Memory Overview",
         "roteCount": "Notes Count",
         "vectorProgress": "Vectorized",
-        "vectorProgressValue": "{{percent}}"
+        "vectorProgressValue": "{{percent}}%"
       },
       "privacy": {
         "title": "Conversation Note",

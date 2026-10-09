@@ -70,8 +70,7 @@ export async function createChatCompletion(
       ),
       signal: control.signal,
     });
-    const body = await readJsonResponse(response);
-    recorder.observe(body?.usage);
+    const body = await readJsonResponse(response, recorder.observe);
     const content = body?.choices?.[0]?.message?.content;
 
     if (typeof content !== 'string') {
@@ -123,8 +122,7 @@ export async function createChatCompletionWithTools(
       ),
       signal: control.signal,
     });
-    const body = await readJsonResponse(response);
-    recorder.observe(body?.usage);
+    const body = await readJsonResponse(response, recorder.observe);
     const message = body?.choices?.[0]?.message;
 
     if (!message || typeof message !== 'object') {

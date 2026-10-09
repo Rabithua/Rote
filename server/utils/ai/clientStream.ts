@@ -94,7 +94,7 @@ export async function createChatCompletionWithToolsStreaming(
       signal: control.signal,
     });
 
-    await ensureProviderStreamResponse(response);
+    await ensureProviderStreamResponse(response, recorder.observe);
     if (!response.body) throw new Error('Chat provider returned an empty tool stream response');
 
     reader = response.body.getReader();
@@ -227,7 +227,7 @@ export async function* createChatCompletionStreamParts(
       signal: control.signal,
     });
 
-    await ensureProviderStreamResponse(response);
+    await ensureProviderStreamResponse(response, recorder.observe);
     if (!response.body) throw new Error('Chat provider returned an empty stream response');
 
     reader = response.body.getReader();

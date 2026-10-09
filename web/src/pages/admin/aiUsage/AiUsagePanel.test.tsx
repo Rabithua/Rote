@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SWRConfig } from 'swr';
+import { createInstance } from 'i18next';
 import { get } from '@/utils/api';
 import AiUsagePanel from './AiUsagePanel';
 import { aiUsageRange, formatTokenCount } from './range';
@@ -113,4 +114,18 @@ it('provides the same complete locale contract in Chinese, English, and Japanese
   const keys = Object.keys(en.pages.admin.dashboard.aiUsage).sort();
   expect(Object.keys(zh.pages.admin.dashboard.aiUsage).sort()).toEqual(keys);
   expect(Object.keys(ja.pages.admin.dashboard.aiUsage).sort()).toEqual(keys);
+});
+
+it.each([
+  ['en', en],
+  ['zh', zh],
+  ['ja', ja],
+])('preserves the percent unit of memory vector progress in %s', async (language, translations) => {
+  const i18n = createInstance();
+  await i18n.init({ lng: language, resources: { [language]: { translation: translations } } });
+  for (const percent of [0, 75, 100]) {
+    expect(i18n.t('pages.aiMemory.memoryStats.vectorProgressValue', { percent })).toBe(
+      `${percent}%`
+    );
+  }
 });

@@ -43,6 +43,14 @@ export async function createEmbedding(
         true
       );
     }
+    let body: { data?: { embedding?: unknown }[]; usage?: unknown } | undefined;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      // HTTP failures retain their status-based error even when the body is not JSON.
+      if (response.ok) throw new EmbeddingError('embedding_response_invalid');
+    }
+    recorder.observe(body?.usage);
     if (!response.ok) {
       const retryable =
         response.status === 408 || response.status === 429 || response.status >= 500;
@@ -56,13 +64,6 @@ export async function createEmbedding(
               : 'embedding_parameter_rejected';
       throw new EmbeddingError(code, 502, { providerStatus: response.status }, retryable);
     }
-    let body: { data?: { embedding?: unknown }[]; usage?: unknown };
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      throw new EmbeddingError('embedding_response_invalid');
-    }
-    recorder.observe(body?.usage);
     const expected =
       output.data.mode === 'dimensions' ? output.data.dimensions : options.expectedDimensions;
     const embedding = validateVector(body?.data?.[0]?.embedding, expected);

@@ -699,7 +699,7 @@
         "title": "メモリー概要",
         "roteCount": "ノート数",
         "vectorProgress": "ベクトル化進捗",
-        "vectorProgressValue": "{{percent}}"
+        "vectorProgressValue": "{{percent}}%"
       },
       "privacy": {
         "title": "会話について",

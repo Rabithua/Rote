@@ -165,9 +165,12 @@ function buildProviderErrorMessage(response: Response, body: unknown): string {
   return providerMessage.slice(0, 500);
 }
 
-export async function ensureProviderStreamResponse(response: Response): Promise<void> {
+export async function ensureProviderStreamResponse(
+  response: Response,
+  observeUsage?: (usage: unknown) => void
+): Promise<void> {
   if (!response.ok) {
-    await readJsonResponse(response);
+    await readJsonResponse(response, observeUsage);
   }
 
   const contentType = response.headers.get('content-type') || '';
@@ -176,7 +179,10 @@ export async function ensureProviderStreamResponse(response: Response): Promise<
   }
 }
 
-export async function readJsonResponse(response: Response): Promise<any> {
+export async function readJsonResponse(
+  response: Response,
+  observeUsage?: (usage: unknown) => void
+): Promise<any> {
   const text = await response.text();
   let body: any = null;
   try {
@@ -184,6 +190,8 @@ export async function readJsonResponse(response: Response): Promise<any> {
   } catch {
     body = text;
   }
+
+  observeUsage?.(body?.usage);
 
   const contentType = response.headers.get('content-type') || '';
   if (typeof body === 'string' && (contentType.includes('text/html') || looksLikeHtml(body))) {

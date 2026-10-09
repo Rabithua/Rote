@@ -7,6 +7,7 @@ import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { registerProviderCaptureTests } from './testCases/providerCapture.test';
+import { registerHttpErrorUsageTests } from './testCases/httpErrorUsage.test';
 import { saveAiUsage } from './repository';
 import { getAiUsageStatistics } from './statistics';
 import { parseAiUsageFilters } from './filters';
@@ -75,6 +76,7 @@ afterAll(async () => {
 });
 
 registerProviderCaptureTests(client, owner, provider);
+registerHttpErrorUsageTests(client, owner, provider);
 
 async function recorded() {
   return client`SELECT * FROM ai_token_usage_logs ORDER BY "createdAt", request_id`;

@@ -685,7 +685,7 @@
         "title": "记忆概览",
         "roteCount": "笔记数量",
         "vectorProgress": "向量化进度",
-        "vectorProgressValue": "{{percent}}"
+        "vectorProgressValue": "{{percent}}%"
       },
       "privacy": {
         "title": "对话说明",
