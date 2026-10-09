@@ -18,7 +18,6 @@ export function createAiOutputStream(params: {
   updateMessage: (updater: (message: AiMemoryMessage) => AiMemoryMessage) => void;
   isActive: () => boolean;
   firstToken: () => number;
-  label: (phase: AiOutputStarted['phase']) => string;
 }) {
   const pending = new Map<string, PendingOutput>();
   let frame: number | undefined;
@@ -115,7 +114,7 @@ export function createAiOutputStream(params: {
             ...metadata,
             kind: finished.kind,
             phase: 'answering' as const,
-            statusText: params.label('answering'),
+            status: { type: 'phase' as const, phase: 'answering' as const },
           };
         });
         return { ...message, content, outputs };

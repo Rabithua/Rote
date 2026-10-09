@@ -73,9 +73,9 @@ export async function localAiAgentStream(params: {
   ) => {
     const separator = lastOutputId && lastOutputId !== outputId ? '\n\n' : '';
     lastOutputId = outputId;
-    const output = { outputId, phase, text: separator + text };
+    const output = { outputId, phase, text };
     if (params.handlers.onOutputDelta) params.handlers.onOutputDelta(output);
-    else params.handlers.onDelta?.(output.text);
+    else params.handlers.onDelta?.(separator + text);
   };
   const availableToolNames = new Set(bootstrap?.tools.map((tool) => tool.function.name) || []);
 

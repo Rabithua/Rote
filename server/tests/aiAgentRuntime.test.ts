@@ -111,7 +111,7 @@ describe('agent streamed output', () => {
     );
     expect(events.filter((event) => event.type === 'delta')).toEqual([
       { type: 'delta', outputId: 'step-0', phase: 'planning', text: 'Let me inspect that first.' },
-      { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: '\n\nFinal ' },
+      { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: 'Final ' },
       { type: 'delta', outputId: 'step-1', phase: 'tool_calling', text: 'answer' },
     ]);
     expect(events.filter((event) => event.type === 'output_finished')).toEqual([

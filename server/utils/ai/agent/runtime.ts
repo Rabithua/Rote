@@ -224,15 +224,12 @@ export async function runRoteAgentStream(params: {
   let evidenceExhausted = false;
   let hasFinalAnswer = false;
   let endedWithoutTools = false;
-  let lastOutputId: string | undefined;
   const emitOutput = async (outputId: string, phase: RoteAgentPhase, text: string) => {
     if (!request.streamOutputs) {
       await emit({ type: 'delta', text });
       return;
     }
-    const separator = lastOutputId && lastOutputId !== outputId ? '\n\n' : '';
-    lastOutputId = outputId;
-    await emit({ type: 'delta', outputId, phase, text: separator + text });
+    await emit({ type: 'delta', outputId, phase, text });
   };
   let totalTokens = 0;
   const startedAt = Date.now();

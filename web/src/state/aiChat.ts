@@ -33,6 +33,13 @@ export type AiMessageTimelineItem = {
   updatedAt: number;
 };
 
+export type AiOutputStatus =
+  | { type: 'phase'; phase: AiAgentPhase }
+  | { type: 'tool_started' | 'tool_finished'; toolName: string }
+  | { type: 'tool_progress'; status: AiAgentToolProgressStatus }
+  | { type: 'sources'; count: number; added?: number }
+  | { type: 'evidence_limit' };
+
 export type AiMemoryMessage = {
   id: string;
   role: 'user' | 'assistant';
@@ -43,7 +50,7 @@ export type AiMemoryMessage = {
     text?: string;
     thinking?: string;
     thinkingPhase?: AiThinkingPhase;
-    statusText?: string;
+    status?: AiOutputStatus;
     kind?: 'process' | 'answer';
   }[];
   sources?: AiSemanticResult[];

@@ -12,6 +12,7 @@ import {
   mergeAiTokenUsageByPhase,
   settleAiMessageTimeline,
   type AiMemoryMessage,
+  type AiOutputStatus,
 } from '@/state/aiChat';
 import { createAiOutputStream } from '@/state/aiOutputStream';
 
@@ -65,6 +66,7 @@ function updateTimeline(
     toolName?: string;
     toolStatus?: AiAgentToolProgressStatus;
     message: string;
+    outputStatus: AiOutputStatus;
     status?: 'running' | 'done' | 'error';
   }
 ) {
@@ -96,7 +98,7 @@ function updateTimeline(
         timeline: next.slice(-10),
         outputs: message.outputs?.map((output, index, outputs) =>
           index === outputs.length - 1 && output.kind !== 'answer'
-            ? { ...output, statusText: item.message }
+            ? { ...output, status: item.outputStatus }
             : output
         ),
       };
@@ -130,7 +132,6 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
   const outputs = createAiOutputStream({
     isActive: () => ctx.isActiveRun(ctx.assistantId),
     firstToken: () => (ctx.progress.firstTokenTime ??= performance.now() - ctx.startedAt),
-    label: ctx.labels.phase,
     updateMessage: (updater) => {
       if (!ctx.isActiveRun(ctx.assistantId)) return;
       ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>
@@ -161,6 +162,10 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
           phase === 'answering' && ctx.progress.evidenceExhausted
             ? ctx.labels.evidenceLimit
             : ctx.labels.phase(phase),
+        outputStatus:
+          phase === 'answering' && ctx.progress.evidenceExhausted
+            ? { type: 'evidence_limit' }
+            : { type: 'phase', phase },
       });
     },
     onToolStarted: (toolName) => {
@@ -169,6 +174,7 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
         type: 'tool',
         toolName,
         message: ctx.labels.toolStarted(toolName),
+        outputStatus: { type: 'tool_started', toolName },
       });
     },
     onToolProgress: (toolName, status) => {
@@ -178,6 +184,7 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
         toolName,
         toolStatus: status,
         message: ctx.labels.toolStatus(status),
+        outputStatus: { type: 'tool_progress', status },
       });
     },
     onToolFinished: (toolName) => {
@@ -187,6 +194,7 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
         type: 'tool',
         toolName,
         message: ctx.labels.toolFinished(toolName),
+        outputStatus: { type: 'tool_finished', toolName },
         status: 'done',
       });
     },
@@ -255,6 +263,13 @@ export function createAiRunHandlers(ctx: AiRunHandlerContext): AiRunHandlers {
           : retrieval
             ? ctx.labels.sourcesAdded(retrieval.addedCount, retrieval.totalCount)
             : ctx.labels.sourcesFound(sources.length),
+        outputStatus: retrieval?.budgetExhausted
+          ? { type: 'evidence_limit' }
+          : {
+              type: 'sources',
+              count: retrieval?.totalCount ?? sources.length,
+              added: retrieval?.addedCount,
+            },
         status: 'done',
       });
       ctx.setMessagesForActiveRun(ctx.assistantId, (prev) =>

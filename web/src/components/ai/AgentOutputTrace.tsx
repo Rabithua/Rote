@@ -16,7 +16,33 @@ function OutputRound({
 }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.aiMemory' });
   const [expanded, setExpanded] = useState(false);
-  const title = output.statusText || t(`timeline.phases.${output.phase}`);
+  let title = t(`timeline.phases.${output.phase}`);
+  const status = output.status;
+  switch (status?.type) {
+    case 'phase':
+      title = t(`timeline.phases.${status.phase}`);
+      break;
+    case 'tool_started':
+      title = t(`timeline.tools.${status.toolName}`, { defaultValue: status.toolName });
+      break;
+    case 'tool_finished':
+      title = t(`timeline.toolDone.${status.toolName}`, {
+        defaultValue: t('timeline.toolDone.default'),
+      });
+      break;
+    case 'tool_progress':
+      title = t(`timeline.toolStatus.${status.status}`);
+      break;
+    case 'sources':
+      title =
+        status.added === undefined
+          ? t('timeline.sourcesFound', { count: status.count })
+          : t('timeline.sourcesAdded', { added: status.added, total: status.count });
+      break;
+    case 'evidence_limit':
+      title = t('timeline.evidenceLimit');
+      break;
+  }
   const content = output.kind === 'answer' ? message.content : output.text;
 
   return (

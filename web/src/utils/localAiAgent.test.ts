@@ -189,11 +189,12 @@ describe('local AI agent', () => {
       sourceCharsUsed: 250,
     });
     const onDelta = vi.fn();
+    const onOutputDelta = vi.fn();
 
     await localAiAgentStream({
       config,
       payload: { message: 'show tags' },
-      handlers: { onDelta },
+      handlers: { onDelta, onOutputDelta },
       toolsAvailable: true,
       enableThinking: true,
     });
@@ -218,11 +219,12 @@ describe('local AI agent', () => {
       messages: Array<{ role: string; content?: string | null; tool_calls?: unknown[] }>;
     };
     expect(secondRequest.messages.find((message) => message.tool_calls)?.content).toBeNull();
-    expect(onDelta.mock.calls.map(([text]) => text)).toEqual([
+    expect(onOutputDelta.mock.calls.map(([output]) => output.text)).toEqual([
       'I will inspect the tags first.',
-      '\n\nfinal ',
+      'final ',
       'answer',
     ]);
+    expect(onDelta).not.toHaveBeenCalled();
     expect(mocks.complete).toHaveBeenCalledTimes(2);
   });
 

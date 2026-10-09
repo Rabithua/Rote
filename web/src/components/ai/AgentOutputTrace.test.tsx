@@ -3,6 +3,16 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { AiMessageItem } from './AiMessageItem';
 import type { AiMemoryMessage } from '@/state/aiChat';
+import { createInstance } from 'i18next';
+import en from '@/locales/en.json';
+import zh from '@/locales/zh.json';
+
+const translation = vi.hoisted(() => ({
+  t: (key: string, _values?: Record<string, unknown>): string => key,
+}));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({ t: translation.t }),
+}));
 
 vi.unmock('react-dom/client');
 vi.mock('@/hooks/useAiAnswerExport', () => ({
@@ -17,7 +27,10 @@ vi.mock('./AiStreamingMarkdown', () => ({
   default: ({ content }: { content: string }) => <p>{content}</p>,
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  translation.t = (key: string) => key;
+});
 
 it('keeps each round body under its own collapsible thinking row without moving it on classification', () => {
   const message: AiMemoryMessage = {
@@ -101,4 +114,52 @@ it('keeps each round body under its own collapsible thinking row without moving 
   expect(container.querySelector('[data-output-id="step-2"]')).toBe(finalRound);
   expect(screen.getAllByText('Final body')).toHaveLength(1);
   expect(firstRound.textContent).toContain('First body');
+});
+
+it('renders saved round statuses in the current language, including their counts', async () => {
+  const i18n = createInstance();
+  await i18n.init({ lng: 'zh', resources: { en: { translation: en }, zh: { translation: zh } } });
+  translation.t = (key, values) => i18n.t(`pages.aiMemory.${key}`, values || {});
+  const message: AiMemoryMessage = {
+    id: 'saved',
+    role: 'assistant',
+    content: 'Answer',
+    outputs: [
+      {
+        outputId: 'step-0',
+        phase: 'planning',
+        kind: 'process',
+        text: 'Process body',
+        status: { type: 'sources', added: 2, count: 5 },
+      },
+      {
+        outputId: 'step-1',
+        phase: 'answering',
+        kind: 'answer',
+        status: { type: 'phase', phase: 'answering' },
+      },
+    ],
+  };
+  const { container, rerender } = render(
+    <MemoryRouter>
+      <AiMessageItem message={message} />
+    </MemoryRouter>
+  );
+  const title = (outputId: string) =>
+    container.querySelector(`[data-output-id="${outputId}"]`)!.firstElementChild!.textContent;
+  expect(title('step-0')).toBe(
+    i18n.t('pages.aiMemory.timeline.sourcesAdded', { added: 2, total: 5 })
+  );
+  const chineseTitle = title('step-0');
+  await i18n.changeLanguage('en');
+  rerender(
+    <MemoryRouter>
+      <AiMessageItem message={JSON.parse(JSON.stringify(message))} />
+    </MemoryRouter>
+  );
+  expect(title('step-0')).toBe(
+    i18n.t('pages.aiMemory.timeline.sourcesAdded', { added: 2, total: 5 })
+  );
+  expect(title('step-0')).not.toBe(chineseTitle);
+  expect(title('step-1')).toBe(i18n.t('pages.aiMemory.timeline.phases.answering'));
 });

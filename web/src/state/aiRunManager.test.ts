@@ -115,6 +115,11 @@ it('keeps streamed process text out of the answer and does not replay final chun
   handlers.onOutputFinished?.({ outputId: 'step-0', phase: 'planning', kind: 'process' });
   expect(messages[0].content).toBe('');
   expect(messages[0].outputs?.[0]).toMatchObject({ text: 'I will search.', kind: 'process' });
+  handlers.onToolProgress?.('rote_search_notes', 'retrieving_sources');
+  expect(messages[0].outputs?.[0].status).toEqual({
+    type: 'tool_progress',
+    status: 'retrieving_sources',
+  });
   handlers.onOutputDelta?.({ outputId: 'step-1', phase: 'tool_calling', text: 'The answer ' });
   handlers.flushOutputs();
   expect(messages[0].content).toBe('');
@@ -123,6 +128,7 @@ it('keeps streamed process text out of the answer and does not replay final chun
   handlers.onOutputFinished?.({ outputId: 'step-1', phase: 'tool_calling', kind: 'answer' });
   expect(messages[0].content).toBe('The answer is here.');
   expect(messages[0].outputs?.[1].text).toBeUndefined();
+  expect(messages[0].outputs?.[1].status).toEqual({ type: 'phase', phase: 'answering' });
   handlers.onOutputFinished?.({ outputId: 'step-1', phase: 'tool_calling', kind: 'answer' });
   expect(messages[0].content).toBe('The answer is here.');
   expect(queuedChunks).toBe(0);
