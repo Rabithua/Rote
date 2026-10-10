@@ -1,5 +1,7 @@
 import type { AiUsageContext } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
+import { buildChatParameters } from './chatParameters';
+import type { ReasoningDetail } from './reasoningDetails';
 
 export type ChatToolCall = {
   id: string;
@@ -15,6 +17,7 @@ export type ChatMessage = {
   content: string | null;
   reasoning_content?: string;
   reasoning?: string;
+  reasoning_details?: ReasoningDetail[];
   tool_call_id?: string;
   tool_calls?: ChatToolCall[];
 };
@@ -42,7 +45,6 @@ export type ChatToolChoice =
 export type ChatCompletionOptions = {
   usageContext?: AiUsageContext;
   temperature?: number;
-  enableThinking?: boolean;
   toolChoice?: ChatToolChoice;
   signal?: AbortSignal;
   requestTimeoutMs?: number;
@@ -222,7 +224,6 @@ export function buildChatRequestBody(
     messages: ChatMessage[];
     temperature: number;
     stream?: boolean;
-    enableThinking?: boolean;
     tools?: ChatToolDefinition[];
     toolChoice?: ChatToolChoice;
   }
@@ -230,11 +231,8 @@ export function buildChatRequestBody(
   return {
     model: config.model,
     messages: body.messages,
-    temperature: body.temperature,
+    ...buildChatParameters(config, body.temperature),
     ...(body.stream ? { stream: true, stream_options: { include_usage: true } } : {}),
     ...(body.tools?.length ? { tools: body.tools, tool_choice: body.toolChoice || 'auto' } : {}),
-    ...(config.providerId === 'dashscope' && typeof body.enableThinking === 'boolean'
-      ? { enable_thinking: body.enableThinking }
-      : {}),
   };
 }

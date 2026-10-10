@@ -605,10 +605,6 @@
         "exportFailed": "エクスポートに失敗しました"
       },
       "inputPlaceholder": "Rote に質問...",
-      "thinkingToggle": {
-        "on": "思考はオンです",
-        "off": "思考はオフです"
-      },
       "empty": {
         "title": "Rote に聞く",
         "desc": "ノートと記事から文脈を探します。"

@@ -130,6 +130,7 @@ export interface AiProviderConfig {
   baseUrl: string;
   apiKey?: string;
   model: string;
+  reasoningEffort?: 'high';
 }
 
 export interface AiIndexingConfig {

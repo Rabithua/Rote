@@ -601,10 +601,6 @@
         "exportFailed": "Export failed"
       },
       "inputPlaceholder": "Ask your Rote...",
-      "thinkingToggle": {
-        "on": "Thinking is on",
-        "off": "Thinking is off"
-      },
       "empty": {
         "title": "Ask Rote",
         "desc": "Find context from your notes and articles."

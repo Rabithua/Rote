@@ -591,10 +591,6 @@
         "exportFailed": "导出失败"
       },
       "inputPlaceholder": "问问你的 Rote...",
-      "thinkingToggle": {
-        "on": "思考已开启",
-        "off": "思考已关闭"
-      },
       "empty": {
         "title": "问 Rote",
         "desc": "从你的笔记和文章里找上下文。"

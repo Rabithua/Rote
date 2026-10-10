@@ -71,7 +71,6 @@ async function streamToolPlannedChatResponse(
     excludeIds: body?.excludeIds,
     history: body?.history,
     clientContext: body?.clientContext,
-    enableThinking: body?.enableThinking === true,
     signal,
     onPlanUsage: (usage) => addAiChatStreamUsage(metrics, usage),
     onPlanThinkingDelta: async (text) => {
@@ -97,7 +96,6 @@ async function streamToolPlannedChatResponse(
   let lastUsage: any = null;
   for await (const part of createChatCompletionStreamParts(config.chat, messages, {
     usageContext: { userId: user.id, purpose: 'chat_answer' },
-    enableThinking: body?.enableThinking === true,
     signal,
   })) {
     if (part.type === 'reasoning') {
@@ -312,7 +310,6 @@ aiRouter.post('/chat', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =>
           message,
           history: body?.history,
           clientContext: body?.clientContext,
-          enableThinking: body?.enableThinking === true,
         }),
         sources: [],
       };
@@ -364,7 +361,6 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
           excludeIds: body?.excludeIds,
           pendingPlan: body?.pendingPlan,
           clarificationAnswer: body?.clarificationAnswer,
-          enableThinking: body?.enableThinking === true,
           streamOutputs: body?.streamOutputs === true,
         },
         config,
@@ -441,7 +437,6 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
           message,
           history: body?.history,
           clientContext: body?.clientContext,
-          enableThinking: body?.enableThinking === true,
           signal: abortControl.signal,
           onReasoning: (text) => writeSseEvent(stream, 'thinking', { phase: 'answer', text }),
           onContent: (text) => writeSseEvent(stream, 'delta', { text }),

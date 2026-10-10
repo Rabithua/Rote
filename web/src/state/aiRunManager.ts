@@ -44,7 +44,6 @@ type StartAiRunParams = {
   mode: PersonalAiMode;
   personalConfig?: PersonalAiProviderConfig;
   toolsAvailable?: boolean;
-  enableThinking?: boolean;
   labels: AiRunLabels;
 };
 
@@ -297,7 +296,6 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       previousPlan,
       excludeIds,
       history: validHistory.length > 0 ? validHistory : undefined,
-      enableThinking: params.enableThinking === true,
       state: {
         ...agentState,
         previousPlan,
@@ -325,7 +323,6 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
         payload: agentPayload,
         handlers: agentHandlers,
         toolsAvailable: params.toolsAvailable === true,
-        enableThinking: params.enableThinking === true,
         signal: controller.signal,
       });
     } else if (params.toolsAvailable === true) {

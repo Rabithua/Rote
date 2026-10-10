@@ -8,6 +8,7 @@ export interface PersonalAiProviderConfig {
   model: string;
   apiKey: string;
   temperature: number;
+  reasoningEffort?: 'high';
 }
 
 export interface PersonalAiSettings {
@@ -29,6 +30,7 @@ export const DEFAULT_PERSONAL_AI_SETTINGS: PersonalAiSettings = {
     model: 'gemma-4-12b-it',
     apiKey: '',
     temperature: 0.2,
+    reasoningEffort: 'high',
   },
 };
 
@@ -38,6 +40,7 @@ const DEFAULT_LEGACY_REMOTE_PROVIDER: PersonalAiProviderConfig = {
   model: '',
   apiKey: '',
   temperature: 0.2,
+  reasoningEffort: 'high',
 };
 
 export function isLocalPersonalAiProvider(config: Pick<PersonalAiProviderConfig, 'baseUrl'>) {
@@ -80,12 +83,14 @@ export function withPersonalAiDefaults(
     ? {
         ...DEFAULT_PERSONAL_AI_SETTINGS.personal,
         ...settings.local,
+        reasoningEffort: 'high' as const,
       }
     : undefined;
   const remote = settings?.remote
     ? {
         ...DEFAULT_LEGACY_REMOTE_PROVIDER,
         ...settings.remote,
+        reasoningEffort: 'high' as const,
       }
     : undefined;
 
@@ -96,6 +101,7 @@ export function withPersonalAiDefaults(
     personal: {
       ...DEFAULT_PERSONAL_AI_SETTINGS.personal,
       ...provider,
+      reasoningEffort: 'high',
     },
     local,
     remote,

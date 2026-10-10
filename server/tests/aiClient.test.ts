@@ -53,6 +53,149 @@ afterEach(() => {
 });
 
 describe('ai client streaming', () => {
+  it('keeps Kimi fixed sampling valid in connection and tool probes', async () => {
+    const kimiConfig = {
+      ...config,
+      baseUrl: 'https://api.moonshot.cn/v1',
+      model: 'kimi-k3',
+    };
+    const bodies: any[] = [];
+    globalThis.fetch = (async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      bodies.push(body);
+      if ('temperature' in body || 'thinking' in body)
+        throw new Error('Kimi K3 rejects custom sampling and K2 thinking fields');
+      return Response.json({ choices: [{ message: { content: 'OK' } }] });
+    }) as typeof fetch;
+    await createChatCompletion(kimiConfig, []);
+    await probeChatProviderToolCalling(kimiConfig);
+    expect(bodies).toHaveLength(2);
+    expect(bodies.every((body) => body.reasoning_effort === 'high')).toBe(true);
+    expect(bodies[1].tool_choice).toBe('auto');
+  });
+
+  it('collects DashScope thinking streams for synchronous chat and tool callers', async () => {
+    const thinkingConfig = { ...config, providerId: 'dashscope', model: 'qwen3.5-27b' };
+    const bodies: any[] = [];
+    globalThis.fetch = (async (_url, init) => {
+      const body = JSON.parse(init?.body as string);
+      bodies.push(body);
+      if (!body.stream || !body.enable_thinking) throw new Error('invalid DashScope transport');
+      return sseResponse([
+        { choices: [{ delta: { reasoning_content: 'Thought' } }] },
+        {
+          choices: [
+            {
+              delta: body.tools
+                ? {
+                    tool_calls: [
+                      {
+                        index: 0,
+                        id: 'call_1',
+                        function: { name: 'search_rotes', arguments: '{}' },
+                      },
+                    ],
+                  }
+                : { content: 'OK' },
+              finish_reason: body.tools ? 'tool_calls' : 'stop',
+            },
+          ],
+        },
+        { choices: [], usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 } },
+      ]);
+    }) as typeof fetch;
+    expect(await createChatCompletion(thinkingConfig, [])).toEqual({
+      content: 'OK',
+      usage: { prompt_tokens: 2, completion_tokens: 3, total_tokens: 5 },
+    });
+    expect((await createChatCompletionWithTools(thinkingConfig, [], tools)).message).toMatchObject({
+      reasoning_content: 'Thought',
+      tool_calls: [{ id: 'call_1' }],
+    });
+    expect(bodies).toHaveLength(2);
+  });
+
+  it('passes complete OpenRouter reasoning blocks back in the next tool round', async () => {
+    const routerConfig = {
+      ...config,
+      providerId: 'openrouter',
+      model: 'anthropic/claude-sonnet-4',
+    };
+    const bodies: any[] = [];
+    globalThis.fetch = (async (_url, init) => {
+      bodies.push(JSON.parse(init?.body as string));
+      return sseResponse([
+        {
+          choices: [
+            {
+              delta: {
+                reasoning_details: [
+                  {
+                    type: 'reasoning.text',
+                    index: 0,
+                    id: 'r0',
+                    format: 'anthropic-claude-v1',
+                    text: 'First ',
+                    signature: 'sig-',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          choices: [
+            {
+              delta: {
+                reasoning_details: [
+                  { type: 'reasoning.text', index: 0, text: 'thought', signature: 'end' },
+                  { type: 'reasoning.encrypted', index: 1, id: 'r1', data: 'cipher' },
+                ],
+              },
+            },
+          ],
+        },
+        {
+          choices: [
+            {
+              delta: {
+                tool_calls: [
+                  { index: 0, id: 'call_1', function: { name: 'search_rotes', arguments: '{}' } },
+                ],
+              },
+              finish_reason: 'tool_calls',
+            },
+          ],
+        },
+      ]);
+    }) as typeof fetch;
+    const onReasoning: string[] = [];
+    const result = await createChatCompletionWithToolsStreaming(routerConfig, [], tools, {
+      onReasoning: (text) => {
+        onReasoning.push(text);
+      },
+    });
+    await createChatCompletionWithToolsStreaming(
+      routerConfig,
+      [result.message, { role: 'tool', tool_call_id: 'call_1', content: 'found' }],
+      tools
+    );
+    expect(onReasoning).toEqual(['First ', 'thought']);
+    expect(bodies[1].messages[0].reasoning_details).toEqual([
+      {
+        type: 'reasoning.text',
+        index: 0,
+        id: 'r0',
+        format: 'anthropic-claude-v1',
+        text: 'First thought',
+        signature: 'sig-end',
+      },
+      { type: 'reasoning.encrypted', index: 1, id: 'r1', data: 'cipher' },
+    ]);
+    expect(bodies[0].reasoning).toEqual({ effort: 'high' });
+    expect(bodies[0]).not.toHaveProperty('temperature');
+    expect(bodies[0]).not.toHaveProperty('thinking');
+  });
   it.each(['reasoning_content', 'reasoning'] as const)(
     'keeps complete streamed %s for the next tool round, including empty reasoning',
     async (field) => {

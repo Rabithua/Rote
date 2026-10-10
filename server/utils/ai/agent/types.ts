@@ -64,7 +64,6 @@ export type RoteAgentRequest = {
   excludeIds?: string[];
   pendingPlan?: PlannerAgentDto | null;
   clarificationAnswer?: string;
-  enableThinking?: boolean;
   /** Opt into per-output streaming; existing clients receive only the reused answer. */
   streamOutputs?: boolean;
 };

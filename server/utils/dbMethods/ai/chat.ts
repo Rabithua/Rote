@@ -236,7 +236,6 @@ export async function prepareRoteChatContext(params: {
   onPlanGenerated?: (plan: PlannerAgentDto) => Promise<void> | void;
   onPlanThinkingDelta?: (text: string) => Promise<void> | void;
   onPlanUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
-  enableThinking?: boolean;
   clientContext?: RetrievalTimeContext | null;
   signal?: AbortSignal;
 }): Promise<{
@@ -258,7 +257,6 @@ export async function prepareRoteChatContext(params: {
     history: params.history,
     executeSearch: (scope) => searchRotesProbe(scope, params.signal),
     excludeIds: sanitizeExcludeIds(params.excludeIds),
-    enableThinking: params.enableThinking === true,
     timeContext: params.clientContext,
     onThinkingDelta: params.onPlanThinkingDelta,
     signal: params.signal,

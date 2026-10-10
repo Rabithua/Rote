@@ -150,6 +150,7 @@ export const DEFAULT_AI_CONFIG: AiConfig = {
     apiFormat: 'openai_compatible',
     baseUrl: 'https://api.openai.com/v1',
     model: 'gpt-4.1-mini',
+    reasoningEffort: 'high',
     apiKey: '',
   },
   embedding: {
@@ -176,6 +177,7 @@ export function mergeAiConfig(config?: Partial<AiConfig> | null): AiConfig {
     chat: {
       ...DEFAULT_AI_CONFIG.chat,
       ...(config?.chat || {}),
+      reasoningEffort: 'high',
       apiFormat: 'openai_compatible',
     },
     embedding: {

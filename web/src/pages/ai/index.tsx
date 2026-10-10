@@ -24,7 +24,6 @@ import {
   ArrowDown,
   ArrowDownLeft,
   ArrowUpRight,
-  Brain,
   BrainCircuit,
   BrainCog,
   Loader,
@@ -42,12 +41,6 @@ import {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  buttonType,
-  ghostButtonVariant,
-  iconButtonSize,
-  statusBlockClasses,
-} from './components/aiPageClasses';
 import { AiMemorySidebar } from './components/AiMemorySidebar';
 import { PersonalAiDialog } from './components/PersonalAiDialog';
 import { useAiRunLabels } from './hooks/useAiRunLabels';
@@ -63,7 +56,6 @@ function AiMemoryPage() {
     [personalAiSettings]
   );
   const [input, setInput] = useState('');
-  const [enableThinking, setEnableThinking] = useState(false);
   const [isPromptsExpanded, setIsPromptsExpanded] = useState(false);
   const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
   const [isPersonalAiDialogOpen, setIsPersonalAiDialogOpen] = useState(false);
@@ -189,7 +181,6 @@ function AiMemoryPage() {
       mode: personalAi.mode,
       personalConfig: isPersonalModelMode ? activePersonalConfig : undefined,
       toolsAvailable: status?.memoryAvailable === true,
-      enableThinking,
       labels: aiRunLabels,
     });
     if (!started) {
@@ -354,20 +345,6 @@ function AiMemoryPage() {
               onChange={(event) => setInput(event.target.value)}
               onKeyDown={handleInputKeyDown}
             />
-            <Button
-              type={buttonType}
-              size={iconButtonSize}
-              variant={ghostButtonVariant}
-              className={statusBlockClasses.settingsButton}
-              style={{ opacity: enableThinking ? 1 : 0.45 }}
-              disabled={isSending || unavailable}
-              aria-label={enableThinking ? t('thinkingToggle.on') : t('thinkingToggle.off')}
-              aria-pressed={enableThinking}
-              title={enableThinking ? t('thinkingToggle.on') : t('thinkingToggle.off')}
-              onClick={() => setEnableThinking((value) => !value)}
-            >
-              <Brain className={statusBlockClasses.settingsIcon} />
-            </Button>
             <Button
               type="submit"
               size="sm"

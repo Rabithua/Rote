@@ -3,8 +3,8 @@ import { streamLocalChatCompletion, testLocalAiConnection } from '@/utils/localA
 
 const config = {
   enabled: true,
-  baseUrl: 'http://127.0.0.1:11435/v1/',
-  model: 'gemma-local',
+  baseUrl: 'http://127.0.0.1:8080/v1/',
+  model: 'gemma-4-12b-it',
   apiKey: 'local-token',
   temperature: 0.2,
 };
@@ -32,13 +32,125 @@ afterEach(() => {
 });
 
 describe('local AI client', () => {
+  it('returns OpenRouter signed reasoning intact for the next browser tool round', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        sseResponse([
+          {
+            choices: [
+              {
+                delta: {
+                  reasoning_details: [
+                    { type: 'reasoning.text', index: 0, id: 'r0', text: 'Think ', signature: 's1' },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            choices: [
+              {
+                delta: {
+                  reasoning_details: [
+                    { type: 'reasoning.text', index: 0, text: 'more', signature: 's2' },
+                    { type: 'reasoning.encrypted', index: 1, data: 'encrypted' },
+                  ],
+                },
+                finish_reason: 'tool_calls',
+              },
+            ],
+          },
+        ])
+      )
+      .mockResolvedValueOnce(
+        sseResponse([{ choices: [{ delta: { content: 'OK' }, finish_reason: 'stop' }] }])
+      );
+    vi.stubGlobal('fetch', fetchMock);
+    const router = {
+      ...config,
+      baseUrl: 'https://openrouter.ai/api/v1',
+      model: 'anthropic/claude-sonnet-4',
+    };
+    const reasoning: string[] = [];
+    const result = await streamLocalChatCompletion({
+      config: router,
+      messages: [],
+      onReasoning: (text) => reasoning.push(text),
+    });
+    await streamLocalChatCompletion({ config: router, messages: [result.message] });
+    const second = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(reasoning).toEqual(['Think ', 'more']);
+    expect(second.messages[0].reasoning_details).toEqual([
+      { type: 'reasoning.text', index: 0, id: 'r0', text: 'Think more', signature: 's1s2' },
+      { type: 'reasoning.encrypted', index: 1, data: 'encrypted' },
+    ]);
+    expect(second.reasoning).toEqual({ effort: 'high' });
+    expect(second).not.toHaveProperty('temperature');
+  });
+  it('sends default high to a remote GLM without leaking local thinking parameters', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse([{ choices: [{ delta: { content: 'OK' } }] }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await streamLocalChatCompletion({
+      config: {
+        ...config,
+        baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
+        model: 'glm-5.3-flash',
+      },
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe('high');
+    expect(body).not.toHaveProperty('chat_template_kwargs');
+    expect(body.thinking).toEqual({ type: 'enabled' });
+  });
+
+  it('omits sampling parameters in remote OpenAI reasoning requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse([{ choices: [{ delta: { content: 'OK' } }] }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await streamLocalChatCompletion({
+      config: {
+        ...config,
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.2',
+      },
+      messages: [],
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe('high');
+    expect(body).not.toHaveProperty('temperature');
+  });
+
+  it('sets high for local Ollama GPT-OSS without llama.cpp template fields', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse([{ choices: [{ delta: { content: 'OK' } }] }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await streamLocalChatCompletion({
+      config: {
+        ...config,
+        baseUrl: 'http://localhost:11434/v1',
+        model: 'gpt-oss:20b',
+        reasoningEffort: 'high',
+      },
+      messages: [],
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe('high');
+    expect(body).not.toHaveProperty('chat_template_kwargs');
+  });
+
   it('tests the bridge with the local token', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
     await testLocalAiConnection(config);
 
-    expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:11435/v1/models', {
+    expect(fetchMock).toHaveBeenCalledWith('http://127.0.0.1:8080/v1/models', {
       headers: {
         'Content-Type': 'application/json',
         Authorization: 'Bearer local-token',
@@ -56,8 +168,8 @@ describe('local AI client', () => {
     await testLocalAiConnection(config);
 
     expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
-      'http://127.0.0.1:11435/v1/models',
-      'http://localhost:11435/v1/models',
+      'http://127.0.0.1:8080/v1/models',
+      'http://localhost:8080/v1/models',
     ]);
   });
 
@@ -112,7 +224,7 @@ describe('local AI client', () => {
     });
     expect(result.usage?.total_tokens).toBe(14);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
-      chat_template_kwargs: { enable_thinking: false },
+      chat_template_kwargs: { enable_thinking: true },
     });
   });
 
@@ -130,19 +242,18 @@ describe('local AI client', () => {
 
     expect(result.message.content).toBe('OK');
     expect(fetchMock.mock.calls.map((call) => call[0])).toEqual([
-      'http://127.0.0.1:11435/v1/chat/completions',
-      'http://localhost:11435/v1/chat/completions',
+      'http://127.0.0.1:8080/v1/chat/completions',
+      'http://localhost:8080/v1/chat/completions',
     ]);
   });
 
-  it(`can enable model thinking for local browser calls`, async () => {
+  it(`always enables model thinking for local browser calls`, async () => {
     const fetchMock = vi.fn().mockResolvedValue(sseResponse([{ choices: [{ delta: {} }] }]));
     vi.stubGlobal('fetch', fetchMock);
 
     await streamLocalChatCompletion({
       config,
       messages: [{ role: 'user', content: 'Think' }],
-      enableThinking: true,
     });
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({

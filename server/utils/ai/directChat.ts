@@ -55,7 +55,6 @@ export async function createDirectSiteChat(params: {
   message: string;
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
   clientContext?: RetrievalTimeContext | null;
-  enableThinking?: boolean;
   signal?: AbortSignal;
 }) {
   const config = await getStoredAiConfig();
@@ -64,7 +63,6 @@ export async function createDirectSiteChat(params: {
     buildMessages(params.message, params.history, params.clientContext),
     {
       usageContext: { userId: params.userId, purpose: 'chat_answer' },
-      enableThinking: params.enableThinking,
       signal: params.signal,
     }
   );
@@ -76,7 +74,6 @@ export async function streamDirectSiteChat(params: {
   message: string;
   history?: Array<{ role: 'user' | 'assistant'; content: string }>;
   clientContext?: RetrievalTimeContext | null;
-  enableThinking?: boolean;
   signal?: AbortSignal;
   onReasoning: (text: string) => Promise<void>;
   onContent: (text: string) => Promise<void>;
@@ -89,7 +86,6 @@ export async function streamDirectSiteChat(params: {
     buildMessages(params.message, params.history, params.clientContext),
     {
       usageContext: { userId: params.userId, purpose: 'chat_answer' },
-      enableThinking: params.enableThinking,
       signal: params.signal,
     }
   )) {
