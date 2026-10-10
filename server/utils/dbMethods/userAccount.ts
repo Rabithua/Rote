@@ -19,6 +19,7 @@ import {
   users,
 } from '../../drizzle/schema';
 import db from '../drizzle';
+import { recordRoteChanges } from '../../sync/journal';
 import { enqueueBackfillEmbeddingJobsForOwner } from './ai';
 import { DatabaseError } from './common';
 import {
@@ -148,10 +149,22 @@ export async function mergeUserAccounts(
       // 5. 合并笔记变更历史
       const changesResult = await tx
         .update(roteChanges)
-        .set({ userid: targetUserId })
+        .set({ userid: targetUserId, revision: null })
         .where(eq(roteChanges.userid, sourceUserId))
         .returning({ id: roteChanges.id });
       mergedData.changes = changesResult.length;
+
+      // Transferred audit history is not part of the target's ordered feed.
+      // Publish the transferred current notes at fresh target revisions.
+      await recordRoteChanges(
+        tx,
+        targetUserId,
+        notesResult.map((note) => ({
+          originid: note.id,
+          roteid: note.id,
+          action: 'CREATE' as const,
+        }))
+      );
 
       // 6. 合并 API 密钥
       const openKeysResult = await tx

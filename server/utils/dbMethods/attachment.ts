@@ -6,7 +6,7 @@ import { UploadResult } from '../../types/main';
 import { validateRoteAttachmentDetails } from '../fileValidation';
 import db from '../drizzle';
 import { r2deletehandler } from '../r2';
-import { createRoteChange } from './change';
+import { lockSyncOwner, recordRoteChanges, type SyncTransaction } from '../../sync/journal';
 import { DatabaseError } from './common';
 
 function collectAttachmentObjectKeys(details: any): string[] {
@@ -34,6 +34,24 @@ function deleteAttachmentObjects(details: any) {
       console.error(`Failed to delete attachment object from R2: ${key}`, err);
     });
   }
+}
+
+async function recordAttachmentChanges(tx: SyncTransaction, noteIds: string[], userId: string) {
+  if (noteIds.length === 0) return;
+  const notes = await tx
+    .update(rotes)
+    .set({ updatedAt: new Date() })
+    .where(and(inArray(rotes.id, noteIds), eq(rotes.authorid, userId)))
+    .returning({ id: rotes.id });
+  await recordRoteChanges(
+    tx,
+    userId,
+    notes.map((note) => ({
+      originid: note.id,
+      roteid: note.id,
+      action: 'UPDATE' as const,
+    }))
+  );
 }
 
 // 附件相关方法
@@ -71,14 +89,16 @@ export async function createAttachments(
     }));
 
     // 使用事务批量插入
-    const attachments_new = await db.transaction(
-      async (tx) =>
-        await Promise.all(
-          attachmentsData.map((attachment: any) =>
-            tx.insert(attachments).values(attachment).returning()
-          )
+    const attachments_new = await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, userid);
+      const inserted = await Promise.all(
+        attachmentsData.map((attachment: any) =>
+          tx.insert(attachments).values(attachment).returning()
         )
-    );
+      );
+      if (roteid && inserted.length > 0) await recordAttachmentChanges(tx, [roteid], userid);
+      return inserted;
+    });
 
     return attachments_new.flat();
   } catch (error) {
@@ -91,11 +111,13 @@ export async function upsertAttachmentsByOriginalKey(
   userid: string,
   roteid: string | undefined,
   data: UploadResult[],
-  transactionOverride?: any
+  transactionOverride?: SyncTransaction
 ): Promise<any[]> {
   try {
-    const execute = async (tx: any) => {
+    const execute = async (tx: SyncTransaction) => {
+      if (!transactionOverride) await lockSyncOwner(tx, userid);
       const out: any[] = [];
+      const changedNoteIds = new Set<string>();
       for (const e of data) {
         const originalKey = (e.details as any)?.key as string | undefined;
         if (!e.url) {
@@ -141,6 +163,7 @@ export async function upsertAttachmentsByOriginalKey(
           .limit(1);
 
         const existing = existingList[0];
+        if (existing?.roteid) changedNoteIds.add(existing.roteid);
 
         if (existing) {
           // 更新压缩信息与元数据；url 保持为原图
@@ -179,6 +202,10 @@ export async function upsertAttachmentsByOriginalKey(
           out.push(created);
         }
       }
+      for (const attachment of out) {
+        if (attachment.roteid) changedNoteIds.add(attachment.roteid);
+      }
+      await recordAttachmentChanges(tx, [...changedNoteIds], userid);
       return out;
     };
     const results = transactionOverride
@@ -270,35 +297,10 @@ export async function bindAttachmentsToRote(
         )
       );
 
-      // 更新 rote 的 updatedAt（如果 rote 存在）
-      try {
-        await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
-      } catch (_error) {
-        // rote 可能不存在，忽略错误
-      }
+      await recordAttachmentChanges(tx, [roteid], userid);
 
       return { count: updateResults.length };
     });
-
-    // 记录变更历史（如果 rote 存在）
-    try {
-      const [rote] = await db
-        .select({ id: rotes.id, authorid: rotes.authorid })
-        .from(rotes)
-        .where(eq(rotes.id, roteid))
-        .limit(1);
-      if (rote) {
-        await createRoteChange({
-          originid: rote.id,
-          roteid: rote.id,
-          action: 'UPDATE',
-          userid: rote.authorid,
-        });
-      }
-    } catch (error) {
-      // 记录变更失败不影响操作，只记录错误
-      console.error('Failed to record rote change for bind attachments:', error);
-    }
 
     return { count: result.count };
   } catch (error) {
@@ -330,7 +332,7 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
         .delete(attachments)
         .where(and(eq(attachments.roteid, roteid), eq(attachments.userid, userid)))
         .returning();
-      if (rote) await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
+      if (rote) await recordAttachmentChanges(tx, [roteid], userid);
       return { count: result.length, details: attachmentsList, tracked, rote };
     });
     const tracked = new Set(deleted.tracked);
@@ -338,21 +340,6 @@ export async function deleteRoteAttachmentsByRoteId(roteid: string, userid: stri
       .flatMap(({ details }) => collectAttachmentObjectKeys(details))
       .filter((key) => !tracked.has(key))
       .forEach((key) => deleteAttachmentObjects({ key }));
-
-    // 记录变更历史（如果 rote 存在）
-    if (deleted.rote) {
-      try {
-        await createRoteChange({
-          originid: deleted.rote.id,
-          roteid: deleted.rote.id,
-          action: 'UPDATE',
-          userid: deleted.rote.authorid,
-        });
-      } catch (error) {
-        // 记录变更失败不影响操作，只记录错误
-        console.error('Failed to record rote change for delete attachments:', error);
-      }
-    }
 
     return { count: deleted.count };
   } catch (error) {
@@ -366,24 +353,24 @@ export async function updateAttachmentsSortOrder(
   attachmentIds: string[]
 ): Promise<any> {
   try {
-    // 验证所有附件都属于该用户和该笔记
-    const attachmentsList = await db
-      .select()
-      .from(attachments)
-      .where(
-        and(
-          inArray(attachments.id, attachmentIds),
-          eq(attachments.userid, userId),
-          eq(attachments.roteid, roteId)
-        )
-      );
-
-    if (attachmentsList.length !== attachmentIds.length) {
-      throw new DatabaseError('Some attachments not found or unauthorized');
-    }
-
-    // 使用事务批量更新排序索引
     const results = await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, userId);
+      // 验证所有附件都属于该用户和该笔记
+      const attachmentsList = await tx
+        .select()
+        .from(attachments)
+        .where(
+          and(
+            inArray(attachments.id, attachmentIds),
+            eq(attachments.userid, userId),
+            eq(attachments.roteid, roteId)
+          )
+        );
+
+      if (attachmentsList.length !== attachmentIds.length) {
+        throw new DatabaseError('Some attachments not found or unauthorized');
+      }
+
       const updateResults = await Promise.all(
         attachmentIds.map((id, index) =>
           tx
@@ -394,35 +381,10 @@ export async function updateAttachmentsSortOrder(
         )
       );
 
-      // 更新 rote 的 updatedAt（如果 rote 存在）
-      try {
-        await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteId));
-      } catch (_error) {
-        // rote 可能不存在，忽略错误
-      }
+      await recordAttachmentChanges(tx, [roteId], userId);
 
       return updateResults.flat();
     });
-
-    // 记录变更历史（如果 rote 存在）
-    try {
-      const [rote] = await db
-        .select({ id: rotes.id, authorid: rotes.authorid })
-        .from(rotes)
-        .where(eq(rotes.id, roteId))
-        .limit(1);
-      if (rote) {
-        await createRoteChange({
-          originid: rote.id,
-          roteid: rote.id,
-          action: 'UPDATE',
-          userid: rote.authorid,
-        });
-      }
-    } catch (error) {
-      // 记录变更失败不影响操作，只记录错误
-      console.error('Failed to record rote change for update attachment sort order:', error);
-    }
 
     return results;
   } catch (error) {
@@ -494,42 +456,9 @@ export async function deleteAttachments(
           removableAttachments.map((a) => a.roteid).filter((id): id is string => id !== null)
         ),
       ];
-      for (const roteid of roteIds) {
-        await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
-      }
+      await recordAttachmentChanges(tx, roteIds, userid);
       return { dbAttachments: removableAttachments, result, roteIds, tracked };
     });
-
-    // 更新相关 rote 的 updatedAt 并记录变更历史
-    for (const roteid of deleted.roteIds) {
-      try {
-        const [rote] = await db
-          .select({ id: rotes.id, authorid: rotes.authorid })
-          .from(rotes)
-          .where(eq(rotes.id, roteid))
-          .limit(1);
-
-        if (rote) {
-          // 更新 rote 的 updatedAt
-          await db.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, roteid));
-
-          // 记录变更历史
-          try {
-            await createRoteChange({
-              originid: rote.id,
-              roteid: rote.id,
-              action: 'UPDATE',
-              userid: rote.authorid,
-            });
-          } catch (error) {
-            console.error(`Failed to record rote change for delete attachment: ${roteid}`, error);
-          }
-        }
-      } catch (error) {
-        // 忽略单个 rote 更新错误
-        console.error(`Failed to update rote for delete attachment: ${roteid}`, error);
-      }
-    }
 
     // 优先使用 DB 中的 details 删除，以涵盖压缩文件；兼容传入 key 的旧行为
     const tracked = new Set(deleted.tracked);
@@ -590,44 +519,12 @@ export async function deleteAttachment(id: string, userid: string): Promise<any>
         .where(and(eq(attachments.id, id), eq(attachments.userid, userid)))
         .returning();
       if (record.roteid) {
-        await tx.update(rotes).set({ updatedAt: new Date() }).where(eq(rotes.id, record.roteid));
+        await recordAttachmentChanges(tx, [record.roteid], userid);
       }
       return { record, result, tracked };
     });
     const record = deleted.record;
     const result = deleted.result;
-
-    // 如果附件绑定了 rote，更新 rote 的 updatedAt 并记录变更历史
-    if (record?.roteid) {
-      try {
-        const [rote] = await db
-          .select({ id: rotes.id, authorid: rotes.authorid })
-          .from(rotes)
-          .where(eq(rotes.id, record.roteid))
-          .limit(1);
-
-        if (rote) {
-          // 更新 rote 的 updatedAt
-          // 记录变更历史
-          try {
-            await createRoteChange({
-              originid: rote.id,
-              roteid: rote.id,
-              action: 'UPDATE',
-              userid: rote.authorid,
-            });
-          } catch (error) {
-            console.error(
-              `Failed to record rote change for delete attachment: ${record.roteid}`,
-              error
-            );
-          }
-        }
-      } catch (error) {
-        // 忽略更新错误
-        console.error(`Failed to update rote for delete attachment: ${record.roteid}`, error);
-      }
-    }
 
     const tracked = new Set(deleted.tracked);
     collectAttachmentObjectKeys(record?.details)

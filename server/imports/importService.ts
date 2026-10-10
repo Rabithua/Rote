@@ -5,7 +5,6 @@ import {
   articles,
   attachments,
   noteImportSources,
-  roteChanges,
   rotes,
   users,
   type NewAttachment,
@@ -13,6 +12,7 @@ import {
   type NewRote,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
+import { recordRoteChanges } from '../sync/journal';
 import { releaseStorageObjectReferences } from '../resources/service';
 import { DatabaseError } from '../utils/dbMethods/common';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
@@ -329,13 +329,13 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
         }
 
         if (changes.length > 0) {
-          await tx.insert(roteChanges).values(
+          await recordRoteChanges(
+            tx,
+            userId,
             changes.map((change) => ({
               originid: change.id,
               roteid: change.id,
               action: change.action,
-              userid: userId,
-              createdAt: new Date(),
             }))
           );
         }

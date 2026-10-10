@@ -1,33 +1,15 @@
-import { sql } from 'drizzle-orm';
-import { roteChanges } from '../../drizzle/schema';
+import { recordRoteChanges, type RoteChangeInput, type SyncTransaction } from '../../sync/journal';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 
 // RoteChange 相关方法
 export async function createRoteChange(
-  data: {
-    originid: string;
-    roteid?: string;
-    action: 'CREATE' | 'UPDATE' | 'DELETE';
-    userid: string;
-  },
-  transactionOverride?: any
+  data: RoteChangeInput,
+  transaction: SyncTransaction
 ): Promise<any> {
   try {
-    const executor = transactionOverride ?? db;
-    const [roteChange] = await executor
-      .insert(roteChanges)
-      .values({
-        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
-        // 使用 sql`now()` 让数据库原子性地计算时间戳
-        // 注意：roteChanges 表只有 createdAt，没有 updatedAt
-        originid: data.originid,
-        roteid: data.roteid || data.originid,
-        action: data.action,
-        userid: data.userid,
-        createdAt: sql`now()`,
-      })
-      .returning();
+    const { userid, ...change } = data;
+    const [roteChange] = await recordRoteChanges(transaction, userid, [change]);
     return roteChange;
   } catch (error) {
     throw new DatabaseError('Failed to create rote change', error);
@@ -42,6 +24,7 @@ export async function findRoteChangesByOriginId(
 ): Promise<any> {
   try {
     const changes = await db.query.roteChanges.findMany({
+      columns: { revision: false },
       where: (roteChanges, { eq, and }) => {
         const conditions = [eq(roteChanges.originid, originid)];
         if (userid) {
@@ -84,6 +67,7 @@ export async function findRoteChangesByRoteId(
 ): Promise<any> {
   try {
     const changes = await db.query.roteChanges.findMany({
+      columns: { revision: false },
       where: (roteChanges, { eq, and }) => {
         const conditions = [eq(roteChanges.roteid, roteid)];
         if (userid) {
@@ -126,6 +110,7 @@ export async function findRoteChangesByUserId(
 ): Promise<any> {
   try {
     const changes = await db.query.roteChanges.findMany({
+      columns: { revision: false },
       where: (roteChanges, { eq, and }) => {
         const conditions = [eq(roteChanges.userid, userid)];
         if (action) {
@@ -177,6 +162,7 @@ export async function findRoteChangesAfterTimestamp(
     }
 
     const changes = await db.query.roteChanges.findMany({
+      columns: { revision: false },
       where: (roteChanges, { eq, and, gt }) => {
         const conditions = [gt(roteChanges.createdAt, timestampDate)];
         if (userid) {

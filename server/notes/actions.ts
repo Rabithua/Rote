@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { HTTPException } from 'hono/http-exception';
 import type { z } from 'zod';
+import { lockSyncOwner, recordRoteChanges } from '../sync/journal';
 import { articles, attachments, roteChanges, rotes, users, type Rote } from '../drizzle/schema';
 import {
   collectOwnedAttachmentObjectKeys,
@@ -176,13 +177,13 @@ export async function createUserNote(
           .where(eq(attachments.id, attachmentId))
       )
     );
-    await transaction.insert(roteChanges).values({
-      originid: created.id,
-      roteid: created.id,
-      action: 'CREATE',
-      userid: userId,
-      createdAt: sql`now()`,
-    });
+    await recordRoteChanges(transaction, userId, [
+      {
+        originid: created.id,
+        roteid: created.id,
+        action: 'CREATE',
+      },
+    ]);
     return { note: created, created: true };
   });
 
@@ -195,6 +196,7 @@ export async function updateUserNote(userId: string, id: string, input: UpdateUs
   const articleId = updatedArticleId(input);
   const fields = updateFields(input);
   const result = await db.transaction(async (transaction) => {
+    await lockSyncOwner(transaction, userId);
     const [existing] = await transaction
       .select()
       .from(rotes)
@@ -215,13 +217,13 @@ export async function updateUserNote(userId: string, id: string, input: UpdateUs
       .returning();
     if (!updated) throw new Error('Note not found');
 
-    await transaction.insert(roteChanges).values({
-      originid: id,
-      roteid: id,
-      action: 'UPDATE',
-      userid: userId,
-      createdAt: sql`now()`,
-    });
+    await recordRoteChanges(transaction, userId, [
+      {
+        originid: id,
+        roteid: id,
+        action: 'UPDATE',
+      },
+    ]);
     return { note: updated, previousState: existing.state };
   });
 
@@ -268,13 +270,13 @@ export async function deleteUserNote(userId: string, id: string) {
       objectKeys.filter((key) => !trackedKeys.has(key))
     );
 
-    await transaction.insert(roteChanges).values({
-      originid: id,
-      roteid: id,
-      action: 'DELETE',
-      userid: userId,
-      createdAt: sql`now()`,
-    });
+    await recordRoteChanges(transaction, userId, [
+      {
+        originid: id,
+        roteid: id,
+        action: 'DELETE',
+      },
+    ]);
     await transaction.delete(attachments).where(eq(attachments.roteid, id));
     const [removed] = await transaction
       .delete(rotes)
