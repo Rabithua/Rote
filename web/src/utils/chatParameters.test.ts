@@ -4,7 +4,12 @@ import { DEFAULT_PERSONAL_AI_SETTINGS, withPersonalAiDefaults } from '@/state/lo
 
 describe('browser default thinking', () => {
   it('uses high and enables supported model thinking without settings controls', () => {
-    expect(buildChatParameters({ model: 'glm-5.3-flash' }, 0.2)).toEqual({
+    expect(
+      buildChatParameters(
+        { model: 'glm-5.3-flash', baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4' },
+        0.2
+      )
+    ).toEqual({
       temperature: 0.2,
       reasoning_effort: 'high',
       thinking: { type: 'enabled' },

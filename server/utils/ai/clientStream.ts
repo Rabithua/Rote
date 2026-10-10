@@ -23,6 +23,7 @@ import {
   createProviderStreamControl,
   readProviderFinishReason,
 } from './clientStreamControl';
+import { ReasoningDetailsAccumulator, readReasoningText } from './reasoningDetails';
 
 const TERMINAL_USAGE_GRACE_MS = 1_000;
 
@@ -45,7 +46,7 @@ function parseProviderSseLine(line: string): ProviderSseData {
 function buildToolStreamResult(
   content: string,
   toolCallsByIndex: Map<number, ChatToolCall>,
-  reasoning: Pick<ChatMessage, 'reasoning_content' | 'reasoning'>,
+  reasoning: Pick<ChatMessage, 'reasoning_content' | 'reasoning' | 'reasoning_details'>,
   usage?: ChatCompletionUsage
 ) {
   return {
@@ -104,6 +105,7 @@ export async function createChatCompletionWithToolsStreaming(
     let buffer = '';
     let content = '';
     const reasoningFields: Pick<ChatMessage, 'reasoning_content' | 'reasoning'> = {};
+    const reasoningDetails = new ReasoningDetailsAccumulator();
     let usage: ChatCompletionUsage | undefined;
     let doneReceived = false;
     let finishReason: string | null = null;
@@ -129,7 +131,8 @@ export async function createChatCompletionWithToolsStreaming(
         if (typeof delta[field] === 'string')
           reasoningFields[field] = (reasoningFields[field] ?? '') + delta[field];
       }
-      const reasoning = delta.reasoning_content || delta.reasoning;
+      reasoningDetails.append(delta.reasoning_details);
+      const reasoning = readReasoningText(delta);
       if (typeof reasoning === 'string' && reasoning.length > 0) {
         await options.onReasoning?.(reasoning);
       }
@@ -194,7 +197,12 @@ export async function createChatCompletionWithToolsStreaming(
     if (!doneReceived && buffer.trim()) await processLine(buffer);
     assertProviderStreamComplete({ doneReceived, finishReason });
     status = 'completed';
-    return buildToolStreamResult(content, toolCallsByIndex, reasoningFields, usage);
+    return buildToolStreamResult(
+      content,
+      toolCallsByIndex,
+      { ...reasoningFields, ...reasoningDetails.fields() },
+      usage
+    );
   } catch (error) {
     status = options.signal?.aborted ? 'cancelled' : 'failed';
     throw control.normalizeError(error);
@@ -279,7 +287,7 @@ export async function* createChatCompletionStreamParts(
         }
 
         const delta = chunk?.choices?.[0]?.delta || {};
-        const reasoning = delta.reasoning_content || delta.reasoning;
+        const reasoning = readReasoningText(delta);
         if (typeof reasoning === 'string' && reasoning.length > 0) {
           yield { type: 'reasoning', text: reasoning };
         }
@@ -306,7 +314,7 @@ export async function* createChatCompletionStreamParts(
           finishReason = nextFinishReason;
         }
         const delta = parsed.chunk?.choices?.[0]?.delta || {};
-        const reasoning = delta.reasoning_content || delta.reasoning;
+        const reasoning = readReasoningText(delta);
         if (typeof reasoning === 'string' && reasoning.length > 0) {
           yield { type: 'reasoning', text: reasoning };
         }

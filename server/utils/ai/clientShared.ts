@@ -1,6 +1,7 @@
 import type { AiUsageContext } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
 import { buildChatParameters } from './chatParameters';
+import type { ReasoningDetail } from './reasoningDetails';
 
 export type ChatToolCall = {
   id: string;
@@ -16,6 +17,7 @@ export type ChatMessage = {
   content: string | null;
   reasoning_content?: string;
   reasoning?: string;
+  reasoning_details?: ReasoningDetail[];
   tool_call_id?: string;
   tool_calls?: ChatToolCall[];
 };
@@ -232,8 +234,5 @@ export function buildChatRequestBody(
     ...buildChatParameters(config, body.temperature),
     ...(body.stream ? { stream: true, stream_options: { include_usage: true } } : {}),
     ...(body.tools?.length ? { tools: body.tools, tool_choice: body.toolChoice || 'auto' } : {}),
-    ...(config.providerId === 'llama-cpp'
-      ? { chat_template_kwargs: { enable_thinking: true } }
-      : {}),
   };
 }

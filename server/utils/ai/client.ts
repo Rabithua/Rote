@@ -18,6 +18,12 @@ import type {
   ToolCallingProbeResult,
 } from './clientShared';
 import { createProviderStreamControl } from './clientStreamControl';
+import { requiresStreamingChat } from './chatParameters';
+import { normalizeReasoningDetails } from './reasoningDetails';
+import {
+  createChatCompletionWithToolsStreaming,
+  createChatCompletionStreamParts,
+} from './clientStream';
 
 export type {
   ChatCompletionOptions,
@@ -50,6 +56,15 @@ export async function createChatCompletion(
   content: string;
   usage?: ChatCompletionUsage;
 }> {
+  if (requiresStreamingChat(config)) {
+    let content = '';
+    let usage: ChatCompletionUsage | undefined;
+    for await (const part of createChatCompletionStreamParts(config, messages, options)) {
+      if (part.type === 'content') content += part.text;
+      if (part.type === 'usage') usage = part.usage;
+    }
+    return { content, usage };
+  }
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
   const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
@@ -99,6 +114,9 @@ export async function createChatCompletionWithTools(
   message: ChatMessage;
   usage?: ChatCompletionUsage;
 }> {
+  if (requiresStreamingChat(config)) {
+    return createChatCompletionWithToolsStreaming(config, messages, tools, options);
+  }
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
   const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
@@ -136,6 +154,9 @@ export async function createChatCompletionWithTools(
           ? { reasoning_content: message.reasoning_content }
           : {}),
         ...(typeof message.reasoning === 'string' ? { reasoning: message.reasoning } : {}),
+        ...(Array.isArray(message.reasoning_details)
+          ? { reasoning_details: normalizeReasoningDetails(message.reasoning_details) }
+          : {}),
         tool_calls: normalizeToolCalls(message.tool_calls),
       },
       usage: normalizeUsage(body?.usage),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { buildChatParameters } from '../utils/ai/chatParameters';
+import { buildChatParameters, requiresStreamingChat } from '../utils/ai/chatParameters';
 import { buildChatParameters as buildBrowserChatParameters } from '../../web/src/utils/chatParameters';
 import { buildChatRequestBody } from '../utils/ai/clientShared';
 import { DEFAULT_AI_CONFIG, mergeAiConfig } from '../utils/ai/providers';
@@ -63,10 +63,15 @@ describe('default thinking and fixed reasoning effort', () => {
     ).toThrow('embedding_config_invalid');
   });
 
-  it.each(['glm-5.3', 'glm-5.3-flash', 'z-ai/glm-5.3-flash', 'deepseek-flash', 'deepseek-v4-pro'])(
+  it.each(['glm-5.3', 'glm-5.3-flash', 'deepseek-flash', 'deepseek-v4-pro'])(
     '%s enables thinking at high effort',
     (model) => {
-      expect(buildChatParameters({ model }, 0.2)).toEqual({
+      expect(
+        buildChatParameters(
+          { model, providerId: model.startsWith('glm') ? 'zhipu' : 'deepseek' },
+          0.2
+        )
+      ).toEqual({
         temperature: 0.2,
         reasoning_effort: 'high',
         thinking: { type: 'enabled' },
@@ -75,7 +80,7 @@ describe('default thinking and fixed reasoning effort', () => {
   );
 
   it('enables thinking on older GLM models without unsupported effort fields', () => {
-    expect(buildChatParameters({ model: 'glm-4.7' }, 0.2)).toEqual({
+    expect(buildChatParameters({ model: 'glm-4.7', providerId: 'zhipu' }, 0.2)).toEqual({
       temperature: 0.2,
       thinking: { type: 'enabled' },
     });
@@ -123,7 +128,12 @@ describe('default thinking and fixed reasoning effort', () => {
       ],
     };
     const body = buildChatRequestBody(
-      { ...DEFAULT_AI_CONFIG.chat, providerId: 'zhipu', model: 'glm-5.3-flash' },
+      {
+        ...DEFAULT_AI_CONFIG.chat,
+        providerId: 'zhipu',
+        baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
+        model: 'glm-5.3-flash',
+      },
       request
     );
     expect(body).toHaveProperty('reasoning_effort', 'high');
@@ -131,9 +141,94 @@ describe('default thinking and fixed reasoning effort', () => {
     expect(body).toHaveProperty('tool_choice', 'auto');
     expect(body).not.toHaveProperty('enableThinking');
     const local = buildChatRequestBody(
-      { ...DEFAULT_AI_CONFIG.chat, providerId: 'llama-cpp', model: 'gemma' },
+      {
+        ...DEFAULT_AI_CONFIG.chat,
+        providerId: 'llama-cpp',
+        baseUrl: 'http://127.0.0.1:8080/v1',
+        model: 'gemma-4-12b-it',
+      },
       request
     );
     expect(local).toHaveProperty('chat_template_kwargs', { enable_thinking: true });
+  });
+
+  it.each([
+    [
+      { providerId: 'openrouter', model: 'anthropic/claude-sonnet-4' },
+      { reasoning: { effort: 'high' } },
+    ],
+    [
+      { baseUrl: 'https://openrouter.ai/api/v1', model: 'z-ai/glm-4.7' },
+      { reasoning: { effort: 'high' } },
+    ],
+    [{ providerId: 'openrouter', model: 'openai/gpt-5.2' }, { reasoning: { effort: 'high' } }],
+    [
+      { baseUrl: 'http://localhost:11434/v1', model: 'gpt-oss:20b' },
+      { temperature: 0.2, reasoning_effort: 'high' },
+    ],
+    [
+      { providerId: 'ollama', baseUrl: 'https://ollama.example.test/v1', model: 'qwen3:8b' },
+      { temperature: 0.2, reasoning_effort: 'high' },
+    ],
+    [
+      { baseUrl: 'http://127.0.0.1:8080/v1', model: 'gpt-oss-20b' },
+      {
+        temperature: 0.2,
+        reasoning_effort: 'high',
+        chat_template_kwargs: { enable_thinking: true, reasoning_effort: 'high' },
+      },
+    ],
+    [{ providerId: 'dashscope', model: 'qwen-max' }, { temperature: 0.2 }],
+    [{ providerId: 'dashscope', model: 'qwen-plus-2025-01-25' }, { temperature: 0.2 }],
+    [{ providerId: 'dashscope', model: 'qwen3-coder-plus' }, { temperature: 0.2 }],
+    [
+      { providerId: 'dashscope', model: 'qwen3.5-27b' },
+      { temperature: 0.2, enable_thinking: true },
+    ],
+    [
+      { providerId: 'dashscope', model: 'qwen3.8-max' },
+      { temperature: 0.2, enable_thinking: true, reasoning_effort: 'high' },
+    ],
+    [
+      { providerId: 'siliconflow', model: 'Pro/zai-org/GLM-5.2' },
+      { temperature: 0.2, enable_thinking: true, reasoning_effort: 'high' },
+    ],
+    [
+      { baseUrl: 'https://api.siliconflow.cn/v1', model: 'deepseek-ai/DeepSeek-V4-Flash' },
+      { temperature: 0.2, enable_thinking: true, reasoning_effort: 'high' },
+    ],
+    [
+      { providerId: 'siliconflow', model: 'Qwen/Qwen3-32B' },
+      { temperature: 0.2, enable_thinking: true },
+    ],
+    [{ providerId: 'zhipu', model: 'glm-4.5-airx' }, { temperature: 0.2 }],
+    [{ baseUrl: 'https://api.moonshot.cn/v1', model: 'kimi-k2.5' }, {}],
+    [{ providerId: 'moonshot', model: 'kimi-k2.6' }, {}],
+    [{ providerId: 'moonshot', model: 'kimi-k2.7-code-highspeed' }, {}],
+    [{ baseUrl: 'https://api.moonshot.ai/v1', model: 'kimi-k3' }, { reasoning_effort: 'high' }],
+    [{ providerId: 'moonshot', model: 'moonshot-v1-8k' }, { temperature: 0.2 }],
+    [{ baseUrl: 'http://localhost:1234/v1', model: 'gpt-oss-20b' }, { temperature: 0.2 }],
+    [
+      { providerId: 'custom', baseUrl: 'https://unknown.example/v1', model: 'glm-5.3' },
+      { temperature: 0.2 },
+    ],
+    [
+      {
+        providerId: 'dashscope',
+        baseUrl: 'https://openrouter.ai/api/v1',
+        model: 'anthropic/claude-sonnet-4',
+      },
+      { reasoning: { effort: 'high' } },
+    ],
+  ])('uses the documented wire protocol for %j', (config, expected) => {
+    expect(buildChatParameters(config, 0.2)).toEqual(expected);
+    expect(buildBrowserChatParameters(config, 0.2)).toEqual(expected);
+  });
+
+  it('uses streaming for enabled DashScope models, including synchronous API calls', () => {
+    expect(requiresStreamingChat({ providerId: 'dashscope', model: 'qwen3.5-27b' })).toBe(true);
+    expect(requiresStreamingChat({ providerId: 'dashscope', model: 'qwen-plus' })).toBe(true);
+    expect(requiresStreamingChat({ providerId: 'dashscope', model: 'qwen-max' })).toBe(false);
+    expect(requiresStreamingChat({ providerId: 'zhipu', model: 'glm-5.3' })).toBe(false);
   });
 });
