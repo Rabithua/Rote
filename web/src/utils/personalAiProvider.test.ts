@@ -96,6 +96,45 @@ describe(`personal AI provider test`, () => {
       code: 'ai_provider_stream_incomplete',
     });
   });
+
+  it.each(['gpt-6-astra', 'gpt-6.1-sol'])(
+    'reports missing Chat Completions tools for %s even when chat succeeds',
+    async (model) => {
+      const bodies: any[] = [];
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (_url, init) => {
+          const body = JSON.parse(init.body);
+          bodies.push(body);
+          if (body.tools)
+            return new Response(
+              JSON.stringify({
+                error: { message: 'Function calling requires the Responses API.' },
+              }),
+              { status: 400, headers: { 'Content-Type': 'application/json' } }
+            );
+          return sseResponse({ choices: [{ message: { content: 'OK' } }] });
+        })
+      );
+      const result = await testPersonalAiProvider({
+        ...remoteConfig,
+        baseUrl: 'https://api.openai.com/v1',
+        model,
+      });
+      expect(result.data.success).toBe(true);
+      expect(result.data.toolCalling).toMatchObject({
+        supported: false,
+        error: expect.stringContaining('Responses API'),
+      });
+      expect(result.message).toBe('personal_ai_test_tool_calling_missing');
+      expect(bodies).toHaveLength(2);
+      for (const body of bodies) {
+        expect(body.reasoning_effort).toBe('high');
+        expect(body).not.toHaveProperty('temperature');
+      }
+    }
+  );
+
   it.each([
     ['glm-5.3-flash', 'https://open.bigmodel.cn/api/coding/paas/v4'],
     ['gpt-5.2', 'https://api.openai.com/v1'],

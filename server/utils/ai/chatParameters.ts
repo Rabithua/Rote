@@ -64,7 +64,7 @@ export function buildChatParameters(
   const kimiThinking = /^kimi-k(?:2\.(?:[56]|7-code)|3)(?:-|$)/.test(model);
   const gptOss = /^gpt-oss(?:[:-]|$)/.test(model);
   const localThinking =
-    glmThinking || deepseekThinking || qwenThinking || gptOss || /^gemma-4(?:[:-]|$)/.test(model);
+    glmThinking || deepseekThinking || qwenThinking || gptOss || /^gemma-?4(?:-|$)/.test(model);
 
   if (provider === 'openrouter') {
     const reasoning =
@@ -72,7 +72,8 @@ export function buildChatParameters(
       glmThinking ||
       deepseekThinking ||
       qwenThinking ||
-      /^claude-(?:3\.7|sonnet-4|opus-4|haiku-4)(?:[.-]|$)/.test(model) ||
+      /^claude-(?:3\.7|(?:sonnet|opus|haiku)-[45]|fable-5)(?:[.-]|$)/.test(model) ||
+      /^kimi-k3(?:-|$)/.test(model) ||
       /^gemini-(?:2\.5|3)(?:[.-]|$)/.test(model) ||
       gptOss;
     return {
@@ -106,9 +107,15 @@ export function buildChatParameters(
     return { temperature };
   }
   if (provider === 'dashscope') {
-    const thinking = glmThinking || deepseekThinking || qwenThinking || kimiThinking;
+    const thinking =
+      glmThinking ||
+      deepseekThinking ||
+      /^deepseek-v4\.1-flash(?:-|$)/.test(model) ||
+      qwenThinking ||
+      kimiThinking;
     const effort =
       glmEffort ||
+      /^glm-5(?:\.1)?$/.test(fullModel) ||
       /^deepseek-v4(?:[.-]|$)/.test(model) ||
       /^qwen3\.8(?:-|$)/.test(model) ||
       fullModel === 'kimi-k3';

@@ -163,9 +163,28 @@ describe('default thinking and fixed reasoning effort', () => {
     ],
     [{ providerId: 'openrouter', model: 'openai/gpt-5.2' }, { reasoning: { effort: 'high' } }],
     [
+      { providerId: 'openrouter', model: 'anthropic/claude-opus-5' },
+      { reasoning: { effort: 'high' } },
+    ],
+    [
+      { providerId: 'openrouter', model: 'anthropic/claude-fable-5.1' },
+      { reasoning: { effort: 'high' } },
+    ],
+    [
+      { providerId: 'openrouter', model: 'anthropic/claude-haiku-5.5' },
+      { reasoning: { effort: 'high' } },
+    ],
+    [{ providerId: 'openrouter', model: 'moonshotai/kimi-k3' }, { reasoning: { effort: 'high' } }],
+    [{ providerId: 'openrouter', model: 'anthropic/claude-3.5-sonnet' }, { temperature: 0.2 }],
+    [
       { baseUrl: 'http://localhost:11434/v1', model: 'gpt-oss:20b' },
       { temperature: 0.2, reasoning_effort: 'high' },
     ],
+    [
+      { baseUrl: 'http://localhost:11434/v1', model: 'gemma4:31b' },
+      { temperature: 0.2, reasoning_effort: 'high' },
+    ],
+    [{ providerId: 'ollama', model: 'gemma3:27b' }, { temperature: 0.2 }],
     [
       { providerId: 'ollama', baseUrl: 'https://ollama.example.test/v1', model: 'qwen3:8b' },
       { temperature: 0.2, reasoning_effort: 'high' },
@@ -182,6 +201,22 @@ describe('default thinking and fixed reasoning effort', () => {
     [{ providerId: 'dashscope', model: 'qwen-plus-2025-01-25' }, { temperature: 0.2 }],
     [{ providerId: 'dashscope', model: 'qwen3-coder-plus' }, { temperature: 0.2 }],
     [{ providerId: 'dashscope', model: 'qwen3-max-2025-09-23' }, { temperature: 0.2 }],
+    [
+      { providerId: 'dashscope', model: 'glm-5.1' },
+      { temperature: 0.2, enable_thinking: true, reasoning_effort: 'high' },
+    ],
+    [
+      { providerId: 'dashscope', model: 'glm-5' },
+      { temperature: 0.2, enable_thinking: true, reasoning_effort: 'high' },
+    ],
+    [
+      { providerId: 'dashscope', model: 'ZHIPU/GLM-5.1' },
+      { temperature: 0.2, enable_thinking: true },
+    ],
+    [
+      { providerId: 'dashscope', model: 'deepseek-v4.1-flash' },
+      { temperature: 0.2, enable_thinking: true, reasoning_effort: 'high' },
+    ],
     [{ providerId: 'dashscope', model: 'kimi/kimi-k2.5' }, { enable_thinking: true }],
     [
       { providerId: 'dashscope', model: 'kimi-k3' },
@@ -235,6 +270,9 @@ describe('default thinking and fixed reasoning effort', () => {
   it('uses streaming for enabled DashScope models, including synchronous API calls', () => {
     expect(requiresStreamingChat({ providerId: 'dashscope', model: 'qwen3.5-27b' })).toBe(true);
     expect(requiresStreamingChat({ providerId: 'dashscope', model: 'qwen-plus' })).toBe(true);
+    expect(requiresStreamingChat({ providerId: 'dashscope', model: 'deepseek-v4.1-flash' })).toBe(
+      true
+    );
     expect(requiresStreamingChat({ providerId: 'dashscope', model: 'qwen-max' })).toBe(false);
     expect(requiresStreamingChat({ providerId: 'zhipu', model: 'glm-5.3' })).toBe(false);
   });
