@@ -33,7 +33,9 @@ const configSchema = z.strictObject({
   vectorEnabled: z.boolean(),
   autoIndexEnabled: z.boolean(),
   publicExploreVectorEnabled: z.boolean(),
-  chat: providerSchema,
+  chat: providerSchema.extend({
+    reasoningEffort: z.enum(['low', 'medium', 'high']).nullable().optional(),
+  }),
   embedding: providerSchema.extend({ output: embeddingOutputSchema }),
   indexing: z.strictObject({
     chunkSize: z.number().int().min(500),

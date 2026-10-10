@@ -3,6 +3,8 @@ import { buildChatParameters } from '../utils/ai/chatParameters';
 import { buildChatParameters as buildBrowserChatParameters } from '../../web/src/utils/chatParameters';
 import { buildChatRequestBody } from '../utils/ai/clientShared';
 import { DEFAULT_AI_CONFIG, mergeAiConfig, resolveIncomingAiConfig } from '../utils/ai/providers';
+import { parseIncomingAiConfig } from '../embeddings/configStore';
+import { embeddingFingerprint } from '../embeddings/contract';
 
 describe('chat parameter compatibility', () => {
   it.each([
@@ -38,6 +40,37 @@ describe('chat parameter compatibility', () => {
         .reasoningEffort
     ).toBeNull();
     expect(DEFAULT_AI_CONFIG.embedding).not.toHaveProperty('reasoningEffort');
+  });
+
+  it('accepts default and opted-out chat effort through the settings schema', () => {
+    const stored = mergeAiConfig();
+    expect(parseIncomingAiConfig(stored, stored).chat.reasoningEffort).toBe('high');
+    const incoming = { ...stored, chat: { ...stored.chat, reasoningEffort: null } };
+    const parsed = parseIncomingAiConfig(incoming, stored);
+    expect(parsed.chat.reasoningEffort).toBeNull();
+    expect(embeddingFingerprint(parsed)).toBe(embeddingFingerprint(stored));
+  });
+
+  it('rejects invalid effort levels and keeps embedding settings strict', () => {
+    const stored = mergeAiConfig();
+    expect(() =>
+      parseIncomingAiConfig(
+        {
+          ...stored,
+          chat: { ...stored.chat, reasoningEffort: 'invalid' as 'high' },
+        },
+        stored
+      )
+    ).toThrow('embedding_config_invalid');
+    expect(() =>
+      parseIncomingAiConfig(
+        {
+          ...stored,
+          embedding: { ...stored.embedding, reasoningEffort: 'high' },
+        },
+        stored
+      )
+    ).toThrow('embedding_config_invalid');
   });
 
   it.each(['glm-5.3', 'glm-5.3-flash', 'z-ai/glm-5.3-flash'])('%s defaults to high', (model) => {
