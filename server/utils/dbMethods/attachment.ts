@@ -89,16 +89,14 @@ export async function createAttachments(
     }));
 
     // 使用事务批量插入
-    const attachments_new = await db.transaction(async (tx) => {
-      await lockSyncOwner(tx, userid);
-      const inserted = await Promise.all(
-        attachmentsData.map((attachment: any) =>
-          tx.insert(attachments).values(attachment).returning()
+    const attachments_new = await db.transaction(
+      async (tx) =>
+        await Promise.all(
+          attachmentsData.map((attachment: any) =>
+            tx.insert(attachments).values(attachment).returning()
+          )
         )
-      );
-      if (roteid && inserted.length > 0) await recordAttachmentChanges(tx, [roteid], userid);
-      return inserted;
-    });
+    );
 
     return attachments_new.flat();
   } catch (error) {
@@ -111,13 +109,11 @@ export async function upsertAttachmentsByOriginalKey(
   userid: string,
   roteid: string | undefined,
   data: UploadResult[],
-  transactionOverride?: SyncTransaction
+  transactionOverride?: any
 ): Promise<any[]> {
   try {
-    const execute = async (tx: SyncTransaction) => {
-      if (!transactionOverride) await lockSyncOwner(tx, userid);
+    const execute = async (tx: any) => {
       const out: any[] = [];
-      const changedNoteIds = new Set<string>();
       for (const e of data) {
         const originalKey = (e.details as any)?.key as string | undefined;
         if (!e.url) {
@@ -163,7 +159,6 @@ export async function upsertAttachmentsByOriginalKey(
           .limit(1);
 
         const existing = existingList[0];
-        if (existing?.roteid) changedNoteIds.add(existing.roteid);
 
         if (existing) {
           // 更新压缩信息与元数据；url 保持为原图
@@ -202,10 +197,6 @@ export async function upsertAttachmentsByOriginalKey(
           out.push(created);
         }
       }
-      for (const attachment of out) {
-        if (attachment.roteid) changedNoteIds.add(attachment.roteid);
-      }
-      await recordAttachmentChanges(tx, [...changedNoteIds], userid);
       return out;
     };
     const results = transactionOverride

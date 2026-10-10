@@ -139,6 +139,11 @@ export async function mergeUserAccounts(
       mergedData.attachments = attachmentsResult.length;
 
       // 4. 合并反应
+      const reactionNotes = await tx
+        .selectDistinct({ id: rotes.id, authorid: rotes.authorid })
+        .from(rotes)
+        .innerJoin(reactions, eq(reactions.roteid, rotes.id))
+        .where(eq(reactions.userid, sourceUserId));
       const reactionsResult = await tx
         .update(reactions)
         .set({ userid: targetUserId, updatedAt: new Date() })
@@ -156,15 +161,24 @@ export async function mergeUserAccounts(
 
       // Transferred audit history is not part of the target's ordered feed.
       // Publish the transferred current notes at fresh target revisions.
-      await recordRoteChanges(
-        tx,
-        targetUserId,
-        notesResult.map((note) => ({
-          originid: note.id,
-          roteid: note.id,
-          action: 'CREATE' as const,
-        }))
-      );
+      const changedByOwner = new Map<string, Map<string, 'CREATE' | 'UPDATE'>>();
+      changedByOwner.set(targetUserId, new Map(notesResult.map((note) => [note.id, 'CREATE'])));
+      for (const note of reactionNotes) {
+        const changes = changedByOwner.get(note.authorid) ?? new Map<string, 'CREATE' | 'UPDATE'>();
+        if (!changes.has(note.id)) changes.set(note.id, 'UPDATE');
+        changedByOwner.set(note.authorid, changes);
+      }
+      // Use one stable counter-lock order when a merge affects multiple owners.
+      for (const ownerId of [...changedByOwner.keys()].sort()) {
+        await recordRoteChanges(
+          tx,
+          ownerId,
+          [...changedByOwner.get(ownerId)!.entries()].map(([originid, action]) => ({
+            originid,
+            action,
+          }))
+        );
+      }
 
       // 6. 合并 API 密钥
       const openKeysResult = await tx

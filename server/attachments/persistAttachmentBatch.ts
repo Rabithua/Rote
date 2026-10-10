@@ -154,18 +154,15 @@ export async function persistAttachmentBatch(
       orderedAttachmentIds,
     };
 
-    // Upserts already journal their changed note inside this transaction.
-    // An order-only batch still needs an entry of its own.
-    if (finalized.length === 0)
-      await createRoteChange(
-        {
-          action: 'UPDATE',
-          originid: params.input.noteId,
-          roteid: params.input.noteId,
-          userid: params.userId,
-        },
-        transaction
-      );
+    await createRoteChange(
+      {
+        action: 'UPDATE',
+        originid: params.input.noteId,
+        roteid: params.input.noteId,
+        userid: params.userId,
+      },
+      transaction
+    );
 
     if (params.claim) {
       const completed = await completeClaimedUploadReservation(

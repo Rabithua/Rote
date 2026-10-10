@@ -202,7 +202,7 @@ databaseDescribe('committed sync journal', () => {
     expect((await repository.readSyncSnapshot(target)).noteIds).toContain(incoming.id);
   });
 
-  it('journals standalone attachment upserts without duplicate entries per batch', async () => {
+  it('keeps standalone fast attachment confirmation scoped to attachment persistence', async () => {
     const owner = await makeOwner();
     const note = await createNote(owner);
     const start = await repository.readSyncSnapshot(owner);
@@ -216,13 +216,191 @@ databaseDescribe('committed sync journal', () => {
       }))
     );
     const page = await repository.readSyncChanges(owner, start.cursor);
-    expect(page.changes.map((c) => [c.originid, c.action])).toEqual([[note.id, 'UPDATE']]);
+    expect(page.changes).toEqual([]);
+    const [persisted] = await db
+      .select()
+      .from(schema.rotes)
+      .where(operators.eq(schema.rotes.id, note.id));
+    expect(persisted.updatedAt).toEqual(note.updatedAt);
     await db.delete(schema.attachments).where(
       operators.inArray(
         schema.attachments.id,
         finalized.map((a) => a.id)
       )
     );
+  });
+
+  it('keeps reaction deletion idempotent after the note is deleted', async () => {
+    const owner = await makeOwner();
+    const note = await createNote(owner);
+    const { addReaction, removeReaction } = await import('../utils/dbMethods/reaction');
+    await addReaction({ roteid: note.id, userid: owner, type: '👍' });
+    await actions.deleteUserNote(owner, note.id);
+    const start = await repository.readSyncSnapshot(owner);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      expect(await removeReaction({ roteid: note.id, userid: owner, type: '👍' })).toEqual({
+        count: 0,
+      });
+    }
+    expect(await repository.readSyncSnapshot(owner)).toEqual(start);
+  });
+
+  it('publishes merged reaction identities to every affected note owner', async () => {
+    const source = await makeOwner();
+    const target = await makeOwner();
+    const other = await makeOwner();
+    const incoming = await createNote(source);
+    const targetNote = await createNote(target);
+    const otherNote = await createNote(other);
+    const { addReaction } = await import('../utils/dbMethods/reaction');
+    for (const note of [incoming, targetNote, otherNote]) {
+      await addReaction({ roteid: note.id, userid: source, type: '👍' });
+    }
+    const targetStart = await repository.readSyncSnapshot(target);
+    const otherStart = await repository.readSyncSnapshot(other);
+    const { mergeUserAccounts } = await import('../utils/dbMethods/userAccount');
+    await mergeUserAccounts(source, target);
+    const targetPage = await repository.readSyncChanges(target, targetStart.cursor);
+    expect(targetPage.changes.map((c) => [c.originid, c.action])).toEqual([
+      [incoming.id, 'CREATE'],
+      [targetNote.id, 'UPDATE'],
+    ]);
+    const otherPage = await repository.readSyncChanges(other, otherStart.cursor);
+    expect(otherPage.changes.map((c) => [c.originid, c.action])).toEqual([
+      [otherNote.id, 'UPDATE'],
+    ]);
+    const actors = await db
+      .select({ userid: schema.reactions.userid })
+      .from(schema.reactions)
+      .where(
+        operators.inArray(schema.reactions.roteid, [incoming.id, targetNote.id, otherNote.id])
+      );
+    expect(actors.map((row) => row.userid)).toEqual([target, target, target]);
+  });
+
+  it('creates a foreign owner checkpoint during a merge without blocking its note owner lock', async () => {
+    const source = await makeOwner();
+    const target = await makeOwner();
+    const other = await makeOwner();
+    const noteId = randomUUID();
+    // Legacy notes have no sync-state row until their first journaled mutation.
+    await db.insert(schema.rotes).values({ id: noteId, authorid: other, content: 'legacy' });
+    await db.insert(schema.reactions).values({ roteid: noteId, userid: source, type: '👍' });
+    const start = await repository.readSyncSnapshot(other);
+    let release!: () => void;
+    let ready!: () => void;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const locked = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    const ownerTransaction = db.transaction(async (tx) => {
+      await journal.lockNoteSyncOwner(tx, noteId);
+      ready();
+      await held;
+    });
+    await locked;
+    const { mergeUserAccounts } = await import('../utils/dbMethods/userAccount');
+    const merge = mergeUserAccounts(source, target);
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        merge,
+        new Promise((_, reject) => {
+          timeout = setTimeout(
+            () => reject(new Error('merge blocked on foreign owner lock')),
+            5000
+          );
+        }),
+      ]);
+    } finally {
+      clearTimeout(timeout);
+      release();
+      await Promise.all([ownerTransaction, merge]);
+    }
+    expect(
+      (await repository.readSyncChanges(other, start.cursor)).changes.map((c) => [
+        c.originid,
+        c.action,
+      ])
+    ).toEqual([[noteId, 'UPDATE']]);
+  }, 10_000);
+
+  for (const includeSkippedNote of [false, true]) {
+    it(`journals an article import with ${includeSkippedNote ? 'a skipped bound note' : 'no imported notes'}`, async () => {
+      const owner = await makeOwner();
+      const note = await createNote(owner, 'keep local note');
+      const { createArticle, setNoteArticleId } = await import('../utils/dbMethods/article');
+      const article = await createArticle({ authorId: owner, content: 'before' });
+      await setNoteArticleId(note.id, article.id, owner);
+      const start = await repository.readSyncSnapshot(owner);
+      const { importUserData } = await import('../imports/importService');
+      const result = await importUserData(owner, {
+        notes: includeSkippedNote
+          ? [{ id: note.id, content: 'must not overwrite', articleId: article.id }]
+          : [],
+        articles: [{ id: article.id, content: 'after' }],
+        importOptions: { existingStrategy: 'skip' },
+      });
+      expect(result.articles.updated).toBe(1);
+      if (includeSkippedNote) expect(result.notes.unchanged).toBe(1);
+      const page = await repository.readSyncChanges(owner, start.cursor);
+      expect(page.changes.map((c) => [c.originid, c.action])).toEqual([[note.id, 'UPDATE']]);
+      const [persisted] = await db
+        .select()
+        .from(schema.rotes)
+        .where(operators.eq(schema.rotes.id, note.id));
+      expect(persisted.content).toBe('keep local note');
+      const [updatedArticle] = await db
+        .select()
+        .from(schema.articles)
+        .where(operators.eq(schema.articles.id, article.id));
+      expect(updatedArticle.content).toBe('after');
+    });
+  }
+
+  it('merges twenty thousand notes with contiguous committed revisions', async () => {
+    const source = await makeOwner();
+    const target = await makeOwner();
+    const notes = Array.from({ length: 20_000 }, () => ({
+      id: randomUUID(),
+      authorid: source,
+      content: 'bulk',
+    }));
+    for (let offset = 0; offset < notes.length; offset += 1000) {
+      await db.insert(schema.rotes).values(notes.slice(offset, offset + 1000));
+    }
+    const { mergeUserAccounts } = await import('../utils/dbMethods/userAccount');
+    const result = await mergeUserAccounts(source, target);
+    expect(result.mergedData.notes).toBe(notes.length);
+    const rows = await db
+      .select()
+      .from(schema.roteChanges)
+      .where(operators.eq(schema.roteChanges.userid, target))
+      .orderBy(schema.roteChanges.revision);
+    expect(rows.length).toBe(notes.length);
+    expect(
+      rows.every((row, index) => row.revision === BigInt(index + 1) && row.action === 'CREATE')
+    ).toBe(true);
+    expect((await repository.readSyncSnapshot(target)).noteIds.length).toBe(notes.length);
+  }, 30_000);
+
+  it('rolls back earlier journal chunks when a later chunk fails', async () => {
+    const owner = await makeOwner();
+    const note = await createNote(owner);
+    const start = await repository.readSyncSnapshot(owner);
+    await expect(
+      db.transaction(async (tx) => {
+        await journal.lockSyncOwner(tx, owner);
+        await journal.recordRoteChanges(tx, owner, [
+          ...Array.from({ length: 1000 }, () => ({ originid: note.id, action: 'UPDATE' as const })),
+          { originid: randomUUID(), action: 'UPDATE' },
+        ]);
+      })
+    ).rejects.toThrow();
+    expect(await repository.readSyncSnapshot(owner)).toEqual(start);
+    expect((await repository.readSyncChanges(owner, start.cursor)).changes).toEqual([]);
   });
 
   it('serves authenticated JSON endpoints and rejects invalid cursor requests', async () => {

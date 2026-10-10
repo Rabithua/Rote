@@ -42,6 +42,7 @@ export async function addReaction(data: {
   try {
     const insertedReaction = await db.transaction(async (transaction) => {
       const note = await lockNoteSyncOwner(transaction, data.roteid);
+      if (!note) throw new Error('Note not found');
       await transaction.execute(
         sql`SELECT pg_advisory_xact_lock(hashtext(${reactionLockKey(data)}))`
       );
@@ -141,6 +142,7 @@ export async function removeReaction(data: {
   try {
     const result = await db.transaction(async (transaction) => {
       const note = await lockNoteSyncOwner(transaction, data.roteid);
+      if (!note) return [];
       await transaction.execute(
         sql`SELECT pg_advisory_xact_lock(hashtext(${reactionLockKey(data)}))`
       );

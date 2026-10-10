@@ -1,8 +1,8 @@
 # Note sync protocol
 
-These authenticated endpoints live under `/v2/sync` and use the existing response envelope.
+These authenticated endpoints live under `/v2/api/sync` and use the existing response envelope.
 
-- `GET /snapshot` returns `{ noteIds: string[], cursor: string }`. Both fields come from one PostgreSQL repeatable-read snapshot. IDs include every note owned by the account, including archived notes. Fetch note bodies through the existing `POST /v2/notes/batch` endpoint in batches of at most 100.
+- `GET /snapshot` returns `{ noteIds: string[], cursor: string }`. Both fields come from one PostgreSQL repeatable-read snapshot. IDs include every note owned by the account, including archived notes. Fetch note bodies through the existing `POST /v2/api/notes/batch` endpoint in batches of at most 100.
 - `GET /changes?cursor=...&limit=100` returns `{ changes: [{ id, originid, action, revision }], nextCursor, hasMore }`. Actions are `CREATE`, `UPDATE`, and `DELETE`; revisions are decimal strings. Pages are ordered by revision and retain the first page's upper boundary until `hasMore` is false. Treat cursors as opaque and account-specific. Save `nextCursor` only after all pages and fetched bodies have been applied and saved locally.
 
 Full reconciliation starts with `/snapshot`, loads its notes, and consumes changes after its cursor. Remove previously synced local notes absent from the final membership, while preserving pending local edits/uploads. An empty snapshot and empty feed still produce a valid checkpoint.

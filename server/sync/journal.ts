@@ -23,18 +23,25 @@ export async function lockSyncOwner(transaction: SyncTransaction, userId: string
 }
 
 export async function lockNoteSyncOwner(transaction: SyncTransaction, noteId: string) {
+  // Serialize owner mutations without blocking FK references from a merge's
+  // new sync-state row back to this owner.
   const [note] = await transaction
     .select({ id: rotes.id, authorid: rotes.authorid })
     .from(rotes)
     .where(eq(rotes.id, noteId));
-  if (!note) throw new Error('Note not found');
-  await lockSyncOwner(transaction, note.authorid);
+  if (!note) return undefined;
+  await transaction
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, note.authorid))
+    .for('no key update');
   // Account merges can move the note while we wait for its former owner.
   const [current] = await transaction
     .select({ id: rotes.id, authorid: rotes.authorid })
     .from(rotes)
     .where(eq(rotes.id, noteId));
-  if (!current || current.authorid !== note.authorid) throw new Error('Note ownership changed');
+  if (!current) return undefined;
+  if (current.authorid !== note.authorid) throw new Error('Note ownership changed');
   return current;
 }
 
@@ -55,16 +62,26 @@ export async function recordRoteChanges(
     })
     .returning();
   const firstRevision = state.revision - BigInt(changes.length) + BigInt(1);
-  return transaction
-    .insert(roteChanges)
-    .values(
-      changes.map((change, index) => ({
-        ...change,
-        roteid: change.roteid ?? change.originid,
-        userid: userId,
-        revision: firstRevision + BigInt(index),
-        createdAt: sql`clock_timestamp()`,
-      }))
-    )
-    .returning({ id: roteChanges.id, originid: roteChanges.originid, action: roteChanges.action });
+  const inserted: { id: string; originid: string; action: string }[] = [];
+  // Bound SQL parameters while retaining one revision allocation and commit.
+  for (let offset = 0; offset < changes.length; offset += 1000) {
+    const rows = await transaction
+      .insert(roteChanges)
+      .values(
+        changes.slice(offset, offset + 1000).map((change, index) => ({
+          ...change,
+          roteid: change.roteid ?? change.originid,
+          userid: userId,
+          revision: firstRevision + BigInt(offset + index),
+          createdAt: sql`clock_timestamp()`,
+        }))
+      )
+      .returning({
+        id: roteChanges.id,
+        originid: roteChanges.originid,
+        action: roteChanges.action,
+      });
+    inserted.push(...rows);
+  }
+  return inserted;
 }
