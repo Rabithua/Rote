@@ -5,7 +5,6 @@ import {
   articles,
   attachments,
   noteImportSources,
-  roteChanges,
   rotes,
   users,
   type NewAttachment,
@@ -13,6 +12,7 @@ import {
   type NewRote,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
+import { lockSyncOwner, recordRoteChanges } from '../sync/journal';
 import { releaseStorageObjectReferences } from '../resources/service';
 import { DatabaseError } from '../utils/dbMethods/common';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
@@ -329,13 +329,13 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
         }
 
         if (changes.length > 0) {
-          await tx.insert(roteChanges).values(
+          await recordRoteChanges(
+            tx,
+            userId,
             changes.map((change) => ({
               originid: change.id,
               roteid: change.id,
               action: change.action,
-              userid: userId,
-              createdAt: new Date(),
             }))
           );
         }
@@ -444,6 +444,7 @@ async function importArticles(userId: string, payload: ImportPayload) {
   if (uniqueArticles.length === 0) return { total: 0, created: 0, updated: 0 };
 
   return db.transaction(async (tx) => {
+    await lockSyncOwner(tx, userId);
     const existing = await tx
       .select({ id: articles.id, authorId: articles.authorId })
       .from(articles)
@@ -479,6 +480,18 @@ async function importArticles(userId: string, payload: ImportPayload) {
           updatedAt: sql`excluded."updatedAt"`,
         },
       });
+
+    if (existingIds.size > 0) {
+      const boundNotes = await tx
+        .select({ id: rotes.id })
+        .from(rotes)
+        .where(and(eq(rotes.authorid, userId), inArray(rotes.articleId, [...existingIds])));
+      await recordRoteChanges(
+        tx,
+        userId,
+        boundNotes.map((note) => ({ originid: note.id, action: 'UPDATE' }))
+      );
+    }
 
     return {
       total: rows.length,

@@ -1,6 +1,7 @@
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { type Article, articles, rotes } from '../../drizzle/schema';
 import db from '../drizzle';
+import { lockSyncOwner, recordRoteChanges } from '../../sync/journal';
 import { parseMarkdownMeta } from '../markdown';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
@@ -40,40 +41,29 @@ export async function setNoteArticleId(
   authorId: string
 ): Promise<void> {
   try {
-    const note = await db.query.rotes.findFirst({
-      where: (tbl, { eq }) => eq(tbl.id, noteId),
-      columns: { id: true, authorid: true, articleId: true },
-    });
-    if (!note || note.authorid !== authorId) {
-      throw new Error('Note not found or permission denied');
-    }
-
-    // 只在 articleId 发生变化时更新和记录变更
-    if (note.articleId === articleId) {
-      return;
-    }
-
-    if (articleId) {
-      const [owned] = await findArticlesByIds([articleId], authorId);
-      if (!owned) {
-        throw new Error('Article does not belong to current user');
-      }
-    }
-
-    await db.update(rotes).set({ articleId, updatedAt: new Date() }).where(eq(rotes.id, noteId));
-
-    // 记录变更历史
-    try {
-      await createRoteChange({
-        originid: noteId,
-        roteid: noteId,
-        action: 'UPDATE',
-        userid: authorId,
+    await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, authorId);
+      const note = await tx.query.rotes.findFirst({
+        where: (table, { eq }) => eq(table.id, noteId),
+        columns: { id: true, authorid: true, articleId: true },
       });
-    } catch (_error) {
-      // 记录变更失败不影响操作
-    }
-  } catch (error: any) {
+      if (!note || note.authorid !== authorId)
+        throw new Error('Note not found or permission denied');
+      if (note.articleId === articleId) return;
+      if (articleId) {
+        const [article] = await tx
+          .select({ id: articles.id })
+          .from(articles)
+          .where(and(eq(articles.id, articleId), eq(articles.authorId, authorId)));
+        if (!article) throw new Error('Article does not belong to current user');
+      }
+      await tx.update(rotes).set({ articleId, updatedAt: new Date() }).where(eq(rotes.id, noteId));
+      await createRoteChange(
+        { originid: noteId, roteid: noteId, action: 'UPDATE', userid: authorId },
+        tx
+      );
+    });
+  } catch (error) {
     throw new DatabaseError('Failed to set note article', error);
   }
 }
@@ -113,38 +103,28 @@ export async function updateArticle(data: {
 }): Promise<ArticleWithMeta | null> {
   try {
     const { id, authorId, ...rest } = data;
-    const [article] = await db
-      .update(articles)
-      .set({
-        ...rest,
-        updatedAt: new Date(),
-      })
-      .where(and(eq(articles.id, id), eq(articles.authorId, authorId)))
-      .returning();
-
-    if (!article) return null;
-
-    // 记录绑定到此 article 的 rote 的变更历史（保证 /changes/after 增量同步能感知）
-    try {
-      const boundRotes = await db
-        .select({ id: rotes.id })
-        .from(rotes)
-        .where(eq(rotes.articleId, id));
-      for (const r of boundRotes) {
-        await createRoteChange({
-          originid: r.id,
-          roteid: r.id,
-          action: 'UPDATE',
-          userid: authorId,
-        });
-      }
-    } catch (_error) {
-      // 记录变更失败不影响操作
-    }
-
-    const meta = parseMarkdownMeta(article.content);
-    return { ...article, ...meta };
-  } catch (error: any) {
+    const article = await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, authorId);
+      const [updated] = await tx
+        .update(articles)
+        .set({ ...rest, updatedAt: new Date() })
+        .where(and(eq(articles.id, id), eq(articles.authorId, authorId)))
+        .returning();
+      if (!updated) return null;
+      const notes = await tx.select({ id: rotes.id }).from(rotes).where(eq(rotes.articleId, id));
+      await recordRoteChanges(
+        tx,
+        authorId,
+        notes.map((note) => ({
+          originid: note.id,
+          roteid: note.id,
+          action: 'UPDATE' as const,
+        }))
+      );
+      return updated;
+    });
+    return article ? { ...article, ...parseMarkdownMeta(article.content) } : null;
+  } catch (error) {
     throw new DatabaseError(`Failed to update article: ${data.id}`, error);
   }
 }
@@ -155,35 +135,29 @@ export async function deleteArticle(data: {
   authorId: string;
 }): Promise<Article | null> {
   try {
-    // 先查询绑定到此 article 的 rote，用于删除后写 changelog
-    const boundRotes = await db
-      .select({ id: rotes.id })
-      .from(rotes)
-      .where(eq(rotes.articleId, data.id));
-
-    const [article] = await db
-      .delete(articles)
-      .where(and(eq(articles.id, data.id), eq(articles.authorId, data.authorId)))
-      .returning();
-
-    if (!article) return null;
-
-    // 删除成功后为受影响的 rote 写 UPDATE changelog（rote 仍存在，只是 articleId 变 null）
-    try {
-      for (const r of boundRotes) {
-        await createRoteChange({
-          originid: r.id,
-          roteid: r.id,
-          action: 'UPDATE',
-          userid: data.authorId,
-        });
-      }
-    } catch (_error) {
-      // 记录变更失败不影响操作
-    }
-
-    return article;
-  } catch (error: any) {
+    return await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, data.authorId);
+      const notes = await tx
+        .select({ id: rotes.id })
+        .from(rotes)
+        .where(eq(rotes.articleId, data.id));
+      const [article] = await tx
+        .delete(articles)
+        .where(and(eq(articles.id, data.id), eq(articles.authorId, data.authorId)))
+        .returning();
+      if (!article) return null;
+      await recordRoteChanges(
+        tx,
+        data.authorId,
+        notes.map((note) => ({
+          originid: note.id,
+          roteid: note.id,
+          action: 'UPDATE' as const,
+        }))
+      );
+      return article;
+    });
+  } catch (error) {
     throw new DatabaseError(`Failed to delete article: ${data.id}`, error);
   }
 }
