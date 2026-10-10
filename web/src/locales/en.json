@@ -601,10 +601,6 @@
         "exportFailed": "Export failed"
       },
       "inputPlaceholder": "Ask your Rote...",
-      "thinkingToggle": {
-        "on": "Thinking is on",
-        "off": "Thinking is off"
-      },
       "empty": {
         "title": "Ask Rote",
         "desc": "Find context from your notes and articles."
@@ -2276,18 +2272,6 @@
       "monthsAgo_plural": "{{count}} months ago",
       "yearsAgo": "{{count}} year ago",
       "yearsAgo_plural": "{{count}} years ago"
-    }
-  },
-  "aiProvider": {
-    "reasoningEffort": {
-      "label": "Reasoning effort",
-      "low": "Low",
-      "medium": "Medium",
-      "high": "High (default)",
-      "omit": "Omit; use model default",
-      "description": "Send reasoning_effort only to recognized GLM, DeepSeek and OpenAI reasoning models, mapping levels to model capabilities. Omit it for other models and personal local models. This setting does not disable thinking.",
-      "effective": "Sent effort: {{effort}}",
-      "notSent": "Use the model default; this field is not sent."
     }
   }
 }

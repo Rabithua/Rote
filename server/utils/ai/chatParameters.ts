@@ -1,37 +1,37 @@
-export type ReasoningEffort = 'low' | 'medium' | 'high';
-
 export interface ChatParameterConfig {
   model: string;
-  reasoningEffort?: ReasoningEffort | null;
+  providerId?: string;
+  baseUrl?: string;
 }
 
-// OpenAI-compatible transport does not imply identical model parameters.
-// Keep this model policy aligned with the browser client in web/src/utils/chatParameters.ts.
+// Thinking is a product default; callers and saved settings cannot disable it.
+// Browser and server policy parity is checked in tests.
 export function buildChatParameters(config: ChatParameterConfig, temperature: number) {
   const model = config.model.trim().toLowerCase().split('/').pop() || '';
-  const effort = config.reasoningEffort === undefined ? 'high' : config.reasoningEffort;
   const openaiReasoning =
     /^(o1|o3|o4-mini)(?:-|$)/.test(model) &&
     !/^(o1-mini|o1-preview|o1-pro|o3-pro)(?:-|$)/.test(model);
   const gptReasoning = /^gpt-5(?:[.-]|$)/.test(model) && !model.includes('chat');
-
   if (openaiReasoning || gptReasoning) {
-    return {
-      ...(effort ? { reasoning_effort: model.includes('-pro') ? 'high' : effort } : {}),
-    };
+    return { reasoning_effort: 'high' as const };
   }
 
-  const glm = /^glm-5\.[23](?:-|$)/.test(model);
+  const glmEffort = /^glm-5\.[23](?:-|$)/.test(model);
+  const glmThinking =
+    /^glm-(?:4\.[567]|5(?:\.[123])?)(?:-|$)/.test(model) && !model.includes('airx');
   const deepseek = /^deepseek-(?:flash|v4-pro)(?:-|$)/.test(model);
+  const dashscope =
+    config.providerId === 'dashscope' ||
+    /^https?:\/\/(?:dashscope(?:-intl|-us)?|[a-z0-9.-]+\.maas)\.aliyuncs\.com(?:[:/]|$)/i.test(
+      config.baseUrl || ''
+    );
   return {
     temperature,
-    ...(effort && (glm || deepseek)
-      ? {
-          reasoning_effort:
-            effort === 'medium' || (model.startsWith('glm-5.2') && effort === 'low')
-              ? 'high'
-              : effort,
-        }
-      : {}),
+    ...(glmEffort || deepseek ? { reasoning_effort: 'high' as const } : {}),
+    ...(dashscope
+      ? { enable_thinking: true }
+      : glmThinking || deepseek
+        ? { thinking: { type: 'enabled' as const } }
+        : {}),
   };
 }

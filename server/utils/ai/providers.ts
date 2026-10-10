@@ -177,6 +177,7 @@ export function mergeAiConfig(config?: Partial<AiConfig> | null): AiConfig {
     chat: {
       ...DEFAULT_AI_CONFIG.chat,
       ...(config?.chat || {}),
+      reasoningEffort: 'high',
       apiFormat: 'openai_compatible',
     },
     embedding: {

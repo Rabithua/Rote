@@ -271,5 +271,4 @@ export type AiChatPayload = {
   state?: AiAgentClientState | null;
   clientContext?: AiClientRequestContext | null;
   debug?: boolean;
-  enableThinking?: boolean;
 };

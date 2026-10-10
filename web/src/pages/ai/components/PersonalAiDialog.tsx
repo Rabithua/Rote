@@ -1,5 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { ReasoningEffortSelect } from '@/components/ai/ReasoningEffortSelect';
 import {
   Dialog,
   DialogContent,
@@ -10,11 +9,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import {
-  isLocalPersonalAiProvider,
-  type PersonalAiMode,
-  type PersonalAiSettings,
-} from '@/state/localAi';
+import type { PersonalAiMode, PersonalAiSettings } from '@/state/localAi';
 import { BrainCog, Cloud, Loader, TestTube2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -226,13 +221,6 @@ export function PersonalAiDialog({
                     onChange={(event) => setProviderField({ apiKey: event.target.value })}
                   />
                 </div>
-                <ReasoningEffortSelect
-                  id="personal-ai-reasoning-effort"
-                  model={editableConfig.model}
-                  local={isLocalPersonalAiProvider(editableConfig)}
-                  value={editableConfig.reasoningEffort}
-                  onChange={(reasoningEffort) => setProviderField({ reasoningEffort })}
-                />
               </div>
 
               <p className={dialogClasses.note}>{t('personal.personalProxyNote')}</p>

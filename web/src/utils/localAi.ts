@@ -133,7 +133,6 @@ export async function streamLocalChatCompletion(params: {
   config: PersonalAiProviderConfig;
   messages: LocalChatMessage[];
   tools?: LocalChatToolDefinition[];
-  enableThinking?: boolean;
   signal?: AbortSignal;
   onReasoning?: (text: string) => void;
   onContent?: (text: string) => void;
@@ -149,7 +148,7 @@ export async function streamLocalChatCompletion(params: {
     stream: true,
     stream_options: { include_usage: true },
     ...(isLocalPersonalAiProvider(params.config)
-      ? { chat_template_kwargs: { enable_thinking: params.enableThinking === true } }
+      ? { chat_template_kwargs: { enable_thinking: true } }
       : {}),
     ...(params.tools?.length ? { tools: params.tools, tool_choice: 'auto' } : {}),
   });

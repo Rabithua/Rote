@@ -90,7 +90,6 @@ export async function createChatCompletionWithToolsStreaming(
           toolChoice: options.toolChoice || 'auto',
           temperature: options.temperature ?? 0.2,
           stream: true,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,
@@ -228,7 +227,6 @@ export async function* createChatCompletionStreamParts(
           messages,
           temperature: options.temperature ?? 0.2,
           stream: true,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,

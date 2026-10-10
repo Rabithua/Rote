@@ -87,7 +87,6 @@ describe('local AI agent', () => {
       payload: { message: 'hello' },
       handlers: { onOutputDelta, onOutputFinished, onOutputStarted, onThinking },
       toolsAvailable: true,
-      enableThinking: false,
     });
     expect(mocks.complete).toHaveBeenCalledTimes(1);
     expect(onOutputDelta).toHaveBeenCalledTimes(2);
@@ -113,7 +112,6 @@ describe('local AI agent', () => {
         payload: { message: 'hello' },
         handlers: {},
         toolsAvailable: true,
-        enableThinking: false,
       })
     ).rejects.toThrow('error_no_answer_no_sources');
     expect(mocks.complete).toHaveBeenCalledTimes(1);
@@ -130,11 +128,10 @@ describe('local AI agent', () => {
       payload: { message: 'hello' },
       handlers: { onDelta },
       toolsAvailable: false,
-      enableThinking: false,
     });
 
     expect(onDelta).toHaveBeenCalledWith('private reply');
-    expect(mocks.complete).toHaveBeenCalledWith(expect.objectContaining({ enableThinking: false }));
+    expect(mocks.complete.mock.calls[0][0]).not.toHaveProperty('enableThinking');
     expect(mocks.bootstrap).not.toHaveBeenCalled();
     expect(mocks.executeTool).not.toHaveBeenCalled();
   });
@@ -196,16 +193,15 @@ describe('local AI agent', () => {
       payload: { message: 'show tags' },
       handlers: { onDelta, onOutputDelta },
       toolsAvailable: true,
-      enableThinking: true,
     });
 
     expect(mocks.complete).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ enableThinking: true })
+      expect.objectContaining({ config, messages: expect.any(Array) })
     );
     expect(mocks.complete).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ enableThinking: true })
+      expect.objectContaining({ config, messages: expect.any(Array) })
     );
     expect(mocks.executeTool).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -304,7 +300,6 @@ describe('local AI agent', () => {
       payload: { message: 'show tags and notes' },
       handlers: {},
       toolsAvailable: true,
-      enableThinking: false,
     });
 
     expect(mocks.executeTool).toHaveBeenCalledTimes(1);
@@ -365,7 +360,6 @@ it('merges two batches, restores reading state and sends both batches to the pro
     payload: { message: 'review' },
     handlers: { onSources },
     toolsAvailable: true,
-    enableThinking: false,
   });
   expect(onSources.mock.calls.map(([rows]) => rows.length)).toEqual([20, 40]);
   expect(onSources.mock.calls[1][1].totalCount).toBe(40);
@@ -431,7 +425,6 @@ it('stops further local tools after evidence exhaustion', async () => {
     payload: { message: 'review' },
     handlers: { onSources },
     toolsAvailable: true,
-    enableThinking: false,
   });
   expect(mocks.executeTool).toHaveBeenCalledTimes(1);
   expect(mocks.complete).toHaveBeenCalledTimes(2);
@@ -486,7 +479,6 @@ it('tells the final local provider when a successful single result exhausts the 
     payload: { message: 'review' },
     handlers: {},
     toolsAvailable: true,
-    enableThinking: false,
   });
   expect(mocks.complete).toHaveBeenCalledTimes(2);
   const messages = mocks.complete.mock.calls[1][0].messages;

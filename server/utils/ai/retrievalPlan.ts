@@ -253,7 +253,6 @@ export async function createRetrievalPlan(params: {
   getTagCounts?: () => Promise<Array<{ name: string; count: number }>>;
   maxSteps?: number;
   maxToolCalls?: number;
-  enableThinking?: boolean;
   timeContext?: RetrievalTimeContext | null;
   onThinkingDelta?: (text: string) => Promise<void> | void;
   onUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
@@ -287,7 +286,6 @@ export async function createRetrievalPlan(params: {
           purpose: step === 0 ? 'chat_plan' : 'chat_tool_decision',
         },
         temperature: 0,
-        enableThinking: params.enableThinking === true,
         onReasoning: params.onThinkingDelta,
         signal: params.signal,
       });

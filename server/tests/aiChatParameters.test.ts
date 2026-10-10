@@ -2,11 +2,11 @@ import { describe, expect, it } from 'bun:test';
 import { buildChatParameters } from '../utils/ai/chatParameters';
 import { buildChatParameters as buildBrowserChatParameters } from '../../web/src/utils/chatParameters';
 import { buildChatRequestBody } from '../utils/ai/clientShared';
-import { DEFAULT_AI_CONFIG, mergeAiConfig, resolveIncomingAiConfig } from '../utils/ai/providers';
+import { DEFAULT_AI_CONFIG, mergeAiConfig } from '../utils/ai/providers';
 import { parseIncomingAiConfig } from '../embeddings/configStore';
 import { embeddingFingerprint } from '../embeddings/contract';
 
-describe('chat parameter compatibility', () => {
+describe('default thinking and fixed reasoning effort', () => {
   it.each([
     'glm-5.2',
     'glm-5.3',
@@ -31,37 +31,27 @@ describe('chat parameter compatibility', () => {
       expect(buildChatParameters(config, 0.2)).toEqual(buildBrowserChatParameters(config, 0.2));
     }
   });
-  it('defaults new and existing chat settings to high and preserves opt-out', () => {
+
+  it.each([null, 'low', 'medium'])(
+    'normalizes saved effort %s to high without changing the embedding index',
+    (effort) => {
+      const stored = mergeAiConfig();
+      const legacy = { ...stored, chat: { ...stored.chat, reasoningEffort: effort as 'high' } };
+      const parsed = parseIncomingAiConfig(legacy, stored);
+      expect(parsed.chat.reasoningEffort).toBe('high');
+      expect(embeddingFingerprint(parsed)).toBe(embeddingFingerprint(stored));
+    }
+  );
+
+  it('defaults new and missing chat settings to high', () => {
     expect(DEFAULT_AI_CONFIG.chat.reasoningEffort).toBe('high');
     const { reasoningEffort: _effort, ...legacyChat } = DEFAULT_AI_CONFIG.chat;
     expect(mergeAiConfig({ chat: legacyChat }).chat.reasoningEffort).toBe('high');
-    expect(
-      resolveIncomingAiConfig({ chat: { ...legacyChat, reasoningEffort: null } }).chat
-        .reasoningEffort
-    ).toBeNull();
     expect(DEFAULT_AI_CONFIG.embedding).not.toHaveProperty('reasoningEffort');
   });
 
-  it('accepts default and opted-out chat effort through the settings schema', () => {
+  it('keeps reasoning effort out of embedding settings', () => {
     const stored = mergeAiConfig();
-    expect(parseIncomingAiConfig(stored, stored).chat.reasoningEffort).toBe('high');
-    const incoming = { ...stored, chat: { ...stored.chat, reasoningEffort: null } };
-    const parsed = parseIncomingAiConfig(incoming, stored);
-    expect(parsed.chat.reasoningEffort).toBeNull();
-    expect(embeddingFingerprint(parsed)).toBe(embeddingFingerprint(stored));
-  });
-
-  it('rejects invalid effort levels and keeps embedding settings strict', () => {
-    const stored = mergeAiConfig();
-    expect(() =>
-      parseIncomingAiConfig(
-        {
-          ...stored,
-          chat: { ...stored.chat, reasoningEffort: 'invalid' as 'high' },
-        },
-        stored
-      )
-    ).toThrow('embedding_config_invalid');
     expect(() =>
       parseIncomingAiConfig(
         {
@@ -73,27 +63,22 @@ describe('chat parameter compatibility', () => {
     ).toThrow('embedding_config_invalid');
   });
 
-  it.each(['glm-5.3', 'glm-5.3-flash', 'z-ai/glm-5.3-flash'])('%s defaults to high', (model) => {
-    expect(buildChatParameters({ model }, 0.2)).toEqual({
-      temperature: 0.2,
-      reasoning_effort: 'high',
-    });
-  });
+  it.each(['glm-5.3', 'glm-5.3-flash', 'z-ai/glm-5.3-flash', 'deepseek-flash', 'deepseek-v4-pro'])(
+    '%s enables thinking at high effort',
+    (model) => {
+      expect(buildChatParameters({ model }, 0.2)).toEqual({
+        temperature: 0.2,
+        reasoning_effort: 'high',
+        thinking: { type: 'enabled' },
+      });
+    }
+  );
 
-  it('converts model-specific effort levels', () => {
-    expect(
-      buildChatParameters({ model: 'glm-5.3', reasoningEffort: 'medium' }, 0.2)
-    ).toHaveProperty('reasoning_effort', 'high');
-    expect(buildChatParameters({ model: 'glm-5.2', reasoningEffort: 'low' }, 0.2)).toHaveProperty(
-      'reasoning_effort',
-      'high'
-    );
-    expect(
-      buildChatParameters({ model: 'deepseek-flash', reasoningEffort: 'medium' }, 0.2)
-    ).toHaveProperty('reasoning_effort', 'high');
-    expect(
-      buildChatParameters({ model: 'glm-5.3-flash', reasoningEffort: 'low' }, 0.2)
-    ).toHaveProperty('reasoning_effort', 'low');
+  it('enables thinking on older GLM models without unsupported effort fields', () => {
+    expect(buildChatParameters({ model: 'glm-4.7' }, 0.2)).toEqual({
+      temperature: 0.2,
+      thinking: { type: 'enabled' },
+    });
   });
 
   it.each([
@@ -101,44 +86,54 @@ describe('chat parameter compatibility', () => {
     'gpt-4o',
     'gpt-5-chat-latest',
     'o1-preview',
-    'glm-4.7',
+    'glm-4-flash',
     'deepseek-chat',
     'unknown',
-  ])('does not assume %s supports effort', (model) => {
+  ])('does not add unsupported thinking fields to %s', (model) => {
     expect(buildChatParameters({ model }, 0.2)).toEqual({ temperature: 0.2 });
   });
 
-  it('omits conflicting sampling parameters on OpenAI reasoning models', () => {
-    expect(buildChatParameters({ model: 'gpt-5.2' }, 0.2)).toEqual({ reasoning_effort: 'high' });
-    expect(buildChatParameters({ model: 'o3-mini', reasoningEffort: 'low' }, 0.2)).toEqual({
-      reasoning_effort: 'low',
-    });
-    expect(buildChatParameters({ model: 'gpt-5-pro', reasoningEffort: 'low' }, 0.2)).toEqual({
-      reasoning_effort: 'high',
-    });
+  it.each(['gpt-5.2', 'o3-mini'])('keeps %s at high even with old opt-out settings', (model) => {
+    const legacy = { model, reasoningEffort: null };
+    expect(buildChatParameters(legacy, 0.2)).toEqual({ reasoning_effort: 'high' });
   });
 
-  it('allows providers to choose their own effort without disabling thinking', () => {
-    expect(buildChatParameters({ model: 'glm-5.3', reasoningEffort: null }, 0.2)).toEqual({
+  it.each([
+    { providerId: 'dashscope', baseUrl: 'https://example.test/v1' },
+    { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+    { baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1' },
+    { baseUrl: 'https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1' },
+  ])('enables DashScope thinking in both clients', (provider) => {
+    const config = { ...provider, model: 'qwen-plus' };
+    expect(buildChatParameters(config, 0.2)).toEqual({ temperature: 0.2, enable_thinking: true });
+    expect(buildBrowserChatParameters(config, 0.2)).toEqual(buildChatParameters(config, 0.2));
+  });
+
+  it.each([false, true])('ignores old request toggles in stream=%s and tool requests', (stream) => {
+    const request = {
+      messages: [],
       temperature: 0.2,
-    });
-    expect(buildChatParameters({ model: 'gpt-5.2', reasoningEffort: null }, 0.2)).toEqual({});
-  });
-
-  it.each([false, true])('applies the policy to stream=%s and tool requests', (stream) => {
+      stream,
+      enableThinking: false,
+      tools: [
+        {
+          type: 'function' as const,
+          function: { name: 'test', description: 'test', parameters: {} },
+        },
+      ],
+    };
     const body = buildChatRequestBody(
       { ...DEFAULT_AI_CONFIG.chat, providerId: 'zhipu', model: 'glm-5.3-flash' },
-      {
-        messages: [],
-        temperature: 0.2,
-        stream,
-        tools: [
-          { type: 'function', function: { name: 'test', description: 'test', parameters: {} } },
-        ],
-      }
+      request
     );
     expect(body).toHaveProperty('reasoning_effort', 'high');
+    expect(body).toHaveProperty('thinking', { type: 'enabled' });
     expect(body).toHaveProperty('tool_choice', 'auto');
-    expect(body).not.toHaveProperty('thinking');
+    expect(body).not.toHaveProperty('enableThinking');
+    const local = buildChatRequestBody(
+      { ...DEFAULT_AI_CONFIG.chat, providerId: 'llama-cpp', model: 'gemma' },
+      request
+    );
+    expect(local).toHaveProperty('chat_template_kwargs', { enable_thinking: true });
   });
 });

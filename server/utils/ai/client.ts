@@ -65,7 +65,6 @@ export async function createChatCompletion(
         buildChatRequestBody(config, {
           messages,
           temperature: options.temperature ?? 0.2,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,
@@ -117,7 +116,6 @@ export async function createChatCompletionWithTools(
           tools,
           toolChoice: options.toolChoice ?? 'auto',
           temperature: options.temperature ?? 0.2,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,

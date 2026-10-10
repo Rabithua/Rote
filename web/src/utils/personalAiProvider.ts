@@ -42,7 +42,7 @@ async function fetchBrowserChatCompletion(
   let lastError: unknown;
   const { temperature = config.temperature, ...chatPayload } = payload;
   const parameters = isLocalPersonalAiProvider(config)
-    ? { temperature }
+    ? { temperature, chat_template_kwargs: { enable_thinking: true } }
     : buildChatParameters(config, Number(temperature));
 
   for (const baseUrl of getPersonalAiBaseUrlCandidates(config)) {

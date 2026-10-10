@@ -144,7 +144,6 @@ async function streamFinalAnswer(
 
   for await (const part of createChatCompletionStreamParts(ctx.config.chat, messages, {
     usageContext: { userId: ctx.userId, purpose: 'chat_answer' },
-    enableThinking: ctx.request.enableThinking === true,
     signal,
   })) {
     if (part.type === 'reasoning') {
@@ -261,7 +260,6 @@ export async function runRoteAgentStream(params: {
                 purpose: step === 0 ? 'chat_plan' : 'chat_tool_decision',
               },
               temperature: 0.2,
-              enableThinking: request.enableThinking === true,
               signal: params.signal,
               onContent: (text) => {
                 if (request.streamOutputs) return emitOutput(outputId, phase, text);

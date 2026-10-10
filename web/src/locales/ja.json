@@ -605,10 +605,6 @@
         "exportFailed": "エクスポートに失敗しました"
       },
       "inputPlaceholder": "Rote に質問...",
-      "thinkingToggle": {
-        "on": "思考はオンです",
-        "off": "思考はオフです"
-      },
       "empty": {
         "title": "Rote に聞く",
         "desc": "ノートと記事から文脈を探します。"
@@ -2280,18 +2276,6 @@
       "monthsAgo_plural": "{{count}}ヶ月前",
       "yearsAgo": "{{count}}年前",
       "yearsAgo_plural": "{{count}}年前"
-    }
-  },
-  "aiProvider": {
-    "reasoningEffort": {
-      "label": "推論の強度",
-      "low": "低（low）",
-      "medium": "中（medium）",
-      "high": "高（high、既定）",
-      "omit": "送信せず、モデルの既定値を使用",
-      "description": "認識された対応 GLM・DeepSeek・OpenAI 推論モデルにのみ reasoning_effort を送信し、強度をモデルに合わせて変換します。他のモデルと個人のローカルモデルには送信しません。思考を無効にする設定ではありません。",
-      "effective": "送信する強度：{{effort}}",
-      "notSent": "このフィールドは送信せず、モデルの既定の推論動作を使用します。"
     }
   }
 }

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ReasoningEffortSelect } from '@/components/ai/ReasoningEffortSelect';
 import { formatEmbeddingError } from './embeddingErrors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,14 +132,6 @@ export default function AIConfigProviderForm({
             onChange={(event) => updateProvider(target, { baseUrl: event.target.value })}
           />
         </div>
-        {target === 'chat' && (
-          <ReasoningEffortSelect
-            id="site-ai-reasoning-effort"
-            model={config.chat?.model || ''}
-            value={config.chat?.reasoningEffort}
-            onChange={(reasoningEffort) => updateProvider('chat', { reasoningEffort })}
-          />
-        )}
         {showLlamaCppTip && (
           <div className="bg-muted/20 rounded-md border p-3">
             <div className="flex items-center gap-2 text-sm font-medium">

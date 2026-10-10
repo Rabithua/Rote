@@ -39,7 +39,6 @@ export async function localAiAgentStream(params: {
   payload: AiChatPayload;
   handlers: AiChatStreamHandlers;
   toolsAvailable: boolean;
-  enableThinking: boolean;
   signal?: AbortSignal;
 }) {
   const payload = withAiClientRequestContext(params.payload);
@@ -87,7 +86,6 @@ export async function localAiAgentStream(params: {
     const response = await streamLocalChatCompletion({
       config: params.config,
       messages,
-      enableThinking: params.enableThinking,
       signal: params.signal,
       onReasoning: (text) => params.handlers.onThinking?.('answer', text),
       onContent: (text) => params.handlers.onDelta?.(text),
@@ -109,7 +107,6 @@ export async function localAiAgentStream(params: {
       config: params.config,
       messages,
       tools: bootstrap.tools,
-      enableThinking: params.enableThinking,
       signal: params.signal,
       onContent: (text) => emitOutput(outputId, phase, text),
       onReasoning: (text) =>
@@ -229,7 +226,6 @@ export async function localAiAgentStream(params: {
     const response = await streamLocalChatCompletion({
       config: params.config,
       messages,
-      enableThinking: params.enableThinking,
       signal: params.signal,
       onReasoning: (text) => params.handlers.onThinking?.('answer', text, 'final'),
       onContent: (text) => emitOutput('final', 'answering', text),

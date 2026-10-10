@@ -48,7 +48,7 @@ describe('local AI client', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.reasoning_effort).toBe('high');
     expect(body).not.toHaveProperty('chat_template_kwargs');
-    expect(body).not.toHaveProperty('thinking');
+    expect(body.thinking).toEqual({ type: 'enabled' });
   });
 
   it('omits sampling parameters in remote OpenAI reasoning requests', async () => {
@@ -61,12 +61,11 @@ describe('local AI client', () => {
         ...config,
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-5.2',
-        reasoningEffort: 'low',
       },
       messages: [],
     });
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.reasoning_effort).toBe('low');
+    expect(body.reasoning_effort).toBe('high');
     expect(body).not.toHaveProperty('temperature');
   });
 
@@ -78,7 +77,6 @@ describe('local AI client', () => {
     await streamLocalChatCompletion({
       config: { ...config, model: 'glm-5.3', reasoningEffort: 'high' },
       messages: [],
-      enableThinking: true,
     });
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body).not.toHaveProperty('reasoning_effort');
@@ -165,7 +163,7 @@ describe('local AI client', () => {
     });
     expect(result.usage?.total_tokens).toBe(14);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
-      chat_template_kwargs: { enable_thinking: false },
+      chat_template_kwargs: { enable_thinking: true },
     });
   });
 
@@ -188,14 +186,13 @@ describe('local AI client', () => {
     ]);
   });
 
-  it(`can enable model thinking for local browser calls`, async () => {
+  it(`always enables model thinking for local browser calls`, async () => {
     const fetchMock = vi.fn().mockResolvedValue(sseResponse([{ choices: [{ delta: {} }] }]));
     vi.stubGlobal('fetch', fetchMock);
 
     await streamLocalChatCompletion({
       config,
       messages: [{ role: 'user', content: 'Think' }],
-      enableThinking: true,
     });
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({

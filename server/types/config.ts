@@ -130,7 +130,7 @@ export interface AiProviderConfig {
   baseUrl: string;
   apiKey?: string;
   model: string;
-  reasoningEffort?: import('../utils/ai/chatParameters').ReasoningEffort | null;
+  reasoningEffort?: 'high';
 }
 
 export interface AiIndexingConfig {

@@ -43,7 +43,6 @@ export type ChatToolChoice =
 export type ChatCompletionOptions = {
   usageContext?: AiUsageContext;
   temperature?: number;
-  enableThinking?: boolean;
   toolChoice?: ChatToolChoice;
   signal?: AbortSignal;
   requestTimeoutMs?: number;
@@ -223,7 +222,6 @@ export function buildChatRequestBody(
     messages: ChatMessage[];
     temperature: number;
     stream?: boolean;
-    enableThinking?: boolean;
     tools?: ChatToolDefinition[];
     toolChoice?: ChatToolChoice;
   }
@@ -234,8 +232,8 @@ export function buildChatRequestBody(
     ...buildChatParameters(config, body.temperature),
     ...(body.stream ? { stream: true, stream_options: { include_usage: true } } : {}),
     ...(body.tools?.length ? { tools: body.tools, tool_choice: body.toolChoice || 'auto' } : {}),
-    ...(config.providerId === 'dashscope' && typeof body.enableThinking === 'boolean'
-      ? { enable_thinking: body.enableThinking }
+    ...(config.providerId === 'llama-cpp'
+      ? { chat_template_kwargs: { enable_thinking: true } }
       : {}),
   };
 }
