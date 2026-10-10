@@ -181,6 +181,13 @@ describe('default thinking and fixed reasoning effort', () => {
     [{ providerId: 'dashscope', model: 'qwen-max' }, { temperature: 0.2 }],
     [{ providerId: 'dashscope', model: 'qwen-plus-2025-01-25' }, { temperature: 0.2 }],
     [{ providerId: 'dashscope', model: 'qwen3-coder-plus' }, { temperature: 0.2 }],
+    [{ providerId: 'dashscope', model: 'qwen3-max-2025-09-23' }, { temperature: 0.2 }],
+    [{ providerId: 'dashscope', model: 'kimi/kimi-k2.5' }, { enable_thinking: true }],
+    [
+      { providerId: 'dashscope', model: 'kimi-k3' },
+      { enable_thinking: true, reasoning_effort: 'high' },
+    ],
+    [{ providerId: 'dashscope', model: 'kimi/kimi-k3' }, { enable_thinking: true }],
     [
       { providerId: 'dashscope', model: 'qwen3.5-27b' },
       { temperature: 0.2, enable_thinking: true },

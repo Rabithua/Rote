@@ -57,8 +57,11 @@ export function buildChatParameters(
   const deepseekEffort = /^deepseek-(?:flash|v4(?:-pro|-flash)?)(?:-|$)/.test(model);
   const deepseekThinking = deepseekEffort || /^deepseek-v3\.[12](?:-|$)/.test(model);
   const qwenThinking =
-    (/^qwen3(?:[.-]|$)/.test(model) && !/coder|instruct/.test(model)) ||
+    (/^qwen3(?:[.-]|$)/.test(model) &&
+      !/coder|instruct/.test(model) &&
+      model !== 'qwen3-max-2025-09-23') ||
     /^qwen-(?:plus|turbo|flash)(?:-latest)?$/.test(model);
+  const kimiThinking = /^kimi-k(?:2\.(?:[56]|7-code)|3)(?:-|$)/.test(model);
   const gptOss = /^gpt-oss(?:[:-]|$)/.test(model);
   const localThinking =
     glmThinking || deepseekThinking || qwenThinking || gptOss || /^gemma-4(?:[:-]|$)/.test(model);
@@ -99,16 +102,18 @@ export function buildChatParameters(
   if (provider === 'moonshot') {
     // Kimi thinking models fix sampling values and already enable thinking by default.
     if (/^kimi-k3(?:-|$)/.test(model)) return { reasoning_effort: 'high' };
-    if (/^kimi-k2\.(?:[56]|7-code)(?:-|$)/.test(model)) return {};
+    if (kimiThinking) return {};
     return { temperature };
   }
   if (provider === 'dashscope') {
-    const thinking =
-      glmThinking || deepseekThinking || qwenThinking || /^kimi-k2\.[567](?:-|$)/.test(model);
+    const thinking = glmThinking || deepseekThinking || qwenThinking || kimiThinking;
     const effort =
-      glmEffort || /^deepseek-v4(?:[.-]|$)/.test(model) || /^qwen3\.8(?:-|$)/.test(model);
+      glmEffort ||
+      /^deepseek-v4(?:[.-]|$)/.test(model) ||
+      /^qwen3\.8(?:-|$)/.test(model) ||
+      fullModel === 'kimi-k3';
     return {
-      temperature,
+      ...(!kimiThinking ? { temperature } : {}),
       ...(thinking ? { enable_thinking: true } : {}),
       ...(effort ? { reasoning_effort: 'high' } : {}),
     };
