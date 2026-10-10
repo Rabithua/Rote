@@ -5,6 +5,7 @@ import type {
   AiToolCallingProbeResult,
 } from '@/utils/aiApi';
 import { buildPersonalAiHeaders, getPersonalAiBaseUrlCandidates } from '@/utils/localAi';
+import { buildChatParameters } from '@/utils/chatParameters';
 
 async function readBrowserResponseError(response: Response): Promise<string> {
   const text = await response.text();
@@ -39,13 +40,20 @@ async function fetchBrowserChatCompletion(
   signal?: AbortSignal
 ): Promise<Response> {
   let lastError: unknown;
+  const { temperature = config.temperature, ...chatPayload } = payload;
+  const parameters = isLocalPersonalAiProvider(config)
+    ? { temperature }
+    : buildChatParameters(config, Number(temperature));
 
   for (const baseUrl of getPersonalAiBaseUrlCandidates(config)) {
     try {
       const response = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: buildPersonalAiHeaders(config),
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...chatPayload,
+          ...parameters,
+        }),
         signal,
       });
       const contentType = response.headers.get('content-type') || '';

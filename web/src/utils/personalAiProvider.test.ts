@@ -21,6 +21,23 @@ afterEach(() => {
 });
 
 describe(`personal AI provider test`, () => {
+  it.each(['glm-5.3-flash', 'gpt-5.2'])(
+    'tests %s with the same effort policy as chat',
+    async (model) => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(jsonResponse({ choices: [{ message: { content: 'OK' } }] }));
+      vi.stubGlobal('fetch', fetchMock);
+      await testPersonalAiProvider({ ...remoteConfig, model });
+      expect(fetchMock.mock.calls).toHaveLength(2);
+      for (const call of fetchMock.mock.calls) {
+        const body = JSON.parse(call[1].body);
+        expect(body.reasoning_effort).toBe('high');
+        if (model === 'gpt-5.2') expect(body).not.toHaveProperty('temperature');
+      }
+    }
+  );
+
   it(`calls the configured remote API from the browser`, async () => {
     const fetchMock = vi
       .fn()

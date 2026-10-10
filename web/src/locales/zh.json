@@ -2267,5 +2267,17 @@
       "yearsAgo": "{{count}}年前",
       "yearsAgo_plural": "{{count}}年前"
     }
+  },
+  "aiProvider": {
+    "reasoningEffort": {
+      "label": "推理强度",
+      "low": "低（low）",
+      "medium": "中（medium）",
+      "high": "高（high，默认）",
+      "omit": "不发送，使用模型默认值",
+      "description": "仅对已识别且支持的 GLM、DeepSeek 和 OpenAI 推理模型发送 reasoning_effort；档位按模型能力转换。其他模型和个人本地模型不发送。此设置不会关闭思考。",
+      "effective": "实际发送：{{effort}}",
+      "notSent": "当前模型使用默认推理行为，不发送此字段。"
+    }
   }
 }

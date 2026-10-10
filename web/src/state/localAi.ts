@@ -1,4 +1,5 @@
 import { atomWithStorage } from 'jotai/utils';
+import type { ReasoningEffort } from '@/utils/chatParameters';
 
 export type PersonalAiMode = 'site' | 'personal';
 
@@ -8,6 +9,7 @@ export interface PersonalAiProviderConfig {
   model: string;
   apiKey: string;
   temperature: number;
+  reasoningEffort?: ReasoningEffort | null;
 }
 
 export interface PersonalAiSettings {
@@ -29,6 +31,7 @@ export const DEFAULT_PERSONAL_AI_SETTINGS: PersonalAiSettings = {
     model: 'gemma-4-12b-it',
     apiKey: '',
     temperature: 0.2,
+    reasoningEffort: 'high',
   },
 };
 
@@ -38,6 +41,7 @@ const DEFAULT_LEGACY_REMOTE_PROVIDER: PersonalAiProviderConfig = {
   model: '',
   apiKey: '',
   temperature: 0.2,
+  reasoningEffort: 'high',
 };
 
 export function isLocalPersonalAiProvider(config: Pick<PersonalAiProviderConfig, 'baseUrl'>) {

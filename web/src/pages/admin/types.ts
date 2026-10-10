@@ -108,6 +108,7 @@ export interface AiProviderConfig {
   baseUrl: string;
   apiKey?: string;
   model: string;
+  reasoningEffort?: import('@/utils/chatParameters').ReasoningEffort | null;
 }
 
 export interface AiProviderPreset {

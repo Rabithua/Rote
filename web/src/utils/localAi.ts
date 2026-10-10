@@ -1,4 +1,5 @@
 import { isLocalPersonalAiProvider, type PersonalAiProviderConfig } from '@/state/localAi';
+import { buildChatParameters } from '@/utils/chatParameters';
 import type { AiTokenUsage } from '@/utils/aiApi';
 import { AiStreamError } from '@/utils/aiStream';
 import {
@@ -142,7 +143,9 @@ export async function streamLocalChatCompletion(params: {
   const requestBody = JSON.stringify({
     model: params.config.model,
     messages: params.messages,
-    temperature: params.config.temperature,
+    ...(isLocalPersonalAiProvider(params.config)
+      ? { temperature: params.config.temperature }
+      : buildChatParameters(params.config, params.config.temperature)),
     stream: true,
     stream_options: { include_usage: true },
     ...(isLocalPersonalAiProvider(params.config)

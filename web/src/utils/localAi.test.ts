@@ -32,6 +32,59 @@ afterEach(() => {
 });
 
 describe('local AI client', () => {
+  it('sends default high to a remote GLM without leaking local thinking parameters', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse([{ choices: [{ delta: { content: 'OK' } }] }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await streamLocalChatCompletion({
+      config: {
+        ...config,
+        baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
+        model: 'glm-5.3-flash',
+      },
+      messages: [{ role: 'user', content: 'Hello' }],
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe('high');
+    expect(body).not.toHaveProperty('chat_template_kwargs');
+    expect(body).not.toHaveProperty('thinking');
+  });
+
+  it('omits sampling parameters in remote OpenAI reasoning requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse([{ choices: [{ delta: { content: 'OK' } }] }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await streamLocalChatCompletion({
+      config: {
+        ...config,
+        baseUrl: 'https://api.openai.com/v1',
+        model: 'gpt-5.2',
+        reasoningEffort: 'low',
+      },
+      messages: [],
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.reasoning_effort).toBe('low');
+    expect(body).not.toHaveProperty('temperature');
+  });
+
+  it('keeps reasoning effort out of personal local model requests', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(sseResponse([{ choices: [{ delta: { content: 'OK' } }] }]));
+    vi.stubGlobal('fetch', fetchMock);
+    await streamLocalChatCompletion({
+      config: { ...config, model: 'glm-5.3', reasoningEffort: 'high' },
+      messages: [],
+      enableThinking: true,
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty('reasoning_effort');
+    expect(body.chat_template_kwargs).toEqual({ enable_thinking: true });
+  });
+
   it('tests the bridge with the local token', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
