@@ -4,6 +4,7 @@ import { isPushNotificationsEnabled } from '../../push/config';
 import { reactionActorName } from '../../push/reactionPresentation';
 import { enqueueAggregatedReactionPushEventInTransaction } from '../../push/repository';
 import db from '../drizzle';
+import { lockNoteSyncOwner } from '../../sync/journal';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 
@@ -40,6 +41,8 @@ export async function addReaction(data: {
 }): Promise<any> {
   try {
     const insertedReaction = await db.transaction(async (transaction) => {
+      const note = await lockNoteSyncOwner(transaction, data.roteid);
+      if (!note) throw new Error('Note not found');
       await transaction.execute(
         sql`SELECT pg_advisory_xact_lock(hashtext(${reactionLockKey(data)}))`
       );
@@ -103,6 +106,10 @@ export async function addReaction(data: {
           });
         }
       }
+      await createRoteChange(
+        { originid: note.id, roteid: note.id, action: 'UPDATE', userid: note.authorid },
+        transaction
+      );
       return inserted;
     });
 
@@ -120,26 +127,6 @@ export async function addReaction(data: {
       },
     });
 
-    // 记录变更历史（reactions 变化视为笔记更新）
-    try {
-      const [rote] = await db
-        .select({ id: rotes.id, authorid: rotes.authorid })
-        .from(rotes)
-        .where(eq(rotes.id, data.roteid))
-        .limit(1);
-      if (rote) {
-        await createRoteChange({
-          originid: rote.id,
-          roteid: rote.id,
-          action: 'UPDATE',
-          userid: rote.authorid,
-        });
-      }
-    } catch (error) {
-      // 记录变更失败不影响添加反应操作，只记录错误
-      console.error('Failed to record rote change for add reaction:', error);
-    }
-
     return reaction;
   } catch (error) {
     throw new DatabaseError('Failed to add reaction', error);
@@ -154,34 +141,20 @@ export async function removeReaction(data: {
 }): Promise<any> {
   try {
     const result = await db.transaction(async (transaction) => {
+      const note = await lockNoteSyncOwner(transaction, data.roteid);
+      if (!note) return [];
       await transaction.execute(
         sql`SELECT pg_advisory_xact_lock(hashtext(${reactionLockKey(data)}))`
       );
-      return await transaction.delete(reactions).where(reactionIdentity(data)).returning();
-    });
-
-    // 记录变更历史（reactions 变化视为笔记更新）
-    // 只有在成功删除反应时才记录（count > 0）
-    if (result.length > 0) {
-      try {
-        const [rote] = await db
-          .select({ id: rotes.id, authorid: rotes.authorid })
-          .from(rotes)
-          .where(eq(rotes.id, data.roteid))
-          .limit(1);
-        if (rote) {
-          await createRoteChange({
-            originid: rote.id,
-            roteid: rote.id,
-            action: 'UPDATE',
-            userid: rote.authorid,
-          });
-        }
-      } catch (error) {
-        // 记录变更失败不影响删除反应操作，只记录错误
-        console.error('Failed to record rote change for remove reaction:', error);
+      const deleted = await transaction.delete(reactions).where(reactionIdentity(data)).returning();
+      if (deleted.length > 0) {
+        await createRoteChange(
+          { originid: note.id, roteid: note.id, action: 'UPDATE', userid: note.authorid },
+          transaction
+        );
       }
-    }
+      return deleted;
+    });
 
     return { count: result.length };
   } catch (error) {

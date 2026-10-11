@@ -11,7 +11,7 @@ const databaseUrl = process.env.AI_CONVERSATIONS_MIGRATION_DATABASE_URL;
 const databaseDescribe = databaseUrl ? describe : describe.skip;
 
 databaseDescribe('AI conversation history database upgrade', () => {
-  it('upgrades a populated revision-36 schema without altering existing notes or accounts', async () => {
+  it('upgrades a populated revision-37 schema without altering existing notes, accounts or sync cursors', async () => {
     if (!databaseUrl || new URL(databaseUrl).pathname !== '/rote_ai_conversation_migration_test') {
       throw new Error('Use an empty rote_ai_conversation_migration_test database');
     }
@@ -34,7 +34,7 @@ databaseDescribe('AI conversation history database upgrade', () => {
         journalPath,
         JSON.stringify({
           ...journal,
-          entries: journal.entries.filter((entry: { idx: number }) => entry.idx <= 36),
+          entries: journal.entries.filter((entry: { idx: number }) => entry.idx <= 37),
         })
       );
       const database = drizzle(client);
@@ -49,25 +49,38 @@ databaseDescribe('AI conversation history database upgrade', () => {
         INSERT INTO rotes (id, authorid, content, title, tags)
         VALUES (${noteId}, ${userId}, 'Existing note before AI history persistence', 'Existing note', ARRAY['history'])
       `;
+      await client`INSERT INTO rote_sync_states (userid, revision) VALUES (${userId}, 1)`;
+      await client`
+        INSERT INTO rote_changes (originid, roteid, action, userid, revision)
+        VALUES (${noteId}, ${noteId}, 'CREATE', ${userId}, 1)
+      `;
       const usersBefore = await client`SELECT * FROM users WHERE id = ${userId}`;
       const notesBefore = await client`SELECT * FROM rotes WHERE id = ${noteId}`;
+      const cursorsBefore = await client`SELECT * FROM rote_sync_states WHERE userid = ${userId}`;
+      const changesBefore = await client`SELECT * FROM rote_changes WHERE userid = ${userId}`;
       expect(await client`SELECT to_regclass('public.ai_conversations') AS name`).toEqual([
         { name: null },
       ]);
       const [beforeLedger] =
         await client`SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations`;
-      expect(beforeLedger.count).toBe(37);
+      expect(beforeLedger.count).toBe(38);
 
       writeFileSync(
         journalPath,
         JSON.stringify({
           ...journal,
-          entries: journal.entries.filter((entry: { idx: number }) => entry.idx <= 37),
+          entries: journal.entries.filter((entry: { idx: number }) => entry.idx <= 38),
         })
       );
       await migrate(database, { migrationsFolder: folder });
       expect(await client`SELECT * FROM users WHERE id = ${userId}`).toEqual(usersBefore);
       expect(await client`SELECT * FROM rotes WHERE id = ${noteId}`).toEqual(notesBefore);
+      expect(await client`SELECT * FROM rote_sync_states WHERE userid = ${userId}`).toEqual(
+        cursorsBefore
+      );
+      expect(await client`SELECT * FROM rote_changes WHERE userid = ${userId}`).toEqual(
+        changesBefore
+      );
       expect(await client`SELECT * FROM ai_conversations`).toEqual([]);
       const columns = await client`
         SELECT column_name, data_type FROM information_schema.columns
@@ -87,7 +100,7 @@ databaseDescribe('AI conversation history database upgrade', () => {
       const ledgerAfter = await client`
         SELECT id, hash, created_at FROM drizzle.__drizzle_migrations ORDER BY id
       `;
-      expect(ledgerAfter).toHaveLength(38);
+      expect(ledgerAfter).toHaveLength(39);
 
       await migrate(database, { migrationsFolder: folder });
       expect(
@@ -95,6 +108,12 @@ databaseDescribe('AI conversation history database upgrade', () => {
       ).toEqual(ledgerAfter);
       expect(await client`SELECT * FROM users WHERE id = ${userId}`).toEqual(usersBefore);
       expect(await client`SELECT * FROM rotes WHERE id = ${noteId}`).toEqual(notesBefore);
+      expect(await client`SELECT * FROM rote_sync_states WHERE userid = ${userId}`).toEqual(
+        cursorsBefore
+      );
+      expect(await client`SELECT * FROM rote_changes WHERE userid = ${userId}`).toEqual(
+        changesBefore
+      );
       expect(await client`SELECT * FROM ai_conversations`).toEqual([]);
     } finally {
       try {

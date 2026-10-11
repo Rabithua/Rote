@@ -1,136 +1,9 @@
 {
-  "id": "76d4dd85-041e-4790-9170-9f0555d55bf2",
+  "id": "c1d450c7-881d-43af-8305-68ec877343cb",
   "prevId": "731f8400-2d4f-4fc0-97fc-725f5db50d11",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.ai_conversations": {
-      "name": "ai_conversations",
-      "schema": "",
-      "columns": {
-        "owner_id": {
-          "name": "owner_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "id": {
-          "name": "id",
-          "type": "varchar(160)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "revision": {
-          "name": "revision",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp (3) with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp (3) with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp (3) with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "agent_conversation_id": {
-          "name": "agent_conversation_id",
-          "type": "varchar(160)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "messages": {
-          "name": "messages",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'[]'::jsonb"
-        }
-      },
-      "indexes": {
-        "ai_conversations_owner_activity_idx": {
-          "name": "ai_conversations_owner_activity_idx",
-          "columns": [
-            {
-              "expression": "owner_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "updated_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            },
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "ai_conversations_owner_id_users_id_fk": {
-          "name": "ai_conversations_owner_id_users_id_fk",
-          "tableFrom": "ai_conversations",
-          "tableTo": "users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "cascade"
-        }
-      },
-      "compositePrimaryKeys": {
-        "ai_conversations_owner_id_pk": {
-          "name": "ai_conversations_owner_id_pk",
-          "columns": [
-            "owner_id",
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "ai_conversations_positive_revision": {
-          "name": "ai_conversations_positive_revision",
-          "value": "\"ai_conversations\".\"revision\" > 0"
-        },
-        "ai_conversations_messages_array": {
-          "name": "ai_conversations_messages_array",
-          "value": "jsonb_typeof(\"ai_conversations\".\"messages\") = 'array'"
-        },
-        "ai_conversations_empty_tombstone": {
-          "name": "ai_conversations_empty_tombstone",
-          "value": "\"ai_conversations\".\"deleted_at\" IS NULL OR (\"ai_conversations\".\"messages\" = '[]'::jsonb AND \"ai_conversations\".\"agent_conversation_id\" IS NULL)"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.ai_token_usage_logs": {
       "name": "ai_token_usage_logs",
       "schema": "",
@@ -3161,6 +3034,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp (6) with time zone",
@@ -3244,6 +3123,27 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "rote_changes_userid_revision_idx": {
+          "name": "rote_changes_userid_revision_idx",
+          "columns": [
+            {
+              "expression": "userid",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "revision",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -3401,6 +3301,45 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.rote_sync_states": {
+      "name": "rote_sync_states",
+      "schema": "",
+      "columns": {
+        "userid": {
+          "name": "userid",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "revision": {
+          "name": "revision",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rote_sync_states_userid_users_id_fk": {
+          "name": "rote_sync_states_userid_users_id_fk",
+          "tableFrom": "rote_sync_states",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userid"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

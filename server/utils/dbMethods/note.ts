@@ -3,6 +3,7 @@ import { rotes, users } from '../../drizzle/schema';
 import type { SecurityConfig } from '../../types/config';
 import { getGlobalConfig } from '../config';
 import db from '../drizzle';
+import { lockSyncOwner } from '../../sync/journal';
 import { createRoteChange } from './change';
 import { DatabaseError } from './common';
 import { reactionIsVisibleToViewer, subjectIsVisibleToViewer } from './userBlock';
@@ -102,14 +103,24 @@ export async function createRote(data: any): Promise<any> {
     // 不传递 id 字段，让数据库使用 schema 中定义的 defaultRandom() 自动生成
     // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
     // 这确保 createdAt 和 updatedAt 完全一致
-    const [rote] = await db
-      .insert(rotes)
-      .values({
-        ...cleanData,
-        createdAt: sql`now()`,
-        updatedAt: sql`now()`,
-      })
-      .returning();
+    const rote = await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, cleanData.authorid);
+      const [rote] = await tx
+        .insert(rotes)
+        .values({
+          ...cleanData,
+          createdAt: sql`now()`,
+          updatedAt: sql`now()`,
+        })
+        .returning();
+
+      if (!rote) throw new Error('Failed to insert rote');
+      await createRoteChange(
+        { originid: rote.id, roteid: rote.id, action: 'CREATE', userid: rote.authorid },
+        tx
+      );
+      return rote;
+    });
 
     if (!rote) {
       throw new Error('Failed to insert rote: no data returned');
@@ -137,18 +148,6 @@ export async function createRote(data: any): Promise<any> {
     } catch (_queryError) {
       // 如果关联查询失败，至少返回插入的数据
       roteWithRelations = rote;
-    }
-
-    // 记录变更历史
-    try {
-      await createRoteChange({
-        originid: rote.id,
-        roteid: rote.id,
-        action: 'CREATE',
-        userid: rote.authorid,
-      });
-    } catch (_error) {
-      // 记录变更失败不影响创建操作，静默处理
     }
 
     return roteWithRelations;
@@ -240,6 +239,7 @@ export async function editRoteWithState(data: any): Promise<EditRoteWithStateRes
     cleanData.updatedAt = new Date();
 
     const result = await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, data.authorid);
       const [previousRote] = await tx
         .select({ state: rotes.state })
         .from(rotes)
@@ -259,6 +259,11 @@ export async function editRoteWithState(data: any): Promise<EditRoteWithStateRes
       if (!rote) {
         throw new Error('Failed to update note: no data returned');
       }
+
+      await createRoteChange(
+        { originid: rote.id, roteid: rote.id, action: 'UPDATE', userid: rote.authorid },
+        tx
+      );
 
       return {
         previousState: previousRote.state,
@@ -282,18 +287,6 @@ export async function editRoteWithState(data: any): Promise<EditRoteWithStateRes
       },
     });
 
-    // 记录变更历史
-    try {
-      await createRoteChange({
-        originid: result.rote.id,
-        roteid: result.rote.id,
-        action: 'UPDATE',
-        userid: result.rote.authorid,
-      });
-    } catch (_error) {
-      // 记录变更失败不影响更新操作，静默处理
-    }
-
     return {
       nextState: result.rote.state,
       note: roteWithRelations || result.rote,
@@ -311,23 +304,23 @@ export async function editRote(data: any): Promise<any> {
 
 export async function deleteRote(data: any): Promise<any> {
   try {
-    // 在删除前记录变更历史（确保 roteid 存在）
-    try {
-      await createRoteChange({
-        originid: data.id,
-        roteid: data.id,
-        action: 'DELETE',
-        userid: data.authorid,
-      });
-    } catch (_error) {
-      // 记录变更失败不影响删除操作，静默处理
-    }
-
-    const [rote] = await db
-      .delete(rotes)
-      .where(and(eq(rotes.id, data.id), eq(rotes.authorid, data.authorid)))
-      .returning();
-    return rote;
+    return await db.transaction(async (tx) => {
+      await lockSyncOwner(tx, data.authorid);
+      const [note] = await tx
+        .select({ id: rotes.id })
+        .from(rotes)
+        .where(and(eq(rotes.id, data.id), eq(rotes.authorid, data.authorid)));
+      if (!note) return undefined;
+      await createRoteChange(
+        { originid: data.id, roteid: data.id, action: 'DELETE', userid: data.authorid },
+        tx
+      );
+      const [removed] = await tx
+        .delete(rotes)
+        .where(and(eq(rotes.id, data.id), eq(rotes.authorid, data.authorid)))
+        .returning();
+      return removed;
+    });
   } catch (error) {
     throw new DatabaseError(`Failed to delete rote: ${data.id}`, error);
   }
