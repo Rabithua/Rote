@@ -267,6 +267,13 @@
       "when": 1791647281420,
       "tag": "0037_rote_sync_cursor",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791707782945,
+      "tag": "0038_ai_conversation_history",
+      "breakpoints": true
     }
   ]
 }

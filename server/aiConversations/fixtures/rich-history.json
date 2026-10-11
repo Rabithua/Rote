@@ -1,0 +1,184 @@
+{
+  "id": "1791691200000-legacy-web",
+  "revision": 3,
+  "createdAt": "2026-10-11T04:00:00.000Z",
+  "updatedAt": "2026-10-11T04:00:08.000Z",
+  "deletedAt": null,
+  "agentConversationId": "agent_51a215b3-4934-42ec-ae1f-fa09a63d0bc2",
+  "messages": [
+    {
+      "id": "1791691200000-question",
+      "role": "user",
+      "content": "我最近记录的工作重点是什么？",
+      "createdAt": "2026-10-11T04:00:00.000Z"
+    },
+    {
+      "id": "51a215b3-4934-42ec-ae1f-fa09a63d0bc2",
+      "role": "assistant",
+      "content": "最近的重点是完善 Rote 的跨设备体验，包括同步可靠性和 AI 记忆的引用展示。[1]",
+      "createdAt": "2026-10-11T04:00:01.000Z",
+      "error": false,
+      "clarification": false,
+      "saved": true,
+      "sources": [
+        {
+          "sourceType": "rote",
+          "sourceId": "b208a421-522a-4bd5-8a09-d935ad791b71",
+          "similarity": 0.86,
+          "retrievalMode": "recent",
+          "preview": "本周完成笔记同步回归，继续检查 AI 引用和历史记录。",
+          "metadata": {
+            "title": "本周工作",
+            "tags": ["Rote", "工作"],
+            "state": "private",
+            "archived": false,
+            "createdAt": "2026-10-09T02:00:00.000Z",
+            "updatedAt": "2026-10-10T02:00:00.000Z",
+            "retrievalDateField": "createdAt"
+          }
+        }
+      ],
+      "retrieval": {
+        "foundCount": 3,
+        "addedCount": 1,
+        "totalCount": 1,
+        "budgetExhausted": true
+      },
+      "plan": {
+        "originalMessage": "我最近记录的工作重点是什么？",
+        "retrievalNeeded": true,
+        "scope": {
+          "ownerId": "a1000000-0000-4000-8000-000000000001",
+          "query": "最近工作重点",
+          "tags": [],
+          "excludeTags": [],
+          "semanticScope": [],
+          "sourceTypes": ["rote"],
+          "timeRange": {
+            "from": "2026-10-01T00:00:00.000Z",
+            "to": "2026-10-12T00:00:00.000Z",
+            "label": "最近"
+          },
+          "selection": "recent",
+          "dateField": "createdAt",
+          "lifecycleScope": "all",
+          "taskStatusScope": "unspecified",
+          "limit": 30,
+          "cursor": null,
+          "excludeIds": []
+        },
+        "toolResult": null,
+        "clarification": null,
+        "debugTrace": {
+          "toolCalls": [
+            { "step": 1, "name": "rote_search_notes", "args": { "selection": "recent" } }
+          ],
+          "canonicalizedArgs": [],
+          "warnings": [],
+          "probeCounts": [3],
+          "finishReason": "stop"
+        }
+      },
+      "pendingPlan": null,
+      "thinking": {
+        "retrieval_planning": "先查看最近的工作记录。",
+        "answer": "根据引用归纳重复出现的重点。"
+      },
+      "outputs": [
+        {
+          "id": "output-1",
+          "phase": "planning",
+          "text": "我会先查看最近的记录，再归纳重点。",
+          "thinking": "使用最近记录检索。",
+          "thinkingPhase": "retrieval_planning",
+          "kind": "process",
+          "status": {
+            "id": "output-1-sources",
+            "type": "progress",
+            "phase": "retrieving",
+            "status": "done",
+            "updatedAt": "2026-10-11T04:00:02.000Z",
+            "retrieval": {
+              "foundCount": 3,
+              "addedCount": 1,
+              "totalCount": 1,
+              "budgetExhausted": false
+            }
+          }
+        },
+        {
+          "id": "output-2",
+          "phase": "reading",
+          "kind": "process",
+          "status": {
+            "id": "output-2-limit",
+            "type": "tool",
+            "toolStatus": "evidence_limit",
+            "status": "done",
+            "updatedAt": "2026-10-11T04:00:03.000Z"
+          }
+        },
+        {
+          "id": "output-3",
+          "phase": "answering",
+          "thinking": "将同步与引用归为跨设备体验。",
+          "thinkingPhase": "answer",
+          "kind": "answer"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "tool-search",
+          "type": "tool",
+          "toolName": "rote_search_notes",
+          "toolStatus": "retrieving_sources",
+          "status": "done",
+          "updatedAt": "2026-10-11T04:00:02.000Z"
+        }
+      ],
+      "metrics": {
+        "planTime": 510,
+        "sourcesTime": 1210,
+        "firstTokenTime": 2100,
+        "totalTime": 7120,
+        "usage": { "prompt_tokens": 3200, "completion_tokens": 420, "total_tokens": 3620 },
+        "usageByPhase": {
+          "planning": { "prompt_tokens": 900, "completion_tokens": 120, "total_tokens": 1020 },
+          "tool_decision": { "prompt_tokens": 1100, "completion_tokens": 80, "total_tokens": 1180 },
+          "answer": { "prompt_tokens": 1200, "completion_tokens": 220, "total_tokens": 1420 }
+        }
+      }
+    },
+    {
+      "id": "question-2",
+      "role": "user",
+      "content": "能展开说明同步部分吗？",
+      "createdAt": "2026-10-11T04:00:06.000Z"
+    },
+    {
+      "id": "answer-2",
+      "role": "assistant",
+      "content": "同步部分包括",
+      "createdAt": "2026-10-11T04:00:07.000Z",
+      "error": true,
+      "errorDetail": "response_interrupted",
+      "outputs": [
+        {
+          "id": "output-interrupted",
+          "phase": "answering",
+          "kind": "answer",
+          "thinking": "展开同步记录。"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "interrupted-phase",
+          "type": "progress",
+          "phase": "answering",
+          "status": "error",
+          "updatedAt": "2026-10-11T04:00:08.000Z"
+        }
+      ]
+    }
+  ]
+}

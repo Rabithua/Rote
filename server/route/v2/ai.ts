@@ -47,8 +47,10 @@ import {
 import { registerAdminAiRoutes } from './aiAdmin';
 import { registerClientAgentRoutes } from './aiClientAgent';
 import { registerAiStatusRoute } from './aiStatus';
+import aiConversationRouter from '../../aiConversations/routes';
 
 const aiRouter = new Hono<{ Variables: HonoVariables }>();
+aiRouter.route('/conversations', aiConversationRouter);
 const VALID_AI_SOURCE_TYPES = new Set<AiSourceType>(['rote', 'article']);
 
 function getAiMemoryErrorStatus(message: string): 403 | 503 {

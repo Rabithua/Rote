@@ -695,7 +695,7 @@
       },
       "privacy": {
         "title": "Conversation Note",
-        "description": "AI conversations stay in the current browser session and are not persisted to the database."
+        "description": "Conversation history is saved to your account database and available on devices signed in to the same account."
       },
       "sources": {
         "title": "Sources",
@@ -808,6 +808,22 @@
         "clarifyMoreResults": "For which notes would you like to see more results?",
         "saveSuccess": "Saved as article",
         "saveFailed": "Save failed"
+      },
+      "history": {
+        "title": "Conversation history",
+        "new": "New conversation",
+        "delete": "Delete current conversation",
+        "stop": "Stop generating",
+        "untitled": "Untitled conversation",
+        "loading": "Loading conversation history…",
+        "saving": "Syncing conversation…",
+        "load": "Cloud history could not load. Local conversations are retained.",
+        "save": "Sync failed. Unsaved content is retained in this browser.",
+        "conflict": "This conversation was updated or deleted on another device. Unsynced content is retained in this browser.",
+        "storage": "The browser could not save local history. Check available storage.",
+        "retry": "Retry sync",
+        "keepCopy": "Save as a new conversation",
+        "importLegacy": "Import old chats from this browser"
       }
     },
     "explore": {

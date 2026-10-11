@@ -137,6 +137,50 @@ jobs:
       - run: bun run test -- src/utils/chatParameters.test.ts src/utils/personalAiProvider.test.ts src/utils/localAi.test.ts src/utils/localAiAgent.test.ts src/utils/aiStream.test.ts src/state/aiRunManager.test.ts src/components/ai/AgentOutputTrace.test.tsx src/components/ai/AiStreamingMarkdown.test.ts src/components/ai/AiStreamingMarkdown.render.test.tsx
         working-directory: web
 
+  ai-conversation-history:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: conversation_test
+          POSTGRES_DB: rote_ai_conversation_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRESQL_URL: postgres://rote:conversation_test@127.0.0.1:5432/rote_ai_conversation_test
+      AI_CONVERSATIONS_TEST_DATABASE_URL: postgres://rote:conversation_test@127.0.0.1:5432/rote_ai_conversation_test
+      AI_CONVERSATIONS_MIGRATION_DATABASE_URL: postgres://rote:conversation_test@127.0.0.1:5432/rote_ai_conversation_migration_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - name: Prepare migration upgrade database
+        run: psql "$POSTGRESQL_URL" -c 'CREATE DATABASE rote_ai_conversation_migration_test'
+      - run: bun run db:migrate:programmatic
+        working-directory: server
+      - run: bun test aiConversations/migration.integration.test.ts
+        working-directory: server
+      - run: bun test aiConversations/repository.integration.test.ts
+        working-directory: server
+      - run: bun test aiConversations/routes.integration.test.ts
+        working-directory: server
+      - run: bun test embeddings/migrationSnapshot.test.ts
+        working-directory: server
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - run: bun run test -- src/features/ai-conversations src/state/aiRunManager.test.ts src/utils/aiStream.test.ts src/utils/apiSession.test.ts src/utils/__tests__/api.test.ts
+        working-directory: web
+
   embedding-contract:
     runs-on: ubuntu-latest
     steps:

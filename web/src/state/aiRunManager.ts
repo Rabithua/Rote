@@ -5,6 +5,15 @@ import { isAiStreamError } from '@/utils/aiStream';
 import type { PersonalAiProviderConfig, PersonalAiMode } from '@/state/localAi';
 import { localAiAgentStream } from '@/utils/localAiAgent';
 import {
+  getAiConversationRunContext,
+  isAiConversationRunCurrent,
+  isAiConversationScopeReady,
+  persistAiConversationRun,
+  releaseAiConversationRun,
+  registerAiConversationRunLifecycle,
+  type AiConversationRunContext,
+} from '@/features/ai-conversations/runtime';
+import {
   createAiRunHandlers,
   type AiRunLabels,
   type AiRunProgressState,
@@ -33,6 +42,9 @@ type ActiveRun = {
   assistantId: string;
   controller: AbortController;
   cancelOutputs?: () => void;
+  flushOutputs?: () => void;
+  conversation?: AiConversationRunContext;
+  interrupted: string;
 };
 
 type StartAiRunParams = {
@@ -51,6 +63,7 @@ const store = getDefaultStore();
 
 let activeRun: ActiveRun | null = null;
 let activeStream: ActiveStream | null = null;
+let stoppingRunId: string | null = null;
 let isSending = false;
 let seenSourceIds = new Set<string>();
 let agentState: AiAgentClientState = {
@@ -79,7 +92,12 @@ function setRunState(next: { isSending: boolean; assistantId?: string }) {
 }
 
 function isActiveRun(assistantId: string) {
-  return activeRun?.assistantId === assistantId;
+  return (
+    activeRun?.assistantId === assistantId &&
+    (stoppingRunId === assistantId ||
+      !activeRun.conversation ||
+      isAiConversationRunCurrent(activeRun.conversation))
+  );
 }
 
 function setMessagesForActiveRun(
@@ -184,16 +202,52 @@ function mergeAgentState(
   };
 }
 
-export function syncAiRunStateFromMessages(messages: AiMemoryMessage[]) {
+export function syncAiRunStateFromMessages(
+  messages: AiMemoryMessage[],
+  agentConversationId?: string
+) {
   if (isSending) return;
   const nextSeenSourceIds = getSeenSourceIdsForActiveAiPlan(messages);
   seenSourceIds = new Set(nextSeenSourceIds);
   agentState = {
     ...agentState,
+    ...(agentConversationId ? { conversationId: agentConversationId } : {}),
     previousPlan: getLatestAiAssistantPlan(messages),
     seenSourceIds: nextSeenSourceIds,
     stateVersion: 1,
   };
+}
+
+export function stopAiRun() {
+  const run = activeRun;
+  if (!run) return;
+  stoppingRunId = run.assistantId;
+  run.flushOutputs?.();
+  flushStreamContent(run.assistantId, { force: true });
+  run.controller.abort();
+  run.cancelOutputs?.();
+  store.set(aiChatMessagesAtom, (messages) =>
+    messages.map((message) =>
+      message.id === run.assistantId
+        ? settleAiMessageTimeline(
+            { ...message, isStreaming: false, error: true, errorDetail: run.interrupted },
+            'error'
+          )
+        : message
+    )
+  );
+  persistAiConversationRun(
+    run.conversation,
+    store.get(aiChatMessagesAtom),
+    agentState.conversationId
+  );
+  releaseAiConversationRun(run.conversation);
+  if (activeStream?.frame !== null && activeStream?.frame !== undefined)
+    window.cancelAnimationFrame(activeStream.frame);
+  activeRun = null;
+  activeStream = null;
+  setRunState({ isSending: false });
+  stoppingRunId = null;
 }
 
 export function clearAiRun() {
@@ -234,7 +288,7 @@ export function getAiRunFailureMessage(error: unknown, labels: AiRunLabels): str
 
 export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
   const question = params.question.trim();
-  if (!question || isSending || params.unavailable) return false;
+  if (!question || isSending || params.unavailable || !isAiConversationScopeReady()) return false;
 
   const validHistory = params.messages
     .filter((message) => !message.error && !message.isStreaming && message.content)
@@ -243,6 +297,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
 
   const activePendingPlan = params.ignorePendingPlan ? null : params.pendingPlan;
   const assistantId = createAiMessageId();
+  const conversation = getAiConversationRunContext();
   const controller = new AbortController();
   const progress: AiRunProgressState = {
     currentIsMore: false,
@@ -250,7 +305,12 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
   };
   const start = performance.now();
 
-  activeRun = { assistantId, controller };
+  activeRun = {
+    assistantId,
+    controller,
+    conversation,
+    interrupted: params.labels.streamInterrupted,
+  };
   activeStream = {
     id: assistantId,
     content: '',
@@ -266,15 +326,18 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       id: createAiMessageId(),
       role: 'user',
       content: question,
+      createdAt: new Date().toISOString(),
     },
     {
       id: assistantId,
       role: 'assistant',
       content: '',
+      createdAt: new Date().toISOString(),
       sources: [],
       isStreaming: true,
     },
   ]);
+  persistAiConversationRun(conversation, store.get(aiChatMessagesAtom), agentState.conversationId);
 
   let agentHandlers: AiRunHandlers | undefined;
   try {
@@ -316,6 +379,7 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       mergeAgentState,
     });
     activeRun.cancelOutputs = agentHandlers.cancelOutputs;
+    activeRun.flushOutputs = agentHandlers.flushOutputs;
 
     if (isPersonalAgent) {
       await localAiAgentStream({
@@ -392,6 +456,12 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
       activeStream = null;
     }
     if (finishingActiveRun) {
+      persistAiConversationRun(
+        conversation,
+        store.get(aiChatMessagesAtom),
+        agentState.conversationId
+      );
+      releaseAiConversationRun(conversation);
       activeRun = null;
       setRunState({ isSending: false });
     }
@@ -399,3 +469,10 @@ export async function startAiRun(params: StartAiRunParams): Promise<boolean> {
 
   return true;
 }
+
+registerAiConversationRunLifecycle({
+  stop: stopAiRun,
+  reset: clearAiRun,
+  restore: (messages, agentConversationId) =>
+    syncAiRunStateFromMessages(messages, agentConversationId || createAiMessageId()),
+});

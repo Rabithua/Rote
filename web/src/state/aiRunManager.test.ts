@@ -156,7 +156,7 @@ it('drops pending fragments and late events when the active run is cleared', () 
   expect(update).not.toHaveBeenCalled();
 });
 
-it('batches frequent text and thinking fragments into one storage update per frame', () => {
+it('batches frequent text and thinking fragments into one state update per frame without persistence', () => {
   const frames: FrameRequestCallback[] = [];
   vi.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
     frames.push(callback);
@@ -166,6 +166,10 @@ it('batches frequent text and thinking fragments into one storage update per fra
     { id: 'answer', role: 'assistant', content: '' },
   ];
   const storage = vi.spyOn(Storage.prototype, 'setItem');
+  const update = vi.fn((_id, updater) => {
+    messages = updater(messages);
+    getDefaultStore().set(aiChatMessagesAtom, messages);
+  });
   const handlers = createAiRunHandlers({
     assistantId: 'answer',
     labels,
@@ -173,10 +177,7 @@ it('batches frequent text and thinking fragments into one storage update per fra
     startedAt: performance.now(),
     seenSourceIds: new Set(),
     isActiveRun: () => true,
-    setMessagesForActiveRun: (_id, updater) => {
-      messages = updater(messages);
-      getDefaultStore().set(aiChatMessagesAtom, messages);
-    },
+    setMessagesForActiveRun: update,
     queueStreamDelta: () => {},
     mergeAgentState: () => {},
   });
@@ -187,7 +188,8 @@ it('batches frequent text and thinking fragments into one storage update per fra
   expect(frames).toHaveLength(1);
   expect(storage).not.toHaveBeenCalled();
   frames[0](performance.now());
-  expect(storage).toHaveBeenCalledTimes(1);
+  expect(storage).not.toHaveBeenCalled();
+  expect(update).toHaveBeenCalledTimes(1);
   expect(messages[0].outputs?.[0]).toMatchObject({
     text: 'x'.repeat(100),
     thinking: 'y'.repeat(100),

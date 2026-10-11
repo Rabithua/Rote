@@ -12,12 +12,7 @@ import {
 } from '@/state/aiChat';
 import { getAiStatus } from '@/utils/aiApi';
 import { personalAiSettingsAtom, withPersonalAiDefaults } from '@/state/localAi';
-import {
-  clearAiRun,
-  isAiRunActive,
-  startAiRun,
-  syncAiRunStateFromMessages,
-} from '@/state/aiRunManager';
+import { isAiRunActive, startAiRun, syncAiRunStateFromMessages } from '@/state/aiRunManager';
 import { useAPIGet } from '@/utils/fetcher';
 import { useAtom } from 'jotai';
 import {
@@ -29,7 +24,6 @@ import {
   Loader,
   Send,
   Sparkles,
-  Trash2,
 } from 'lucide-react';
 import {
   type FormEvent,
@@ -45,11 +39,18 @@ import { AiMemorySidebar } from './components/AiMemorySidebar';
 import { PersonalAiDialog } from './components/PersonalAiDialog';
 import { useAiRunLabels } from './hooks/useAiRunLabels';
 import { usePersonalAiTesting } from './hooks/usePersonalAiTesting';
+import {
+  AiConversationControls,
+  AiConversationSyncStatus,
+} from '@/features/ai-conversations/AiConversationControls';
+import { aiConversationViewAtom } from '@/features/ai-conversations/runtime';
+import { useAtomValue } from 'jotai';
 
 function AiMemoryPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.aiMemory' });
   const [messages, setMessages] = useAtom(aiChatMessagesAtom);
   const [runState] = useAtom(aiRunStateAtom);
+  const history = useAtomValue(aiConversationViewAtom);
   const [personalAiSettings, setPersonalAiSettings] = useAtom(personalAiSettingsAtom);
   const personalAi = useMemo(
     () => withPersonalAiDefaults(personalAiSettings),
@@ -100,7 +101,9 @@ function AiMemoryPage() {
     Boolean(activePersonalConfig.baseUrl.trim()) &&
     Boolean(activePersonalConfig.model.trim());
   const unavailable =
-    !isStatusLoading && (isPersonalModelMode ? !personalAiReady : status?.available !== true);
+    !history.scopeKey ||
+    history.isLoading ||
+    (!isStatusLoading && (isPersonalModelMode ? !personalAiReady : status?.available !== true));
   const unavailableText = isPersonalModelMode
     ? t('personal.personalUnavailable')
     : status?.chatAllowed === false
@@ -161,11 +164,6 @@ function AiMemoryPage() {
     if (isSending) return;
     syncAiRunStateFromMessages(messages);
   }, [messages, isSending]);
-
-  const clearChat = useCallback(() => {
-    setIsAutoScrollPaused(false);
-    clearAiRun();
-  }, []);
 
   async function sendMessage(value: string, options: { ignorePendingPlan?: boolean } = {}) {
     const question = value.trim();
@@ -250,21 +248,10 @@ function AiMemoryPage() {
       <NavBar title={t('title')} icon={<BrainCircuit className="size-5" />}>
         <div className="ml-auto flex items-center gap-2">
           {isSending && <Loader className="size-4 animate-spin" />}
-          {messages.length > 0 && !isSending && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8"
-              onClick={clearChat}
-              aria-label={t('clear')}
-              title={t('clear')}
-            >
-              <Trash2 className="size-4" />
-            </Button>
-          )}
+          <AiConversationControls isSending={isSending} hasMessages={messages.length > 0} />
         </div>
       </NavBar>
+      <AiConversationSyncStatus />
 
       <div className="flex min-h-[calc(100dvh-var(--nav-height,56px))] flex-col">
         <div className="flex-1 divide-y">
