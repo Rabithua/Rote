@@ -1,6 +1,6 @@
 import { useAtomValue } from 'jotai';
 import { useTranslation } from 'react-i18next';
-import { History, Plus, Square, Trash2 } from 'lucide-react';
+import { History, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { stopAiRun } from '@/state/aiRunManager';
 import {
   aiConversationViewAtom,
   deleteAiConversation,
@@ -31,19 +30,6 @@ export function AiConversationControls({
   const history = view.conversations.filter((conversation) => conversation.messages.length);
   return (
     <div className="flex items-center gap-1">
-      {isSending && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="size-8"
-          onClick={stopAiRun}
-          aria-label={t('stop')}
-          title={t('stop')}
-        >
-          <Square className="size-4" />
-        </Button>
-      )}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
