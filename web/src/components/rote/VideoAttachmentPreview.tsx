@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils';
+import { RemoteImage } from '@/components/images/RemoteImage';
 import { Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { useRef, useState, type SyntheticEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -55,8 +56,9 @@ export function VideoAttachmentPreview({
     if (posterSrc) {
       return (
         <div className={cn('relative h-full w-full overflow-hidden bg-black', className)}>
-          <img
+          <RemoteImage
             className={cn('h-full w-full bg-black object-contain', mediaClassName)}
+            imageClassName={cn('object-contain', mediaClassName)}
             src={posterSrc}
             alt=""
           />

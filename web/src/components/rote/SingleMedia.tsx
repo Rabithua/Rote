@@ -4,6 +4,7 @@ import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
 import { LivePhotoAttachmentPreview } from './LivePhotoAttachmentPreview';
 import { VideoAttachmentPreview } from './VideoAttachmentPreview';
 import type { PostMediaItem } from './postMediaModel';
+import { imageRatio } from '@/components/images/imageGeometry';
 
 type SingleMediaProps = {
   media: PostMediaItem;
@@ -35,6 +36,9 @@ export function SingleMedia({ media, withTimeStamp }: SingleMediaProps) {
         previewSrc={previewSrc}
         thumbnailSrc={media.thumbnail || ''}
         crossOrigin={withTimeStamp ? 'anonymous' : undefined}
+        intrinsic
+        aspectRatio={imageRatio(attachment.details?.width, attachment.details?.height)}
+        layoutKey={`single:${attachment.id}:${media.thumbnail}`}
       />
     );
   }
@@ -45,6 +49,9 @@ export function SingleMedia({ media, withTimeStamp }: SingleMediaProps) {
       containerClassName="relative w-full overflow-hidden rounded-2xl border-[0.5px]"
       crossOrigin={withTimeStamp ? 'anonymous' : undefined}
       imageClassName="bg-foreground/3 block w-full object-cover"
+      intrinsic
+      aspectRatio={imageRatio(attachment.details?.width, attachment.details?.height)}
+      layoutKey={`single:${attachment.id}:${media.thumbnail}`}
       heicOriginalSrc={isHeicLikeAttachment(attachment) ? attachment.url : undefined}
       previewSrc={previewSrc}
       src={media.thumbnail || ''}

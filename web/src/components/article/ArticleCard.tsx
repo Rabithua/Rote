@@ -13,6 +13,7 @@ import { useAtomValue } from 'jotai';
 import { Check, Edit, Link, MoreVertical, Newspaper, Trash2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RemoteImage } from '@/components/images/RemoteImage';
 
 interface ArticleCardProps {
   article: Article | ArticleSummary;
@@ -107,16 +108,7 @@ export function ArticleCard({
       >
         <div className="bg-foreground/5 flex size-18 shrink-0 items-center justify-center">
           {coverImage ? (
-            <img
-              src={coverImage}
-              alt=""
-              className="size-full object-cover"
-              onError={(e) => {
-                // 图片加载失败时隐藏，显示后备图标
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling?.classList.remove('hidden');
-              }}
-            />
+            <RemoteImage src={coverImage} alt="" className="size-full object-cover" />
           ) : null}
           <div
             className={`text-primary flex size-full items-center justify-center ${

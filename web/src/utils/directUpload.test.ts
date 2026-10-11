@@ -40,6 +40,13 @@ function makeAttachment(overrides: Partial<Attachment>): Attachment {
 }
 
 describe('attachment image display sources', () => {
+  it('keeps animated GIF bytes for thumbnails instead of a static compressed preview', () => {
+    const attachment = makeAttachment({
+      url: 'https://cdn.example.com/animation.gif',
+      details: { mimetype: 'image/gif' },
+    });
+    expect(getAttachmentImageThumbnailSrc(attachment)).toBe(attachment.url);
+  });
   it('uses the compressed still when previewing a Live Photo', () => {
     const attachment = makeAttachment({
       url: 'https://cdn.example.com/users/u/uploads/live.HEIC',

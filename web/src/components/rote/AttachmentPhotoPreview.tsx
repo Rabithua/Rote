@@ -1,6 +1,6 @@
-import { useState, type SyntheticEvent } from 'react';
+import type { SyntheticEvent } from 'react';
 import { PhotoView } from 'react-photo-view';
-import { AttachmentImage } from './AttachmentImage';
+import { RemoteImage } from '@/components/images/RemoteImage';
 import { HeicPhotoViewer } from './HeicPhotoViewer';
 
 interface AttachmentPhotoPreviewProps {
@@ -14,6 +14,9 @@ interface AttachmentPhotoPreviewProps {
   src: string;
   width?: number;
   unavailableLabel?: string;
+  intrinsic?: boolean;
+  aspectRatio?: number;
+  layoutKey?: string;
   onImageLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
 }
 
@@ -29,20 +32,26 @@ export function AttachmentPhotoPreview({
   width,
   unavailableLabel,
   onImageLoad,
+  intrinsic,
+  aspectRatio,
+  layoutKey,
 }: AttachmentPhotoPreviewProps) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const unavailable = !previewSrc || !src || failedSrc === src;
+  const unavailable = !previewSrc || !src;
   const content = (
     <div className={containerClassName}>
-      <AttachmentImage
+      <RemoteImage
         className={imageClassName}
+        imageClassName={imageClassName}
+        intrinsic={intrinsic}
+        aspectRatio={aspectRatio}
+        layoutKey={layoutKey}
+        allowsRetry
         crossOrigin={crossOrigin}
         height={height}
         width={width}
         src={unavailable ? '' : src}
         alt={alt}
         draggable={false}
-        onUnavailable={() => setFailedSrc(src)}
         onLoad={onImageLoad}
         unavailableLabel={unavailableLabel}
       />

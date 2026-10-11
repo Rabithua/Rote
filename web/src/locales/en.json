@@ -2165,6 +2165,21 @@
       "createFailed": "Could not create the share link. Please try again.",
       "stopFailed": "Could not stop sharing. Please try again.",
       "stopped": "Sharing stopped"
+    },
+    "images": {
+      "unavailable": "Image unavailable",
+      "retry": "Reload image",
+      "preview": {
+        "title": "Image loading preview",
+        "replay": "Replay loading",
+        "redisplay": "Show cached images again",
+        "firstLoad": "First load and fixed surfaces",
+        "longImage": "Long image and size adjustment",
+        "failure": "Failure and retry",
+        "offscreen": "Scroll stability",
+        "description": "Local fixtures use delayed responses and a separate cache. Your account and real image cache are unchanged.",
+        "hint": "Wait for loading, then show cached images again. Tap the failed image to retry, or scroll away before the long image arrives."
+      }
     }
   },
   "article": {

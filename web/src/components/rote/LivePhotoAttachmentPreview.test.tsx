@@ -150,11 +150,11 @@ describe('LivePhotoAttachmentPreview', () => {
     );
 
     expect(container.querySelector('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
+    expect(screen.getByRole('img', { name: 'unavailable' })).toBeVisible();
     expect(screen.queryByTestId('photo-view')).not.toBeInTheDocument();
   });
 
-  it('removes the invalid PhotoView target after the compatible still fails to load', () => {
+  it('can reload a failed compatible still without replacing the preview frame', () => {
     const { container } = render(
       <LivePhotoAttachmentPreview
         attachment={makeLivePhotoAttachment()}
@@ -167,8 +167,12 @@ describe('LivePhotoAttachmentPreview', () => {
     expect(screen.getByTestId('photo-view')).toBeInTheDocument();
     fireEvent.error(thumbnail!);
 
-    expect(container.querySelector('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
-    expect(screen.queryByTestId('photo-view')).not.toBeInTheDocument();
+    expect(container.querySelector('.remote-image img')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'retry' }));
+    expect(container.querySelector('.remote-image img')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/users/u/compressed/missing.jpg'
+    );
+    expect(screen.getByTestId('photo-view')).toBeInTheDocument();
   });
 });

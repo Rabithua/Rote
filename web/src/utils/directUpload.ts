@@ -278,6 +278,9 @@ export function isHeicLikeAttachment(attachment: File | AttachmentMedia) {
 }
 
 export function getAttachmentImageThumbnailSrc(attachment: AttachmentMedia) {
+  if (attachment.details?.mimetype?.toLowerCase() === 'image/gif') {
+    return attachment.url || attachment.compressUrl || '';
+  }
   const compatibleStill = attachment.compressUrl || attachment.posterUrl || '';
   if (isHeicLikeAttachment(attachment)) {
     return compatibleStill;

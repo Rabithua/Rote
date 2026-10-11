@@ -143,7 +143,7 @@ describe('PostMedia', () => {
     const { container } = render(<PostMedia attachments={[attachment]} />);
 
     expect(container.querySelector('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
+    expect(screen.getByRole('img', { name: 'unavailable' })).toBeVisible();
     expect(container.firstElementChild).toHaveClass('w-full', 'max-w-[500px]');
     expect(container.querySelector('.post-media-rail')).not.toBeInTheDocument();
   });
@@ -185,7 +185,7 @@ describe('PostMedia', () => {
     expect(displayMediaRatio(Number.NaN)).toBe(1);
   });
 
-  it('updates a legacy image ratio after its dimensions load', () => {
+  it('retains reserved rail geometry when a legacy thumbnail arrives late', () => {
     const { container } = render(<PostMedia attachments={mockAttachments} />);
     const image = container.querySelector<HTMLImageElement>('.post-media-item:nth-child(2) img')!;
     Object.defineProperties(image, {
@@ -197,6 +197,6 @@ describe('PostMedia', () => {
       container
         .querySelectorAll<HTMLElement>('.post-media-item')[1]
         .style.getPropertyValue('--display-ratio')
-    ).toBe('1.25');
+    ).toBe('1');
   });
 });
