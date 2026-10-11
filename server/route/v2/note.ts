@@ -23,6 +23,13 @@ import { NoteCreateZod, NoteUpdateZod, SearchKeywordZod } from '../../utils/zod'
 // 笔记相关路由
 const notesRouter = new Hono<{ Variables: HonoVariables }>();
 
+async function authenticateBatchRead(c: HonoContext, next: () => Promise<void>) {
+  // A supplied credential must authenticate; a partial guest result cannot
+  // acknowledge the private note bodies requested by synchronization.
+  const authenticate = c.req.header('authorization') !== undefined ? authenticateJWT : optionalJWT;
+  return authenticate(c, next);
+}
+
 // 创建笔记
 notesRouter.post('/', authenticateJWT, bodyTypeCheck, async (c: HonoContext) => {
   const body = await c.req.json();
@@ -381,7 +388,7 @@ notesRouter.get('/public', optionalJWT, async (c: HonoContext) => {
 });
 
 // 批量获取笔记
-notesRouter.post('/batch', optionalJWT, bodyTypeCheck, async (c: HonoContext) => {
+notesRouter.post('/batch', authenticateBatchRead, bodyTypeCheck, async (c: HonoContext) => {
   const user = c.get('user') as User | undefined;
   const body = await c.req.json();
   const { ids } = body as { ids: string[] };

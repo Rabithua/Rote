@@ -85,7 +85,7 @@ function scheduleUpdatedEffects(note: Rote, previousState: string, refreshLinkPr
   if (refreshLinkPreviews) {
     trackBackgroundTask(
       (async () => {
-        await deleteRoteLinkPreviewsByRoteId(note.id);
+        await deleteRoteLinkPreviewsByRoteId(note.id, note.content);
         if (!note.articleId) await parseAndStoreRoteLinkPreviews(note.id, note.content);
       })(),
       'link_preview_update_failed'

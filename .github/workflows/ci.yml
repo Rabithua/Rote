@@ -96,7 +96,9 @@ jobs:
         env:
           NOTE_ACTIONS_TEST_DATABASE_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test
       - name: Test ordered sync protocol
-        run: bun test sync
+        run: |
+          bun test sync/cursor.test.ts sync/repository.integration.test.ts
+          bun test sync/noteContent.integration.test.ts
         working-directory: server
         env:
           SYNC_TEST_DATABASE_URL: postgres://rote:sharing_test@127.0.0.1:5432/rote_sharing_test

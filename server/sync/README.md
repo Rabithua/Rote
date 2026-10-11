@@ -5,6 +5,8 @@ These authenticated endpoints live under `/v2/api/sync` and use the existing res
 - `GET /snapshot` returns `{ noteIds: string[], cursor: string }`. Both fields come from one PostgreSQL repeatable-read snapshot. IDs include every note owned by the account, including archived notes. Fetch note bodies through the existing `POST /v2/api/notes/batch` endpoint in batches of at most 100.
 - `GET /changes?cursor=...&limit=100` returns `{ changes: [{ id, originid, action, revision }], nextCursor, hasMore }`. Actions are `CREATE`, `UPDATE`, and `DELETE`; revisions are decimal strings. Pages are ordered by revision and retain the first page's upper boundary until `hasMore` is false. Treat cursors as opaque and account-specific. Save `nextCursor` only after all pages and fetched bodies have been applied and saved locally.
 
+`POST /notes/batch` requires valid authentication whenever an Authorization header is supplied; invalid credentials return HTTP 401 instead of a partial guest result. Requests without credentials retain public-note access. Background link-preview writes and removals publish note updates in the same transaction, including the parent timestamp for legacy clients. Results for superseded note content are ignored; webpage fetches stay outside the transaction.
+
 Full reconciliation starts with `/snapshot`, loads its notes, and consumes changes after its cursor. Remove previously synced local notes absent from the final membership, while preserving pending local edits/uploads. An empty snapshot and empty feed still produce a valid checkpoint.
 
 The per-account revision row is advanced in the same transaction as each note mutation and its journal entries. Its lock lasts through commit, preventing later revisions from committing first. Bulk writes allocate a contiguous range with one counter update. No persistent snapshot, worker, media processing, or periodic scan is introduced.
@@ -18,4 +20,7 @@ Database regression tests use an isolated migrated PostgreSQL database:
 ```sh
 SYNC_TEST_DATABASE_URL=postgresql://... bun test sync/repository.integration.test.ts
 bun test sync/cursor.test.ts
+SYNC_TEST_DATABASE_URL=postgresql://... bun test sync/noteContent.integration.test.ts
 ```
+
+Run the database suites in separate Bun processes: each owns and closes the application's shared database pool and initializes its own authentication configuration.
