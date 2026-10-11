@@ -145,6 +145,11 @@ export async function findRoteChangesByUserId(
   }
 }
 
+/**
+ * Legacy timestamp-sync reader, retained for released clients until the planned
+ * 2026-11 retirement. Keep timestamps, pagination, filters and response fields
+ * compatible; the cursor-based sync reader lives in sync/repository.ts.
+ */
 export async function findRoteChangesAfterTimestamp(
   timestamp: Date | string,
   userid?: string,

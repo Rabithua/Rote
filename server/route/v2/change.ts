@@ -97,7 +97,10 @@ changeRouter.get('/user', authenticateJWT, async (c: HonoContext) => {
   return c.json(createResponse(changes), 200);
 });
 
-// 获取指定时间戳之后的变更记录（用于iOS客户端同步）
+// Legacy timestamp sync: keep this route and its request/response contract available
+// to released clients during the transition. Planned retirement: 2026-11 (exact
+// cutoff pending). New clients use /v2/api/sync/snapshot and /v2/api/sync/changes.
+// Do not retire shared /notes or /notes/batch endpoints with this sync route.
 changeRouter.get('/after', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const timestamp = c.req.query('timestamp');
