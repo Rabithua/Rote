@@ -837,6 +837,13 @@ export const settings = pgTable(
 );
 
 // Rote Changes 表
+export const roteSyncStates = pgTable('rote_sync_states', {
+  userid: uuid('userid')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  revision: bigint('revision', { mode: 'bigint' }).notNull(),
+});
+
 export const roteChanges = pgTable(
   'rote_changes',
   {
@@ -845,6 +852,8 @@ export const roteChanges = pgTable(
     roteid: uuid('roteid'),
     action: varchar('action', { length: 50 }).notNull().default('CREATE'),
     userid: uuid('userid').notNull(),
+    // Historical audit rows stay unversioned; a snapshot initializes new sync clients.
+    revision: bigint('revision', { mode: 'bigint' }),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => ({
@@ -858,6 +867,10 @@ export const roteChanges = pgTable(
       table.createdAt
     ),
     useridIdx: index('rote_changes_userid_idx').on(table.userid),
+    useridRevisionIdx: uniqueIndex('rote_changes_userid_revision_idx').on(
+      table.userid,
+      table.revision
+    ),
     roteidActionIdx: index('rote_changes_roteid_action_idx').on(table.roteid, table.action),
     roteidFk: foreignKey({
       columns: [table.roteid],

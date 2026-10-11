@@ -137,16 +137,19 @@ export async function parseAndStoreRoteLinkPreviews(
         return;
       }
 
-      await upsertRoteLinkPreview({
-        roteid,
-        url,
-        title,
-        description,
-        image,
-        siteName,
-        contentExcerpt: description || title || null,
-        score,
-      });
+      await upsertRoteLinkPreview(
+        {
+          roteid,
+          url,
+          title,
+          description,
+          image,
+          siteName,
+          contentExcerpt: description || title || null,
+          score,
+        },
+        content
+      );
     })
   );
 }
