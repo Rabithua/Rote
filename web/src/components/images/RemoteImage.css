@@ -100,7 +100,7 @@ button.remote-image__failure {
     opacity: 0.08;
   }
   50% {
-    opacity: 0.3;
+    opacity: 0.14;
   }
 }
 
@@ -112,6 +112,6 @@ button.remote-image__failure {
 
   .remote-image__breath {
     animation: none;
-    opacity: 0.16;
+    opacity: 0.11;
   }
 }

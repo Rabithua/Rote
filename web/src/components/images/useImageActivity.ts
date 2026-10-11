@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 
 export function imageIsVisible(element: HTMLElement | null) {
   if (!element || document.visibilityState === 'hidden') return false;
@@ -19,11 +19,11 @@ export function useImageActivity(
   freezeGeometry: () => void,
   attempt: number
 ) {
+  const wasVisible = useRef(false);
   useEffect(() => {
     const element = surface.current;
     if (!element) return;
     let frame = 0;
-    let wasVisible = false;
     const update = () => {
       const visible = imageIsVisible(element);
       element.dataset.imageActive = String(visible);
@@ -36,10 +36,10 @@ export function useImageActivity(
             if (imageIsVisible(element)) recordPlaceholder();
           });
         });
-      } else if (wasVisible) {
+      } else if (wasVisible.current) {
         freezeGeometry();
       }
-      wasVisible = visible;
+      wasVisible.current = visible;
     };
     const observer = new IntersectionObserver(update);
     observer.observe(element);
@@ -49,7 +49,9 @@ export function useImageActivity(
       cancelAnimationFrame(frame);
       observer.disconnect();
       document.removeEventListener('visibilitychange', update);
-      freezeGeometry();
+      // Strict Mode probes effects while the surface is still mounted.
+      // Only a removed, previously visible row needs to retain its geometry.
+      if (!element.isConnected && wasVisible.current) freezeGeometry();
     };
   }, [surface, recordPlaceholder, freezeGeometry, attempt]);
 }

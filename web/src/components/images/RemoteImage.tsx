@@ -9,7 +9,7 @@ import {
   type SyntheticEvent,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getSettledImageRatio, settleImageRatio } from './imageGeometry';
+import { getSettledImageRatio, imageRatio, settleImageRatio } from './imageGeometry';
 import { imageIsVisible, useImageActivity } from './useImageActivity';
 import './RemoteImage.css';
 
@@ -68,9 +68,32 @@ function ImageSurface({
   };
   const freezeGeometry = useCallback(() => {
     if (!intrinsic) return;
+    if (phaseRef.current === 'resizing' && surface.current) {
+      const { width, height } = surface.current.getBoundingClientRect();
+      const displayedRatio = imageRatio(width, height);
+      if (displayedRatio) {
+        ratioRef.current = displayedRatio;
+        setRatio(displayedRatio);
+      }
+      // Stop an offscreen size transition at its current bounds before revealing.
+      setFade(false);
+      phaseRef.current = 'ready';
+      setPhase('ready');
+    }
     geometryLocked.current = true;
     settleImageRatio(geometryKey, ratioRef.current);
   }, [geometryKey, intrinsic]);
+  useLayoutEffect(
+    () => () => {
+      // Capture animated bounds before DOM removal; activity cleanup only
+      // commits this ratio when the row has actually unmounted.
+      if (phaseRef.current !== 'resizing' || !surface.current) return;
+      const { width, height } = surface.current.getBoundingClientRect();
+      const displayedRatio = imageRatio(width, height);
+      if (displayedRatio) ratioRef.current = displayedRatio;
+    },
+    []
+  );
   const recordPlaceholder = useCallback(() => {
     if (phaseRef.current === 'loading' || phaseRef.current === 'resizing') {
       placeholderWasVisible.current = true;
@@ -90,13 +113,16 @@ function ImageSurface({
     const naturalRatio = element.naturalWidth / element.naturalHeight;
     if (intrinsic && !geometryLocked.current && Number.isFinite(naturalRatio) && naturalRatio > 0) {
       const visible = imageIsVisible(surface.current);
-      geometryLocked.current = true;
-      if (visible) {
+      if (!visible && placeholderWasVisible.current) {
+        freezeGeometry();
+      } else {
+        geometryLocked.current = true;
         const changesSize = Math.abs(ratioRef.current - naturalRatio) > 0.001;
         ratioRef.current = naturalRatio;
         setRatio(naturalRatio);
         settleImageRatio(geometryKey, naturalRatio);
         if (
+          visible &&
           changesSize &&
           placeholderWasVisible.current &&
           !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -104,8 +130,6 @@ function ImageSurface({
           updatePhase('resizing');
           return;
         }
-      } else {
-        freezeGeometry();
       }
     }
     reveal();

@@ -1,7 +1,7 @@
 import '@/styles/index.css';
 import '@/utils/i18n';
 import { createRoot } from 'react-dom/client';
-import { useEffect, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PhotoProvider } from 'react-photo-view';
 import { RemoteImage } from '@/components/images/RemoteImage';
@@ -145,7 +145,9 @@ function ImageLoadingPreview() {
 }
 
 createRoot(document.getElementById('root')!).render(
-  <MemoryRouter>
-    <ImageLoadingPreview />
-  </MemoryRouter>
+  <StrictMode>
+    <MemoryRouter>
+      <ImageLoadingPreview />
+    </MemoryRouter>
+  </StrictMode>
 );
