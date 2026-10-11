@@ -260,6 +260,13 @@
       "when": 1791512313240,
       "tag": "0036_ai_usage_statistics",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791690121496,
+      "tag": "0037_ai_conversation_history",
+      "breakpoints": true
     }
   ]
 }

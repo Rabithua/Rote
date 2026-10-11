@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import type { ConversationTimeline } from '@/features/ai-conversations/types';
 import type {
   AiAgentPhase,
   AiRetrievalSummary,
@@ -28,9 +28,10 @@ export type AiMessageTimelineItem = {
   phase?: AiAgentPhase;
   toolName?: string;
   toolStatus?: AiAgentToolProgressStatus;
-  message: string;
+  message?: string;
   status: 'running' | 'done' | 'error';
   updatedAt: number;
+  canonicalRetrieval?: AiRetrievalSummary;
 };
 
 export type AiOutputStatus =
@@ -44,6 +45,7 @@ export type AiMemoryMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  createdAt?: string;
   outputs?: {
     outputId: string;
     phase: AiAgentPhase;
@@ -51,12 +53,13 @@ export type AiMemoryMessage = {
     thinking?: string;
     thinkingPhase?: AiThinkingPhase;
     status?: AiOutputStatus;
+    canonicalStatus?: ConversationTimeline;
     kind?: 'process' | 'answer';
   }[];
   sources?: AiSemanticResult[];
   retrieval?: AiRetrievalSummary;
-  plan?: PlannerAgentDto;
-  pendingPlan?: PlannerAgentDto;
+  plan?: PlannerAgentDto | null;
+  pendingPlan?: PlannerAgentDto | null;
   clarification?: boolean;
   error?: boolean;
   errorDetail?: string;
@@ -200,7 +203,7 @@ export function getSeenSourceIdsForActiveAiPlan(messages: AiMemoryMessage[]): st
   return sanitizeAiSourceKeys(ids);
 }
 
-export const aiChatMessagesAtom = atomWithStorage<AiMemoryMessage[]>('aiChatMessages', []);
+export const aiChatMessagesAtom = atom<AiMemoryMessage[]>([]);
 
 export type AiRunState = {
   isSending: boolean;

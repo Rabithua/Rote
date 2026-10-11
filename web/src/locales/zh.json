@@ -685,7 +685,7 @@
       },
       "privacy": {
         "title": "对话说明",
-        "description": "AI 对话只保存在当前浏览器会话中，不会持久化写入数据库。"
+        "description": "对话记录会保存到当前账号的数据库，可在登录同一账号的设备上继续查看。"
       },
       "sources": {
         "title": "来源",
@@ -798,6 +798,22 @@
         "clarifyMoreResults": "你想看哪一类笔记的更多结果？",
         "saveSuccess": "已保存为文章",
         "saveFailed": "保存失败"
+      },
+      "history": {
+        "title": "历史对话",
+        "new": "新对话",
+        "delete": "删除当前对话",
+        "stop": "停止生成",
+        "untitled": "未命名对话",
+        "loading": "正在读取对话历史…",
+        "saving": "正在同步对话…",
+        "load": "无法读取云端历史，本地记录已保留。",
+        "save": "同步失败，未保存的内容已保留在此浏览器。",
+        "conflict": "此对话已在其他设备更新或删除，未同步内容仍保留在此浏览器。",
+        "storage": "浏览器无法保存本地记录，请检查存储空间。",
+        "retry": "重试同步",
+        "keepCopy": "另存为新对话",
+        "importLegacy": "导入此浏览器的旧聊天"
       }
     },
     "explore": {

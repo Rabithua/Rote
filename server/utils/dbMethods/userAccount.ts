@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { mergeAiConversationOwnership } from '../../aiConversations/repository';
 import { eq, inArray, sql } from 'drizzle-orm';
 import {
   apnsDevices,
@@ -119,7 +120,14 @@ export async function mergeUserAccounts(
         apnsDevices: 0,
         pushEvents: 0,
         changes: 0,
+        aiConversations: 0,
       };
+
+      mergedData.aiConversations = await mergeAiConversationOwnership(
+        tx,
+        sourceUserId,
+        targetUserId
+      );
 
       // 2. 合并笔记
       const notesResult = await tx

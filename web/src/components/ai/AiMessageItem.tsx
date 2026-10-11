@@ -15,6 +15,7 @@ import { Copy, ImageDown, Printer, Link as LinkIcon, Loader } from 'lucide-react
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { conversationErrorTranslation } from '@/features/ai-conversations/errorPresentation';
 
 function formatTokenBreakdown(message: AiMemoryMessage) {
   const usageByPhase = message.metrics?.usageByPhase;
@@ -32,6 +33,9 @@ function formatTokenBreakdown(message: AiMemoryMessage) {
 export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.aiMemory' });
   const profile = useProfile();
+  const errorKey = message.errorDetail
+    ? conversationErrorTranslation(message.errorDetail)
+    : undefined;
   const { exporting, handleExportImage, handleExportPdf } = useAiAnswerExport();
   const hasThinking = Object.values(message.thinking || {}).some((text) => text?.trim());
   const hasAssistantStatus =
@@ -136,7 +140,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
           ))}
         {message.error && message.errorDetail && (
           <div className="text-destructive text-xs wrap-break-word whitespace-pre-line">
-            {message.errorDetail}
+            {errorKey ? t(errorKey) : message.errorDetail}
           </div>
         )}
         {!message.error && message.metrics && !message.isStreaming && (

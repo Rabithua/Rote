@@ -79,7 +79,32 @@ function skipsAuthentication(config: unknown): boolean {
   return Boolean((config as ApiRequestConfig | undefined)?.skipAuthentication);
 }
 
+type RefreshSession = { site: string; revision: number; token: string | null };
 let refreshPromise: Promise<string> | null = null;
+let refreshSession: RefreshSession | null = null;
+
+function currentRefreshSession(): RefreshSession {
+  return {
+    site: getApiUrl(),
+    revision: authService.getSessionRevision(),
+    token: authService.getRefreshToken(),
+  };
+}
+
+function isCurrentRefreshSession(session: RefreshSession): boolean {
+  const current = currentRefreshSession();
+  return (
+    current.site === session.site &&
+    current.revision === session.revision &&
+    current.token === session.token
+  );
+}
+
+export class AuthSessionChangedError extends Error {
+  constructor() {
+    super('auth_session_changed');
+  }
+}
 
 function clearExpiredSession() {
   authService.clearTokens();
@@ -90,10 +115,21 @@ function clearExpiredSession() {
 }
 
 function refreshAccessTokenOnce(): Promise<string> {
-  if (!refreshPromise) {
-    refreshPromise = refreshAccessToken().finally(() => {
-      refreshPromise = null;
+  const session = currentRefreshSession();
+  if (
+    !refreshPromise ||
+    refreshSession?.site !== session.site ||
+    refreshSession?.revision !== session.revision ||
+    refreshSession?.token !== session.token
+  ) {
+    const pending = refreshAccessToken().finally(() => {
+      if (refreshPromise === pending) {
+        refreshPromise = null;
+        refreshSession = null;
+      }
     });
+    refreshSession = session;
+    refreshPromise = pending;
   }
 
   return refreshPromise;
@@ -119,10 +155,14 @@ api.interceptors.request.use(
       (!accessToken || authService.isTokenExpired(accessToken)) &&
       authService.hasValidRefreshToken()
     ) {
+      const session = currentRefreshSession();
       try {
         accessToken = await refreshAccessTokenOnce();
+        if (session.site !== getApiUrl() || authService.getAccessToken() !== accessToken)
+          throw new AuthSessionChangedError();
       } catch (error) {
-        clearExpiredSession();
+        if (!(error instanceof AuthSessionChangedError) && isCurrentRefreshSession(session))
+          clearExpiredSession();
         return Promise.reject(error);
       }
     }
@@ -174,13 +214,19 @@ api.interceptors.response.use(
       // 如果是JWT认证失败，尝试刷新token
       if (authService.hasValidRefreshToken() && !originalRequest._retry) {
         originalRequest._retry = true;
-
+        const session = currentRefreshSession();
         try {
           const newToken = await refreshAccessTokenOnce();
+          if (session.site !== getApiUrl() || authService.getAccessToken() !== newToken)
+            throw new AuthSessionChangedError();
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return api(originalRequest);
         } catch (refreshError) {
-          clearExpiredSession();
+          if (
+            !(refreshError instanceof AuthSessionChangedError) &&
+            isCurrentRefreshSession(session)
+          )
+            clearExpiredSession();
           return Promise.reject(refreshError);
         }
       } else {
@@ -201,14 +247,25 @@ export const refreshAccessToken = async (): Promise<string> => {
     throw new Error('No refresh token available');
   }
 
-  // 使用动态获取的 API URL，确保使用最新配置
-  const response = await axios.post(`${getApiUrl()}/auth/refresh`, {
-    refreshToken: refreshTokenValue,
-  });
-
-  const { accessToken, refreshToken: newRefreshToken } = response.data.data;
-  authService.setTokens(accessToken, newRefreshToken);
-  return accessToken;
+  const site = getApiUrl();
+  const revision = authService.getSessionRevision();
+  const isCurrentSession = () =>
+    getApiUrl() === site &&
+    authService.getSessionRevision() === revision &&
+    authService.getRefreshToken() === refreshTokenValue;
+  try {
+    const response = await axios.post(`${site}/auth/refresh`, {
+      refreshToken: refreshTokenValue,
+    });
+    if (!isCurrentSession()) throw new AuthSessionChangedError();
+    const { accessToken, refreshToken: newRefreshToken } = response.data.data;
+    authService.setTokens(accessToken, newRefreshToken);
+    return accessToken;
+  } catch (error) {
+    // A stale success or failure must never replace or log out a newer session.
+    if (!isCurrentSession()) throw new AuthSessionChangedError();
+    throw error;
+  }
 };
 
 // 导出请求方法

@@ -1,4 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
+import type { AiConversationMessage } from '../aiConversations/types';
 import {
   bigint,
   boolean,
@@ -52,6 +53,41 @@ export const users = pgTable(
     emailIdx: index('users_email_idx').on(table.email),
     usernameIdx: index('users_username_idx').on(table.username),
     // 注意：authProvider 相关索引已移除，OAuth 绑定信息存储在 user_oauth_bindings 表中
+  })
+);
+
+// Durable account-scoped AI history. Deletion keeps an empty tombstone so late
+// client snapshots cannot recreate a conversation with the same identity.
+export const aiConversations = pgTable(
+  'ai_conversations',
+  {
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    id: varchar('id', { length: 160 }).notNull(),
+    revision: integer('revision').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 3 }),
+    agentConversationId: varchar('agent_conversation_id', { length: 160 }),
+    messages: jsonb('messages').$type<AiConversationMessage[]>().notNull().default([]),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.ownerId, table.id], name: 'ai_conversations_owner_id_pk' }),
+    activityIdx: index('ai_conversations_owner_activity_idx').on(
+      table.ownerId,
+      table.updatedAt.desc(),
+      table.id.desc()
+    ),
+    positiveRevision: check('ai_conversations_positive_revision', sql`${table.revision} > 0`),
+    messagesArray: check(
+      'ai_conversations_messages_array',
+      sql`jsonb_typeof(${table.messages}) = 'array'`
+    ),
+    emptyTombstone: check(
+      'ai_conversations_empty_tombstone',
+      sql`${table.deletedAt} IS NULL OR (${table.messages} = '[]'::jsonb AND ${table.agentConversationId} IS NULL)`
+    ),
   })
 );
 

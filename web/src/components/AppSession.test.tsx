@@ -10,6 +10,9 @@ vi.mock('@/state/profile', () => ({ bootstrapAuthAtom: {} }));
 vi.mock('jotai', () => ({ useSetAtom: () => vi.fn() }));
 vi.mock('./CustomHeadScripts', () => ({ default: () => null }));
 vi.mock('./ScrollPositionManager', () => ({ default: () => null }));
+vi.mock('@/features/ai-conversations/AiConversationSession', () => ({
+  AiConversationSession: () => null,
+}));
 
 describe('application session metadata', () => {
   it('accepts a site with an empty description without giving Helmet a string child', () => {
