@@ -12,7 +12,7 @@ vi.mock('react-photo-view', () => ({
 }));
 
 describe('AttachmentPhotoPreview', () => {
-  it('removes the invalid PhotoView target after its image fails to load', () => {
+  it('keeps one loading surface through failure and retry', () => {
     const { container } = render(
       <AttachmentPhotoPreview
         alt=""
@@ -27,7 +27,12 @@ describe('AttachmentPhotoPreview', () => {
     fireEvent.error(container.querySelector('img')!);
 
     expect(container.querySelector('img')).not.toBeInTheDocument();
-    expect(screen.getByRole('img', { name: 'imageUnavailable' })).toBeVisible();
-    expect(screen.queryByTestId('photo-view')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'retry' })).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'retry' }));
+    expect(container.querySelector('img')).toHaveAttribute(
+      'src',
+      'https://cdn.example.com/missing.jpg'
+    );
+    expect(screen.getByTestId('photo-view')).toBeInTheDocument();
   });
 });

@@ -1,6 +1,21 @@
 import { vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 
+// jsdom does not implement viewport observation or media preferences.
+vi.stubGlobal(
+  'IntersectionObserver',
+  class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+);
+vi.stubGlobal('matchMedia', () => ({
+  matches: false,
+  addEventListener() {},
+  removeEventListener() {},
+}));
+
 // Mock sonner toast to avoid console noise in tests
 vi.mock('sonner', () => ({
   toast: {

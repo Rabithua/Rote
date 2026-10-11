@@ -10,7 +10,7 @@ import {
   LivePhotoMotionViewer,
   LivePhotoStillViewer,
 } from './LivePhotoViewer';
-import { AttachmentImage } from './AttachmentImage';
+import { RemoteImage } from '@/components/images/RemoteImage';
 
 type PhotoRenderParams = Parameters<NonNullable<ComponentProps<typeof PhotoView>['render']>>[0];
 
@@ -43,6 +43,9 @@ interface LivePhotoAttachmentPreviewProps {
   badgeClassName?: string;
   crossOrigin?: 'anonymous';
   onStillLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
+  intrinsic?: boolean;
+  aspectRatio?: number;
+  layoutKey?: string;
 }
 
 function LivePhotoStill({
@@ -52,29 +55,43 @@ function LivePhotoStill({
   crossOrigin,
   badgeLabel,
   onLoad,
-  onUnavailable,
+  onReady,
+  intrinsic,
+  aspectRatio,
+  layoutKey,
 }: Pick<
   LivePhotoAttachmentPreviewProps,
-  'thumbnailSrc' | 'imageClassName' | 'badgeClassName' | 'crossOrigin'
+  | 'thumbnailSrc'
+  | 'imageClassName'
+  | 'badgeClassName'
+  | 'crossOrigin'
+  | 'intrinsic'
+  | 'aspectRatio'
+  | 'layoutKey'
 > & {
   badgeLabel: string;
   onLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
-  onUnavailable?: () => void;
+  onReady?: (_image: HTMLImageElement) => void;
 }) {
   return (
     <>
-      <AttachmentImage
+      <RemoteImage
         className={imageClassName}
+        imageClassName={imageClassName}
+        intrinsic={intrinsic}
+        aspectRatio={aspectRatio}
+        layoutKey={layoutKey}
+        allowsRetry
         src={thumbnailSrc}
         crossOrigin={crossOrigin}
         alt=""
         draggable={false}
         onLoad={onLoad}
-        onUnavailable={onUnavailable}
+        onReady={onReady}
       />
       <span
         className={cn(
-          'absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold tracking-normal text-white',
+          'pointer-events-none absolute bottom-2 left-2 flex items-center gap-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold tracking-normal text-white',
           badgeClassName
         )}
       >
@@ -94,10 +111,12 @@ export function LivePhotoAttachmentPreview({
   badgeClassName,
   crossOrigin,
   onStillLoad,
+  intrinsic,
+  aspectRatio,
+  layoutKey,
 }: LivePhotoAttachmentPreviewProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.attachments.livePhoto' });
   const [stillSize, setStillSize] = useState(DEFAULT_PREVIEW_SIZE);
-  const [failedStillSrc, setFailedStillSrc] = useState<string | null>(null);
   const [viewportSize, setViewportSize] = useState(getViewportSize);
   const [videoFailed, setVideoFailed] = useState(false);
   const playbackSrc = getAttachmentLivePhotoPlaybackSrc(attachment);
@@ -105,7 +124,7 @@ export function LivePhotoAttachmentPreview({
     () => getLivePhotoPreviewSize(stillSize.width, stillSize.height, viewportSize),
     [stillSize.height, stillSize.width, viewportSize]
   );
-  const stillUnavailable = !previewSrc || !thumbnailSrc || failedStillSrc === thumbnailSrc;
+  const stillUnavailable = !previewSrc || !thumbnailSrc;
 
   useEffect(() => {
     setVideoFailed(false);
@@ -122,7 +141,12 @@ export function LivePhotoAttachmentPreview({
 
   const handleStillLoad = (event: SyntheticEvent<HTMLImageElement>) => {
     onStillLoad?.(event);
-    const { naturalWidth, naturalHeight } = event.currentTarget;
+  };
+
+  const handleStillReady = (image: HTMLImageElement) => {
+    // PhotoView registers dimensions on mount. Re-register only after reveal so
+    // its keyed frame cannot reset an already visible loading placeholder.
+    const { naturalWidth, naturalHeight } = image;
     if (!naturalWidth || !naturalHeight) return;
 
     setStillSize((current) => {
@@ -158,6 +182,9 @@ export function LivePhotoAttachmentPreview({
       <div className={cn('relative grow overflow-hidden', className)}>
         <LivePhotoStill
           thumbnailSrc=""
+          intrinsic={intrinsic}
+          aspectRatio={aspectRatio}
+          layoutKey={layoutKey}
           imageClassName={imageClassName}
           badgeClassName={badgeClassName}
           crossOrigin={crossOrigin}
@@ -173,12 +200,15 @@ export function LivePhotoAttachmentPreview({
         <div className={cn('relative grow overflow-hidden', className)}>
           <LivePhotoStill
             thumbnailSrc={thumbnailSrc}
+            intrinsic={intrinsic}
+            aspectRatio={aspectRatio}
+            layoutKey={layoutKey}
             imageClassName={imageClassName}
             badgeClassName={badgeClassName}
             crossOrigin={crossOrigin}
             badgeLabel={t('badge')}
             onLoad={handleStillLoad}
-            onUnavailable={() => setFailedStillSrc(thumbnailSrc)}
+            onReady={handleStillReady}
           />
         </div>
       </PhotoView>
@@ -201,12 +231,15 @@ export function LivePhotoAttachmentPreview({
       >
         <LivePhotoStill
           thumbnailSrc={thumbnailSrc}
+          intrinsic={intrinsic}
+          aspectRatio={aspectRatio}
+          layoutKey={layoutKey}
           imageClassName={imageClassName}
           badgeClassName={badgeClassName}
           crossOrigin={crossOrigin}
           badgeLabel={t('badge')}
           onLoad={handleStillLoad}
-          onUnavailable={() => setFailedStillSrc(thumbnailSrc)}
+          onReady={handleStillReady}
         />
       </div>
     </PhotoView>

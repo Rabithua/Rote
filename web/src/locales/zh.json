@@ -2155,6 +2155,21 @@
       "createFailed": "创建分享链接失败，请重试。",
       "stopFailed": "停止分享失败，请重试。",
       "stopped": "已停止分享"
+    },
+    "images": {
+      "unavailable": "图片暂不可用",
+      "retry": "重新加载图片",
+      "preview": {
+        "title": "图片加载预览",
+        "replay": "重播加载",
+        "redisplay": "重新显示缓存图片",
+        "firstLoad": "首次加载与固定尺寸",
+        "longImage": "长图与尺寸调整",
+        "failure": "失败与重试",
+        "offscreen": "滚动稳定性",
+        "description": "本地样例使用延迟响应和独立缓存，保留你的账号及真实图片缓存。",
+        "hint": "加载完成后重新显示缓存图片；点击失败图片重试，或在长图到达前滚动离开。"
+      }
     }
   },
   "article": {

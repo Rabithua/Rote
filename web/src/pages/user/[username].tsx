@@ -1,4 +1,5 @@
 import defaultCover from '@/assets/img/defaultCover.png';
+import { RemoteImage } from '@/components/images/RemoteImage';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import UserSidebarLinks from '@/components/common/UserSidebarLinks';
 import NavBar from '@/components/layout/navBar';
@@ -166,7 +167,7 @@ function UserPage() {
         </NavBar>
         <div className="pb-4">
           <div className="relative aspect-[3] max-h-80 w-full overflow-hidden">
-            <img
+            <RemoteImage
               className="h-full w-full object-cover"
               src={userInfo?.cover || defaultCover}
               alt=""

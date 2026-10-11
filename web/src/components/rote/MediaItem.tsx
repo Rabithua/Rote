@@ -1,5 +1,4 @@
-import type { CSSProperties, SyntheticEvent } from 'react';
-import { useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAttachmentImagePreviewSrc, isHeicLikeAttachment } from '@/utils/directUpload';
 import { AttachmentPhotoPreview } from './AttachmentPhotoPreview';
@@ -14,16 +13,10 @@ type MediaItemProps = {
 
 export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.attachments' });
-  const [aspectRatio, setAspectRatio] = useState(media.aspectRatio);
   const attachment = media.attachment;
   const previewSrc = getAttachmentImagePreviewSrc(attachment);
-  const measureImage = (event: SyntheticEvent<HTMLImageElement>) => {
-    const image = event.currentTarget;
-    if (image.naturalWidth > 0 && image.naturalHeight > 0) {
-      setAspectRatio(image.naturalWidth / image.naturalHeight);
-    }
-  };
-  const style = { '--display-ratio': displayMediaRatio(aspectRatio) } as CSSProperties;
+  // The rail's metadata owns its geometry; late thumbnails must not shift its scroll position.
+  const style = { '--display-ratio': displayMediaRatio(media.aspectRatio) } as CSSProperties;
 
   return (
     <div className="post-media-item" style={style} data-media-type={media.type}>
@@ -34,12 +27,6 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
           playbackSrc={attachment.url}
           posterSrc={media.thumbnail}
           railOverlay
-          onLoadedMetadata={(event) => {
-            const video = event.currentTarget;
-            if (video.videoWidth > 0 && video.videoHeight > 0) {
-              setAspectRatio(video.videoWidth / video.videoHeight);
-            }
-          }}
         />
       ) : media.isLivePhoto ? (
         <LivePhotoAttachmentPreview
@@ -49,7 +36,6 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
           previewSrc={previewSrc}
           thumbnailSrc={media.thumbnail || ''}
           crossOrigin={withTimeStamp ? 'anonymous' : undefined}
-          onStillLoad={measureImage}
         />
       ) : (
         <AttachmentPhotoPreview
@@ -60,7 +46,6 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
           heicOriginalSrc={isHeicLikeAttachment(attachment) ? attachment.url : undefined}
           previewSrc={previewSrc}
           src={media.thumbnail || ''}
-          onImageLoad={measureImage}
           unavailableLabel={
             (attachment.details as Record<string, unknown> | undefined)
               ?.previewRequiresAuthorization
