@@ -43,12 +43,16 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: bun run lint
 
+      - name: Set up Docker Buildx
+        if: matrix.path == 'web'
+        uses: docker/setup-buildx-action@v3
+
       - name: Build frontend Docker image
         if: matrix.path == 'web'
         working-directory: ${{ matrix.path }}
         env:
           ROTE_BUILD_REVISION: ${{ github.sha }}
-        run: docker build --build-arg ROTE_BUILD_REVISION="$ROTE_BUILD_REVISION" -t rote-frontend:ci .
+        run: docker buildx build --load --build-arg ROTE_BUILD_REVISION="$ROTE_BUILD_REVISION" -t rote-frontend:ci .
 
       - name: Type check
         working-directory: ${{ matrix.path }}
