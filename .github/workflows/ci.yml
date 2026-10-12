@@ -10,6 +10,14 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  deployment-verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Test deployment acceptance and timeout handling
+        run: bun test ./.github/scripts/verify-deployment.test.ts ./web/build/deploymentRevision.test.ts
+
   lint-and-build:
     runs-on: ubuntu-latest
     

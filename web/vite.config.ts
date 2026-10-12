@@ -6,6 +6,7 @@ import fs from 'fs';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { imageLoadingPreviewServer } from './dev/imageLoadingPreviewServer';
+import { deploymentRevision } from './build/deploymentRevision';
 dotenv.config();
 // https://vite.dev/config/
 export default defineConfig({
@@ -16,6 +17,7 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
   },
   plugins: [
+    deploymentRevision(process.env.ROTE_BUILD_REVISION),
     imageLoadingPreviewServer(),
     {
       name: 'serve-aasa',
