@@ -20,7 +20,9 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'components.attachments' });
   const attachment = media.attachment;
   const previewSrc = getAttachmentImagePreviewSrc(attachment);
-  const geometryKey = `rail:${attachment.id}:${media.thumbnail || attachment.url}`;
+  const geometrySource =
+    media.type === 'video' ? attachment.url : media.thumbnail || attachment.url;
+  const geometryKey = `rail:${attachment.id}:${geometrySource}`;
   const metadataRatio = imageRatio(attachment.details?.width, attachment.details?.height);
   const [measured, setMeasured] = useState<{ key: string; ratio: number }>();
   const aspectRatio =

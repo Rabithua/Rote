@@ -291,15 +291,36 @@ describe('PostMedia', () => {
       posterUrl: 'https://example.test/legacy-video-poster.jpg',
       details: { ...attachments[1].details, mediaKind: 'video', mimetype: 'video/mp4' },
     };
-    const { container } = render(<PostMedia attachments={attachments} />);
+    const { container, rerender } = render(<PostMedia attachments={attachments} />);
     const item = container.querySelectorAll<HTMLElement>('.post-media-item')[1];
     const video = screen.getByTestId('video-preview');
     Object.defineProperties(video, {
-      videoWidth: { value: 3840 },
-      videoHeight: { value: 1080 },
+      videoWidth: { configurable: true, value: 3840 },
+      videoHeight: { configurable: true, value: 1080 },
     });
     fireEvent.loadedMetadata(video);
 
     expect(item.style.getPropertyValue('--display-ratio')).toBe('2');
+    const updatedPoster = attachments.map((attachment, index) =>
+      index === 1
+        ? { ...attachment, posterUrl: 'https://example.test/replacement-video-poster.jpg' }
+        : attachment
+    );
+    rerender(<PostMedia attachments={updatedPoster} />);
+    expect(item.style.getPropertyValue('--display-ratio')).toBe('2');
+
+    const updatedVideo = updatedPoster.map((attachment, index) =>
+      index === 1
+        ? { ...attachment, url: 'https://example.test/replacement-video.mp4' }
+        : attachment
+    );
+    rerender(<PostMedia attachments={updatedVideo} />);
+    expect(item.style.getPropertyValue('--display-ratio')).toBe('1');
+    Object.defineProperties(video, {
+      videoWidth: { configurable: true, value: 600 },
+      videoHeight: { configurable: true, value: 1200 },
+    });
+    fireEvent.loadedMetadata(video);
+    expect(item.style.getPropertyValue('--display-ratio')).toBe('0.5');
   });
 });
