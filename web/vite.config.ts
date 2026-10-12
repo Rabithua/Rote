@@ -6,7 +6,7 @@ import fs from 'fs';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { imageLoadingPreviewServer } from './dev/imageLoadingPreviewServer';
-import { deploymentRevision } from './build/deploymentRevision';
+import { deploymentRevision } from './scripts/deployment/revision';
 dotenv.config();
 // https://vite.dev/config/
 export default defineConfig({

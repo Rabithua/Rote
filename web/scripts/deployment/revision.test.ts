@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { deploymentRevision } from './deploymentRevision';
+import { deploymentRevision } from './revision';
 
 test('rejects invalid revision values before building HTML', () => {
   expect(() => deploymentRevision('<script>')).toThrow('full Git commit SHA');
