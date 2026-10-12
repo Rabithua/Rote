@@ -262,26 +262,50 @@ describe('PostMedia', () => {
     expect(item.style.getPropertyValue('--display-ratio')).toBe(String(16 / 9));
   });
 
-  it('uses attachment metadata ahead of cached or newly loaded thumbnail dimensions', () => {
-    const attachments = railAttachments('metadata-authority');
-    const { container, rerender } = render(<PostMedia attachments={attachments} />);
-    const item = container.querySelectorAll<HTMLElement>('.post-media-item')[1];
-    loadRailImage(item, 1600, 900);
-    const withMetadata = attachments.map((attachment) => ({
+  it('replaces metadata estimates with loaded dimensions and retains them across remounts', () => {
+    const attachments = railAttachments('loaded-authority').map((attachment) => ({
       ...attachment,
       details: { ...attachment.details, width: 400, height: 800 },
     }));
-    rerender(<PostMedia attachments={withMetadata} />);
-    expect(item.style.getPropertyValue('--display-ratio')).toBe('0.5');
+    const first = render(<PostMedia attachments={attachments} />);
+    const items = first.container.querySelectorAll<HTMLElement>('.post-media-item');
+    expect(items[0].style.getPropertyValue('--display-ratio')).toBe('0.5');
+    expect(items[1].style.getPropertyValue('--display-ratio')).toBe('0.5');
 
-    const otherThumbnail = withMetadata.map((attachment, index) =>
+    loadRailImage(items[0], 900, 1600);
+    loadRailImage(items[1], 1600, 900);
+    expect(items[0].style.getPropertyValue('--display-ratio')).toBe(String(9 / 16));
+    expect(items[1].style.getPropertyValue('--display-ratio')).toBe(String(16 / 9));
+    first.unmount();
+
+    const second = render(<PostMedia attachments={attachments} />);
+    const item = second.container.querySelectorAll<HTMLElement>('.post-media-item')[1];
+    expect(item.style.getPropertyValue('--display-ratio')).toBe(String(16 / 9));
+
+    const otherThumbnail = attachments.map((attachment, index) =>
       index === 1
         ? { ...attachment, compressUrl: 'https://example.test/metadata-thumbnail.webp' }
         : attachment
     );
-    rerender(<PostMedia attachments={otherThumbnail} />);
-    loadRailImage(item, 1600, 900);
+    second.rerender(<PostMedia attachments={otherThumbnail} />);
     expect(item.style.getPropertyValue('--display-ratio')).toBe('0.5');
+    loadRailImage(item, 1600, 900);
+    expect(item.style.getPropertyValue('--display-ratio')).toBe(String(16 / 9));
+  });
+
+  it('overrides metadata estimates before paint for decoded cache hits', () => {
+    vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+    vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(1600);
+    vi.spyOn(HTMLImageElement.prototype, 'naturalHeight', 'get').mockReturnValue(900);
+    const attachments = railAttachments('loaded-authority-cache').map((attachment) => ({
+      ...attachment,
+      details: { ...attachment.details, width: 400, height: 800 },
+    }));
+    const { container } = render(<PostMedia attachments={attachments} />);
+    for (const item of container.querySelectorAll<HTMLElement>('.post-media-item')) {
+      expect(item.style.getPropertyValue('--display-ratio')).toBe(String(16 / 9));
+      expect(item.querySelector('.remote-image')).toHaveAttribute('data-image-state', 'ready');
+    }
   });
 
   it('restores a legacy video ratio from loaded metadata using the same rail range', () => {

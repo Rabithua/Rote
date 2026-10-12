@@ -26,12 +26,12 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
   const metadataRatio = imageRatio(attachment.details?.width, attachment.details?.height);
   const [measured, setMeasured] = useState<{ key: string; ratio: number }>();
   const aspectRatio =
-    metadataRatio ??
     (measured?.key === geometryKey ? measured.ratio : getSettledImageRatio(geometryKey)) ??
+    metadataRatio ??
     1;
   const recordDimensions = (width: number, height: number) => {
     const ratio = imageRatio(width, height);
-    if (metadataRatio || !ratio) return;
+    if (!ratio) return;
     settleImageRatio(geometryKey, ratio);
     setMeasured((current) =>
       current?.key === geometryKey && current.ratio === ratio
@@ -39,7 +39,7 @@ export function MediaItem({ media, withTimeStamp }: MediaItemProps) {
         : { key: geometryKey, ratio }
     );
   };
-  // The row height stays fixed; only the item's width settles as dimensions arrive.
+  // Stored dimensions estimate the placeholder; loaded dimensions own the fixed-height item.
   const style = { '--display-ratio': displayMediaRatio(aspectRatio) } as CSSProperties;
 
   return (
