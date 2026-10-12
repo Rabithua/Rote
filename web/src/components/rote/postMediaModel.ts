@@ -37,5 +37,5 @@ export function postMediaItem(attachment: AttachmentMedia): PostMediaItem {
 }
 
 export function displayMediaRatio(ratio: number): number {
-  return Number.isFinite(ratio) && ratio > 0 ? Math.min(1.25, Math.max(0.6, ratio)) : 1;
+  return Number.isFinite(ratio) && ratio > 0 ? Math.min(2, Math.max(0.4, ratio)) : 1;
 }

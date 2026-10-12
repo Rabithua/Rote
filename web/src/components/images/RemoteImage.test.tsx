@@ -68,9 +68,46 @@ describe('RemoteImage presentation', () => {
     vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
     vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(400);
     vi.spyOn(HTMLImageElement.prototype, 'naturalHeight', 'get').mockReturnValue(300);
-    const { container } = render(<RemoteImage src="cached.png" className="size-full" />);
+    const dimensions = vi.fn(() => {
+      expect(document.querySelector('.remote-image')).toHaveAttribute(
+        'data-image-state',
+        'loading'
+      );
+    });
+    const { container } = render(
+      <RemoteImage src="cached.png" className="size-full" onDimensions={dimensions} />
+    );
     expect(container.firstChild).toHaveAttribute('data-image-state', 'ready');
     expect(container.firstChild).toHaveAttribute('data-image-reveal', 'immediate');
+    expect(dimensions).toHaveBeenCalledExactlyOnceWith(400, 300);
+    fireEvent.load(container.querySelector('img')!);
+    expect(dimensions).toHaveBeenCalledOnce();
+  });
+
+  it('reports native dimensions before reveal once per attempt and reports them again after retry', () => {
+    const dimensions = vi.fn(() => {
+      expect(document.querySelector('.remote-image')).toHaveAttribute(
+        'data-image-state',
+        'loading'
+      );
+    });
+    const { container, rerender } = render(
+      <RemoteImage src="dimensions-retry.png" allowsRetry onDimensions={dimensions} />
+    );
+    paint();
+    load(container, 1600, 900);
+    expect(dimensions).toHaveBeenCalledExactlyOnceWith(1600, 900);
+    expect(container.firstChild).toHaveAttribute('data-image-state', 'revealing');
+
+    load(container, 1600, 900);
+    rerender(<RemoteImage src="dimensions-retry.png" allowsRetry onDimensions={dimensions} />);
+    expect(dimensions).toHaveBeenCalledOnce();
+    fireEvent.error(container.querySelector('img')!);
+    fireEvent.click(screen.getByRole('button', { name: 'retry' }));
+    load(container, 800, 600);
+
+    expect(dimensions).toHaveBeenCalledTimes(2);
+    expect(dimensions).toHaveBeenLastCalledWith(800, 600);
   });
 
   it('crossfades after a visible placeholder even when the same source was displayed before', () => {
@@ -254,9 +291,10 @@ describe('RemoteImage presentation', () => {
     vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
     vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(400);
     vi.spyOn(HTMLImageElement.prototype, 'naturalHeight', 'get').mockReturnValue(1000);
+    const dimensions = vi.fn();
     const { container } = render(
       <StrictMode>
-        <RemoteImage src="strict-cached-portrait.png" intrinsic />
+        <RemoteImage src="strict-cached-portrait.png" intrinsic onDimensions={dimensions} />
       </StrictMode>
     );
     expect(container.firstChild).toHaveStyle({ aspectRatio: '0.4' });
@@ -265,6 +303,7 @@ describe('RemoteImage presentation', () => {
     paint();
     expect(container.firstChild).toHaveAttribute('data-image-state', 'ready');
     expect(container.firstChild).toHaveAttribute('data-image-reveal', 'immediate');
+    expect(dimensions).toHaveBeenCalledExactlyOnceWith(400, 1000);
   });
 
   it('freezes a departed row against a late result and retains the same ratio on remount', () => {

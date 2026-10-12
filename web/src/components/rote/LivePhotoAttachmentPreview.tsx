@@ -43,6 +43,7 @@ interface LivePhotoAttachmentPreviewProps {
   badgeClassName?: string;
   crossOrigin?: 'anonymous';
   onStillLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
+  onDimensions?: (_width: number, _height: number) => void;
   intrinsic?: boolean;
   aspectRatio?: number;
   layoutKey?: string;
@@ -55,6 +56,7 @@ function LivePhotoStill({
   crossOrigin,
   badgeLabel,
   onLoad,
+  onDimensions,
   onReady,
   intrinsic,
   aspectRatio,
@@ -68,6 +70,7 @@ function LivePhotoStill({
   | 'intrinsic'
   | 'aspectRatio'
   | 'layoutKey'
+  | 'onDimensions'
 > & {
   badgeLabel: string;
   onLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
@@ -87,6 +90,7 @@ function LivePhotoStill({
         alt=""
         draggable={false}
         onLoad={onLoad}
+        onDimensions={onDimensions}
         onReady={onReady}
       />
       <span
@@ -111,6 +115,7 @@ export function LivePhotoAttachmentPreview({
   badgeClassName,
   crossOrigin,
   onStillLoad,
+  onDimensions,
   intrinsic,
   aspectRatio,
   layoutKey,
@@ -208,6 +213,7 @@ export function LivePhotoAttachmentPreview({
             crossOrigin={crossOrigin}
             badgeLabel={t('badge')}
             onLoad={handleStillLoad}
+            onDimensions={onDimensions}
             onReady={handleStillReady}
           />
         </div>
@@ -239,6 +245,7 @@ export function LivePhotoAttachmentPreview({
           crossOrigin={crossOrigin}
           badgeLabel={t('badge')}
           onLoad={handleStillLoad}
+          onDimensions={onDimensions}
           onReady={handleStillReady}
         />
       </div>

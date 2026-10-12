@@ -71,6 +71,27 @@ function ImageLoadingPreview() {
       </div>
       <p className="text-muted-foreground text-sm">{t('hint')}</p>
       <div key={`${replay}:${instance}`} className="space-y-8">
+        <section data-preview-natural-rail className="space-y-4">
+          <h2 className="font-semibold">{t('mediaRail')}</h2>
+          <p className="text-muted-foreground text-sm">{t('mediaRailHint')}</p>
+          <PostMedia
+            attachments={[
+              'rail-landscape',
+              'rail-portrait',
+              'rail-long',
+              'rail-square',
+              'rail-live',
+              'rail-panorama',
+            ].map((id, sortIndex) => ({
+              ...attachment(id, 1, 1),
+              sortIndex,
+              details: {
+                mimetype: 'image/svg+xml',
+                ...(id === 'rail-live' ? { mediaKind: 'livePhoto' as const } : {}),
+              },
+            }))}
+          />
+        </section>
         <section data-preview-fixed className="space-y-4">
           <h2 className="font-semibold">{t('firstLoad')}</h2>
           <div className="flex items-center gap-5">

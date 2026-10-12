@@ -22,6 +22,7 @@ export type RemoteImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> 
   allowsRetry?: boolean;
   unavailableLabel?: string;
   onUnavailable?: () => void;
+  onDimensions?: (_width: number, _height: number) => void;
   onReady?: (_image: HTMLImageElement) => void;
 };
 
@@ -44,6 +45,7 @@ function ImageSurface({
   onLoad,
   onError,
   onUnavailable,
+  onDimensions,
   onReady,
   ...props
 }: RemoteImageProps) {
@@ -111,6 +113,10 @@ function ImageSurface({
   const loaded = (element: HTMLImageElement) => {
     if (phaseRef.current !== 'loading') return;
     const naturalRatio = element.naturalWidth / element.naturalHeight;
+    if (Number.isFinite(naturalRatio) && naturalRatio > 0) {
+      // Notify fixed-height layouts before reveal, including decoded cache hits.
+      onDimensions?.(element.naturalWidth, element.naturalHeight);
+    }
     if (intrinsic && !geometryLocked.current && Number.isFinite(naturalRatio) && naturalRatio > 0) {
       const visible = imageIsVisible(surface.current);
       if (!visible && placeholderWasVisible.current) {
