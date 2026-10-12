@@ -1,6 +1,7 @@
 import type { LinkPreview } from '@/types/main';
 import { ArrowUpRight, Link } from 'lucide-react';
 import { useMemo } from 'react';
+import { RemoteImage } from '@/components/images/RemoteImage';
 
 export function LinkPreviewCard({
   preview,
@@ -27,14 +28,7 @@ export function LinkPreviewCard({
     >
       <div className="bg-foreground/5 flex size-18 shrink-0 items-center justify-center">
         {preview.image ? (
-          <img
-            src={preview.image}
-            alt=""
-            className="size-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
+          <RemoteImage src={preview.image} alt="" className="size-full object-cover" />
         ) : (
           <div className="text-primary flex size-full items-center justify-center">
             <Link className="size-6" />

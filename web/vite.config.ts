@@ -5,6 +5,8 @@ import path from 'path';
 import fs from 'fs';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
+import { imageLoadingPreviewServer } from './dev/imageLoadingPreviewServer';
+import { deploymentRevision } from './scripts/deployment/revision';
 dotenv.config();
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,6 +17,8 @@ export default defineConfig({
     include: ['src/**/*.test.{ts,tsx}'],
   },
   plugins: [
+    deploymentRevision(process.env.ROTE_BUILD_REVISION),
+    imageLoadingPreviewServer(),
     {
       name: 'serve-aasa',
       configureServer(server) {
@@ -38,11 +42,16 @@ export default defineConfig({
       injectRegister: 'auto',
       strategies: 'injectManifest',
       injectManifest: {
-        globIgnores: ['**/jszip.min-*.js', '**/sql-wasm-browser-*.js', '**/sql-wasm-*.wasm'],
+        globIgnores: [
+          '**/jszip.min-*.js',
+          '**/sql-wasm-browser-*.js',
+          '**/sql-wasm-*.wasm',
+          '**/heicPreviewWorker-*.js',
+        ],
       },
       srcDir: 'src',
       filename: 'sw.js',
-      devOptions: { enabled: true, type: 'module' },
+      devOptions: { enabled: process.env.ROTE_IMAGE_LOADING_PREVIEW !== '1', type: 'module' },
       includeAssets: [
         'ico.ico',
         'ico.svg',

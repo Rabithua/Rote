@@ -1,7 +1,8 @@
 import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
+import type { ConversationTimeline } from '@/features/ai-conversations/types';
 import type {
   AiAgentPhase,
+  AiRetrievalSummary,
   AiAgentToolProgressStatus,
   AiThinkingPhase,
   AiTokenUsage,
@@ -27,18 +28,38 @@ export type AiMessageTimelineItem = {
   phase?: AiAgentPhase;
   toolName?: string;
   toolStatus?: AiAgentToolProgressStatus;
-  message: string;
+  message?: string;
   status: 'running' | 'done' | 'error';
   updatedAt: number;
+  canonicalRetrieval?: AiRetrievalSummary;
 };
+
+export type AiOutputStatus =
+  | { type: 'phase'; phase: AiAgentPhase }
+  | { type: 'tool_started' | 'tool_finished'; toolName: string }
+  | { type: 'tool_progress'; status: AiAgentToolProgressStatus }
+  | { type: 'sources'; count: number; added?: number }
+  | { type: 'evidence_limit' };
 
 export type AiMemoryMessage = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  createdAt?: string;
+  outputs?: {
+    outputId: string;
+    phase: AiAgentPhase;
+    text?: string;
+    thinking?: string;
+    thinkingPhase?: AiThinkingPhase;
+    status?: AiOutputStatus;
+    canonicalStatus?: ConversationTimeline;
+    kind?: 'process' | 'answer';
+  }[];
   sources?: AiSemanticResult[];
-  plan?: PlannerAgentDto;
-  pendingPlan?: PlannerAgentDto;
+  retrieval?: AiRetrievalSummary;
+  plan?: PlannerAgentDto | null;
+  pendingPlan?: PlannerAgentDto | null;
   clarification?: boolean;
   error?: boolean;
   errorDetail?: string;
@@ -134,6 +155,18 @@ export function sanitizeAiChatMessages(
       next = settleAiMessageTimeline(next, 'error');
     }
 
+    if (next.outputs?.some((output) => output.kind === 'answer' && output.text === next.content)) {
+      changed = true;
+      next = {
+        ...next,
+        outputs: next.outputs.map((output) => {
+          if (output.kind !== 'answer' || output.text !== next.content) return output;
+          const { text: _text, ...metadata } = output;
+          return metadata;
+        }),
+      };
+    }
+
     return next;
   });
 
@@ -170,7 +203,7 @@ export function getSeenSourceIdsForActiveAiPlan(messages: AiMemoryMessage[]): st
   return sanitizeAiSourceKeys(ids);
 }
 
-export const aiChatMessagesAtom = atomWithStorage<AiMemoryMessage[]>('aiChatMessages', []);
+export const aiChatMessagesAtom = atom<AiMemoryMessage[]>([]);
 
 export type AiRunState = {
   isSending: boolean;

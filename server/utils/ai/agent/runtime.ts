@@ -4,7 +4,6 @@ import {
   type ChatMessage,
   type ChatToolCall,
 } from '../client';
-import { logAiTokenUsage } from '../../dbMethods';
 import { buildFinalAnswerInstruction, buildRoteAgentSystemPrompt } from './prompt';
 import { getNativeRoteTools } from './tools';
 import {
@@ -16,6 +15,7 @@ import {
   type RoteAgentPhase,
   type RoteAgentPolicy,
   type RoteAgentRequest,
+  type RoteAgentTool,
 } from './types';
 import { classifyAiStreamError, createAiRunId, logAiStreamLifecycle } from './observability';
 import { AgentSourceBudget } from './sourceBudget';
@@ -69,18 +69,6 @@ async function emitWithHeartbeat<T>(
   } finally {
     clearInterval(timer);
   }
-}
-
-async function logChatUsage(userId: string, model: string, usage: any): Promise<void> {
-  if (!usage) return;
-  await logAiTokenUsage({
-    userid: userId,
-    model,
-    type: 'chat',
-    promptTokens: usage.prompt_tokens,
-    completionTokens: usage.completion_tokens,
-    totalTokens: usage.total_tokens,
-  });
 }
 
 function buildRequestTimeContextMessage(state: RoteAgentClientState): ChatMessage {
@@ -147,6 +135,7 @@ function buildInitialMessages(
 async function streamFinalAnswer(
   ctx: RoteAgentContext,
   messages: ChatMessage[],
+  emitText: (text: string) => Promise<void>,
   signal?: AbortSignal
 ): Promise<{ emittedText: boolean; usage: any }> {
   await ctx.emit({ type: 'progress', phase: 'answering' });
@@ -154,21 +143,25 @@ async function streamFinalAnswer(
   let lastUsage: any = null;
 
   for await (const part of createChatCompletionStreamParts(ctx.config.chat, messages, {
-    enableThinking: ctx.request.enableThinking === true,
+    usageContext: { userId: ctx.userId, purpose: 'chat_answer' },
     signal,
   })) {
     if (part.type === 'reasoning') {
-      await ctx.emit({ type: 'thinking', phase: 'answer', text: part.text });
+      await ctx.emit({
+        type: 'thinking',
+        phase: 'answer',
+        text: part.text,
+        ...(ctx.request.streamOutputs ? { outputId: 'final' } : {}),
+      });
     } else if (part.type === 'usage') {
       lastUsage = part.usage;
     } else if (part.type === 'content') {
       emittedText = true;
-      await ctx.emit({ type: 'delta', text: part.text });
+      await emitText(part.text);
     }
   }
 
   if (lastUsage) {
-    await logChatUsage(ctx.userId, ctx.config.chat.model, lastUsage);
     await ctx.emit({ type: 'usage', phase: 'answer', usage: lastUsage });
   }
 
@@ -183,22 +176,24 @@ export async function runRoteAgentStream(params: {
   policy?: Partial<RoteAgentPolicy>;
   runId?: string;
   signal?: AbortSignal;
+  tools?: RoteAgentTool[];
 }): Promise<void> {
   const request = params.request;
   const runId = params.runId || createAiRunId('agent');
   const policy = { ...DEFAULT_AGENT_POLICY, ...(params.policy || {}) };
-  const tools = getNativeRoteTools();
+  const tools = params.tools ?? getNativeRoteTools();
   const toolByName = new Map(tools.map((tool) => [tool.definition.function.name, tool]));
   const sourceBudget = new AgentSourceBudget({
-    maxSources: policy.maxSources,
     maxSourceChars: policy.maxSourceChars,
   });
   const state = sanitizeAgentState(request);
   const mode = request.mode || 'chat';
   let currentPhase: RoteAgentPhase = 'understanding';
   const emit: RoteAgentEmitter = async (event) => {
+    params.signal?.throwIfAborted();
     if (event.type === 'progress') currentPhase = event.phase;
     await params.emit(event);
+    params.signal?.throwIfAborted();
   };
   const ctx: RoteAgentContext = {
     userId: params.userId,
@@ -209,15 +204,22 @@ export async function runRoteAgentStream(params: {
     policy,
     state,
     emit,
-    registerSources: (sources) => sourceBudget.register(sources),
-    consumeSourceText: (value, requestedChars) => sourceBudget.consumeText(value, requestedChars),
-    getSourceBudget: () => sourceBudget.snapshot(),
-    getSources: () => sourceBudget.list(),
+    sourceBudget,
+    signal: params.signal,
   };
 
   const messages = buildInitialMessages(request, state);
   let toolCallCount = 0;
+  let evidenceExhausted = false;
   let hasFinalAnswer = false;
+  let endedWithoutTools = false;
+  const emitOutput = async (outputId: string, phase: RoteAgentPhase, text: string) => {
+    if (!request.streamOutputs) {
+      await emit({ type: 'delta', text });
+      return;
+    }
+    await emit({ type: 'delta', outputId, phase, text });
+  };
   let totalTokens = 0;
   const startedAt = Date.now();
   const recordUsage = (usage: any) => {
@@ -237,7 +239,11 @@ export async function runRoteAgentStream(params: {
     await emit({ type: 'progress', phase: 'understanding' });
 
     for (let step = 0; step < policy.maxIterations; step += 1) {
+      params.signal?.throwIfAborted();
       const phase: RoteAgentPhase = step === 0 ? 'planning' : 'tool_calling';
+      const outputId = `step-${step}`;
+      const contentChunks: string[] = [];
+      if (request.streamOutputs) await emit({ type: 'output_started', outputId, phase });
       let assistantMessage: ChatMessage;
       let responseUsage: Awaited<
         ReturnType<typeof createChatCompletionWithToolsStreaming>
@@ -249,14 +255,22 @@ export async function runRoteAgentStream(params: {
             messages,
             tools.map((tool) => tool.definition),
             {
+              usageContext: {
+                userId: params.userId,
+                purpose: step === 0 ? 'chat_plan' : 'chat_tool_decision',
+              },
               temperature: 0.2,
-              enableThinking: request.enableThinking === true,
               signal: params.signal,
+              onContent: (text) => {
+                if (request.streamOutputs) return emitOutput(outputId, phase, text);
+                contentChunks.push(text);
+              },
               onReasoning: (text) =>
                 emit({
                   type: 'thinking',
                   phase: step === 0 ? 'route_decision' : 'evidence_decision',
                   text,
+                  ...(request.streamOutputs ? { outputId } : {}),
                 }),
             }
           )
@@ -265,7 +279,6 @@ export async function runRoteAgentStream(params: {
         responseUsage = response.usage;
         if (response.usage) {
           recordUsage(response.usage);
-          await logChatUsage(params.userId, params.config.chat.model, response.usage);
         }
       } catch (error: any) {
         if (step === 0 && isLikelyToolUnsupportedError(error)) {
@@ -277,11 +290,26 @@ export async function runRoteAgentStream(params: {
       }
 
       const toolCalls = assistantMessage.tool_calls || [];
+      hasFinalAnswer = !toolCalls.length && !!assistantMessage.content?.trim();
+      if (request.streamOutputs)
+        await emit({
+          type: 'output_finished',
+          outputId,
+          phase,
+          kind: hasFinalAnswer ? 'answer' : 'process',
+        });
       if (!toolCalls.length) {
+        endedWithoutTools = true;
+        if (hasFinalAnswer) {
+          await emit({ type: 'progress', phase: 'answering' });
+          if (!request.streamOutputs) {
+            for (const text of contentChunks) await emit({ type: 'delta', text });
+          }
+        }
         if (responseUsage) {
           await emit({
             type: 'usage',
-            phase: step === 0 ? 'planning' : 'tool_decision',
+            phase: hasFinalAnswer ? 'answer' : step === 0 ? 'planning' : 'tool_decision',
             usage: responseUsage,
           });
         }
@@ -315,20 +343,22 @@ export async function runRoteAgentStream(params: {
       if (validToolCalls.length === 0) continue;
 
       messages.push({
-        role: 'assistant',
-        content: null,
+        ...assistantMessage,
         tool_calls: validToolCalls,
       });
 
       for (const toolCall of validToolCalls) {
-        if (toolCallCount >= policy.maxToolCalls) {
+        params.signal?.throwIfAborted();
+        if (toolCallCount >= policy.maxToolCalls || evidenceExhausted) {
           messages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
             content: JSON.stringify({
               status: 'skipped',
-              reason: 'tool_budget_exceeded',
-              message: `Tool call ${toolCall.function.name} was skipped because the agent reached the maximum tool call budget.`,
+              reason: evidenceExhausted ? 'budget_exhausted' : 'tool_budget_exceeded',
+              message: evidenceExhausted
+                ? 'Evidence text budget exhausted; answer from delivered evidence.'
+                : `Tool call ${toolCall.function.name} exceeded the tool call budget.`,
             }),
           });
           await emit({
@@ -347,9 +377,16 @@ export async function runRoteAgentStream(params: {
         const result = await emitWithHeartbeat(emit, policy, 'tool_calling', () =>
           tool!.execute(args, ctx, toolCall)
         );
+        params.signal?.throwIfAborted();
 
+        evidenceExhausted ||= result.retrieval?.budgetExhausted === true;
         if (result.plan) await emit({ type: 'plan', plan: result.plan });
-        if (result.sources) await emit({ type: 'sources', sources: ctx.getSources() });
+        if (result.sources)
+          await emit({
+            type: 'sources',
+            sources: ctx.sourceBudget.list(),
+            retrieval: result.retrieval,
+          });
         if (result.statePatch) {
           Object.assign(ctx.state, result.statePatch);
           await emit({ type: 'state_patch', state: result.statePatch });
@@ -390,19 +427,35 @@ export async function runRoteAgentStream(params: {
         }
       }
 
-      if (toolCallCount >= policy.maxToolCalls) break;
+      if (toolCallCount >= policy.maxToolCalls || evidenceExhausted) break;
     }
 
-    if (!hasFinalAnswer) {
-      messages.push({ role: 'user', content: buildFinalAnswerInstruction() });
-      const finalAnswer = await streamFinalAnswer(ctx, messages, params.signal);
+    if (!hasFinalAnswer && !endedWithoutTools) {
+      messages.push({ role: 'user', content: buildFinalAnswerInstruction(evidenceExhausted) });
+      if (request.streamOutputs)
+        await emit({ type: 'output_started', outputId: 'final', phase: 'answering' });
+      const finalAnswer = await streamFinalAnswer(
+        ctx,
+        messages,
+        (text) => emitOutput('final', 'answering', text),
+        params.signal
+      );
       hasFinalAnswer = finalAnswer.emittedText;
+      if (request.streamOutputs)
+        await emit({
+          type: 'output_finished',
+          outputId: 'final',
+          phase: 'answering',
+          kind: 'answer',
+        });
       recordUsage(finalAnswer.usage);
     }
 
     if (!hasFinalAnswer) {
       const errorCode =
-        ctx.getSources().length > 0 ? 'error_no_answer_with_sources' : 'error_no_answer_no_sources';
+        ctx.sourceBudget.list().length > 0
+          ? 'error_no_answer_with_sources'
+          : 'error_no_answer_no_sources';
       await emit({
         type: 'error',
         message: errorCode,

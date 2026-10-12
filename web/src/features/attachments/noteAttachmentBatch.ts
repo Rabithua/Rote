@@ -108,6 +108,8 @@ export class NoteAttachmentBatch {
         posterKey: uploaded.has('poster') ? info.poster?.key : undefined,
         size: item.file.size,
         mimetype: item.file.type,
+        width: item.dimensions?.width,
+        height: item.dimensions?.height,
       };
     });
     const clientIds = new Map(this.prepared.map((item) => [item.file, item.clientId]));

@@ -1,4 +1,5 @@
 import defaultCover from '@/assets/img/defaultCover.png';
+import { RemoteImage } from '@/components/images/RemoteImage';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import UserAvatar from '@/components/others/UserAvatar';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,11 @@ export default function ProfileHeader({
   return (
     <div className="pb-4">
       <div className="relative aspect-[3] w-full overflow-hidden">
-        <img className="h-full w-full object-cover" src={profile?.cover || defaultCover} alt="" />
+        <RemoteImage
+          className="h-full w-full object-cover"
+          src={profile?.cover || defaultCover}
+          alt=""
+        />
         <input
           type="file"
           accept="image/*"

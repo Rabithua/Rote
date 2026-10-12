@@ -16,6 +16,7 @@ export function useAiRunLabels() {
           defaultValue: t('timeline.toolDone.default'),
         }),
       sourcesFound: (count: number) => t('timeline.sourcesFound', { count }),
+      sourcesAdded: (added: number, total: number) => t('timeline.sourcesAdded', { added, total }),
       askFailed: t('messages.askFailed'),
       streamInterrupted: t('messages.streamInterrupted'),
       streamTimeout: t('messages.streamTimeout'),

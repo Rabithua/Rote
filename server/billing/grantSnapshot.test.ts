@@ -24,6 +24,23 @@ describe('billing grant validation', () => {
     expect(grant.capabilities).toEqual(['ai.chat', 'attachment.video.upload']);
   });
 
+  it('accepts an account-bound complimentary Pro grant without an Apple product or expiry', () => {
+    const grant = parse({
+      ...base,
+      productId: null,
+      entitlementExpiresAt: null,
+    });
+    expect(grant.status).toBe('active');
+    expect(grant.productId).toBeNull();
+    expect(grant.entitlementExpiresAt).toBeNull();
+    expect(grant.leaseExpiresAt).not.toBeNull();
+  });
+
+  it('rejects a partial Apple product and expiry pair', () => {
+    expect(() => parse({ ...base, productId: null })).toThrow('Apple grants require');
+    expect(() => parse({ ...base, entitlementExpiresAt: null })).toThrow('Apple grants require');
+  });
+
   it('rejects request ID mismatches, unknown capabilities, and invalid lease order', () => {
     expect(() => parse(base, '018f3f5a-7b2c-7d4e-8a91-2b3c4d5e6f74')).toThrow();
     expect(() => parse({ ...base, capabilities: ['unknown.capability'] })).toThrow();

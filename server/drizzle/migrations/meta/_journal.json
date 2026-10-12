@@ -253,6 +253,27 @@
       "when": 1788698004166,
       "tag": "0035_anonymous_note_sharing",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1791512313240,
+      "tag": "0036_ai_usage_statistics",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1791647281420,
+      "tag": "0037_rote_sync_cursor",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791707782945,
+      "tag": "0038_ai_conversation_history",
+      "breakpoints": true
     }
   ]
 }

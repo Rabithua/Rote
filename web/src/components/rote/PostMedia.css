@@ -1,0 +1,53 @@
+.post-media-bleed {
+  --post-media-start-inset: 1.25rem;
+  --post-media-end-inset: 1.25rem;
+  width: calc(100% + var(--post-media-start-inset) + var(--post-media-end-inset));
+  margin-left: calc(-1 * var(--post-media-start-inset));
+}
+
+@media (min-width: 80rem) {
+  .post-media-bleed--avatar {
+    --post-media-start-inset: 4.75rem;
+  }
+}
+
+.post-media-rail {
+  --media-height: clamp(180px, 60vw, 255px);
+  display: flex;
+  width: 100%;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-left: var(--post-media-start-inset);
+  padding-right: 44px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  cursor: grab;
+  user-select: none;
+}
+
+.post-media-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.post-media-rail-dragging {
+  cursor: grabbing;
+}
+
+.post-media-rail .post-media-item {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--media-height) * var(--display-ratio));
+  height: var(--media-height);
+  overflow: hidden;
+  border-radius: 16px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.post-media-item img,
+.post-media-item video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}

@@ -144,6 +144,13 @@ describe.skipIf(process.env.ROTE_ATTACHMENT_INTEGRATION !== '1')(
         expect(result.attachments).toHaveLength(3);
         expect(transaction).toHaveBeenCalledTimes(1);
         expect(storage).not.toHaveBeenCalled();
+        const changes = await db
+          .select()
+          .from(schema.roteChanges)
+          .where(eq(schema.roteChanges.originid, input.noteId));
+        expect(changes).toHaveLength(1);
+        expect(changes[0]).toMatchObject({ userid: owner, action: 'UPDATE' });
+        expect(changes[0].revision).not.toBeNull();
         const [reservation] = await db
           .select()
           .from(schema.resourceUploadReservations)

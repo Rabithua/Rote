@@ -30,8 +30,10 @@ export function createOpenKeyMiddleware(
 ) {
   return async (c: HonoContext, next: () => Promise<void>) => {
     const body = await c.req.json().catch(() => ({}));
+    const authorization = c.req.header('authorization');
+    const bearer = authorization?.match(/^Bearer (.+)$/i)?.[1];
     const credentialResult = OpenKeyCredentialSchema.safeParse(
-      body?.openkey ?? c.req.query('openkey')
+      bearer ?? c.req.header('x-api-key') ?? body?.openkey ?? c.req.query('openkey')
     );
     if (!credentialResult.success) {
       throw new HTTPException(400, { message: openKeyErrors.invalidCredential });

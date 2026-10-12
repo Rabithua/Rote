@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from 'crypto';
 import { and, eq, inArray, or, sql } from 'drizzle-orm';
+import { isNotReferencedByProfile } from '../attachments/unboundCleanup';
 import {
   articles,
   attachments,
   noteImportSources,
-  roteChanges,
   rotes,
   users,
   type NewAttachment,
@@ -12,6 +12,7 @@ import {
   type NewRote,
 } from '../drizzle/schema';
 import db from '../utils/drizzle';
+import { lockSyncOwner, recordRoteChanges } from '../sync/journal';
 import { releaseStorageObjectReferences } from '../resources/service';
 import { DatabaseError } from '../utils/dbMethods/common';
 import { validateRoteAttachmentDetails } from '../utils/fileValidation';
@@ -35,6 +36,7 @@ interface ImportCounts {
 }
 
 export interface ImportResult {
+  results: Array<{ index: number; id: string; status: 'created' | 'updated' | 'skipped' }>;
   count: number;
   created: number;
   updated: number;
@@ -51,6 +53,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
   const payload = parsedPayload;
   const articleResult = await importArticles(userId, payload);
   const ownedArticleIds = await getOwnedArticleIds(userId, payload.notes);
+  const results: ImportResult['results'] = [];
   const counts: ImportCounts = { created: 0, updated: 0, unchanged: 0 };
   const attachmentCounts = {
     total: payload.notes.reduce((total, note) => total + (note.attachments?.length ?? 0), 0),
@@ -114,7 +117,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
         const managedAttachmentIdsToDelete = new Set<string>();
         const changes: Array<{ id: string; action: 'CREATE' | 'UPDATE' }> = [];
 
-        for (const note of chunk) {
+        for (const [chunkIndex, note] of chunk.entries()) {
           const mapping = note.source ? mappingsBySource.get(sourceKey(note.source)) : undefined;
           const targetId = mapping?.roteId ?? (note.source ? randomUUID() : note.id);
           const existing = existingById.get(targetId);
@@ -125,6 +128,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
 
           if (existing && payload.importOptions.existingStrategy === 'skip') {
             counts.unchanged += 1;
+            results.push({ index: offset + chunkIndex, id: targetId, status: 'skipped' });
             (note.attachments ?? []).forEach((attachment) => {
               const pending = attachment.id
                 ? incomingAttachmentsById.get(attachment.id)
@@ -138,6 +142,11 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
 
           const noteData = buildNoteData(note, targetId, userId, ownedArticleIds, payload);
           noteRows.push(noteData);
+          results.push({
+            index: offset + chunkIndex,
+            id: targetId,
+            status: existing ? 'updated' : 'created',
+          });
           changes.push({ id: targetId, action: existing ? 'UPDATE' : 'CREATE' });
           if (existing) counts.updated += 1;
           else counts.created += 1;
@@ -238,7 +247,13 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
           for (const ids of chunkValues([...managedAttachmentIdsToDelete], 500)) {
             const deleted = await tx
               .delete(attachments)
-              .where(and(eq(attachments.userid, userId), inArray(attachments.id, ids)))
+              .where(
+                and(
+                  eq(attachments.userid, userId),
+                  inArray(attachments.id, ids),
+                  isNotReferencedByProfile()
+                )
+              )
               .returning({
                 id: attachments.id,
                 details: attachments.details,
@@ -314,13 +329,13 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
         }
 
         if (changes.length > 0) {
-          await tx.insert(roteChanges).values(
+          await recordRoteChanges(
+            tx,
+            userId,
             changes.map((change) => ({
               originid: change.id,
               roteid: change.id,
               action: change.action,
-              userid: userId,
-              createdAt: new Date(),
             }))
           );
         }
@@ -339,6 +354,7 @@ export async function importUserData(userId: string, rawData: unknown): Promise<
     }
 
     return {
+      results,
       count: payload.notes.length,
       created: counts.created,
       updated: counts.updated,
@@ -428,6 +444,7 @@ async function importArticles(userId: string, payload: ImportPayload) {
   if (uniqueArticles.length === 0) return { total: 0, created: 0, updated: 0 };
 
   return db.transaction(async (tx) => {
+    await lockSyncOwner(tx, userId);
     const existing = await tx
       .select({ id: articles.id, authorId: articles.authorId })
       .from(articles)
@@ -463,6 +480,18 @@ async function importArticles(userId: string, payload: ImportPayload) {
           updatedAt: sql`excluded."updatedAt"`,
         },
       });
+
+    if (existingIds.size > 0) {
+      const boundNotes = await tx
+        .select({ id: rotes.id })
+        .from(rotes)
+        .where(and(eq(rotes.authorid, userId), inArray(rotes.articleId, [...existingIds])));
+      await recordRoteChanges(
+        tx,
+        userId,
+        boundNotes.map((note) => ({ originid: note.id, action: 'UPDATE' }))
+      );
+    }
 
     return {
       total: rows.length,

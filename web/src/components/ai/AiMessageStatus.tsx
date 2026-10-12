@@ -4,11 +4,21 @@ import { Brain, SlidersHorizontal, Workflow } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export function AiStatusTitle({ children, icon }: { children: ReactNode; icon?: ReactNode }) {
+export function AiStatusTitle({
+  children,
+  icon,
+  truncate = false,
+}: {
+  children: ReactNode;
+  icon?: ReactNode;
+  truncate?: boolean;
+}) {
   return (
-    <span className="text-muted-foreground flex shrink-0 items-center gap-1 font-medium whitespace-nowrap select-none">
+    <span
+      className={`text-muted-foreground flex items-center gap-1 font-medium whitespace-nowrap select-none ${truncate ? 'min-w-0 overflow-hidden' : 'shrink-0'}`}
+    >
       {icon}
-      {children}
+      {truncate ? <span className="truncate">{children}</span> : children}
     </span>
   );
 }
@@ -200,6 +210,8 @@ export function ThinkingTraceEntry({
   isExpanded,
   isStreaming,
   onToggle,
+  id,
+  truncateTitle,
 }: {
   phase: AiThinkingPhase;
   text: string;
@@ -207,12 +219,14 @@ export function ThinkingTraceEntry({
   isExpanded: boolean;
   isStreaming: boolean;
   onToggle: () => void;
+  id?: string;
+  truncateTitle?: boolean;
 }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.aiMemory' });
   const lineRef = useRef<HTMLDivElement>(null);
   const expandedRef = useRef<HTMLDivElement>(null);
   const inlineText = useMemo(() => text.replace(/\s+/g, ' ').trim(), [text]);
-  const traceId = `thinking-trace-${phase}`;
+  const traceId = id || `thinking-trace-${phase}`;
   const ariaExpanded = isExpanded ? 'true' : 'false';
 
   useEffect(() => {
@@ -233,6 +247,7 @@ export function ThinkingTraceEntry({
     <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-1.5 text-xs leading-5">
         <AiStatusTitle
+          truncate={truncateTitle}
           icon={<Brain className={`size-3 shrink-0 ${isStreaming ? 'animate-pulse' : ''}`} />}
         >
           {title}

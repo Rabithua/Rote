@@ -36,7 +36,7 @@
 - **Separated Architecture**: Frontend and backend use separated architecture design, deploy only the services you need
 - **Markdown Articles**: Standalone Article support, can be referenced by notes, offering a pure writing and reading experience
 - **Memory**: Optional AI chat over your own notes and articles, with semantic search, related notes, streamed responses, and source references
-- **Admin-Controlled AI**: AI, vector storage, automatic indexing, and public semantic discovery are disabled by default and must be explicitly enabled by an administrator
+- **Admin-Controlled AI**: AI and public semantic discovery are disabled by default. New instances default vector storage and automatic indexing to on; confirming the first enabled AI configuration prepares pgvector and starts background indexing. Existing explicit opt-outs are preserved
 - **iOS Client**: More elegant App client
 
 ### Quick Start
@@ -85,7 +85,7 @@ After the containers are running:
 1. Open `http://<your-ip-address>:18001`.
 2. Complete the setup page and create the first administrator account.
 3. Sign in and configure site settings from the Admin dashboard.
-4. Optional: if your image tag includes Memory support, open `Admin -> AI Settings` to configure chat and embedding providers, enable pgvector, and backfill existing notes/articles.
+4. Optional: if your image tag includes Memory support, open `Admin -> AI Settings` to configure chat and embedding providers. Vector storage and automatic indexing default to on; confirming the first enabled AI configuration prepares pgvector and indexes existing notes/articles in the background.
 
 #### Method 2: Using Dokploy (Recommended)
 

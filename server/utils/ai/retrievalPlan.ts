@@ -253,12 +253,12 @@ export async function createRetrievalPlan(params: {
   getTagCounts?: () => Promise<Array<{ name: string; count: number }>>;
   maxSteps?: number;
   maxToolCalls?: number;
-  enableThinking?: boolean;
   timeContext?: RetrievalTimeContext | null;
   onThinkingDelta?: (text: string) => Promise<void> | void;
   onUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
   signal?: AbortSignal;
 }): Promise<PlannerAgentResult> {
+  params.signal?.throwIfAborted();
   const trace = createEmptyTrace();
   const availableTags = params.availableTags || (await getUserRoteTags(params.ownerId));
   const messages: ChatMessage[] = [
@@ -277,11 +277,15 @@ export async function createRetrievalPlan(params: {
   const maxToolCalls = params.maxToolCalls ?? MAX_TOOL_CALLS;
 
   for (let step = 0; step < maxSteps; step += 1) {
+    params.signal?.throwIfAborted();
     let response: Awaited<ReturnType<typeof createChatCompletionWithToolsStreaming>>;
     try {
       response = await completeWithTools(params.config.chat, messages, toolDefinitions, {
+        usageContext: {
+          userId: params.ownerId,
+          purpose: step === 0 ? 'chat_plan' : 'chat_tool_decision',
+        },
         temperature: 0,
-        enableThinking: params.enableThinking === true,
         onReasoning: params.onThinkingDelta,
         signal: params.signal,
       });
@@ -298,13 +302,10 @@ export async function createRetrievalPlan(params: {
       trace.fallbackReason = 'assistant_returned_no_tool_call';
       return noRetrievalResult(params.message, trace, 'assistant_returned_no_tool_call');
     }
-    messages.push({
-      role: 'assistant',
-      content: response.message.content || null,
-      tool_calls: calls,
-    });
+    messages.push(response.message);
 
     for (const call of calls) {
+      params.signal?.throwIfAborted();
       if (toolCallCount >= maxToolCalls) {
         trace.fallbackReason = 'tool_call_budget_exceeded';
         return lastSearch

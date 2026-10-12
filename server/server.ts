@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { runAutomaticHeicBrowserCoverBackfill } from './attachments/heicBrowserCoverBackfillWorker';
 import internalBillingRouter from './billing';
 import { rateLimiterMiddleware } from './middleware/limiter';
 import { recorderIpAndTime } from './middleware/recorder';
@@ -170,10 +169,6 @@ subscribeConfigChange('site', (_group, newConfig) => {
     }
 
     console.log(`Rote Node backend server listening on port ${port}!`);
-
-    void runAutomaticHeicBrowserCoverBackfill().catch((error) => {
-      console.error('[heic-cover-backfill] status=automatic-failed', error);
-    });
   } catch (error) {
     console.error('❌ Failed to start server:', error);
     process.exit(1);

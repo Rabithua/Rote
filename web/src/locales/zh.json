@@ -543,8 +543,6 @@
     },
     "filter": {
       "title": "筛选 / Filter",
-      "includeTags": "包含标签：",
-      "allTags": "所有标签：",
       "none": "无",
       "data": "数据统计",
       "note": "笔记",
@@ -593,10 +591,6 @@
         "exportFailed": "导出失败"
       },
       "inputPlaceholder": "问问你的 Rote...",
-      "thinkingToggle": {
-        "on": "思考已开启",
-        "off": "思考已关闭"
-      },
       "empty": {
         "title": "问 Rote",
         "desc": "从你的笔记和文章里找上下文。"
@@ -691,7 +685,7 @@
       },
       "privacy": {
         "title": "对话说明",
-        "description": "AI 对话只保存在当前浏览器会话中，不会持久化写入数据库。"
+        "description": "对话记录会保存到当前账号的数据库，可在登录同一账号的设备上继续查看。"
       },
       "sources": {
         "title": "来源",
@@ -745,7 +739,7 @@
       },
       "timeline": {
         "title": "进度",
-        "sourcesFound": "找到 {{count}} 条相关记录",
+        "sourcesFound": "累计参考 {{count}} 条",
         "phases": {
           "understanding": "正在理解问题",
           "planning": "正在判断是否需要读取记录",
@@ -774,7 +768,9 @@
           "rote_find_related_notes": "已找到相关记录",
           "rote_get_tags": "已读取标签",
           "rote_skill_view": "已确定处理方式"
-        }
+        },
+        "sourcesAdded": "本次新增 {{added}} 条，累计参考 {{total}} 条",
+        "evidenceLimit": "正在组织回答"
       },
       "thinkingTrace": {
         "route_decision": "正在判断是否需要查询 Rote",
@@ -802,6 +798,22 @@
         "clarifyMoreResults": "你想看哪一类笔记的更多结果？",
         "saveSuccess": "已保存为文章",
         "saveFailed": "保存失败"
+      },
+      "history": {
+        "title": "历史对话",
+        "new": "新对话",
+        "delete": "删除当前对话",
+        "stop": "停止生成",
+        "untitled": "未命名对话",
+        "loading": "正在读取对话历史…",
+        "saving": "正在同步对话…",
+        "load": "无法读取云端历史，本地记录已保留。",
+        "save": "同步失败，未保存的内容已保留在此浏览器。",
+        "conflict": "此对话已在其他设备更新或删除，未同步内容仍保留在此浏览器。",
+        "storage": "浏览器无法保存本地记录，请检查存储空间。",
+        "retry": "重试同步",
+        "keepCopy": "另存为新对话",
+        "importLegacy": "导入此浏览器的旧聊天"
       }
     },
     "explore": {
@@ -1253,6 +1265,12 @@
       "title": "管理员仪表盘",
       "accessDenied": "访问被拒绝",
       "adminOnly": "此页面仅限管理员访问",
+      "updateBanner": {
+        "title": "发现新版本",
+        "versions": "当前版本 {{current}}，新版本 {{latest}}",
+        "viewRelease": "查看更新",
+        "dismiss": "关闭新版本提示"
+      },
       "tabs": {
         "dashboard": "数据看板",
         "site": "站点设置",
@@ -1293,6 +1311,52 @@
           "noApiUsage": "近 7 天无 API 使用记录",
           "noStorageUsage": "暂无存储使用记录",
           "noTokenUsage": "暂无 Token 使用记录"
+        },
+        "aiUsage": {
+          "title": "AI 用量",
+          "totalUsage": "总用量（Token）",
+          "usage": "用量（Token）",
+          "statisticsNotes": "统计说明",
+          "modelUsage": "模型用量",
+          "modelName": "模型",
+          "users": "用户用量",
+          "viewDetails": "查看详情",
+          "description": "统计供应商调用与收到的 usage。缺失 usage 或写入失败仍可能形成缺口，完整费用以供应商账单为准。",
+          "period": "时间范围",
+          "7d": "最近 7 天",
+          "30d": "最近 30 天",
+          "month": "本月",
+          "all": "全部",
+          "chat": "聊天",
+          "embedding": "向量",
+          "type": "类型",
+          "model": "供应商 / 模型",
+          "refresh": "刷新",
+          "loading": "正在加载 AI 用量…",
+          "error": "AI 用量加载失败，请刷新重试。",
+          "totalTokens": "已记录总 token",
+          "promptTokens": "输入（Token）",
+          "completionTokens": "输出（Token）",
+          "calls": "调用次数",
+          "reportedCalls": "有 usage 的调用",
+          "unknownCalls": "未知 usage 调用",
+          "coverage": "新调用 usage 覆盖率：{{percent}} · 历史记录：{{legacy}} · 失败：{{failed}} · 取消：{{cancelled}}",
+          "legacyCount": "{{count}} 条历史记录",
+          "legacyProvider": "历史记录未保存供应商",
+          "details": "已记录明细",
+          "cacheHit": "缓存命中输入",
+          "cacheMiss": "缓存未命中输入",
+          "reasoning": "思考输出",
+          "unknown": "未知",
+          "detailCoverage": "{{count}} 次调用有数据",
+          "empty": "该范围内没有记录",
+          "topUsers": "用户用量前 10 名",
+          "user": "用户",
+          "system": "系统测试与校验",
+          "unattributed": "匿名 / 已删除用户",
+          "groupUsage": "{{tokens}} 已记录 token · {{calls}} 次新调用 · {{unknown}} 次未知 usage",
+          "subsets": "模型用量、用户用量与以下分组都是总用量的明细，不额外相加。",
+          "detailNote": "缓存和思考明细仅汇总有返回数据的调用，属于输入 / 输出的子项，不重复加入总数。历史记录的采集覆盖率未知。"
         }
       },
       "site": {
@@ -1715,6 +1779,7 @@
         "rebuildStarted": "重建已启动",
         "saveBeforeRebuild": "请先保存当前配置，再启动重建。",
         "saveChangeTitle": "保存向量配置？",
+        "saveInitializeDescription": "保存后将自动启用 pgvector，并在后台为现有笔记和文章建立首次向量索引。索引会调用配置的向量模型，可能产生费用；后续内容变更将按自动索引设置处理。",
         "saveChangeDescription": "如果新配置与现有索引不兼容，保存后向量检索将暂停，需要手动启动全量重建。重建会产生模型调用费用；保存本身不会启动重建。",
         "saveChangeReuse": "切回同一代索引的原模型、输出维度和分块设置时，可复用经过验证的索引，仅补齐期间的内容变化。普通聊天和关键词搜索不受影响。",
         "saveChangeCancel": "取消",
@@ -1952,7 +2017,7 @@
       }
     },
     "sidebarSearch": {
-      "placeholder": "搜索笔记..."
+      "placeholder": "搜索标题、正文或标签…"
     },
     "aiSourceList": {
       "empty": "暂无来源",
@@ -1994,6 +2059,7 @@
       "mixedMediaNotAllowed": "图片和视频不能同时上传",
       "singleVideoOnly": "一个动态最多只能上传 1 个视频",
       "imageLimitExceeded": "最多只能上传 {{count}} 张图片",
+      "mediaLimitExceeded": "最多只能上传 {{count}} 个媒体附件",
       "unsupportedFileType": "包含不支持的文件类型",
       "videoTooLarge": "视频大小不能超过 {{size}}MB",
       "articleLinked": "文章已关联"
@@ -2059,6 +2125,12 @@
     "attachments": {
       "imageUnavailable": "图片暂不可用",
       "sourcePreviewUnavailable": "来源限制，无法预览",
+      "heicConverting": "HEIC 转换中…",
+      "heicPreviewFailed": "高清预览失败，当前显示缩略图",
+      "playVideo": "播放视频",
+      "pauseVideo": "暂停视频",
+      "muteVideo": "静音",
+      "unmuteVideo": "取消静音",
       "livePhoto": {
         "badge": "LIVE",
         "open": "打开 Live Photo",
@@ -2083,6 +2155,23 @@
       "createFailed": "创建分享链接失败，请重试。",
       "stopFailed": "停止分享失败，请重试。",
       "stopped": "已停止分享"
+    },
+    "images": {
+      "unavailable": "图片暂不可用",
+      "retry": "重新加载图片",
+      "preview": {
+        "title": "图片加载预览",
+        "replay": "重播加载",
+        "redisplay": "重新显示缓存图片",
+        "mediaRail": "没有尺寸记录的多图",
+        "mediaRailHint": "依次为横图 16:9、竖图 3:4、长图 2:5、正方形、Live Photo 静态图 3:2、超宽图 3:1。先显示正方形，加载后保持统一高度，按真实比例调整宽度，比例范围为 0.4～2.0。",
+        "firstLoad": "首次加载与固定尺寸",
+        "longImage": "长图与尺寸调整",
+        "failure": "失败与重试",
+        "offscreen": "滚动稳定性",
+        "description": "本地样例使用延迟响应和独立缓存，保留你的账号及真实图片缓存。",
+        "hint": "加载完成后重新显示缓存图片；点击失败图片重试，或在长图到达前滚动离开。"
+      }
     }
   },
   "article": {

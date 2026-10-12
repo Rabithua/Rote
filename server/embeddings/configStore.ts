@@ -9,6 +9,7 @@ import db from '../utils/drizzle';
 import { testEmbeddingProvider } from './client';
 import { embeddingFingerprint, embeddingOutputSchema } from './contract';
 import { EmbeddingError, isEmbeddingContractFailure } from './errors';
+import { canInitializeIndex, createIndexGeneration } from './indexGeneration';
 import {
   generationMatches,
   restoreGenerationStatus,
@@ -32,7 +33,9 @@ const configSchema = z.strictObject({
   vectorEnabled: z.boolean(),
   autoIndexEnabled: z.boolean(),
   publicExploreVectorEnabled: z.boolean(),
-  chat: providerSchema,
+  chat: providerSchema.extend({
+    reasoningEffort: z.literal('high').optional(),
+  }),
   embedding: providerSchema.extend({ output: embeddingOutputSchema }),
   indexing: z.strictObject({
     chunkSize: z.number().int().min(500),
@@ -184,6 +187,8 @@ export async function saveAiSettings(incoming: Partial<AiConfig>): Promise<AiCon
           updatedAt: new Date(),
         })
         .where(eq(embeddingIndexState.id, 1));
+      if (enabling && verified && (await canInitializeIndex(state, tx)))
+        await createIndexGeneration(tx, next, verified.dimensions);
     })
     .catch(configurationWriteFailed);
   await refreshConfigCache();

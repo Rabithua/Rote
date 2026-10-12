@@ -1,17 +1,24 @@
-import { useState } from 'react';
+import type { SyntheticEvent } from 'react';
 import { PhotoView } from 'react-photo-view';
-import { AttachmentImage } from './AttachmentImage';
+import { RemoteImage } from '@/components/images/RemoteImage';
+import { HeicPhotoViewer } from './HeicPhotoViewer';
 
 interface AttachmentPhotoPreviewProps {
   alt: string;
   containerClassName: string;
   crossOrigin?: 'anonymous';
   height?: number;
+  heicOriginalSrc?: string;
   imageClassName: string;
   previewSrc: string;
   src: string;
   width?: number;
   unavailableLabel?: string;
+  intrinsic?: boolean;
+  aspectRatio?: number;
+  layoutKey?: string;
+  onImageLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
+  onDimensions?: (_width: number, _height: number) => void;
 }
 
 export function AttachmentPhotoPreview({
@@ -19,28 +26,58 @@ export function AttachmentPhotoPreview({
   containerClassName,
   crossOrigin,
   height,
+  heicOriginalSrc,
   imageClassName,
   previewSrc,
   src,
   width,
   unavailableLabel,
+  onImageLoad,
+  onDimensions,
+  intrinsic,
+  aspectRatio,
+  layoutKey,
 }: AttachmentPhotoPreviewProps) {
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const unavailable = !previewSrc || !src || failedSrc === src;
+  const unavailable = !previewSrc || !src;
   const content = (
     <div className={containerClassName}>
-      <AttachmentImage
+      <RemoteImage
         className={imageClassName}
+        imageClassName={imageClassName}
+        intrinsic={intrinsic}
+        aspectRatio={aspectRatio}
+        layoutKey={layoutKey}
+        allowsRetry
         crossOrigin={crossOrigin}
         height={height}
         width={width}
         src={unavailable ? '' : src}
         alt={alt}
-        onUnavailable={() => setFailedSrc(src)}
+        draggable={false}
+        onLoad={onImageLoad}
+        onDimensions={onDimensions}
         unavailableLabel={unavailableLabel}
       />
     </div>
   );
 
-  return unavailable ? content : <PhotoView src={previewSrc}>{content}</PhotoView>;
+  if (unavailable) return content;
+
+  if (heicOriginalSrc) {
+    const viewerWidth = typeof window === 'undefined' ? 1280 : Math.max(1, window.innerWidth - 32);
+    const viewerHeight = typeof window === 'undefined' ? 960 : Math.max(1, window.innerHeight - 64);
+    return (
+      <PhotoView
+        width={viewerWidth}
+        height={viewerHeight}
+        render={({ attrs }) => (
+          <HeicPhotoViewer attrs={attrs} originalSrc={heicOriginalSrc} thumbnailSrc={previewSrc} />
+        )}
+      >
+        {content}
+      </PhotoView>
+    );
+  }
+
+  return <PhotoView src={previewSrc}>{content}</PhotoView>;
 }

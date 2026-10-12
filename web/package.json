@@ -51,6 +51,7 @@
     "date-fns": "^4.1.0",
     "express": "^5.2.1",
     "file-saver": "^2.0.5",
+    "heic-to": "1.5.2",
     "html-to-image": "^1.11.13",
     "i18next": "^25.7.2",
     "isbot": "^5.1.32",

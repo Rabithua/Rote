@@ -1,5 +1,5 @@
 import { Input } from '@/components/ui/input';
-import { Loader, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
@@ -70,7 +70,7 @@ export default function SearchBar({
         disabled={isLoading}
         variant={'ghost'}
       >
-        {isLoading ? <Loader className="size-4 animate-spin duration-300" /> : <Search />}
+        <Search />
       </Button>
     </form>
   );

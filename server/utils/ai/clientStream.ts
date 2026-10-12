@@ -1,3 +1,5 @@
+import { createAiUsageRecorder } from '../../aiUsage/recording';
+import type { AiUsageRecord } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
 import {
   buildChatRequestBody,
@@ -21,6 +23,7 @@ import {
   createProviderStreamControl,
   readProviderFinishReason,
 } from './clientStreamControl';
+import { ReasoningDetailsAccumulator, readReasoningText } from './reasoningDetails';
 
 const TERMINAL_USAGE_GRACE_MS = 1_000;
 
@@ -43,12 +46,14 @@ function parseProviderSseLine(line: string): ProviderSseData {
 function buildToolStreamResult(
   content: string,
   toolCallsByIndex: Map<number, ChatToolCall>,
+  reasoning: Pick<ChatMessage, 'reasoning_content' | 'reasoning' | 'reasoning_details'>,
   usage?: ChatCompletionUsage
 ) {
   return {
     message: {
       role: 'assistant' as const,
       content: content || null,
+      ...reasoning,
       tool_calls: normalizeToolCalls(Array.from(toolCallsByIndex.values())),
     },
     usage,
@@ -69,9 +74,13 @@ export async function createChatCompletionWithToolsStreaming(
 }> {
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'cancelled';
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -82,13 +91,12 @@ export async function createChatCompletionWithToolsStreaming(
           toolChoice: options.toolChoice || 'auto',
           temperature: options.temperature ?? 0.2,
           stream: true,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,
     });
 
-    await ensureProviderStreamResponse(response);
+    await ensureProviderStreamResponse(response, recorder.observe);
     if (!response.body) throw new Error('Chat provider returned an empty tool stream response');
 
     reader = response.body.getReader();
@@ -96,6 +104,8 @@ export async function createChatCompletionWithToolsStreaming(
     const toolCallsByIndex = new Map<number, ChatToolCall>();
     let buffer = '';
     let content = '';
+    const reasoningFields: Pick<ChatMessage, 'reasoning_content' | 'reasoning'> = {};
+    const reasoningDetails = new ReasoningDetailsAccumulator();
     let usage: ChatCompletionUsage | undefined;
     let doneReceived = false;
     let finishReason: string | null = null;
@@ -109,6 +119,7 @@ export async function createChatCompletionWithToolsStreaming(
       }
 
       const chunk = parsed.chunk;
+      recorder.observe(chunk?.usage);
       const nextFinishReason = readProviderFinishReason(chunk);
       if (nextFinishReason) {
         assertProviderFinishReason(nextFinishReason);
@@ -116,7 +127,12 @@ export async function createChatCompletionWithToolsStreaming(
       }
 
       const delta = chunk?.choices?.[0]?.delta || {};
-      const reasoning = delta.reasoning_content || delta.reasoning;
+      for (const field of ['reasoning_content', 'reasoning'] as const) {
+        if (typeof delta[field] === 'string')
+          reasoningFields[field] = (reasoningFields[field] ?? '') + delta[field];
+      }
+      reasoningDetails.append(delta.reasoning_details);
+      const reasoning = readReasoningText(delta);
       if (typeof reasoning === 'string' && reasoning.length > 0) {
         await options.onReasoning?.(reasoning);
       }
@@ -180,12 +196,20 @@ export async function createChatCompletionWithToolsStreaming(
     buffer += decoder.decode();
     if (!doneReceived && buffer.trim()) await processLine(buffer);
     assertProviderStreamComplete({ doneReceived, finishReason });
-    return buildToolStreamResult(content, toolCallsByIndex, usage);
+    status = 'completed';
+    return buildToolStreamResult(
+      content,
+      toolCallsByIndex,
+      { ...reasoningFields, ...reasoningDetails.fields() },
+      usage
+    );
   } catch (error) {
+    status = options.signal?.aborted ? 'cancelled' : 'failed';
     throw control.normalizeError(error);
   } finally {
     reader?.releaseLock();
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 
@@ -196,9 +220,13 @@ export async function* createChatCompletionStreamParts(
 ): AsyncGenerator<ChatCompletionStreamPart> {
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'cancelled';
   let reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -207,13 +235,12 @@ export async function* createChatCompletionStreamParts(
           messages,
           temperature: options.temperature ?? 0.2,
           stream: true,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,
     });
 
-    await ensureProviderStreamResponse(response);
+    await ensureProviderStreamResponse(response, recorder.observe);
     if (!response.body) throw new Error('Chat provider returned an empty stream response');
 
     reader = response.body.getReader();
@@ -252,6 +279,7 @@ export async function* createChatCompletionStreamParts(
         }
 
         const chunk = parsed.chunk;
+        recorder.observe(chunk?.usage);
         const nextFinishReason = readProviderFinishReason(chunk);
         if (nextFinishReason) {
           assertProviderFinishReason(nextFinishReason);
@@ -259,7 +287,7 @@ export async function* createChatCompletionStreamParts(
         }
 
         const delta = chunk?.choices?.[0]?.delta || {};
-        const reasoning = delta.reasoning_content || delta.reasoning;
+        const reasoning = readReasoningText(delta);
         if (typeof reasoning === 'string' && reasoning.length > 0) {
           yield { type: 'reasoning', text: reasoning };
         }
@@ -279,13 +307,14 @@ export async function* createChatCompletionStreamParts(
       if (parsed?.done) {
         doneReceived = true;
       } else if (parsed && !parsed.done) {
+        recorder.observe(parsed.chunk?.usage);
         const nextFinishReason = readProviderFinishReason(parsed.chunk);
         if (nextFinishReason) {
           assertProviderFinishReason(nextFinishReason);
           finishReason = nextFinishReason;
         }
         const delta = parsed.chunk?.choices?.[0]?.delta || {};
-        const reasoning = delta.reasoning_content || delta.reasoning;
+        const reasoning = readReasoningText(delta);
         if (typeof reasoning === 'string' && reasoning.length > 0) {
           yield { type: 'reasoning', text: reasoning };
         }
@@ -298,11 +327,14 @@ export async function* createChatCompletionStreamParts(
     }
 
     assertProviderStreamComplete({ doneReceived, finishReason });
+    status = 'completed';
   } catch (error) {
+    status = options.signal?.aborted ? 'cancelled' : 'failed';
     throw control.normalizeError(error);
   } finally {
     reader?.releaseLock();
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 

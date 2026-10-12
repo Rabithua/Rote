@@ -24,7 +24,7 @@ describe('fileValidation', () => {
     ).not.toThrow();
   });
 
-  it('rejects mixed image and video attachments', () => {
+  it('allows mixed image and video attachments', () => {
     expect(() =>
       validateRoteAttachmentDetails([
         {
@@ -40,10 +40,10 @@ describe('fileValidation', () => {
           },
         },
       ])
-    ).toThrow('Images and videos cannot be uploaded together in the same Rote');
+    ).not.toThrow();
   });
 
-  it('rejects more than one video', () => {
+  it('allows multiple videos within the media limit', () => {
     expect(() =>
       validateRoteAttachmentDetails([
         {
@@ -59,10 +59,10 @@ describe('fileValidation', () => {
           },
         },
       ])
-    ).toThrow('Only one video can be uploaded to a Rote');
+    ).not.toThrow();
   });
 
-  it('rejects more than the max number of images', () => {
+  it('rejects more than the max number of media attachments', () => {
     const attachments = Array.from({ length: MAX_FILES + 1 }, () => ({
       details: {
         mediaKind: 'image',
@@ -71,7 +71,7 @@ describe('fileValidation', () => {
     }));
 
     expect(() => validateRoteAttachmentDetails(attachments)).toThrow(
-      `Maximum ${MAX_FILES} images can be uploaded to a Rote`
+      `Maximum ${MAX_FILES} media attachments can be uploaded to a Rote`
     );
   });
 
@@ -103,7 +103,7 @@ describe('fileValidation', () => {
     ).not.toThrow();
   });
 
-  it('rejects mixing Live Photos with standalone videos', () => {
+  it('allows mixing Live Photos with standalone videos', () => {
     expect(() =>
       validateRoteAttachmentDetails([
         {
@@ -120,7 +120,7 @@ describe('fileValidation', () => {
           },
         },
       ])
-    ).toThrow('Images and videos cannot be uploaded together in the same Rote');
+    ).not.toThrow();
   });
 
   it('uses configured video upload size limit', () => {

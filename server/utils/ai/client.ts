@@ -1,3 +1,5 @@
+import { createAiUsageRecorder } from '../../aiUsage/recording';
+import type { AiUsageRecord } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
 import {
   buildChatRequestBody,
@@ -16,6 +18,12 @@ import type {
   ToolCallingProbeResult,
 } from './clientShared';
 import { createProviderStreamControl } from './clientStreamControl';
+import { requiresStreamingChat } from './chatParameters';
+import { normalizeReasoningDetails } from './reasoningDetails';
+import {
+  createChatCompletionWithToolsStreaming,
+  createChatCompletionStreamParts,
+} from './clientStream';
 
 export type {
   ChatCompletionOptions,
@@ -48,10 +56,23 @@ export async function createChatCompletion(
   content: string;
   usage?: ChatCompletionUsage;
 }> {
+  if (requiresStreamingChat(config)) {
+    let content = '';
+    let usage: ChatCompletionUsage | undefined;
+    for await (const part of createChatCompletionStreamParts(config, messages, options)) {
+      if (part.type === 'content') content += part.text;
+      if (part.type === 'usage') usage = part.usage;
+    }
+    return { content, usage };
+  }
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'failed';
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -59,26 +80,28 @@ export async function createChatCompletion(
         buildChatRequestBody(config, {
           messages,
           temperature: options.temperature ?? 0.2,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,
     });
-    const body = await readJsonResponse(response);
+    const body = await readJsonResponse(response, recorder.observe);
     const content = body?.choices?.[0]?.message?.content;
 
     if (typeof content !== 'string') {
       throw new Error('Chat provider returned an invalid chat completion response');
     }
 
+    status = 'completed';
     return {
       content,
       usage: normalizeUsage(body?.usage),
     };
   } catch (error) {
+    if (options.signal?.aborted) status = 'cancelled';
     throw control.normalizeError(error);
   } finally {
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 
@@ -91,10 +114,17 @@ export async function createChatCompletionWithTools(
   message: ChatMessage;
   usage?: ChatCompletionUsage;
 }> {
+  if (requiresStreamingChat(config)) {
+    return createChatCompletionWithToolsStreaming(config, messages, tools, options);
+  }
   ensureProviderConfig(config);
   const control = createProviderStreamControl(options);
+  const recorder = createAiUsageRecorder(config, 'chat', options.usageContext);
+  let status: AiUsageRecord['status'] = 'failed';
 
   try {
+    control.signal.throwIfAborted();
+    recorder.dispatch();
     const response = await fetch(`${normalizeBaseUrl(config.baseUrl)}/chat/completions`, {
       method: 'POST',
       headers: buildHeaders(config),
@@ -104,30 +134,39 @@ export async function createChatCompletionWithTools(
           tools,
           toolChoice: options.toolChoice ?? 'auto',
           temperature: options.temperature ?? 0.2,
-          enableThinking: options.enableThinking,
         })
       ),
       signal: control.signal,
     });
-    const body = await readJsonResponse(response);
+    const body = await readJsonResponse(response, recorder.observe);
     const message = body?.choices?.[0]?.message;
 
     if (!message || typeof message !== 'object') {
       throw new Error('Chat provider returned an invalid tool completion response');
     }
 
+    status = 'completed';
     return {
       message: {
         role: 'assistant',
         content: typeof message.content === 'string' ? message.content : null,
+        ...(typeof message.reasoning_content === 'string'
+          ? { reasoning_content: message.reasoning_content }
+          : {}),
+        ...(typeof message.reasoning === 'string' ? { reasoning: message.reasoning } : {}),
+        ...(Array.isArray(message.reasoning_details)
+          ? { reasoning_details: normalizeReasoningDetails(message.reasoning_details) }
+          : {}),
         tool_calls: normalizeToolCalls(message.tool_calls),
       },
       usage: normalizeUsage(body?.usage),
     };
   } catch (error) {
+    if (options.signal?.aborted) status = 'cancelled';
     throw control.normalizeError(error);
   } finally {
     control.cleanup();
+    await recorder.finish(status);
   }
 }
 

@@ -5,6 +5,7 @@ import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { bootstrapAuthAtom } from '@/state/profile';
 import CustomHeadScripts from './CustomHeadScripts';
 import ScrollPositionManager from './ScrollPositionManager';
+import { AiConversationSession } from '@/features/ai-conversations/AiConversationSession';
 
 // Account bootstrapping, site scripts and persisted navigation state only run
 // in the application, never in the independent anonymous share reader.
@@ -17,6 +18,7 @@ export default function AppSession() {
 
   return (
     <>
+      <AiConversationSession />
       <Helmet>
         <title>{siteStatus?.site?.name || 'Rote'}</title>
         {siteStatus?.site?.description ? (

@@ -27,7 +27,7 @@ export const extractOriginalUploadUuid = (key?: string) =>
   key?.match(/\/uploads\/([^/.]+)(\.[^.]+)?$/)?.[1] ?? null;
 
 export const extractCompressedUuid = (key?: string) =>
-  key?.match(/\/compressed\/([^/.]+)\.(?:webp|jpe?g)$/i)?.[1] ?? null;
+  key?.match(/\/compressed\/([^/.]+)\.(?:png|webp|jpe?g)$/i)?.[1] ?? null;
 
 export const extractPosterUuid = (key?: string) =>
   key?.match(/\/posters\/([^/.]+)\.[^.]+$/)?.[1] ?? null;

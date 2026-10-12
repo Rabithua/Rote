@@ -557,8 +557,6 @@
     },
     "filter": {
       "title": "フィルター",
-      "includeTags": "含むタグ：",
-      "allTags": "すべてのタグ：",
       "none": "なし",
       "data": "データ統計",
       "note": "ノート",
@@ -607,10 +605,6 @@
         "exportFailed": "エクスポートに失敗しました"
       },
       "inputPlaceholder": "Rote に質問...",
-      "thinkingToggle": {
-        "on": "思考はオンです",
-        "off": "思考はオフです"
-      },
       "empty": {
         "title": "Rote に聞く",
         "desc": "ノートと記事から文脈を探します。"
@@ -705,7 +699,7 @@
       },
       "privacy": {
         "title": "会話について",
-        "description": "AI との会話は現在のブラウザセッション内にのみ保存され、データベースには永続保存されません。"
+        "description": "会話履歴はアカウントのデータベースに保存され、同じアカウントでログインした端末から確認できます。"
       },
       "sources": {
         "title": "ソース",
@@ -759,7 +753,7 @@
       },
       "timeline": {
         "title": "進捗",
-        "sourcesFound": "関連ソースを {{count}} 件見つけました",
+        "sourcesFound": "参考資料は合計 {{count}} 件",
         "phases": {
           "understanding": "質問を理解中",
           "planning": "Rote を読む必要があるか判断中",
@@ -788,7 +782,9 @@
           "rote_find_related_notes": "関連記録を見つけました",
           "rote_get_tags": "タグを読み込みました",
           "rote_skill_view": "処理方法を決定しました"
-        }
+        },
+        "sourcesAdded": "今回 {{added}} 件追加、参考資料は合計 {{total}} 件",
+        "evidenceLimit": "回答を整理中"
       },
       "thinkingTrace": {
         "route_decision": "Rote を検索するか判断中",
@@ -816,6 +812,22 @@
         "clarifyMoreResults": "どの種類のノートについてもっと見たいですか？",
         "saveSuccess": "記事として保存しました",
         "saveFailed": "保存失敗"
+      },
+      "history": {
+        "title": "会話履歴",
+        "new": "新しい会話",
+        "delete": "現在の会話を削除",
+        "stop": "生成を停止",
+        "untitled": "無題の会話",
+        "loading": "会話履歴を読み込み中…",
+        "saving": "会話を同期中…",
+        "load": "クラウド履歴を読み込めませんでした。ローカルの会話は保持されています。",
+        "save": "同期に失敗しました。未保存の内容はこのブラウザに保持されています。",
+        "conflict": "この会話は別の端末で更新または削除されました。未同期の内容はこのブラウザに保持されています。",
+        "storage": "ブラウザで履歴を保存できませんでした。空き容量を確認してください。",
+        "retry": "同期を再試行",
+        "keepCopy": "新しい会話として保存",
+        "importLegacy": "このブラウザの以前の会話をインポート"
       }
     },
     "explore": {
@@ -1267,6 +1279,12 @@
       "title": "管理ダッシュボード",
       "accessDenied": "アクセス拒否",
       "adminOnly": "このページは管理者のみアクセス可能です",
+      "updateBanner": {
+        "title": "新しいバージョンがあります",
+        "versions": "現在のバージョン {{current}}、新しいバージョン {{latest}}",
+        "viewRelease": "更新内容",
+        "dismiss": "更新のお知らせを閉じる"
+      },
       "tabs": {
         "dashboard": "ダッシュボード",
         "site": "サイト設定",
@@ -1307,6 +1325,52 @@
           "noApiUsage": "過去 7 日間に API 使用なし",
           "noStorageUsage": "ストレージ使用記録なし",
           "noTokenUsage": "Token 使用記録なし"
+        },
+        "aiUsage": {
+          "viewDetails": "詳細を見る",
+          "title": "AI 使用量",
+          "totalUsage": "合計トークン",
+          "usage": "使用量（トークン）",
+          "statisticsNotes": "集計について",
+          "modelUsage": "モデル別使用量",
+          "modelName": "モデル",
+          "users": "ユーザー別使用量",
+          "description": "プロバイダー呼び出しと受信した usage を集計します。usage の欠落や保存失敗による不足があり得ます。料金はプロバイダーの請求を参照してください。",
+          "period": "期間",
+          "7d": "直近 7 日間",
+          "30d": "直近 30 日間",
+          "month": "今月",
+          "all": "すべて",
+          "chat": "チャット",
+          "embedding": "埋め込み",
+          "type": "種類",
+          "model": "プロバイダー / モデル",
+          "refresh": "更新",
+          "loading": "AI 使用量を読み込み中…",
+          "error": "AI 使用量を取得できません。再度更新してください。",
+          "totalTokens": "記録済みトークン",
+          "promptTokens": "入力トークン",
+          "completionTokens": "出力トークン",
+          "calls": "呼び出し回数",
+          "reportedCalls": "usage あり",
+          "unknownCalls": "usage 不明",
+          "coverage": "新規呼び出しの usage 取得率：{{percent}} · 過去の記録：{{legacy}} · 失敗：{{failed}} · キャンセル：{{cancelled}}",
+          "legacyCount": "過去の記録 {{count}} 件",
+          "legacyProvider": "過去のプロバイダー情報なし",
+          "details": "記録済み詳細",
+          "cacheHit": "キャッシュ入力",
+          "cacheMiss": "非キャッシュ入力",
+          "reasoning": "推論出力",
+          "unknown": "不明",
+          "detailCoverage": "{{count}} 件で取得",
+          "empty": "この期間に記録はありません",
+          "topUsers": "使用量上位 10 ユーザー",
+          "user": "ユーザー",
+          "system": "システムテストと検証",
+          "unattributed": "匿名 / 削除済みユーザー",
+          "groupUsage": "記録済み {{tokens}} トークン · 新規呼び出し {{calls}} 件 · usage 不明 {{unknown}} 件",
+          "subsets": "モデル別、ユーザー別と以下のグループは合計の内訳であり、追加の使用量ではありません。",
+          "detailNote": "キャッシュと推論は報告された呼び出しのみを集計します。入力 / 出力の内訳であり、合計には加算しません。過去の取得率は不明です。"
         }
       },
       "site": {
@@ -1729,6 +1793,7 @@
         "rebuildStarted": "再構築を開始しました",
         "saveBeforeRebuild": "再構築の前に設定を保存してください。",
         "saveChangeTitle": "ベクトル設定を保存しますか？",
+        "saveInitializeDescription": "保存すると pgvector が自動的に有効になり、既存のノートと記事の初回ベクトル索引をバックグラウンドで作成します。索引作成には設定した埋め込みモデルを使用するため、料金が発生する場合があります。その後の変更は自動索引設定に従って処理されます。",
         "saveChangeDescription": "新しい設定が既存の索引と互換性を持たない場合、保存後にベクトル検索が停止し、手動で全件再構築する必要があります。再構築にはモデル利用料金が発生します。保存だけでは再構築を開始しません。",
         "saveChangeReuse": "保持中の世代と同じモデル、出力次元数、分割設定に戻すと、検証済みの索引を再利用し、その間の内容変更のみを反映します。チャットとキーワード検索は引き続き利用できます。",
         "saveChangeCancel": "キャンセル",
@@ -1966,7 +2031,7 @@
       }
     },
     "sidebarSearch": {
-      "placeholder": "ノートを検索..."
+      "placeholder": "タイトル・本文・タグを検索…"
     },
     "aiSourceList": {
       "empty": "ソースなし",
@@ -2008,6 +2073,7 @@
       "mixedMediaNotAllowed": "画像と動画は同時にアップロードできません",
       "singleVideoOnly": "1つの Rote には動画を 1 本だけアップロードできます",
       "imageLimitExceeded": "{{count}} 枚まで画像をアップロードできます",
+      "mediaLimitExceeded": "メディアは最大 {{count}} 件までアップロードできます",
       "unsupportedFileType": "未対応のファイル形式が含まれています",
       "videoTooLarge": "動画サイズは {{size}}MB 以下にしてください",
       "articleLinked": "記事がリンクされました"
@@ -2073,6 +2139,12 @@
     "attachments": {
       "imageUnavailable": "画像を表示できません",
       "sourcePreviewUnavailable": "取得元の制限によりプレビューできません",
+      "heicConverting": "HEIC を変換中…",
+      "heicPreviewFailed": "高画質プレビューに失敗しました。サムネイルを表示しています",
+      "playVideo": "動画を再生",
+      "pauseVideo": "動画を一時停止",
+      "muteVideo": "ミュート",
+      "unmuteVideo": "ミュートを解除",
       "livePhoto": {
         "badge": "LIVE",
         "open": "Live Photo を開く",
@@ -2097,6 +2169,23 @@
       "createFailed": "共有リンクを作成できませんでした。もう一度お試しください。",
       "stopFailed": "共有を停止できませんでした。もう一度お試しください。",
       "stopped": "共有を停止しました"
+    },
+    "images": {
+      "unavailable": "画像を表示できません",
+      "retry": "画像を再読み込み",
+      "preview": {
+        "title": "画像読み込みプレビュー",
+        "replay": "読み込みを再生",
+        "redisplay": "キャッシュ画像を再表示",
+        "mediaRail": "サイズ情報のない複数画像",
+        "mediaRailHint": "横長 16:9、縦長 3:4、長い画像 2:5、正方形、Live Photo の静止画 3:2、パノラマ 3:1 の順です。最初は正方形で表示し、読み込み後は高さを揃え、0.4～2.0 の範囲で元の比率に合わせて幅を調整します。",
+        "firstLoad": "初回読み込みと固定サイズ",
+        "longImage": "縦長画像とサイズ調整",
+        "failure": "エラーと再試行",
+        "offscreen": "スクロールの安定性",
+        "description": "ローカルサンプルは遅延応答と専用キャッシュを使用します。アカウントと実際の画像キャッシュは保持されます。",
+        "hint": "読み込み後にキャッシュ画像を再表示してください。エラー画像をタップして再試行するか、縦長画像の読み込み前にスクロールしてください。"
+      }
     }
   },
   "article": {

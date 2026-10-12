@@ -104,6 +104,7 @@ export const executeClientAgentTool = (payload: {
   state?: AiAgentClientState | null;
   sourceKeys?: string[];
   sourceCharsUsed?: number;
+  readOffsets?: Record<string, number>;
 }) => {
   const request = withAiClientRequestContext(payload.request);
   return post('/ai/client-agent/tools/execute', {

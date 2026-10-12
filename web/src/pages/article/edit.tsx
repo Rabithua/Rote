@@ -19,7 +19,7 @@ import {
   uploadToSignedUrl,
 } from '@/utils/directUpload';
 import { parseMarkdownMeta } from '@/utils/markdownParser';
-import { maybeCompressToWebp } from '@/utils/uploadHelpers';
+import { generateImageThumbnail } from '@/utils/uploadHelpers';
 import { ArrowUpRight, Edit3, Eye, Heading1, Save, Signature, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -206,16 +206,17 @@ export default function ArticleEditPage() {
     for (const { file, placeholder } of uploads) {
       let activeReservationId: string | null = null;
       try {
-        const compressed = await maybeCompressToWebp(file);
+        const compressed = await generateImageThumbnail(file);
         const presignFiles = [
           {
             filename: file.name,
             contentType: file.type,
             size: file.size,
+            compressedContentType: compressed?.type,
             ...(compressed && supportsBrowserDirectUpload
               ? {
                   compressed: {
-                    contentType: compressed.type as 'image/jpeg' | 'image/webp',
+                    contentType: compressed.type,
                     size: compressed.size,
                   },
                 }

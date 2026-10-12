@@ -2,7 +2,7 @@
 
 本文档面向已经在线上运行 Rote 的自托管实例，说明如何从旧版普通 PostgreSQL 数据库升级到支持记忆、语义搜索和 pgvector 的新版。
 
-新版会新增 `document_embeddings` 和 `embedding_jobs` 两张表。原有笔记、文章、用户、配置等业务数据不会被重写。AI、向量存储和公开 Explore 语义检索默认关闭，必须由管理员在后台显式开启。
+新版会新增 `document_embeddings` 和 `embedding_jobs` 两张表。原有笔记、文章、用户、配置等业务数据不会被重写。AI 和公开 Explore 语义检索仍默认关闭。新实例的向量存储和自动索引默认开启；已有实例显式关闭的设置会保留。首次启用 AI 与向量功能并确认保存时，会验证向量模型、自动启用 pgvector，并在后台为存量笔记和文章建立首次索引。
 
 ## 适用范围
 
@@ -20,7 +20,7 @@
 2. 保持 `POSTGRES_PASSWORD`、数据库卷名和 PostgreSQL 大版本不变。
 3. 将 PostgreSQL 镜像切到带 pgvector 扩展的镜像，例如 `pgvector/pgvector:pg17-trixie`。
 4. 先让新版后端执行数据库迁移，再在 Admin 后台启用 AI 与向量能力。
-5. 存量数据不会自动全部向量化，需要管理员明确启动重建。
+5. 首次启用且没有旧向量或索引任务时，确认保存会自动启动首次索引。已有索引的模型变更、旧版向量恢复及后续全量重建仍需管理员手动操作。
 
 ## 迁移前检查
 
@@ -143,10 +143,12 @@ docker exec rote-postgres psql -U rote -d rote -c "select to_regclass('public.do
 3. 配置 Chat Provider 和 Embedding Provider。
 4. 分别测试 Chat 与 Embedding 连接。
 5. 开启 `启用 AI`。
-6. 开启 `启用向量存储`。
-7. 点击 `启用 pgvector`。
+6. 确认 `启用向量存储` 和 `自动索引` 已开启（新实例默认开启）。
+7. 保存配置并确认首次索引的模型调用费用。没有旧向量或索引任务时，会自动安装 pgvector、创建经过验证的 HNSW 索引，并启动后台索引。
 
-`启用 pgvector` 会执行：
+已有旧向量或索引任务的实例继续使用手动恢复/重建流程；可点击 `完成 pgvector 设置` 安装扩展。
+
+`完成 pgvector 设置` 会执行：
 
 - `CREATE EXTENSION IF NOT EXISTS vector`
 
@@ -163,7 +165,7 @@ docker exec rote-postgres psql -U rote -d rote -c "select indexname from pg_inde
 
 ## 向量化存量数据
 
-迁移只会创建表结构，不会立即把所有历史笔记和文章向量化。管理员需要在 `AI 相关` 页面执行：
+迁移只会创建表结构，不调用向量模型。首次启用且没有旧向量或索引任务时，确认保存会自动启动首次索引；已有索引或旧版向量数据需要在 `AI 相关` 页面手动恢复或重建：
 
 1. 保存并验证配置后，点击 `重建向量索引`，确认模型调用费用。
 2. 观察任务统计中的 pending/running/succeeded/failed。

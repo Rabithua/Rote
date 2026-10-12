@@ -39,7 +39,6 @@ export async function localAiAgentStream(params: {
   payload: AiChatPayload;
   handlers: AiChatStreamHandlers;
   toolsAvailable: boolean;
-  enableThinking: boolean;
   signal?: AbortSignal;
 }) {
   const payload = withAiClientRequestContext(params.payload);
@@ -59,9 +58,24 @@ export async function localAiAgentStream(params: {
   const sourceMap = new Map<string, AiSemanticResult>();
   let sourceKeys: string[] = [];
   let sourceCharsUsed = 0;
+  let readOffsets: Record<string, number> = {};
+  let evidenceExhausted = false;
   let state: AiAgentClientState = payload.state || { stateVersion: 1, seenSourceIds: [] };
   let toolCallCount = 0;
   let hasAnswer = false;
+  let endedWithoutTools = false;
+  let lastOutputId: string | undefined;
+  const emitOutput = (
+    outputId: string,
+    phase: 'planning' | 'tool_calling' | 'answering',
+    text: string
+  ) => {
+    const separator = lastOutputId && lastOutputId !== outputId ? '\n\n' : '';
+    lastOutputId = outputId;
+    const output = { outputId, phase, text };
+    if (params.handlers.onOutputDelta) params.handlers.onOutputDelta(output);
+    else params.handlers.onDelta?.(separator + text);
+  };
   const availableToolNames = new Set(bootstrap?.tools.map((tool) => tool.function.name) || []);
 
   params.handlers.onRunStarted?.(`local_${Date.now()}`);
@@ -72,7 +86,6 @@ export async function localAiAgentStream(params: {
     const response = await streamLocalChatCompletion({
       config: params.config,
       messages,
-      enableThinking: params.enableThinking,
       signal: params.signal,
       onReasoning: (text) => params.handlers.onThinking?.('answer', text),
       onContent: (text) => params.handlers.onDelta?.(text),
@@ -86,24 +99,38 @@ export async function localAiAgentStream(params: {
   }
 
   for (let step = 0; step < bootstrap.policy.maxIterations; step += 1) {
-    params.handlers.onProgress?.(step === 0 ? 'planning' : 'tool_calling');
+    const phase = step === 0 ? 'planning' : 'tool_calling';
+    const outputId = `step-${step}`;
+    params.handlers.onOutputStarted?.({ outputId, phase });
+    params.handlers.onProgress?.(phase);
     const response = await streamLocalChatCompletion({
       config: params.config,
       messages,
       tools: bootstrap.tools,
-      enableThinking: params.enableThinking,
       signal: params.signal,
+      onContent: (text) => emitOutput(outputId, phase, text),
       onReasoning: (text) =>
-        params.handlers.onThinking?.(step === 0 ? 'route_decision' : 'evidence_decision', text),
+        params.handlers.onThinking?.(
+          step === 0 ? 'route_decision' : 'evidence_decision',
+          text,
+          outputId
+        ),
     });
     const calls = response.message.tool_calls || [];
+    hasAnswer = !calls.length && !!response.message.content?.trim();
+    params.handlers.onOutputFinished?.({
+      outputId,
+      phase,
+      kind: hasAnswer ? 'answer' : 'process',
+    });
+    if (response.usage)
+      params.handlers.onUsage?.(
+        response.usage,
+        hasAnswer ? 'answer' : step === 0 ? 'planning' : 'tool_decision'
+      );
     if (!calls.length) {
-      if (response.message.content) {
-        hasAnswer = true;
-        params.handlers.onDelta?.(response.message.content);
-      }
-      if (response.usage)
-        params.handlers.onUsage?.(response.usage, hasAnswer ? 'answer' : 'planning');
+      endedWithoutTools = true;
+      if (hasAnswer) params.handlers.onProgress?.('answering');
       break;
     }
 
@@ -125,19 +152,16 @@ export async function localAiAgentStream(params: {
     }
     if (!validCalls.length) continue;
 
-    if (response.usage) {
-      params.handlers.onUsage?.(response.usage, step === 0 ? 'planning' : 'tool_decision');
-    }
-    messages.push({ role: 'assistant', content: null, tool_calls: validCalls });
+    messages.push({ ...response.message, tool_calls: validCalls });
 
     for (const call of validCalls) {
-      if (toolCallCount >= bootstrap.policy.maxToolCalls) {
+      if (toolCallCount >= bootstrap.policy.maxToolCalls || evidenceExhausted) {
         messages.push({
           role: 'tool',
           tool_call_id: call.id,
           content: JSON.stringify({
             status: 'skipped',
-            reason: 'tool_budget_exceeded',
+            reason: evidenceExhausted ? 'budget_exhausted' : 'tool_budget_exceeded',
             toolName: call.function.name,
           }),
         });
@@ -154,16 +178,22 @@ export async function localAiAgentStream(params: {
         state,
         sourceKeys,
         sourceCharsUsed,
+        readOffsets,
       });
       state = result.state;
+      readOffsets = result.readOffsets || {};
+      evidenceExhausted ||= result.retrieval?.budgetExhausted === true;
       sourceKeys = result.sourceKeys;
       sourceCharsUsed = Number.isFinite(result.sourceCharsUsed)
         ? Math.min(Math.max(Math.floor(result.sourceCharsUsed), 0), bootstrap.policy.maxSourceChars)
         : sourceCharsUsed;
       if (result.plan) params.handlers.onPlan?.(result.plan);
       if (result.statePatch) params.handlers.onStatePatch?.(result.statePatch);
-      if (result.sources.length) {
-        params.handlers.onSources?.(mergeSources(sourceMap, result.sources, sourceKeys));
+      if (result.sources.length || result.retrieval) {
+        params.handlers.onSources?.(
+          mergeSources(sourceMap, result.sources, sourceKeys),
+          result.retrieval
+        );
       }
       params.handlers.onToolFinished?.(
         call.function.name,
@@ -183,26 +213,37 @@ export async function localAiAgentStream(params: {
       }
     }
 
-    if (toolCallCount >= bootstrap.policy.maxToolCalls) break;
+    if (toolCallCount >= bootstrap.policy.maxToolCalls || evidenceExhausted) break;
   }
 
-  if (!hasAnswer) {
+  if (!hasAnswer && !endedWithoutTools) {
+    params.handlers.onOutputStarted?.({ outputId: 'final', phase: 'answering' });
     params.handlers.onProgress?.('answering');
-    messages.push({ role: 'user', content: bootstrap.finalAnswerInstruction });
+    const stopReason = evidenceExhausted
+      ? 'No further evidence tools are available. Answer from delivered evidence without mentioning internal reading or tool budgets.\n'
+      : '';
+    messages.push({ role: 'user', content: stopReason + bootstrap.finalAnswerInstruction });
     const response = await streamLocalChatCompletion({
       config: params.config,
       messages,
-      enableThinking: params.enableThinking,
       signal: params.signal,
-      onReasoning: (text) => params.handlers.onThinking?.('answer', text),
-      onContent: (text) => params.handlers.onDelta?.(text),
+      onReasoning: (text) => params.handlers.onThinking?.('answer', text, 'final'),
+      onContent: (text) => emitOutput('final', 'answering', text),
     });
     if (!response.message.content?.trim()) {
       throw new Error(
         sourceMap.size > 0 ? 'error_no_answer_with_sources' : 'error_no_answer_no_sources'
       );
     }
+    hasAnswer = true;
+    params.handlers.onOutputFinished?.({ outputId: 'final', phase: 'answering', kind: 'answer' });
     if (response.usage) params.handlers.onUsage?.(response.usage, 'answer');
+  }
+
+  if (!hasAnswer) {
+    throw new Error(
+      sourceMap.size > 0 ? 'error_no_answer_with_sources' : 'error_no_answer_no_sources'
+    );
   }
 
   params.handlers.onStatePatch?.(state);

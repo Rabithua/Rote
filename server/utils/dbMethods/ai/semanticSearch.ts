@@ -3,7 +3,6 @@ import type { SecurityConfig } from '../../../types/config';
 import { vectorToLiteral } from '../../ai/client';
 import { getGlobalConfig } from '../../config';
 import db from '../../drizzle';
-import { logAiTokenUsage } from '../aiToken';
 import { subjectIsVisibleToViewer } from '../userBlock';
 import { requireReadyGeneration } from '../../../embeddings/queue';
 import { createQueryEmbedding } from '../../../embeddings/query';
@@ -21,6 +20,7 @@ import type {
 } from './types';
 
 export async function semanticSearch(params: {
+  signal?: AbortSignal;
   query: string;
   ownerId?: string;
   viewerId?: string;
@@ -36,6 +36,7 @@ export async function semanticSearch(params: {
   exclude?: { sourceType: AiSourceType; sourceId: string };
   excludeIds?: string[];
 }): Promise<SemanticSearchResult[]> {
+  params.signal?.throwIfAborted();
   const { config, state } = await requireReadyGeneration();
   if (params.scope === 'public' && !config.publicExploreVectorEnabled) {
     throw new Error('Public semantic search is disabled');
@@ -47,22 +48,14 @@ export async function semanticSearch(params: {
   const dateField = params.dateField === 'updatedAt' ? 'updatedAt' : 'createdAt';
   const queryText = [params.query, ...(params.semanticScope || [])].filter(Boolean).join('\n');
 
-  const { embedding: queryEmbedding, usage } = await createQueryEmbedding(
+  const { embedding: queryEmbedding } = await createQueryEmbedding(
     config,
     state.generationId!,
     dimensions,
-    queryText || 'all notes'
+    queryText || 'all notes',
+    { userId: params.viewerId ?? params.ownerId, purpose: 'embedding_query' },
+    params.signal
   );
-  if (usage && params.ownerId) {
-    await logAiTokenUsage({
-      userid: params.ownerId,
-      model: config.embedding.model,
-      type: 'embedding',
-      promptTokens: usage.prompt_tokens,
-      completionTokens: 0,
-      totalTokens: usage.total_tokens,
-    });
-  }
   const securityConfig = getGlobalConfig<SecurityConfig>('security');
   const requireVerifiedEmailForExplore = securityConfig?.requireVerifiedEmailForExplore === true;
   const sourceTypes = Array.from(

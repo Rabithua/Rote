@@ -29,7 +29,6 @@ import {
   findRoteById,
   getPgvectorStatus,
   getStoredAiConfig,
-  logAiTokenUsage,
   prepareRoteChatContext,
   searchMemory,
 } from '../../utils/dbMethods';
@@ -48,8 +47,10 @@ import {
 import { registerAdminAiRoutes } from './aiAdmin';
 import { registerClientAgentRoutes } from './aiClientAgent';
 import { registerAiStatusRoute } from './aiStatus';
+import aiConversationRouter from '../../aiConversations/routes';
 
 const aiRouter = new Hono<{ Variables: HonoVariables }>();
+aiRouter.route('/conversations', aiConversationRouter);
 const VALID_AI_SOURCE_TYPES = new Set<AiSourceType>(['rote', 'article']);
 
 function getAiMemoryErrorStatus(message: string): 403 | 503 {
@@ -72,7 +73,6 @@ async function streamToolPlannedChatResponse(
     excludeIds: body?.excludeIds,
     history: body?.history,
     clientContext: body?.clientContext,
-    enableThinking: body?.enableThinking === true,
     signal,
     onPlanUsage: (usage) => addAiChatStreamUsage(metrics, usage),
     onPlanThinkingDelta: async (text) => {
@@ -97,7 +97,7 @@ async function streamToolPlannedChatResponse(
   let emittedText = false;
   let lastUsage: any = null;
   for await (const part of createChatCompletionStreamParts(config.chat, messages, {
-    enableThinking: body?.enableThinking === true,
+    usageContext: { userId: user.id, purpose: 'chat_answer' },
     signal,
   })) {
     if (part.type === 'reasoning') {
@@ -112,14 +112,6 @@ async function streamToolPlannedChatResponse(
 
   if (lastUsage) {
     addAiChatStreamUsage(metrics, lastUsage);
-    await logAiTokenUsage({
-      userid: user.id,
-      model: config.chat.model,
-      type: 'chat',
-      promptTokens: lastUsage.prompt_tokens,
-      completionTokens: lastUsage.completion_tokens,
-      totalTokens: lastUsage.total_tokens,
-    });
     await writeSseEvent(stream, 'usage', { phase: 'answer', usage: lastUsage });
   }
 
@@ -320,7 +312,6 @@ aiRouter.post('/chat', authenticateJWT, bodyTypeCheck, async (c: HonoContext) =>
           message,
           history: body?.history,
           clientContext: body?.clientContext,
-          enableThinking: body?.enableThinking === true,
         }),
         sources: [],
       };
@@ -372,7 +363,7 @@ aiRouter.post('/agent/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCon
           excludeIds: body?.excludeIds,
           pendingPlan: body?.pendingPlan,
           clarificationAnswer: body?.clarificationAnswer,
-          enableThinking: body?.enableThinking === true,
+          streamOutputs: body?.streamOutputs === true,
         },
         config,
         emit: (event) => writeAgentSseEvent(stream, event),
@@ -448,7 +439,6 @@ aiRouter.post('/chat/stream', authenticateJWT, bodyTypeCheck, async (c: HonoCont
           message,
           history: body?.history,
           clientContext: body?.clientContext,
-          enableThinking: body?.enableThinking === true,
           signal: abortControl.signal,
           onReasoning: (text) => writeSseEvent(stream, 'thinking', { phase: 'answer', text }),
           onContent: (text) => writeSseEvent(stream, 'delta', { text }),

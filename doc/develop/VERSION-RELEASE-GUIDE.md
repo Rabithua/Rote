@@ -93,6 +93,22 @@ Dokploy develop Compose 应同时使用 `rabithua/rote-backend:develop` 和
 Actions Secret 保存，且不得写入仓库或日志。不要为同一个 Compose 在两个 Docker Hub repository 中
 重复配置部署 Webhook；独立 Dokploy Application 仍可继续使用与其镜像 tag 匹配的 Docker Hub Webhook。
 
+Webhook 返回成功只表示部署已排队。部署 job 随后每 15 秒检查线上后端版本、数据库连接、
+前端 HTML 中的完整 Git revision、入口 JavaScript 和 Service Worker 是否一致；最多等待 5 分钟。
+任一检查未通过时，job 会失败并保留最后一个具体错误。这个检查只读取公开接口，不需要 Dokploy
+管理凭证，也不会重新构建镜像。前端 revision 通过 `ROTE_BUILD_REVISION` 构建参数注入，
+develop 和 release 镜像都会携带；本地开发不需要该参数。
+
+正式发布时，先将 `develop` 通过 PR 合并到 `main`。如果随后立即创建 GitHub Release，先取消
+这次 main push 触发的重复镜像构建，避免两个 workflow 同时覆盖 `latest` / `release`。
+Release workflow 完成只代表镜像已发布；部署具体版本后还需执行同一校验：
+
+```bash
+ROTE_EXPECTED_RELEASE_VERSION=v2.6.0 \
+ROTE_EXPECTED_REVISION=<release-commit-sha> \
+bun run .github/scripts/verify-deployment.ts
+```
+
 ## 验证构建
 
 构建完成后，可以在以下位置验证：

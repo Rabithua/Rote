@@ -228,20 +228,8 @@ export function mergeUniqueRoteAttachmentDetails<T extends AttachmentLike>(
 
 export function validateRoteMediaKinds(mediaKinds: MediaKind[]): void {
   if (mediaKinds.length === 0) return;
-
-  const imageCount = mediaKinds.filter((kind) => kind === 'image' || kind === 'livePhoto').length;
-  const videoCount = mediaKinds.filter((kind) => kind === 'video').length;
-
-  if (imageCount > 0 && videoCount > 0) {
-    throw new Error('Images and videos cannot be uploaded together in the same Rote');
-  }
-
-  if (videoCount > 1) {
-    throw new Error('Only one video can be uploaded to a Rote');
-  }
-
-  if (imageCount > MAX_FILES) {
-    throw new Error(`Maximum ${MAX_FILES} images can be uploaded to a Rote`);
+  if (mediaKinds.length > MAX_FILES) {
+    throw new Error(`Maximum ${MAX_FILES} media attachments can be uploaded to a Rote`);
   }
 }
 

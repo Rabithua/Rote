@@ -1,4 +1,10 @@
 import { isLocalPersonalAiProvider, type PersonalAiProviderConfig } from '@/state/localAi';
+import { buildChatParameters } from '@/utils/chatParameters';
+import {
+  ReasoningDetailsAccumulator,
+  readReasoningText,
+  type ReasoningDetail,
+} from '@/utils/reasoningDetails';
 import type { AiTokenUsage } from '@/utils/aiApi';
 import { AiStreamError } from '@/utils/aiStream';
 import {
@@ -21,6 +27,9 @@ export type LocalChatToolCall = {
 export type LocalChatMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
+  reasoning_content?: string;
+  reasoning?: string;
+  reasoning_details?: ReasoningDetail[];
   tool_call_id?: string;
   tool_calls?: LocalChatToolCall[];
 };
@@ -71,11 +80,18 @@ async function readError(response: Response): Promise<string> {
   const text = await response.text();
   try {
     const body = JSON.parse(text);
-    return (
-      body?.error?.message || body?.message || `Personal model request failed (${response.status})`
-    );
+    return body?.error?.message || body?.message || 'personal_ai_request_failed';
   } catch {
-    return text || `Personal model request failed (${response.status})`;
+    const plainText = text
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (/Connection Closed|SGErrorDomain|Policy:/i.test(plainText)) {
+      return 'personal_ai_proxy_intercepted';
+    }
+    return plainText || text || 'personal_ai_request_failed';
   }
 }
 
@@ -130,7 +146,6 @@ export async function streamLocalChatCompletion(params: {
   config: PersonalAiProviderConfig;
   messages: LocalChatMessage[];
   tools?: LocalChatToolDefinition[];
-  enableThinking?: boolean;
   signal?: AbortSignal;
   onReasoning?: (text: string) => void;
   onContent?: (text: string) => void;
@@ -140,12 +155,9 @@ export async function streamLocalChatCompletion(params: {
   const requestBody = JSON.stringify({
     model: params.config.model,
     messages: params.messages,
-    temperature: params.config.temperature,
+    ...buildChatParameters(params.config, params.config.temperature),
     stream: true,
     stream_options: { include_usage: true },
-    ...(isLocalPersonalAiProvider(params.config)
-      ? { chat_template_kwargs: { enable_thinking: params.enableThinking === true } }
-      : {}),
     ...(params.tools?.length ? { tools: params.tools, tool_choice: 'auto' } : {}),
   });
   let response: Response | null = null;
@@ -161,7 +173,8 @@ export async function streamLocalChatCompletion(params: {
           body: requestBody,
           signal: control.signal,
         });
-        if (!candidate.ok) throw new Error(await readError(candidate));
+        if (!candidate.ok || candidate.headers.get('content-type')?.includes('text/html'))
+          throw new Error(await readError(candidate));
         response = candidate;
         break;
       } catch (error) {
@@ -181,6 +194,8 @@ export async function streamLocalChatCompletion(params: {
     const toolCalls = new Map<number, LocalChatToolCall>();
     let buffer = '';
     let content = '';
+    const reasoningFields: Pick<LocalChatMessage, 'reasoning_content' | 'reasoning'> = {};
+    const reasoningDetails = new ReasoningDetailsAccumulator();
     let usage: AiTokenUsage | undefined;
     let doneReceived = false;
     let finishReason: string | null = null;
@@ -209,7 +224,12 @@ export async function streamLocalChatCompletion(params: {
       }
 
       const delta = chunk?.choices?.[0]?.delta || {};
-      const reasoning = delta.reasoning_content || delta.reasoning;
+      for (const field of ['reasoning_content', 'reasoning'] as const) {
+        if (typeof delta[field] === 'string')
+          reasoningFields[field] = (reasoningFields[field] ?? '') + delta[field];
+      }
+      reasoningDetails.append(delta.reasoning_details);
+      const reasoning = readReasoningText(delta);
       if (typeof reasoning === 'string' && reasoning) params.onReasoning?.(reasoning);
       if (typeof delta.content === 'string' && delta.content) {
         content += delta.content;
@@ -274,6 +294,8 @@ export async function streamLocalChatCompletion(params: {
       message: {
         role: 'assistant',
         content: content || null,
+        ...reasoningFields,
+        ...reasoningDetails.fields(),
         tool_calls: Array.from(toolCalls.values()).filter((call) => call.function.name),
       },
       usage,

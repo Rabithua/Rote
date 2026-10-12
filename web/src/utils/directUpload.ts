@@ -47,7 +47,8 @@ export type PresignFile = {
   contentType?: string;
   size?: number;
   mediaKind?: MediaKind;
-  compressed?: { contentType: 'image/jpeg' | 'image/webp'; size: number };
+  compressedContentType?: 'image/png' | 'image/webp';
+  compressed?: { contentType: 'image/png' | 'image/webp'; size: number };
   pairedVideo?: { filename?: string; contentType?: string; size?: number };
   poster?: { contentType: 'image/jpeg'; size: number };
 };
@@ -59,7 +60,7 @@ export type PresignItem = {
     key: string;
     putUrl: string;
     url: string;
-    contentType: 'image/jpeg' | 'image/webp';
+    contentType: 'image/png' | 'image/webp' | 'image/jpeg';
   };
   poster?: { key: string; putUrl: string; url: string; contentType: 'image/jpeg' };
   pairedVideo?: { key: string; putUrl: string; url: string; contentType?: string };
@@ -209,6 +210,8 @@ export type FinalizeAttachment = {
   pairedVideoFilename?: string;
   size?: number;
   mimetype?: string;
+  width?: number;
+  height?: number;
   mediaKind?: MediaKind;
   hash?: string;
 };
@@ -275,6 +278,9 @@ export function isHeicLikeAttachment(attachment: File | AttachmentMedia) {
 }
 
 export function getAttachmentImageThumbnailSrc(attachment: AttachmentMedia) {
+  if (attachment.details?.mimetype?.toLowerCase() === 'image/gif') {
+    return attachment.url || attachment.compressUrl || '';
+  }
   const compatibleStill = attachment.compressUrl || attachment.posterUrl || '';
   if (isHeicLikeAttachment(attachment)) {
     return compatibleStill;
@@ -283,7 +289,11 @@ export function getAttachmentImageThumbnailSrc(attachment: AttachmentMedia) {
 }
 
 export function getAttachmentImagePreviewSrc(attachment: AttachmentMedia) {
-  return getAttachmentImageThumbnailSrc(attachment);
+  const thumbnailSrc = getAttachmentImageThumbnailSrc(attachment);
+  const requiresWebSafeStill =
+    getAttachmentMediaKind(attachment) === 'livePhoto' || isHeicLikeAttachment(attachment);
+
+  return requiresWebSafeStill ? thumbnailSrc : attachment.url || thumbnailSrc;
 }
 
 export function getAttachmentLivePhotoPlaybackSrc(attachment: AttachmentMedia) {

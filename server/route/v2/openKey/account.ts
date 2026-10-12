@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { getOpenKeyCapabilities } from '../../../openKey/capabilities';
 import type { HonoContext, HonoVariables } from '../../../types/hono';
 import {
   editMyProfile,
@@ -50,11 +51,18 @@ function validateDateRange(startDate: string | undefined, endDate: string | unde
 
 router.get('/permissions', async (c: HonoContext) => {
   const openKey = requireOpenKey(c);
+  const [profile, capabilities] = await Promise.all([
+    getMyProfile(openKey.userid),
+    getOpenKeyCapabilities(openKey.userid, openKey.permissions),
+  ]);
+  c.header('Cache-Control', 'no-store');
   return c.json(
     createResponse({
+      protocolVersion: 1,
       permissions: openKey.permissions,
       ownerId: openKey.userid,
-      capabilities: openKey.permissions.includes('GETROTE') ? { noteCreateIdempotency: 1 } : {},
+      owner: { id: openKey.userid, username: profile.username, nickname: profile.nickname },
+      capabilities,
     }),
     200
   );

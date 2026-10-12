@@ -7,6 +7,7 @@ import {
 } from '@/components/ai/AiMessageStatus';
 import { cleanSourceText, getAiSourcePath } from '@/components/ai/AiSourceList';
 import AiStreamingMarkdown from '@/components/ai/AiStreamingMarkdown';
+import { AgentOutputTrace } from '@/components/ai/AgentOutputTrace';
 import { useAiAnswerExport } from '@/hooks/useAiAnswerExport';
 import { useProfile } from '@/state/profile';
 import type { AiMemoryMessage } from '@/state/aiChat';
@@ -14,6 +15,7 @@ import { Copy, ImageDown, Printer, Link as LinkIcon, Loader } from 'lucide-react
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { conversationErrorTranslation } from '@/features/ai-conversations/errorPresentation';
 
 function formatTokenBreakdown(message: AiMemoryMessage) {
   const usageByPhase = message.metrics?.usageByPhase;
@@ -31,11 +33,15 @@ function formatTokenBreakdown(message: AiMemoryMessage) {
 export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.aiMemory' });
   const profile = useProfile();
+  const errorKey = message.errorDetail
+    ? conversationErrorTranslation(message.errorDetail)
+    : undefined;
   const { exporting, handleExportImage, handleExportPdf } = useAiAnswerExport();
   const hasThinking = Object.values(message.thinking || {}).some((text) => text?.trim());
   const hasAssistantStatus =
     message.role === 'assistant' && ((message.timeline?.length || 0) > 0 || hasThinking);
   const tokenBreakdown = formatTokenBreakdown(message);
+  const hasOutputBody = message.outputs?.some((output) => output.kind !== 'process');
   const copyAnswer = async () => {
     const sourceLines = (message.sources || [])
       .map((source, index) => `[${index + 1}] ${window.location.origin}${getAiSourcePath(source)}`)
@@ -55,7 +61,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
   return (
     <div className={`px-4 py-4 ${message.role === 'assistant' ? 'bg-foreground/2' : ''}`}>
       <div className="mx-auto flex max-w-3xl flex-col gap-2 text-sm">
-        {message.role === 'assistant' && (
+        {message.role === 'assistant' && !message.outputs?.length && (
           <AgentTimeline message={message} title={t('timeline.title')} />
         )}
         {message.role === 'assistant' && (
@@ -65,6 +71,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
           <PlannerDebugSummary message={message} title={t('debug.title')} />
         )}
         {message.role === 'assistant' && <ThinkingTrace message={message} />}
+        {message.role === 'assistant' && <AgentOutputTrace message={message} />}
         {message.role === 'assistant' && (message.sources?.length || 0) > 0 && (
           <div className="relative flex w-full items-center gap-1.5 text-xs">
             <AiStatusTitle icon={<LinkIcon className="size-3 shrink-0" />}>
@@ -101,38 +108,39 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
             </div>
           </div>
         )}
-        {message.role === 'assistant' && (!message.error || message.errorDetail) ? (
-          message.content ? (
-            <AiStreamingMarkdown
-              content={message.content}
-              isStreaming={message.isStreaming}
-              sources={message.sources}
-            />
-          ) : (
-            !message.error &&
-            !hasAssistantStatus && (
-              <div className="text-info flex items-center gap-2">
-                <Loader className="size-4 animate-spin" />
-                {!message.plan
-                  ? t('messages.thinking')
-                  : !(message.sources && message.sources.length > 0)
-                    ? t('messages.searching')
-                    : t('messages.reading')}
-              </div>
+        {!hasOutputBody &&
+          (message.role === 'assistant' && (!message.error || message.errorDetail) ? (
+            message.content ? (
+              <AiStreamingMarkdown
+                content={message.content}
+                isStreaming={message.isStreaming}
+                sources={message.sources}
+              />
+            ) : (
+              !message.error &&
+              !hasAssistantStatus && (
+                <div className="text-info flex items-center gap-2">
+                  <Loader className="size-4 animate-spin" />
+                  {!message.plan
+                    ? t('messages.thinking')
+                    : !(message.sources && message.sources.length > 0)
+                      ? t('messages.searching')
+                      : t('messages.reading')}
+                </div>
+              )
             )
-          )
-        ) : (
-          <div
-            className={`wrap-break-word whitespace-pre-line ${
-              message.error ? 'text-destructive' : ''
-            }`}
-          >
-            {message.content}
-          </div>
-        )}
+          ) : (
+            <div
+              className={`wrap-break-word whitespace-pre-line ${
+                message.error ? 'text-destructive' : ''
+              }`}
+            >
+              {message.content}
+            </div>
+          ))}
         {message.error && message.errorDetail && (
           <div className="text-destructive text-xs wrap-break-word whitespace-pre-line">
-            {message.errorDetail}
+            {errorKey ? t(errorKey) : message.errorDetail}
           </div>
         )}
         {!message.error && message.metrics && !message.isStreaming && (
@@ -150,15 +158,7 @@ export function AiMessageItem({ message }: { message: AiMemoryMessage }) {
               </span>
             )}
             {message.metrics.firstTokenTime && (
-              <span>
-                First Token:{' '}
-                {(
-                  (message.metrics.firstTokenTime -
-                    (message.metrics.sourcesTime || message.metrics.planTime || 0)) /
-                  1000
-                ).toFixed(2)}
-                s
-              </span>
+              <span>First Token: {(message.metrics.firstTokenTime / 1000).toFixed(2)}s</span>
             )}
             {message.metrics.totalTime && (
               <span>Total: {(message.metrics.totalTime / 1000).toFixed(2)}s</span>

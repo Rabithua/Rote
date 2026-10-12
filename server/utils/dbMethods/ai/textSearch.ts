@@ -267,6 +267,7 @@ export async function textSearchMemory(params: {
 }
 
 export async function searchMemory(params: {
+  signal?: AbortSignal;
   query: string;
   ownerId?: string;
   viewerId?: string;
@@ -283,6 +284,7 @@ export async function searchMemory(params: {
   exclude?: { sourceType: AiSourceType; sourceId: string };
   excludeIds?: string[];
 }): Promise<{ sources: SemanticSearchResult[]; warnings: string[] }> {
+  params.signal?.throwIfAborted();
   const { timeRange, warnings } = normalizeSearchTimeRange(params.timeRange);
   const safeParams = { ...params, timeRange };
   if (params.selection === 'recent') {

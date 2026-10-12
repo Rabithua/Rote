@@ -1,15 +1,7 @@
 // RoteItem.tsx（合并优化版）
 import { useAtom } from 'jotai';
 import Linkify from 'linkify-react';
-import {
-  Archive,
-  ArrowDownLeft,
-  Edit,
-  Globe2Icon,
-  LinkIcon,
-  PinIcon,
-  SmilePlus,
-} from 'lucide-react';
+import { Archive, ArrowDownLeft, Edit, Globe2Icon, LinkIcon, PinIcon } from 'lucide-react';
 import moment from 'moment';
 import { memo, useCallback, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
@@ -21,7 +13,7 @@ import RoteEditor from '@/components/editor/RoteEditor';
 import { VerifiedIcon } from '@/components/icons/Verified';
 import { SoftBottom } from '@/components/others/SoftBottom';
 import UserAvatar from '@/components/others/UserAvatar';
-import AttachmentsGrid from '@/components/rote/AttachmentsGrid';
+import PostMedia from '@/components/rote/PostMedia';
 import { LinkPreviewCard } from '@/components/rote/LinkPreviewCard';
 import NoticeCreateBoard from '@/components/rote/NoticeCreateBoard';
 import { ReactionsPart } from '@/components/rote/Reactions';
@@ -111,7 +103,7 @@ function RoteItem({
         </Link>
       )}
 
-      <div className="flex grow flex-col space-y-2 overflow-hidden">
+      <div className="flex min-w-0 grow flex-col space-y-2">
         {/* Header */}
         <div className="flex w-full cursor-default items-center gap-2">
           <Link
@@ -277,8 +269,9 @@ function RoteItem({
 
         {/* Attachments */}
         {rote.attachments?.length > 0 && (
-          <AttachmentsGrid
+          <PostMedia
             attachments={rote.attachments.filter((a): a is Attachment => !(a instanceof File))}
+            avatarInset={showAvatar}
           />
         )}
 
@@ -286,7 +279,7 @@ function RoteItem({
         {rote.tags?.length > 0 && (
           <div className="my-2 flex flex-wrap items-center gap-2">
             {rote.tags.map((tag) => (
-              <Link key={tag} to="/filter" state={{ tags: [tag] }}>
+              <Link key={tag} to="/filter" state={{ initialKeyword: tag }}>
                 <div className="bg-foreground/5 rounded-md px-2 py-1 text-xs duration-300 hover:scale-95">
                   {tag}
                 </div>
@@ -295,13 +288,15 @@ function RoteItem({
           </div>
         )}
 
-        {/* Reactions */}
-        {showReactions &&
-          (inView ? (
-            <ReactionsPart rote={rote} mutate={mutate} mutateSingle={mutateSingle} />
-          ) : (
-            <SmilePlus className="bg-foreground/5 ml-auto size-6 cursor-pointer rounded-2xl p-1 duration-300 hover:scale-110" />
-          ))}
+        {/* Preserve reaction layout and local state across viewport changes. */}
+        {showReactions && (
+          <ReactionsPart
+            rote={rote}
+            mutate={mutate}
+            mutateSingle={mutateSingle}
+            isInView={inView}
+          />
+        )}
       </div>
 
       {modalType === 'share' && isOwner && (

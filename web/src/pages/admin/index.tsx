@@ -24,6 +24,7 @@ import PermissionsTab from './components/PermissionsTab';
 import SiteConfigTab from './components/SiteConfigTab';
 import StorageConfigTab from './components/StorageConfigTab';
 import UIConfigTab from './components/UIConfigTab';
+import UpdateBanner from './components/UpdateBanner';
 import UsersTab from './components/UsersTab';
 import DashboardTab from './components/DashboardTab';
 import HooksConfigTab from './components/HooksConfigTab';
@@ -129,6 +130,8 @@ export default function AdminDashboard() {
   return (
     <ContainerWithSideBar>
       <NavBar title={t('title')} icon={<Shield className="size-5" />} />
+
+      <UpdateBanner />
 
       <div className="flex flex-col divide-y">
         {/* Tab 导航 */}

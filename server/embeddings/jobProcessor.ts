@@ -17,7 +17,6 @@ import {
   hashText,
   splitIntoChunks,
 } from '../utils/dbMethods/ai/documents';
-import { logAiTokenUsage } from '../utils/dbMethods/aiToken';
 import type { AiSourceType } from '../utils/dbMethods/ai/types';
 import { createEmbedding } from './client';
 import { canProcessIndex, lockIndexState, readAiSnapshot } from './configStore';
@@ -39,17 +38,9 @@ export async function processEmbeddingJob(job: EmbeddingJob, config: AiConfig, d
   for (const [chunkIndex, chunk] of chunks.entries()) {
     await renewClaim(job);
     const result = await createEmbedding(config.embedding, chunk, {
+      usageContext: { userId: ownerId, purpose: 'embedding_index' },
       expectedDimensions: dimensions,
     });
-    if (result.usage)
-      await logAiTokenUsage({
-        userid: ownerId,
-        model: config.embedding.model,
-        type: 'embedding',
-        promptTokens: result.usage.prompt_tokens,
-        completionTokens: 0,
-        totalTokens: result.usage.total_tokens,
-      });
     vectors.push({
       generationId: job.generationId,
       ownerId,

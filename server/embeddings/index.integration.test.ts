@@ -45,6 +45,7 @@ async function saveConfig() {
     ...structuredClone(DEFAULT_AI_CONFIG),
     enabled: true,
     vectorEnabled: true,
+    autoIndexEnabled: false,
     embedding: {
       ...DEFAULT_AI_CONFIG.embedding,
       baseUrl: 'https://embedding.test/v1',
@@ -103,9 +104,95 @@ afterAll(async () => {
 });
 
 describe.serial('embedding configuration and index lifecycle', () => {
+  it('initializes pgvector and indexes existing content after the first enabled save', async () => {
+    await db.execute(sql`DROP EXTENSION IF EXISTS vector`);
+    const defaults = (await readAiSnapshot()).config;
+    expect(defaults).toMatchObject({ enabled: false, vectorEnabled: true, autoIndexEnabled: true });
+    await note();
+    await db
+      .insert(articles)
+      .values({ id: articleId, authorId: ownerId, content: 'existing article' });
+    const incoming = {
+      ...defaults,
+      enabled: true,
+      embedding: { ...defaults.embedding, baseUrl: 'https://embedding.test/v1' },
+    };
+    const { getAiConfigurationImpact } = await import('./configImpact');
+    expect(await getAiConfigurationImpact(incoming)).toMatchObject({
+      initializesIndex: true,
+      requiresConfirmation: true,
+    });
+    expect((await getPgvectorStatus()).installed).toBe(false);
+    const saved = await saveAiSettings(incoming);
+    const started = await getPgvectorStatus();
+    expect(started).toMatchObject({ installed: true, status: 'rebuilding', dimensions: 3 });
+    expect(started.indexName).toBeTruthy();
+    expect(requests).toHaveLength(1); // The validated dimensions also create the first index.
+    await saveAiSettings(saved);
+    expect((await getPgvectorStatus()).generationId).toBe(started.generationId);
+    expect(requests).toHaveLength(1);
+    await completeRebuild();
+    expect((await getPgvectorStatus()).ready).toBe(true);
+    expect((await db.select().from(documentEmbeddings)).map((row) => row.sourceId).sort()).toEqual(
+      [noteId, articleId].sort()
+    );
+    await note('changed after first indexing');
+    await processPendingEmbeddingJobs(20);
+    const [updated] = await db
+      .select()
+      .from(documentEmbeddings)
+      .where(eq(documentEmbeddings.sourceId, noteId));
+    expect(updated.text).toBe('changed after first indexing');
+    const changed = await saveAiSettings({
+      ...saved,
+      revision: saved.revision + 1,
+      embedding: { ...saved.embedding, model: 'next' },
+    });
+    expect((await readAiSnapshot()).state).toMatchObject({
+      status: 'needs_rebuild',
+      generationId: started.generationId,
+    });
+    expect(changed.revision).toBe(3);
+  });
+  it('preserves explicit opt-outs and does not initialize an index with AI or vectors disabled', async () => {
+    const saved = await saveAiSettings({
+      ...DEFAULT_AI_CONFIG,
+      enabled: true,
+      vectorEnabled: false,
+      autoIndexEnabled: false,
+    });
+    expect((await readAiSnapshot()).config).toMatchObject({
+      vectorEnabled: false,
+      autoIndexEnabled: false,
+    });
+    expect((await readAiSnapshot()).state.generationId).toBeNull();
+    expect(requests).toHaveLength(0);
+    await saveAiSettings({ ...saved, enabled: false, vectorEnabled: true });
+    expect((await readAiSnapshot()).state.generationId).toBeNull();
+    expect(requests).toHaveLength(0);
+  });
+  it('retains legacy vectors rather than starting an automatic full rebuild', async () => {
+    const config = await saveConfig();
+    await note();
+    await completeRebuild();
+    await db.update(documentEmbeddings).set({ generationId: null });
+    await db
+      .update(embeddingIndexState)
+      .set({ generationId: null })
+      .where(eq(embeddingIndexState.id, 1));
+    const disabled = await saveAiSettings({ ...config, enabled: false });
+    const { getAiConfigurationImpact } = await import('./configImpact');
+    expect(await getAiConfigurationImpact({ ...disabled, enabled: true })).toMatchObject({
+      initializesIndex: false,
+    });
+    const retained = await db.select().from(documentEmbeddings);
+    await saveAiSettings({ ...disabled, enabled: true });
+    expect((await readAiSnapshot()).state.generationId).toBeNull();
+    expect(await db.select().from(documentEmbeddings)).toEqual(retained);
+  });
   it('verifies at save time, rejects forged dimensions and stale revisions, preserves working settings on failure', async () => {
     const saved = await saveConfig();
-    expect((await readAiSnapshot()).state.status).toBe('needs_rebuild');
+    expect((await readAiSnapshot()).state.status).toBe('rebuilding');
     expect(saved.revision).toBe(1);
     await expect(saveAiSettings({ ...saved, revision: 0 })).rejects.toMatchObject({
       code: 'embedding_revision_conflict',

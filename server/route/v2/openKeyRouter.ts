@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { HonoVariables } from '../../types/hono';
 import { isOpenKeyOk } from '../../openKey/middleware';
+import importsRouter from './openKey/imports';
 import accountRouter from './openKey/account';
 import articlesRouter from './openKey/articles';
 import attachmentsRouter from './openKey/attachments';
@@ -16,6 +17,7 @@ router.route('/', noteSharesRouter);
 router.route('/', notesRouter);
 router.route('/', reactionsRouter);
 router.route('/', accountRouter);
+router.route('/', importsRouter);
 router.route('/', attachmentsRouter);
 
 export default router;

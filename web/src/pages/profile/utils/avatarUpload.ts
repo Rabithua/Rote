@@ -8,7 +8,7 @@ import {
   presignBrowserUpload,
   uploadToSignedUrl,
 } from '@/utils/directUpload';
-import { maybeCompressToWebp } from '@/utils/uploadHelpers';
+import { generateImageThumbnail } from '@/utils/uploadHelpers';
 import type { Area } from 'react-easy-crop';
 
 export function profileAttachmentUrl(attachment: Attachment): string {
@@ -74,7 +74,7 @@ async function uploadProfileImage(
   options: ProfileImageUploadOptions
 ): Promise<Attachment> {
   const contentType = file.type || 'image/jpeg';
-  const compressedBlob = await maybeCompressToWebp(file, {
+  const compressedBlob = await generateImageThumbnail(file, {
     maxWidthOrHeight: options.maxWidthOrHeight,
     initialQuality: options.initialQuality,
   });
@@ -83,10 +83,11 @@ async function uploadProfileImage(
       filename: file.name,
       contentType,
       size: file.size,
+      compressedContentType: compressedBlob?.type,
       ...(compressedBlob && options.browserDirectUpload
         ? {
             compressed: {
-              contentType: compressedBlob.type as 'image/jpeg' | 'image/webp',
+              contentType: compressedBlob.type,
               size: compressedBlob.size,
             },
           }

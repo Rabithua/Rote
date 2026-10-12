@@ -144,7 +144,17 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
         data: { databaseCode: '23502' },
       });
     }
-    expect(log.mock.calls).toHaveLength(2);
+    const configurationErrors = log.mock.calls.filter(
+      ([event]) => event === 'AI configuration transaction failed'
+    );
+    expect(configurationErrors).toHaveLength(2);
+    // These probes run before migration 0036, so usage writes fail safely while
+    // provider testing remains available. Assert the new operational signal too.
+    const usageErrors = log.mock.calls.filter(([event]) => event === 'ai_usage_persist_failed');
+    expect(usageErrors).toHaveLength(2);
+    for (const [, metadata] of usageErrors) {
+      expect(Object.keys(metadata as object).sort()).toEqual(['errorType', 'requestId']);
+    }
     expect(JSON.stringify(log.mock.calls)).not.toContain('migration-placeholder');
     expect((await client`SELECT config FROM settings WHERE "group" = 'ai'`)[0].config).toEqual(
       setting.config
@@ -193,6 +203,28 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
     expect(
       (await client`SELECT "updatedAt" FROM settings WHERE "group" = 'ai'`)[0].updatedAt
     ).not.toBeNull();
+    // A fresh activation on ordinary PostgreSQL must fail atomically, with no saved AI settings.
+    await client`DELETE FROM document_embeddings`;
+    await client`DELETE FROM embedding_jobs`;
+    await client`DELETE FROM settings WHERE "group" = 'ai'`;
+    const [beforeActivation] = await client`SELECT * FROM embedding_index_state`;
+    const unavailable = await request('/admin/settings', 'PUT', {
+      group: 'ai',
+      config: { ...incoming, revision: 4 },
+    });
+    expect(unavailable.status).toBe(503);
+    expect((await unavailable.json()).message).toBe('embedding_database_unavailable');
+    expect(await client`SELECT * FROM settings WHERE "group" = 'ai'`).toHaveLength(0);
+    expect((await client`SELECT * FROM embedding_index_state`)[0]).toEqual(beforeActivation);
+    const chatOnly = await request('/admin/settings', 'PUT', {
+      group: 'ai',
+      config: { ...incoming, revision: 4, vectorEnabled: false, autoIndexEnabled: false },
+    });
+    expect(chatOnly.status).toBe(200);
+    expect((await chatOnly.json()).data.config).toMatchObject({
+      vectorEnabled: false,
+      autoIndexEnabled: false,
+    });
   } finally {
     log.mockRestore();
     model.stop(true);

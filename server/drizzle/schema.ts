@@ -1,4 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
+import type { AiConversationMessage } from '../aiConversations/types';
 import {
   bigint,
   boolean,
@@ -52,6 +53,41 @@ export const users = pgTable(
     emailIdx: index('users_email_idx').on(table.email),
     usernameIdx: index('users_username_idx').on(table.username),
     // 注意：authProvider 相关索引已移除，OAuth 绑定信息存储在 user_oauth_bindings 表中
+  })
+);
+
+// Durable account-scoped AI history. Deletion keeps an empty tombstone so late
+// client snapshots cannot recreate a conversation with the same identity.
+export const aiConversations = pgTable(
+  'ai_conversations',
+  {
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade', onUpdate: 'cascade' }),
+    id: varchar('id', { length: 160 }).notNull(),
+    revision: integer('revision').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 3 }).notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 3 }).notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at', { withTimezone: true, precision: 3 }),
+    agentConversationId: varchar('agent_conversation_id', { length: 160 }),
+    messages: jsonb('messages').$type<AiConversationMessage[]>().notNull().default([]),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.ownerId, table.id], name: 'ai_conversations_owner_id_pk' }),
+    activityIdx: index('ai_conversations_owner_activity_idx').on(
+      table.ownerId,
+      table.updatedAt.desc(),
+      table.id.desc()
+    ),
+    positiveRevision: check('ai_conversations_positive_revision', sql`${table.revision} > 0`),
+    messagesArray: check(
+      'ai_conversations_messages_array',
+      sql`jsonb_typeof(${table.messages}) = 'array'`
+    ),
+    emptyTombstone: check(
+      'ai_conversations_empty_tombstone',
+      sql`${table.deletedAt} IS NULL OR (${table.messages} = '[]'::jsonb AND ${table.agentConversationId} IS NULL)`
+    ),
   })
 );
 
@@ -399,12 +435,20 @@ export const aiTokenUsageLogs = pgTable(
   'ai_token_usage_logs',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    userid: uuid('userid').notNull(),
+    userid: uuid('userid'),
     model: varchar('model', { length: 255 }).notNull(),
     type: varchar('type', { length: 20 }).notNull(), // 'chat' | 'embedding'
-    promptTokens: integer('promptTokens').notNull().default(0),
-    completionTokens: integer('completionTokens').notNull().default(0),
-    totalTokens: integer('totalTokens').notNull().default(0),
+    promptTokens: integer('promptTokens'),
+    completionTokens: integer('completionTokens'),
+    totalTokens: integer('totalTokens'),
+    requestId: uuid('request_id').unique(),
+    providerId: varchar('provider_id', { length: 100 }),
+    purpose: varchar('purpose', { length: 40 }),
+    status: varchar('status', { length: 20 }),
+    usageStatus: varchar('usage_status', { length: 20 }).notNull().default('legacy'),
+    cacheHitTokens: integer('cache_hit_tokens'),
+    cacheMissTokens: integer('cache_miss_tokens'),
+    reasoningTokens: integer('reasoning_tokens'),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => ({
@@ -414,7 +458,7 @@ export const aiTokenUsageLogs = pgTable(
       columns: [table.userid],
       foreignColumns: [users.id],
     })
-      .onDelete('cascade')
+      .onDelete('set null')
       .onUpdate('cascade'),
   })
 );
@@ -829,6 +873,13 @@ export const settings = pgTable(
 );
 
 // Rote Changes 表
+export const roteSyncStates = pgTable('rote_sync_states', {
+  userid: uuid('userid')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  revision: bigint('revision', { mode: 'bigint' }).notNull(),
+});
+
 export const roteChanges = pgTable(
   'rote_changes',
   {
@@ -837,6 +888,8 @@ export const roteChanges = pgTable(
     roteid: uuid('roteid'),
     action: varchar('action', { length: 50 }).notNull().default('CREATE'),
     userid: uuid('userid').notNull(),
+    // Historical audit rows stay unversioned; a snapshot initializes new sync clients.
+    revision: bigint('revision', { mode: 'bigint' }),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
   (table) => ({
@@ -850,6 +903,10 @@ export const roteChanges = pgTable(
       table.createdAt
     ),
     useridIdx: index('rote_changes_userid_idx').on(table.userid),
+    useridRevisionIdx: uniqueIndex('rote_changes_userid_revision_idx').on(
+      table.userid,
+      table.revision
+    ),
     roteidActionIdx: index('rote_changes_roteid_action_idx').on(table.roteid, table.action),
     roteidFk: foreignKey({
       columns: [table.roteid],

@@ -6,7 +6,6 @@ import {
   lifecycleScopeToArchived,
   toPlannerAgentDto,
 } from '../../ai/retrievalPlan';
-import { logAiTokenUsage } from '../aiToken';
 import { getStoredAiConfig } from './config';
 import { fallbackAnswer } from './documents';
 import { searchMemory } from './search';
@@ -26,21 +25,6 @@ function formatEvidenceDate(value: unknown): string | null {
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toISOString().slice(0, 10);
-}
-
-async function logChatTokenUsage(
-  ownerId: string,
-  model: string,
-  usage: ChatCompletionUsage
-): Promise<void> {
-  await logAiTokenUsage({
-    userid: ownerId,
-    model,
-    type: 'chat',
-    promptTokens: usage.prompt_tokens,
-    completionTokens: usage.completion_tokens,
-    totalTokens: usage.total_tokens,
-  });
 }
 
 function sourceToSnippet(source: SemanticSearchResult): RetrievalSnippet {
@@ -81,13 +65,17 @@ function decodeRetrievalCursor(cursor: string | null): string[] {
   }
 }
 
-export async function searchRotesProbe(scope: RetrievalScope): Promise<SearchRotesProbeResult> {
+export async function searchRotesProbe(
+  scope: RetrievalScope,
+  signal?: AbortSignal
+): Promise<SearchRotesProbeResult> {
   const warnings: string[] = [];
   const cursorExcludeIds = decodeRetrievalCursor(scope.cursor);
   if (scope.cursor && cursorExcludeIds.length === 0) warnings.push('invalid_cursor_ignored');
   const excludeIds = sanitizeExcludeIds([...scope.excludeIds, ...cursorExcludeIds]);
 
   const { sources, warnings: searchWarnings } = await searchMemory({
+    signal,
     query: scope.query,
     ownerId: scope.ownerId,
     sourceTypes: scope.sourceTypes,
@@ -231,10 +219,9 @@ export async function chatWithRoteContext(params: {
     };
   }
 
-  const { content, usage } = await createChatCompletion(config.chat, messages);
-  if (usage) {
-    await logChatTokenUsage(params.ownerId, config.chat.model, usage);
-  }
+  const { content } = await createChatCompletion(config.chat, messages, {
+    usageContext: { userId: params.ownerId, purpose: 'chat_answer' },
+  });
   const answer = content.trim() || fallbackAnswer(sources);
 
   return { answer, sources, plan };
@@ -249,7 +236,6 @@ export async function prepareRoteChatContext(params: {
   onPlanGenerated?: (plan: PlannerAgentDto) => Promise<void> | void;
   onPlanThinkingDelta?: (text: string) => Promise<void> | void;
   onPlanUsage?: (usage: ChatCompletionUsage) => Promise<void> | void;
-  enableThinking?: boolean;
   clientContext?: RetrievalTimeContext | null;
   signal?: AbortSignal;
 }): Promise<{
@@ -269,14 +255,12 @@ export async function prepareRoteChatContext(params: {
     message: params.message,
     config,
     history: params.history,
-    executeSearch: searchRotesProbe,
+    executeSearch: (scope) => searchRotesProbe(scope, params.signal),
     excludeIds: sanitizeExcludeIds(params.excludeIds),
-    enableThinking: params.enableThinking === true,
     timeContext: params.clientContext,
     onThinkingDelta: params.onPlanThinkingDelta,
     signal: params.signal,
     onUsage: async (usage) => {
-      await logChatTokenUsage(params.ownerId, config.chat.model, usage);
       await params.onPlanUsage?.(usage);
     },
   });

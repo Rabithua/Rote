@@ -72,6 +72,8 @@ export type Attachment = {
     encoding?: string;
     mimetype?: string | null;
     mediaKind?: 'image' | 'video' | 'livePhoto';
+    width?: number;
+    height?: number;
     size?: number;
     bucket?: string;
     key?: string;

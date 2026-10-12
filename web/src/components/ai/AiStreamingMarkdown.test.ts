@@ -18,6 +18,26 @@ const sources = [
 ] as AiSemanticResult[];
 
 describe('linkifyCitations', () => {
+  it('linkifies every adjacent citation shown in the memory reply', () => {
+    const replySources = Array.from({ length: 30 }, (_, index) => ({
+      sourceType: 'rote' as const,
+      sourceId: `rote-${index + 1}`,
+      similarity: 1,
+      text: `Source ${index + 1}`,
+      metadata: {},
+    }));
+
+    expect(linkifyCitations('Answer [3][9][6]. More [30][10][15].', replySources)).toBe(
+      'Answer [\\[3\\]](/rote/rote-3 "Source 3")[\\[9\\]](/rote/rote-9 "Source 9")[\\[6\\]](/rote/rote-6 "Source 6"). More [\\[30\\]](/rote/rote-30 "Source 30")[\\[10\\]](/rote/rote-10 "Source 10")[\\[15\\]](/rote/rote-15 "Source 15").'
+    );
+  });
+
+  it('linkifies adjacent groups while preserving separators and unknown citations', () => {
+    expect(linkifyCitations('Answer [1, 2][99][1] [2].', sources)).toBe(
+      'Answer [\\[1\\]](/rote/rote-1 "First source"), [\\[2\\]](/article/article-2 "Second source")[99][\\[1\\]](/rote/rote-1 "First source") [\\[2\\]](/article/article-2 "Second source").'
+    );
+  });
+
   it('linkifies every citation in a comma-separated group', () => {
     expect(linkifyCitations('Answer [1,2].', sources)).toBe(
       'Answer [\\[1\\]](/rote/rote-1 "First source"),[\\[2\\]](/article/article-2 "Second source").'
@@ -33,10 +53,12 @@ describe('linkifyCitations', () => {
   it('does not rewrite existing markdown links or footnotes', () => {
     expect(
       linkifyCitations(
-        '[1,2](https://example.com) [1,2][details] [^1]\n\n[details]: https://example.com',
+        '[1,2](https://example.com) [1,2][details] [1][] [[1]] [^1]\n\n[details]: https://example.com',
         sources
       )
-    ).toBe('[1,2](https://example.com) [1,2][details] [^1]\n\n[details]: https://example.com');
+    ).toBe(
+      '[1,2](https://example.com) [1,2][details] [1][] [[1]] [^1]\n\n[details]: https://example.com'
+    );
   });
 
   it('does not rewrite citations inside inline or fenced code', () => {

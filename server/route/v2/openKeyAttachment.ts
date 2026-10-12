@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { finalizeAttachmentReservation } from '../../attachments/finalizeReservation';
 import { finalizeAttachmentUploads } from '../../attachments/finalizeUpload';
 import {
   presignAttachmentUploads,
@@ -57,7 +58,7 @@ openKeyAttachmentRouter.post(
     const openKey = c.get('openKey')!;
     const body = await c.req.json();
     AttachmentPresignZod.parse(body);
-    const { files } = body as PresignAttachmentInput;
+    const { files, browserDirectUpload } = body as PresignAttachmentInput;
     const videoAllowed = canUploadVideo(openKey.permissions);
     if (presignInputIncludesVideo(files) && !videoAllowed) {
       return c.json(createResponse(null, 'openkey_permission_required:UPLOADVIDEO'), 403);
@@ -72,6 +73,7 @@ openKeyAttachmentRouter.post(
 
     const result = await presignAttachmentUploads({
       files,
+      browserDirectUpload,
       scopes: videoAllowed ? ['video:upload'] : [],
       userId: openKey.userid,
     });
@@ -87,9 +89,10 @@ openKeyAttachmentRouter.post(
   async (c: HonoContext) => {
     const openKey = c.get('openKey')!;
     const body = await c.req.json();
-    const { attachments, noteId } = body as {
+    const { attachments, noteId, reservationId } = body as {
       attachments?: FinalizeAttachmentInput[];
       noteId?: string;
+      reservationId?: string;
     };
     const videoAllowed = canUploadVideo(openKey.permissions);
     if (Array.isArray(attachments) && finalizeInputIncludesVideo(attachments) && !videoAllowed) {
@@ -107,12 +110,15 @@ openKeyAttachmentRouter.post(
       return c.json(createResponse(null, 'capability_required:attachment.video.upload'), 403);
     }
 
-    const result = await finalizeAttachmentUploads({
-      attachments,
+    const input = {
+      attachments: attachments ?? [],
       noteId,
       scopes: videoAllowed ? ['video:upload'] : [],
       userId: openKey.userid,
-    });
+    };
+    const result = reservationId
+      ? await finalizeAttachmentReservation({ ...input, reservationId })
+      : await finalizeAttachmentUploads(input);
     return c.json(createResponse(result), 201);
   }
 );

@@ -3,6 +3,7 @@
  * 负责处理访问令牌和刷新令牌的存储、获取和验证
  */
 class AuthService {
+  private sessionRevision = 0;
   private ACCESS_TOKEN_KEY = 'rote_access_token';
   private REFRESH_TOKEN_KEY = 'rote_refresh_token';
 
@@ -20,10 +21,15 @@ class AuthService {
     return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
+  getSessionRevision(): number {
+    return this.sessionRevision;
+  }
+
   /**
    * 存储访问令牌和刷新令牌
    */
   setTokens(accessToken: string, refreshToken: string): void {
+    this.sessionRevision += 1;
     localStorage.setItem(this.ACCESS_TOKEN_KEY, accessToken);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
   }
@@ -32,6 +38,7 @@ class AuthService {
    * 清除所有令牌
    */
   clearTokens(): void {
+    this.sessionRevision += 1;
     localStorage.removeItem(this.ACCESS_TOKEN_KEY);
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
   }

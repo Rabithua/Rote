@@ -1,3 +1,4 @@
+import type { AiUsageContext } from '../aiUsage/types';
 import { and, eq } from 'drizzle-orm';
 import { embeddingIndexState } from '../drizzle/schema';
 import db from '../utils/drizzle';
@@ -11,15 +12,22 @@ export async function createQueryEmbedding(
   config: AiConfig,
   generationId: string,
   dimensions: number,
-  input: string
+  input: string,
+  usageContext: AiUsageContext,
+  signal?: AbortSignal
 ) {
+  signal?.throwIfAborted();
   if (!(await getPgvectorStatus()).ready)
     throw new EmbeddingError('embedding_rebuild_required', 503);
   try {
     const result = await createEmbedding(config.embedding, input, {
       expectedDimensions: dimensions,
+      usageContext,
+      signal,
     });
+    signal?.throwIfAborted();
     const current = await requireReadyGeneration();
+    signal?.throwIfAborted();
     if (current.state.generationId !== generationId)
       throw new EmbeddingError('embedding_rebuild_required', 503);
     return result;

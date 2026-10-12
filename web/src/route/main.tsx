@@ -9,6 +9,7 @@ import { ProtectedRoute } from './protectedRoute';
 
 import NotFoundPage from '@/pages/404';
 import AdminDashboard from '@/pages/admin';
+import AiUsagePage from '@/pages/admin/aiUsage/AiUsagePage';
 import AiMemoryPage from '@/pages/ai';
 import PrivacyPolicyPage from '@/pages/app/privacy';
 import TermsOfServicePage from '@/pages/app/terms';
@@ -211,6 +212,15 @@ export default function GlobalRouterProvider() {
               element: (
                 <ProtectedRoute>
                   <AdminDashboard />
+                </ProtectedRoute>
+              ),
+            },
+            {
+              path: 'admin/ai-usage',
+              errorElement: <RouteErrorPage />,
+              element: (
+                <ProtectedRoute>
+                  <AiUsagePage />
                 </ProtectedRoute>
               ),
             },

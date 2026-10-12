@@ -1,10 +1,17 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import {
+  mockAllIsIntersecting,
+  resetIntersectionMocking,
+  setupIntersectionMocking,
+} from 'react-intersection-observer/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Reaction, Rote } from '@/types/main';
+import { generateVisitorId } from '@/utils/deviceFingerprint';
 
 import { ReactionsPart } from './Reactions';
+import RoteItem from './roteItem';
 
 const mocks = vi.hoisted(() => ({
   isAuthenticated: false,
@@ -14,9 +21,12 @@ const mocks = vi.hoisted(() => ({
   del: vi.fn(),
 }));
 
-vi.mock('@/components/animate-ui/text/sliding-number', () => ({
-  SlidingNumber: ({ number }: { number: number }) => <span>{number}</span>,
-}));
+vi.mock('@/components/editor/RoteEditor', () => ({ default: () => null }));
+vi.mock('@/components/rote/RoteActionsMenu', () => ({ default: () => null }));
+vi.mock('@/components/rote/PostMedia', () => ({ default: () => null }));
+vi.mock('@/components/rote/NoticeCreateBoard', () => ({ default: () => null }));
+vi.mock('@/features/note-sharing/NoteShareDialog', () => ({ NoteShareDialog: () => null }));
+vi.mock('@/state/editor', () => ({ useEditor: () => ({ editor_editRoteAtom: {} }) }));
 
 vi.mock('@/components/ui/avatar', () => ({
   Avatar: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
@@ -48,6 +58,7 @@ vi.mock('@/hooks/useSiteStatus', () => ({
 }));
 
 vi.mock('@/state/profile', () => ({
+  profileAtom: {},
   useAuthState: () => ({
     authReady: true,
     isAuthenticated: mocks.isAuthenticated,
@@ -57,7 +68,10 @@ vi.mock('@/state/profile', () => ({
 }));
 
 vi.mock('@/state/visitorId', () => ({ visitorIdAtom: {} }));
-vi.mock('jotai', () => ({ useAtom: () => [mocks.visitorId, vi.fn()] }));
+vi.mock('jotai', () => ({
+  useAtom: () => [mocks.visitorId, vi.fn()],
+  useAtomValue: () => undefined,
+}));
 vi.mock('@/utils/api', () => ({
   post: mocks.post,
   del: mocks.del,
@@ -105,13 +119,16 @@ function renderReactions(rote = makeRote()) {
 describe('ReactionsPart anonymous access', () => {
   beforeEach(() => {
     mocks.isAuthenticated = false;
+    setupIntersectionMocking(vi.fn);
     mocks.visitorId = 'visitor-current';
     mocks.anonymousPreReactions = ['❤️', '👍'];
     mocks.post.mockReset();
     mocks.del.mockReset();
+    vi.mocked(generateVisitorId).mockClear();
   });
 
   afterEach(() => {
+    resetIntersectionMocking();
     vi.useRealTimers();
   });
 
@@ -197,5 +214,115 @@ describe('ReactionsPart anonymous access', () => {
     fireEvent.pointerDown(screen.getByRole('button'), { button: 0, pointerType: 'touch' });
     act(() => vi.advanceTimersByTime(2_000));
     expect(screen.getByPlaceholderText('placeholder')).toBeInTheDocument();
+  });
+
+  it('defers visitor identity initialization until visible while keeping reaction content', async () => {
+    mocks.visitorId = null;
+    const rote = makeRote([makeReaction({ type: 'existing-reaction' })]);
+    const view = (isInView: boolean) => (
+      <MemoryRouter>
+        <ReactionsPart rote={rote} isInView={isInView} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view(false));
+
+    await act(async () => undefined);
+    expect(screen.getByText('existing-reaction')).toBeInTheDocument();
+    expect(generateVisitorId).not.toHaveBeenCalled();
+
+    rerender(view(true));
+    await waitFor(() => expect(generateVisitorId).toHaveBeenCalledTimes(1));
+    expect(screen.getByText('existing-reaction')).toBeInTheDocument();
+
+    rerender(view(false));
+    rerender(view(true));
+    await act(async () => undefined);
+    expect(generateVisitorId).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders actual reaction counts before the card enters view and preserves their nodes', () => {
+    const rote = makeRote([
+      makeReaction({ id: 'reaction-1', type: 'existing-reaction' }),
+      makeReaction({ id: 'reaction-2', type: 'existing-reaction' }),
+    ]);
+    const view = (note: Rote) => (
+      <MemoryRouter>
+        <RoteItem rote={note} showAvatar={false} />
+      </MemoryRouter>
+    );
+    const { rerender } = render(view(rote));
+    const reaction = screen.getByText('existing-reaction');
+    const count = screen.getByText('2');
+
+    for (const inView of [true, false, true]) {
+      act(() => mockAllIsIntersecting(inView));
+      expect(screen.getByText('existing-reaction')).toBe(reaction);
+      expect(screen.getByText('2')).toBe(count);
+    }
+
+    rerender(
+      view({
+        ...rote,
+        reactions: [
+          ...rote.reactions,
+          makeReaction({ id: 'reaction-3', type: 'existing-reaction' }),
+        ],
+      })
+    );
+    expect(screen.getByText('3')).toBe(count);
+  });
+
+  it('keeps a custom reaction draft and focus when the card leaves and re-enters view', () => {
+    vi.useFakeTimers();
+    mocks.isAuthenticated = true;
+    const rote = makeRote();
+    const view = (
+      <MemoryRouter>
+        <RoteItem rote={rote} showAvatar={false} />
+      </MemoryRouter>
+    );
+    render(view);
+    act(() => mockAllIsIntersecting(true));
+
+    fireEvent.pointerDown(screen.getByRole('button'), { button: 0, pointerType: 'touch' });
+    act(() => vi.advanceTimersByTime(2_000));
+    fireEvent.pointerUp(screen.getByPlaceholderText('placeholder'));
+    const input = screen.getByPlaceholderText('placeholder');
+    fireEvent.change(input, { target: { value: 'draft reaction' } });
+
+    for (const inView of [false, true]) {
+      act(() => mockAllIsIntersecting(inView));
+      expect(screen.getByPlaceholderText('placeholder')).toBe(input);
+      expect(input).toHaveValue('draft reaction');
+      expect(input).toHaveFocus();
+    }
+  });
+
+  it('keeps an in-flight reaction disabled across viewport changes', async () => {
+    mocks.isAuthenticated = true;
+    const rote = makeRote([makeReaction({ type: 'existing-reaction', userid: 'other-user' })]);
+    let finishRequest!: (_response: { data: Reaction }) => void;
+    mocks.post.mockReturnValue(
+      new Promise((resolve) => {
+        finishRequest = resolve;
+      })
+    );
+    render(
+      <MemoryRouter>
+        <RoteItem rote={rote} showAvatar={false} />
+      </MemoryRouter>
+    );
+    act(() => mockAllIsIntersecting(true));
+    fireEvent.click(screen.getByText('existing-reaction'));
+    expect(mocks.post).toHaveBeenCalledTimes(1);
+
+    act(() => mockAllIsIntersecting(false));
+    act(() => mockAllIsIntersecting(true));
+    fireEvent.click(screen.getByText('existing-reaction'));
+    expect(mocks.post).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      finishRequest({ data: makeReaction({ type: 'existing-reaction', userid: 'user-current' }) });
+    });
   });
 });

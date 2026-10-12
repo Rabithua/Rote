@@ -10,7 +10,6 @@ import { getUploadErrorMessage } from '@/utils/directUpload';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { usePermissions } from '@/hooks/usePermissions';
 
-import { getAttachmentMediaKind } from '@/utils/directUpload';
 import {
   DEFAULT_MAX_VIDEO_UPLOAD_SIZE_MB,
   IMAGE_ACCEPT,
@@ -67,20 +66,8 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const [localContent, setLocalContent] = useState(rote.content);
   const [articleSelectionOpen, setArticleSelectionOpen] = useState(false);
 
-  const attachmentMediaKinds = useMemo(
-    () => rote.attachments.map((attachment) => getAttachmentMediaKind(attachment)).filter(Boolean),
-    [rote.attachments]
-  );
-  const hasVideoAttachment = attachmentMediaKinds.includes('video');
-  const imageAttachmentCount = attachmentMediaKinds.filter(
-    (kind) => kind === 'image' || kind === 'livePhoto'
-  ).length;
-  const canAddMoreAttachments = !hasVideoAttachment && imageAttachmentCount < 9;
-  const uploadAccept = hasVideoAttachment
-    ? VIDEO_ACCEPT
-    : canUploadVideo
-      ? `${IMAGE_ACCEPT},${VIDEO_ACCEPT}`
-      : IMAGE_ACCEPT;
+  const canAddMoreAttachments = rote.attachments.length < 9;
+  const uploadAccept = canUploadVideo ? `${IMAGE_ACCEPT},${VIDEO_ACCEPT}` : IMAGE_ACCEPT;
 
   // 选中的文章 ID（一对一，只能有一个）
 
@@ -206,50 +193,27 @@ function RoteEditor({ roteAtom, callback }: { roteAtom: RoteAtomType; callback?:
   const addFiles = useCallback(
     (files: File[]) => {
       if (!files.length || submittingRef.current) return;
-      const existingMediaKinds = rote.attachments.map(getAttachmentMediaKind).filter(Boolean);
-      const existingHasVideo = existingMediaKinds.includes('video');
-      const existingImageCount = existingMediaKinds.filter(
-        (kind) => kind === 'image' || kind === 'livePhoto'
-      ).length;
-
       const fileKinds = files.map((file) => {
         if (isImageFile(file)) return 'image';
         if (isVideoFile(file)) return 'video';
         return null;
       });
       const hasUnsupportedFile = fileKinds.some((kind) => kind === null);
-      const hasImageSelection = fileKinds.includes('image');
       const hasVideoSelection = fileKinds.includes('video');
 
       if (hasUnsupportedFile) {
         toast.error(t('unsupportedFileType'));
         return;
       }
-      if (hasImageSelection && hasVideoSelection) {
-        toast.error(t('mixedMediaNotAllowed'));
-        return;
-      }
       if (hasVideoSelection && !canUploadVideo) {
         toast.error(t('videoUploadDisabled'));
         return;
       }
-      if (hasVideoSelection && existingImageCount > 0) {
-        toast.error(t('mixedMediaNotAllowed'));
+      if (rote.attachments.length + files.length > 9) {
+        toast.error(t('mediaLimitExceeded', { count: 9 }));
         return;
       }
-      if (hasImageSelection && existingHasVideo) {
-        toast.error(t('mixedMediaNotAllowed'));
-        return;
-      }
-      if (hasVideoSelection && (files.length > 1 || existingHasVideo)) {
-        toast.error(t('singleVideoOnly'));
-        return;
-      }
-      if (hasImageSelection && existingImageCount + files.length > 9) {
-        toast.error(t('imageLimitExceeded', { count: 9 }));
-        return;
-      }
-      if (hasVideoSelection && files.some((file) => file.size > maxVideoUploadSizeBytes)) {
+      if (files.some((file) => isVideoFile(file) && file.size > maxVideoUploadSizeBytes)) {
         toast.error(t('videoTooLarge', { size: maxVideoUploadSizeMB }));
         return;
       }

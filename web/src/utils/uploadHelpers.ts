@@ -1,4 +1,11 @@
 import imageCompression from 'browser-image-compression';
+import i18n from 'i18next';
+
+export type ImageThumbnail = Blob & { readonly type: 'image/png' | 'image/webp' };
+
+function isImageThumbnail(blob: Blob): blob is ImageThumbnail {
+  return blob.type === 'image/png' || blob.type === 'image/webp';
+}
 
 export const IMAGE_ACCEPT = 'image/*';
 export const VIDEO_ACCEPT = 'video/mp4,video/webm,video/quicktime';
@@ -39,20 +46,22 @@ export const qualityForSize = (size: number) => {
   return 0.6;
 };
 
-export async function maybeCompressToWebp(
+export async function generateImageThumbnail(
   file: File,
   opts?: { maxWidthOrHeight?: number; initialQuality?: number }
-) {
+): Promise<ImageThumbnail | null> {
   if (!shouldCompress(file)) return null;
 
   const { maxWidthOrHeight = 2560, initialQuality = qualityForSize(file.size) } = opts || {};
 
-  return imageCompression(file, {
-    maxWidthOrHeight,
-    initialQuality,
-    fileType: 'image/webp',
-    useWebWorker: true,
-  });
+  const options = { maxWidthOrHeight, initialQuality, useWebWorker: true };
+  const thumbnail = await imageCompression(file, { ...options, fileType: 'image/webp' });
+  // Browsers without a WebP encoder may return PNG. Always declare the actual bytes.
+  if (isImageThumbnail(thumbnail)) return thumbnail;
+
+  const png = await imageCompression(file, { ...options, fileType: 'image/png' });
+  if (isImageThumbnail(png) && png.type === 'image/png') return png;
+  throw new Error(i18n.t('pages.profile.resources.errors.manifestMismatch'));
 }
 
 // 任务执行结果

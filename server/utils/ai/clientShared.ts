@@ -1,4 +1,7 @@
+import type { AiUsageContext } from '../../aiUsage/types';
 import type { AiProviderConfig } from '../../types/config';
+import { buildChatParameters } from './chatParameters';
+import type { ReasoningDetail } from './reasoningDetails';
 
 export type ChatToolCall = {
   id: string;
@@ -12,6 +15,9 @@ export type ChatToolCall = {
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
+  reasoning_content?: string;
+  reasoning?: string;
+  reasoning_details?: ReasoningDetail[];
   tool_call_id?: string;
   tool_calls?: ChatToolCall[];
 };
@@ -37,8 +43,8 @@ export type ChatToolChoice =
     };
 
 export type ChatCompletionOptions = {
+  usageContext?: AiUsageContext;
   temperature?: number;
-  enableThinking?: boolean;
   toolChoice?: ChatToolChoice;
   signal?: AbortSignal;
   requestTimeoutMs?: number;
@@ -163,9 +169,12 @@ function buildProviderErrorMessage(response: Response, body: unknown): string {
   return providerMessage.slice(0, 500);
 }
 
-export async function ensureProviderStreamResponse(response: Response): Promise<void> {
+export async function ensureProviderStreamResponse(
+  response: Response,
+  observeUsage?: (usage: unknown) => void
+): Promise<void> {
   if (!response.ok) {
-    await readJsonResponse(response);
+    await readJsonResponse(response, observeUsage);
   }
 
   const contentType = response.headers.get('content-type') || '';
@@ -174,7 +183,10 @@ export async function ensureProviderStreamResponse(response: Response): Promise<
   }
 }
 
-export async function readJsonResponse(response: Response): Promise<any> {
+export async function readJsonResponse(
+  response: Response,
+  observeUsage?: (usage: unknown) => void
+): Promise<any> {
   const text = await response.text();
   let body: any = null;
   try {
@@ -182,6 +194,8 @@ export async function readJsonResponse(response: Response): Promise<any> {
   } catch {
     body = text;
   }
+
+  observeUsage?.(body?.usage);
 
   const contentType = response.headers.get('content-type') || '';
   if (typeof body === 'string' && (contentType.includes('text/html') || looksLikeHtml(body))) {
@@ -210,7 +224,6 @@ export function buildChatRequestBody(
     messages: ChatMessage[];
     temperature: number;
     stream?: boolean;
-    enableThinking?: boolean;
     tools?: ChatToolDefinition[];
     toolChoice?: ChatToolChoice;
   }
@@ -218,11 +231,8 @@ export function buildChatRequestBody(
   return {
     model: config.model,
     messages: body.messages,
-    temperature: body.temperature,
+    ...buildChatParameters(config, body.temperature),
     ...(body.stream ? { stream: true, stream_options: { include_usage: true } } : {}),
     ...(body.tools?.length ? { tools: body.tools, tool_choice: body.toolChoice || 'auto' } : {}),
-    ...(config.providerId === 'dashscope' && typeof body.enableThinking === 'boolean'
-      ? { enable_thinking: body.enableThinking }
-      : {}),
   };
 }
