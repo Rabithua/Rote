@@ -18,6 +18,7 @@ interface AttachmentPhotoPreviewProps {
   aspectRatio?: number;
   layoutKey?: string;
   onImageLoad?: (_event: SyntheticEvent<HTMLImageElement>) => void;
+  onDimensions?: (_width: number, _height: number) => void;
 }
 
 export function AttachmentPhotoPreview({
@@ -32,6 +33,7 @@ export function AttachmentPhotoPreview({
   width,
   unavailableLabel,
   onImageLoad,
+  onDimensions,
   intrinsic,
   aspectRatio,
   layoutKey,
@@ -53,6 +55,7 @@ export function AttachmentPhotoPreview({
         alt={alt}
         draggable={false}
         onLoad={onImageLoad}
+        onDimensions={onDimensions}
         unavailableLabel={unavailableLabel}
       />
     </div>

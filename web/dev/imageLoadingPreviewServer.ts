@@ -1,6 +1,18 @@
 import type { Plugin } from 'vite';
 import { animatedImageFixture } from './animatedImageFixture';
 
+const fixtureDimensions: Record<string, readonly [number, number]> = {
+  'rail-a.svg': [800, 600],
+  'rail-b.svg': [400, 600],
+  'rail-c.svg': [1200, 600],
+  'rail-landscape.svg': [1600, 900],
+  'rail-portrait.svg': [600, 800],
+  'rail-long.svg': [400, 1000],
+  'rail-square.svg': [600, 600],
+  'rail-live.svg': [900, 600],
+  'rail-panorama.svg': [1800, 600],
+};
+
 export function imageLoadingPreviewServer(): Plugin {
   const requests = new Map<string, number>();
   return {
@@ -14,7 +26,9 @@ export function imageLoadingPreviewServer(): Plugin {
         requests.set(key, count + 1);
         if (requests.size > 1000) requests.delete(requests.keys().next().value!);
         const sample = url.pathname.split('/').pop();
-        const [width, height] = sample?.startsWith('long') ? [400, 1000] : [800, 600];
+        const [width, height] =
+          fixtureDimensions[sample || ''] ||
+          (sample?.startsWith('long') ? [400, 1000] : [800, 600]);
         const delay = Math.min(6000, Math.max(0, Number(url.searchParams.get('delay') ?? 2400)));
         const timer = setTimeout(() => {
           if (sample === 'failure.svg' && count === 0) {

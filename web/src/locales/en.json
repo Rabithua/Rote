@@ -2173,6 +2173,8 @@
         "title": "Image loading preview",
         "replay": "Replay loading",
         "redisplay": "Show cached images again",
+        "mediaRail": "Multiple images without size metadata",
+        "mediaRailHint": "Landscape 16:9, portrait 3:4, tall 2:5, square, Live Photo still 3:2, and panorama 3:1. They start square, then use their loaded proportions at a fixed height within the 0.4–2.0 limit.",
         "firstLoad": "First load and fixed surfaces",
         "longImage": "Long image and size adjustment",
         "failure": "Failure and retry",
