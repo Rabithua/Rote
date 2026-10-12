@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - name: Test deployment acceptance and timeout handling
-        run: bun test ./.github/scripts/verify-deployment.test.ts ./web/build/deploymentRevision.test.ts
+        run: bun test ./.github/scripts/verify-deployment.test.ts ./web/scripts/deployment/revision.test.ts
 
   lint-and-build:
     runs-on: ubuntu-latest
@@ -43,10 +43,16 @@ jobs:
         working-directory: ${{ matrix.path }}
         run: bun run lint
 
-      - name: Build
+      - name: Set up Docker Buildx
+        if: matrix.path == 'web'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build frontend Docker image
         if: matrix.path == 'web'
         working-directory: ${{ matrix.path }}
-        run: bun run build
+        env:
+          ROTE_BUILD_REVISION: ${{ github.sha }}
+        run: docker buildx build --load --build-arg ROTE_BUILD_REVISION="$ROTE_BUILD_REVISION" -t rote-frontend:ci .
 
       - name: Type check
         working-directory: ${{ matrix.path }}
@@ -56,11 +62,11 @@ jobs:
         if: matrix.path == 'web'
         working-directory: web
         shell: bash
+        env:
+          ROTE_EXPECTED_REVISION: ${{ github.sha }}
         run: |
           set -euo pipefail
-          container_id=$(docker run --rm -d -p 127.0.0.1:38081:80 \
-            -v "$PWD/dist:/usr/share/nginx/html:ro" \
-            -v "$PWD/nginx.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine)
+          container_id=$(docker run --rm -d -p 127.0.0.1:38081:80 rote-frontend:ci)
           trap 'docker rm -f "$container_id" >/dev/null' EXIT
           for attempt in {1..10}; do
             if curl --silent --fail --head http://127.0.0.1:38081/ >/dev/null; then break; fi

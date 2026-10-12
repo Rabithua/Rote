@@ -9,6 +9,13 @@ async function get(path: string) {
 
 const index = await get('/index.html');
 const html = await index.text();
+if (process.env.ROTE_EXPECTED_REVISION) {
+  assert.equal(
+    html.match(/<meta\s+name="rote-revision"\s+content="([a-f0-9]{40})"/)?.[1],
+    process.env.ROTE_EXPECTED_REVISION,
+    'The frontend image must contain the expected build revision'
+  );
+}
 const asset = html.match(/src="(\/assets\/[^"\s]+\.js)"/)?.[1];
 assert(asset, 'The built entry HTML must reference a fingerprinted JavaScript asset');
 
