@@ -63,6 +63,19 @@ export function LandingHero() {
           </Link>
         </Button>
 
+        <Link
+          to="https://apps.apple.com/us/app/rote/id6755513897"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center"
+        >
+          <img
+            src="/download-on-the-app-store.svg"
+            alt={t('pages.user.downloadApp', { keyPrefix: '' })}
+            className="h-10"
+          />
+        </Link>
+
         <Button
           variant="outline"
           size="lg"
