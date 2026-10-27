@@ -435,6 +435,7 @@
         "saving": "Saving…",
         "saveSuccess": "Settings saved",
         "saveFailed": "Failed to save: {{error}}",
+        "unknownError": "Unknown error",
         "blockedUsers": {
           "title": "Blocked users",
           "description": "Review accounts you have blocked and unblock them.",
