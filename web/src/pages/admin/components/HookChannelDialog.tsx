@@ -28,14 +28,16 @@ import { createDefaultChannel, toggleEvent } from './hookChannelDialogUtils';
 
 interface HookChannelDialogProps {
   channel?: AdminHookChannel;
+  isSaving: boolean;
   mode: 'create' | 'edit';
   onOpenChange: (open: boolean) => void;
-  onSubmit: (channel: AdminHookChannel) => void;
+  onSubmit: (channel: AdminHookChannel) => Promise<boolean>;
   open: boolean;
 }
 
 export default function HookChannelDialog({
   channel,
+  isSaving,
   mode,
   onOpenChange,
   onSubmit,
@@ -69,14 +71,19 @@ export default function HookChannelDialog({
     });
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    onSubmit(normalizeChannel(draft));
-    onOpenChange(false);
+    if (isSaving) return;
+    if (await onSubmit(normalizeChannel(draft))) onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!isSaving) onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
@@ -87,83 +94,94 @@ export default function HookChannelDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-5" onSubmit={handleSubmit}>
-          <div className="flex items-center justify-between gap-4 rounded-md border p-4">
-            <div className="space-y-0.5">
-              <Label>{t('hooks.channelEnabled')}</Label>
-              <p className="text-muted-foreground text-sm">{t('hooks.channelEnabledDesc')}</p>
-            </div>
-            <Switch
-              checked={draft.enabled}
-              onCheckedChange={(checked) => setDraft({ ...draft, enabled: checked })}
-            />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={`hook-type-${draft.id}`}>{t('hooks.channelType')}</Label>
-              <Select
-                value={draft.type}
-                onValueChange={(value) => handleTypeChange(value as AdminHookChannel['type'])}
-                disabled={mode === 'edit'}
-              >
-                <SelectTrigger id={`hook-type-${draft.id}`} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="bark">{t('hooks.channelTypes.bark')}</SelectItem>
-                  <SelectItem value="http">{t('hooks.channelTypes.http')}</SelectItem>
-                  <SelectItem value="admin_pwa">{t('hooks.channelTypes.admin_pwa')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor={`hook-name-${draft.id}`}>{t('hooks.channelName')}</Label>
-              <Input
-                id={`hook-name-${draft.id}`}
-                value={draft.name}
-                required
-                onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+        <form onSubmit={handleSubmit} aria-busy={isSaving}>
+          <fieldset className="space-y-5" disabled={isSaving}>
+            <div className="flex items-center justify-between gap-4 rounded-md border p-4">
+              <div className="space-y-0.5">
+                <Label>{t('hooks.channelEnabled')}</Label>
+                <p className="text-muted-foreground text-sm">{t('hooks.channelEnabledDesc')}</p>
+              </div>
+              <Switch
+                checked={draft.enabled}
+                onCheckedChange={(checked) => setDraft({ ...draft, enabled: checked })}
               />
             </div>
-          </div>
 
-          {draft.type === 'bark' && <HookChannelBarkFields channel={draft} onChange={setDraft} />}
-
-          {draft.type === 'http' && <HookChannelHttpFields channel={draft} onChange={setDraft} />}
-
-          <div className="space-y-2">
-            <Label>{t('hooks.events')}</Label>
-            <div className="grid gap-3 md:grid-cols-2">
-              {HOOK_EVENTS.map((eventName) => (
-                <label
-                  key={eventName}
-                  className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor={`hook-type-${draft.id}`}>{t('hooks.channelType')}</Label>
+                <Select
+                  value={draft.type}
+                  onValueChange={(value) => handleTypeChange(value as AdminHookChannel['type'])}
+                  disabled={mode === 'edit'}
                 >
-                  <Checkbox
-                    checked={draft.events.includes(eventName)}
-                    onCheckedChange={(checked) =>
-                      setDraft({
-                        ...draft,
-                        events: toggleEvent(draft.events, eventName, checked === true),
-                      })
-                    }
-                  />
-                  <span>{t(`hooks.eventsMap.${EVENT_TRANSLATION_KEYS[eventName]}`)}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+                  <SelectTrigger id={`hook-type-${draft.id}`} className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bark">{t('hooks.channelTypes.bark')}</SelectItem>
+                    <SelectItem value="http">{t('hooks.channelTypes.http')}</SelectItem>
+                    <SelectItem value="admin_pwa">{t('hooks.channelTypes.admin_pwa')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t('hooks.dialog.cancel')}
-            </Button>
-            <Button type="submit">
-              {mode === 'create' ? t('hooks.dialog.addAction') : t('hooks.dialog.applyAction')}
-            </Button>
-          </DialogFooter>
+              <div className="space-y-2">
+                <Label htmlFor={`hook-name-${draft.id}`}>{t('hooks.channelName')}</Label>
+                <Input
+                  id={`hook-name-${draft.id}`}
+                  value={draft.name}
+                  required
+                  onChange={(event) => setDraft({ ...draft, name: event.target.value })}
+                />
+              </div>
+            </div>
+
+            {draft.type === 'bark' && <HookChannelBarkFields channel={draft} onChange={setDraft} />}
+
+            {draft.type === 'http' && <HookChannelHttpFields channel={draft} onChange={setDraft} />}
+
+            <div className="space-y-2">
+              <Label>{t('hooks.events')}</Label>
+              <div className="grid gap-3 md:grid-cols-2">
+                {HOOK_EVENTS.map((eventName) => (
+                  <label
+                    key={eventName}
+                    className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm"
+                  >
+                    <Checkbox
+                      checked={draft.events.includes(eventName)}
+                      onCheckedChange={(checked) =>
+                        setDraft({
+                          ...draft,
+                          events: toggleEvent(draft.events, eventName, checked === true),
+                        })
+                      }
+                    />
+                    <span>{t(`hooks.eventsMap.${EVENT_TRANSLATION_KEYS[eventName]}`)}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSaving}
+                onClick={() => onOpenChange(false)}
+              >
+                {t('hooks.dialog.cancel')}
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving
+                  ? t('saving')
+                  : mode === 'create'
+                    ? t('hooks.dialog.addAction')
+                    : t('hooks.dialog.applyAction')}
+              </Button>
+            </DialogFooter>
+          </fieldset>
         </form>
       </DialogContent>
     </Dialog>

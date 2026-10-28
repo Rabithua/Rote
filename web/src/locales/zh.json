@@ -425,6 +425,7 @@
         "saving": "保存中…",
         "saveSuccess": "设置已保存",
         "saveFailed": "保存失败：{{error}}",
+        "unknownError": "未知错误",
         "blockedUsers": {
           "title": "已屏蔽用户",
           "description": "查看你屏蔽的账户并随时解除。",

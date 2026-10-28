@@ -439,6 +439,7 @@
         "saving": "保存中…",
         "saveSuccess": "設定を保存しました",
         "saveFailed": "保存に失敗しました：{{error}}",
+        "unknownError": "不明なエラー",
         "blockedUsers": {
           "title": "ブロックしたユーザー",
           "description": "ブロックしたアカウントを確認し、解除できます。",
