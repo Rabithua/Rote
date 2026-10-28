@@ -6,9 +6,91 @@ import {
   reactionActorName,
   reactionNoteLabel,
   reactionNotificationPresentation,
+  reactionNotificationSender,
 } from './reactionPresentation';
 
 describe('reaction notification presentation', () => {
+  const alice = {
+    id: 'alice',
+    displayName: 'Alice',
+    avatarURL: 'https://example.test/alice.png',
+  };
+
+  it('keeps the sender for repeated reactions by one user and clears it for a mixed batch', () => {
+    let state = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '❤️',
+      sender: alice,
+    });
+    expect(state.sender).toEqual(alice);
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '👍',
+      sender: alice,
+    });
+    expect(state.sender).toEqual(alice);
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'visitor:anonymous',
+      reactionType: '🎉',
+    });
+    expect(state.sender).toBeUndefined();
+    state = mergeReactionNotificationState(state, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '👏',
+      sender: alice,
+    });
+    expect(state.sender).toBeUndefined();
+  });
+
+  it('does not retain one user avatar when another known user joins the batch', () => {
+    const first = mergeReactionNotificationState(null, {
+      actorKey: 'user:alice',
+      actorName: 'Alice',
+      reactionType: '❤️',
+      sender: alice,
+    });
+    const mixed = mergeReactionNotificationState(first, {
+      actorKey: 'user:bob',
+      actorName: 'Bob',
+      reactionType: '👍',
+      sender: { ...alice, id: 'bob', displayName: 'Bob' },
+    });
+    expect(mixed.sender).toBeUndefined();
+    expect(reactionNotificationPresentation(mixed).titleLocArgs).toEqual(['Alice', '1']);
+  });
+
+  it('does not attribute anonymous reactions or a mismatched identity to a registered sender', () => {
+    for (const actorKey of ['visitor:anonymous', 'user:bob']) {
+      expect(
+        mergeReactionNotificationState(null, {
+          actorKey,
+          reactionType: '❤️',
+          sender: alice,
+        }).sender
+      ).toBeUndefined();
+    }
+  });
+
+  it('omits missing, unsafe, malformed, and oversized avatar URLs', () => {
+    for (const avatar of [
+      null,
+      '',
+      'invalid URL',
+      'http://example.test/avatar.png',
+      'https://user:password@example.test/avatar.png',
+      `https://example.test/${'a'.repeat(1_025)}`,
+    ]) {
+      expect(reactionNotificationSender('alice', ' Alice ', avatar)).toEqual({
+        id: 'alice',
+        displayName: 'Alice',
+      });
+    }
+    expect(reactionNotificationSender('alice', ' ', alice.avatarURL)).toBeUndefined();
+  });
+
   it('uses the known actor, reaction, and note label for a single response', () => {
     const state = mergeReactionNotificationState(null, {
       actorKey: 'user:alice',
