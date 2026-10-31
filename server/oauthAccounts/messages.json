@@ -1,0 +1,10 @@
+{
+  "targetUserNotFound": "Target user not found",
+  "providerAlreadyBound": "您已绑定此 {provider} 账户",
+  "emailAlreadyUsed": "该邮箱已被其他账户使用，请使用用户名密码登录后关联 {provider} 账户",
+  "providerUserIdMissing": "{provider} user ID is missing",
+  "userCreationConflict": "Failed to create user due to conflict",
+  "authenticationFailed": "{provider} OAuth authentication failed",
+  "errorResponse": "OAuth error: {message}",
+  "unbindWouldPreventLogin": "无法解绑：您没有设置密码，解绑后将无法登录"
+}

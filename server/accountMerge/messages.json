@@ -1,0 +1,9 @@
+{
+  "oauth_merge_invalid_request": "Invalid account merge request.",
+  "oauth_merge_authorization_required": "Please authorize the OAuth account again before merging.",
+  "oauth_merge_conflict": "The account or OAuth binding changed. Please authorize again.",
+  "oauth_merge_billing_blocked": "Managed billing accounts cannot be merged automatically.",
+  "oauth_merge_disabled": "OAuth account merging is disabled for this provider.",
+  "oauth_merge_failed": "Account merge failed. Please try again.",
+  "oauth_merge_success": "Account merged and OAuth account bound successfully."
+}

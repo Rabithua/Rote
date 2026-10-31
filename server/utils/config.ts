@@ -1,14 +1,22 @@
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { settings } from '../drizzle/schema';
+import { mutateStoredConfigs, type ConfigMutation } from '../settings/configStore';
+import {
+  initializeAuthenticationKeys,
+  initializeNotificationKeys,
+  rotateAuthenticationKeys,
+  rotateNotificationKeys,
+} from '../settings/securityKeys';
 import type {
   ConfigData,
   ConfigGroup,
   ConfigUpdateOptions,
   NotificationConfig,
+  SecurityConfig,
+  SecurityKeyRotationScope,
   SystemConfig,
 } from '../types/config';
 import db from './drizzle';
-import { KeyGenerator } from './keyGenerator';
 
 // 配置变更监听器类型
 type ConfigChangeListener = (group: ConfigGroup, newConfig: any, oldConfig: any) => void;
@@ -38,8 +46,19 @@ export class ConfigManager {
   private listeners: Map<ConfigGroup, Set<ConfigChangeListener>> = new Map();
   private globalConfig: Record<ConfigGroup, any> = {} as Record<ConfigGroup, any>;
   private configInitialized = false;
+  private operationQueue: Promise<void> = Promise.resolve();
 
   private constructor() {}
+
+  private serialize<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operationQueue.then(operation);
+    // A failed operation must not prevent later, independent configuration updates.
+    this.operationQueue = result.then(
+      () => undefined,
+      () => undefined
+    );
+    return result;
+  }
 
   public static getInstance(): ConfigManager {
     if (!ConfigManager.instance) {
@@ -52,43 +71,23 @@ export class ConfigManager {
    * 初始化配置管理器，预加载所有配置
    */
   public async initialize(): Promise<void> {
-    if (this.configInitialized) {
-      return;
-    }
-
-    try {
-      console.log('🔄 Initializing configuration manager...');
-
-      // 预加载所有配置
-      this.globalConfig = await this.getAllConfigs();
+    await this.serialize(async () => {
+      if (this.configInitialized) return;
+      this.globalConfig = await this.readAllConfigs();
       this.configInitialized = true;
-
-      console.log('✅ Configuration manager initialized');
-    } catch (error) {
-      console.error('❌ Failed to initialize configuration manager:', error);
-      throw error;
-    }
+    });
   }
 
   /**
    * 强制刷新配置缓存
    */
   public async refreshCache(): Promise<void> {
-    try {
-      console.log('🔄 Refreshing configuration cache...');
-
-      // 清空当前缓存
+    await this.serialize(async () => {
+      const configs = await this.readAllConfigs();
       this.cache.clear();
       this.cacheExpiry.clear();
-
-      // 重新加载所有配置
-      this.globalConfig = await this.getAllConfigs();
-
-      console.log('✅ Configuration cache refreshed');
-    } catch (error) {
-      console.error('❌ Failed to refresh configuration cache:', error);
-      throw error;
-    }
+      this.globalConfig = configs;
+    });
   }
 
   /**
@@ -204,6 +203,10 @@ export class ConfigManager {
    * 获取指定分组的配置
    */
   public async getConfig<T extends ConfigData>(group: ConfigGroup): Promise<T | null> {
+    return this.serialize(() => this.readConfig<T>(group));
+  }
+
+  private async readConfig<T extends ConfigData>(group: ConfigGroup): Promise<T | null> {
     // 检查缓存
     const cacheKey = `config_${group}`;
     const cached = this.cache.get(cacheKey);
@@ -231,8 +234,8 @@ export class ConfigManager {
       this.cacheExpiry.set(cacheKey, Date.now() + this.CACHE_TTL);
 
       return config;
-    } catch (error) {
-      console.error(`获取配置失败 [${group}]:`, error);
+    } catch {
+      console.error(`获取配置失败 [${group}]`);
       return null;
     }
   }
@@ -246,78 +249,64 @@ export class ConfigManager {
     options?: ConfigUpdateOptions
   ): Promise<boolean> {
     try {
-      // 获取旧配置用于通知
-      const oldConfig = this.globalConfig[group];
-
-      // 先尝试查找现有配置
-      const [existing] = await db.select().from(settings).where(eq(settings.group, group)).limit(1);
-
-      if (existing) {
-        // 更新现有配置
-        await db
-          .update(settings)
-          .set({
-            config: config as unknown as any,
-            isRequired: options?.isRequired ?? false,
-            isSystem: options?.isSystem ?? false,
-            isInitialized: options?.isInitialized ?? true,
-            updatedAt: new Date(),
-          })
-          .where(eq(settings.group, group));
-      } else {
-        // 创建新配置
-        // 不包含 id 字段，让数据库使用 defaultRandom() 自动生成
-        // 使用 sql`now()` 让数据库原子性地在同一时间点计算时间戳
-        const insertData: any = {
-          group,
-          config: config as unknown as any,
-          isRequired: options?.isRequired ?? false,
-          isSystem: options?.isSystem ?? false,
-          isInitialized: options?.isInitialized ?? true,
-          createdAt: sql`now()`,
-          updatedAt: sql`now()`,
-        };
-        await db.insert(settings).values(insertData);
-      }
-
-      // 更新全局配置
-      this.globalConfig[group] = normalizeConfigForCompatibility(group, config);
-
-      // 清除缓存
-      this.clearCache(group);
-
-      // 通知配置变更
-      this.notifyConfigChange(group, config, oldConfig);
-
+      await this.mutateConfigs([{ group, options, update: () => config }]);
       return true;
-    } catch (error) {
-      console.error(`设置配置失败 [${group}]:`, error);
+    } catch {
+      // Database errors can contain bound parameters, including signing keys.
+      console.error(`设置配置失败 [${group}]`);
       return false;
     }
+  }
+
+  private async mutateConfigs(mutations: ConfigMutation[]) {
+    return this.serialize(async () => {
+      const changes = await mutateStoredConfigs(mutations);
+      // Publish only committed values, in the same order as database writes.
+      for (const { group, config, previous } of changes) {
+        this.globalConfig[group] = normalizeConfigForCompatibility(group, config);
+        this.clearCache(group);
+        this.notifyConfigChange(group, config, previous);
+      }
+      return changes;
+    });
+  }
+
+  public async updateConfig<T extends ConfigData>(
+    group: ConfigGroup,
+    update: (existing: T | null) => T | Promise<T>,
+    options?: ConfigUpdateOptions
+  ): Promise<T> {
+    const [change] = await this.mutateConfigs([
+      {
+        group,
+        options,
+        update: (existing) => update(existing as T | null),
+      },
+    ]);
+    return change.config as T;
   }
 
   /**
    * 获取所有配置分组
    */
   public async getAllConfigs(): Promise<Record<ConfigGroup, any>> {
-    try {
-      const settingsList = await db
-        .select({ group: settings.group, config: settings.config })
-        .from(settings);
+    return this.serialize(() => this.readAllConfigs());
+  }
 
-      const result: Record<string, any> = {};
-      settingsList.forEach((setting) => {
-        result[setting.group] = normalizeConfigForCompatibility(
-          setting.group as ConfigGroup,
-          setting.config
-        );
-      });
+  private async readAllConfigs(): Promise<Record<ConfigGroup, any>> {
+    const settingsList = await db
+      .select({ group: settings.group, config: settings.config })
+      .from(settings);
 
-      return result as Record<ConfigGroup, any>;
-    } catch (error) {
-      console.error('获取所有配置失败:', error);
-      return {} as Record<ConfigGroup, any>;
-    }
+    const result: Record<string, any> = {};
+    settingsList.forEach((setting) => {
+      result[setting.group] = normalizeConfigForCompatibility(
+        setting.group as ConfigGroup,
+        setting.config
+      );
+    });
+
+    return result as Record<ConfigGroup, any>;
   }
 
   /**
@@ -359,46 +348,51 @@ export class ConfigManager {
   }
 
   /**
-   * 自动生成安全密钥
+   * 初始化缺失的密钥，不改变现有登录和通知密钥。
    */
-  public async generateSecurityKeys(): Promise<boolean> {
+  public async initializeSecurityKeys(): Promise<boolean> {
     try {
-      // 生成 JWT 密钥
-      const jwtSecret = KeyGenerator.generateJWTSecret();
-      const jwtRefreshSecret = KeyGenerator.generateJWTSecret();
-      const sessionSecret = KeyGenerator.generateSessionSecret();
-
-      // 生成 VAPID 密钥
-      const vapidKeys = KeyGenerator.generateVAPIDKeys();
-      const existingNotificationConfig = this.getGlobalConfig<NotificationConfig>('notification');
-
-      // 更新安全配置
-      await this.setConfig(
-        'security',
+      await this.mutateConfigs([
         {
-          jwtSecret,
-          jwtRefreshSecret,
-          jwtAccessExpiry: '7d',
-          jwtRefreshExpiry: '30d',
-          sessionSecret,
+          group: 'security',
+          options: { isRequired: true, isSystem: false },
+          update: (existing) =>
+            initializeAuthenticationKeys((existing as Partial<SecurityConfig>) || {}),
         },
-        { isRequired: true, isSystem: false }
-      );
-
-      // 更新通知配置
-      await this.setConfig(
-        'notification',
         {
-          ...(existingNotificationConfig || {}),
-          vapidPublicKey: vapidKeys.publicKey,
-          vapidPrivateKey: vapidKeys.privateKey,
+          group: 'notification',
+          options: { isRequired: false, isSystem: false },
+          update: (existing) =>
+            initializeNotificationKeys((existing as Partial<NotificationConfig>) || {}),
         },
-        { isRequired: false, isSystem: false }
-      );
-
+      ]);
       return true;
-    } catch (error) {
-      console.error('生成安全密钥失败:', error);
+    } catch {
+      console.error('初始化安全密钥失败');
+      return false;
+    }
+  }
+
+  public async rotateSecurityKeys(scope: SecurityKeyRotationScope): Promise<boolean> {
+    try {
+      const mutations: ConfigMutation[] = [
+        {
+          group: 'security',
+          options: { isRequired: true },
+          update: (existing) =>
+            rotateAuthenticationKeys((existing as Partial<SecurityConfig>) || {}),
+        },
+      ];
+      if (scope === 'all')
+        mutations.push({
+          group: 'notification',
+          update: (existing) =>
+            rotateNotificationKeys((existing as Partial<NotificationConfig>) || {}),
+        });
+      await this.mutateConfigs(mutations);
+      return true;
+    } catch {
+      console.error('轮换安全密钥失败');
       return false;
     }
   }
@@ -422,7 +416,20 @@ export const isInitialized = (): Promise<boolean> => configManager.isSystemIniti
 export const getMissingRequiredConfigs = (): Promise<ConfigGroup[]> =>
   configManager.getMissingRequiredConfigs();
 
-export const generateSecurityKeys = (): Promise<boolean> => configManager.generateSecurityKeys();
+export const initializeSecurityKeys = (): Promise<boolean> =>
+  configManager.initializeSecurityKeys();
+
+// Existing setup scripts use this export to initialize missing keys.
+export const generateSecurityKeys = initializeSecurityKeys;
+
+export const rotateSecurityKeys = (scope: SecurityKeyRotationScope): Promise<boolean> =>
+  configManager.rotateSecurityKeys(scope);
+
+export const updateConfig = <T extends ConfigData>(
+  group: ConfigGroup,
+  update: (existing: T | null) => T | Promise<T>,
+  options?: ConfigUpdateOptions
+): Promise<T> => configManager.updateConfig(group, update, options);
 
 export const getAllConfigs = (): Promise<Record<ConfigGroup, any>> => configManager.getAllConfigs();
 

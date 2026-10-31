@@ -7,15 +7,30 @@ import {
   requireAdmin,
   requireSuperAdmin,
 } from '../../middleware/jwtAuth';
-import type { AiConfig, ConfigTestResult, NotificationConfig } from '../../types/config';
+import type {
+  AiConfig,
+  ConfigTestResult,
+  NotificationConfig,
+  SecurityConfig,
+} from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
+import settingsMessages from '../../settings/messages.json';
+import { isSecurityKeyRotationScope } from '../../settings/securityKeys';
 import {
-  generateSecurityKeys,
+  mergeSecuritySettings,
+  parseSecuritySettingsUpdate,
+  readSecuritySettings,
+  SecuritySettingsError,
+  validateSecuritySettings,
+} from '../../settings/securitySettings';
+import {
   getAllConfigs,
   getConfig,
   isInitialized,
   refreshConfigCache,
+  rotateSecurityKeys,
   setConfig,
+  updateConfig,
 } from '../../utils/config';
 import { sanitizeAiConfig } from '../../utils/ai/providers';
 import {
@@ -83,13 +98,11 @@ adminRouter.post('/hooks/test', authenticateJWT, requireAdmin, async (c: HonoCon
   }
 });
 
-const sanitizeSettingsForAdmin = (configs: Record<string, any>) => {
-  if (!configs.ai) return configs;
-  return {
-    ...configs,
-    ai: sanitizeAiConfig(configs.ai),
-  };
-};
+const sanitizeSettingsForAdmin = (configs: Record<string, any>) => ({
+  ...configs,
+  ...(configs.ai ? { ai: sanitizeAiConfig(configs.ai) } : {}),
+  ...(configs.security ? { security: readSecuritySettings(configs.security) } : {}),
+});
 
 // 获取所有配置（管理员）
 adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContext) => {
@@ -106,7 +119,12 @@ adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       return c.json(
         createResponse({
           group,
-          config: group === 'ai' ? sanitizeAiConfig(config as AiConfig) : config,
+          config:
+            group === 'ai'
+              ? sanitizeAiConfig(config as AiConfig)
+              : group === 'security'
+                ? readSecuritySettings(config)
+                : config,
         }),
         200
       );
@@ -143,6 +161,26 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
     const user = c.get('user') as any;
     if (group === 'system' && user?.role !== 'super_admin') {
       return c.json(createResponse(null, 'Only super admin can modify system configuration'), 403);
+    }
+
+    if (group === 'security') {
+      const patch = parseSecuritySettingsUpdate(config);
+      const saved = await updateConfig<SecurityConfig>(
+        'security',
+        async (existing) => {
+          const merged = mergeSecuritySettings(existing || ({} as SecurityConfig), patch);
+          await validateSecuritySettings(merged);
+          return merged;
+        },
+        { isRequired: true, isInitialized: true }
+      );
+      return c.json(
+        createResponse(
+          { group, config: readSecuritySettings(saved) },
+          settingsMessages.security_settings_updated
+        ),
+        200
+      );
     }
 
     if (group === 'site') {
@@ -218,43 +256,6 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       }
     }
 
-    // 如果是 Security 配置，验证 OAuth 配置
-    if (group === 'security') {
-      const securityConfig = config as any;
-      if (securityConfig.oauth) {
-        const oauthConfig = securityConfig.oauth;
-        if (oauthConfig.enabled && oauthConfig.providers) {
-          // 动态验证所有已配置的提供商
-          const { oauthProviderRegistry } = await import('../../utils/oauth/providers');
-
-          for (const [providerName, providerConfig] of Object.entries(oauthConfig.providers)) {
-            if ((providerConfig as any)?.enabled) {
-              try {
-                await oauthProviderRegistry.validateProviderConfig(providerName, providerConfig);
-
-                // 验证 callbackUrl 格式
-                if ((providerConfig as any)?.callbackUrl) {
-                  try {
-                    new URL((providerConfig as any).callbackUrl);
-                  } catch {
-                    return c.json(
-                      createResponse(null, `Invalid ${providerName} OAuth callbackUrl format`, 400),
-                      400
-                    );
-                  }
-                }
-              } catch (error: any) {
-                return c.json(
-                  createResponse(null, `${providerName} OAuth: ${error.message}`, 400),
-                  400
-                );
-              }
-            }
-          }
-        }
-      }
-    }
-
     if (group === 'ai') {
       const saved = await saveAiSettings(config);
       return c.json(createResponse({ group, config: sanitizeAiConfig(saved) }), 200);
@@ -290,8 +291,11 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       200
     );
   } catch (error: any) {
+    if (error instanceof SecuritySettingsError) {
+      return c.json(createResponse(null, error.code, error.status), error.status);
+    }
     if (error instanceof EmbeddingError) throw error;
-    console.error('Failed to update settings:', error);
+    console.error('Failed to update settings');
     return c.json(createResponse(null, 'Failed to update settings', 1), 500);
   }
 });
@@ -350,7 +354,22 @@ adminRouter.post(
   requireSuperAdmin,
   async (c: HonoContext) => {
     try {
-      const success = await generateSecurityKeys();
+      const body = await c.req.text();
+      let scope: unknown = 'authentication';
+      if (body) {
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(body);
+        } catch {
+          return c.json(createResponse(null, 'security_key_rotation_scope_invalid', 400), 400);
+        }
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
+          return c.json(createResponse(null, 'security_key_rotation_scope_invalid', 400), 400);
+        scope = (parsed as { scope?: unknown }).scope ?? 'authentication';
+      }
+      if (!isSecurityKeyRotationScope(scope))
+        return c.json(createResponse(null, 'security_key_rotation_scope_invalid', 400), 400);
+      const success = await rotateSecurityKeys(scope);
 
       if (!success) {
         return c.json(createResponse(null, 'Failed to regenerate security keys'), 500);
@@ -364,6 +383,7 @@ adminRouter.post(
         createResponse(
           {
             message: 'Security keys regenerated successfully',
+            scope,
             keys: {
               jwtSecret: (securityConfig as any)?.jwtSecret ? '***regenerated***' : '',
               jwtRefreshSecret: (securityConfig as any)?.jwtRefreshSecret
@@ -372,7 +392,9 @@ adminRouter.post(
               sessionSecret: (securityConfig as any)?.sessionSecret ? '***regenerated***' : '',
               vapidPublicKey: (notificationConfig as any)?.vapidPublicKey || '',
               vapidPrivateKey: (notificationConfig as any)?.vapidPrivateKey
-                ? '***regenerated***'
+                ? scope === 'all'
+                  ? '***regenerated***'
+                  : '***configured***'
                 : '',
             },
           },

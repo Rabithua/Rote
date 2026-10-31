@@ -74,6 +74,53 @@ jobs:
           done
           bun run scripts/verify-cache-policy.ts http://127.0.0.1:38081
 
+  security-regressions:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - database: rote_oauth_merge_test
+            test-env: OAUTH_MERGE_TEST_DATABASE_URL
+            suite: accountMerge
+          - database: rote_security_settings_test
+            test-env: ADMIN_SETTINGS_TEST_DATABASE_URL
+            suite: settings
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17-trixie
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: security_test
+          POSTGRES_DB: ${{ matrix.database }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRESQL_URL: postgres://rote:security_test@127.0.0.1:5432/${{ matrix.database }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - run: bun run db:migrate:programmatic
+        working-directory: server
+      - name: Test authorization boundaries with PostgreSQL and JWT
+        run: env '${{ matrix.test-env }}'="$POSTGRESQL_URL" bun test '${{ matrix.suite }}' tests/setupSecurity.test.ts middleware/jwtAuth.test.ts
+        working-directory: server
+      - run: bun install --frozen-lockfile
+        if: matrix.suite == 'settings'
+        working-directory: web
+      - name: Test configuration forms and OAuth merge feedback
+        if: matrix.suite == 'settings'
+        run: bun run test -- src/pages/admin/components src/pages/profile/hooks src/utils/setupApi.test.ts
+        working-directory: web
+
   note-sharing:
     runs-on: ubuntu-latest
     services:

@@ -1,5 +1,8 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { userOAuthBindings, users } from '../../drizzle/schema';
+import { oauthMergeAuthorizations } from '../../drizzle/accountMergeSchema';
+import { AccountMergeError } from '../../accountMerge/errors';
+import { OAuthUnbindWouldPreventLogin } from '../../oauthAccounts/errors';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 
@@ -42,46 +45,66 @@ export async function bindOAuthProvider(
   providerUsername?: string
 ): Promise<any> {
   try {
-    // 检查是否已经绑定
-    const [existing] = await db
-      .select()
-      .from(userOAuthBindings)
-      .where(and(eq(userOAuthBindings.userid, userId), eq(userOAuthBindings.provider, provider)))
-      .limit(1);
+    return await db.transaction(async (tx) => {
+      const [user] = await tx
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for('update');
+      if (!user) throw new AccountMergeError('oauth_merge_conflict');
+      // 检查是否已经绑定
+      const [existing] = await tx
+        .select()
+        .from(userOAuthBindings)
+        .where(and(eq(userOAuthBindings.userid, userId), eq(userOAuthBindings.provider, provider)))
+        .limit(1);
 
-    if (existing) {
-      throw new DatabaseError(`User already has ${provider} OAuth binding`);
-    }
+      if (existing) {
+        throw new DatabaseError(`User already has ${provider} OAuth binding`);
+      }
 
-    // 检查该 providerId 是否已被其他用户使用
-    const [existingBinding] = await db
-      .select()
-      .from(userOAuthBindings)
-      .where(
-        and(eq(userOAuthBindings.provider, provider), eq(userOAuthBindings.providerId, providerId))
-      )
-      .limit(1);
+      // 检查该 providerId 是否已被其他用户使用
+      const [existingBinding] = await tx
+        .select()
+        .from(userOAuthBindings)
+        .where(
+          and(
+            eq(userOAuthBindings.provider, provider),
+            eq(userOAuthBindings.providerId, providerId)
+          )
+        )
+        .limit(1);
 
-    if (existingBinding) {
-      throw new DatabaseError(`OAuth provider ID ${providerId} is already bound to another user`);
-    }
+      if (existingBinding) {
+        throw new DatabaseError(`OAuth provider ID ${providerId} is already bound to another user`);
+      }
 
-    // 创建绑定
-    const [binding] = await db
-      .insert(userOAuthBindings)
-      .values({
-        userid: userId,
-        provider,
-        providerId,
-        providerUsername: providerUsername || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
+      // 创建绑定
+      const [binding] = await tx
+        .insert(userOAuthBindings)
+        .values({
+          userid: userId,
+          provider,
+          providerId,
+          providerUsername: providerUsername || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
 
-    return binding;
+      await tx
+        .delete(oauthMergeAuthorizations)
+        .where(
+          and(
+            eq(oauthMergeAuthorizations.targetUserId, userId),
+            eq(oauthMergeAuthorizations.provider, provider),
+            isNull(oauthMergeAuthorizations.completedAt)
+          )
+        );
+      return binding;
+    });
   } catch (error) {
-    if (error instanceof DatabaseError) {
+    if (error instanceof DatabaseError || error instanceof AccountMergeError) {
       throw error;
     }
     throw new DatabaseError(`Failed to bind OAuth provider: ${provider}`, error);
@@ -91,18 +114,48 @@ export async function bindOAuthProvider(
 // 解绑 OAuth 提供商
 export async function unbindOAuthProvider(userId: string, provider: string): Promise<void> {
   try {
-    const result = await db
-      .delete(userOAuthBindings)
-      .where(and(eq(userOAuthBindings.userid, userId), eq(userOAuthBindings.provider, provider)))
-      .returning();
-
-    if (result.length === 0) {
-      throw new DatabaseError(`User does not have ${provider} OAuth binding`);
-    }
+    await db.transaction(async (tx) => {
+      const [user] = await tx
+        .select({ id: users.id, passwordhash: users.passwordhash, salt: users.salt })
+        .from(users)
+        .where(eq(users.id, userId))
+        .for('update');
+      if (!user) throw new AccountMergeError('oauth_merge_conflict');
+      const bindings = await tx
+        .select({ provider: userOAuthBindings.provider })
+        .from(userOAuthBindings)
+        .where(eq(userOAuthBindings.userid, userId));
+      if (!bindings.some((binding) => binding.provider === provider)) {
+        throw new DatabaseError(`User does not have ${provider} OAuth binding`);
+      }
+      if (
+        !(user.passwordhash && user.salt) &&
+        !bindings.some((binding) => binding.provider !== provider)
+      ) {
+        throw new OAuthUnbindWouldPreventLogin();
+      }
+      const removed = await tx
+        .delete(userOAuthBindings)
+        .where(and(eq(userOAuthBindings.userid, userId), eq(userOAuthBindings.provider, provider)))
+        .returning({ id: userOAuthBindings.id });
+      if (!removed.length) throw new DatabaseError(`User does not have ${provider} OAuth binding`);
+      await tx.delete(oauthMergeAuthorizations).where(
+        and(
+          inArray(
+            oauthMergeAuthorizations.sourceBindingId,
+            removed.map((binding) => binding.id)
+          ),
+          isNull(oauthMergeAuthorizations.completedAt)
+        )
+      );
+    });
   } catch (error) {
-    if (error instanceof DatabaseError) {
+    if (
+      error instanceof DatabaseError ||
+      error instanceof AccountMergeError ||
+      error instanceof OAuthUnbindWouldPreventLogin
+    )
       throw error;
-    }
     throw new DatabaseError(`Failed to unbind OAuth provider: ${provider}`, error);
   }
 }

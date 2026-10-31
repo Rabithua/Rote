@@ -6,9 +6,10 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import * as oauthMcpSchema from '../drizzle/oauthMcpSchema';
+import * as accountMergeSchema from '../drizzle/accountMergeSchema';
 import * as baseSchema from '../drizzle/schema';
 
-const schema = { ...baseSchema, ...oauthMcpSchema };
+const schema = { ...baseSchema, ...oauthMcpSchema, ...accountMergeSchema };
 
 const connectionString = process.env.POSTGRESQL_URL || '';
 
