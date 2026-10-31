@@ -9,7 +9,7 @@ import type {
 } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
-  generateSecurityKeys,
+  initializeSecurityKeys,
   getConfig,
   getMissingRequiredConfigs,
   isInitialized,
@@ -236,7 +236,7 @@ adminSetupRouter.post('/setup', async (c: HonoContext) => {
 
     await setConfig('ui', setupData.ui, { isRequired: false, isInitialized: true });
 
-    const securityKeysGenerated = await generateSecurityKeys();
+    const securityKeysGenerated = await initializeSecurityKeys();
     if (!securityKeysGenerated) {
       throw new Error('Failed to generate security keys');
     }

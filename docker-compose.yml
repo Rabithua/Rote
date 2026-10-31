@@ -56,7 +56,8 @@ services:
     ports:
       - "18001:80"
     depends_on:
-      - rote-backend
+      rote-backend:
+        condition: service_healthy
     environment:
       - VITE_API_BASE=${VITE_API_BASE:?Set VITE_API_BASE to your public backend URL, for example http://your-domain.com}
     restart: unless-stopped

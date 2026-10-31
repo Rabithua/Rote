@@ -480,6 +480,14 @@
           "unbindFailed": "解绑失败：{{error}}",
           "mergeSuccess": "账户绑定成功，账户数据已合并",
           "mergeFailed": "账户合并失败：{{error}}",
+          "mergeErrors": {
+            "invalidRequest": "合并请求无效，请重新发起账户绑定。",
+            "authorizationRequired": "合并授权缺失或已过期，请重新绑定账户以授权合并。",
+            "conflict": "账户绑定状态已改变，请重新发起账户绑定。",
+            "billingBlocked": "受管理计费账户暂不支持自动合并。",
+            "disabled": "账户绑定功能已关闭，请联系管理员。",
+            "failed": "未能完成账户合并，请重试。"
+          },
           "mergeDialog": {
             "title": "合并账户确认",
             "description": "检测到该账户已被其他账户使用。合并后，该账户的所有数据（笔记、附件等）将迁移到当前账户，原账户将被删除。",
@@ -1505,6 +1513,10 @@
         "maxVideoUploadSizeMBDesc": "单个视频允许上传的最大大小，最小值为 1MB，默认值为 300MB。"
       },
       "security": {
+        "errors": {
+          "security_signing_keys_not_editable": "此处不能保存签名密钥，请刷新页面后重试。",
+          "security_settings_invalid": "安全配置无效，请检查修改内容。"
+        },
         "title": "安全配置",
         "description": "配置与安全相关的策略，例如账号认证要求等。",
         "requireCertifiedUserForExplore": "仅允许已认证用户出现在探索页",

@@ -490,6 +490,14 @@
           "unbindFailed": "Unbinding failed: {{error}}",
           "mergeSuccess": "Account bound successfully, account data merged",
           "mergeFailed": "Account merge failed: {{error}}",
+          "mergeErrors": {
+            "invalidRequest": "The merge request is invalid. Please start account linking again.",
+            "authorizationRequired": "The merge authorization is missing or expired. Please link the account again to authorize the merge.",
+            "conflict": "The account linking status has changed. Please start account linking again.",
+            "billingBlocked": "Accounts with managed billing cannot be merged automatically.",
+            "disabled": "Account linking is disabled. Please contact the administrator.",
+            "failed": "The merge could not be completed. Please try again."
+          },
           "mergeDialog": {
             "title": "Confirm Account Merge",
             "description": "This account is already linked to another account. After merging, all data (notes, attachments, etc.) from that account will be migrated to your current account, and the original account will be deleted.",
@@ -1515,6 +1523,10 @@
         "maxVideoUploadSizeMBDesc": "Maximum upload size per video. Minimum 1MB, default 300MB."
       },
       "security": {
+        "errors": {
+          "security_signing_keys_not_editable": "Signing keys cannot be saved here. Refresh the page and try again.",
+          "security_settings_invalid": "The security settings are invalid. Please check your changes."
+        },
         "title": "Security Configuration",
         "description": "Configure security-related policies, such as account certification requirements.",
         "requireCertifiedUserForExplore": "Only allow certified users to appear in Explore",

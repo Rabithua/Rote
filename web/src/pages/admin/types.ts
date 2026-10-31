@@ -22,6 +22,14 @@ export interface SystemConfig {
     region?: string;
   };
   security?: {
+    jwtAccessExpiry?: string;
+    jwtRefreshExpiry?: string;
+    passkey?: {
+      enabled?: boolean;
+      rpName?: string;
+      rpId?: string;
+      origin?: string;
+    };
     requireCertifiedUserForExplore?: boolean;
     // TODO: 下下次更新移除 requireVerifiedEmailForExplore 旧配置键兼容。
     requireVerifiedEmailForExplore?: boolean;
