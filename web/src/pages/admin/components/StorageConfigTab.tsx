@@ -1,6 +1,6 @@
 import S3ConfigForm from '@/components/common/S3ConfigForm';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { put } from '@/utils/api';
 import { probeCors, testStorageConnection } from '@/utils/setupApi';
 import { useState } from 'react';
@@ -8,28 +8,34 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import type { KeyedMutator } from 'swr';
 import type { SystemConfig } from '../types';
+import AdminSettingsPanel from '../settings/AdminSettingsPanel';
 
 interface StorageConfigTabProps {
   storageConfig: SystemConfig['storage'];
   setStorageConfig: (config: SystemConfig['storage']) => void;
   isSaving: boolean;
+  hasUnsavedChanges?: boolean;
   setIsSaving: (isSaving: boolean) => void;
   isTesting: boolean;
   setIsTesting: (isTesting: boolean) => void;
   onMutate: KeyedMutator<SystemConfig>;
+  onSaved?: (config: SystemConfig['storage']) => void;
 }
 
 export default function StorageConfigTab({
   storageConfig,
   setStorageConfig,
   isSaving,
+  hasUnsavedChanges = true,
   setIsSaving,
   isTesting,
   setIsTesting,
   onMutate,
+  onSaved,
 }: StorageConfigTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.storage' });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -89,37 +95,40 @@ export default function StorageConfigTab({
   };
 
   const handleSave = async () => {
+    setSaveError(null);
     if (!validate()) {
-      toast.error(t('fillAllRequired'));
+      const message = t('fillAllRequired');
+      setSaveError(message);
+      toast.error(message);
       return;
     }
     setIsSaving(true);
     try {
       await put('/admin/settings', { group: 'storage', config: storageConfig });
-      await onMutate();
+      onSaved?.(storageConfig);
       toast.success(t('saveSuccess'));
+      void onMutate();
     } catch (error: any) {
-      toast.error(t('saveFailed', { error: error.message }));
+      const message = t('saveFailed', { error: error.message });
+      setSaveError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <Card className="rounded-none border-none shadow-none">
-      <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
-        <CardDescription>{t('description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <S3ConfigForm
-          config={storageConfig}
-          onChange={(newConfig) => setStorageConfig(newConfig)}
-          errors={errors}
-          showTestConnection={false}
-        />
-
-        <div className="mt-6 flex gap-2">
+    <AdminSettingsPanel
+      isDirty={hasUnsavedChanges}
+      saveError={saveError}
+      header={
+        <CardHeader className="pb-0">
+          <CardTitle>{t('title')}</CardTitle>
+          <CardDescription>{t('description')}</CardDescription>
+        </CardHeader>
+      }
+      actions={
+        <div className="flex flex-wrap justify-end gap-2">
           <Button
             type="button"
             variant="outline"
@@ -128,11 +137,24 @@ export default function StorageConfigTab({
           >
             {isTesting ? t('testing') : t('testConnection')}
           </Button>
-          <Button type="button" onClick={handleSave} disabled={isSaving || isTesting}>
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving || isTesting || !hasUnsavedChanges}
+          >
             {isSaving ? t('saving') : t('save')}
           </Button>
         </div>
+      }
+    >
+      <CardContent className="space-y-4">
+        <S3ConfigForm
+          config={storageConfig}
+          onChange={(newConfig) => setStorageConfig(newConfig)}
+          errors={errors}
+          showTestConnection={false}
+        />
       </CardContent>
-    </Card>
+    </AdminSettingsPanel>
   );
 }

@@ -15,7 +15,7 @@ import {
   Shield,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import AIConfigTab from './components/AIConfigTab';
@@ -28,13 +28,27 @@ import UpdateBanner from './components/UpdateBanner';
 import UsersTab from './components/UsersTab';
 import DashboardTab from './components/DashboardTab';
 import HooksConfigTab from './components/HooksConfigTab';
+import UnsavedSettingsDialog from './settings/UnsavedSettingsDialog';
+import { useAdminNavigationGuard } from './settings/useAdminNavigationGuard';
+import { useAdminSettingsDrafts } from './settings/useAdminSettingsDrafts';
 import type { SystemConfig } from './types';
 
 export default function AdminDashboard() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const { authReady, profile } = useAuthState();
+  const canManageSettings =
+    authReady && (profile?.role === 'admin' || profile?.role === 'super_admin');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [permissionsDirty, setPermissionsDirty] = useState(false);
+  const [permissionsSaving, setPermissionsSaving] = useState(false);
+  const [hooksDirty, setHooksDirty] = useState(false);
+  const [autosaveDirty, setAutosaveDirty] = useState(false);
+  const [autosaveSaving, setAutosaveSaving] = useState(false);
+  const [userPermissionsDirty, setUserPermissionsDirty] = useState(false);
+  const [userPermissionsSaving, setUserPermissionsSaving] = useState(false);
+  const isNavigationLocked =
+    isSaving || permissionsSaving || autosaveSaving || userPermissionsSaving;
   const [activeTab, setActiveTab] = useState<
     'ai' | 'dashboard' | 'hooks' | 'oauth' | 'permissions' | 'site' | 'storage' | 'ui' | 'users'
   >('dashboard');
@@ -52,60 +66,21 @@ export default function AdminDashboard() {
     }
   );
 
-  const [siteConfig, setSiteConfig] = useState<SystemConfig['site'] | undefined>(undefined);
-  const [storageConfig, setStorageConfig] = useState<SystemConfig['storage'] | undefined>(
-    undefined
-  );
-  const [uiConfig, setUiConfig] = useState<SystemConfig['ui'] | undefined>(undefined);
-  const [securityConfig, setSecurityConfig] = useState<SystemConfig['security'] | undefined>(
-    undefined
-  );
-  const [aiConfig, setAiConfig] = useState<SystemConfig['ai'] | undefined>(undefined);
-  const [notificationConfig, setNotificationConfig] = useState<
-    SystemConfig['notification'] | undefined
-  >(undefined);
-
-  useEffect(() => {
-    if (configs) {
-      if (configs.site) setSiteConfig(configs.site);
-      // 存储配置可能为空，初始化为空对象以便用户添加配置
-      setStorageConfig(
-        configs.storage || {
-          endpoint: '',
-          bucket: '',
-          accessKeyId: '',
-          secretAccessKey: '',
-          urlPrefix: '',
-        }
-      );
-      // UI 配置可能为空，初始化为默认值
-      setUiConfig(
-        configs.ui || {
-          allowRegistration: true,
-          allowUploadFile: true,
-          defaultUserRole: 'user',
-          apiRateLimit: 100,
-          maxVideoUploadSizeMB: 300,
-        }
-      );
-      setSecurityConfig(
-        configs.security || {
-          requireCertifiedUserForExplore: false,
-        }
-      );
-      setAiConfig(configs.ai);
-      setNotificationConfig(
-        configs.notification || {
-          adminHooks: {
-            enabled: false,
-            channels: [],
-          },
-          vapidPrivateKey: '',
-          vapidPublicKey: '',
-        }
-      );
-    }
-  }, [configs]);
+  const drafts = useAdminSettingsDrafts(configs);
+  const navigation = useAdminNavigationGuard({
+    activeTab,
+    hasUnsavedChanges:
+      canManageSettings &&
+      (drafts.hasUnsavedChanges ||
+        permissionsDirty ||
+        hooksDirty ||
+        autosaveDirty ||
+        userPermissionsDirty),
+    isSaving: canManageSettings && isNavigationLocked,
+    onDiscard: drafts.discard,
+    onTabChange: setActiveTab,
+  });
+  const securityConfig = drafts.security.value;
 
   if (!authReady) {
     return <LoadingPlaceholder className="h-dvh w-full" size={6} />;
@@ -128,17 +103,19 @@ export default function AdminDashboard() {
   }
 
   return (
-    <ContainerWithSideBar>
-      <NavBar title={t('title')} icon={<Shield className="size-5" />} />
+    <ContainerWithSideBar viewport scrollContainerName="#admin-settings-scroll">
+      <div className="shrink-0">
+        <NavBar title={t('title')} icon={<Shield className="size-5" />} />
+        <UpdateBanner />
+      </div>
 
-      <UpdateBanner />
-
-      <div className="flex flex-col divide-y">
+      <div className="flex min-h-0 flex-1 flex-col divide-y">
         {/* Tab 导航 */}
-        <div className="noScrollBar flex divide-x overflow-x-scroll">
+        <div className="noScrollBar flex shrink-0 divide-x overflow-x-scroll">
           <Button
             variant={activeTab === 'dashboard' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => navigation.requestTabChange('dashboard')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Activity className="size-4" />
@@ -146,7 +123,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'site' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('site')}
+            onClick={() => navigation.requestTabChange('site')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Globe className="size-4" />
@@ -154,7 +132,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'storage' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('storage')}
+            onClick={() => navigation.requestTabChange('storage')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Database className="size-4" />
@@ -162,7 +141,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'ui' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('ui')}
+            onClick={() => navigation.requestTabChange('ui')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Settings className="size-4" />
@@ -170,7 +150,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'users' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('users')}
+            onClick={() => navigation.requestTabChange('users')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Users className="size-4" />
@@ -178,7 +159,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'permissions' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('permissions')}
+            onClick={() => navigation.requestTabChange('permissions')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <KeyRound className="size-4" />
@@ -186,7 +168,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'ai' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('ai')}
+            onClick={() => navigation.requestTabChange('ai')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Brain className="size-4" />
@@ -194,7 +177,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'hooks' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('hooks')}
+            onClick={() => navigation.requestTabChange('hooks')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <BellRing className="size-4" />
@@ -202,7 +186,8 @@ export default function AdminDashboard() {
           </Button>
           <Button
             variant={activeTab === 'oauth' ? 'default' : 'ghost'}
-            onClick={() => setActiveTab('oauth')}
+            onClick={() => navigation.requestTabChange('oauth')}
+            disabled={isNavigationLocked}
             className="flex items-center gap-2 rounded-none"
           >
             <Shield className="size-4" />
@@ -210,86 +195,135 @@ export default function AdminDashboard() {
           </Button>
         </div>
 
-        {/* 数据看板 */}
-        {activeTab === 'dashboard' && <DashboardTab />}
+        <fieldset disabled={isSaving} className="flex min-h-0 min-w-0 flex-1 flex-col">
+          {/* 数据看板 */}
+          {activeTab === 'dashboard' && (
+            <div id="admin-settings-scroll" className="min-h-0 flex-1 overflow-y-auto">
+              <DashboardTab />
+            </div>
+          )}
 
-        {/* 站点配置 */}
-        {activeTab === 'site' && (
-          <SiteConfigTab
-            siteConfig={siteConfig}
-            setSiteConfig={setSiteConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-            isSuperAdmin={profile.role === 'super_admin'}
-          />
-        )}
+          {/* 站点配置 */}
+          {activeTab === 'site' && (
+            <SiteConfigTab
+              siteConfig={drafts.site.value}
+              setSiteConfig={drafts.site.setValue}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              onMutate={mutate}
+              onSaved={(config) => drafts.site.markSaved(config)}
+              hasUnsavedChanges={drafts.site.isDirty}
+              isSuperAdmin={profile.role === 'super_admin'}
+            />
+          )}
 
-        {/* 存储配置 */}
-        {activeTab === 'storage' && (
-          <StorageConfigTab
-            storageConfig={storageConfig}
-            setStorageConfig={setStorageConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            isTesting={isTesting}
-            setIsTesting={setIsTesting}
-            onMutate={mutate}
-          />
-        )}
+          {/* 存储配置 */}
+          {activeTab === 'storage' && (
+            <StorageConfigTab
+              storageConfig={drafts.storage.value}
+              setStorageConfig={drafts.storage.setValue}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              isTesting={isTesting}
+              setIsTesting={setIsTesting}
+              onMutate={mutate}
+              onSaved={(config) => drafts.storage.markSaved(config)}
+              hasUnsavedChanges={drafts.storage.isDirty}
+            />
+          )}
 
-        {/* UI 配置 */}
-        {activeTab === 'ui' && (
-          <UIConfigTab
-            uiConfig={uiConfig}
-            setUiConfig={setUiConfig}
-            securityConfig={securityConfig}
-            setSecurityConfig={setSecurityConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
+          {/* UI 配置 */}
+          {activeTab === 'ui' && (
+            <UIConfigTab
+              uiConfig={drafts.ui.value}
+              securityConfig={securityConfig}
+              onMutate={mutate}
+              onDirtyChange={setAutosaveDirty}
+              onSavingChange={setAutosaveSaving}
+              onSaved={(update) => {
+                void mutate(
+                  (current) => ({
+                    ...current,
+                    ...(update.ui ? { ui: update.ui } : {}),
+                    ...(update.requireCertifiedUserForExplore !== undefined
+                      ? {
+                          security: {
+                            ...current?.security,
+                            requireCertifiedUserForExplore: update.requireCertifiedUserForExplore,
+                          },
+                        }
+                      : {}),
+                  }),
+                  { revalidate: false }
+                );
+              }}
+            />
+          )}
 
-        {/* OAuth 配置 */}
-        {activeTab === 'oauth' && (
-          <OAuthConfigTab
-            securityConfig={securityConfig}
-            setSecurityConfig={setSecurityConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
+          {/* OAuth 配置 */}
+          {activeTab === 'oauth' && (
+            <OAuthConfigTab
+              securityConfig={securityConfig}
+              setSecurityConfig={drafts.security.setValue}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              onMutate={mutate}
+              onSaved={(oauth) =>
+                drafts.security.markSaved(securityConfig, { ...securityConfig, oauth })
+              }
+              hasUnsavedChanges={drafts.security.isDirty}
+            />
+          )}
 
-        {/* AI 配置 */}
-        {activeTab === 'ai' && (
-          <AIConfigTab
-            aiConfig={aiConfig}
-            setAiConfig={setAiConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
+          {/* AI 配置 */}
+          {activeTab === 'ai' && (
+            <AIConfigTab
+              aiConfig={drafts.ai.value}
+              setAiConfig={drafts.ai.setValue}
+              isSaving={isSaving}
+              setIsSaving={setIsSaving}
+              onMutate={mutate}
+              onSaved={(config) => drafts.ai.markSaved(drafts.ai.value, config)}
+              hasUnsavedChanges={drafts.ai.isDirty}
+            />
+          )}
 
-        {/* Hook 配置 */}
-        {activeTab === 'hooks' && (
-          <HooksConfigTab
-            notificationConfig={notificationConfig}
-            setNotificationConfig={setNotificationConfig}
-            isSaving={isSaving}
-            setIsSaving={setIsSaving}
-            onMutate={mutate}
-          />
-        )}
+          {/* Hook 配置 */}
+          {activeTab === 'hooks' && (
+            <div id="admin-settings-scroll" className="min-h-0 flex-1 overflow-y-auto">
+              <HooksConfigTab
+                notificationConfig={configs?.notification}
+                setNotificationConfig={(notification) => {
+                  void mutate((current) => ({ ...current, notification }), { revalidate: false });
+                }}
+                isSaving={isSaving}
+                setIsSaving={setIsSaving}
+                onMutate={mutate}
+                onDirtyChange={setHooksDirty}
+              />
+            </div>
+          )}
 
-        {/* 用户管理 */}
-        {activeTab === 'users' && <UsersTab />}
+          {/* 用户管理 */}
+          {activeTab === 'users' && (
+            <div id="admin-settings-scroll" className="min-h-0 flex-1 overflow-y-auto">
+              <UsersTab
+                onDirtyChange={setUserPermissionsDirty}
+                onSavingChange={setUserPermissionsSaving}
+              />
+            </div>
+          )}
 
-        {/* 权限管理 */}
-        {activeTab === 'permissions' && <PermissionsTab />}
+          {/* 权限管理 */}
+          {activeTab === 'permissions' && (
+            <PermissionsTab
+              onDirtyChange={setPermissionsDirty}
+              onSavingChange={setPermissionsSaving}
+            />
+          )}
+        </fieldset>
       </div>
+      <UnsavedSettingsDialog {...navigation.dialogProps} />
     </ContainerWithSideBar>
   );
 }

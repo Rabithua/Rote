@@ -11,6 +11,7 @@ import AiUsagePage from './AiUsagePage';
 import type { AiUsageMetrics, AiUsageStatistics } from './types';
 
 vi.mock('@/utils/api', () => ({ get: vi.fn() }));
+vi.mock('./AiUsageTrend', () => ({ default: () => <div>trendTitle</div> }));
 vi.mock('@/state/profile', () => ({ useAuthState: vi.fn() }));
 vi.mock('@/layout/dashboard', () => ({ tabsData: [] }));
 vi.mock('@/layout/ContainerWithSideBar', () => ({
@@ -63,6 +64,7 @@ const usage: AiUsageStatistics = {
     timeZone: 'Asia/Shanghai',
   },
   summary: metrics,
+  daily: [{ date: '2026-10-08', metrics }],
   system: metrics,
   unattributed: metrics,
   models: [],

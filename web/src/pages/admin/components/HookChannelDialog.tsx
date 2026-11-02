@@ -20,6 +20,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import UnsavedSettingsDialog from '../settings/UnsavedSettingsDialog';
+import { useAdminSettingsDraft } from '../settings/useAdminSettingsDraft';
 import type { AdminHookChannel } from '../types';
 import HookChannelBarkFields from './HookChannelBarkFields';
 import HookChannelHttpFields from './HookChannelHttpFields';
@@ -31,57 +33,72 @@ interface HookChannelDialogProps {
   isSaving: boolean;
   mode: 'create' | 'edit';
   onOpenChange: (open: boolean) => void;
+  onDirtyChange?: (dirty: boolean) => void;
   onSubmit: (channel: AdminHookChannel) => Promise<boolean>;
   open: boolean;
 }
 
-export default function HookChannelDialog({
+export default function HookChannelDialog(props: HookChannelDialogProps) {
+  return props.open ? <HookChannelEditor {...props} /> : null;
+}
+
+function HookChannelEditor({
   channel,
   isSaving,
   mode,
   onOpenChange,
+  onDirtyChange,
   onSubmit,
   open,
 }: HookChannelDialogProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
-  const [draft, setDraft] = useState<AdminHookChannel>(() =>
+  const [defaultChannel] = useState<AdminHookChannel>(() =>
     createDefaultChannel('bark', t('hooks.channelDefaults.bark'))
   );
+  const form = useAdminSettingsDraft(channel ? normalizeChannel(channel) : defaultChannel);
+  const { value: draft, setValue: setDraft, isDirty } = form;
+  const [closeRequested, setCloseRequested] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
-    setDraft(
-      channel
-        ? normalizeChannel(channel)
-        : createDefaultChannel('bark', t('hooks.channelDefaults.bark'))
-    );
-  }, [channel, open, t]);
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+
+  const requestClose = () => {
+    if (isSaving) return;
+    if (isDirty) setCloseRequested(true);
+    else onOpenChange(false);
+  };
 
   const handleTypeChange = (type: AdminHookChannel['type']) => {
-    setDraft((current) => {
-      const oldDefaultName = t(`hooks.channelDefaults.${current.type}`);
-      const next = createDefaultChannel(type, t(`hooks.channelDefaults.${type}`));
-      return {
-        ...next,
-        enabled: current.enabled,
-        events: current.events,
-        id: current.id,
-        name: current.name === oldDefaultName ? next.name : current.name,
-      };
+    const oldDefaultName = t(`hooks.channelDefaults.${draft.type}`);
+    const next = createDefaultChannel(type, t(`hooks.channelDefaults.${type}`));
+    setDraft({
+      ...next,
+      enabled: draft.enabled,
+      events: draft.events,
+      id: draft.id,
+      name: draft.name === oldDefaultName ? next.name : draft.name,
     });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isSaving) return;
-    if (await onSubmit(normalizeChannel(draft))) onOpenChange(false);
+    if (isSaving || !isDirty) return;
+    const submitted = normalizeChannel(draft);
+    if (await onSubmit(submitted)) {
+      form.markSaved(draft, submitted);
+      onDirtyChange?.(false);
+      onOpenChange(false);
+    }
   };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!isSaving) onOpenChange(nextOpen);
+        if (!nextOpen) requestClose();
       }}
     >
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
@@ -95,7 +112,7 @@ export default function HookChannelDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} aria-busy={isSaving}>
-          <fieldset className="space-y-5" disabled={isSaving}>
+          <fieldset className="space-y-5 px-1" disabled={isSaving}>
             <div className="flex items-center justify-between gap-4 rounded-md border p-4">
               <div className="space-y-0.5">
                 <Label>{t('hooks.channelEnabled')}</Label>
@@ -163,27 +180,41 @@ export default function HookChannelDialog({
                 ))}
               </div>
             </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isSaving}
-                onClick={() => onOpenChange(false)}
-              >
-                {t('hooks.dialog.cancel')}
-              </Button>
-              <Button type="submit" disabled={isSaving}>
-                {isSaving
-                  ? t('saving')
-                  : mode === 'create'
-                    ? t('hooks.dialog.addAction')
-                    : t('hooks.dialog.applyAction')}
-              </Button>
-            </DialogFooter>
           </fieldset>
+          <DialogFooter className="bg-background mt-6 flex-row border-t pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSaving}
+              onClick={requestClose}
+              className="min-w-0 flex-1 whitespace-normal sm:flex-none"
+            >
+              {t('hooks.dialog.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving || !isDirty}
+              className="min-w-0 flex-1 whitespace-normal sm:flex-none"
+            >
+              {isSaving
+                ? t('saving')
+                : mode === 'create'
+                  ? t('hooks.dialog.addAction')
+                  : t('hooks.dialog.applyAction')}
+            </Button>
+          </DialogFooter>
         </form>
       </DialogContent>
+      <UnsavedSettingsDialog
+        open={closeRequested}
+        isSaving={isSaving}
+        onContinue={() => setCloseRequested(false)}
+        onDiscard={() => {
+          if (isSaving) return;
+          onDirtyChange?.(false);
+          onOpenChange(false);
+        }}
+      />
     </Dialog>
   );
 }

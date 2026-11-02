@@ -6,10 +6,12 @@ export default function FloatBtns({
   scrollContainerName,
   children,
   hideOnMobile,
+  viewport = false,
 }: {
   scrollContainerName?: string;
   children?: ReactNode;
   hideOnMobile?: boolean;
+  viewport?: boolean;
 }) {
   function goTop() {
     const container = scrollContainerName ? document.querySelector(scrollContainerName) : window;
@@ -25,6 +27,14 @@ export default function FloatBtns({
 
   return (
     <div
+      style={
+        viewport
+          ? {
+              bottom:
+                'calc(var(--dashboard-bottom-nav-height, 0px) + var(--viewport-actions-height, 0px) + 1rem)',
+            }
+          : undefined
+      }
       className={`animate-show fixed right-8 bottom-16 z-10 flex-col gap-2 self-end duration-300 ${
         hideOnMobile ? 'hidden md:flex' : 'flex'
       }`}

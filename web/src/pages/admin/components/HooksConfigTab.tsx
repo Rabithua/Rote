@@ -18,6 +18,7 @@ interface HooksConfigTabProps {
   isSaving: boolean;
   notificationConfig: SystemConfig['notification'] | undefined;
   onMutate: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
   setIsSaving: (saving: boolean) => void;
   setNotificationConfig: (config: SystemConfig['notification'] | undefined) => void;
 }
@@ -32,6 +33,7 @@ export default function HooksConfigTab({
   isSaving,
   notificationConfig,
   onMutate,
+  onDirtyChange,
   setIsSaving,
   setNotificationConfig,
 }: HooksConfigTabProps) {
@@ -253,6 +255,7 @@ export default function HooksConfigTab({
         open={dialogOpen}
         onOpenChange={handleDialogOpenChange}
         onSubmit={handleDialogSubmit}
+        onDirtyChange={onDirtyChange}
       />
     </Card>
   );

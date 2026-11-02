@@ -1,7 +1,7 @@
+import AdminSettingsPanel from '../settings/AdminSettingsPanel';
 import { formatEmbeddingError } from './embeddingErrors';
 import AIConfigSaveButton from './AIConfigSaveButton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Divider from '@/components/ui/divider';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { get, put } from '@/utils/api';
@@ -19,8 +19,10 @@ interface AIConfigTabProps {
   aiConfig: SystemConfig['ai'] | undefined;
   setAiConfig: (config: SystemConfig['ai'] | undefined) => void;
   isSaving: boolean;
+  hasUnsavedChanges?: boolean;
   setIsSaving: (saving: boolean) => void;
   onMutate: () => void;
+  onSaved?: (config: SystemConfig['ai']) => void;
 }
 
 function mergeAiConfig(
@@ -80,12 +82,15 @@ function AIConfigEditor({
   aiConfig,
   setAiConfig,
   isSaving,
+  hasUnsavedChanges: draftHasUnsavedChanges,
   setIsSaving,
   onMutate,
+  onSaved,
 }: AIConfigTabProps & { defaults: NonNullable<SystemConfig['ai']> }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const { mutate: mutateGlobal } = useSWRConfig();
   const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const config = useMemo(() => mergeAiConfig(aiConfig, defaults), [aiConfig, defaults]);
 
   const { data: savedAi, mutate: mutateSavedAi } = useSWR(
@@ -94,7 +99,9 @@ function AIConfigEditor({
       (await get('/admin/settings?group=ai')).data as { config: NonNullable<SystemConfig['ai']> }
   );
   const hasUnsavedChanges =
-    !savedAi || JSON.stringify(config) !== JSON.stringify(mergeAiConfig(savedAi.config, defaults));
+    draftHasUnsavedChanges ??
+    (!savedAi ||
+      JSON.stringify(config) !== JSON.stringify(mergeAiConfig(savedAi.config, defaults)));
 
   const { data: providers = [] } = useSWR<AiProviderPreset[]>('/ai/providers', async () => {
     const res = await get('/ai/providers');
@@ -151,17 +158,23 @@ function AIConfigEditor({
   };
 
   const handleSave = async (snapshot: NonNullable<SystemConfig['ai']>): Promise<boolean> => {
+    setSaveError(null);
     setIsSaving(true);
     try {
       const res = await put('/admin/settings', {
         group: 'ai',
         config: snapshot,
       });
-      setAiConfig(res.data.config);
-      await mutateSavedAi();
+      if (onSaved) onSaved(res.data.config);
+      else setAiConfig(res.data.config);
       toast.success(t('saveSuccess'));
-      await Promise.all([Promise.resolve(onMutate()), mutateGlobal('site-status')]);
-      await Promise.all([mutateVectorStatus(), mutateJobStats()]);
+      void Promise.all([
+        mutateSavedAi(),
+        Promise.resolve(onMutate()),
+        mutateGlobal('site-status'),
+        mutateVectorStatus(),
+        mutateJobStats(),
+      ]);
       return true;
     } catch (error: any) {
       const errorMessage =
@@ -169,7 +182,9 @@ function AIConfigEditor({
         error?.message ||
         error?.response?.data?.error ||
         'Unknown error';
-      toast.error(t('saveFailed', { error: formatEmbeddingError(error, t) || errorMessage }));
+      const message = t('saveFailed', { error: formatEmbeddingError(error, t) || errorMessage });
+      setSaveError(message);
+      toast.error(message);
       return false;
     } finally {
       setIsSaving(false);
@@ -218,33 +233,44 @@ function AIConfigEditor({
   );
 
   return (
-    <Card className="rounded-none border-none shadow-none">
-      <CardHeader className="pb-0">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <CardTitle>{t('ai.title')}</CardTitle>
-            <CardDescription>{t('ai.description')}</CardDescription>
+    <AdminSettingsPanel
+      isDirty={hasUnsavedChanges}
+      saveError={saveError}
+      header={
+        <CardHeader className="pb-0">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <CardTitle>{t('ai.title')}</CardTitle>
+              <CardDescription>{t('ai.description')}</CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StatusPill
+                active={config.enabled === true}
+                text={config.enabled ? t('ai.enabledStatus') : t('ai.disabledStatus')}
+              />
+              <StatusPill
+                active={isVectorReady}
+                text={
+                  !vectorStatus
+                    ? t('ai.vectorChecking')
+                    : isVectorReady
+                      ? t('ai.vectorReady')
+                      : t('ai.vectorNotReady')
+                }
+              />
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <StatusPill
-              active={config.enabled === true}
-              text={config.enabled ? t('ai.enabledStatus') : t('ai.disabledStatus')}
-            />
-            <StatusPill
-              active={isVectorReady}
-              text={
-                !vectorStatus
-                  ? t('ai.vectorChecking')
-                  : isVectorReady
-                    ? t('ai.vectorReady')
-                    : t('ai.vectorNotReady')
-              }
-            />
-          </div>
-        </div>
-      </CardHeader>
-      <Divider />
-
+        </CardHeader>
+      }
+      actions={
+        <AIConfigSaveButton
+          config={config}
+          disabled={isSaving || busyAction !== null || !hasUnsavedChanges}
+          onSave={handleSave}
+          onError={setSaveError}
+        />
+      }
+    >
       <CardContent className="space-y-6">
         <section className="grid gap-3 md:grid-cols-4">
           <MetricBlock label={t('ai.providerSummary')} value={config.chat?.providerId || '-'} />
@@ -311,13 +337,7 @@ function AIConfigEditor({
           updateConfig={updateConfig}
           runAction={runAction}
         />
-
-        <AIConfigSaveButton
-          config={config}
-          disabled={isSaving || busyAction !== null}
-          onSave={handleSave}
-        />
       </CardContent>
-    </Card>
+    </AdminSettingsPanel>
   );
 }

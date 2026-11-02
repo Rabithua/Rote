@@ -154,6 +154,7 @@ it('matches SQL totals across boundaries, model/type filters, legacy and unknown
     legacyRecords: 1,
   });
   expect(stats.system).toMatchObject({ totalTokens: '120', calls: 1 });
+  expect(stats.daily).toEqual([{ date: '2026-10-01', metrics: stats.summary }]);
   expect(stats.topUsers).toHaveLength(1);
   expect(stats.topUsers[0].metrics.totalTokens).toBe('142');
   expect(
@@ -171,6 +172,136 @@ it('matches SQL totals across boundaries, model/type filters, legacy and unknown
   expect(selected.models).toHaveLength(1);
   expect(selected.topUsers[0].metrics.totalTokens).toBe('9');
   expect(selected.availableModels).toEqual(['embedding-test']);
+  expect(selected.daily).toEqual([{ date: '2026-10-01', metrics: selected.summary }]);
+});
+
+it('groups daily usage in Shanghai with the same range, filters, and accounting as the summary', async () => {
+  await saveAiUsage(record({ createdAt: new Date('2026-10-01T15:59:58.999Z') }));
+  await saveAiUsage(record({ createdAt: new Date('2026-10-01T15:59:59Z') }));
+  await saveAiUsage(
+    record({
+      createdAt: new Date('2026-10-01T16:00:00Z'),
+      userid: null,
+      purpose: 'provider_test',
+      type: 'embedding',
+      model: 'embedding-daily',
+      totalTokens: 9,
+      promptTokens: 9,
+      completionTokens: 0,
+    })
+  );
+  await saveAiUsage(
+    record({
+      createdAt: new Date('2026-10-02T02:00:00Z'),
+      usageStatus: 'unknown',
+      totalTokens: null,
+      promptTokens: null,
+      completionTokens: null,
+    })
+  );
+  await saveAiUsage(
+    record({
+      createdAt: new Date('2026-10-02T16:00:00Z'),
+      userid: null,
+      status: 'failed',
+      totalTokens: 200,
+    })
+  );
+  await saveAiUsage(
+    record({
+      createdAt: new Date('2026-10-03T15:59:59.999Z'),
+      status: 'cancelled',
+      totalTokens: 50,
+    })
+  );
+  await client`INSERT INTO ai_token_usage_logs (userid, model, type, "promptTokens", "completionTokens", "totalTokens", "createdAt") VALUES (${owner}, 'old', 'chat', 11, 2, 13, '2026-10-03T00:00:00+08:00')`;
+  await saveAiUsage(record({ createdAt: new Date('2026-10-03T16:00:00Z') }));
+  const filters = parseAiUsageFilters({
+    startAt: '2026-10-01T15:59:59Z',
+    endAt: '2026-10-03T16:00:00Z',
+  });
+  const stats = (await getAiUsageStatistics(filters)) as any;
+  expect(stats.daily.map((point: any) => point.date)).toEqual([
+    '2026-10-01',
+    '2026-10-02',
+    '2026-10-03',
+  ]);
+  expect(stats.daily.map((point: any) => point.metrics)).toMatchObject([
+    { totalTokens: '120', calls: 1 },
+    { totalTokens: '9', calls: 2, unknownCalls: 1 },
+    { totalTokens: '263', calls: 2, failedCalls: 1, cancelledCalls: 1, legacyRecords: 1 },
+  ]);
+  for (const key of ['totalTokens', 'promptTokens', 'completionTokens']) {
+    expect(
+      stats.daily.reduce((sum: bigint, point: any) => sum + BigInt(point.metrics[key]), 0n)
+    ).toBe(BigInt(stats.summary[key]));
+  }
+  for (const key of ['calls', 'reportedCalls', 'unknownCalls', 'legacyRecords']) {
+    expect(stats.daily.reduce((sum: number, point: any) => sum + point.metrics[key], 0)).toBe(
+      stats.summary[key]
+    );
+  }
+  expect(stats.daily[1].metrics.cacheHitTokens).toBeNull();
+  const selected = (await getAiUsageStatistics({
+    ...filters,
+    type: 'embedding',
+    model: 'embedding-daily',
+  })) as any;
+  expect(selected.daily).toEqual([{ date: '2026-10-02', metrics: selected.summary }]);
+  const empty = (await getAiUsageStatistics({ ...filters, endAt: filters.startAt })) as any;
+  expect(empty.daily).toEqual([]);
+});
+
+it('keeps omitted daily token fields null and preserves explicitly reported zero', async () => {
+  await saveAiUsage(
+    record({
+      totalTokens: 120,
+      promptTokens: null,
+      completionTokens: null,
+      createdAt: new Date('2026-09-30T16:00:00Z'),
+    })
+  );
+  await saveAiUsage(
+    record({
+      usageStatus: 'unknown',
+      totalTokens: null,
+      promptTokens: 0,
+      completionTokens: null,
+      createdAt: new Date('2026-10-01T16:00:00Z'),
+    })
+  );
+  const stats = (await getAiUsageStatistics(
+    parseAiUsageFilters({
+      startAt: '2026-09-30T16:00:00Z',
+      endAt: '2026-10-02T16:00:00Z',
+    })
+  )) as any;
+  expect(stats.daily).toMatchObject([
+    {
+      date: '2026-10-01',
+      metrics: {
+        totalTokens: '120',
+        promptTokens: null,
+        completionTokens: null,
+        reportedCalls: 1,
+      },
+    },
+    {
+      date: '2026-10-02',
+      metrics: {
+        totalTokens: null,
+        promptTokens: '0',
+        completionTokens: null,
+        unknownCalls: 1,
+      },
+    },
+  ]);
+  expect(stats.summary).toMatchObject({
+    totalTokens: '120',
+    promptTokens: '0',
+    completionTokens: '0',
+    calls: 2,
+  });
 });
 
 it('paginates every user beyond the top ten with stable totals and the same attribution filters', async () => {

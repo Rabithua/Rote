@@ -20,10 +20,12 @@ export default function AIConfigSaveButton({
   config,
   disabled,
   onSave,
+  onError,
 }: {
   config: AiConfiguration;
   disabled: boolean;
   onSave: (config: AiConfiguration) => Promise<boolean>;
+  onError?: (message: string | null) => void;
 }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const [busy, setBusy] = useState(false);
@@ -48,6 +50,7 @@ export default function AIConfigSaveButton({
     }
   };
   const checkImpact = async () => {
+    onError?.(null);
     const snapshot = structuredClone(config);
     setBusy(true);
     try {
@@ -61,7 +64,9 @@ export default function AIConfigSaveButton({
         });
       else await onSave(snapshot);
     } catch (error) {
-      toast.error(formatEmbeddingError(error, t) || t('ai.saveImpactCheckFailed'));
+      const message = formatEmbeddingError(error, t) || t('ai.saveImpactCheckFailed');
+      onError?.(message);
+      toast.error(message);
     } finally {
       setBusy(false);
     }
@@ -77,6 +82,7 @@ export default function AIConfigSaveButton({
         {busy ? t('saving') : t('save')}
       </Button>
       <DialogContent
+        className="overflow-y-auto"
         showCloseButton={false}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
@@ -85,6 +91,8 @@ export default function AIConfigSaveButton({
       >
         <DialogHeader>
           <DialogTitle>{t('ai.saveChangeTitle')}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
           <DialogDescription className="text-pretty">
             {t(
               pending?.initializesIndex
@@ -92,11 +100,11 @@ export default function AIConfigSaveButton({
                 : 'ai.saveChangeDescription'
             )}
           </DialogDescription>
-        </DialogHeader>
-        {!pending?.initializesIndex && (
-          <p className="text-muted-foreground text-sm">{t('ai.saveChangeReuse')}</p>
-        )}
-        <DialogFooter className="flex-row gap-2">
+          {!pending?.initializesIndex && (
+            <p className="text-muted-foreground text-sm">{t('ai.saveChangeReuse')}</p>
+          )}
+        </div>
+        <DialogFooter className="bg-background flex-row gap-2 border-t pt-4">
           <Button
             variant="outline"
             className="flex-1"

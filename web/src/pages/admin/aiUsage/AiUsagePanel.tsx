@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import useSWR from 'swr';
 import { get } from '@/utils/api';
@@ -17,6 +17,8 @@ import AiUsageModels from './AiUsageModels';
 import AiUsageUsers from './AiUsageUsers';
 import { aiUsageRange, type AiUsagePeriod } from './range';
 import type { AiUsageStatistics } from './types';
+
+const AiUsageTrend = lazy(() => import('./AiUsageTrend'));
 
 export default function AiUsagePanel() {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.dashboard.aiUsage' });
@@ -82,6 +84,18 @@ export default function AiUsagePanel() {
       {data && (
         <>
           <AiUsageTotals metrics={data.summary} />
+          <Suspense
+            fallback={
+              <div
+                role="status"
+                className="text-muted-foreground flex h-80 items-center justify-center rounded-md border text-sm"
+              >
+                {t('loading')}
+              </div>
+            }
+          >
+            <AiUsageTrend daily={data.daily} range={data.range} />
+          </Suspense>
           <AiUsageUsers key={`${range.startAt}:${range.endAt}:${refreshKey}`} range={range} />
           <div className="min-w-0 space-y-3">
             <h3 className="text-sm font-medium">{t('modelUsage')}</h3>

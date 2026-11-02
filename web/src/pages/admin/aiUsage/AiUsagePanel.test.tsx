@@ -11,6 +11,7 @@ import zh from '@/locales/zh.json';
 import ja from '@/locales/ja.json';
 
 vi.mock('@/utils/api', () => ({ get: vi.fn() }));
+vi.mock('./AiUsageTrend', () => ({ default: () => <div>trendTitle</div> }));
 const metrics: AiUsageMetrics = {
   totalTokens: '120',
   promptTokens: '100',
@@ -35,6 +36,7 @@ const fixture: AiUsageStatistics = {
     timeZone: 'Asia/Shanghai',
   },
   summary: metrics,
+  daily: [{ date: '2026-10-08', metrics }],
   system: { ...metrics, totalTokens: '0', calls: 0, unknownCalls: 0 },
   unattributed: { ...metrics, totalTokens: '0', calls: 0, unknownCalls: 0 },
   models: [{ providerId: null, model: 'deepseek-flash', type: 'chat', metrics }],
@@ -109,6 +111,13 @@ describe('AI usage dashboard', () => {
     mount();
     await screen.findByText('test-user');
     expect(screen.getByText('totalUsage')).toBeVisible();
+    const trend = await screen.findByText('trendTitle');
+    expect(screen.getByText('totalUsage').compareDocumentPosition(trend)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(trend.compareDocumentPosition(screen.getByText('test-user'))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
     screen.getAllByText('promptTokens').forEach((element) => expect(element).toBeVisible());
     screen.getAllByText('completionTokens').forEach((element) => expect(element).toBeVisible());
     screen.getAllByText('calls').forEach((element) => expect(element).toBeVisible());

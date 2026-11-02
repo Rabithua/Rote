@@ -1,11 +1,9 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Divider from '@/components/ui/divider';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/state/profile';
 import {
   CAPABILITY_KEYS,
   MANAGEABLE_ROLES,
-  type CapabilityKey,
   type CapabilityOverride,
   type ManageableRole,
   type RoleCapabilityPolicy,
@@ -18,15 +16,20 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import PermissionSettingRow from './PermissionSettingRow';
+import { usePermissionsDrafts } from './permissionsDrafts';
+import AdminSettingsPanel from '../settings/AdminSettingsPanel';
 
-type RoleDrafts = Partial<Record<ManageableRole, Record<CapabilityKey, CapabilityOverride>>>;
+interface PermissionsTabProps {
+  onDirtyChange?: (dirty: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
+}
 
-export default function PermissionsTab() {
+export default function PermissionsTab({ onDirtyChange, onSavingChange }: PermissionsTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.permissions' });
   const profile = useProfile();
   const isSuperAdmin = profile?.role === 'super_admin';
-  const [drafts, setDrafts] = useState<RoleDrafts>({});
   const [savingRole, setSavingRole] = useState<ManageableRole | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { data, isLoading, mutate } = useSWR<RoleCapabilityPolicy[]>(
     '/admin/permissions/roles',
     async (url: string) => {
@@ -34,55 +37,80 @@ export default function PermissionsTab() {
       return response.data as RoleCapabilityPolicy[];
     }
   );
+  const { drafts, dirtyRoles, hasUnsavedChanges, markRoleSaved, updateRoleCapability } =
+    usePermissionsDrafts(data);
 
   useEffect(() => {
-    if (!data) return;
-    setDrafts(
-      Object.fromEntries(
-        data
-          .filter((policy) => MANAGEABLE_ROLES.includes(policy.role as ManageableRole))
-          .map((policy) => [policy.role, policy.capabilities])
-      ) as RoleDrafts
-    );
-  }, [data]);
+    onDirtyChange?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onDirtyChange]);
 
-  const updateRoleCapability = (
-    role: ManageableRole,
-    capability: CapabilityKey,
-    effect: CapabilityOverride
-  ) => {
-    setDrafts((current) => ({
-      ...current,
-      [role]: {
-        ...current[role],
-        [capability]: effect,
-      } as Record<CapabilityKey, CapabilityOverride>,
-    }));
-  };
+  useEffect(() => {
+    onSavingChange?.(savingRole !== null);
+  }, [onSavingChange, savingRole]);
+
+  useEffect(
+    () => () => {
+      onDirtyChange?.(false);
+      onSavingChange?.(false);
+    },
+    [onDirtyChange, onSavingChange]
+  );
 
   const saveRole = async (role: ManageableRole) => {
     const capabilities = drafts[role];
-    if (!capabilities) return;
+    if (!capabilities || savingRole !== null || !dirtyRoles.includes(role)) return;
 
+    setSaveError(null);
     setSavingRole(role);
     try {
-      await put(`/admin/permissions/roles/${role}`, { capabilities });
-      await mutate();
+      const response = await put<{ data: RoleCapabilityPolicy[] }>(
+        `/admin/permissions/roles/${role}`,
+        { capabilities }
+      );
+      markRoleSaved(role, capabilities);
+      await mutate(response.data, { revalidate: false });
       toast.success(t('saveSuccess'));
     } catch (error) {
-      toast.error(t('saveFailed', { error: getErrorMessage(error) || t('unknownError') }));
+      const message = t('saveFailed', { error: getErrorMessage(error) || t('unknownError') });
+      setSaveError(message);
+      toast.error(message);
     } finally {
       setSavingRole(null);
     }
   };
 
   return (
-    <Card className="rounded-none border-none shadow-none">
-      <CardHeader className="pb-0">
-        <CardTitle>{t('title')}</CardTitle>
-        <CardDescription>{t('description')}</CardDescription>
-      </CardHeader>
-      <Divider />
+    <AdminSettingsPanel
+      isDirty={hasUnsavedChanges}
+      saveError={saveError}
+      header={
+        <CardHeader className="pb-0">
+          <CardTitle>{t('title')}</CardTitle>
+          <CardDescription>{t('description')}</CardDescription>
+        </CardHeader>
+      }
+      actions={
+        isSuperAdmin && (
+          <div className="flex flex-wrap justify-end gap-2">
+            {MANAGEABLE_ROLES.map((role) => (
+              <Button
+                key={role}
+                size="sm"
+                onClick={() => saveRole(role)}
+                disabled={!drafts[role] || savingRole !== null || !dirtyRoles.includes(role)}
+              >
+                {savingRole === role ? (
+                  <Loader className="size-4 animate-spin" />
+                ) : (
+                  <Save className="size-4" />
+                )}
+                {t('saveRoleFor', { role: t(`roles.${role}.label`) })}
+              </Button>
+            ))}
+          </div>
+        )
+      }
+    >
       <CardContent className="space-y-6">
         {!isSuperAdmin && (
           <p className="text-muted-foreground text-sm">{t('readOnlyDescription')}</p>
@@ -104,20 +132,6 @@ export default function PermissionsTab() {
                       {t(`roles.${role}.description`)}
                     </p>
                   </div>
-                  {isSuperAdmin && (
-                    <Button
-                      size="sm"
-                      onClick={() => saveRole(role)}
-                      disabled={!capabilities || savingRole !== null}
-                    >
-                      {savingRole === role ? (
-                        <Loader className="size-4 animate-spin" />
-                      ) : (
-                        <Save className="size-4" />
-                      )}
-                      {t('saveRole')}
-                    </Button>
-                  )}
                 </div>
                 <div className="px-4">
                   {capabilities &&
@@ -140,6 +154,6 @@ export default function PermissionsTab() {
           })
         )}
       </CardContent>
-    </Card>
+    </AdminSettingsPanel>
   );
 }

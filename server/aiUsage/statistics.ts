@@ -11,6 +11,14 @@ export async function getAiUsageStatistics(filters: AiUsageFilters) {
       ${filters.type === 'all' ? sql`` : sql`AND type = ${filters.type}`}
     ), filtered AS MATERIALIZED (
       SELECT * FROM window_usage ${filters.model ? sql`WHERE model = ${filters.model}` : sql``}
+    ), daily_stats AS (
+      SELECT ("createdAt" AT TIME ZONE 'Asia/Shanghai')::date::text AS date,
+        (${metrics} || jsonb_build_object(
+          'totalTokens', SUM("totalTokens")::text,
+          'promptTokens', SUM("promptTokens")::text,
+          'completionTokens', SUM("completionTokens")::text
+        )) AS metrics
+      FROM filtered GROUP BY ("createdAt" AT TIME ZONE 'Asia/Shanghai')::date
     ), model_stats AS (
       SELECT provider_id AS "providerId", model, type, ${metrics} AS metrics
       FROM filtered GROUP BY provider_id, model, type
@@ -29,6 +37,7 @@ export async function getAiUsageStatistics(filters: AiUsageFilters) {
       (SELECT ${metrics} FROM filtered WHERE purpose IN ('provider_test', 'index_validation')) AS system,
       (SELECT ${metrics} FROM filtered WHERE userid IS NULL
         AND (purpose IS NULL OR purpose NOT IN ('provider_test', 'index_validation'))) AS unattributed,
+      COALESCE((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.date) FROM daily_stats d), '[]'::jsonb) AS daily,
       COALESCE((SELECT jsonb_agg(to_jsonb(m)) FROM model_stats m), '[]'::jsonb) AS models,
       COALESCE((SELECT jsonb_agg(to_jsonb(u)) FROM top_users u), '[]'::jsonb) AS "topUsers",
       COALESCE((SELECT jsonb_agg(model ORDER BY model) FROM
