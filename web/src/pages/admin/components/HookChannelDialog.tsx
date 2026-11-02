@@ -187,14 +187,14 @@ function HookChannelEditor({
               variant="outline"
               disabled={isSaving}
               onClick={requestClose}
-              className="min-w-0 flex-1 whitespace-normal sm:flex-none"
+              className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
             >
               {t('hooks.dialog.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isSaving || !isDirty}
-              className="min-w-0 flex-1 whitespace-normal sm:flex-none"
+              className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
             >
               {isSaving
                 ? t('saving')

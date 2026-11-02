@@ -1528,6 +1528,7 @@
         "requireCertifiedUserForExploreDesc": "开启后，只有已认证用户的公开笔记才会被推荐到「探索」页面；已公开的笔记仍可通过链接访问。"
       },
       "hooks": {
+        "channelRemoved": "该通知渠道已被删除，当前更改尚未保存。",
         "title": "通知 Hook",
         "description": "配置管理员通知渠道，用于新用户和创建时即公开的笔记。",
         "enabled": "启用管理员通知",

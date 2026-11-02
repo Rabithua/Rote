@@ -204,4 +204,44 @@ describe('notification hook immediate saving', () => {
       },
     });
   });
+
+  it('retains the edit draft when the channel was deleted by a settings refresh', async () => {
+    const onDirtyChange = vi.fn();
+    const setNotificationConfig = vi.fn();
+    const props = {
+      isSaving: false,
+      onMutate,
+      onDirtyChange,
+      setIsSaving: vi.fn(),
+      setNotificationConfig,
+    };
+    const { rerender } = render(<HooksConfigTab {...props} notificationConfig={initialConfig} />);
+    fireEvent.click(screen.getByRole('button', { name: 'hooks.configure' }));
+    fireEvent.change(screen.getByLabelText('hooks.channelName'), {
+      target: { value: 'Unsaved channel edit' },
+    });
+
+    rerender(
+      <HooksConfigTab
+        {...props}
+        notificationConfig={{
+          ...initialConfig,
+          adminHooks: { enabled: true, channels: [] },
+        }}
+      />
+    );
+    const dialog = screen.getByRole('dialog');
+    fireEvent.submit(
+      within(dialog).getByRole('button', { name: 'hooks.dialog.applyAction' }).closest('form')!
+    );
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('saveFailed'));
+    expect(put).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(onMutate).not.toHaveBeenCalled();
+    expect(setNotificationConfig).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeVisible();
+    expect(screen.getByLabelText('hooks.channelName')).toHaveValue('Unsaved channel edit');
+    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+  });
 });

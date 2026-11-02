@@ -155,14 +155,14 @@ function UserPermissionsEditor({
               variant="outline"
               onClick={requestClose}
               disabled={isSaving}
-              className="min-w-0 flex-1 whitespace-normal sm:flex-none"
+              className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
             >
               {t('userDialog.close')}
             </Button>
             {canManage && (
               <Button
                 onClick={() => void save()}
-                className="min-w-0 flex-1 whitespace-normal sm:flex-none"
+                className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
                 disabled={isLoading || !data || isSaving || !form.isDirty}
               >
                 {isSaving && <Loader className="size-4 animate-spin" />}

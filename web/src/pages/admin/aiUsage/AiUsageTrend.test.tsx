@@ -36,16 +36,21 @@ const range = {
 
 describe('AI usage trend chart', () => {
   beforeEach(() => {
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
-      x: 0,
-      y: 0,
-      top: 0,
-      left: 0,
-      right: 640,
-      bottom: 256,
-      width: 640,
-      height: 256,
-      toJSON: () => ({}),
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement
+    ) {
+      const height = this.closest('.recharts-legend-wrapper') ? 24 : 256;
+      return {
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        right: 640,
+        bottom: height,
+        width: 640,
+        height,
+        toJSON: () => ({}),
+      };
     });
   });
   afterEach(() => vi.restoreAllMocks());
@@ -62,8 +67,8 @@ describe('AI usage trend chart', () => {
     expect(screen.getByText('totalUsage')).toBeVisible();
     expect(screen.getByText('promptTokens')).toBeVisible();
     expect(screen.getByText('completionTokens')).toBeVisible();
-    expect(view.container.querySelectorAll('.recharts-line')).toHaveLength(3);
-    expect(view.container.querySelectorAll('.recharts-line-dot')).toHaveLength(3);
+    expect(view.container.querySelectorAll('.recharts-area')).toHaveLength(3);
+    expect(view.container.querySelectorAll('.recharts-area-dot')).toHaveLength(3);
   });
 
   it('shows exact tokens and unreported-call coverage when inspected with a keyboard', async () => {
@@ -122,7 +127,7 @@ describe('AI usage trend chart', () => {
         range={{ ...range, endAt: '2026-10-03T16:00:00Z' }}
       />
     );
-    const dots = view.container.querySelectorAll('.recharts-line-dot');
+    const dots = view.container.querySelectorAll('.recharts-area-dot');
     expect(dots).toHaveLength(3);
     dots.forEach((dot) => expect(dot).toHaveAttribute('r', '2'));
   });

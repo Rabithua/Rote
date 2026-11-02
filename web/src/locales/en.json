@@ -1538,6 +1538,7 @@
         "requireCertifiedUserForExploreDesc": "When enabled, only certified users will have their public notes recommended in the Explore page; existing public notes remain accessible via direct links."
       },
       "hooks": {
+        "channelRemoved": "This notification channel was deleted. Your changes have not been saved.",
         "title": "Notification Hooks",
         "description": "Configure administrator notification channels for new users and notes created as public.",
         "enabled": "Enable Admin Notifications",
