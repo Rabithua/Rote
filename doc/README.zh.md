@@ -14,7 +14,7 @@
   </picture>
 </p>
 
-[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](../LICENSE)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-yellow.svg)](../LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Rabithua/Rote.svg?style=social&label=Star)](https://github.com/Rabithua/Rote)
 [![GitHub forks](https://img.shields.io/github/forks/Rabithua/Rote.svg?style=social&label=Fork)](https://github.com/Rabithua/Rote/fork)
 
