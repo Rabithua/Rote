@@ -3,7 +3,7 @@
   "version": "1.2.3",
   "description": "Rote Web, a web application for managing and sharing knowledge.",
   "private": true,
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host --port 3001",
