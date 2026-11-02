@@ -14,6 +14,15 @@ interface MergeInfo {
   providerUsername: string;
 }
 
+const mergeErrorTranslationKeys: Record<string, string> = {
+  oauth_merge_invalid_request: 'settings.oauth.mergeErrors.invalidRequest',
+  oauth_merge_authorization_required: 'settings.oauth.mergeErrors.authorizationRequired',
+  oauth_merge_conflict: 'settings.oauth.mergeErrors.conflict',
+  oauth_merge_billing_blocked: 'settings.oauth.mergeErrors.billingBlocked',
+  oauth_merge_disabled: 'settings.oauth.mergeErrors.disabled',
+  oauth_merge_failed: 'settings.oauth.mergeErrors.failed',
+};
+
 export function useOAuthBinding(onSuccess?: () => void) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const [searchParams, setSearchParams] = useSearchParams();
@@ -91,7 +100,10 @@ export function useOAuthBinding(onSuccess?: () => void) {
         return true;
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Unknown error';
+      const translationKey = mergeErrorTranslationKeys[err.response?.data?.errorCode];
+      const errorMessage = translationKey
+        ? t(translationKey)
+        : err.response?.data?.message || err.message || 'Unknown error';
       const errorKey = `settings.oauth.${mergeInfo.provider}.mergeFailed`;
       const fallbackKey = 'settings.oauth.mergeFailed';
       toast.error(

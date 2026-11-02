@@ -14,13 +14,19 @@
   </picture>
 </p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-yellow.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Rabithua/Rote.svg?style=social&label=Star)](https://github.com/Rabithua/Rote)
 [![GitHub forks](https://img.shields.io/github/forks/Rabithua/Rote.svg?style=social&label=Fork)](https://github.com/Rabithua/Rote/fork)
 
 **[Demo](https://demo.rote.ink/)** ｜ **[Website](https://rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://rote.ink/explore)** ｜ **[Rabithua](https://rote.ink/rabithua)**
 
 > Open API, more than one way to record 🤩, supports Self-Hosted, take control of your own data, come and go freely, no data hostage 🙅🏻
+
+### License
+
+Rote is source-available under the [PolyForm Noncommercial License 1.0.0](LICENSE). Noncommercial use, modification, and redistribution are permitted under its terms. The license also permits use by the organizations it lists, including educational and government institutions. Commercial use outside the license's permitted purposes requires a separate written license from the copyright holder; contact [Rabithua](https://github.com/Rabithua) for licensing.
+
+This is a noncommercial source-available license, not an OSI-approved open-source license. Versions previously released under MIT retain their MIT permissions; this change does not revoke those grants. Third-party components remain subject to their own licenses, including the [frontend third-party notices](web/THIRD_PARTY_NOTICES.md).
 
 ### Preview
 

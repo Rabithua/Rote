@@ -2,6 +2,10 @@ import * as http2 from 'node:http2';
 import { importPKCS8, SignJWT } from 'jose';
 import type { ApnsEnvironment } from './config';
 import { getApnsConfig } from './config';
+import {
+  parseReactionNotificationSender,
+  REACTION_RECEIVED_EVENT_TYPE,
+} from './reactionPresentation';
 
 let cachedToken: { value: string; expiresAt: number; signature: string } | null = null;
 const clients = new Map<string, http2.ClientHttp2Session>();
@@ -79,9 +83,15 @@ export function serializeApnsPayload(message: ApnsPayloadMessage): string {
   if (message.bodyLocKey) alert['loc-key'] = message.bodyLocKey;
   if (message.titleLocArgs?.length) alert['title-loc-args'] = message.titleLocArgs;
   if (message.bodyLocArgs?.length) alert['loc-args'] = message.bodyLocArgs;
+  const sender = parseReactionNotificationSender(message.payload?.sender);
+  const hasSenderAvatar =
+    message.payload?.eventType === REACTION_RECEIVED_EVENT_TYPE &&
+    typeof message.payload.recipientId === 'string' &&
+    Boolean(message.payload.recipientId.trim()) &&
+    Boolean(sender?.avatarURL);
   return JSON.stringify({
     ...message.payload,
-    aps: { alert, sound: 'default' },
+    aps: { alert, sound: 'default', ...(hasSenderAvatar ? { 'mutable-content': 1 } : {}) },
     route: message.route,
   });
 }

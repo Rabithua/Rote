@@ -138,7 +138,8 @@ export async function probeCors(
 }
 
 // 重新生成安全密钥（超级管理员）
-export const regenerateKeys = () => post('/admin/settings/regenerate-keys');
+export const regenerateKeys = (scope: 'authentication' | 'all' = 'authentication') =>
+  post('/admin/settings/regenerate-keys', { scope });
 
 // 检测当前 URL（管理员）
 export const detectUrls = () => get('/admin/settings/detect-urls');

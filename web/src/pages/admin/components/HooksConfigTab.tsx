@@ -5,6 +5,7 @@ import Divider from '@/components/ui/divider';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { post, put } from '@/utils/api';
+import { getErrorMessage } from '@/utils/error';
 import { Plus, Send, Settings2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -45,26 +46,37 @@ export default function HooksConfigTab({
     ? hooks.channels.find((channel) => channel.id === editingChannelId)
     : undefined;
 
-  const updateHooks = (adminHooks: typeof hooks) => {
-    setNotificationConfig({
+  const updateHooks = async (adminHooks: typeof hooks): Promise<boolean> => {
+    if (isSaving) return false;
+
+    const nextConfig = {
       ...(notificationConfig || {}),
-      adminHooks,
-    });
+      adminHooks: {
+        ...adminHooks,
+        channels: normalizeChannels(adminHooks.channels),
+      },
+    };
+    setIsSaving(true);
+    try {
+      await put('/admin/settings', { config: nextConfig, group: 'notification' });
+      setNotificationConfig(nextConfig);
+      toast.success(t('saveSuccess'));
+      onMutate();
+      return true;
+    } catch (error) {
+      toast.error(t('saveFailed', { error: getErrorMessage(error) || t('hooks.unknownError') }));
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const updateChannel = (id: string, next: AdminHookChannel) => {
-    updateHooks({
-      ...hooks,
-      channels: hooks.channels.map((channel) => (channel.id === id ? next : channel)),
-    });
-  };
-
-  const removeChannel = (id: string) => {
-    updateHooks({
+  const removeChannel = async (id: string) => {
+    const saved = await updateHooks({
       ...hooks,
       channels: hooks.channels.filter((channel) => channel.id !== id),
     });
-    if (editingChannelId === id) {
+    if (saved && editingChannelId === id) {
       setDialogOpen(false);
       setEditingChannelId(null);
     }
@@ -87,48 +99,14 @@ export default function HooksConfigTab({
     if (!open) setEditingChannelId(null);
   };
 
-  const handleDialogSubmit = (channel: AdminHookChannel) => {
-    if (dialogMode === 'edit') {
-      updateChannel(channel.id, channel);
-      return;
-    }
+  const handleDialogSubmit = (channel: AdminHookChannel) =>
     updateHooks({
       ...hooks,
-      channels: [...hooks.channels, channel],
+      channels:
+        dialogMode === 'edit'
+          ? hooks.channels.map((current) => (current.id === channel.id ? channel : current))
+          : [...hooks.channels, channel],
     });
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const nextConfig = notificationConfig || {
-        adminHooks: hooks,
-        vapidPrivateKey: '',
-        vapidPublicKey: '',
-      };
-      await put('/admin/settings', {
-        config: {
-          ...nextConfig,
-          adminHooks: {
-            ...(nextConfig.adminHooks || hooks),
-            channels: normalizeChannels((nextConfig.adminHooks || hooks).channels),
-          },
-        },
-        group: 'notification',
-      });
-      toast.success(t('saveSuccess'));
-      onMutate();
-    } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        error?.response?.data?.error ||
-        t('hooks.unknownError');
-      toast.error(t('saveFailed', { error: errorMessage }));
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   const handleTest = async (channel: AdminHookChannel) => {
     setTestingId(channel.id);
@@ -167,7 +145,7 @@ export default function HooksConfigTab({
             <CardTitle>{t('hooks.title')}</CardTitle>
             <CardDescription>{t('hooks.description')}</CardDescription>
           </div>
-          <Button type="button" onClick={openCreateDialog} className="gap-2">
+          <Button type="button" onClick={openCreateDialog} disabled={isSaving} className="gap-2">
             <Plus className="size-4" />
             {t('hooks.add')}
           </Button>
@@ -181,7 +159,9 @@ export default function HooksConfigTab({
             <p className="text-muted-foreground text-sm">{t('hooks.enabledDesc')}</p>
           </div>
           <Switch
+            aria-label={t('hooks.enabled')}
             checked={hooks.enabled}
+            disabled={isSaving}
             onCheckedChange={(checked) => updateHooks({ ...hooks, enabled: checked })}
           />
         </div>
@@ -218,6 +198,7 @@ export default function HooksConfigTab({
                       variant="outline"
                       size="sm"
                       onClick={() => openEditDialog(channel.id)}
+                      disabled={isSaving}
                       className="gap-2"
                     >
                       <Settings2 className="size-4" />
@@ -228,7 +209,7 @@ export default function HooksConfigTab({
                       variant="outline"
                       size="sm"
                       onClick={() => handleTest(channel)}
-                      disabled={testingId === channel.id}
+                      disabled={isSaving || testingId === channel.id}
                       className="gap-2"
                     >
                       <Send className="size-4" />
@@ -239,6 +220,7 @@ export default function HooksConfigTab({
                       variant="outline"
                       size="sm"
                       onClick={() => removeChannel(channel.id)}
+                      disabled={isSaving}
                       className="text-destructive hover:text-destructive gap-2"
                     >
                       <Trash2 className="size-4" />
@@ -262,14 +244,11 @@ export default function HooksConfigTab({
             );
           })}
         </div>
-
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? t('saving') : t('save')}
-        </Button>
       </CardContent>
 
       <HookChannelDialog
         channel={editingChannel}
+        isSaving={isSaving}
         mode={dialogMode}
         open={dialogOpen}
         onOpenChange={handleDialogOpenChange}

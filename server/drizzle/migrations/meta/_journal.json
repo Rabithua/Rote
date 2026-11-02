@@ -274,6 +274,13 @@
       "when": 1791707782945,
       "tag": "0038_ai_conversation_history",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1793422564367,
+      "tag": "0039_oauth_merge_authorizations",
+      "breakpoints": true
     }
   ]
 }

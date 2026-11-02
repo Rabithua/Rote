@@ -51,13 +51,6 @@ export default function UIConfigTab({
       requireCertifiedUserForExplore: checked,
     };
   };
-  const getSecurityConfigForSave = (): SystemConfig['security'] => {
-    const config = { ...(securityConfig || { requireCertifiedUserForExplore: false }) };
-    config.requireCertifiedUserForExplore =
-      config.requireCertifiedUserForExplore ?? config.requireVerifiedEmailForExplore ?? false;
-    delete config.requireVerifiedEmailForExplore;
-    return config;
-  };
 
   const handleSave = async () => {
     // 验证必填字段
@@ -99,7 +92,7 @@ export default function UIConfigTab({
         }),
         put('/admin/settings', {
           group: 'security',
-          config: getSecurityConfigForSave(),
+          config: { requireCertifiedUserForExplore },
         }),
       ]);
       toast.success(t('saveSuccess'));
@@ -115,7 +108,11 @@ export default function UIConfigTab({
         error?.message ||
         error?.response?.data?.error ||
         'Unknown error';
-      toast.error(t('saveFailed', { error: errorMessage }));
+      toast.error(
+        t('saveFailed', {
+          error: t(`security.errors.${errorMessage}`, { defaultValue: errorMessage }),
+        })
+      );
     } finally {
       setIsSaving(false);
     }

@@ -69,6 +69,14 @@ export interface SecurityConfig {
   passkey?: PasskeyConfig;
 }
 
+// Signing material is owned by initialization and explicit key rotation, never settings forms.
+export type SecuritySettings = Omit<
+  SecurityConfig,
+  'jwtSecret' | 'jwtRefreshSecret' | 'sessionSecret'
+>;
+export type SecuritySettingsUpdate = Partial<SecuritySettings>;
+export type SecurityKeyRotationScope = 'authentication' | 'all';
+
 export type AdminHookEvent = 'user.registered' | 'note.public.created';
 
 export interface AdminHookChannelBase {

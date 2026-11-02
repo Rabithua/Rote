@@ -3,6 +3,7 @@ import { apnsDevices, pushDeliveries, pushEvents, pushPreferences } from '../dri
 import { db, withDatabaseAdvisoryLock } from '../utils/drizzle';
 import { sendApns } from './apns';
 import { prepareApnsPayload } from './payload';
+import { REACTION_RECEIVED_EVENT_TYPE } from './reactionPresentation';
 import {
   DELIVERY_BATCH_SIZE,
   DELIVERY_CLAIM_LEASE_MS,
@@ -154,7 +155,17 @@ async function deliverClaimedItem(item: ClaimedDelivery): Promise<void> {
     return;
   }
   try {
-    const preparedPayload = prepareApnsPayload(item.event.payload);
+    // Account merging can migrate an event to a new recipient. Keep the sender's
+    // queued snapshot, while binding delivery to the event's current owner.
+    const payload =
+      item.event.type === REACTION_RECEIVED_EVENT_TYPE
+        ? {
+            ...item.event.payload,
+            eventType: REACTION_RECEIVED_EVENT_TYPE,
+            recipientId: item.event.userid,
+          }
+        : item.event.payload;
+    const preparedPayload = prepareApnsPayload(payload);
     const response = await sendApns({
       token: item.device.token,
       environment: item.device.environment as 'sandbox' | 'production',

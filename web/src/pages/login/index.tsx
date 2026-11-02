@@ -50,7 +50,12 @@ function Login() {
   const { authenticateWithPasskey, registerPasskey, isAuthenticating, isRegistering } =
     usePasskey();
   const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
+  const [isRedirectingToIos, setIsRedirectingToIos] = useState(false);
   const isIosLoginFlow = searchParams.get('type') === 'ioslogin';
+  const isIosOAuthCallback =
+    isIosLoginFlow &&
+    searchParams.get('oauth') === 'success' &&
+    Boolean(searchParams.get('token') && searchParams.get('refreshToken'));
   const redirectTarget = searchParams.get('redirect');
   const hasOAuthAuthorizeRedirect = isOAuthAuthorizeRedirect(redirectTarget);
   const postLoginRedirect = getSafeLoginRedirect(searchParams);
@@ -105,6 +110,7 @@ function Login() {
   }
 
   function redirectToIosLogin(accessToken: string, refreshToken: string) {
+    setIsRedirectingToIos(true);
     window.location.href = getIosCallbackUrl(accessToken, refreshToken);
   }
 
@@ -353,7 +359,7 @@ function Login() {
   return (
     <div className="relative flex h-dvh w-full items-center justify-center">
       <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
-        {isCheckingStatus ? (
+        {isCheckingStatus || (isIosLoginFlow && isRedirectingToIos) || isIosOAuthCallback ? (
           <LoadingPlaceholder className="py-8" size={6} />
         ) : profile && isIosLoginFlow ? (
           <IosAuthorizePanel

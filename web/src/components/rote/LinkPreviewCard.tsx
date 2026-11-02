@@ -26,7 +26,7 @@ export function LinkPreviewCard({
       rel="noopener noreferrer"
       className="group hover:bg-secondary bg-secondary/50 flex cursor-pointer items-stretch overflow-hidden rounded-md border duration-300"
     >
-      <div className="bg-foreground/5 flex size-18 shrink-0 items-center justify-center">
+      <div className="bg-foreground/5 flex size-18 shrink-0 items-center justify-center has-[[data-image-state=error]]:hidden">
         {preview.image ? (
           <RemoteImage src={preview.image} alt="" className="size-full object-cover" />
         ) : (

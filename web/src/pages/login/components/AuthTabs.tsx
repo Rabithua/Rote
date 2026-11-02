@@ -9,10 +9,10 @@ import { AppleIcon } from '@/components/icons/Apple';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Fingerprint, Github } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Fingerprint, Github, LoaderCircle } from 'lucide-react';
 import type { ComponentProps, ComponentType, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import type { LoginData, OAuthProviders, RegisterData } from '../types';
 
 type IconComponent = ComponentType<ComponentProps<'svg'>>;
@@ -138,48 +138,63 @@ export function AuthTabs({
             <Button disabled={disabled} onClick={onLogin} className="w-full">
               {disabled ? t('messages.loggingIn') : t('buttons.login')}
             </Button>
-            {passkeyEnabled && (
-              <Button
-                variant="outline"
-                disabled={disabled || isAuthenticating}
-                onClick={onPasskeyLogin}
-                className="w-full"
-              >
-                <Fingerprint className="mr-2 size-4" />
-                {isAuthenticating ? t('messages.loggingIn') : t('passkey.loginWithPasskey')}
-              </Button>
-            )}
-            {hasEnabledOAuthProviders && (
-              <>
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background text-muted-foreground px-2">
-                      {t('oauth.or')}
-                    </span>
-                  </div>
-                </div>
-                {Object.entries(oauthProviders).map(([provider, config]) => {
+            {(passkeyEnabled || hasEnabledOAuthProviders) && (
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {passkeyEnabled && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        disabled={disabled || isAuthenticating}
+                        onClick={onPasskeyLogin}
+                        aria-label={
+                          isAuthenticating ? t('messages.loggingIn') : t('passkey.loginWithPasskey')
+                        }
+                        aria-busy={isAuthenticating}
+                      >
+                        {isAuthenticating ? (
+                          <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Fingerprint className="size-4" aria-hidden="true" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>{t('passkey.loginWithPasskey')}</TooltipContent>
+                  </Tooltip>
+                )}
+                {passkeyEnabled && hasEnabledOAuthProviders && (
+                  <div className="bg-border h-5 w-px" aria-hidden="true" />
+                )}
+                {Object.entries(oauthProviders ?? {}).map(([provider, config]) => {
                   if (!config?.enabled) return null;
                   const providerInfo = getOAuthProviderInfo(provider);
                   const ProviderIcon = providerInfo.icon;
+                  const label = t(providerInfo.labelKey);
                   return (
-                    <Button
-                      key={provider}
-                      type="button"
-                      variant="outline"
-                      onClick={() => onOAuthLogin(provider)}
-                      className="w-full"
-                      disabled={disabled}
-                    >
-                      {ProviderIcon && <ProviderIcon className="mr-2 size-4" />}
-                      {t(providerInfo.labelKey)}
-                    </Button>
+                    <Tooltip key={provider}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size={ProviderIcon ? 'icon' : 'default'}
+                          onClick={() => onOAuthLogin(provider)}
+                          disabled={disabled || isAuthenticating}
+                          aria-label={label}
+                        >
+                          {ProviderIcon ? (
+                            <ProviderIcon className="size-4" aria-hidden="true" />
+                          ) : (
+                            label
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>{label}</TooltipContent>
+                    </Tooltip>
                   );
                 })}
-              </>
+              </div>
             )}
           </TabsContent>
 
@@ -251,16 +266,6 @@ export function AuthTabs({
               </Button>
             </TabsContent>
           )}
-
-          <div className="my-4 flex cursor-pointer items-center justify-center gap-1 text-sm duration-300 active:scale-95">
-            <Link to="/explore">
-              <div className="duration-300 hover:opacity-60">{t('nav.explore')}</div>
-            </Link>
-            <span className="px-2">/</span>
-            <Link to="/landing">
-              <div className="duration-300 hover:opacity-60">{t('nav.home')}</div>
-            </Link>
-          </div>
         </div>
       </TabsContents>
     </Tabs>

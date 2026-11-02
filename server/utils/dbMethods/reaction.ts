@@ -1,8 +1,8 @@
 import { and, eq, isNull, sql } from 'drizzle-orm';
 import { reactions, rotes, users } from '../../drizzle/schema';
 import { isPushNotificationsEnabled } from '../../push/config';
-import { reactionActorName } from '../../push/reactionPresentation';
-import { enqueueAggregatedReactionPushEventInTransaction } from '../../push/repository';
+import { reactionActorName, reactionNotificationSender } from '../../push/reactionPresentation';
+import { enqueueAggregatedReactionPushEventInTransaction } from '../../push/reactionQueue';
 import db from '../drizzle';
 import { lockNoteSyncOwner } from '../../sync/journal';
 import { createRoteChange } from './change';
@@ -87,13 +87,17 @@ export async function addReaction(data: {
           .limit(1);
         if (rote && rote.authorid !== data.userid) {
           let actorName = data.actorName;
-          if (!actorName && data.userid) {
+          let sender: ReturnType<typeof reactionNotificationSender>;
+          if (data.userid) {
             const [actor] = await transaction
-              .select({ nickname: users.nickname, username: users.username })
+              .select({ nickname: users.nickname, username: users.username, avatar: users.avatar })
               .from(users)
               .where(eq(users.id, data.userid))
               .limit(1);
-            if (actor) actorName = reactionActorName(actor.nickname, actor.username);
+            if (actor) {
+              actorName = actorName || reactionActorName(actor.nickname, actor.username);
+              sender = reactionNotificationSender(data.userid, actorName, actor.avatar);
+            }
           }
           await enqueueAggregatedReactionPushEventInTransaction(transaction, {
             userid: rote.authorid,
@@ -101,6 +105,7 @@ export async function addReaction(data: {
             reactionType: data.type,
             actorKey: data.userid ? `user:${data.userid}` : `visitor:${data.visitorId}`,
             actorName,
+            sender,
             noteTitle: rote.title,
             noteContent: rote.content,
           });

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+export const REACTION_RECEIVED_EVENT_TYPE = 'reaction.received';
+
 const NOTE_PREVIEW_LENGTH = 36;
 const NOTE_PREVIEW_BYTES = 256;
 const ACTOR_PREVIEW_LENGTH = 32;
@@ -35,6 +37,13 @@ export type ReactionNotificationState = {
   }>;
   reactionTypesOverflowed: boolean;
   noteLabel?: string;
+  sender?: ReactionNotificationSender;
+};
+
+export type ReactionNotificationSender = {
+  id: string;
+  displayName: string;
+  avatarURL?: string;
 };
 
 export type ReactionNotificationInput = {
@@ -42,6 +51,7 @@ export type ReactionNotificationInput = {
   actorName?: string;
   reactionType: string;
   noteLabel?: string;
+  sender?: ReactionNotificationSender;
 };
 
 export type ReactionNotificationPresentation = {
@@ -119,6 +129,48 @@ export function reactionActorName(
   );
 }
 
+export function reactionNotificationSender(
+  id: string,
+  displayName: string | undefined,
+  avatar: string | null | undefined
+): ReactionNotificationSender | undefined {
+  const name = reactionActorName(displayName, '');
+  if (!id || !name) return undefined;
+  let avatarURL: string | undefined;
+  if (avatar && Buffer.byteLength(avatar, 'utf8') <= 1_024) {
+    try {
+      const url = new URL(avatar);
+      if (
+        url.protocol === 'https:' &&
+        url.hostname &&
+        !url.username &&
+        !url.password &&
+        Buffer.byteLength(url.href, 'utf8') <= 1_024
+      ) {
+        avatarURL = url.href;
+      }
+    } catch {
+      // Missing or malformed avatars keep the standard notification presentation.
+    }
+  }
+  return { id, displayName: name, ...(avatarURL ? { avatarURL } : {}) };
+}
+
+export function parseReactionNotificationSender(
+  value: unknown
+): ReactionNotificationSender | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const sender = value as Partial<ReactionNotificationSender>;
+  if (
+    typeof sender.id !== 'string' ||
+    typeof sender.displayName !== 'string' ||
+    (sender.avatarURL !== undefined && typeof sender.avatarURL !== 'string')
+  ) {
+    return undefined;
+  }
+  return reactionNotificationSender(sender.id, sender.displayName, sender.avatarURL);
+}
+
 export function canPresentDetailedReactionType(reactionType: string): boolean {
   const normalized = normalizedText(reactionType);
   return (
@@ -176,6 +228,17 @@ export function mergeReactionNotificationState(
     NOTE_PREVIEW_LENGTH,
     NOTE_PREVIEW_BYTES
   );
+  // A batch involving multiple people must not be attributed to one sender.
+  const sender =
+    actorKeyHashes.length === 1 && !actorsOverflowed && input.actorKey.startsWith('user:')
+      ? input.sender?.id === input.actorKey.slice('user:'.length)
+        ? reactionNotificationSender(
+            input.sender.id,
+            input.sender.displayName,
+            input.sender.avatarURL
+          )
+        : current?.sender
+      : undefined;
   return {
     actorKeyHashes,
     actorsOverflowed,
@@ -183,6 +246,7 @@ export function mergeReactionNotificationState(
     reactionTypes,
     reactionTypesOverflowed,
     noteLabel: current?.noteLabel || nextNoteLabel,
+    ...(sender ? { sender } : {}),
   };
 }
 
@@ -208,7 +272,13 @@ export function parseReactionNotificationState(value: unknown): ReactionNotifica
     typeof state.reactionTypesOverflowed !== 'boolean' ||
     (state.reactionTypesOverflowed && state.reactionTypes.length !== MAX_TRACKED_REACTION_TYPES) ||
     (state.noteLabel !== undefined && typeof state.noteLabel !== 'string') ||
-    (state.firstKnownActorName !== undefined && typeof state.firstKnownActorName !== 'string')
+    (state.firstKnownActorName !== undefined && typeof state.firstKnownActorName !== 'string') ||
+    (state.sender !== undefined &&
+      (!state.sender ||
+        typeof state.sender !== 'object' ||
+        typeof state.sender.id !== 'string' ||
+        typeof state.sender.displayName !== 'string' ||
+        (state.sender.avatarURL !== undefined && typeof state.sender.avatarURL !== 'string')))
   ) {
     return null;
   }
