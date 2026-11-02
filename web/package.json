@@ -81,6 +81,7 @@
     "react-router-dom": "^7.10.1",
     "react-textarea-autosize": "^8.5.9",
     "react-use-measure": "^2.1.7",
+    "recharts": "3.10.1",
     "remark-gfm": "^4.0.1",
     "remove-markdown": "^0.6.4",
     "sonner": "^2.0.7",

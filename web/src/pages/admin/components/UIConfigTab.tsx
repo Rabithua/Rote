@@ -1,7 +1,4 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Divider from '@/components/ui/divider';
-import { Input } from '@/components/ui/input';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -11,167 +8,89 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { put } from '@/utils/api';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
-import { useSWRConfig } from 'swr';
 import type { SystemConfig } from '../types';
+import AdminSettingsPanel from '../settings/AdminSettingsPanel';
+import AutosaveFeedback from './AutosaveFeedback';
+import AutosaveNumberField from './AutosaveNumberField';
+import { useUiAutosave, type AutosaveField, type UiSettingsUpdate } from './useUiAutosave';
 
 interface UIConfigTabProps {
-  uiConfig: SystemConfig['ui'] | undefined;
-  setUiConfig: (config: SystemConfig['ui'] | undefined) => void;
-  securityConfig: SystemConfig['security'] | undefined;
-  setSecurityConfig: (config: SystemConfig['security'] | undefined) => void;
-  isSaving: boolean;
-  setIsSaving: (saving: boolean) => void;
-  onMutate: () => void;
+  uiConfig: SystemConfig['ui'];
+  securityConfig: SystemConfig['security'];
+  onMutate: () => unknown;
+  onSaved?: (update: UiSettingsUpdate) => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  onSavingChange?: (saving: boolean) => void;
 }
-
-export default function UIConfigTab({
-  uiConfig,
-  setUiConfig,
-  securityConfig,
-  setSecurityConfig,
-  isSaving,
-  setIsSaving,
-  onMutate,
-}: UIConfigTabProps) {
+export default function UIConfigTab({ onDirtyChange, onSavingChange, ...props }: UIConfigTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
-  const { mutate: globalMutate } = useSWRConfig();
-  // TODO: 下下次更新移除 requireVerifiedEmailForExplore 旧配置键兼容。
-  const requireCertifiedUserForExplore =
-    securityConfig?.requireCertifiedUserForExplore ??
-    securityConfig?.requireVerifiedEmailForExplore ??
-    false;
-  const withRequireCertifiedUserForExplore = (checked: boolean): SystemConfig['security'] => {
-    const rest = { ...(securityConfig || {}) };
-    delete rest.requireVerifiedEmailForExplore;
-    return {
-      ...rest,
-      requireCertifiedUserForExplore: checked,
-    };
-  };
-
-  const handleSave = async () => {
-    // 验证必填字段
-    if (!uiConfig) {
-      toast.error(t('saveFailed', { error: 'UI configuration is required' }));
-      return;
-    }
-    // 验证 apiRateLimit 必须大于等于 10
-    if (
-      uiConfig.apiRateLimit !== undefined &&
-      (typeof uiConfig.apiRateLimit !== 'number' || uiConfig.apiRateLimit < 10)
-    ) {
-      toast.error(t('saveFailed', { error: 'API rate limit must be a number and at least 10' }));
-      return;
-    }
-    if (
-      uiConfig.maxVideoUploadSizeMB !== undefined &&
-      (typeof uiConfig.maxVideoUploadSizeMB !== 'number' || uiConfig.maxVideoUploadSizeMB < 1)
-    ) {
-      toast.error(
-        t('saveFailed', { error: 'Video upload size limit must be a number and at least 1 MB' })
-      );
-      return;
-    }
-    // 验证 defaultUserRole 必须是有效角色
-    if (uiConfig.defaultUserRole && !['user', 'moderator'].includes(uiConfig.defaultUserRole)) {
-      toast.error(
-        t('saveFailed', { error: 'Default user role must be either "user" or "moderator"' })
-      );
-      return;
-    }
-    setIsSaving(true);
-    try {
-      // 同时保存 UI 和安全配置
-      await Promise.all([
-        put('/admin/settings', {
-          group: 'ui',
-          config: uiConfig,
-        }),
-        put('/admin/settings', {
-          group: 'security',
-          config: { requireCertifiedUserForExplore },
-        }),
-      ]);
-      toast.success(t('saveSuccess'));
-      onMutate();
-      // 更新所有使用 site-status 的组件，确保 allowUploadFile 等配置实时生效
-      globalMutate('site-status');
-      // 安全配置变更后，刷新全局配置缓存
-      globalMutate('/admin/settings');
-    } catch (error: any) {
-      // 优先使用后端返回的错误消息
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        error?.response?.data?.error ||
-        'Unknown error';
-      toast.error(
-        t('saveFailed', {
-          error: t(`security.errors.${errorMessage}`, { defaultValue: errorMessage }),
-        })
-      );
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
+  const form = useUiAutosave(props);
+  const [rateDirty, setRateDirty] = useState(false);
+  const [videoDirty, setVideoDirty] = useState(false);
+  const isDirty = rateDirty || videoDirty;
+  useEffect(() => onDirtyChange?.(isDirty), [isDirty, onDirtyChange]);
+  useEffect(() => onSavingChange?.(form.isSaving), [form.isSaving, onSavingChange]);
+  useEffect(
+    () => () => {
+      onDirtyChange?.(false);
+      onSavingChange?.(false);
+    },
+    [onDirtyChange, onSavingChange]
+  );
+  const feedback = (field: AutosaveField) => (
+    <AutosaveFeedback status={form.statuses[field]} onRetry={() => form.retry(field)} />
+  );
   return (
-    <Card className="rounded-none border-none shadow-none">
-      <CardHeader className="pb-0">
-        <CardTitle>{t('ui.title')}</CardTitle>
-        <CardDescription>{t('ui.description')}</CardDescription>
-      </CardHeader>
-      <Divider />
+    <AdminSettingsPanel
+      header={
+        <CardHeader className="pb-0">
+          <CardTitle>{t('ui.title')}</CardTitle>
+          <CardDescription>{t('ui.description')}</CardDescription>
+          <p className="text-muted-foreground text-sm">{t('autosave.description')}</p>
+        </CardHeader>
+      }
+    >
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label>{t('ui.allowRegistration')}</Label>
-            <p className="text-muted-foreground text-sm">{t('ui.allowRegistrationDesc')}</p>
+        {(['allowRegistration', 'allowUploadFile'] as const).map((field) => (
+          <div key={field} className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor={field}>{t(`ui.${field}`)}</Label>
+              <p className="text-muted-foreground text-sm">{t(`ui.${field}Desc`)}</p>
+              {feedback(field)}
+            </div>
+            <Switch
+              id={field}
+              checked={form.ui[field] ?? true}
+              disabled={form.statuses[field]?.state === 'saving'}
+              onCheckedChange={(checked) => void form.saveUi(field, checked)}
+            />
           </div>
-          <Switch
-            checked={uiConfig?.allowRegistration ?? true}
-            onCheckedChange={(checked) =>
-              setUiConfig({ ...(uiConfig || {}), allowRegistration: checked })
-            }
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
+        ))}
+        <div className="flex items-center justify-between gap-4">
           <div className="space-y-0.5">
-            <Label>{t('ui.allowUploadFile')}</Label>
-            <p className="text-muted-foreground text-sm">{t('ui.allowUploadFileDesc')}</p>
-          </div>
-          <Switch
-            checked={uiConfig?.allowUploadFile ?? true}
-            onCheckedChange={(checked) =>
-              setUiConfig({ ...(uiConfig || {}), allowUploadFile: checked })
-            }
-          />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="space-y-0.5">
-            <Label>{t('security.requireCertifiedUserForExplore')}</Label>
+            <Label htmlFor="requireCertifiedUserForExplore">
+              {t('security.requireCertifiedUserForExplore')}
+            </Label>
             <p className="text-muted-foreground text-sm">
               {t('security.requireCertifiedUserForExploreDesc')}
             </p>
+            {feedback('requireCertifiedUserForExplore')}
           </div>
           <Switch
-            checked={requireCertifiedUserForExplore}
-            onCheckedChange={(checked) =>
-              setSecurityConfig(withRequireCertifiedUserForExplore(checked))
-            }
+            id="requireCertifiedUserForExplore"
+            checked={form.policy}
+            disabled={form.statuses.requireCertifiedUserForExplore?.state === 'saving'}
+            onCheckedChange={(checked) => void form.savePolicy(checked)}
           />
         </div>
-
         <div className="space-y-2">
           <Label htmlFor="defaultUserRole">{t('ui.defaultUserRole')}</Label>
           <Select
-            value={uiConfig?.defaultUserRole || 'user'}
-            onValueChange={(value) => setUiConfig({ ...(uiConfig || {}), defaultUserRole: value })}
+            value={form.ui.defaultUserRole || 'user'}
+            disabled={form.statuses.defaultUserRole?.state === 'saving'}
+            onValueChange={(value) => void form.saveUi('defaultUserRole', value)}
           >
             <SelectTrigger id="defaultUserRole" className="w-full">
               <SelectValue placeholder={t('ui.defaultUserRolePlaceholder')} />
@@ -182,56 +101,31 @@ export default function UIConfigTab({
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">{t('ui.defaultUserRoleDescription')}</p>
+          {feedback('defaultUserRole')}
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="apiRateLimit">{t('ui.apiRateLimit')}</Label>
-          <Input
-            id="apiRateLimit"
-            type="number"
-            min="10"
-            value={uiConfig?.apiRateLimit || 100}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              // 如果输入值小于10，设置为10；如果输入无效，保持当前值或使用默认值100
-              if (!isNaN(value) && value >= 10) {
-                setUiConfig({ ...(uiConfig || {}), apiRateLimit: value });
-              } else if (!isNaN(value) && value < 10) {
-                setUiConfig({ ...(uiConfig || {}), apiRateLimit: 10 });
-              } else if (e.target.value === '') {
-                // 允许清空，但保存时会验证
-                setUiConfig({ ...(uiConfig || {}), apiRateLimit: undefined as any });
-              }
-            }}
-          />
-          <p className="text-muted-foreground text-xs">{t('ui.apiRateLimitDescription')}</p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="maxVideoUploadSizeMB">{t('ui.maxVideoUploadSizeMB')}</Label>
-          <Input
-            id="maxVideoUploadSizeMB"
-            type="number"
-            min="1"
-            value={uiConfig?.maxVideoUploadSizeMB || 300}
-            onChange={(e) => {
-              const value = parseInt(e.target.value);
-              if (!isNaN(value) && value >= 1) {
-                setUiConfig({ ...(uiConfig || {}), maxVideoUploadSizeMB: value });
-              } else if (!isNaN(value) && value < 1) {
-                setUiConfig({ ...(uiConfig || {}), maxVideoUploadSizeMB: 1 });
-              } else if (e.target.value === '') {
-                setUiConfig({ ...(uiConfig || {}), maxVideoUploadSizeMB: undefined as any });
-              }
-            }}
-          />
-          <p className="text-muted-foreground text-xs">{t('ui.maxVideoUploadSizeMBDesc')}</p>
-        </div>
-
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? t('saving') : t('save')}
-        </Button>
+        <AutosaveNumberField
+          id="apiRateLimit"
+          label={t('ui.apiRateLimit')}
+          description={t('ui.apiRateLimitDescription')}
+          value={form.ui.apiRateLimit ?? 100}
+          minimum={10}
+          validationKey="invalidRateLimit"
+          status={form.statuses.apiRateLimit}
+          onCommit={(value) => form.saveUi('apiRateLimit', value)}
+          onDirtyChange={setRateDirty}
+        />
+        <AutosaveNumberField
+          id="maxVideoUploadSizeMB"
+          label={t('ui.maxVideoUploadSizeMB')}
+          description={t('ui.maxVideoUploadSizeMBDesc')}
+          value={form.ui.maxVideoUploadSizeMB ?? 300}
+          minimum={1}
+          validationKey="invalidVideoLimit"
+          status={form.statuses.maxVideoUploadSizeMB}
+          onCommit={(value) => form.saveUi('maxVideoUploadSizeMB', value)}
+          onDirtyChange={setVideoDirty}
+        />
       </CardContent>
-    </Card>
+    </AdminSettingsPanel>
   );
 }

@@ -1332,6 +1332,11 @@
           "noTokenUsage": "No token usage yet"
         },
         "aiUsage": {
+          "trendTitle": "Token usage over time",
+          "trendDescription": "Recorded tokens by day in Asia/Shanghai. Unreported usage is not estimated; the first and last days may be partial.",
+          "trendEmpty": "No usage recorded in this period.",
+          "trendUnknown": "Token usage was not reported for {{count}} calls",
+          "trendChartLabel": "Daily total, input, and output tokens. Use the left and right arrow keys to inspect each day.",
           "viewDetails": "View details",
           "title": "AI usage",
           "totalUsage": "Total tokens",
@@ -1533,6 +1538,7 @@
         "requireCertifiedUserForExploreDesc": "When enabled, only certified users will have their public notes recommended in the Explore page; existing public notes remain accessible via direct links."
       },
       "hooks": {
+        "channelRemoved": "This notification channel was deleted. Your changes have not been saved.",
         "title": "Notification Hooks",
         "description": "Configure administrator notification channels for new users and notes created as public.",
         "enabled": "Enable Admin Notifications",
@@ -1875,6 +1881,7 @@
         }
       },
       "permissions": {
+        "saveRoleFor": "Save {{role}} permissions",
         "title": "Permissions",
         "description": "Control role defaults and apply overrides for individual users.",
         "readOnlyDescription": "Administrators can view permissions. Only super administrators can make changes.",
@@ -1932,6 +1939,23 @@
           "saveSuccess": "User permissions saved",
           "saveFailed": "Failed to save user permissions: {{error}}"
         }
+      },
+      "autosave": {
+        "description": "Changes save automatically. Press Enter or leave a number field to save it.",
+        "saving": "Saving…",
+        "saved": "Saved",
+        "failed": "Save failed: {{error}}",
+        "retry": "Retry",
+        "invalidRateLimit": "Enter an integer of at least 10.",
+        "invalidVideoLimit": "Enter an integer of at least 1 MB.",
+        "unknownError": "Unknown error"
+      },
+      "unsavedChanges": {
+        "status": "Unsaved changes",
+        "title": "You have unsaved changes",
+        "description": "Your settings have not been saved. Continue editing to save them, or discard your changes and leave.",
+        "continueEditing": "Continue editing",
+        "discardAndLeave": "Discard changes and leave"
       },
       "save": "Save",
       "saving": "Saving...",

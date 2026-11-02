@@ -25,6 +25,18 @@ decimal strings. `calls` excludes legacy rows; new-call coverage uses only
 `reportedCalls / calls`. System and anonymous groups are subsets of the overview.
 The existing dashboard's `topUsersByTokenUsage` response remains available.
 
+The overview also returns `daily`, a date-ascending array of `{ date, metrics }`
+using the same filtered records, snapshot, and metrics as `summary`. Dates are
+`YYYY-MM-DD` in Asia/Shanghai and represent request start time, even when a
+request finishes later. Days without records are omitted; the UI fills those
+days with zero recorded tokens. In `daily`, the three core token sums stay null
+when no provider supplied that field; reported zero stays `"0"`. This differs
+from the overview's zero-coalesced sums and lets the chart show missing fields
+as gaps without estimating them from call status. A day with unknown calls is
+not evidence of zero actual provider usage. Rolling 7/30-day windows can cover 8/31 calendar dates,
+with partial first and last days. The half-open end never adds a new midnight
+bucket, and an empty time window has no dates.
+
 `GET /admin/stats/ai-usage/users` provides the complete user usage table with the
 same admin requirement and range/type/model filters. It accepts `page` (starting
 at 1) and `limit` (1–100, default 20), and returns `users` and `pagination`

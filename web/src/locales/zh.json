@@ -1322,6 +1322,11 @@
           "noTokenUsage": "暂无 Token 使用记录"
         },
         "aiUsage": {
+          "trendTitle": "Token 用量趋势",
+          "trendDescription": "按上海时区汇总已记录的 Token；未上报用量不估算，首尾日期可能仅覆盖部分时段。",
+          "trendEmpty": "所选时段暂无用量记录。",
+          "trendUnknown": "{{count}} 次调用未上报 Token 用量",
+          "trendChartLabel": "每日总量、输入和输出 Token 折线图，可用左右方向键查看日期详情。",
           "title": "AI 用量",
           "totalUsage": "总用量（Token）",
           "usage": "用量（Token）",
@@ -1523,6 +1528,7 @@
         "requireCertifiedUserForExploreDesc": "开启后，只有已认证用户的公开笔记才会被推荐到「探索」页面；已公开的笔记仍可通过链接访问。"
       },
       "hooks": {
+        "channelRemoved": "该通知渠道已被删除，当前更改尚未保存。",
         "title": "通知 Hook",
         "description": "配置管理员通知渠道，用于新用户和创建时即公开的笔记。",
         "enabled": "启用管理员通知",
@@ -1865,6 +1871,7 @@
         }
       },
       "permissions": {
+        "saveRoleFor": "保存{{role}}权限",
         "title": "权限管理",
         "description": "分别控制角色默认权限，并为单个用户设置覆盖规则。",
         "readOnlyDescription": "管理员可以查看权限配置，只有超级管理员可以修改。",
@@ -1922,6 +1929,23 @@
           "saveSuccess": "用户权限已保存",
           "saveFailed": "保存用户权限失败：{{error}}"
         }
+      },
+      "autosave": {
+        "description": "更改会自动保存；数值填写完成后按 Enter 或移开焦点保存。",
+        "saving": "保存中…",
+        "saved": "已保存",
+        "failed": "保存失败：{{error}}",
+        "retry": "重试",
+        "invalidRateLimit": "请输入不小于 10 的整数。",
+        "invalidVideoLimit": "请输入不小于 1 的整数（MB）。",
+        "unknownError": "未知错误"
+      },
+      "unsavedChanges": {
+        "status": "有未保存的更改",
+        "title": "设置尚未保存",
+        "description": "你修改的设置还没有保存。可以继续编辑并保存，或放弃更改后离开。",
+        "continueEditing": "继续编辑",
+        "discardAndLeave": "放弃更改并离开"
       },
       "save": "保存",
       "saving": "保存中...",

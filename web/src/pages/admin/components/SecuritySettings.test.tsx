@@ -49,7 +49,7 @@ const cachedSecurityConfig = {
 function SettingsPage({ tab }: { tab: 'ui' | 'security' | 'oauth' }) {
   const [securityConfig, setSecurityConfig] =
     useState<SystemConfig['security']>(cachedSecurityConfig);
-  const [uiConfig, setUiConfig] = useState<SystemConfig['ui']>({
+  const [uiConfig] = useState<SystemConfig['ui']>({
     allowRegistration: true,
     defaultUserRole: 'user',
     apiRateLimit: 100,
@@ -58,7 +58,7 @@ function SettingsPage({ tab }: { tab: 'ui' | 'security' | 'oauth' }) {
   const props = { securityConfig, setSecurityConfig, isSaving, setIsSaving, onMutate };
 
   if (tab === 'ui') {
-    return <UIConfigTab {...props} uiConfig={uiConfig} setUiConfig={setUiConfig} />;
+    return <UIConfigTab uiConfig={uiConfig} securityConfig={securityConfig} onMutate={onMutate} />;
   }
   return tab === 'security' ? <SecurityConfigTab {...props} /> : <OAuthConfigTab {...props} />;
 }
@@ -77,14 +77,14 @@ describe('admin security configuration ownership', () => {
       const policySwitch = screen.getAllByRole('switch')[tab === 'ui' ? 2 : 0];
       expect(policySwitch).toBeChecked();
       fireEvent.click(policySwitch);
-      fireEvent.click(screen.getByRole('button', { name: 'save' }));
+      if (tab === 'security') fireEvent.click(screen.getByRole('button', { name: 'save' }));
 
       await waitFor(() => expect(onMutate).toHaveBeenCalledOnce());
       expect(put).toHaveBeenCalledWith('/admin/settings', {
         group: 'security',
         config: { requireCertifiedUserForExplore: false },
       });
-      expect(put).toHaveBeenCalledTimes(tab === 'ui' ? 2 : 1);
+      expect(put).toHaveBeenCalledOnce();
     }
   );
 

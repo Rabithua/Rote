@@ -18,6 +18,7 @@ interface HooksConfigTabProps {
   isSaving: boolean;
   notificationConfig: SystemConfig['notification'] | undefined;
   onMutate: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
   setIsSaving: (saving: boolean) => void;
   setNotificationConfig: (config: SystemConfig['notification'] | undefined) => void;
 }
@@ -32,6 +33,7 @@ export default function HooksConfigTab({
   isSaving,
   notificationConfig,
   onMutate,
+  onDirtyChange,
   setIsSaving,
   setNotificationConfig,
 }: HooksConfigTabProps) {
@@ -99,14 +101,20 @@ export default function HooksConfigTab({
     if (!open) setEditingChannelId(null);
   };
 
-  const handleDialogSubmit = (channel: AdminHookChannel) =>
-    updateHooks({
+  const handleDialogSubmit = async (channel: AdminHookChannel): Promise<boolean> => {
+    if (dialogMode === 'edit' && !hooks.channels.some((current) => current.id === channel.id)) {
+      toast.error(t('saveFailed', { error: t('hooks.channelRemoved') }));
+      return false;
+    }
+
+    return updateHooks({
       ...hooks,
       channels:
         dialogMode === 'edit'
           ? hooks.channels.map((current) => (current.id === channel.id ? channel : current))
           : [...hooks.channels, channel],
     });
+  };
 
   const handleTest = async (channel: AdminHookChannel) => {
     setTestingId(channel.id);
@@ -253,6 +261,7 @@ export default function HooksConfigTab({
         open={dialogOpen}
         onOpenChange={handleDialogOpenChange}
         onSubmit={handleDialogSubmit}
+        onDirtyChange={onDirtyChange}
       />
     </Card>
   );

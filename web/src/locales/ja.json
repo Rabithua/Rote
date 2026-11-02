@@ -1336,6 +1336,11 @@
           "noTokenUsage": "Token 使用記録なし"
         },
         "aiUsage": {
+          "trendTitle": "トークン使用量の推移",
+          "trendDescription": "上海時間で記録済みトークンを日別集計します。未報告分は推計せず、最初と最後の日は一部の時間帯のみの場合があります。",
+          "trendEmpty": "選択した期間の使用量記録はありません。",
+          "trendUnknown": "{{count}} 回の呼び出しでトークン使用量が報告されていません",
+          "trendChartLabel": "日別の合計・入力・出力トークンの折れ線グラフです。左右の矢印キーで各日の詳細を確認できます。",
           "viewDetails": "詳細を見る",
           "title": "AI 使用量",
           "totalUsage": "合計トークン",
@@ -1537,6 +1542,7 @@
         "requireCertifiedUserForExploreDesc": "有効にすると、認証済みユーザーのみ、公開ノートが探索ページで推奨されます。既存の公開ノートは直接リンクで引き続きアクセス可能です。"
       },
       "hooks": {
+        "channelRemoved": "この通知チャンネルは削除されました。変更は保存されていません。",
         "title": "通知 Hook",
         "description": "新規ユーザーと作成時に公開されたノート向けの管理者通知チャンネルを設定します。",
         "enabled": "管理者通知を有効化",
@@ -1879,6 +1885,7 @@
         }
       },
       "permissions": {
+        "saveRoleFor": "{{role}}の権限を保存",
         "title": "権限管理",
         "description": "ロールのデフォルト権限を制御し、ユーザーごとの上書きを設定します。",
         "readOnlyDescription": "管理者は権限を閲覧できます。変更できるのはスーパー管理者のみです。",
@@ -1936,6 +1943,23 @@
           "saveSuccess": "ユーザー権限を保存しました",
           "saveFailed": "ユーザー権限の保存に失敗しました：{{error}}"
         }
+      },
+      "autosave": {
+        "description": "変更は自動保存されます。数値は Enter キーを押すか、入力欄からフォーカスを外すと保存されます。",
+        "saving": "保存中…",
+        "saved": "保存済み",
+        "failed": "保存に失敗しました：{{error}}",
+        "retry": "再試行",
+        "invalidRateLimit": "10 以上の整数を入力してください。",
+        "invalidVideoLimit": "1 MB 以上の整数を入力してください。",
+        "unknownError": "不明なエラー"
+      },
+      "unsavedChanges": {
+        "status": "未保存の変更があります",
+        "title": "未保存の変更があります",
+        "description": "設定の変更はまだ保存されていません。編集を続けて保存するか、変更を破棄して移動してください。",
+        "continueEditing": "編集を続ける",
+        "discardAndLeave": "変更を破棄して移動"
       },
       "save": "保存",
       "saving": "保存中...",

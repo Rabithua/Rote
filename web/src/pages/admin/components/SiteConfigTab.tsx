@@ -1,15 +1,16 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import Divider from '@/components/ui/divider';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { put } from '@/utils/api';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useSWRConfig } from 'swr';
 import type { SystemConfig } from '../types';
+import AdminSettingsPanel from '../settings/AdminSettingsPanel';
 
 const CUSTOM_HEAD_SCRIPTS_MAX_BYTES = 64 * 1024;
 
@@ -17,8 +18,10 @@ interface SiteConfigTabProps {
   siteConfig: SystemConfig['site'] | undefined;
   setSiteConfig: (config: SystemConfig['site'] | undefined) => void;
   isSaving: boolean;
+  hasUnsavedChanges?: boolean;
   setIsSaving: (saving: boolean) => void;
   onMutate: () => void;
+  onSaved?: (config: SystemConfig['site']) => void;
   isSuperAdmin: boolean;
 }
 
@@ -26,23 +29,31 @@ export default function SiteConfigTab({
   siteConfig,
   setSiteConfig,
   isSaving,
+  hasUnsavedChanges = true,
   setIsSaving,
   onMutate,
+  onSaved,
   isSuperAdmin,
 }: SiteConfigTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const { mutate: globalMutate } = useSWRConfig();
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSave = async () => {
+    setSaveError(null);
     if (!siteConfig || !siteConfig.name || !siteConfig.frontendUrl) {
-      toast.error(t('saveFailed', { error: 'Site name and frontend URL are required' }));
+      const message = t('saveFailed', { error: 'Site name and frontend URL are required' });
+      setSaveError(message);
+      toast.error(message);
       return;
     }
     if (
       new TextEncoder().encode(siteConfig.customHeadScripts || '').byteLength >
       CUSTOM_HEAD_SCRIPTS_MAX_BYTES
     ) {
-      toast.error(t('site.customHeadScripts.tooLarge'));
+      const message = t('site.customHeadScripts.tooLarge');
+      setSaveError(message);
+      toast.error(message);
       return;
     }
     setIsSaving(true);
@@ -51,6 +62,7 @@ export default function SiteConfigTab({
         group: 'site',
         config: siteConfig,
       });
+      onSaved?.(siteConfig);
       toast.success(t('saveSuccess'));
       onMutate();
       // 更新所有使用 site-status 的组件
@@ -62,19 +74,30 @@ export default function SiteConfigTab({
         error?.message ||
         error?.response?.data?.error ||
         'Unknown error';
-      toast.error(t('saveFailed', { error: errorMessage }));
+      const message = t('saveFailed', { error: errorMessage });
+      setSaveError(message);
+      toast.error(message);
     } finally {
       setIsSaving(false);
     }
   };
 
   return (
-    <Card className="rounded-none border-none shadow-none">
-      <CardHeader className="pb-0">
-        <CardTitle>{t('site.title')}</CardTitle>
-        <CardDescription>{t('site.description')}</CardDescription>
-      </CardHeader>
-      <Divider />
+    <AdminSettingsPanel
+      isDirty={hasUnsavedChanges}
+      saveError={saveError}
+      header={
+        <CardHeader className="pb-0">
+          <CardTitle>{t('site.title')}</CardTitle>
+          <CardDescription>{t('site.description')}</CardDescription>
+        </CardHeader>
+      }
+      actions={
+        <Button onClick={handleSave} disabled={isSaving || !hasUnsavedChanges} className="w-full">
+          {isSaving ? t('saving') : t('save')}
+        </Button>
+      }
+    >
       <CardContent className="space-y-4">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -242,11 +265,7 @@ export default function SiteConfigTab({
             </div>
           </div>
         )}
-
-        <Button onClick={handleSave} disabled={isSaving} className="w-full">
-          {isSaving ? t('saving') : t('save')}
-        </Button>
       </CardContent>
-    </Card>
+    </AdminSettingsPanel>
   );
 }
