@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Rote 是一个开源的个人笔记仓库系统，采用前后端分离架构，支持开放 API、用户数据自主控制、Docker 一键部署等核心特性。
+Rote 是一个公开源码、采用 PolyForm Noncommercial License 1.0.0 的个人笔记仓库系统，超出协议允许用途的商业使用须另行获得书面授权。项目采用前后端分离架构，支持开放 API、用户数据自主控制、Docker 一键部署等核心特性。
 
 ## Technology Stack
 

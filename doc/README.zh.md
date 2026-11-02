@@ -14,13 +14,19 @@
   </picture>
 </p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm_Noncommercial_1.0.0-blue.svg)](../LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Rabithua/Rote.svg?style=social&label=Star)](https://github.com/Rabithua/Rote)
 [![GitHub forks](https://img.shields.io/github/forks/Rabithua/Rote.svg?style=social&label=Fork)](https://github.com/Rabithua/Rote/fork)
 
 **[Demo](https://demo.rote.ink/)** ｜ **[Website](https://rote.ink)** ｜ **[iOS APP](https://apps.apple.com/us/app/rote/id6755513897)** ｜ **[Explore](https://rote.ink/explore)** ｜ **[Rabithua](https://rote.ink/rabithua)**
 
 > 开放 API，记录的姿势不止一种 🤩，支持 Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架 🙅🏻
+
+### 许可证
+
+Rote 采用 [PolyForm Noncommercial License 1.0.0](../LICENSE)，公开源码，允许在协议规定的非商业用途下使用、修改和分发。协议也允许其列举的公益、教育、政府等机构使用。超出协议允许用途的商业使用须另行取得著作权人的书面许可，请联系 [Rabithua](https://github.com/Rabithua) 获取授权。
+
+这是非商业的源码可用许可，不属于 OSI 定义的开源许可。此前以 MIT 协议发布的版本仍保留原有 MIT 授权，本次变更不会撤销这些授权。第三方组件继续适用各自的许可证，详见[前端第三方声明](../web/THIRD_PARTY_NOTICES.md)。
 
 ### 预览
 

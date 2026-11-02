@@ -85,7 +85,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/status'
     "databaseConnected": true,
     "site": {
       "name": "Rote",
-      "description": "一个开源的个人笔记仓库系统",
+      "description": "一个公开源码、采用非商业许可的个人笔记仓库系统",
       "frontendUrl": "https://rote.ink",
       "defaultLanguage": "zh-CN",
       "icpRecord": "京ICP备12345678号",
@@ -210,7 +210,7 @@ curl -X GET 'https://your-domain.com/v2/api/site/config-status'
     "isInitialized": true,
     "site": {
       "name": "Rote",
-      "description": "一个开源的个人笔记仓库系统",
+      "description": "一个公开源码、采用非商业许可的个人笔记仓库系统",
       "frontendUrl": "https://rote.ink"
     },
     "system": {
