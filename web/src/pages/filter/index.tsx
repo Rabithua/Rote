@@ -259,7 +259,7 @@ function MineFilter() {
     return (
       <div className="relative flex w-full flex-col divide-y">
         {semanticData.rotes.map((rote) => (
-          <RoteItem key={rote.id} rote={rote} />
+          <RoteItem key={rote.id} rote={rote} onRefresh={() => void mutateSemantic()} />
         ))}
       </div>
     );
