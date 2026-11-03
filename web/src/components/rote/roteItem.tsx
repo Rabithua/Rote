@@ -37,6 +37,7 @@ function RoteItem({
   rote,
   mutate,
   mutateSingle,
+  onRefresh,
   showAvatar = true,
   enableContentCollapse = true,
   showReactions = true,
@@ -45,6 +46,7 @@ function RoteItem({
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
+  onRefresh?: () => void;
   showAvatar?: boolean;
   enableContentCollapse?: boolean;
   showReactions?: boolean;
@@ -192,11 +194,12 @@ function RoteItem({
             )}
           </span>
 
-          {inView && ((isOwner && (mutate || mutateSingle)) || blockTarget) && (
+          {inView && ((isOwner && (mutate || mutateSingle || onRefresh)) || blockTarget) && (
             <RoteActionsMenu
               rote={rote}
               mutate={mutate}
               mutateSingle={mutateSingle}
+              onRefresh={onRefresh}
               isOwner={isOwner}
               blockTarget={blockTarget}
               onBlockChanged={onBlockChanged}
@@ -251,6 +254,7 @@ function RoteItem({
               onDeleted={() => {
                 mutate?.();
                 mutateSingle?.();
+                onRefresh?.();
               }}
             />
           </div>
@@ -320,6 +324,7 @@ function RoteItem({
                   setModalType(null);
                   mutate?.();
                   mutateSingle?.();
+                  onRefresh?.();
                 }}
               />
             </DialogContent>

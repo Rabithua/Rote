@@ -37,6 +37,7 @@ interface RoteActionsMenuProps {
   rote: Rote;
   mutate?: SWRInfiniteKeyedMutator<Rotes>;
   mutateSingle?: KeyedMutator<Rote>;
+  onRefresh?: () => void;
   onEdit: () => void;
   onShare: () => void;
   onNoticeCreate?: () => void;
@@ -53,6 +54,7 @@ export default function RoteActionsMenu({
   rote,
   mutate,
   mutateSingle,
+  onRefresh,
   onEdit,
   onShare,
   onNoticeCreate,
@@ -94,6 +96,7 @@ export default function RoteActionsMenu({
       if (mutateSingle) {
         mutateSingle();
       }
+      onRefresh?.();
     },
 
     // 更新本地状态 - 编辑操作
@@ -111,6 +114,7 @@ export default function RoteActionsMenu({
       if (mutateSingle) {
         mutateSingle(() => updatedRote, { revalidate: false });
       }
+      onRefresh?.();
     },
 
     // 执行 API 请求并处理本地状态更新
