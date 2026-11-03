@@ -2,6 +2,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import {
+  commonReactions,
+  compareReactionTypes,
+  isPresetReaction,
+} from '@/features/reactions/catalog';
+import {
   availablePreReactions,
   defaultAnonymousPreReactions,
   mayCreateCustomReaction,
@@ -43,12 +48,11 @@ export function ReactionsPart({ rote, mutate, mutateSingle, isInView = true }: R
   const { t } = useTranslation('translation', {
     keyPrefix: 'components.reactions',
   });
-  const preReactions = siteStatus?.frontendConfig?.preReactions ?? [];
   const anonymousPreReactions: readonly string[] =
     siteStatus?.frontendConfig?.anonymousPreReactions ?? defaultAnonymousPreReactions;
   const pickerReactions = availablePreReactions(
     isAuthenticated,
-    preReactions,
+    commonReactions,
     siteStatus?.frontendConfig?.anonymousPreReactions
   );
   const hasReactionPicker = isAuthenticated || pickerReactions.length > 0;
@@ -166,14 +170,16 @@ export function ReactionsPart({ rote, mutate, mutateSingle, isInView = true }: R
 
   const groupedReactions = React.useMemo(
     () =>
-      rote.reactions.reduce(
-        (acc, reaction) => {
-          acc[reaction.type] = acc[reaction.type] || [];
-          acc[reaction.type].push(reaction);
-          return acc;
-        },
-        {} as Record<string, Reaction[]>
-      ),
+      Object.entries(
+        rote.reactions.reduce(
+          (acc, reaction) => {
+            acc[reaction.type] = acc[reaction.type] || [];
+            acc[reaction.type].push(reaction);
+            return acc;
+          },
+          {} as Record<string, Reaction[]>
+        )
+      ).sort(([a], [b]) => compareReactionTypes(a, b)),
     [rote.reactions]
   );
 
@@ -260,9 +266,9 @@ export function ReactionsPart({ rote, mutate, mutateSingle, isInView = true }: R
   return (
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        {Object.entries(groupedReactions).map(([type, reactionGroup]) => {
+        {groupedReactions.map(([type, reactionGroup]) => {
           const hasUserReactions = reactionGroup.some((r) => r.user);
-          const isCustomReaction = !preReactions.includes(type);
+          const isCustomReaction = !isPresetReaction(type);
           const firstUser = isCustomReaction ? reactionGroup.find((r) => r.user)?.user : null;
           const hasOwnReaction = isAuthenticated
             ? reactionGroup.some((reaction) => reaction.userid === profile?.id)

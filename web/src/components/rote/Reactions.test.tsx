@@ -16,7 +16,7 @@ import RoteItem from './roteItem';
 const mocks = vi.hoisted(() => ({
   isAuthenticated: false,
   visitorId: 'visitor-current' as string | null,
-  anonymousPreReactions: ['❤️', '👍'] as string[],
+  anonymousPreReactions: ['❤️', '👍'] as string[] | undefined,
   post: vi.fn(),
   del: vi.fn(),
 }));
@@ -116,7 +116,46 @@ function renderReactions(rote = makeRote()) {
   );
 }
 
-describe('ReactionsPart anonymous access', () => {
+const confirmedPickerReactions = [
+  '❤️',
+  '👍🏿',
+  '😂',
+  '🥳',
+  '🎉',
+  '🔥',
+  '🤩',
+  '😎',
+  '🤤',
+  '🥹',
+  '😮',
+  '🤯',
+  '🤔',
+  '☹️',
+  '😢',
+  '😭',
+  '😡',
+  '🥵',
+  '👎',
+  '🙏',
+  '💪',
+  '👀',
+  '💯',
+  '🌟',
+  '🐶',
+  '😺',
+  '😈',
+  '🤡',
+  '🤖',
+  '🧌',
+  '🌚',
+  '💩',
+  '🐛',
+  '☕',
+  '💡',
+  '🚀',
+];
+
+describe('ReactionsPart', () => {
   beforeEach(() => {
     mocks.isAuthenticated = false;
     setupIntersectionMocking(vi.fn);
@@ -138,6 +177,99 @@ describe('ReactionsPart anonymous access', () => {
     expect(screen.getByText('❤️')).toBeInTheDocument();
     expect(screen.getByText('👍')).toBeInTheDocument();
     expect(screen.queryByText('👎')).not.toBeInTheDocument();
+  });
+
+  it('uses the confirmed authenticated picker order even with an older server catalog', () => {
+    mocks.isAuthenticated = true;
+    const { container } = renderReactions();
+
+    expect(
+      Array.from(container.querySelectorAll('.grid span'), (entry) => entry.textContent)
+    ).toEqual(confirmedPickerReactions);
+  });
+
+  it.each(['👍🏿', '☹️'])('submits the exact Unicode preset %s', async (type) => {
+    mocks.isAuthenticated = true;
+    mocks.post.mockResolvedValue({ data: makeReaction({ type, userid: 'user-current' }) });
+    renderReactions();
+
+    fireEvent.click(screen.getByText(type));
+
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith('/reactions', {
+        type,
+        roteid: 'rote-id',
+        metadata: { source: 'web' },
+      })
+    );
+    expect(mocks.post).toHaveBeenCalledTimes(1);
+  });
+
+  it('orders current and retired presets without chip avatars or changing stored reactions', () => {
+    const retiredReactions = ['👍', '⭐', '🎯', '✨', '👏', '🤝', '⚡', '🌝'];
+    const sourceTypes = [
+      'custom-second',
+      ...[...retiredReactions].reverse(),
+      ...[...confirmedPickerReactions].reverse(),
+      'custom-first',
+    ];
+    const reactions = sourceTypes.map((type, index) =>
+      makeReaction({
+        id: `reaction-${index}`,
+        type,
+        userid: 'user-other',
+        user: { username: 'other', nickname: 'Other', avatar: null },
+      })
+    );
+    const originalReactions = reactions.map((reaction) => ({ ...reaction }));
+    const { container } = renderReactions(makeRote(reactions));
+    const chips = Array.from(container.querySelectorAll('div.h-6'));
+
+    expect(chips.map((chip) => chip.querySelector(':scope > span')?.textContent)).toEqual([
+      ...confirmedPickerReactions,
+      ...retiredReactions,
+      'custom-second',
+      'custom-first',
+    ]);
+    for (const chip of chips.slice(0, 44)) {
+      expect(chip.querySelector('a')).toBeNull();
+    }
+    for (const chip of chips.slice(44)) {
+      expect(chip.querySelector('a')).toHaveAttribute('href', '/other');
+    }
+    expect(reactions).toEqual(originalReactions);
+  });
+
+  it('preserves the twelve anonymous defaults when the server omits its allowlist', () => {
+    mocks.anonymousPreReactions = undefined;
+    const { container } = renderReactions();
+
+    expect(
+      Array.from(container.querySelectorAll('.grid span'), (entry) => entry.textContent)
+    ).toEqual(['❤️', '👍', '🎉', '👏', '✨', '💡', '🚀', '🙏', '💪', '🤝', '🔥', '🌟']);
+  });
+
+  it('allows an anonymous thumbs up without granting permission to its replacement', async () => {
+    mocks.post.mockResolvedValue({
+      data: makeReaction({ type: '👍', visitorId: mocks.visitorId }),
+    });
+    renderReactions(makeRote([makeReaction({ type: '👍🏿', userid: 'user-other' })]));
+
+    fireEvent.click(screen.getByText('👍🏿'));
+    expect(mocks.post).not.toHaveBeenCalled();
+    expect(mocks.del).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText('👍'));
+    await waitFor(() =>
+      expect(mocks.post).toHaveBeenCalledWith('/reactions', {
+        type: '👍',
+        roteid: 'rote-id',
+        metadata: { source: 'web' },
+        visitorId: 'visitor-current',
+        visitorInfo: {},
+      })
+    );
+    expect(mocks.post).toHaveBeenCalledTimes(1);
   });
 
   it('does not open the custom composer on anonymous long press', () => {
