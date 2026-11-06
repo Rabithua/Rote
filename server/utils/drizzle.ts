@@ -4,9 +4,15 @@ import { join } from 'path';
 import postgres from 'postgres';
 import * as oauthMcpSchema from '../drizzle/oauthMcpSchema';
 import * as accountMergeSchema from '../drizzle/accountMergeSchema';
+import * as oauthRegistrationSchema from '../drizzle/oauthRegistrationSchema';
 import * as baseSchema from '../drizzle/schema';
 
-const schema = { ...baseSchema, ...oauthMcpSchema, ...accountMergeSchema };
+const schema = {
+  ...baseSchema,
+  ...oauthMcpSchema,
+  ...accountMergeSchema,
+  ...oauthRegistrationSchema,
+};
 
 // 创建 postgres 连接
 const connectionString = process.env.POSTGRESQL_URL || '';

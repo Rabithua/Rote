@@ -1,0 +1,11 @@
+{
+  "registrationDisabled": "Registration is currently disabled",
+  "passkeyDisabled": "Passkey is disabled",
+  "usernameUnavailable": "Username already exists",
+  "usernameInvalid": "Enter a valid username",
+  "emailUnavailable": "Email already exists",
+  "lastLoginMethod": "Add another login method before removing your last one",
+  "userNotFound": "User not found",
+  "currentPasswordRequired": "Current password is required to clear password",
+  "incorrectPassword": "Incorrect password"
+}

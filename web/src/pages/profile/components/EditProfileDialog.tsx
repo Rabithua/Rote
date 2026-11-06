@@ -58,13 +58,12 @@ export default function EditProfileDialog({
               fallbackClassName="bg-muted/80"
               onClick={onAvatarClick}
             />
-            <div className="mt-2 text-base font-semibold">{t('email')}</div>
-            <Input
-              disabled
-              className="w-full rounded-md font-mono"
-              maxLength={20}
-              value={editProfile?.email || ''}
-            />
+            {editProfile?.email && (
+              <>
+                <div className="mt-2 text-base font-semibold">{t('email')}</div>
+                <Input disabled className="w-full rounded-md font-mono" value={editProfile.email} />
+              </>
+            )}
             <div className="mt-2 text-base font-semibold">{t('username')}</div>
             <Input
               className="w-full rounded-md font-mono"

@@ -42,7 +42,7 @@ export class AppleOAuthProvider implements OAuthProvider {
   }
 
   getAuthUrl(config: AppleOAuthProviderConfig, state: string, _redirectUrl: string): string {
-    const scopes = config.scopes || ['name', 'email'];
+    const scopes = config.scopes || ['name'];
     const appleAuthUrl = new URL('https://appleid.apple.com/auth/authorize');
     appleAuthUrl.searchParams.set('client_id', config.clientId);
     appleAuthUrl.searchParams.set('redirect_uri', config.callbackUrl);

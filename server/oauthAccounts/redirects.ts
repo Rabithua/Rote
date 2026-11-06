@@ -5,6 +5,7 @@ import { createResponse } from '../utils/main';
 import { extractStateData } from '../utils/oauth';
 import { oauthProviderRegistry } from '../utils/oauth/providers';
 import messages from './messages.json';
+import { OAuthRegistrationError } from './registrationError';
 
 // 验证 redirectUrl 防止开放重定向攻击
 export function validateRedirectUrl(
@@ -66,6 +67,7 @@ export async function handleOAuthError(
       userFriendlyMessage = error.message;
     }
   }
+  if (error instanceof OAuthRegistrationError) userFriendlyMessage = error.message;
 
   try {
     const frontendBaseUrl = await getFrontendBaseUrl(c);
@@ -86,6 +88,9 @@ export async function handleOAuthError(
       loginUrl.searchParams.set('oauth', 'error');
       loginUrl.searchParams.set('provider', provider);
       loginUrl.searchParams.set('message', userFriendlyMessage);
+      if (error instanceof OAuthRegistrationError) {
+        loginUrl.searchParams.set('errorCode', error.code);
+      }
       return c.redirect(loginUrl.toString());
     }
   } catch (_redirectError) {

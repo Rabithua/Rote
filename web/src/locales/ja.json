@@ -205,7 +205,9 @@
         "title": "ログイン認証",
         "message": "Rote Web App を Rote iOS App に {{username}} としてログインすることを承認しようとしています",
         "button": "ログインを認証",
-        "switchAccount": "アカウントを切り替える"
+        "switchAccount": "アカウントを切り替える",
+        "switchAction": "切替",
+        "confirmAction": "認証"
       },
       "messages": {
         "loggingIn": "ログイン中...",
@@ -213,10 +215,13 @@
         "backendDown": "バックエンドサービスが利用できません",
         "registering": "登録中...",
         "registerSuccess": "登録成功",
-        "oauthLoginSuccess": "GitHub ログイン成功",
-        "oauthCancelled": "GitHub 認証がキャンセルされました",
+        "oauthLoginSuccess": "ログインしました",
+        "oauthCancelled": "外部アカウントの認証をキャンセルしました",
         "appleLoginSuccess": "Apple ログイン成功",
-        "appleCancelled": "Apple 認証がキャンセルされました"
+        "appleCancelled": "Apple 認証がキャンセルされました",
+        "loginFailed": "ログインできませんでした。入力内容を確認してください。",
+        "tokenNotFound": "ログイン情報の期限が切れました。もう一度ログインしてください。",
+        "registerFailed": "登録できませんでした。もう一度お試しください。"
       },
       "oauth": {
         "or": "または"
@@ -256,7 +261,7 @@
       "passwordMin": "パスワードは6文字以上で入力してください",
       "passwordMaxLength": "パスワードは128文字以内で入力してください",
       "emailRequired": "メールアドレスは必須です",
-      "emailMaxLength": "メールアドレスは30文字以内で入力してください",
+      "emailMaxLength": "メールアドレスは255文字以内にしてください",
       "emailFormat": "無効なメールアドレス形式です",
       "nicknameRequired": "ニックネームは必須です",
       "nicknameMaxLength": "ニックネームは20文字以内で入力してください",
@@ -269,10 +274,32 @@
         "loginWithPasskey": "パスキーでログイン",
         "loginSuccess": "ログイン成功",
         "loginFailed": "パスキーログインに失敗しました",
-        "registerSuccess": "パスキーの登録に成功しました",
-        "registerFailed": "パスキーの登録に失敗しました",
-        "cancelled": "操作がキャンセルされました",
-        "passwordOptionalHint": "パスワードをスキップして、パスキーで登録できます。"
+        "registerSuccess": "パスキーを追加しました",
+        "registerFailed": "パスキーを追加できませんでした",
+        "accountChanged": "ログイン中のアカウントが変更されました。パスキーを再度追加してください。",
+        "cancelled": "操作がキャンセルされました"
+      },
+      "entry": {
+        "or": "または",
+        "continueWithProvider": "{{provider}} で続ける",
+        "otherWays": "その他の方法",
+        "back": "戻る",
+        "backToLogin": "ログインに戻る",
+        "usernameHint": "半角英数字・アンダースコア・ハイフンの1〜20文字。プロフィールのURLに使用します。",
+        "oauthCreateDescription": "{{provider}} の認証が完了しました。ユーザー名を確認して記録を始めましょう。",
+        "continue": "続ける"
+      },
+      "errors": {
+        "oauthRegistrationExpired": "登録用の認証期限が切れました。もう一度外部アカウントで続けてください。",
+        "oauthRegistrationInvalid": "登録用の認証が無効です。もう一度ログインしてください。",
+        "oauthRegistrationConflict": "この外部アカウントは登録済みです。もう一度ログインしてください。",
+        "registrationDisabled": "現在、新規登録を受け付けていません。",
+        "oauthDisabled": "このログイン方法は無効になっています。別の方法を選んでください。",
+        "passkeyDisabled": "パスキーは無効になっています。別の方法を選んでください。",
+        "usernameUnavailable": "このユーザー名は使用されています。別の名前を選んでください。",
+        "oauthRegistrationFailed": "登録を完了できませんでした。もう一度お試しください。",
+        "registrationInvalid": "登録情報を確認してください。",
+        "emailUnavailable": "このメールアドレスは使用されています。既存のアカウントでログインしてください。"
       }
     },
     "oauthAuthorize": {

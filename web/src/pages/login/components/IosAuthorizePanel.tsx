@@ -1,4 +1,4 @@
-import Logo from '@/components/others/logo';
+import { AppleIcon } from '@/components/icons/Apple';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import type { LoginProfile } from '../types';
@@ -19,24 +19,33 @@ export function IosAuthorizePanel({
   });
 
   return (
-    <>
-      <div className="mb-4">
-        <Logo className="w-32" color="#3ECF4A" />
-      </div>
-      <div className="bg-muted/50 w-full rounded-lg p-6">
-        <h2 className="mb-4 text-lg"> {t('authorize.title')}</h2>
-        <p className="mb-6 text-sm font-light">
-          {t('authorize.message', {
-            username: profile.nickname || profile.username,
-          })}
-        </p>
-        <Button onClick={onAuthorize} className="w-full">
-          {t('authorize.button')}
+    <div className="w-full">
+      <h2 className="mb-4 flex items-center gap-2 text-lg">
+        <AppleIcon className="size-4" aria-hidden="true" />
+        {t('authorize.title')}
+      </h2>
+      <p className="mb-6 text-sm font-light [overflow-wrap:anywhere]">
+        {t('authorize.message', {
+          username: profile.nickname || profile.username,
+        })}
+      </p>
+      <div className="flex gap-3">
+        <Button
+          variant="outline"
+          onClick={onSwitchAccount}
+          className="h-auto min-w-0 flex-1 whitespace-normal"
+          aria-label={t('authorize.switchAccount')}
+        >
+          {t('authorize.switchAction')}
         </Button>
-        <Button variant="ghost" onClick={onSwitchAccount} className="mt-2 w-full">
-          {t('authorize.switchAccount')}
+        <Button
+          onClick={onAuthorize}
+          className="h-auto min-w-0 flex-[2] whitespace-normal"
+          aria-label={t('authorize.button')}
+        >
+          {t('authorize.confirmAction')}
         </Button>
       </div>
-    </>
+    </div>
   );
 }

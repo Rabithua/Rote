@@ -1,0 +1,43 @@
+.auth-screen {
+  --auth-column-width: 24rem;
+  --auth-line: var(--border);
+}
+
+.auth-screen-grid {
+  display: grid;
+  grid-template-rows: minmax(2rem, 0.5fr) auto auto minmax(4rem, 1fr);
+  min-block-size: 100dvh;
+}
+
+.auth-screen-band {
+  display: grid;
+  grid-template-columns: minmax(1rem, 1fr) minmax(0, var(--auth-column-width)) minmax(1rem, 1fr);
+  border-color: var(--auth-line);
+}
+
+.auth-screen-column {
+  min-inline-size: 0;
+  border-inline: 1px solid var(--auth-line);
+}
+
+.auth-screen-top,
+.auth-screen-brand,
+.auth-screen-body {
+  border-block-end: 1px solid var(--auth-line);
+}
+
+.auth-screen-brand > .auth-screen-column {
+  display: flex;
+  align-items: center;
+}
+
+.auth-screen-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.auth-screen-decoration,
+.auth-screen-space {
+  pointer-events: none;
+}

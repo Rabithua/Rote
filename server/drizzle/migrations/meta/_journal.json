@@ -281,6 +281,13 @@
       "when": 1793422564367,
       "tag": "0039_oauth_merge_authorizations",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1793973268754,
+      "tag": "0040_confused_riptide",
+      "breakpoints": true
     }
   ]
 }

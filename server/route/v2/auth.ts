@@ -1,59 +1,70 @@
 import crypto from 'crypto';
 import { Hono } from 'hono';
 import { eq } from 'drizzle-orm';
-import { users, userPasskeys, userOAuthBindings } from '../../drizzle/schema';
+import { users } from '../../drizzle/schema';
 import type { User } from '../../drizzle/schema';
 import { requireSecurityConfig } from '../../middleware/configCheck';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import type { SecurityConfig, UiConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
-import { getConfig, getGlobalConfig } from '../../utils/config';
 import db from '../../utils/drizzle';
-import { changeUserPassword, createUser, oneUser, passportCheckUser } from '../../utils/dbMethods';
+import { changeUserPassword, oneUser, passportCheckUser } from '../../utils/dbMethods';
+import { UserIdentityConflict } from '../../utils/dbMethods/user';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
 import { passwordChangeZod, RegisterDataZod } from '../../utils/zod';
-import passkeyRegistrationRouter from './authPasskeyRegistration';
+import {
+  clearUserPassword,
+  PasswordCredentialError,
+} from '../../authentication/passwordCredentials';
+import { LastLoginMethodError } from '../../authentication/loginMethods';
+import { AuthenticationPolicyError } from '../../authentication/policy';
+import { registerPasswordAccount } from '../../authentication/passwordRegistration';
+import oauthRegistrationRouter from './authOAuthRegistration';
 
 // 认证相关路由
 const authRouter = new Hono<{ Variables: HonoVariables }>();
 
 // 注册
 authRouter.post('/register', async (c: HonoContext) => {
-  // 检查是否允许注册
-  const uiConfig = await getConfig<UiConfig>('ui');
-  if (uiConfig && uiConfig.allowRegistration === false) {
-    return c.json(createResponse(null, 'Registration is currently disabled'), 403);
+  const parsed = RegisterDataZod.safeParse(await c.req.json());
+  if (!parsed.success) {
+    return c.json(
+      {
+        ...createResponse(null, parsed.error.issues[0].message, 400),
+        errorCode: parsed.error.issues.some((issue) => issue.path[0] === 'username')
+          ? 'username_invalid'
+          : 'registration_invalid',
+      },
+      400
+    );
   }
-
-  const body = await c.req.json();
-  const { username, password, email, nickname } = body;
-
-  // If passkey is disabled, password is required
-  const securityConfig = getGlobalConfig<SecurityConfig>('security');
-  const passkeyEnabled = securityConfig?.passkey?.enabled !== false;
-  if (!passkeyEnabled && !password) {
-    return c.json(createResponse(null, 'Password is required when passkey is disabled', 400), 400);
+  let user: User;
+  try {
+    user = await registerPasswordAccount(parsed.data);
+  } catch (error) {
+    if (error instanceof AuthenticationPolicyError) {
+      return c.json(
+        { ...createResponse(null, error.message, error.status), errorCode: error.code },
+        error.status
+      );
+    }
+    if (error instanceof UserIdentityConflict) {
+      return c.json(
+        {
+          ...createResponse(null, error.message, 409),
+          errorCode: error.identity === 'username' ? 'username_unavailable' : 'email_unavailable',
+        },
+        409
+      );
+    }
+    throw error;
   }
-
-  RegisterDataZod.parse(body);
-
-  // 使用配置中的默认用户角色，如果没有配置则使用 'user'
-  const defaultRole = uiConfig?.defaultUserRole || 'user';
-
-  const user = await createUser({
-    username,
-    password,
-    email,
-    nickname,
-    role: defaultRole,
-  });
 
   if (!user.id) {
     throw new Error('Registration failed, username or email already exists');
   }
 
-  // Generate JWT tokens so the user is immediately logged in (supports passkey registration during signup)
+  // Generate JWT tokens so the user is immediately logged in
   const accessToken = await generateAccessToken({
     userId: user.id,
     username: user.username,
@@ -77,7 +88,7 @@ authRouter.post('/register', async (c: HonoContext) => {
   );
 });
 
-authRouter.route('/register/passkey', passkeyRegistrationRouter);
+authRouter.route('/register/oauth', oauthRegistrationRouter);
 
 // 登录 (手动实现，不再使用 Passport)
 authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
@@ -148,7 +159,8 @@ authRouter.post('/login', requireSecurityConfig, async (c: HonoContext) => {
           const response = c.json(
             createResponse(
               {
-                user: sanitizeUserData(user as User),
+                // Preserve the published native password-login response contract.
+                user: { ...sanitizeUserData(user as User), email: user.email ?? '' },
                 accessToken,
                 refreshToken,
               },
@@ -236,101 +248,19 @@ authRouter.post('/refresh', requireSecurityConfig, async (c: HonoContext) => {
   }
 });
 
-// 清除密码 (切换为纯无密码模式)
+// Credential removals share an owner lock so concurrent removals cannot lock out an account.
 authRouter.delete('/password', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
-  const body = await c.req.json().catch(() => ({}));
-  const { password } = body;
-
-  // 1. 获取完整用户信息
-  const fullUser = await oneUser(user.id);
-  if (!fullUser) {
-    return c.json(createResponse(null, 'User not found', 404), 404);
-  }
-
-  // 2. 如果当前有密码，则必须验证密码
-  if (fullUser.passwordhash && fullUser.salt) {
-    if (!password) {
-      return c.json(
-        createResponse(null, 'Current password is required to clear password', 400),
-        400
-      );
+  const { password } = await c.req.json().catch(() => ({}));
+  try {
+    const updatedUser = await clearUserPassword(user.id, password);
+    return c.json(createResponse({ ...sanitizeUserData(updatedUser), hasPassword: false }), 200);
+  } catch (error) {
+    if (error instanceof LastLoginMethodError || error instanceof PasswordCredentialError) {
+      return c.json(createResponse(null, error.message, 400), 400);
     }
-    // 验证密码
-    const saltBuffer = Buffer.isBuffer(fullUser.salt)
-      ? fullUser.salt
-      : Buffer.from(fullUser.salt as unknown as string);
-    const passwordhashBuffer = Buffer.isBuffer(fullUser.passwordhash)
-      ? fullUser.passwordhash
-      : Buffer.from(fullUser.passwordhash as unknown as string);
-
-    const isMatch = await new Promise<boolean>((resolve) => {
-      crypto.pbkdf2(password, saltBuffer, 310000, 32, 'sha256', (err, hashedPassword) => {
-        if (err) return resolve(false);
-        try {
-          resolve(crypto.timingSafeEqual(passwordhashBuffer, hashedPassword));
-        } catch {
-          resolve(false);
-        }
-      });
-    });
-
-    if (!isMatch) {
-      return c.json(createResponse(null, 'Incorrect password', 400), 400);
-    }
+    throw error;
   }
-
-  // 3. 核心防锁死校验
-  const oauthBindings = await db
-    .select()
-    .from(userOAuthBindings)
-    .where(eq(userOAuthBindings.userid, user.id));
-
-  const passkeys = await db.select().from(userPasskeys).where(eq(userPasskeys.userid, user.id));
-
-  const securityConfig = getGlobalConfig<SecurityConfig>('security');
-  const passkeyEnabled = securityConfig?.passkey?.enabled !== false;
-
-  const hasOAuth = oauthBindings.length > 0;
-  const hasUsablePasskey = passkeys.length > 0 && passkeyEnabled;
-
-  if (!hasOAuth && !hasUsablePasskey) {
-    return c.json(
-      createResponse(
-        null,
-        passkeyEnabled
-          ? 'Must bind at least one OAuth provider or Passkey before clearing password'
-          : 'Must bind at least one OAuth provider before clearing password (Passkey login is disabled)',
-        400
-      ),
-      400
-    );
-  }
-
-  // 4. 清除密码
-  await db
-    .update(users)
-    .set({
-      passwordhash: null,
-      salt: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, user.id));
-
-  // 获取更新后的用户信息并返回
-  const updatedUser = await oneUser(user.id);
-  if (!updatedUser) {
-    return c.json(createResponse(null, 'User not found after update', 404), 404);
-  }
-
-  // 注入 hasPassword: false 并序列化返回
-  const sanitizedUser = sanitizeUserData(updatedUser);
-  const profileResponse = {
-    ...sanitizedUser,
-    hasPassword: false,
-  };
-
-  return c.json(createResponse(profileResponse, 'Password cleared successfully'), 200);
 });
 
 // 设置密码 (适用于无密码账户设置密码)

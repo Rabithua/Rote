@@ -1,97 +1,84 @@
-import { TypingText } from '@/components/animate-ui/text/typing';
-import Logo from '@/components/others/logo';
+import { Button } from '@/components/ui/button';
+import { Fingerprint } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { LoginData, OAuthProviders, RegisterData } from '../types';
+import type { AuthView, LoginData, OAuthProviders, RegisterData } from '../types';
+import { AuthMethodDivider } from './AuthMethodDivider';
 import { AuthTabs } from './AuthTabs';
-import { PasskeySetupPrompt } from './PasskeySetupPrompt';
+import { PrimarySignInOptions } from './PrimarySignInOptions';
 
 type StandardLoginPanelProps = {
-  activeTab: string;
+  activeTab: AuthView;
   allowRegistration: boolean;
-  backendStatusOk?: unknown;
   disabled: boolean;
-  isAuthenticating: boolean;
-  isRegistering: boolean;
   loginData: LoginData;
   oauthProviders?: OAuthProviders;
   passkeyEnabled: boolean;
   registerData: RegisterData;
-  showPasskeyPrompt: boolean;
-  onActiveTabChange: (value: string) => void;
+  onActiveTabChange: (value: AuthView) => void;
   onLogin: () => void;
   onLoginFieldChange: (key: keyof LoginData, value: string) => void;
   onOAuthLogin: (provider: string) => void;
-  onPasskeyLogin: () => Promise<void>;
   onRegister: () => void;
+  onPasskeyLogin: () => void;
   onRegisterFieldChange: (key: keyof RegisterData, value: string) => void;
-  onSetupPasskey: () => Promise<void>;
-  onSkipPasskey: () => void;
 };
 
-export function StandardLoginPanel({
-  activeTab,
-  allowRegistration,
-  backendStatusOk,
-  disabled,
-  isAuthenticating,
-  isRegistering,
-  loginData,
-  oauthProviders,
-  passkeyEnabled,
-  registerData,
-  showPasskeyPrompt,
-  onActiveTabChange,
-  onLogin,
-  onLoginFieldChange,
-  onOAuthLogin,
-  onPasskeyLogin,
-  onRegister,
-  onRegisterFieldChange,
-  onSetupPasskey,
-  onSkipPasskey,
-}: StandardLoginPanelProps) {
-  const { t } = useTranslation('translation', {
-    keyPrefix: 'pages.login',
-  });
+export function StandardLoginPanel(props: StandardLoginPanelProps) {
+  const { t } = useTranslation('translation', { keyPrefix: 'pages.login' });
+  const { allowRegistration, disabled, passkeyEnabled, oauthProviders, onActiveTabChange } = props;
+  const hasOAuth = Object.values(oauthProviders ?? {}).some((provider) => provider?.enabled);
+  const requestedView =
+    !allowRegistration && props.activeTab === 'password-register' ? 'primary' : props.activeTab;
+  const view = !hasOAuth && requestedView === 'primary' ? 'password-login' : requestedView;
 
-  return (
+  return view === 'primary' ? (
+    <PrimarySignInOptions
+      disabled={disabled}
+      oauthProviders={oauthProviders}
+      passkeyEnabled={passkeyEnabled}
+      onOAuthLogin={props.onOAuthLogin}
+      onPasskeyLogin={props.onPasskeyLogin}
+      onOtherWays={() => onActiveTabChange('password-login')}
+    />
+  ) : (
     <>
-      <div className="mb-4">
-        <Logo className="w-32" color="#3ECF4A" />
-      </div>
-
-      {backendStatusOk ? (
-        showPasskeyPrompt ? (
-          <PasskeySetupPrompt
-            isRegistering={isRegistering}
-            onSetup={onSetupPasskey}
-            onSkip={onSkipPasskey}
-          />
-        ) : (
-          <AuthTabs
-            activeTab={activeTab}
-            allowRegistration={allowRegistration}
+      <AuthTabs
+        activeTab={view === 'password-register' ? 'register' : 'login'}
+        allowRegistration={allowRegistration}
+        disabled={disabled}
+        loginData={props.loginData}
+        registerData={props.registerData}
+        onActiveTabChange={(tab) =>
+          onActiveTabChange(tab === 'register' ? 'password-register' : 'password-login')
+        }
+        onLogin={props.onLogin}
+        onLoginFieldChange={props.onLoginFieldChange}
+        onRegister={props.onRegister}
+        onRegisterFieldChange={props.onRegisterFieldChange}
+      />
+      {!hasOAuth && passkeyEnabled && (
+        <div className="mt-4 space-y-3">
+          <AuthMethodDivider />
+          <Button
+            variant="outline"
+            className="w-full"
             disabled={disabled}
-            isAuthenticating={isAuthenticating}
-            loginData={loginData}
-            oauthProviders={oauthProviders}
-            passkeyEnabled={passkeyEnabled}
-            registerData={registerData}
-            onActiveTabChange={onActiveTabChange}
-            onLogin={onLogin}
-            onLoginFieldChange={onLoginFieldChange}
-            onOAuthLogin={onOAuthLogin}
-            onPasskeyLogin={onPasskeyLogin}
-            onRegister={onRegister}
-            onRegisterFieldChange={onRegisterFieldChange}
-          />
-        )
-      ) : (
-        <div>
-          <div className=" ">{t('error.backendIssue')}</div>
-          <div>{JSON.stringify(backendStatusOk)}</div>
-          <TypingText className="text-sm opacity-60" text={t('error.dockerDeployment')} />
+            onClick={props.onPasskeyLogin}
+          >
+            <Fingerprint className="size-4" aria-hidden="true" />
+            {t('passkey.loginWithPasskey')}
+          </Button>
         </div>
+      )}
+      {hasOAuth && (
+        <Button
+          variant="ghost"
+          className="text-muted-foreground mt-4 w-full"
+          disabled={disabled}
+          onClick={() => onActiveTabChange('primary')}
+        >
+          {t('entry.back')}
+        </Button>
       )}
     </>
   );

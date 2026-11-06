@@ -1,10 +1,24 @@
 import crypto from 'crypto';
+import authMessages from '../../authentication/messages.json';
 import { eq, sql } from 'drizzle-orm';
 import { users } from '../../drizzle/schema';
 import { notifyUserRegistered } from '../adminHooks';
 import { trackBackgroundTask } from '../backgroundTask';
 import db from '../drizzle';
 import { DatabaseError } from './common';
+
+export class UserIdentityConflict extends DatabaseError {
+  constructor(
+    public readonly identity: 'username' | 'email',
+    originalError: unknown
+  ) {
+    super(
+      identity === 'username' ? authMessages.usernameUnavailable : authMessages.emailUnavailable,
+      originalError
+    );
+    this.name = 'UserIdentityConflict';
+  }
+}
 
 // 用户相关方法
 export async function allUser() {
@@ -54,7 +68,7 @@ export async function getSafeUser(id: string) {
 
 export async function createUser(data: {
   username: string;
-  email: string;
+  email?: string | null;
   password?: string; // OAuth 用户可能没有密码
   nickname?: string;
   role?: string;
@@ -63,8 +77,8 @@ export async function createUser(data: {
   try {
     const insertData: any = {
       username: data.username,
-      email: data.email,
-      nickname: data.nickname,
+      email: data.email || null,
+      nickname: data.nickname || data.username,
       emailVerified: false,
       role: data.role || 'user',
       avatar: data.avatar || null,
@@ -89,9 +103,12 @@ export async function createUser(data: {
     return user;
   } catch (error: any) {
     // 处理唯一约束冲突
-    if (error.code === '23505') {
-      // PostgreSQL unique violation
-      throw new DatabaseError('Username or email already exists', error);
+    const constraintError = error.cause || error;
+    if (constraintError.code === '23505') {
+      throw new UserIdentityConflict(
+        constraintError.constraint_name?.includes('email') ? 'email' : 'username',
+        error
+      );
     }
     throw new DatabaseError('Failed to create user', error);
   }

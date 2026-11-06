@@ -191,7 +191,9 @@
         "title": "授权登录",
         "message": "你将授权 Rote Web App 以 {{username}} 的身份登录 Rote iOS App",
         "button": "授权登录",
-        "switchAccount": "切换账号"
+        "switchAccount": "切换账号",
+        "switchAction": "切换",
+        "confirmAction": "授权"
       },
       "messages": {
         "loggingIn": "登录中...",
@@ -199,10 +201,13 @@
         "backendDown": "后端服务不可用",
         "registering": "注册中...",
         "registerSuccess": "注册成功",
-        "oauthLoginSuccess": "GitHub 登录成功",
-        "oauthCancelled": "已取消 GitHub 授权",
+        "oauthLoginSuccess": "第三方账号登录成功",
+        "oauthCancelled": "已取消第三方账号授权",
         "appleLoginSuccess": "Apple 登录成功",
-        "appleCancelled": "已取消 Apple 授权"
+        "appleCancelled": "已取消 Apple 授权",
+        "loginFailed": "登录失败，请检查账号信息后重试。",
+        "tokenNotFound": "登录信息已失效，请重新登录。",
+        "registerFailed": "注册失败，请重试。"
       },
       "oauth": {
         "or": "或"
@@ -242,7 +247,7 @@
       "passwordMin": "密码长度至少6位",
       "passwordMaxLength": "密码最长128位",
       "emailRequired": "请输入邮箱",
-      "emailMaxLength": "邮箱最长30位",
+      "emailMaxLength": "邮箱最长255位",
       "emailFormat": "请输入正确的邮箱格式",
       "nicknameRequired": "请输入昵称",
       "nicknameMaxLength": "昵称最长20位",
@@ -252,13 +257,35 @@
         "setup": "设置通行密钥",
         "skip": "暂不设置",
         "settingUp": "设置中...",
-        "loginWithPasskey": "使用通行密钥登录",
+        "loginWithPasskey": "使用 Passkey 登录",
         "loginSuccess": "登录成功",
         "loginFailed": "通行密钥登录失败",
-        "registerSuccess": "通行密钥注册成功",
-        "registerFailed": "通行密钥注册失败",
-        "cancelled": "操作已取消",
-        "passwordOptionalHint": "可以跳过密码设置，使用通行密钥注册。"
+        "registerSuccess": "通行密钥已添加",
+        "registerFailed": "添加通行密钥失败",
+        "accountChanged": "登录账号已变更，请重新添加通行密钥。",
+        "cancelled": "操作已取消"
+      },
+      "entry": {
+        "or": "或者",
+        "continueWithProvider": "使用 {{provider}} 继续",
+        "otherWays": "其他方式",
+        "back": "返回",
+        "backToLogin": "返回登录",
+        "usernameHint": "1–20 位字母、数字、下划线或连字符，用于你的个人主页。",
+        "oauthCreateDescription": "{{provider}} 授权已完成，确认用户名即可开始记录。",
+        "continue": "继续"
+      },
+      "errors": {
+        "oauthRegistrationExpired": "注册授权已过期，请重新使用第三方账号继续。",
+        "oauthRegistrationInvalid": "注册授权无效，请重新登录。",
+        "oauthRegistrationConflict": "该第三方账号已完成注册，请重新登录。",
+        "registrationDisabled": "当前站点暂未开放注册。",
+        "oauthDisabled": "此第三方登录方式已关闭，请选择其他方式。",
+        "passkeyDisabled": "通行密钥已关闭，请选择其他方式。",
+        "usernameUnavailable": "这个用户名已被使用，请换一个。",
+        "oauthRegistrationFailed": "未能完成注册，请重试。",
+        "registrationInvalid": "请检查填写的注册资料。",
+        "emailUnavailable": "这个邮箱已被使用，请登录已有账号。"
       }
     },
     "oauthAuthorize": {

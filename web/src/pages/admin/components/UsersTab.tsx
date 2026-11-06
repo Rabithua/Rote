@@ -50,7 +50,7 @@ import UserPermissionsDialog from './UserPermissionsDialog';
 interface User {
   id: string;
   username: string;
-  email: string;
+  email: string | null;
   nickname: string | null;
   avatar: string | null;
   role: string;

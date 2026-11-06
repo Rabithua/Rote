@@ -201,7 +201,9 @@
         "title": "Authorize Login",
         "message": "You are about to authorize Rote Web App to sign in to Rote iOS App as {{username}}",
         "button": "Authorize Login",
-        "switchAccount": "Switch Account"
+        "switchAccount": "Switch Account",
+        "switchAction": "Switch",
+        "confirmAction": "Authorize"
       },
       "messages": {
         "loggingIn": "Logging in...",
@@ -209,10 +211,13 @@
         "backendDown": "Backend service is unavailable",
         "registering": "Registering...",
         "registerSuccess": "Registration successful",
-        "oauthLoginSuccess": "GitHub login successful",
-        "oauthCancelled": "GitHub authorization cancelled",
+        "oauthLoginSuccess": "Signed in successfully",
+        "oauthCancelled": "Provider authorization cancelled",
         "appleLoginSuccess": "Apple login successful",
-        "appleCancelled": "Apple authorization cancelled"
+        "appleCancelled": "Apple authorization cancelled",
+        "loginFailed": "Sign-in failed. Check your details and try again.",
+        "tokenNotFound": "Your sign-in information expired. Please sign in again.",
+        "registerFailed": "Could not sign up. Please try again."
       },
       "oauth": {
         "or": "OR"
@@ -252,7 +257,7 @@
       "passwordMin": "Password must be at least 6 characters",
       "passwordMaxLength": "Password cannot exceed 128 characters",
       "emailRequired": "Email is required",
-      "emailMaxLength": "Email cannot exceed 30 characters",
+      "emailMaxLength": "Email cannot exceed 255 characters",
       "emailFormat": "Invalid email format",
       "nicknameRequired": "Nickname is required",
       "nicknameMaxLength": "Nickname cannot exceed 20 characters",
@@ -265,10 +270,32 @@
         "loginWithPasskey": "Login with Passkey",
         "loginSuccess": "Login successful",
         "loginFailed": "Passkey login failed",
-        "registerSuccess": "Passkey registered successfully",
-        "registerFailed": "Passkey registration failed",
-        "cancelled": "Operation cancelled",
-        "passwordOptionalHint": "You can skip the password and register with a passkey."
+        "registerSuccess": "Passkey added",
+        "registerFailed": "Could not add passkey",
+        "accountChanged": "Your signed-in account has changed. Please add the passkey again.",
+        "cancelled": "Operation cancelled"
+      },
+      "entry": {
+        "or": "or",
+        "continueWithProvider": "Continue with {{provider}}",
+        "otherWays": "Other ways",
+        "back": "Back",
+        "backToLogin": "Back to sign in",
+        "usernameHint": "1–20 letters, numbers, underscores, or hyphens. This appears in your profile URL.",
+        "oauthCreateDescription": "You’re connected with {{provider}}. Confirm a username to start writing.",
+        "continue": "Continue"
+      },
+      "errors": {
+        "oauthRegistrationExpired": "Your sign-up authorization expired. Continue with your provider again.",
+        "oauthRegistrationInvalid": "This sign-up authorization is invalid. Please sign in again.",
+        "oauthRegistrationConflict": "This provider account is already registered. Please sign in again.",
+        "registrationDisabled": "Registration is currently closed.",
+        "oauthDisabled": "This sign-in provider is disabled. Choose another way.",
+        "passkeyDisabled": "Passkeys are disabled. Choose another way.",
+        "usernameUnavailable": "That username is taken. Please choose another.",
+        "oauthRegistrationFailed": "Could not complete sign-up. Please try again.",
+        "registrationInvalid": "Please check your sign-up details.",
+        "emailUnavailable": "That email is already in use. Sign in to your existing account."
       }
     },
     "oauthAuthorize": {
