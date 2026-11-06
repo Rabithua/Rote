@@ -17,7 +17,6 @@ import '../../utils/oauth/providers';
 import { completeOAuthBinding } from '../../oauthAccounts/binding';
 import { completeOAuthLogin } from '../../oauthAccounts/login';
 import { OAuthUnbindWouldPreventLogin } from '../../oauthAccounts/errors';
-import oauthMessages from '../../oauthAccounts/messages.json';
 import {
   validateRedirectUrl,
   extractOptionalStateData,
@@ -375,16 +374,6 @@ oauthRouter.delete('/:provider/bind', authenticateJWT, async (c: HonoContext) =>
     const hasBinding = existingBindings.some((binding) => binding.provider === providerName);
     if (!hasBinding) {
       return c.json(createResponse(null, `您尚未绑定 ${providerName} 账户`, 400), 400);
-    }
-
-    // 检查解绑后是否还有其他登录方式
-    const otherBindings = existingBindings.filter((binding) => binding.provider !== providerName);
-    const hasPassword = fullUser.passwordhash && fullUser.salt;
-    const hasOtherBindings = otherBindings.length > 0;
-
-    // 如果没有密码且没有其他绑定，解绑后将无法登录
-    if (!hasPassword && !hasOtherBindings) {
-      return c.json(createResponse(null, oauthMessages.unbindWouldPreventLogin, 400), 400);
     }
 
     // 解绑 OAuth 提供商

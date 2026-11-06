@@ -1,0 +1,77 @@
+{
+  "zh": {
+    "title": "登录与注册预览",
+    "notice": "本地 Mock · 不连接真实账号",
+    "scenario": "验收场景",
+    "theme": "外观",
+    "light": "浅色",
+    "dark": "深色",
+    "restart": "重新开始",
+    "open": "独立打开",
+    "hint": "用户名 taken 会提示已占用；其他合法用户名可完成模拟注册。通行密钥和第三方授权均为模拟。",
+    "success": "登录成功",
+    "successHint": "模拟流程已完成。新无密码账号的邮箱为空。",
+    "back": "返回登录页",
+    "scenarios": {
+      "all": "全部登录方式",
+      "oauth": "仅第三方登录",
+      "passkey": "仅通行密钥",
+      "legacy": "仅传统方式",
+      "closed": "关闭注册",
+      "unsupported": "设备不支持通行密钥",
+      "cancel": "取消通行密钥",
+      "existing": "OAuth 已有账号",
+      "expired": "OAuth 注册凭证过期"
+    }
+  },
+  "en": {
+    "title": "Sign-in and registration preview",
+    "notice": "Local mock · No real accounts",
+    "scenario": "Scenario",
+    "theme": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "restart": "Restart",
+    "open": "Open separately",
+    "hint": "The username taken triggers a conflict; other valid usernames complete the mock registration. Passkeys and OAuth are simulated.",
+    "success": "Signed in",
+    "successHint": "The simulated flow is complete. New passwordless accounts have no email address.",
+    "back": "Back to sign-in",
+    "scenarios": {
+      "all": "All methods",
+      "oauth": "OAuth only",
+      "passkey": "Passkey only",
+      "legacy": "Traditional only",
+      "closed": "Registration disabled",
+      "unsupported": "Passkeys unsupported",
+      "cancel": "Cancel passkey",
+      "existing": "Existing OAuth account",
+      "expired": "Expired OAuth registration"
+    }
+  },
+  "ja": {
+    "title": "ログインと登録のプレビュー",
+    "notice": "ローカル Mock · 実際のアカウントには接続しません",
+    "scenario": "確認シナリオ",
+    "theme": "外観",
+    "light": "ライト",
+    "dark": "ダーク",
+    "restart": "最初から",
+    "open": "別画面で開く",
+    "hint": "ユーザー名 taken は使用済みとして扱われます。他の有効な名前で模擬登録できます。パスキーと OAuth はシミュレーションです。",
+    "success": "ログイン完了",
+    "successHint": "模擬フローが完了しました。新しいパスワードレスアカウントにメールアドレスはありません。",
+    "back": "ログイン画面へ",
+    "scenarios": {
+      "all": "すべての方法",
+      "oauth": "OAuth のみ",
+      "passkey": "パスキーのみ",
+      "legacy": "従来の方法のみ",
+      "closed": "登録停止中",
+      "unsupported": "パスキー非対応",
+      "cancel": "パスキーをキャンセル",
+      "existing": "既存の OAuth アカウント",
+      "expired": "OAuth 登録の有効期限切れ"
+    }
+  }
+}

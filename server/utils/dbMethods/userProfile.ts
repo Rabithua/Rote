@@ -22,7 +22,7 @@ export async function editMyProfile(
   }
 ): Promise<{
   id: string;
-  email: string;
+  email: string | null;
   username: string;
   nickname: string | null;
   description: string | null;
@@ -150,7 +150,7 @@ export async function getUserInfoByUsername(username: string): Promise<{
 export async function getMyProfile(userId: string): Promise<{
   id: string;
   certified: boolean;
-  email: string;
+  email: string | null;
   username: string;
   nickname: string | null;
   description: string | null;

@@ -18,12 +18,20 @@ vi.unmock('react-dom/client');
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: translate, i18n: { language: 'en' } }),
 }));
-vi.mock('@/utils/api', () => ({ get, post, getApiUrl: () => '/v2/api' }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
+vi.mock('@/utils/api', () => ({
+  get,
+  post,
+  publicGet: get,
+  publicPost: post,
+  getApiUrl: () => '/v2/api',
+}));
 vi.mock('@/utils/setupApi', () => ({
   getSiteStatus: async () => ({ data: { passkey: { enabled: true } } }),
 }));
 vi.mock('@/utils/passkey', () => ({
   authenticateWithPasskey,
+  isPasskeySupported: () => true,
   registerPasskey: vi.fn(),
   registerWithPasskey: vi.fn(),
   listPasskeys: vi.fn(),
@@ -166,6 +174,23 @@ describe('iOS login handoff', () => {
     expect(authorizeRender).not.toHaveBeenCalled();
     expect(screen.getByRole('status')).toHaveTextContent('loading');
   });
+
+  it.each(['error', 'cancelled'])(
+    'preserves iOS handoff when retrying an OAuth %s callback',
+    async (status) => {
+      renderLogin(`/login?type=ioslogin&oauth=${status}&message=failed&redirect=%2Fexplore`);
+      await waitFor(() =>
+        expect(screen.getByTestId('location')).toHaveTextContent(
+          '/login?redirect=%2Fexplore&type=ioslogin'
+        )
+      );
+      await screen.findByRole('button', { name: 'password login' });
+      await loginWithPassword();
+      await waitFor(() => expect(authService.getAccessToken()).toBe(tokens.accessToken));
+      expect(screen.getByRole('status')).toHaveTextContent('loading');
+      expect(authorizeRender).not.toHaveBeenCalled();
+    }
+  );
 
   it('continues navigating ordinary web logins to their requested destination', async () => {
     renderLogin('/login?redirect=%2Fexplore');

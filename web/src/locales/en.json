@@ -209,10 +209,13 @@
         "backendDown": "Backend service is unavailable",
         "registering": "Registering...",
         "registerSuccess": "Registration successful",
-        "oauthLoginSuccess": "GitHub login successful",
-        "oauthCancelled": "GitHub authorization cancelled",
+        "oauthLoginSuccess": "Signed in successfully",
+        "oauthCancelled": "Provider authorization cancelled",
         "appleLoginSuccess": "Apple login successful",
-        "appleCancelled": "Apple authorization cancelled"
+        "appleCancelled": "Apple authorization cancelled",
+        "loginFailed": "Sign-in failed. Check your details and try again.",
+        "tokenNotFound": "Your sign-in information expired. Please sign in again.",
+        "registerFailed": "Could not sign up. Please try again."
       },
       "oauth": {
         "or": "OR"
@@ -252,7 +255,7 @@
       "passwordMin": "Password must be at least 6 characters",
       "passwordMaxLength": "Password cannot exceed 128 characters",
       "emailRequired": "Email is required",
-      "emailMaxLength": "Email cannot exceed 30 characters",
+      "emailMaxLength": "Email cannot exceed 255 characters",
       "emailFormat": "Invalid email format",
       "nicknameRequired": "Nickname is required",
       "nicknameMaxLength": "Nickname cannot exceed 20 characters",
@@ -269,6 +272,41 @@
         "registerFailed": "Passkey registration failed",
         "cancelled": "Operation cancelled",
         "passwordOptionalHint": "You can skip the password and register with a passkey."
+      },
+      "entry": {
+        "title": "Welcome to Rote",
+        "description": "Choose a way to continue your story.",
+        "continueWithProvider": "Continue with {{provider}}",
+        "newHere": "New to Rote?",
+        "createWithPasskey": "Create an account with a passkey",
+        "otherWays": "Other ways",
+        "back": "Back",
+        "backToLogin": "Back to sign in",
+        "createTitle": "Create your account",
+        "createDescription": "Choose a username, then create a passkey with your face, fingerprint, or device lock.",
+        "createAccount": "Create account",
+        "usernameHint": "1–20 letters, numbers, underscores, or hyphens. This appears in your profile URL.",
+        "emailLoginTitle": "Sign in with a password",
+        "emailLoginDescription": "Use your existing username or email and password.",
+        "emailRegisterTitle": "Sign up with email",
+        "emailRegisterDescription": "Create an account using your email and a password.",
+        "registerWithEmail": "Sign up with email and password",
+        "oauthCreateTitle": "Choose your username",
+        "oauthCreateDescription": "You’re connected with {{provider}}. Confirm a username to start writing."
+      },
+      "errors": {
+        "oauthRegistrationExpired": "Your sign-up authorization expired. Continue with your provider again.",
+        "oauthRegistrationInvalid": "This sign-up authorization is invalid. Please sign in again.",
+        "oauthRegistrationConflict": "This provider account is already registered. Please sign in again.",
+        "registrationDisabled": "Registration is currently closed.",
+        "oauthDisabled": "This sign-in provider is disabled. Choose another way.",
+        "passkeyDisabled": "Passkeys are disabled. Choose another way.",
+        "usernameUnavailable": "That username is taken. Please choose another.",
+        "oauthRegistrationFailed": "Could not complete sign-up. Please try again.",
+        "registrationExpired": "Sign-up expired. Please create your passkey again.",
+        "passkeyVerificationFailed": "Could not verify your passkey. Please try again.",
+        "registrationInvalid": "Please check your sign-up details.",
+        "emailUnavailable": "That email is already in use. Sign in to your existing account."
       }
     },
     "oauthAuthorize": {

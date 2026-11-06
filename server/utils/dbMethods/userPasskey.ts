@@ -1,5 +1,10 @@
 import { and, count, eq } from 'drizzle-orm';
-import { users, userOAuthBindings, userPasskeys } from '../../drizzle/schema';
+import { userPasskeys } from '../../drizzle/schema';
+import {
+  hasRemainingLoginMethod,
+  LastLoginMethodError,
+  lockUserLoginMethods,
+} from '../../authentication/loginMethods';
 import db from '../drizzle';
 import { DatabaseError } from './common';
 
@@ -73,17 +78,23 @@ export async function updatePasskeyCounter(credentialId: string, newCounter: num
 
 export async function deleteUserPasskey(id: string, userId: string) {
   try {
-    const result = await db
-      .delete(userPasskeys)
-      .where(and(eq(userPasskeys.id, id), eq(userPasskeys.userid, userId)))
-      .returning();
-    if (result.length === 0) {
-      throw new DatabaseError('Passkey not found or access denied');
-    }
-    return result[0];
-  } catch (error: any) {
-    if (error instanceof DatabaseError) throw error;
-    throw new DatabaseError(`Failed to delete passkey`, error);
+    return await db.transaction(async (transaction) => {
+      const state = await lockUserLoginMethods(transaction, userId);
+      if (!state || !state.passkeys.some((passkey) => passkey.id === id)) {
+        throw new DatabaseError('Passkey not found or access denied');
+      }
+      if (!hasRemainingLoginMethod(state.methods, { type: 'passkey', id })) {
+        throw new LastLoginMethodError();
+      }
+      const [removed] = await transaction
+        .delete(userPasskeys)
+        .where(and(eq(userPasskeys.id, id), eq(userPasskeys.userid, userId)))
+        .returning();
+      return removed;
+    });
+  } catch (error) {
+    if (error instanceof DatabaseError || error instanceof LastLoginMethodError) throw error;
+    throw new DatabaseError('Failed to delete passkey', error);
   }
 }
 
@@ -96,31 +107,5 @@ export async function getUserPasskeyCount(userId: string): Promise<number> {
     return result?.count || 0;
   } catch (error: any) {
     throw new DatabaseError(`Failed to count passkeys for user: ${userId}`, error);
-  }
-}
-
-export async function hasOtherLoginMethods(userId: string): Promise<boolean> {
-  try {
-    const [fullUser] = await db
-      .select({ passwordhash: users.passwordhash, salt: users.salt })
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
-    const hasPassword = Boolean(fullUser?.passwordhash && fullUser?.salt);
-
-    const [oauthBinding] = await db
-      .select({ id: userOAuthBindings.id })
-      .from(userOAuthBindings)
-      .where(eq(userOAuthBindings.userid, userId))
-      .limit(1);
-
-    const hasOAuth = Boolean(oauthBinding);
-
-    const passkeyCount = await getUserPasskeyCount(userId);
-
-    return hasPassword || hasOAuth || passkeyCount > 1;
-  } catch (error: any) {
-    throw new DatabaseError(`Failed to check login methods for user: ${userId}`, error);
   }
 }

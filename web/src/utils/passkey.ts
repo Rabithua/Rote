@@ -3,7 +3,7 @@ import {
   startAuthentication,
   browserSupportsWebAuthn,
 } from '@simplewebauthn/browser';
-import { get, post, del } from './api';
+import { get, post, publicPost, del } from './api';
 
 export function isPasskeySupported(): boolean {
   return browserSupportsWebAuthn();
@@ -11,18 +11,16 @@ export function isPasskeySupported(): boolean {
 
 export async function registerWithPasskey(data: {
   username: string;
-  email: string;
-  nickname: string;
 }): Promise<{ user: any; accessToken: string; refreshToken: string }> {
   // Step 1: validate user data, get passkey options
-  const optionsRes = await post('/auth/register/passkey/options', data);
+  const optionsRes = await publicPost('/auth/register/passkey/options', data);
   const { options, registrationToken } = optionsRes.data;
 
   // Step 2: browser WebAuthn ceremony
   const credential = await startRegistration({ optionsJSON: options });
 
   // Step 3: verify passkey + create account atomically
-  const verifyRes = await post('/auth/register/passkey/verify', {
+  const verifyRes = await publicPost('/auth/register/passkey/verify', {
     credential,
     registrationToken,
     deviceName: getDeviceName(),
@@ -51,14 +49,14 @@ export async function authenticateWithPasskey(): Promise<{
   refreshToken: string;
 }> {
   // Get authentication options from backend
-  const res = await post('/auth/passkey/authenticate/options', {});
+  const res = await publicPost('/auth/passkey/authenticate/options', {});
   const { options, challengeKey } = res.data;
 
   // Trigger browser WebAuthn UI
   const credential = await startAuthentication({ optionsJSON: options });
 
   // Verify with backend and get tokens
-  const verifyRes = await post('/auth/passkey/authenticate/verify', {
+  const verifyRes = await publicPost('/auth/passkey/authenticate/verify', {
     credential,
     challengeKey,
   });

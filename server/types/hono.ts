@@ -7,7 +7,7 @@ export type SafeUser = {
   emailVerified: boolean;
   passwordhash: Buffer | null;
   salt: Buffer | null;
-  email: string;
+  email: string | null;
   username: string;
   nickname: string | null;
   description: string | null;

@@ -9,6 +9,7 @@ import {
   type AuthenticationResponseJSON,
 } from '@simplewebauthn/server';
 import { Hono } from 'hono';
+import { LastLoginMethodError } from '../../authentication/loginMethods';
 import type { User } from '../../drizzle/schema';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { SecurityConfig, SiteConfig } from '../../types/config';
@@ -19,7 +20,6 @@ import {
   deleteUserPasskey,
   getPasskeyByCredentialId,
   getUserPasskeys,
-  hasOtherLoginMethods,
   updatePasskeyCounter,
 } from '../../utils/dbMethods';
 import { oneUser } from '../../utils/dbMethods/user';
@@ -263,20 +263,14 @@ passkeyRouter.delete('/:id', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const id = c.req.param('id');
 
-  // Check if this is the last login method
-  const canDelete = await hasOtherLoginMethods(user.id);
-  if (!canDelete) {
-    return c.json(
-      createResponse(
-        null,
-        'Cannot delete passkey: it is your only login method. Add a password or another passkey first.',
-        400
-      ),
-      400
-    );
+  try {
+    await deleteUserPasskey(id, user.id);
+  } catch (error) {
+    if (error instanceof LastLoginMethodError) {
+      return c.json(createResponse(null, error.message, 400), 400);
+    }
+    throw error;
   }
-
-  await deleteUserPasskey(id, user.id);
   return c.json(createResponse(null, 'Passkey deleted successfully'), 200);
 });
 

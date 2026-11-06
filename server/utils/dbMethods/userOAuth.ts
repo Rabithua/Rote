@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { userOAuthBindings, users } from '../../drizzle/schema';
 import { oauthMergeAuthorizations } from '../../drizzle/accountMergeSchema';
 import { AccountMergeError } from '../../accountMerge/errors';
+import { hasRemainingLoginMethod, lockUserLoginMethods } from '../../authentication/loginMethods';
 import { OAuthUnbindWouldPreventLogin } from '../../oauthAccounts/errors';
 import db from '../drizzle';
 import { DatabaseError } from './common';
@@ -115,23 +116,13 @@ export async function bindOAuthProvider(
 export async function unbindOAuthProvider(userId: string, provider: string): Promise<void> {
   try {
     await db.transaction(async (tx) => {
-      const [user] = await tx
-        .select({ id: users.id, passwordhash: users.passwordhash, salt: users.salt })
-        .from(users)
-        .where(eq(users.id, userId))
-        .for('update');
-      if (!user) throw new AccountMergeError('oauth_merge_conflict');
-      const bindings = await tx
-        .select({ provider: userOAuthBindings.provider })
-        .from(userOAuthBindings)
-        .where(eq(userOAuthBindings.userid, userId));
+      const state = await lockUserLoginMethods(tx, userId);
+      if (!state) throw new AccountMergeError('oauth_merge_conflict');
+      const { bindings } = state;
       if (!bindings.some((binding) => binding.provider === provider)) {
         throw new DatabaseError(`User does not have ${provider} OAuth binding`);
       }
-      if (
-        !(user.passwordhash && user.salt) &&
-        !bindings.some((binding) => binding.provider !== provider)
-      ) {
+      if (!hasRemainingLoginMethod(state.methods, { type: 'oauth', provider })) {
         throw new OAuthUnbindWouldPreventLogin();
       }
       const removed = await tx

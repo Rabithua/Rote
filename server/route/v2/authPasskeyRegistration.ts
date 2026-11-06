@@ -5,22 +5,36 @@ import {
   type RegistrationResponseJSON,
 } from '@simplewebauthn/server';
 import { Hono } from 'hono';
-import { eq, or } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { users, userPasskeys } from '../../drizzle/schema';
-import type { SecurityConfig, SiteConfig, UiConfig } from '../../types/config';
+import type { SiteConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { notifyUserRegistered } from '../../utils/adminHooks';
 import { trackBackgroundTask } from '../../utils/backgroundTask';
-import { getConfig, getGlobalConfig } from '../../utils/config';
+import { getConfig } from '../../utils/config';
 import db from '../../utils/drizzle';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
-import { RegisterDataZod } from '../../utils/zod';
+import { PasskeyRegisterDataZod } from '../../utils/zod';
+import messages from '../../authentication/messages.json';
+import {
+  AuthenticationPolicyError,
+  readAuthenticationPolicy,
+  requireAccountRegistration,
+} from '../../authentication/policy';
 
 const passkeyRegistrationRouter = new Hono<{ Variables: HonoVariables }>();
 
+passkeyRegistrationRouter.onError((error, c) => {
+  if (!(error instanceof AuthenticationPolicyError)) throw error;
+  return c.json(
+    { ...createResponse(null, error.message, error.status), errorCode: error.code },
+    error.status
+  );
+});
+
 interface PendingRegistration {
-  userData: { username: string; email: string; nickname: string; tempUserId: string };
+  userData: { username: string; tempUserId: string };
   challenge: string;
   expiresAt: number;
 }
@@ -53,30 +67,35 @@ function getAndDeletePendingRegistration(token: string) {
 
 // 无密码注册 - Step 1: 验证用户数据，生成 passkey 注册 options
 passkeyRegistrationRouter.post('/options', async (c: HonoContext) => {
-  const uiConfig = await getConfig<UiConfig>('ui');
-  if (uiConfig && uiConfig.allowRegistration === false) {
-    return c.json(createResponse(null, 'Registration is currently disabled'), 403);
+  const policy = await db.transaction(readAuthenticationPolicy);
+  requireAccountRegistration(policy, 'passkey');
+  const securityConfig = policy.security;
+
+  const parsed = PasskeyRegisterDataZod.safeParse(await c.req.json());
+  if (!parsed.success) {
+    return c.json(
+      {
+        ...createResponse(null, parsed.error.issues[0].message, 400),
+        errorCode: 'username_invalid',
+      },
+      400
+    );
   }
+  const { username } = parsed.data;
 
-  const securityConfig = getGlobalConfig<SecurityConfig>('security');
-  if (securityConfig?.passkey?.enabled === false) {
-    return c.json(createResponse(null, 'Passkey is disabled', 400), 400);
-  }
-
-  const body = await c.req.json();
-  const { username, email, nickname } = body;
-
-  // Validate user data (no password)
-  RegisterDataZod.parse({ username, email, nickname, password: undefined });
-
-  // Check username/email uniqueness early
   const existing = await db
     .select({ id: users.id })
     .from(users)
-    .where(or(eq(users.username, username), eq(users.email, email)))
+    .where(eq(users.username, username))
     .limit(1);
   if (existing.length > 0) {
-    return c.json(createResponse(null, 'Username or email already exists', 409), 409);
+    return c.json(
+      {
+        ...createResponse(null, messages.usernameUnavailable, 409),
+        errorCode: 'username_unavailable',
+      },
+      409
+    );
   }
 
   // Generate temp user ID for WebAuthn
@@ -94,8 +113,9 @@ passkeyRegistrationRouter.post('/options', async (c: HonoContext) => {
   const options = await generateRegistrationOptions({
     rpName,
     rpID: rpId,
-    userName: email || username,
-    userDisplayName: nickname || username,
+    userID: new TextEncoder().encode(tempUserId),
+    userName: username,
+    userDisplayName: username,
     excludeCredentials: [],
     authenticatorSelection: {
       residentKey: 'required',
@@ -105,11 +125,7 @@ passkeyRegistrationRouter.post('/options', async (c: HonoContext) => {
 
   // Store pending registration
   const registrationToken = crypto.randomUUID();
-  storePendingRegistration(
-    registrationToken,
-    { username, email, nickname, tempUserId },
-    options.challenge
-  );
+  storePendingRegistration(registrationToken, { username, tempUserId }, options.challenge);
 
   return c.json(
     createResponse({
@@ -122,6 +138,10 @@ passkeyRegistrationRouter.post('/options', async (c: HonoContext) => {
 
 // 无密码注册 - Step 2: 验证 passkey，创建账号
 passkeyRegistrationRouter.post('/verify', async (c: HonoContext) => {
+  const policy = await db.transaction(readAuthenticationPolicy);
+  requireAccountRegistration(policy, 'passkey');
+  const securityConfig = policy.security;
+
   const body = await c.req.json();
   const { credential, registrationToken, deviceName } = body as {
     credential: RegistrationResponseJSON;
@@ -131,13 +151,18 @@ passkeyRegistrationRouter.post('/verify', async (c: HonoContext) => {
 
   const pending = getAndDeletePendingRegistration(registrationToken);
   if (!pending) {
-    return c.json(createResponse(null, 'Registration expired or invalid', 400), 400);
+    return c.json(
+      {
+        ...createResponse(null, messages.registrationExpired, 400),
+        errorCode: 'registration_expired',
+      },
+      400
+    );
   }
 
   // Get passkey config for origin/RP verification
   const origin = c.req.header('origin');
   const siteConfig = await getConfig<SiteConfig>('site');
-  const securityConfig = getGlobalConfig<SecurityConfig>('security');
   const passkeyCfg = securityConfig?.passkey;
   const frontendUrl = origin || siteConfig?.frontendUrl || 'http://localhost:3001';
   const url = new URL(frontendUrl);
@@ -154,50 +179,80 @@ passkeyRegistrationRouter.post('/verify', async (c: HonoContext) => {
   });
 
   if (!verification.verified || !verification.registrationInfo) {
-    return c.json(createResponse(null, 'Passkey verification failed', 400), 400);
+    return c.json(
+      {
+        ...createResponse(null, messages.passkeyVerificationFailed, 400),
+        errorCode: 'passkey_verification_failed',
+      },
+      400
+    );
   }
 
   const { credential: regCredential } = verification.registrationInfo;
   const { userData } = pending;
 
   // Create user + passkey atomically in a transaction
-  const { defaultUserRole } = (await getConfig<UiConfig>('ui')) || {};
+  const result = await db
+    .transaction(async (tx) => {
+      const currentPolicy = await readAuthenticationPolicy(tx);
+      requireAccountRegistration(currentPolicy, 'passkey');
+      // Create user (no password)
+      const [user] = await tx
+        .insert(users)
+        .values({
+          id: userData.tempUserId,
+          username: userData.username,
+          email: null,
+          nickname: userData.username,
+          passwordhash: null,
+          salt: null,
+          role: currentPolicy.ui?.defaultUserRole || 'user',
+          emailVerified: false,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
 
-  const result = await db.transaction(async (tx) => {
-    // Create user (no password)
-    const salt = crypto.randomBytes(16);
-    const userId = crypto.randomUUID();
-    const [user] = await tx
-      .insert(users)
-      .values({
-        id: userId,
-        username: userData.username,
-        email: userData.email,
-        nickname: userData.nickname,
-        passwordhash: null,
-        salt,
-        role: defaultUserRole || 'user',
-        emailVerified: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
+      // Create passkey
+      const [passkey] = await tx
+        .insert(userPasskeys)
+        .values({
+          userid: user.id,
+          credentialId: regCredential.id,
+          publicKey: Buffer.from(regCredential.publicKey),
+          counter: regCredential.counter,
+          transports: credential.response?.transports as string[] | undefined,
+          deviceName: deviceName || '',
+        })
+        .returning();
 
-    // Create passkey
-    const [passkey] = await tx
-      .insert(userPasskeys)
-      .values({
-        userid: user.id,
-        credentialId: regCredential.id,
-        publicKey: Buffer.from(regCredential.publicKey),
-        counter: regCredential.counter,
-        transports: credential.response?.transports as string[] | undefined,
-        deviceName: deviceName || '',
-      })
-      .returning();
-
-    return { user, passkey };
-  });
+      return { user, passkey };
+    })
+    .catch(
+      (error: {
+        code?: string;
+        constraint_name?: string;
+        cause?: { code?: string; constraint_name?: string };
+      }) => {
+        const constraintError = error.cause || error;
+        if (
+          constraintError.code === '23505' &&
+          constraintError.constraint_name === 'users_username_unique'
+        ) {
+          return null;
+        }
+        throw error;
+      }
+    );
+  if (!result) {
+    return c.json(
+      {
+        ...createResponse(null, messages.usernameUnavailable, 409),
+        errorCode: 'username_unavailable',
+      },
+      409
+    );
+  }
 
   trackBackgroundTask(notifyUserRegistered(result.user), 'admin_hook_user_registered_failed');
 

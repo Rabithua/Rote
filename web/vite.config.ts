@@ -6,6 +6,7 @@ import fs from 'fs';
 import { defineConfig } from 'vitest/config';
 import { VitePWA } from 'vite-plugin-pwa';
 import { imageLoadingPreviewServer } from './dev/imageLoadingPreviewServer';
+import { authPreviewServer } from './dev/authPreviewServer';
 import { deploymentRevision } from './scripts/deployment/revision';
 dotenv.config();
 // https://vite.dev/config/
@@ -19,6 +20,7 @@ export default defineConfig({
   plugins: [
     deploymentRevision(process.env.ROTE_BUILD_REVISION),
     imageLoadingPreviewServer(),
+    authPreviewServer(),
     {
       name: 'serve-aasa',
       configureServer(server) {
@@ -51,7 +53,11 @@ export default defineConfig({
       },
       srcDir: 'src',
       filename: 'sw.js',
-      devOptions: { enabled: process.env.ROTE_IMAGE_LOADING_PREVIEW !== '1', type: 'module' },
+      devOptions: {
+        enabled:
+          process.env.ROTE_IMAGE_LOADING_PREVIEW !== '1' && process.env.ROTE_AUTH_PREVIEW !== '1',
+        type: 'module',
+      },
       includeAssets: [
         'ico.ico',
         'ico.svg',

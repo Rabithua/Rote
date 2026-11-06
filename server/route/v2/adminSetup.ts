@@ -185,7 +185,7 @@ adminSetupRouter.post('/setup', async (c: HonoContext) => {
     let adminUser: {
       id: string;
       username: string;
-      email: string;
+      email: string | null;
       role: string;
     };
     let reusedExistingAdmin = false;
@@ -262,7 +262,7 @@ adminSetupRouter.post('/setup', async (c: HonoContext) => {
         ? 'System initialization completed using the existing admin user. The existing password was not changed.'
         : 'System initialization completed successfully',
       data: {
-        adminUser,
+        adminUser: { ...adminUser, email: setupData.admin.email },
         generatedKeys: buildSetupGeneratedKeysResponse(securityConfig, notificationConfig),
       },
     };

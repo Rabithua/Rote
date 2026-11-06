@@ -1,0 +1,9 @@
+{
+  "oauth_registration_expired": "This registration has expired. Please authorize your account again.",
+  "registration_disabled": "Registration is currently disabled.",
+  "oauth_disabled": "This sign-in provider is currently disabled.",
+  "username_unavailable": "This username is already in use.",
+  "username_invalid": "Please choose a valid username.",
+  "oauth_registration_conflict": "This account is already registered. Please sign in again.",
+  "oauth_registration_invalid": "The registration request is invalid."
+}

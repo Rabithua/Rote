@@ -146,7 +146,7 @@ export interface DashboardStats {
   topUsersByNotes: Array<{
     id: string;
     username: string;
-    email: string;
+    email: string | null;
     nickname: string | null;
     avatar: string | null;
     roteCount: number;
@@ -156,7 +156,7 @@ export interface DashboardStats {
   topUsersByApi: Array<{
     id: string;
     username: string;
-    email: string;
+    email: string | null;
     nickname: string | null;
     avatar: string | null;
     apiCallCount: number;
@@ -164,7 +164,7 @@ export interface DashboardStats {
   topUsersByStorage: Array<{
     id: string;
     username: string;
-    email: string;
+    email: string | null;
     nickname: string | null;
     avatar: string | null;
     storageUsage: number | string;
@@ -172,7 +172,7 @@ export interface DashboardStats {
   topUsersByTokenUsage: Array<{
     id: string;
     username: string;
-    email: string;
+    email: string | null;
     nickname: string | null;
     avatar: string | null;
     tokenUsage: number | string;

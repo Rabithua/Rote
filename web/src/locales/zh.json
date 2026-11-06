@@ -199,10 +199,13 @@
         "backendDown": "后端服务不可用",
         "registering": "注册中...",
         "registerSuccess": "注册成功",
-        "oauthLoginSuccess": "GitHub 登录成功",
-        "oauthCancelled": "已取消 GitHub 授权",
+        "oauthLoginSuccess": "第三方账号登录成功",
+        "oauthCancelled": "已取消第三方账号授权",
         "appleLoginSuccess": "Apple 登录成功",
-        "appleCancelled": "已取消 Apple 授权"
+        "appleCancelled": "已取消 Apple 授权",
+        "loginFailed": "登录失败，请检查账号信息后重试。",
+        "tokenNotFound": "登录信息已失效，请重新登录。",
+        "registerFailed": "注册失败，请重试。"
       },
       "oauth": {
         "or": "或"
@@ -242,7 +245,7 @@
       "passwordMin": "密码长度至少6位",
       "passwordMaxLength": "密码最长128位",
       "emailRequired": "请输入邮箱",
-      "emailMaxLength": "邮箱最长30位",
+      "emailMaxLength": "邮箱最长255位",
       "emailFormat": "请输入正确的邮箱格式",
       "nicknameRequired": "请输入昵称",
       "nicknameMaxLength": "昵称最长20位",
@@ -259,6 +262,41 @@
         "registerFailed": "通行密钥注册失败",
         "cancelled": "操作已取消",
         "passwordOptionalHint": "可以跳过密码设置，使用通行密钥注册。"
+      },
+      "entry": {
+        "title": "欢迎使用 Rote",
+        "description": "选择一种方式，继续你的记录。",
+        "continueWithProvider": "使用 {{provider}} 继续",
+        "newHere": "第一次使用 Rote？",
+        "createWithPasskey": "使用通行密钥创建账号",
+        "otherWays": "其他方式",
+        "back": "返回",
+        "backToLogin": "返回登录",
+        "createTitle": "创建你的账号",
+        "createDescription": "选择一个用户名，然后使用面容、指纹或设备锁创建通行密钥。",
+        "createAccount": "创建账号",
+        "usernameHint": "1–20 位字母、数字、下划线或连字符，用于你的个人主页。",
+        "emailLoginTitle": "邮箱密码登录",
+        "emailLoginDescription": "使用已有账号的用户名或邮箱登录。",
+        "emailRegisterTitle": "邮箱密码注册",
+        "emailRegisterDescription": "填写账号资料，使用邮箱和密码注册。",
+        "registerWithEmail": "使用邮箱密码注册",
+        "oauthCreateTitle": "选择你的用户名",
+        "oauthCreateDescription": "{{provider}} 授权已完成，确认用户名即可开始记录。"
+      },
+      "errors": {
+        "oauthRegistrationExpired": "注册授权已过期，请重新使用第三方账号继续。",
+        "oauthRegistrationInvalid": "注册授权无效，请重新登录。",
+        "oauthRegistrationConflict": "该第三方账号已完成注册，请重新登录。",
+        "registrationDisabled": "当前站点暂未开放注册。",
+        "oauthDisabled": "此第三方登录方式已关闭，请选择其他方式。",
+        "passkeyDisabled": "通行密钥已关闭，请选择其他方式。",
+        "usernameUnavailable": "这个用户名已被使用，请换一个。",
+        "oauthRegistrationFailed": "未能完成注册，请重试。",
+        "registrationExpired": "注册已过期，请重新创建通行密钥。",
+        "passkeyVerificationFailed": "通行密钥验证失败，请重试。",
+        "registrationInvalid": "请检查填写的注册资料。",
+        "emailUnavailable": "这个邮箱已被使用，请登录已有账号。"
       }
     },
     "oauthAuthorize": {

@@ -31,7 +31,7 @@ export const users = pgTable(
   'users',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    email: varchar('email', { length: 255 }).notNull().unique(),
+    email: varchar('email', { length: 255 }).unique(),
     username: varchar('username', { length: 100 }).notNull().unique(),
     // 邮箱是否已验证
     emailVerified: boolean('emailVerified').notNull().default(false),

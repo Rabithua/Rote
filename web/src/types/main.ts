@@ -154,7 +154,7 @@ export type RotesAction =
 export type Profile =
   | {
       id: string;
-      email: string;
+      email: string | null;
       username: string;
       nickname: string;
       description: string;

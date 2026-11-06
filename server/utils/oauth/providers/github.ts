@@ -41,11 +41,11 @@ export class GitHubOAuthProvider implements OAuthProvider {
   }
 
   getAuthUrl(config: OAuthProviderConfig, state: string, _redirectUrl: string): string {
-    const scopes = config.scopes || ['user:email'];
+    const scopes = config.scopes || [];
     const githubAuthUrl = new URL('https://github.com/login/oauth/authorize');
     githubAuthUrl.searchParams.set('client_id', config.clientId);
     githubAuthUrl.searchParams.set('redirect_uri', config.callbackUrl);
-    githubAuthUrl.searchParams.set('scope', scopes.join(' '));
+    if (scopes.length) githubAuthUrl.searchParams.set('scope', scopes.join(' '));
     githubAuthUrl.searchParams.set('state', state);
     return githubAuthUrl.toString();
   }
@@ -105,25 +105,10 @@ export class GitHubOAuthProvider implements OAuthProvider {
       // 获取用户基本信息
       const { data: user } = await octokit.rest.users.getAuthenticated();
 
-      // 获取用户邮箱列表
-      let email: string | null = null;
-      try {
-        const { data: emails } = await octokit.rest.users.listEmailsForAuthenticatedUser();
-        // 优先返回主邮箱且已验证的邮箱
-        const primaryEmail = emails.find((e) => e.primary && e.verified)?.email;
-        const verifiedEmail = emails.find((e) => e.verified)?.email;
-        email = primaryEmail || verifiedEmail || emails[0]?.email || null;
-      } catch (emailError: any) {
-        // 如果没有 user:email scope，可能无法获取邮箱
-        console.warn('Failed to fetch GitHub email:', emailError.message);
-        // 尝试使用用户公开邮箱
-        email = user.email || null;
-      }
-
       return {
         id: user.id.toString(),
         username: user.login,
-        email,
+        email: null,
         name: user.name || null,
         avatar: user.avatar_url || null,
         bio: user.bio || null,

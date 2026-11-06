@@ -2,31 +2,22 @@ import { z } from 'zod';
 import mainJson from '../json/main.json';
 const { safeRoutes } = mainJson;
 
+export const UsernameZod = z
+  .string()
+  .min(1, 'Username cannot be empty')
+  .max(20, 'Username cannot exceed 20 characters')
+  .regex(/^[A-Za-z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen')
+  .refine((value) => !safeRoutes.includes(value), {
+    message: 'Username conflicts with routes, please choose another one',
+  });
+
+export const PasskeyRegisterDataZod = z.object({ username: UsernameZod });
+
 export const RegisterDataZod = z.object({
-  username: z
-    .string()
-    .min(1, 'Username cannot be empty')
-    .max(20, 'Username cannot exceed 20 characters')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen')
-    .refine((value) => !safeRoutes.includes(value), {
-      message: 'Username conflicts with routes, please choose another one',
-    }),
-  password: z
-    .string()
-    .max(128, 'Password cannot exceed 128 characters')
-    .optional()
-    .refine((val) => !val || val.length >= 6, {
-      message: 'Password must be at least 6 characters',
-    }),
-  email: z
-    .string()
-    .min(1, 'Email cannot be empty')
-    .max(30, 'Email cannot exceed 30 characters')
-    .email('Invalid email format'),
-  nickname: z
-    .string()
-    .min(1, 'Nickname cannot be empty')
-    .max(20, 'Nickname cannot exceed 20 characters'),
+  username: UsernameZod,
+  password: z.string().min(6, 'Password must be at least 6 characters').max(128),
+  email: z.string().min(1, 'Email cannot be empty').max(255).email('Invalid email format'),
+  nickname: z.string().min(1).max(20).optional(),
 });
 
 export const passwordChangeZod = z.object({
@@ -42,16 +33,7 @@ export const passwordChangeZod = z.object({
 });
 
 // 用户名更新验证
-export const UsernameUpdateZod = z.object({
-  username: z
-    .string()
-    .min(1, 'Username cannot be empty')
-    .max(20, 'Username cannot exceed 20 characters')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen')
-    .refine((value) => !safeRoutes.includes(value), {
-      message: 'Username conflicts with routes, please choose another one',
-    }),
-});
+export const UsernameUpdateZod = z.object({ username: UsernameZod });
 
 // 笔记相关验证
 const NoteContentZod = z
