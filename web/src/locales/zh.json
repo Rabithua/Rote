@@ -262,6 +262,7 @@
         "loginFailed": "通行密钥登录失败",
         "registerSuccess": "通行密钥已添加",
         "registerFailed": "添加通行密钥失败",
+        "accountChanged": "登录账号已变更，请重新添加通行密钥。",
         "cancelled": "操作已取消"
       },
       "entry": {

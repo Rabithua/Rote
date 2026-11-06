@@ -45,7 +45,9 @@ export function usePasskey() {
       await fetchPasskeys();
       return true;
     } catch (error: any) {
-      if (error?.name === 'NotAllowedError') {
+      if (error?.name === 'AbortError' && error?.message === 'passkey_account_changed') {
+        toast.error(t('login.passkey.accountChanged'));
+      } else if (error?.name === 'NotAllowedError') {
         toast.info(t('login.passkey.cancelled'));
       } else {
         toast.error(error?.message || t('login.passkey.registerFailed'));

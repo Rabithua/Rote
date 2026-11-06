@@ -272,6 +272,7 @@
         "loginFailed": "Passkey login failed",
         "registerSuccess": "Passkey added",
         "registerFailed": "Could not add passkey",
+        "accountChanged": "Your signed-in account has changed. Please add the passkey again.",
         "cancelled": "Operation cancelled"
       },
       "entry": {

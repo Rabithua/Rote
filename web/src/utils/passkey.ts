@@ -20,7 +20,7 @@ export async function registerPasskey(): Promise<boolean> {
       !currentToken ||
       authService.getUserInfoFromToken(currentToken)?.userId !== accountId
     ) {
-      throw new DOMException('Authentication account changed', 'AbortError');
+      throw new DOMException('passkey_account_changed', 'AbortError');
     }
   }
 

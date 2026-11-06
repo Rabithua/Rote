@@ -276,6 +276,7 @@
         "loginFailed": "パスキーログインに失敗しました",
         "registerSuccess": "パスキーを追加しました",
         "registerFailed": "パスキーを追加できませんでした",
+        "accountChanged": "ログイン中のアカウントが変更されました。パスキーを再度追加してください。",
         "cancelled": "操作がキャンセルされました"
       },
       "entry": {
