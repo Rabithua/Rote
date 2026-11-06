@@ -42,11 +42,17 @@ export function authPreviewServer(): Plugin {
           res.writeHead(200, { 'Content-Type': 'text/javascript', 'Cache-Control': 'no-store' });
           res.end(readFileSync(new URL('./auth-preview/client.js', import.meta.url), 'utf8'));
         } else if (pages[url.pathname]) {
-          res.writeHead(200, {
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'no-store',
-          });
-          res.end(pages[url.pathname]());
+          const send = (html: string) => {
+            res.writeHead(200, {
+              'Content-Type': 'text/html; charset=utf-8',
+              'Cache-Control': 'no-store',
+            });
+            res.end(html);
+          };
+          const html = pages[url.pathname]();
+          if (url.pathname === '/__auth-preview/success') {
+            void server.transformIndexHtml(url.pathname, html).then(send).catch(next);
+          } else send(html);
         } else next();
       });
     },

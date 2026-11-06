@@ -257,24 +257,22 @@
         "setup": "设置通行密钥",
         "skip": "暂不设置",
         "settingUp": "设置中...",
-        "loginWithPasskey": "使用通行密钥登录",
+        "loginWithPasskey": "使用 Passkey 登录",
         "loginSuccess": "登录成功",
         "loginFailed": "通行密钥登录失败",
-        "registerSuccess": "通行密钥注册成功",
-        "registerFailed": "通行密钥注册失败",
-        "cancelled": "操作已取消",
-        "passwordOptionalHint": "可以跳过密码设置，使用通行密钥注册。"
+        "registerSuccess": "通行密钥已添加",
+        "registerFailed": "添加通行密钥失败",
+        "cancelled": "操作已取消"
       },
       "entry": {
+        "or": "或者",
         "continueWithProvider": "使用 {{provider}} 继续",
         "otherWays": "其他方式",
         "back": "返回",
         "backToLogin": "返回登录",
         "usernameHint": "1–20 位字母、数字、下划线或连字符，用于你的个人主页。",
         "oauthCreateDescription": "{{provider}} 授权已完成，确认用户名即可开始记录。",
-        "continueWithPasskey": "使用通行密钥继续",
-        "continue": "继续",
-        "passkeyContinueHint": "输入用户名后继续，系统会登录已有账号或为你创建账号。"
+        "continue": "继续"
       },
       "errors": {
         "oauthRegistrationExpired": "注册授权已过期，请重新使用第三方账号继续。",
@@ -285,12 +283,8 @@
         "passkeyDisabled": "通行密钥已关闭，请选择其他方式。",
         "usernameUnavailable": "这个用户名已被使用，请换一个。",
         "oauthRegistrationFailed": "未能完成注册，请重试。",
-        "registrationExpired": "注册已过期，请重新创建通行密钥。",
-        "passkeyVerificationFailed": "通行密钥验证失败，请重试。",
         "registrationInvalid": "请检查填写的注册资料。",
-        "emailUnavailable": "这个邮箱已被使用，请登录已有账号。",
-        "passkeyNotAvailable": "此账号尚未设置通行密钥，请使用其他方式登录。",
-        "usernameLookupMaxLength": "用户名不能超过 100 个字符。"
+        "emailUnavailable": "这个邮箱已被使用，请登录已有账号。"
       }
     },
     "oauthAuthorize": {
@@ -2001,6 +1995,13 @@
       "retry": "重试",
       "article": "关联文章",
       "tags": "标签"
+    },
+    "passkeyAdoption": {
+      "title": "下次登录，直接用通行密钥",
+      "description": "保存通行密钥，下次用面容、指纹或设备密码即可登录。",
+      "create": "添加通行密钥",
+      "creating": "正在添加通行密钥…",
+      "later": "稍后"
     }
   },
   "components": {

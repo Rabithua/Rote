@@ -11,8 +11,6 @@ export const UsernameZod = z
     message: 'Username conflicts with routes, please choose another one',
   });
 
-export const PasskeyRegisterDataZod = z.object({ username: UsernameZod });
-
 export const RegisterDataZod = z.object({
   username: UsernameZod,
   password: z.string().min(6, 'Password must be at least 6 characters').max(128),

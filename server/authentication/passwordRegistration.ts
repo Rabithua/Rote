@@ -15,7 +15,7 @@ export async function registerPasswordAccount(data: z.infer<typeof RegisterDataZ
   try {
     user = await db.transaction(async (transaction) => {
       const policy = await readAuthenticationPolicy(transaction);
-      requireAccountRegistration(policy, 'password');
+      requireAccountRegistration(policy);
       const [created] = await transaction
         .insert(users)
         .values({

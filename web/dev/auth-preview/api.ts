@@ -9,16 +9,12 @@ export function authPreviewApi() {
   const authenticationChallenges = new Map<string, string>();
   const accounts = new Map<string, 'passkey' | 'other'>([
     ['passkey_user', 'passkey'],
-    ['legacy_' + 'u'.repeat(93), 'passkey'],
     ['password_user', 'other'],
     ['taken', 'other'],
   ]);
 
   function registrationOptions(username: string, hostname: string) {
-    const registrationToken = randomUUID();
-    registrations.set(registrationToken, { username, returnUrl: '', expired: false });
     return {
-      registrationToken,
       options: {
         challenge: 'cHJldmlldy1jaGFsbGVuZ2U',
         rp: { name: 'Rote', id: hostname },
@@ -29,7 +25,7 @@ export function authPreviewApi() {
     };
   }
 
-  function authenticationOptions(username: string, hostname: string, accountBound = false) {
+  function authenticationOptions(username: string, hostname: string) {
     const challengeKey = randomUUID();
     authenticationChallenges.set(challengeKey, username);
     return {
@@ -38,9 +34,7 @@ export function authPreviewApi() {
         challenge: 'cHJldmlldy1jaGFsbGVuZ2U',
         rpId: hostname,
         userVerification: 'required',
-        allowCredentials: accountBound
-          ? [{ type: 'public-key', id: 'cHJldmlldy1jcmVkZW50aWFs', transports: ['internal'] }]
-          : [],
+        allowCredentials: [],
       },
     };
   }
@@ -79,25 +73,37 @@ export function authPreviewApi() {
     }
     if (path === '/users/me/settings') return reply(res, { allowExplore: true });
     if (path === '/auth/passkey/config') return reply(res, { enabled: config.passkey.enabled });
-    if (path === '/auth/passkey') return reply(res, []);
-    if (path === '/auth/passkey/continue/options') {
+    if (path === '/auth/passkey') {
+      const profile = profileFromToken(req.headers.authorization);
+      if (!profile) return reply(res, null, 401);
+      return reply(
+        res,
+        accounts.get(profile.username) === 'passkey'
+          ? [
+              {
+                id: 'preview-passkey',
+                credentialId: 'cHJldmlldy1jcmVkZW50aWFs',
+                deviceName: 'Preview',
+                transports: ['internal'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ]
+          : []
+      );
+    }
+    if (path === '/auth/passkey/register/options') {
+      const profile = profileFromToken(req.headers.authorization);
+      if (!profile) return reply(res, null, 401);
       if (!config.passkey.enabled) return reply(res, null, 400, 'passkey_disabled');
-      if (typeof body.username !== 'string' || !body.username || body.username.length > 100)
-        return reply(res, null, 400, 'username_invalid');
-      if (accounts.get(body.username) === 'other')
-        return reply(res, null, 409, 'passkey_not_available');
-      if (accounts.get(body.username) === 'passkey')
-        return reply(res, {
-          method: 'authenticate',
-          ...authenticationOptions(body.username, url.hostname, true),
-        });
-      if (!config.ui.allowRegistration) return reply(res, null, 403, 'registration_disabled');
-      if (!/^[A-Za-z0-9_-]{1,20}$/.test(body.username))
-        return reply(res, null, 400, 'username_invalid');
-      return reply(res, {
-        method: 'register',
-        ...registrationOptions(body.username, url.hostname),
-      });
+      return reply(res, registrationOptions(profile.username, url.hostname));
+    }
+    if (path === '/auth/passkey/register/verify') {
+      const profile = profileFromToken(req.headers.authorization);
+      if (!profile) return reply(res, null, 401);
+      if (!config.passkey.enabled) return reply(res, null, 400, 'passkey_disabled');
+      accounts.set(profile.username, 'passkey');
+      return reply(res, { verified: true });
     }
 
     const oauth = path.match(/^\/auth\/oauth\/(github|apple)$/);
@@ -109,8 +115,10 @@ export function authPreviewApi() {
         callback.searchParams.set('oauth', 'error');
         callback.searchParams.set('message', 'registration_disabled');
         callback.searchParams.set('errorCode', 'registration_disabled');
-      } else if (scenario === 'existing') {
-        const tokens = previewTokens('returning_user');
+      } else if (scenario === 'existing' || scenario === 'existing-passkey') {
+        const tokens = previewTokens(
+          scenario === 'existing-passkey' ? 'passkey_user' : 'returning_user'
+        );
         callback.searchParams.set('oauth', 'success');
         callback.searchParams.set('token', tokens.accessToken);
         callback.searchParams.set('refreshToken', tokens.refreshToken);
@@ -136,24 +144,14 @@ export function authPreviewApi() {
       return reply(res, { provider: pending.provider, suggestedUsername: pending.username });
     }
 
-    if (path.startsWith('/auth/register')) {
+    if (path === '/auth/register' || path === '/auth/register/oauth') {
       if (!config.ui.allowRegistration) return reply(res, null, 403, 'registration_disabled');
-      if (!/^[A-Za-z0-9_-]{1,20}$/.test(String(body.username || '')) && !path.endsWith('/verify')) {
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(String(body.username || ''))) {
         return reply(res, null, 400, 'username_invalid');
       }
-      if (body.username === 'taken') return reply(res, null, 409, 'username_unavailable');
+      if (accounts.has(body.username)) return reply(res, null, 409, 'username_unavailable');
     }
 
-    if (path === '/auth/register/passkey/options') {
-      return reply(res, registrationOptions(body.username, url.hostname));
-    }
-    if (path === '/auth/register/passkey/verify') {
-      const pending = registrations.get(body.registrationToken);
-      if (!pending) return reply(res, null, 410, 'registration_expired');
-      registrations.delete(body.registrationToken);
-      accounts.set(pending.username, 'passkey');
-      return reply(res, previewTokens(pending.username));
-    }
     if (path === '/auth/register/oauth' && req.method === 'POST') {
       const pending = registrations.get(body.registrationToken);
       if (!pending || pending.expired) return reply(res, null, 410, 'oauth_registration_expired');
@@ -174,6 +172,7 @@ export function authPreviewApi() {
     if (path === '/auth/login')
       return reply(res, previewTokens(body.username || 'returning_user', 'preview@example.test'));
     if (path === '/auth/passkey/authenticate/options') {
+      if (!config.passkey.enabled) return reply(res, null, 400, 'passkey_disabled');
       return reply(res, authenticationOptions('passkey_user', url.hostname));
     }
     if (path === '/auth/passkey/authenticate/verify') {

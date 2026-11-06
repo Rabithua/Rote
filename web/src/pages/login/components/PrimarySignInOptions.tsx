@@ -3,13 +3,14 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, Fingerprint, Github } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { OAuthProviders } from '../types';
+import { AuthMethodDivider } from './AuthMethodDivider';
 
 type PrimarySignInOptionsProps = {
   disabled: boolean;
   oauthProviders?: OAuthProviders;
   passkeyEnabled: boolean;
   onOAuthLogin: (provider: string) => void;
-  onPasskeyContinue: () => void;
+  onPasskeyLogin: () => void;
   onOtherWays: () => void;
 };
 
@@ -18,40 +19,49 @@ export function PrimarySignInOptions({
   oauthProviders,
   passkeyEnabled,
   onOAuthLogin,
-  onPasskeyContinue,
+  onPasskeyLogin,
   onOtherWays,
 }: PrimarySignInOptionsProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.login' });
+  const providers = Object.entries(oauthProviders ?? {})
+    .filter(([, config]) => config?.enabled)
+    .sort(([first], [second]) => Number(second === 'apple') - Number(first === 'apple'));
 
   return (
     <div className="space-y-4">
       <div className="space-y-3">
-        {passkeyEnabled && (
-          <Button className="w-full" disabled={disabled} onClick={onPasskeyContinue}>
-            <Fingerprint className="size-4" aria-hidden="true" />
-            {t('entry.continueWithPasskey')}
+        {providers.map(([provider], index) => (
+          <Button
+            key={provider}
+            variant={index === 0 ? 'default' : 'outline'}
+            className="w-full"
+            disabled={disabled}
+            onClick={() => onOAuthLogin(provider)}
+          >
+            {provider === 'apple' ? (
+              <AppleIcon className="size-4" aria-hidden="true" />
+            ) : provider === 'github' ? (
+              <Github className="size-4" aria-hidden="true" />
+            ) : null}
+            {t('entry.continueWithProvider', {
+              provider:
+                provider === 'github' ? 'GitHub' : provider === 'apple' ? 'Apple' : provider,
+            })}
           </Button>
-        )}
-        {Object.entries(oauthProviders ?? {}).map(([provider, config]) =>
-          config?.enabled ? (
+        ))}
+        {passkeyEnabled && (
+          <>
+            {providers.length > 0 && <AuthMethodDivider />}
             <Button
-              key={provider}
-              variant="outline"
+              variant={providers.length ? 'outline' : 'default'}
               className="w-full"
               disabled={disabled}
-              onClick={() => onOAuthLogin(provider)}
+              onClick={onPasskeyLogin}
             >
-              {provider === 'apple' ? (
-                <AppleIcon className="size-4" aria-hidden="true" />
-              ) : provider === 'github' ? (
-                <Github className="size-4" aria-hidden="true" />
-              ) : null}
-              {t('entry.continueWithProvider', {
-                provider:
-                  provider === 'github' ? 'GitHub' : provider === 'apple' ? 'Apple' : provider,
-              })}
+              <Fingerprint className="size-4" aria-hidden="true" />
+              {t('passkey.loginWithPasskey')}
             </Button>
-          ) : null
+          </>
         )}
       </div>
       <Button

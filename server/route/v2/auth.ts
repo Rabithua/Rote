@@ -20,7 +20,6 @@ import { LastLoginMethodError } from '../../authentication/loginMethods';
 import { AuthenticationPolicyError } from '../../authentication/policy';
 import { registerPasswordAccount } from '../../authentication/passwordRegistration';
 import oauthRegistrationRouter from './authOAuthRegistration';
-import passkeyRegistrationRouter from './authPasskeyRegistration';
 
 // 认证相关路由
 const authRouter = new Hono<{ Variables: HonoVariables }>();
@@ -65,7 +64,7 @@ authRouter.post('/register', async (c: HonoContext) => {
     throw new Error('Registration failed, username or email already exists');
   }
 
-  // Generate JWT tokens so the user is immediately logged in (supports passkey registration during signup)
+  // Generate JWT tokens so the user is immediately logged in
   const accessToken = await generateAccessToken({
     userId: user.id,
     username: user.username,
@@ -89,7 +88,6 @@ authRouter.post('/register', async (c: HonoContext) => {
   );
 });
 
-authRouter.route('/register/passkey', passkeyRegistrationRouter);
 authRouter.route('/register/oauth', oauthRegistrationRouter);
 
 // 登录 (手动实现，不再使用 Passport)

@@ -1,9 +1,10 @@
 import { Button } from '@/components/ui/button';
+import { Fingerprint } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { AuthView, LoginData, OAuthProviders, RegisterData } from '../types';
+import { AuthMethodDivider } from './AuthMethodDivider';
 import { AuthTabs } from './AuthTabs';
 import { PrimarySignInOptions } from './PrimarySignInOptions';
-import { UsernameRegistrationForm } from './UsernameRegistrationForm';
 
 type StandardLoginPanelProps = {
   activeTab: AuthView;
@@ -18,21 +19,17 @@ type StandardLoginPanelProps = {
   onLoginFieldChange: (key: keyof LoginData, value: string) => void;
   onOAuthLogin: (provider: string) => void;
   onRegister: () => void;
-  onPasskeyContinue: () => void;
+  onPasskeyLogin: () => void;
   onRegisterFieldChange: (key: keyof RegisterData, value: string) => void;
 };
 
 export function StandardLoginPanel(props: StandardLoginPanelProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.login' });
   const { allowRegistration, disabled, passkeyEnabled, oauthProviders, onActiveTabChange } = props;
-  const hasModernSignIn =
-    passkeyEnabled || Object.values(oauthProviders ?? {}).some((provider) => provider.enabled);
+  const hasOAuth = Object.values(oauthProviders ?? {}).some((provider) => provider?.enabled);
   const requestedView =
-    (!allowRegistration && props.activeTab === 'password-register') ||
-    (!passkeyEnabled && props.activeTab === 'passkey-continue')
-      ? 'primary'
-      : props.activeTab;
-  const view = !hasModernSignIn && requestedView === 'primary' ? 'password-login' : requestedView;
+    !allowRegistration && props.activeTab === 'password-register' ? 'primary' : props.activeTab;
+  const view = !hasOAuth && requestedView === 'primary' ? 'password-login' : requestedView;
 
   return view === 'primary' ? (
     <PrimarySignInOptions
@@ -40,20 +37,8 @@ export function StandardLoginPanel(props: StandardLoginPanelProps) {
       oauthProviders={oauthProviders}
       passkeyEnabled={passkeyEnabled}
       onOAuthLogin={props.onOAuthLogin}
-      onPasskeyContinue={() => onActiveTabChange('passkey-continue')}
+      onPasskeyLogin={props.onPasskeyLogin}
       onOtherWays={() => onActiveTabChange('password-login')}
-    />
-  ) : view === 'passkey-continue' ? (
-    <UsernameRegistrationForm
-      username={props.registerData.username}
-      disabled={disabled}
-      submitLabel={t('entry.continue')}
-      busyLabel={t('messages.loggingIn')}
-      maxLength={100}
-      hint={t('entry.passkeyContinueHint')}
-      onUsernameChange={(value) => props.onRegisterFieldChange('username', value)}
-      onSubmit={props.onPasskeyContinue}
-      onBack={() => onActiveTabChange('primary')}
     />
   ) : (
     <>
@@ -71,7 +56,21 @@ export function StandardLoginPanel(props: StandardLoginPanelProps) {
         onRegister={props.onRegister}
         onRegisterFieldChange={props.onRegisterFieldChange}
       />
-      {hasModernSignIn && (
+      {!hasOAuth && passkeyEnabled && (
+        <div className="mt-4 space-y-3">
+          <AuthMethodDivider />
+          <Button
+            variant="outline"
+            className="w-full"
+            disabled={disabled}
+            onClick={props.onPasskeyLogin}
+          >
+            <Fingerprint className="size-4" aria-hidden="true" />
+            {t('passkey.loginWithPasskey')}
+          </Button>
+        </div>
+      )}
+      {hasOAuth && (
         <Button
           variant="ghost"
           className="text-muted-foreground mt-4 w-full"

@@ -1,11 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-  NoteCreateZod,
-  NoteUpdateZod,
-  PasskeyRegisterDataZod,
-  RegisterDataZod,
-  UsernameZod,
-} from './zod';
+import { NoteCreateZod, NoteUpdateZod, RegisterDataZod, UsernameZod } from './zod';
 
 describe('note contract compatibility', () => {
   test('strips the legacy type field from create input', () => {
@@ -37,15 +31,6 @@ describe('note contract compatibility', () => {
 });
 
 describe('registration method contracts', () => {
-  test('accepts username alone for passkeys and strips legacy profile fields', () => {
-    expect(
-      PasskeyRegisterDataZod.parse({
-        username: 'new-user',
-        email: 'ignored@example.test',
-        nickname: 'Ignored',
-      })
-    ).toEqual({ username: 'new-user' });
-  });
   test('requires email and password for traditional registration without requiring nickname', () => {
     expect(RegisterDataZod.safeParse({ username: 'new-user' }).success).toBe(false);
     expect(

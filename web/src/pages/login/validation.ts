@@ -21,15 +21,6 @@ export function createUsernameDataSchema(t: LoginTranslator, siteStatus?: LoginS
   });
 }
 
-export function createPasskeyContinuationSchema(t: LoginTranslator) {
-  return z.object({
-    username: z
-      .string()
-      .min(1, t('usernameRequired'))
-      .max(100, t('errors.usernameLookupMaxLength')),
-  });
-}
-
 export function createLoginDataSchema(t: LoginTranslator) {
   return z.object({
     username: z

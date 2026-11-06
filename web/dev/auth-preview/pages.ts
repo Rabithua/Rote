@@ -1,8 +1,8 @@
 import { previewCopy as t, scenarioNames } from './fixtures';
 
 const styles = `*{box-sizing:border-box}body{margin:0;background:#f8faf9;color:#16231d;font:14px system-ui,sans-serif}header{padding:20px 28px;border-bottom:1px solid #e0e7e3;background:white}h1{font-size:19px;letter-spacing:-.4px;margin:0 0 6px}p{color:#63756b;margin:0;line-height:1.6}.tools{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px}label{display:flex;align-items:center;gap:8px}select,button,a{font:inherit;color:inherit}select,button,.link{border:1px solid #cfdbd4;border-radius:7px;background:white;padding:7px 11px}button,a{cursor:pointer}.link{text-decoration:none}iframe{border:0;width:100%;height:calc(100dvh - 170px);background:white}.success{min-height:100dvh;display:grid;place-items:center}.card{padding:32px;border:1px solid #dbe6de;border-radius:16px;background:white;max-width:420px;margin:20px}.card h1{font-size:25px}.card p{margin:12px 0 24px}@media(max-width:600px){header{padding:15px}.tools{gap:8px}iframe{height:calc(100dvh - 225px)}}`;
-const shell = (body: string) =>
-  `<!doctype html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${t.title}</title><style>${styles}</style></head><body>${body}</body></html>`;
+const shell = (body: string, pageStyles = styles) =>
+  `<!doctype html><html lang="zh"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${t.title}</title><style>${pageStyles}</style></head><body>${body}</body></html>`;
 
 export function previewPage() {
   return shell(
@@ -12,6 +12,7 @@ export function previewPage() {
 
 export function successPage() {
   return shell(
-    `<main class="success"><div class="card"><h1>${t.success}</h1><p>${t.successHint}</p><a class="link" href="/login?redirect=%2F__auth-preview%2Fsuccess&previewScenario=all">${t.back}</a></div></main>`
+    '<div id="root"></div><script type="module" src="/dev/auth-preview/success.tsx"></script>',
+    ''
   );
 }

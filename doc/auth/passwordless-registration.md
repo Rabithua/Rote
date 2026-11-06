@@ -1,7 +1,8 @@
 # Passwordless registration
 
-OAuth and Passkey registration require only a username. New passwordless accounts have no
-email address or password; their nickname initially matches the selected username. Traditional
+OAuth account creation requires only a username. New OAuth accounts have no email address or
+password; their nickname initially matches the selected username. Passkeys sign in to existing
+accounts and cannot create new accounts. Traditional
 email/password registration retains its email requirement. Existing users and bindings are not
 rewritten by the migration.
 
@@ -45,20 +46,29 @@ signs in to that account and binds the provider from account settings.
 
 ## Passkey
 
-The primary card has one Passkey entry for both sign-in and account creation. It asks for a
-username, then `POST /auth/passkey/continue/options` selects the credential ceremony:
+The shared login screen lists enabled OAuth providers first, prioritizing Apple. Only the first
+enabled OAuth provider is highlighted. When Passkeys are also available, a localized “or” divider
+precedes a full-width Passkey sign-in button. Traditional forms remain under Other ways when
+OAuth is available. Without an enabled OAuth provider, those original login/register forms are
+the main content, followed by Passkey sign-in when available.
 
-- An existing account with Passkeys receives authentication options restricted to that account,
-  together with an account-bound authentication challenge.
-- An available username receives registration options and a registration credential, provided
-  new-account registration is enabled.
-- An existing account without a Passkey receives `passkey_not_available`, so it can sign in
-  using its original method instead of accidentally creating another account.
+Passkey sign-in does not request a username. `POST /auth/passkey/authenticate/options` creates a
+challenge for discoverable credentials. The browser presents saved credentials for the site;
+`POST /auth/passkey/authenticate/verify` verifies the selected credential and signs in its existing
+owner. Cancelling or failing authentication keeps the sign-in screen available. It never creates
+an account or automatically starts account registration.
 
-Verification uses the existing authentication or registration verification endpoint. Credential
-verification and account creation complete together, so cancelling the operating-system prompt
-leaves no empty account. Existing clients can continue using the anonymous authentication and
-standalone registration endpoints.
+Authenticated users can add credentials to their existing account through
+`POST /auth/passkey/register/options` and `POST /auth/passkey/register/verify`. These endpoints
+require a valid session and do not create users. The client confirms account ownership after
+receiving options and after the browser ceremony, allowing same-account token refresh while
+preventing submission after logout or an account switch.
+
+After ordinary Web OAuth sign-in or account creation, the dashboard can offer a dismissible
+suggestion to add a Passkey. It checks browser support, the site setting, and existing credentials
+first. Only selecting Add opens the system creation prompt. A per-account thirty-day cooldown
+limits repeated offers. iOS handoffs and MCP authorization skip the suggestion and retain their
+original completion destinations.
 
 ## Verification
 

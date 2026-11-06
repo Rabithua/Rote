@@ -8,9 +8,7 @@ import {
 } from '@simplewebauthn/server';
 import { Hono } from 'hono';
 import { LastLoginMethodError } from '../../authentication/loginMethods';
-import { users, userPasskeys, type User } from '../../drizzle/schema';
-import { eq } from 'drizzle-orm';
-import { z } from 'zod';
+import type { User } from '../../drizzle/schema';
 import { authenticateJWT } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import {
@@ -23,18 +21,13 @@ import {
 import { oneUser } from '../../utils/dbMethods/user';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
-import { UsernameZod } from '../../utils/zod';
-import db from '../../utils/drizzle';
-import messages from '../../authentication/messages.json';
-import { AuthenticationPolicyError, readAuthenticationPolicy } from '../../authentication/policy';
+import { AuthenticationPolicyError } from '../../authentication/policy';
 import {
   consumePasskeyChallenge,
   createPasskeyAuthenticationOptions,
   getPasskeyConfig,
   storePasskeyChallenge,
 } from '../../authentication/passkeyAuthentication';
-import { createPasskeyRegistrationOptions } from '../../authentication/passkeyRegistrationOptions';
-import { UserIdentityConflict } from '../../utils/dbMethods/user';
 
 const passkeyRouter = new Hono<{ Variables: HonoVariables }>();
 
@@ -43,12 +36,6 @@ passkeyRouter.onError((error, c) => {
     return c.json(
       { ...createResponse(null, error.message, error.status), errorCode: error.code },
       error.status
-    );
-  }
-  if (error instanceof UserIdentityConflict) {
-    return c.json(
-      { ...createResponse(null, error.message, 409), errorCode: 'username_unavailable' },
-      409
     );
   }
   throw error;
@@ -139,72 +126,7 @@ passkeyRouter.post('/register/verify', authenticateJWT, async (c: HonoContext) =
   return c.json(createResponse(null, 'Passkey registered successfully'), 200);
 });
 
-// One username continues an existing account or prepares a new account's passkey.
-passkeyRouter.post('/continue/options', async (c: HonoContext) => {
-  let body: unknown;
-  try {
-    body = await c.req.json();
-  } catch {
-    return c.json(
-      { ...createResponse(null, messages.usernameInvalid, 400), errorCode: 'username_invalid' },
-      400
-    );
-  }
-  // Existing provider-generated usernames predate the shorter signup limit.
-  const input = z.object({ username: z.string().min(1).max(100) }).safeParse(body);
-  const username = input.success ? input.data.username : null;
-  if (username === null) {
-    return c.json(
-      {
-        ...createResponse(null, messages.usernameInvalid, 400),
-        errorCode: 'username_invalid',
-      },
-      400
-    );
-  }
-  const policy = await db.transaction(readAuthenticationPolicy);
-  if (policy.security?.passkey?.enabled === false)
-    throw new AuthenticationPolicyError('passkey_disabled');
-  const [user] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.username, username))
-    .limit(1);
-  if (!user) {
-    if (!UsernameZod.safeParse(username).success) {
-      return c.json(
-        { ...createResponse(null, messages.usernameInvalid, 400), errorCode: 'username_invalid' },
-        400
-      );
-    }
-    const registration = await createPasskeyRegistrationOptions(
-      username,
-      policy,
-      c.req.header('origin')
-    );
-    return c.json(createResponse({ method: 'register', ...registration }), 200);
-  }
-  const credentials = await db
-    .select({ credentialId: userPasskeys.credentialId, transports: userPasskeys.transports })
-    .from(userPasskeys)
-    .where(eq(userPasskeys.userid, user.id));
-  if (!credentials.length) {
-    return c.json(
-      {
-        ...createResponse(null, messages.passkeyNotAvailable, 409),
-        errorCode: 'passkey_not_available',
-      },
-      409
-    );
-  }
-  const authentication = await createPasskeyAuthenticationOptions(c.req.header('origin'), {
-    id: user.id,
-    credentials,
-  });
-  return c.json(createResponse({ method: 'authenticate', ...authentication }), 200);
-});
-
-// Older clients may still ask for discoverable credentials without entering a username.
+// POST /authenticate/options - discover existing credentials without a username
 passkeyRouter.post('/authenticate/options', async (c: HonoContext) =>
   c.json(createResponse(await createPasskeyAuthenticationOptions(c.req.header('origin'))), 200)
 );
@@ -231,16 +153,6 @@ passkeyRouter.post('/authenticate/verify', async (c: HonoContext) => {
   const passkey = await getPasskeyByCredentialId(credential.id);
   if (!passkey) {
     return c.json(createResponse(null, 'Passkey not found', 404), 404);
-  }
-
-  if (pending.userId && passkey.userid !== pending.userId) {
-    return c.json(
-      {
-        ...createResponse(null, messages.passkeyVerificationFailed, 400),
-        errorCode: 'passkey_verification_failed',
-      },
-      400
-    );
   }
 
   const verification = await verifyAuthenticationResponse({

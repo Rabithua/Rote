@@ -274,21 +274,19 @@
         "loginWithPasskey": "パスキーでログイン",
         "loginSuccess": "ログイン成功",
         "loginFailed": "パスキーログインに失敗しました",
-        "registerSuccess": "パスキーの登録に成功しました",
-        "registerFailed": "パスキーの登録に失敗しました",
-        "cancelled": "操作がキャンセルされました",
-        "passwordOptionalHint": "パスワードをスキップして、パスキーで登録できます。"
+        "registerSuccess": "パスキーを追加しました",
+        "registerFailed": "パスキーを追加できませんでした",
+        "cancelled": "操作がキャンセルされました"
       },
       "entry": {
+        "or": "または",
         "continueWithProvider": "{{provider}} で続ける",
         "otherWays": "その他の方法",
         "back": "戻る",
         "backToLogin": "ログインに戻る",
         "usernameHint": "半角英数字・アンダースコア・ハイフンの1〜20文字。プロフィールのURLに使用します。",
         "oauthCreateDescription": "{{provider}} の認証が完了しました。ユーザー名を確認して記録を始めましょう。",
-        "continueWithPasskey": "パスキーで続ける",
-        "continue": "続ける",
-        "passkeyContinueHint": "ユーザー名を入力して、ログインまたはアカウント作成へ進みます。"
+        "continue": "続ける"
       },
       "errors": {
         "oauthRegistrationExpired": "登録用の認証期限が切れました。もう一度外部アカウントで続けてください。",
@@ -299,12 +297,8 @@
         "passkeyDisabled": "パスキーは無効になっています。別の方法を選んでください。",
         "usernameUnavailable": "このユーザー名は使用されています。別の名前を選んでください。",
         "oauthRegistrationFailed": "登録を完了できませんでした。もう一度お試しください。",
-        "registrationExpired": "登録の期限が切れました。パスキーをもう一度作成してください。",
-        "passkeyVerificationFailed": "パスキーを確認できませんでした。もう一度お試しください。",
         "registrationInvalid": "登録情報を確認してください。",
-        "emailUnavailable": "このメールアドレスは使用されています。既存のアカウントでログインしてください。",
-        "passkeyNotAvailable": "このアカウントにはパスキーがありません。他の方法でログインしてください。",
-        "usernameLookupMaxLength": "ユーザー名は100文字以内で入力してください。"
+        "emailUnavailable": "このメールアドレスは使用されています。既存のアカウントでログインしてください。"
       }
     },
     "oauthAuthorize": {
@@ -2015,6 +2009,13 @@
       "retry": "再試行",
       "article": "関連する記事",
       "tags": "タグ"
+    },
+    "passkeyAdoption": {
+      "title": "次回はパスキーですばやくログイン",
+      "description": "パスキーを保存すると、顔認証・指紋認証・端末の暗証番号でログインできます。",
+      "create": "パスキーを追加",
+      "creating": "パスキーを追加中…",
+      "later": "後で"
     }
   },
   "components": {

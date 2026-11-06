@@ -9,6 +9,10 @@
     localStorage.removeItem('rote_access_token');
     localStorage.removeItem('rote_refresh_token');
     localStorage.removeItem('profile');
+    sessionStorage.removeItem('rote-passkey-adoption');
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('rote-passkey-adoption-offered:')) localStorage.removeItem(key);
+    }
     localStorage.setItem('vite-ui-theme', params.get('previewTheme') || 'light');
   }
   if (scenario || language) {
@@ -19,8 +23,9 @@
   if (selected === 'unsupported') {
     Object.defineProperty(window, 'PublicKeyCredential', { value: undefined, configurable: true });
   } else {
-    const credential = () => {
-      if (selected === 'cancel') throw new DOMException('', 'NotAllowedError');
+    const credential = (method) => {
+      if (selected === 'cancel' || (selected === 'no-passkey' && method === 'get'))
+        throw new DOMException('', 'NotAllowedError');
       const bytes = new TextEncoder().encode('local-preview').buffer;
       return {
         id: 'cHJldmlldy1jcmVkZW50aWFs',
@@ -42,7 +47,7 @@
       const original = navigator.credentials[method].bind(navigator.credentials);
       Object.defineProperty(navigator.credentials, method, {
         configurable: true,
-        value: async (options) => (options?.publicKey ? credential() : original(options)),
+        value: async (options) => (options?.publicKey ? credential(method) : original(options)),
       });
     }
   }

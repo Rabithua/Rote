@@ -1,9 +1,6 @@
 import crypto from 'crypto';
-import {
-  generateAuthenticationOptions,
-  type AuthenticatorTransportFuture,
-} from '@simplewebauthn/server';
-import type { SecurityConfig, SiteConfig } from '../types/config';
+import { generateAuthenticationOptions } from '@simplewebauthn/server';
+import type { SiteConfig } from '../types/config';
 import { getConfig } from '../utils/config';
 import db from '../utils/drizzle';
 import { AuthenticationPolicyError, readAuthenticationPolicy } from './policy';
@@ -11,19 +8,18 @@ import { AuthenticationPolicyError, readAuthenticationPolicy } from './policy';
 interface PasskeyChallenge {
   challenge: string;
   expiresAt: number;
-  userId?: string;
 }
 
 const challenges = new Map<string, PasskeyChallenge>();
 
-export function storePasskeyChallenge(key: string, challenge: string, userId?: string) {
+export function storePasskeyChallenge(key: string, challenge: string) {
   if (challenges.size > 1000) {
     const now = Date.now();
     for (const [storedKey, entry] of challenges) {
       if (now > entry.expiresAt) challenges.delete(storedKey);
     }
   }
-  challenges.set(key, { challenge, userId, expiresAt: Date.now() + 120_000 });
+  challenges.set(key, { challenge, expiresAt: Date.now() + 120_000 });
 }
 
 export function consumePasskeyChallenge(key: string): PasskeyChallenge | null {
@@ -32,12 +28,12 @@ export function consumePasskeyChallenge(key: string): PasskeyChallenge | null {
   return entry && entry.expiresAt > Date.now() ? entry : null;
 }
 
-export async function getPasskeyConfig(requestOrigin?: string, security?: SecurityConfig | null) {
+export async function getPasskeyConfig(requestOrigin?: string) {
   const [site, policy] = await Promise.all([
     getConfig<SiteConfig>('site'),
-    security === undefined ? db.transaction(readAuthenticationPolicy) : null,
+    db.transaction(readAuthenticationPolicy),
   ]);
-  const passkey = (security === undefined ? policy?.security : security)?.passkey;
+  const passkey = policy.security?.passkey;
   const frontendUrl = requestOrigin || site?.frontendUrl || 'http://localhost:3001';
   const url = new URL(frontendUrl);
   return {
@@ -48,28 +44,14 @@ export async function getPasskeyConfig(requestOrigin?: string, security?: Securi
   };
 }
 
-export async function createPasskeyAuthenticationOptions(
-  requestOrigin?: string,
-  account?: {
-    id: string;
-    credentials: { credentialId: string; transports: unknown }[];
-  }
-) {
+export async function createPasskeyAuthenticationOptions(requestOrigin?: string) {
   const config = await getPasskeyConfig(requestOrigin);
   if (!config.enabled) throw new AuthenticationPolicyError('passkey_disabled');
   const options = await generateAuthenticationOptions({
     rpID: config.rpId,
     userVerification: 'required',
-    ...(account && {
-      allowCredentials: account.credentials.map((credential) => ({
-        id: credential.credentialId,
-        transports: Array.isArray(credential.transports)
-          ? (credential.transports as AuthenticatorTransportFuture[])
-          : [],
-      })),
-    }),
   });
   const challengeKey = crypto.randomUUID();
-  storePasskeyChallenge(`auth:${challengeKey}`, options.challenge, account?.id);
+  storePasskeyChallenge(`auth:${challengeKey}`, options.challenge);
   return { options, challengeKey };
 }

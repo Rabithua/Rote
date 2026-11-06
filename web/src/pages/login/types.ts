@@ -10,7 +10,7 @@ export type RegisterData = {
   nickname: string;
 };
 
-export type AuthView = 'primary' | 'password-login' | 'password-register' | 'passkey-continue';
+export type AuthView = 'primary' | 'password-login' | 'password-register';
 
 export type OAuthProviders = Record<string, { enabled?: boolean }>;
 

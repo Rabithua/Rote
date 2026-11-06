@@ -4,15 +4,24 @@ import { SWRConfig } from 'swr';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'sonner';
 import { authService } from '@/utils/auth';
+import { readPasskeyAdoptionIntent } from '@/features/passkey-adoption/intent';
 import Login from './index';
 
-const { get, post, getSiteStatus, continueWithPasskey, state } = vi.hoisted(() => ({
-  get: vi.fn(),
-  post: vi.fn(),
-  getSiteStatus: vi.fn(),
-  continueWithPasskey: vi.fn(),
-  state: { passkeySupported: true, allowRegistration: true, modernEnabled: true },
-}));
+const { get, post, getSiteStatus, authenticateWithPasskey, registerPasskey, state } = vi.hoisted(
+  () => ({
+    get: vi.fn(),
+    post: vi.fn(),
+    getSiteStatus: vi.fn(),
+    authenticateWithPasskey: vi.fn(),
+    registerPasskey: vi.fn(),
+    state: {
+      passkeySupported: true,
+      allowRegistration: true,
+      modernEnabled: true,
+      oauthEnabled: true,
+    },
+  })
+);
 
 vi.unmock('react-dom/client');
 // The original animated tabs observe layout, which jsdom does not implement.
@@ -23,7 +32,12 @@ vi.stubGlobal(
     disconnect() {}
   }
 );
-vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, options?: { provider?: string }) =>
+      options?.provider ? `${key}:${options.provider}` : key,
+  }),
+}));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock('@/utils/api', () => ({
   get,
@@ -35,8 +49,8 @@ vi.mock('@/utils/api', () => ({
 vi.mock('@/utils/setupApi', () => ({ getSiteStatus }));
 vi.mock('@/utils/passkey', () => ({
   isPasskeySupported: () => state.passkeySupported,
-  continueWithPasskey,
-  registerPasskey: vi.fn(),
+  authenticateWithPasskey,
+  registerPasskey,
   listPasskeys: vi.fn(),
   deletePasskey: vi.fn(),
 }));
@@ -72,16 +86,18 @@ function renderLogin(path = '/login?redirect=%2Fexplore') {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
+  sessionStorage.clear();
   state.passkeySupported = true;
   state.allowRegistration = true;
   state.modernEnabled = true;
+  state.oauthEnabled = true;
   getSiteStatus.mockImplementation(async () => ({
     data: {
       passkey: { enabled: state.modernEnabled },
       frontendConfig: { safeRoutes: ['login'] },
       ui: { allowRegistration: state.allowRegistration },
       oauth: {
-        enabled: state.modernEnabled,
+        enabled: state.modernEnabled && state.oauthEnabled,
         providers: { github: { enabled: true }, apple: { enabled: true } },
       },
     },
@@ -95,116 +111,129 @@ beforeEach(() => {
             isInitialized: true,
             ui: { allowRegistration: state.allowRegistration },
             oauth: {
-              enabled: state.modernEnabled,
+              enabled: state.modernEnabled && state.oauthEnabled,
               providers: { github: { enabled: true }, apple: { enabled: true } },
             },
           },
   }));
   post.mockResolvedValue({ data: tokens });
-  continueWithPasskey.mockResolvedValue(tokens);
+  authenticateWithPasskey.mockResolvedValue(tokens);
 });
 
 afterEach(cleanup);
 
 describe('passwordless registration', () => {
-  it('offers one combined Passkey entry alongside OAuth and keeps traditional forms behind other ways', async () => {
+  it('offers OAuth first and only Passkey login without any account-creation entry', async () => {
     renderLogin();
-    expect(await screen.findByRole('button', { name: 'entry.continueWithPasskey' })).toBeVisible();
-    expect(screen.getAllByRole('button', { name: 'entry.continueWithPasskey' })).toHaveLength(1);
-    expect(screen.getAllByRole('button', { name: 'entry.continueWithProvider' })).toHaveLength(2);
+    const passkeyLogin = await screen.findByRole('button', { name: 'passkey.loginWithPasskey' });
+    const oauthButtons = screen.getAllByRole('button', { name: /^entry.continueWithProvider/ });
+    expect(oauthButtons.map((button) => button.textContent)).toEqual([
+      'entry.continueWithProvider:Apple',
+      'entry.continueWithProvider:GitHub',
+    ]);
+    expect(oauthButtons[0]).toHaveClass('bg-primary');
+    expect(oauthButtons[1]).toHaveClass('border');
+    expect(oauthButtons[1]).not.toHaveClass('bg-primary');
+    expect(passkeyLogin).toHaveClass('border', 'w-full');
+    expect(passkeyLogin).not.toHaveClass('bg-primary');
+    expect(screen.getByText('entry.or')).toBeVisible();
     expect(screen.getAllByRole('button')).toHaveLength(4);
-    expect(
-      screen.queryByRole('button', { name: 'entry.createWithPasskey' })
-    ).not.toBeInTheDocument();
+    for (const oauthButton of oauthButtons) {
+      expect(
+        oauthButton.compareDocumentPosition(passkeyLogin) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+    }
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'entry.otherWays' }));
     await waitFor(() => expect(screen.getByLabelText('fields.usernameOrEmail')).toBeVisible());
     expect(screen.getByLabelText('fields.password')).toBeVisible();
   });
 
-  it('continues with a Passkey by submitting only username and preserves the requested destination', async () => {
+  it('uses the original login/register forms first when OAuth is unavailable but Passkey is enabled', async () => {
+    state.oauthEnabled = false;
     renderLogin();
-    fireEvent.click(await screen.findByRole('button', { name: 'entry.continueWithPasskey' }));
-    expect(screen.getAllByRole('textbox')).toHaveLength(1);
-    expect(screen.queryByLabelText('fields.email')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('fields.nickname')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('fields.password')).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: 'reader' } });
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-    await waitFor(() => expect(continueWithPasskey).toHaveBeenCalledWith({ username: 'reader' }));
+
+    const username = await screen.findByLabelText('fields.usernameOrEmail');
+    expect(username).toBeVisible();
+    expect(screen.getByLabelText('fields.password')).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'buttons.login' })).toBeVisible();
+    expect(screen.getByRole('tab', { name: 'buttons.register' })).toBeVisible();
+    const passwordLogin = screen.getByRole('button', { name: 'buttons.login' });
+    const passkeyLogin = screen.getByRole('button', { name: 'passkey.loginWithPasskey' });
+    expect(passwordLogin).toHaveClass('bg-primary');
+    expect(passkeyLogin).toHaveClass('border', 'w-full');
+    expect(passkeyLogin).not.toHaveClass('bg-primary');
+    expect(
+      passwordLogin.compareDocumentPosition(passkeyLogin) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    expect(screen.getByText('entry.or')).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /^entry.continueWithProvider/ })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'entry.otherWays' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'entry.back' })).not.toBeInTheDocument();
+
+    await act(async () =>
+      fireEvent.mouseDown(screen.getByRole('tab', { name: 'buttons.register' }), {
+        button: 0,
+        ctrlKey: false,
+      })
+    );
+    await waitFor(() => expect(screen.getByLabelText('fields.nickname')).toBeVisible());
+    expect(screen.getByLabelText('fields.email')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'passkey.loginWithPasskey' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'entry.back' })).not.toBeInTheDocument();
+  });
+
+  it('keeps secondary Passkey login independent of the empty traditional form without OAuth', async () => {
+    state.oauthEnabled = false;
+    renderLogin();
+    const passkeyLogin = await screen.findByRole('button', { name: 'passkey.loginWithPasskey' });
+    expect(screen.getByLabelText('fields.usernameOrEmail')).toHaveValue('');
+    expect(screen.getByLabelText('fields.password')).toHaveValue('');
+
+    fireEvent.click(passkeyLogin);
+
+    await waitFor(() => expect(authenticateWithPasskey).toHaveBeenCalledWith());
+    expect(post).not.toHaveBeenCalled();
+    expect(registerPasskey).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/explore'));
+  });
+
+  it('authenticates directly without asking for username and preserves the requested destination', async () => {
+    renderLogin();
+    fireEvent.click(await screen.findByRole('button', { name: 'passkey.loginWithPasskey' }));
+    await waitFor(() => expect(authenticateWithPasskey).toHaveBeenCalledWith());
+    expect(registerPasskey).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/explore'));
     expect(post).not.toHaveBeenCalled();
   });
 
-  it('keeps cancelled Passkey continuation on the username form without authenticating', async () => {
-    continueWithPasskey.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
+  it('keeps cancelled Passkey login on the main entry without opening registration', async () => {
+    authenticateWithPasskey.mockRejectedValue(new DOMException('cancelled', 'NotAllowedError'));
     renderLogin();
-    fireEvent.click(await screen.findByRole('button', { name: 'entry.continueWithPasskey' }));
-    fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: 'reader' } });
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'entry.continue' })));
+    await act(async () =>
+      fireEvent.click(await screen.findByRole('button', { name: 'passkey.loginWithPasskey' }))
+    );
     expect(toast.info).toHaveBeenCalledWith('passkey.cancelled');
     expect(authService.getAccessToken()).toBeNull();
-    expect(screen.getByLabelText('fields.username')).toHaveValue('reader');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button')).toHaveLength(4);
+    expect(registerPasskey).not.toHaveBeenCalled();
+    expect(post).not.toHaveBeenCalled();
     expect(screen.getByTestId('location')).toHaveTextContent('/login?redirect=');
   });
 
-  it('localizes a Passkey username conflict and preserves the entered username for retry', async () => {
-    continueWithPasskey.mockRejectedValue({
-      response: { data: { errorCode: 'username_unavailable' } },
-    });
+  it('does not create an account after a Passkey login failure', async () => {
+    authenticateWithPasskey.mockRejectedValue(new Error('Device unavailable'));
     renderLogin();
-    fireEvent.click(await screen.findByRole('button', { name: 'entry.continueWithPasskey' }));
-    fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: 'reader' } });
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('errors.usernameUnavailable'));
-    expect(screen.getByLabelText('fields.username')).toHaveValue('reader');
+    fireEvent.click(await screen.findByRole('button', { name: 'passkey.loginWithPasskey' }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('passkey.loginFailed'));
+    expect(registerPasskey).not.toHaveBeenCalled();
+    expect(post).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(authService.getAccessToken()).toBeNull();
-    continueWithPasskey.mockResolvedValue(tokens);
-    fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: 'reader_2' } });
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-    await waitFor(() =>
-      expect(continueWithPasskey).toHaveBeenLastCalledWith({ username: 'reader_2' })
-    );
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/explore'));
-  });
-
-  it.each([
-    ['passkey_not_available', 'errors.passkeyNotAvailable'],
-    ['registration_disabled', 'errors.registrationDisabled'],
-  ])(
-    'keeps %s on the username form without switching to registration or password login',
-    async (errorCode, message) => {
-      state.allowRegistration = errorCode !== 'registration_disabled';
-      continueWithPasskey.mockRejectedValue({ response: { data: { errorCode } } });
-      renderLogin();
-      fireEvent.click(await screen.findByRole('button', { name: 'entry.continueWithPasskey' }));
-      fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: 'reader' } });
-      fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-      await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
-      expect(screen.getByLabelText('fields.username')).toHaveValue('reader');
-      expect(screen.queryByLabelText('fields.email')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('fields.password')).not.toBeInTheDocument();
-      expect(authService.getAccessToken()).toBeNull();
-      expect(post).not.toHaveBeenCalled();
-    }
-  );
-
-  it('requires a username before starting the Passkey ceremony', async () => {
-    renderLogin();
-    fireEvent.click(await screen.findByRole('button', { name: 'entry.continueWithPasskey' }));
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-    expect(toast.error).toHaveBeenCalledWith('usernameRequired');
-    expect(continueWithPasskey).not.toHaveBeenCalled();
-  });
-
-  it('lets existing long usernames reach account lookup instead of enforcing new-signup limits', async () => {
-    const username = 'legacy_oauth_user_with_a_long_username';
-    renderLogin();
-    fireEvent.click(await screen.findByRole('button', { name: 'entry.continueWithPasskey' }));
-    fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: username } });
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-    await waitFor(() => expect(continueWithPasskey).toHaveBeenCalledWith({ username }));
-    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/explore'));
   });
 
   it('retains the original traditional login/register tabs and registration fields', async () => {
@@ -235,24 +264,24 @@ describe('passwordless registration', () => {
         nickname: 'Reader',
       })
     );
-    expect(continueWithPasskey).not.toHaveBeenCalled();
+    expect(registerPasskey).not.toHaveBeenCalled();
   });
 
-  it('keeps the combined Passkey entry for existing users when registration is closed', async () => {
+  it('keeps direct Passkey login when account registration is closed', async () => {
     state.allowRegistration = false;
     renderLogin();
-    expect(await screen.findByRole('button', { name: 'entry.continueWithPasskey' })).toBeVisible();
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continueWithPasskey' }));
-    fireEvent.change(screen.getByLabelText('fields.username'), { target: { value: 'reader' } });
-    fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
-    await waitFor(() => expect(continueWithPasskey).toHaveBeenCalledWith({ username: 'reader' }));
+    expect(await screen.findByRole('button', { name: 'passkey.loginWithPasskey' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: 'buttons.register' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'passkey.loginWithPasskey' }));
+    await waitFor(() => expect(authenticateWithPasskey).toHaveBeenCalledWith());
+    expect(registerPasskey).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/explore'));
   });
 
   it('hides traditional account registration while retaining old-user login when registration is closed', async () => {
     state.allowRegistration = false;
     renderLogin();
-    await screen.findByRole('button', { name: 'entry.continueWithPasskey' });
+    await screen.findByRole('button', { name: 'passkey.loginWithPasskey' });
     fireEvent.click(screen.getByRole('button', { name: 'entry.otherWays' }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'buttons.login' })).toBeVisible()
@@ -266,7 +295,7 @@ describe('passwordless registration', () => {
     await waitFor(() => expect(screen.getByLabelText('fields.usernameOrEmail')).toBeVisible());
     expect(screen.queryByRole('button', { name: 'entry.otherWays' })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'entry.continueWithPasskey' })
+      screen.queryByRole('button', { name: 'passkey.loginWithPasskey' })
     ).not.toBeInTheDocument();
   });
 
@@ -280,7 +309,7 @@ describe('passwordless registration', () => {
     );
     renderLogin();
     expect(
-      screen.queryByRole('button', { name: 'entry.continueWithPasskey' })
+      screen.queryByRole('button', { name: 'passkey.loginWithPasskey' })
     ).not.toBeInTheDocument();
     await act(async () =>
       resolveStatus({
@@ -298,10 +327,10 @@ describe('passwordless registration', () => {
     state.passkeySupported = false;
     renderLogin();
     expect(
-      await screen.findAllByRole('button', { name: 'entry.continueWithProvider' })
+      await screen.findAllByRole('button', { name: /^entry.continueWithProvider/ })
     ).toHaveLength(2);
     expect(
-      screen.queryByRole('button', { name: 'entry.continueWithPasskey' })
+      screen.queryByRole('button', { name: 'passkey.loginWithPasskey' })
     ).not.toBeInTheDocument();
   });
 
@@ -327,4 +356,32 @@ describe('passwordless registration', () => {
     );
     expect(authService.getAccessToken()).toBeNull();
   });
+
+  it.each([
+    ['ordinary web signup', '/explore', false, true],
+    ['iOS signup', '/explore', true, false],
+    ['MCP authorization signup', '/oauth/authorize?requestId=client-request', false, false],
+  ] as const)(
+    'queues a Passkey suggestion at username-confirm completion only for %s',
+    async (_scenario, redirect, isIosLogin, shouldQueue) => {
+      const accountId = 'new-oauth-account';
+      const accessToken = `header.${btoa(JSON.stringify({ exp: 4102444800, userId: accountId, username: 'reader' }))}.signature`;
+      post.mockResolvedValueOnce({
+        data: { ...tokens, accessToken, completionUrl: '/login?oauth=success' },
+      });
+      const params = new URLSearchParams({
+        oauth: 'register',
+        registrationToken: 'pending',
+        redirect,
+        ...(isIosLogin ? { type: 'ioslogin' } : {}),
+      });
+      renderLogin(`/login?${params}`);
+      await screen.findByLabelText('fields.username');
+
+      fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
+
+      await waitFor(() => expect(authService.getAccessToken()).toBe(accessToken));
+      expect(readPasskeyAdoptionIntent()?.accountId ?? null).toBe(shouldQueue ? accountId : null);
+    }
+  );
 });

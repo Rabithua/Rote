@@ -1,4 +1,5 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
+import { queuePasskeyAdoption } from '@/features/passkey-adoption/intent';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { get, getApiUrl, publicPost } from '@/utils/api';
 import { authService } from '@/utils/auth';
@@ -16,7 +17,7 @@ import { StandardLoginPanel } from './components/StandardLoginPanel';
 import { AuthScreen } from './components/AuthScreen';
 import type { AuthenticationTokens, AuthView, LoginData, RegisterData } from './types';
 import { useAccountRegistration } from './useAccountRegistration';
-import { usePasskeyContinuation } from './usePasskeyContinuation';
+import { usePasskeySignIn } from './usePasskeySignIn';
 import { createLoginDataSchema, getZodErrorMessage } from './validation';
 
 function Login() {
@@ -79,11 +80,11 @@ function Login() {
     siteStatus,
     onAuthenticated: authenticated,
   });
-  const passkey = usePasskeyContinuation({
-    username: registerData.username,
+  const passkey = usePasskeySignIn({
     onAuthenticated: authenticated,
   });
-  const disabled = isLoggingIn || passkey.isContinuing || registration.isRegistering || !siteStatus;
+  const disabled =
+    isLoggingIn || passkey.isAuthenticating || registration.isRegistering || !siteStatus;
 
   async function login() {
     const validation = createLoginDataSchema(t).safeParse(loginData);
@@ -130,6 +131,7 @@ function Login() {
     const errorMessage = searchParams.get('message');
     if (oauthStatus === 'success' && token && refreshToken) {
       authService.setTokens(token, refreshToken);
+      queuePasskeyAdoption(token, postLoginRedirect, isIosLoginFlow);
       toast.success(
         t(
           searchParams.get('provider') === 'apple'
@@ -170,6 +172,7 @@ function Login() {
           onBack={() => navigate(retryLoginPath, { replace: true })}
           onComplete={(tokens, completionUrl) => {
             authService.setTokens(tokens.accessToken, tokens.refreshToken);
+            queuePasskeyAdoption(tokens.accessToken, postLoginRedirect, isIosLoginFlow);
             if (isIosLoginFlow) setIsRedirectingToIos(true);
             window.location.assign(completionUrl);
           }}
@@ -197,7 +200,7 @@ function Login() {
           onLoginFieldChange={(key, value) => setLoginData((data) => ({ ...data, [key]: value }))}
           onOAuthLogin={handleOAuthLogin}
           onRegister={registration.register}
-          onPasskeyContinue={passkey.continueWithUsername}
+          onPasskeyLogin={passkey.authenticate}
           onRegisterFieldChange={(key, value) =>
             setRegisterData((data) => ({ ...data, [key]: value }))
           }

@@ -1,12 +1,9 @@
 {
   "registrationDisabled": "Registration is currently disabled",
   "passkeyDisabled": "Passkey is disabled",
-  "passkeyNotAvailable": "This account does not have a passkey. Use another sign-in method.",
   "usernameUnavailable": "Username already exists",
   "usernameInvalid": "Enter a valid username",
   "emailUnavailable": "Email already exists",
-  "registrationExpired": "Registration expired or invalid",
-  "passkeyVerificationFailed": "Passkey verification failed",
   "lastLoginMethod": "Add another login method before removing your last one",
   "userNotFound": "User not found",
   "currentPasswordRequired": "Current password is required to clear password",

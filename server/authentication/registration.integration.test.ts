@@ -1,8 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import crypto from 'crypto';
 import { and, eq, like } from 'drizzle-orm';
-import { isoCBOR } from '@simplewebauthn/server/helpers';
-import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 
 const databaseUrl = process.env.AUTH_REGISTRATION_TEST_DATABASE_URL;
 if (databaseUrl && new URL(databaseUrl).pathname !== '/rote_auth_registration_test') {
@@ -47,56 +45,6 @@ function request(path: string, body: unknown, token?: string) {
   });
 }
 
-function registrationCredential(challenge: string): RegistrationResponseJSON {
-  const credentialId = crypto.randomBytes(32);
-  const { publicKey } = crypto.generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
-  const jwk = publicKey.export({ format: 'jwk' });
-  const cose = isoCBOR.encode(
-    new Map([
-      [1, 2],
-      [3, -7],
-      [-1, 1],
-      [-2, Buffer.from(jwk.x!, 'base64url')],
-      [-3, Buffer.from(jwk.y!, 'base64url')],
-    ])
-  );
-  const length = Buffer.alloc(2);
-  length.writeUInt16BE(credentialId.length);
-  const authenticatorData = Buffer.concat([
-    crypto.createHash('sha256').update('localhost').digest(),
-    Buffer.from([0x45]),
-    Buffer.alloc(4),
-    Buffer.alloc(16),
-    length,
-    credentialId,
-    cose,
-  ]);
-  const attestation = isoCBOR.encode(
-    new Map([
-      ['fmt', 'none'],
-      ['attStmt', new Map()],
-      ['authData', authenticatorData],
-    ])
-  );
-  return {
-    id: credentialId.toString('base64url'),
-    rawId: credentialId.toString('base64url'),
-    type: 'public-key',
-    response: {
-      attestationObject: Buffer.from(attestation).toString('base64url'),
-      clientDataJSON: Buffer.from(
-        JSON.stringify({
-          type: 'webauthn.create',
-          challenge,
-          origin: 'http://localhost:3001',
-        })
-      ).toString('base64url'),
-      transports: ['internal'],
-    },
-    clientExtensionResults: {},
-  };
-}
-
 async function createCredentialAccount(username: string) {
   const [user] = await db.insert(users).values({ username, email: null }).returning();
   const [passkey] = await db
@@ -114,7 +62,7 @@ async function createCredentialAccount(username: string) {
   return { user, passkey };
 }
 
-suite('username-only registration and credential ownership', () => {
+suite('traditional registration and credential ownership', () => {
   beforeAll(async () => {
     process.env.POSTGRESQL_URL = databaseUrl!;
     ({ users, userPasskeys, userOAuthBindings, settings } = await import('../drizzle/schema'));
@@ -161,56 +109,6 @@ suite('username-only registration and credential ownership', () => {
     expect(data.user.email).toBe('identity@example.test');
   });
 
-  it('creates a discoverable passkey account with only username after verification', async () => {
-    const response = await request('/register/passkey/options', {
-      username: 'identity-passkey',
-      email: 'ignored@example.test',
-      nickname: 'Ignored name',
-    });
-    expect(response.status).toBe(200);
-    const { data } = await response.json();
-    expect(data.options.user.name).toBe('identity-passkey');
-    expect(data.options.authenticatorSelection.residentKey).toBe('required');
-    expect(
-      (await db.select().from(users).where(eq(users.username, 'identity-passkey'))).length
-    ).toBe(0);
-    const verified = await request('/register/passkey/verify', {
-      registrationToken: data.registrationToken,
-      credential: registrationCredential(data.options.challenge),
-    });
-    expect(verified.status).toBe(201);
-    const { data: registered } = await verified.json();
-    expect(registered.user.email).toBeNull();
-    expect(registered.user.nickname).toBe('identity-passkey');
-    expect(registered.user.id).toBe(Buffer.from(data.options.user.id, 'base64url').toString());
-    expect(
-      (await db.select().from(userPasskeys).where(eq(userPasskeys.userid, registered.user.id)))
-        .length
-    ).toBe(1);
-    const replay = await request('/register/passkey/verify', {
-      registrationToken: data.registrationToken,
-    });
-    expect(replay.status).toBe(400);
-  });
-
-  it('reports a username claimed after passkey options without leaving a second credential', async () => {
-    const response = await request('/register/passkey/options', { username: 'identity-claimed' });
-    const { data } = await response.json();
-    const [existing] = await db
-      .insert(users)
-      .values({ username: 'identity-claimed', email: null })
-      .returning();
-    const verified = await request('/register/passkey/verify', {
-      registrationToken: data.registrationToken,
-      credential: registrationCredential(data.options.challenge),
-    });
-    expect(verified.status).toBe(409);
-    expect((await verified.json()).errorCode).toBe('username_unavailable');
-    expect(
-      (await db.select().from(userPasskeys).where(eq(userPasskeys.userid, existing.id))).length
-    ).toBe(0);
-  });
-
   it('reports traditional username and email conflicts without a server error', async () => {
     await request('/register', {
       username: 'identity-existing',
@@ -231,20 +129,6 @@ suite('username-only registration and credential ownership', () => {
     });
     expect(emailConflict.status).toBe(409);
     expect((await emailConflict.json()).errorCode).toBe('email_unavailable');
-  });
-
-  it('rechecks registration policy before committing a pending passkey registration', async () => {
-    const response = await request('/register/passkey/options', { username: 'identity-pending' });
-    const { data } = await response.json();
-    await setConfig('ui', { allowRegistration: false });
-    const result = await request('/register/passkey/verify', {
-      registrationToken: data.registrationToken,
-      credential: registrationCredential(data.options.challenge),
-    });
-    expect(result.status).toBe(403);
-    expect(
-      (await db.select().from(users).where(eq(users.username, 'identity-pending'))).length
-    ).toBe(0);
   });
 
   it('allows several accounts without email and keeps the native password-login string contract', async () => {
@@ -304,28 +188,10 @@ suite('username-only registration and credential ownership', () => {
       email: 'closed@example.test',
       password: 'identity-password',
     });
-    const passkey = await request('/register/passkey/options', { username: 'identity-closed' });
     expect(traditional.status).toBe(403);
-    expect(passkey.status).toBe(403);
     expect(
       (await db.select().from(users).where(eq(users.username, 'identity-closed'))).length
     ).toBe(0);
-  });
-
-  it('rejects a pending passkey after another process disables passkeys', async () => {
-    const options = await request('/register/passkey/options', { username: 'identity-stale' });
-    const { data } = await options.json();
-    await db
-      .update(settings)
-      .set({ config: { ...security, passkey: { enabled: false } } })
-      .where(eq(settings.group, 'security'));
-    expect(getGlobalConfig('security')).toMatchObject({ passkey: { enabled: true } });
-    const verified = await request('/register/passkey/verify', {
-      registrationToken: data.registrationToken,
-      credential: registrationCredential(data.options.challenge),
-    });
-    expect(verified.status).toBe(400);
-    expect((await verified.json()).errorCode).toBe('passkey_disabled');
   });
 
   it('keeps a password when another process disables the only alternate credential', async () => {

@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { PasskeyAdoptionNotice } from '@/features/passkey-adoption/PasskeyAdoptionNotice';
 import {
   Dialog,
   DialogContent,
@@ -186,6 +187,7 @@ function LayoutDashboard({
 
   return (
     <>
+      <PasskeyAdoptionNotice accountId={profile?.id} active={!anonymousReader} />
       <div className="bg-background text-primary mx-auto w-full max-w-6xl [--dashboard-bottom-nav-height:calc(2.5rem+max(1.5rem,env(safe-area-inset-bottom)))] sm:[--dashboard-bottom-nav-height:0px]">
         <div className="mx-auto flex w-dvw max-w-[1440px] font-sans sm:divide-x xl:w-[90%]">
           <div className="bg-background/90 text-primary fixed bottom-0 z-50 flex h-[var(--dashboard-bottom-nav-height)] w-full shrink-0 flex-row items-start justify-around px-1 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom))] backdrop-blur-xl sm:sticky sm:top-0 sm:h-dvh sm:w-fit sm:flex-col sm:justify-center sm:gap-4 sm:px-2 sm:py-2 lg:w-[200px] lg:px-4">

@@ -4,76 +4,33 @@ import {
   browserSupportsWebAuthn,
 } from '@simplewebauthn/browser';
 import { get, post, publicPost, del } from './api';
-
-type PasskeyAccessOptions =
-  | {
-      method: 'register';
-      options: Parameters<typeof startRegistration>[0]['optionsJSON'];
-      registrationToken: string;
-    }
-  | {
-      method: 'authenticate';
-      options: Parameters<typeof startAuthentication>[0]['optionsJSON'];
-      challengeKey: string;
-    };
+import { authService } from './auth';
 
 export function isPasskeySupported(): boolean {
   return browserSupportsWebAuthn();
 }
 
-export async function continueWithPasskey(data: { username: string }): Promise<{
-  user: any;
-  accessToken: string;
-  refreshToken: string;
-}> {
-  const response = await publicPost<{ data: PasskeyAccessOptions }>(
-    '/auth/passkey/continue/options',
-    data
-  );
-  const options = response.data;
-  if (options.method === 'register') {
-    const credential = await startRegistration({ optionsJSON: options.options });
-    const result = await publicPost('/auth/register/passkey/verify', {
-      credential,
-      registrationToken: options.registrationToken,
-      deviceName: getDeviceName(),
-    });
-    return result.data;
+export async function registerPasskey(): Promise<boolean> {
+  const accessToken = authService.getAccessToken();
+  const accountId = accessToken && authService.getUserInfoFromToken(accessToken)?.userId;
+  function assertCurrentAccount() {
+    const currentToken = authService.getAccessToken();
+    if (
+      !accountId ||
+      !currentToken ||
+      authService.getUserInfoFromToken(currentToken)?.userId !== accountId
+    ) {
+      throw new DOMException('Authentication account changed', 'AbortError');
+    }
   }
 
-  const credential = await startAuthentication({ optionsJSON: options.options });
-  const result = await publicPost('/auth/passkey/authenticate/verify', {
-    credential,
-    challengeKey: options.challengeKey,
-  });
-  return result.data;
-}
-
-export async function registerWithPasskey(data: {
-  username: string;
-}): Promise<{ user: any; accessToken: string; refreshToken: string }> {
-  // Step 1: validate user data, get passkey options
-  const optionsRes = await publicPost('/auth/register/passkey/options', data);
-  const { options, registrationToken } = optionsRes.data;
-
-  // Step 2: browser WebAuthn ceremony
-  const credential = await startRegistration({ optionsJSON: options });
-
-  // Step 3: verify passkey + create account atomically
-  const verifyRes = await publicPost('/auth/register/passkey/verify', {
-    credential,
-    registrationToken,
-    deviceName: getDeviceName(),
-  });
-
-  return verifyRes.data;
-}
-
-export async function registerPasskey(): Promise<boolean> {
+  assertCurrentAccount();
   const res = await post('/auth/passkey/register/options', {});
   const { options } = res.data;
+  assertCurrentAccount();
 
   const credential = await startRegistration({ optionsJSON: options });
+  assertCurrentAccount();
 
   await post('/auth/passkey/register/verify', {
     credential,

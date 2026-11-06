@@ -40,13 +40,7 @@ export class AuthenticationPolicyError extends Error {
   }
 }
 
-export function requireAccountRegistration(
-  policy: AuthenticationPolicy,
-  method: 'password' | 'passkey'
-) {
+export function requireAccountRegistration(policy: AuthenticationPolicy) {
   if (policy.ui?.allowRegistration === false)
     throw new AuthenticationPolicyError('registration_disabled');
-  if (method === 'passkey' && policy.security?.passkey?.enabled === false) {
-    throw new AuthenticationPolicyError('passkey_disabled');
-  }
 }

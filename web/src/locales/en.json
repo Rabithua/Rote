@@ -270,21 +270,19 @@
         "loginWithPasskey": "Login with Passkey",
         "loginSuccess": "Login successful",
         "loginFailed": "Passkey login failed",
-        "registerSuccess": "Passkey registered successfully",
-        "registerFailed": "Passkey registration failed",
-        "cancelled": "Operation cancelled",
-        "passwordOptionalHint": "You can skip the password and register with a passkey."
+        "registerSuccess": "Passkey added",
+        "registerFailed": "Could not add passkey",
+        "cancelled": "Operation cancelled"
       },
       "entry": {
+        "or": "or",
         "continueWithProvider": "Continue with {{provider}}",
         "otherWays": "Other ways",
         "back": "Back",
         "backToLogin": "Back to sign in",
         "usernameHint": "1–20 letters, numbers, underscores, or hyphens. This appears in your profile URL.",
         "oauthCreateDescription": "You’re connected with {{provider}}. Confirm a username to start writing.",
-        "continueWithPasskey": "Continue with a passkey",
-        "continue": "Continue",
-        "passkeyContinueHint": "Enter your username to sign in or create your account."
+        "continue": "Continue"
       },
       "errors": {
         "oauthRegistrationExpired": "Your sign-up authorization expired. Continue with your provider again.",
@@ -295,12 +293,8 @@
         "passkeyDisabled": "Passkeys are disabled. Choose another way.",
         "usernameUnavailable": "That username is taken. Please choose another.",
         "oauthRegistrationFailed": "Could not complete sign-up. Please try again.",
-        "registrationExpired": "Sign-up expired. Please create your passkey again.",
-        "passkeyVerificationFailed": "Could not verify your passkey. Please try again.",
         "registrationInvalid": "Please check your sign-up details.",
-        "emailUnavailable": "That email is already in use. Sign in to your existing account.",
-        "passkeyNotAvailable": "This account has no passkey. Use another sign-in method.",
-        "usernameLookupMaxLength": "Username cannot exceed 100 characters."
+        "emailUnavailable": "That email is already in use. Sign in to your existing account."
       }
     },
     "oauthAuthorize": {
@@ -2011,6 +2005,13 @@
       "retry": "Try again",
       "article": "Linked article",
       "tags": "Tags"
+    },
+    "passkeyAdoption": {
+      "title": "Sign in faster next time",
+      "description": "Save a passkey to sign in with your face, fingerprint, or device PIN.",
+      "create": "Add a passkey",
+      "creating": "Adding a passkey…",
+      "later": "Not now"
     }
   },
   "components": {

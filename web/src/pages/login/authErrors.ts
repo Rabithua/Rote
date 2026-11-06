@@ -9,12 +9,9 @@ const errorTranslationKeys: Record<string, string> = {
   registration_disabled: 'errors.registrationDisabled',
   oauth_disabled: 'errors.oauthDisabled',
   passkey_disabled: 'errors.passkeyDisabled',
-  passkey_not_available: 'errors.passkeyNotAvailable',
   username_unavailable: 'errors.usernameUnavailable',
   email_unavailable: 'errors.emailUnavailable',
   username_invalid: 'usernameFormat',
-  registration_expired: 'errors.registrationExpired',
-  passkey_verification_failed: 'errors.passkeyVerificationFailed',
   registration_invalid: 'errors.registrationInvalid',
 };
 

@@ -1,18 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { continueWithPasskey } from './passkey';
+import { authenticateWithPasskey, registerPasskey } from './passkey';
+import { authService } from './auth';
 
-const { publicPost, startRegistration, startAuthentication } = vi.hoisted(() => ({
+const { publicPost, post, startRegistration, startAuthentication } = vi.hoisted(() => ({
   publicPost: vi.fn(),
+  post: vi.fn(),
   startRegistration: vi.fn(),
   startAuthentication: vi.fn(),
 }));
 
-vi.mock('./api', () => ({
-  publicPost,
-  get: vi.fn(),
-  post: vi.fn(),
-  del: vi.fn(),
-}));
+vi.mock('./api', () => ({ publicPost, post, get: vi.fn(), del: vi.fn() }));
 vi.mock('@simplewebauthn/browser', () => ({
   startRegistration,
   startAuthentication,
@@ -26,107 +23,154 @@ const tokens = { user: { username: 'reader' }, accessToken: 'access', refreshTok
 
 beforeEach(() => {
   vi.resetAllMocks();
+  localStorage.clear();
   startRegistration.mockResolvedValue(credential);
   startAuthentication.mockResolvedValue(credential);
 });
 
-describe('continue with a passkey', () => {
-  it('creates a credential only when the server selects new-account registration', async () => {
+describe('explicit Passkey access', () => {
+  it('authenticates discoverable credentials without sending a username', async () => {
     publicPost
       .mockResolvedValueOnce({
-        data: {
-          method: 'register',
-          options: registrationOptions,
-          registrationToken: 'new-account-token',
-        },
+        data: { options: authenticationOptions, challengeKey: 'login-challenge' },
       })
       .mockResolvedValueOnce({ data: tokens });
 
-    await expect(continueWithPasskey({ username: 'reader' })).resolves.toEqual(tokens);
+    await expect(authenticateWithPasskey()).resolves.toEqual(tokens);
 
-    expect(publicPost).toHaveBeenNthCalledWith(1, '/auth/passkey/continue/options', {
-      username: 'reader',
-    });
-    expect(startRegistration).toHaveBeenCalledWith({ optionsJSON: registrationOptions });
-    expect(startAuthentication).not.toHaveBeenCalled();
-    expect(publicPost).toHaveBeenNthCalledWith(2, '/auth/register/passkey/verify', {
-      credential,
-      registrationToken: 'new-account-token',
-      deviceName: expect.any(String),
-    });
-    expect(publicPost).toHaveBeenCalledTimes(2);
-  });
-
-  it('authenticates an existing account with the challenge selected for that account', async () => {
-    publicPost
-      .mockResolvedValueOnce({
-        data: {
-          method: 'authenticate',
-          options: authenticationOptions,
-          challengeKey: 'existing-account-challenge',
-        },
-      })
-      .mockResolvedValueOnce({ data: tokens });
-
-    await expect(continueWithPasskey({ username: 'reader' })).resolves.toEqual(tokens);
-
+    expect(publicPost).toHaveBeenNthCalledWith(1, '/auth/passkey/authenticate/options', {});
     expect(startAuthentication).toHaveBeenCalledWith({ optionsJSON: authenticationOptions });
-    expect(startRegistration).not.toHaveBeenCalled();
     expect(publicPost).toHaveBeenNthCalledWith(2, '/auth/passkey/authenticate/verify', {
       credential,
-      challengeKey: 'existing-account-challenge',
+      challengeKey: 'login-challenge',
     });
-    expect(publicPost).toHaveBeenCalledTimes(2);
+    expect(startRegistration).not.toHaveBeenCalled();
   });
 
-  it.each(['register', 'authenticate'] as const)(
-    'does not verify or switch methods after the user cancels %s',
-    async (method) => {
-      const cancellation = new DOMException('cancelled', 'NotAllowedError');
-      publicPost.mockResolvedValueOnce({
-        data:
-          method === 'register'
-            ? { method, options: registrationOptions, registrationToken: 'pending' }
-            : { method, options: authenticationOptions, challengeKey: 'pending' },
-      });
-      (method === 'register' ? startRegistration : startAuthentication).mockRejectedValueOnce(
-        cancellation
-      );
+  it('does not verify or create a credential when login is cancelled', async () => {
+    const cancellation = new DOMException('cancelled', 'NotAllowedError');
+    publicPost.mockResolvedValueOnce({
+      data: { options: authenticationOptions, challengeKey: 'pending' },
+    });
+    startAuthentication.mockRejectedValueOnce(cancellation);
 
-      await expect(continueWithPasskey({ username: 'reader' })).rejects.toBe(cancellation);
+    await expect(authenticateWithPasskey()).rejects.toBe(cancellation);
 
-      expect(publicPost).toHaveBeenCalledTimes(1);
-      expect(
-        method === 'register' ? startAuthentication : startRegistration
-      ).not.toHaveBeenCalled();
+    expect(publicPost).toHaveBeenCalledTimes(1);
+    expect(startRegistration).not.toHaveBeenCalled();
+  });
+
+  it('propagates an unknown credential instead of switching to account creation', async () => {
+    const unknownCredential = { response: { data: { errorCode: 'passkey_not_found' } } };
+    publicPost
+      .mockResolvedValueOnce({ data: { options: authenticationOptions, challengeKey: 'pending' } })
+      .mockRejectedValueOnce(unknownCredential);
+
+    await expect(authenticateWithPasskey()).rejects.toBe(unknownCredential);
+
+    expect(publicPost).toHaveBeenCalledTimes(2);
+    expect(startRegistration).not.toHaveBeenCalled();
+  });
+});
+
+describe('adding a Passkey to the current account', () => {
+  const tokenFor = (userId: string, version = 'original') =>
+    `header.${btoa(JSON.stringify({ userId, version, exp: 4102444800 }))}.signature`;
+  const accountToken = tokenFor('account-a');
+
+  function replaceSession(kind: 'same-tab' | 'cross-tab' | 'logout') {
+    if (kind === 'same-tab') {
+      authService.setTokens(tokenFor('account-b'), 'account-b-refresh-token');
+    } else if (kind === 'cross-tab') {
+      // Another tab changes localStorage without incrementing this tab's revision.
+      localStorage.setItem('rote_access_token', tokenFor('account-b'));
+    } else {
+      authService.clearTokens();
     }
-  );
+  }
 
-  it.each(['passkey_not_available', 'registration_disabled'])(
-    'does not attempt credential creation after %s',
-    async (errorCode) => {
-      const rejection = { response: { data: { errorCode } } };
-      publicPost.mockRejectedValueOnce(rejection);
+  it('enrolls for an unchanged authenticated session', async () => {
+    authService.setTokens(accountToken, 'account-a-refresh-token');
+    post
+      .mockResolvedValueOnce({ data: { options: registrationOptions } })
+      .mockResolvedValueOnce({ data: {} });
 
-      await expect(continueWithPasskey({ username: 'reader' })).rejects.toBe(rejection);
+    await expect(registerPasskey()).resolves.toBe(true);
+
+    expect(startRegistration).toHaveBeenCalledWith({ optionsJSON: registrationOptions });
+    expect(post).toHaveBeenNthCalledWith(1, '/auth/passkey/register/options', {});
+    expect(post).toHaveBeenNthCalledWith(2, '/auth/passkey/register/verify', {
+      credential,
+      deviceName: expect.any(String),
+    });
+  });
+
+  it('allows a same-account token renewal during the OS ceremony', async () => {
+    authService.setTokens(accountToken, 'account-a-refresh-token');
+    post
+      .mockResolvedValueOnce({ data: { options: registrationOptions } })
+      .mockResolvedValueOnce({ data: {} });
+    startRegistration.mockImplementationOnce(async () => {
+      authService.setTokens(tokenFor('account-a', 'renewed'), 'renewed-refresh-token');
+      return credential;
+    });
+
+    await expect(registerPasskey()).resolves.toBe(true);
+
+    expect(post).toHaveBeenCalledWith('/auth/passkey/register/verify', {
+      credential,
+      deviceName: expect.any(String),
+    });
+  });
+
+  it.each(['same-tab', 'cross-tab', 'logout'] as const)(
+    'does not open the OS ceremony after a %s session change while options are pending',
+    async (kind) => {
+      authService.setTokens(accountToken, 'account-a-refresh-token');
+      let resolveOptions!: (value: unknown) => void;
+      post.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveOptions = resolve;
+          })
+      );
+      const enrollment = registerPasskey();
+      const rejection = expect(enrollment).rejects.toMatchObject({ name: 'AbortError' });
+
+      replaceSession(kind);
+      resolveOptions({ data: { options: registrationOptions } });
+      await rejection;
 
       expect(startRegistration).not.toHaveBeenCalled();
-      expect(startAuthentication).not.toHaveBeenCalled();
-      expect(publicPost).toHaveBeenCalledTimes(1);
+      expect(post).toHaveBeenCalledTimes(1);
     }
   );
 
-  it('propagates a registration race instead of retrying or authenticating another account', async () => {
-    const conflict = { response: { data: { errorCode: 'username_unavailable' } } };
-    publicPost
-      .mockResolvedValueOnce({
-        data: { method: 'register', options: registrationOptions, registrationToken: 'pending' },
-      })
-      .mockRejectedValueOnce(conflict);
+  it.each(['same-tab', 'cross-tab', 'logout'] as const)(
+    'does not verify an old credential after a %s session change during the OS ceremony',
+    async (kind) => {
+      authService.setTokens(accountToken, 'account-a-refresh-token');
+      post.mockResolvedValueOnce({ data: { options: registrationOptions } });
+      let resolveCredential!: (value: unknown) => void;
+      const ceremonyStarted = new Promise<void>((resolveStarted) => {
+        startRegistration.mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              resolveCredential = resolve;
+              resolveStarted();
+            })
+        );
+      });
+      const enrollment = registerPasskey();
+      const rejection = expect(enrollment).rejects.toMatchObject({ name: 'AbortError' });
+      await ceremonyStarted;
 
-    await expect(continueWithPasskey({ username: 'reader' })).rejects.toBe(conflict);
+      replaceSession(kind);
+      resolveCredential(credential);
+      await rejection;
 
-    expect(publicPost).toHaveBeenCalledTimes(2);
-    expect(startAuthentication).not.toHaveBeenCalled();
-  });
+      expect(post).toHaveBeenCalledTimes(1);
+      expect(post).not.toHaveBeenCalledWith('/auth/passkey/register/verify', expect.anything());
+    }
+  );
 });
