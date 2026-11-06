@@ -1,6 +1,4 @@
-import crypto from 'crypto';
 import {
-  generateAuthenticationOptions,
   generateRegistrationOptions,
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
@@ -10,11 +8,11 @@ import {
 } from '@simplewebauthn/server';
 import { Hono } from 'hono';
 import { LastLoginMethodError } from '../../authentication/loginMethods';
-import type { User } from '../../drizzle/schema';
+import { users, userPasskeys, type User } from '../../drizzle/schema';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import type { SecurityConfig, SiteConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
-import { getConfig, getGlobalConfig } from '../../utils/config';
 import {
   createUserPasskey,
   deleteUserPasskey,
@@ -25,53 +23,36 @@ import {
 import { oneUser } from '../../utils/dbMethods/user';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
+import { UsernameZod } from '../../utils/zod';
+import db from '../../utils/drizzle';
+import messages from '../../authentication/messages.json';
+import { AuthenticationPolicyError, readAuthenticationPolicy } from '../../authentication/policy';
+import {
+  consumePasskeyChallenge,
+  createPasskeyAuthenticationOptions,
+  getPasskeyConfig,
+  storePasskeyChallenge,
+} from '../../authentication/passkeyAuthentication';
+import { createPasskeyRegistrationOptions } from '../../authentication/passkeyRegistrationOptions';
+import { UserIdentityConflict } from '../../utils/dbMethods/user';
 
 const passkeyRouter = new Hono<{ Variables: HonoVariables }>();
 
-// In-memory challenge store with 2-minute TTL
-const challengeStore = new Map<string, { challenge: string; expiresAt: number }>();
-
-function storeChallenge(key: string, challenge: string) {
-  // Clean up expired entries periodically
-  if (challengeStore.size > 1000) {
-    const now = Date.now();
-    for (const [k, v] of challengeStore) {
-      if (now > v.expiresAt) challengeStore.delete(k);
-    }
+passkeyRouter.onError((error, c) => {
+  if (error instanceof AuthenticationPolicyError) {
+    return c.json(
+      { ...createResponse(null, error.message, error.status), errorCode: error.code },
+      error.status
+    );
   }
-  challengeStore.set(key, { challenge, expiresAt: Date.now() + 120_000 });
-}
-
-function getAndDeleteChallenge(key: string): string | null {
-  const entry = challengeStore.get(key);
-  if (!entry || Date.now() > entry.expiresAt) {
-    challengeStore.delete(key);
-    return null;
+  if (error instanceof UserIdentityConflict) {
+    return c.json(
+      { ...createResponse(null, error.message, 409), errorCode: 'username_unavailable' },
+      409
+    );
   }
-  challengeStore.delete(key);
-  return entry.challenge;
-}
-
-// Resolve passkey RP config from site config
-async function getPasskeyConfig(requestOrigin?: string) {
-  const siteConfig = await getConfig<SiteConfig>('site');
-  const securityConfig = getGlobalConfig<SecurityConfig>('security');
-  const passkeyConfig = securityConfig?.passkey;
-
-  // Use the actual request origin if provided (browser's Origin header)
-  // This handles cases where user accesses via localhost but frontendUrl is configured differently
-  const frontendUrl = requestOrigin || siteConfig?.frontendUrl || 'http://localhost:3001';
-  const url = new URL(frontendUrl);
-
-  const rpId = passkeyConfig?.rpId || url.hostname;
-
-  return {
-    enabled: passkeyConfig?.enabled !== false,
-    rpName: passkeyConfig?.rpName || siteConfig?.name || 'Rote',
-    rpId,
-    origin: passkeyConfig?.origin || frontendUrl,
-  };
-}
+  throw error;
+});
 
 // GET /config - public endpoint to check if passkeys are enabled
 passkeyRouter.get('/config', async (c: HonoContext) => {
@@ -110,7 +91,7 @@ passkeyRouter.post('/register/options', authenticateJWT, async (c: HonoContext) 
   });
 
   // Store challenge keyed by userId
-  storeChallenge(`reg:${user.id}`, options.challenge);
+  storePasskeyChallenge(`reg:${user.id}`, options.challenge);
 
   return c.json(createResponse({ options }), 200);
 });
@@ -127,14 +108,14 @@ passkeyRouter.post('/register/verify', authenticateJWT, async (c: HonoContext) =
   const origin = c.req.header('origin');
   const config = await getPasskeyConfig(origin || undefined);
 
-  const expectedChallenge = getAndDeleteChallenge(`reg:${user.id}`);
-  if (!expectedChallenge) {
+  const pending = consumePasskeyChallenge(`reg:${user.id}`);
+  if (!pending) {
     return c.json(createResponse(null, 'Challenge expired or not found', 400), 400);
   }
 
   const verification = await verifyRegistrationResponse({
     response: credential,
-    expectedChallenge,
+    expectedChallenge: pending.challenge,
     expectedOrigin: config.origin,
     expectedRPID: config.rpId,
     requireUserVerification: true,
@@ -158,26 +139,75 @@ passkeyRouter.post('/register/verify', authenticateJWT, async (c: HonoContext) =
   return c.json(createResponse(null, 'Passkey registered successfully'), 200);
 });
 
-// POST /authenticate/options - generate authentication options (public)
-passkeyRouter.post('/authenticate/options', async (c: HonoContext) => {
-  const origin = c.req.header('origin');
-  const config = await getPasskeyConfig(origin || undefined);
-  if (!config.enabled) {
-    return c.json(createResponse(null, 'Passkeys are disabled', 403), 403);
+// One username continues an existing account or prepares a new account's passkey.
+passkeyRouter.post('/continue/options', async (c: HonoContext) => {
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json(
+      { ...createResponse(null, messages.usernameInvalid, 400), errorCode: 'username_invalid' },
+      400
+    );
   }
-
-  const options = await generateAuthenticationOptions({
-    rpID: config.rpId,
-    userVerification: 'required',
-    // allowCredentials: [] allows discoverable credentials (passkeys without username)
+  // Existing provider-generated usernames predate the shorter signup limit.
+  const input = z.object({ username: z.string().min(1).max(100) }).safeParse(body);
+  const username = input.success ? input.data.username : null;
+  if (username === null) {
+    return c.json(
+      {
+        ...createResponse(null, messages.usernameInvalid, 400),
+        errorCode: 'username_invalid',
+      },
+      400
+    );
+  }
+  const policy = await db.transaction(readAuthenticationPolicy);
+  if (policy.security?.passkey?.enabled === false)
+    throw new AuthenticationPolicyError('passkey_disabled');
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.username, username))
+    .limit(1);
+  if (!user) {
+    if (!UsernameZod.safeParse(username).success) {
+      return c.json(
+        { ...createResponse(null, messages.usernameInvalid, 400), errorCode: 'username_invalid' },
+        400
+      );
+    }
+    const registration = await createPasskeyRegistrationOptions(
+      username,
+      policy,
+      c.req.header('origin')
+    );
+    return c.json(createResponse({ method: 'register', ...registration }), 200);
+  }
+  const credentials = await db
+    .select({ credentialId: userPasskeys.credentialId, transports: userPasskeys.transports })
+    .from(userPasskeys)
+    .where(eq(userPasskeys.userid, user.id));
+  if (!credentials.length) {
+    return c.json(
+      {
+        ...createResponse(null, messages.passkeyNotAvailable, 409),
+        errorCode: 'passkey_not_available',
+      },
+      409
+    );
+  }
+  const authentication = await createPasskeyAuthenticationOptions(c.req.header('origin'), {
+    id: user.id,
+    credentials,
   });
-
-  // Store challenge with a random key (returned to client for verify)
-  const challengeKey = crypto.randomUUID();
-  storeChallenge(`auth:${challengeKey}`, options.challenge);
-
-  return c.json(createResponse({ options, challengeKey }), 200);
+  return c.json(createResponse({ method: 'authenticate', ...authentication }), 200);
 });
+
+// Older clients may still ask for discoverable credentials without entering a username.
+passkeyRouter.post('/authenticate/options', async (c: HonoContext) =>
+  c.json(createResponse(await createPasskeyAuthenticationOptions(c.req.header('origin'))), 200)
+);
 
 // POST /authenticate/verify - verify authentication and return JWT tokens (public)
 passkeyRouter.post('/authenticate/verify', async (c: HonoContext) => {
@@ -190,10 +220,12 @@ passkeyRouter.post('/authenticate/verify', async (c: HonoContext) => {
   const origin = c.req.header('origin');
   const config = await getPasskeyConfig(origin || undefined);
 
-  const expectedChallenge = getAndDeleteChallenge(`auth:${challengeKey}`);
-  if (!expectedChallenge) {
+  const pending = consumePasskeyChallenge(`auth:${challengeKey}`);
+  if (!pending) {
     return c.json(createResponse(null, 'Challenge expired or not found', 400), 400);
   }
+
+  if (!config.enabled) throw new AuthenticationPolicyError('passkey_disabled');
 
   // Look up the passkey by credential ID
   const passkey = await getPasskeyByCredentialId(credential.id);
@@ -201,9 +233,19 @@ passkeyRouter.post('/authenticate/verify', async (c: HonoContext) => {
     return c.json(createResponse(null, 'Passkey not found', 404), 404);
   }
 
+  if (pending.userId && passkey.userid !== pending.userId) {
+    return c.json(
+      {
+        ...createResponse(null, messages.passkeyVerificationFailed, 400),
+        errorCode: 'passkey_verification_failed',
+      },
+      400
+    );
+  }
+
   const verification = await verifyAuthenticationResponse({
     response: credential,
-    expectedChallenge,
+    expectedChallenge: pending.challenge,
     expectedOrigin: config.origin,
     expectedRPID: config.rpId,
     requireUserVerification: true,

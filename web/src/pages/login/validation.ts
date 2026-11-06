@@ -21,6 +21,15 @@ export function createUsernameDataSchema(t: LoginTranslator, siteStatus?: LoginS
   });
 }
 
+export function createPasskeyContinuationSchema(t: LoginTranslator) {
+  return z.object({
+    username: z
+      .string()
+      .min(1, t('usernameRequired'))
+      .max(100, t('errors.usernameLookupMaxLength')),
+  });
+}
+
 export function createLoginDataSchema(t: LoginTranslator) {
   return z.object({
     username: z
@@ -62,6 +71,7 @@ export function createRegisterDataSchema({
       .min(1, t('emailRequired'))
       .max(255, t('emailMaxLength'))
       .email(t('emailFormat')),
+    nickname: z.string().min(1, t('nicknameRequired')).max(20, t('nicknameMaxLength')),
   });
 }
 

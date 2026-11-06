@@ -1,70 +1,44 @@
 import { AppleIcon } from '@/components/icons/Apple';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Fingerprint, Github, LoaderCircle } from 'lucide-react';
+import { ChevronRight, Fingerprint, Github } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { OAuthProviders } from '../types';
 
 type PrimarySignInOptionsProps = {
-  allowRegistration: boolean;
   disabled: boolean;
-  isAuthenticating: boolean;
   oauthProviders?: OAuthProviders;
   passkeyEnabled: boolean;
   onOAuthLogin: (provider: string) => void;
-  onPasskeyLogin: () => Promise<void>;
-  onCreateAccount: () => void;
+  onPasskeyContinue: () => void;
   onOtherWays: () => void;
 };
 
 export function PrimarySignInOptions({
-  allowRegistration,
   disabled,
-  isAuthenticating,
   oauthProviders,
   passkeyEnabled,
   onOAuthLogin,
-  onPasskeyLogin,
-  onCreateAccount,
+  onPasskeyContinue,
   onOtherWays,
 }: PrimarySignInOptionsProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.login' });
-  const enabledProviders = Object.entries(oauthProviders ?? {}).filter(
-    ([, config]) => config?.enabled
-  );
 
   return (
-    <div className="space-y-5">
-      {passkeyEnabled && (
-        <Button
-          className="w-full"
-          disabled={disabled || isAuthenticating}
-          aria-busy={isAuthenticating}
-          onClick={onPasskeyLogin}
-        >
-          {isAuthenticating ? (
-            <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
-          ) : (
+    <div className="space-y-4 py-4">
+      <div className="space-y-3">
+        {passkeyEnabled && (
+          <Button className="w-full" disabled={disabled} onClick={onPasskeyContinue}>
             <Fingerprint className="size-4" aria-hidden="true" />
-          )}
-          {isAuthenticating ? t('messages.loggingIn') : t('passkey.loginWithPasskey')}
-        </Button>
-      )}
-
-      {(enabledProviders.length > 0 || (allowRegistration && passkeyEnabled)) && (
-        <div className="border-border space-y-3 border-t pt-5">
-          {allowRegistration && (
-            <p className="text-muted-foreground text-center text-sm">
-              {t(
-                enabledProviders.length > 0 ? 'entry.signInOrCreateAccount' : 'entry.createAccount'
-              )}
-            </p>
-          )}
-          {enabledProviders.map(([provider]) => (
+            {t('entry.continueWithPasskey')}
+          </Button>
+        )}
+        {Object.entries(oauthProviders ?? {}).map(([provider, config]) =>
+          config?.enabled ? (
             <Button
               key={provider}
               variant="outline"
               className="w-full"
-              disabled={disabled || isAuthenticating}
+              disabled={disabled}
               onClick={() => onOAuthLogin(provider)}
             >
               {provider === 'apple' ? (
@@ -77,20 +51,9 @@ export function PrimarySignInOptions({
                   provider === 'github' ? 'GitHub' : provider === 'apple' ? 'Apple' : provider,
               })}
             </Button>
-          ))}
-          {allowRegistration && passkeyEnabled && (
-            <Button
-              variant="secondary"
-              className="w-full"
-              disabled={disabled}
-              onClick={onCreateAccount}
-            >
-              {t('entry.createWithPasskey')}
-            </Button>
-          )}
-        </div>
-      )}
-
+          ) : null
+        )}
+      </div>
       <Button
         variant="ghost"
         className="text-muted-foreground w-full"

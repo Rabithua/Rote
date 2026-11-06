@@ -274,25 +274,15 @@
         "passwordOptionalHint": "You can skip the password and register with a passkey."
       },
       "entry": {
-        "title": "Welcome to Rote",
-        "description": "Choose a way to continue your story.",
         "continueWithProvider": "Continue with {{provider}}",
-        "signInOrCreateAccount": "Sign in or create an account",
-        "createWithPasskey": "Create an account with a passkey",
         "otherWays": "Other ways",
         "back": "Back",
         "backToLogin": "Back to sign in",
-        "createTitle": "Create your account",
-        "createDescription": "Choose a username, then create a passkey with your face, fingerprint, or device lock.",
-        "createAccount": "Create account",
         "usernameHint": "1–20 letters, numbers, underscores, or hyphens. This appears in your profile URL.",
-        "emailLoginTitle": "Sign in with a password",
-        "emailLoginDescription": "Use your existing username or email and password.",
-        "emailRegisterTitle": "Sign up with email",
-        "emailRegisterDescription": "Create an account using your email and a password.",
-        "registerWithEmail": "Sign up with email and password",
-        "oauthCreateTitle": "Choose your username",
-        "oauthCreateDescription": "You’re connected with {{provider}}. Confirm a username to start writing."
+        "oauthCreateDescription": "You’re connected with {{provider}}. Confirm a username to start writing.",
+        "continueWithPasskey": "Continue with a passkey",
+        "continue": "Continue",
+        "passkeyContinueHint": "Enter your username to sign in or create your account."
       },
       "errors": {
         "oauthRegistrationExpired": "Your sign-up authorization expired. Continue with your provider again.",
@@ -306,7 +296,9 @@
         "registrationExpired": "Sign-up expired. Please create your passkey again.",
         "passkeyVerificationFailed": "Could not verify your passkey. Please try again.",
         "registrationInvalid": "Please check your sign-up details.",
-        "emailUnavailable": "That email is already in use. Sign in to your existing account."
+        "emailUnavailable": "That email is already in use. Sign in to your existing account.",
+        "passkeyNotAvailable": "This account has no passkey. Use another sign-in method.",
+        "usernameLookupMaxLength": "Username cannot exceed 100 characters."
       }
     },
     "oauthAuthorize": {

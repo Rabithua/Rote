@@ -9,6 +9,9 @@ type UsernameRegistrationFormProps = {
   username: string;
   disabled: boolean;
   submitLabel: string;
+  busyLabel?: string;
+  maxLength?: number;
+  hint?: string;
   onUsernameChange: (value: string) => void;
   onSubmit: () => void;
   onBack: () => void;
@@ -18,6 +21,9 @@ export function UsernameRegistrationForm({
   username,
   disabled,
   submitLabel,
+  busyLabel,
+  maxLength = 20,
+  hint,
   onUsernameChange,
   onSubmit,
   onBack,
@@ -36,14 +42,15 @@ export function UsernameRegistrationForm({
         <Input
           id="signup-username"
           autoComplete="username"
-          maxLength={20}
+          maxLength={maxLength}
+          className="text-md rounded-md font-mono"
           value={username}
           disabled={disabled}
           onChange={(event) => onUsernameChange(event.target.value)}
           aria-describedby="signup-username-hint"
         />
         <p id="signup-username-hint" className="text-muted-foreground text-sm">
-          {t('entry.usernameHint')}
+          {hint || t('entry.usernameHint')}
         </p>
       </div>
       <div className="flex gap-3">
@@ -58,7 +65,7 @@ export function UsernameRegistrationForm({
         </Button>
         <Button type="submit" className="flex-[2]" disabled={disabled} aria-busy={disabled}>
           {disabled && <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />}
-          {disabled ? t('messages.registering') : submitLabel}
+          {disabled ? busyLabel || t('messages.registering') : submitLabel}
         </Button>
       </div>
     </form>

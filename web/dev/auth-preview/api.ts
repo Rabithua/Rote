@@ -6,7 +6,43 @@ type Registration = { username: string; provider?: string; returnUrl: string; ex
 
 export function authPreviewApi() {
   const registrations = new Map<string, Registration>();
-  const authenticationChallenges = new Set<string>();
+  const authenticationChallenges = new Map<string, string>();
+  const accounts = new Map<string, 'passkey' | 'other'>([
+    ['passkey_user', 'passkey'],
+    ['password_user', 'other'],
+    ['taken', 'other'],
+  ]);
+
+  function registrationOptions(username: string, hostname: string) {
+    const registrationToken = randomUUID();
+    registrations.set(registrationToken, { username, returnUrl: '', expired: false });
+    return {
+      registrationToken,
+      options: {
+        challenge: 'cHJldmlldy1jaGFsbGVuZ2U',
+        rp: { name: 'Rote', id: hostname },
+        user: { id: 'cHJldmlldy11c2Vy', name: username, displayName: username },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
+      },
+    };
+  }
+
+  function authenticationOptions(username: string, hostname: string, accountBound = false) {
+    const challengeKey = randomUUID();
+    authenticationChallenges.set(challengeKey, username);
+    return {
+      challengeKey,
+      options: {
+        challenge: 'cHJldmlldy1jaGFsbGVuZ2U',
+        rpId: hostname,
+        userVerification: 'required',
+        allowCredentials: accountBound
+          ? [{ type: 'public-key', id: 'cHJldmlldy1jcmVkZW50aWFs', transports: ['internal'] }]
+          : [],
+      },
+    };
+  }
   const reply = (res: ServerResponse, data: unknown, status = 200, message = '') => {
     res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(
@@ -43,6 +79,25 @@ export function authPreviewApi() {
     if (path === '/users/me/settings') return reply(res, { allowExplore: true });
     if (path === '/auth/passkey/config') return reply(res, { enabled: config.passkey.enabled });
     if (path === '/auth/passkey') return reply(res, []);
+    if (path === '/auth/passkey/continue/options') {
+      if (!config.passkey.enabled) return reply(res, null, 400, 'passkey_disabled');
+      if (typeof body.username !== 'string' || !body.username || body.username.length > 100)
+        return reply(res, null, 400, 'username_invalid');
+      if (accounts.get(body.username) === 'other')
+        return reply(res, null, 409, 'passkey_not_available');
+      if (accounts.get(body.username) === 'passkey')
+        return reply(res, {
+          method: 'authenticate',
+          ...authenticationOptions(body.username, url.hostname, true),
+        });
+      if (!config.ui.allowRegistration) return reply(res, null, 403, 'registration_disabled');
+      if (!/^[A-Za-z0-9_-]{1,20}$/.test(body.username))
+        return reply(res, null, 400, 'username_invalid');
+      return reply(res, {
+        method: 'register',
+        ...registrationOptions(body.username, url.hostname),
+      });
+    }
 
     const oauth = path.match(/^\/auth\/oauth\/(github|apple)$/);
     if (oauth) {
@@ -89,27 +144,13 @@ export function authPreviewApi() {
     }
 
     if (path === '/auth/register/passkey/options') {
-      const registrationToken = randomUUID();
-      registrations.set(registrationToken, {
-        username: body.username,
-        returnUrl: '',
-        expired: false,
-      });
-      return reply(res, {
-        registrationToken,
-        options: {
-          challenge: 'cHJldmlldy1jaGFsbGVuZ2U',
-          rp: { name: 'Rote', id: url.hostname },
-          user: { id: 'cHJldmlldy11c2Vy', name: body.username, displayName: body.username },
-          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-          authenticatorSelection: { residentKey: 'required', userVerification: 'required' },
-        },
-      });
+      return reply(res, registrationOptions(body.username, url.hostname));
     }
     if (path === '/auth/register/passkey/verify') {
       const pending = registrations.get(body.registrationToken);
       if (!pending) return reply(res, null, 410, 'registration_expired');
       registrations.delete(body.registrationToken);
+      accounts.set(pending.username, 'passkey');
       return reply(res, previewTokens(pending.username));
     }
     if (path === '/auth/register/oauth' && req.method === 'POST') {
@@ -117,6 +158,7 @@ export function authPreviewApi() {
       if (!pending || pending.expired) return reply(res, null, 410, 'oauth_registration_expired');
       registrations.delete(body.registrationToken);
       const tokens = previewTokens(body.username);
+      accounts.set(body.username, 'other');
       const completion = new URL(pending.returnUrl, origin);
       completion.searchParams.set('oauth', 'success');
       completion.searchParams.set('token', tokens.accessToken);
@@ -125,27 +167,19 @@ export function authPreviewApi() {
     }
     if (path === '/auth/register') {
       if (!body.email || !body.password) return reply(res, null, 400, 'registration_invalid');
+      accounts.set(body.username, 'other');
       return reply(res, previewTokens(body.username, body.email));
     }
     if (path === '/auth/login')
       return reply(res, previewTokens(body.username || 'returning_user', 'preview@example.test'));
     if (path === '/auth/passkey/authenticate/options') {
-      const challengeKey = randomUUID();
-      authenticationChallenges.add(challengeKey);
-      return reply(res, {
-        challengeKey,
-        options: {
-          challenge: 'cHJldmlldy1jaGFsbGVuZ2U',
-          rpId: url.hostname,
-          userVerification: 'required',
-          allowCredentials: [],
-        },
-      });
+      return reply(res, authenticationOptions('passkey_user', url.hostname));
     }
     if (path === '/auth/passkey/authenticate/verify') {
-      if (!authenticationChallenges.delete(body.challengeKey))
-        return reply(res, null, 400, 'registration_invalid');
-      return reply(res, previewTokens('passkey_user'));
+      const username = authenticationChallenges.get(body.challengeKey);
+      if (!username) return reply(res, null, 400, 'registration_invalid');
+      authenticationChallenges.delete(body.challengeKey);
+      return reply(res, previewTokens(username));
     }
     return reply(res, null, 404, 'preview_endpoint_not_found');
   };

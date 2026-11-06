@@ -10,6 +10,7 @@ import { getAuthErrorMessage } from '../authErrors';
 import type { AuthenticationTokens } from '../types';
 import { createUsernameDataSchema, getZodErrorMessage, type LoginSiteStatus } from '../validation';
 import { UsernameRegistrationForm } from './UsernameRegistrationForm';
+import { LoginCard } from './LoginCard';
 
 type OAuthRegistrationDetails = {
   provider: string;
@@ -61,22 +62,19 @@ function OAuthUsernameConfirmation({
 
   return (
     <>
-      <div className="mb-6 space-y-2">
-        <h1 className="text-foreground text-2xl font-semibold tracking-tight">
-          {t('entry.oauthCreateTitle')}
-        </h1>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+      <div className="space-y-5 py-4">
+        <p className="text-muted-foreground text-sm">
           {t('entry.oauthCreateDescription', { provider })}
         </p>
+        <UsernameRegistrationForm
+          username={username}
+          disabled={isSubmitting}
+          submitLabel={t('entry.continue')}
+          onUsernameChange={setUsername}
+          onSubmit={completeRegistration}
+          onBack={onBack}
+        />
       </div>
-      <UsernameRegistrationForm
-        username={username}
-        disabled={isSubmitting}
-        submitLabel={t('entry.createAccount')}
-        onUsernameChange={setUsername}
-        onSubmit={completeRegistration}
-        onBack={onBack}
-      />
     </>
   );
 }
@@ -99,16 +97,20 @@ export function OAuthRegistrationPanel(props: OAuthRegistrationPanelProps) {
 
   return (
     <>
-      <Logo className="mb-5 w-28" color="#3ECF4A" />
-      {isLoading ? (
-        <LoadingPlaceholder className="py-8" size={6} />
-      ) : data && !error ? (
-        <OAuthUsernameConfirmation key={props.registrationToken} {...props} details={data} />
-      ) : (
-        <Button variant="outline" className="w-full" onClick={props.onBack}>
-          {t('entry.backToLogin')}
-        </Button>
-      )}
+      <div className="mb-4">
+        <Logo className="w-32" color="#3ECF4A" />
+      </div>
+      <LoginCard>
+        {isLoading ? (
+          <LoadingPlaceholder className="py-8" size={6} />
+        ) : data && !error ? (
+          <OAuthUsernameConfirmation key={props.registrationToken} {...props} details={data} />
+        ) : (
+          <Button variant="outline" className="w-full" onClick={props.onBack}>
+            {t('entry.backToLogin')}
+          </Button>
+        )}
+      </LoginCard>
     </>
   );
 }

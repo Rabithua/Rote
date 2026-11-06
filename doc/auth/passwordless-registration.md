@@ -45,9 +45,20 @@ signs in to that account and binds the provider from account settings.
 
 ## Passkey
 
-Passkey registration continues to use the registration-options and verification endpoints.
-Its account details are reduced to the selected username. Credential verification and account
-creation complete together, so cancelling the operating-system prompt leaves no empty account.
+The primary card has one Passkey entry for both sign-in and account creation. It asks for a
+username, then `POST /auth/passkey/continue/options` selects the credential ceremony:
+
+- An existing account with Passkeys receives authentication options restricted to that account,
+  together with an account-bound authentication challenge.
+- An available username receives registration options and a registration credential, provided
+  new-account registration is enabled.
+- An existing account without a Passkey receives `passkey_not_available`, so it can sign in
+  using its original method instead of accidentally creating another account.
+
+Verification uses the existing authentication or registration verification endpoint. Credential
+verification and account creation complete together, so cancelling the operating-system prompt
+leaves no empty account. Existing clients can continue using the anonymous authentication and
+standalone registration endpoints.
 
 ## Verification
 

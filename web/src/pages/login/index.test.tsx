@@ -6,10 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { authService } from '@/utils/auth';
 import Login from './index';
 
-const { get, post, authenticateWithPasskey, authorizeRender, translate } = vi.hoisted(() => ({
+const { get, post, continueWithPasskey, authorizeRender, translate } = vi.hoisted(() => ({
   get: vi.fn(),
   post: vi.fn(),
-  authenticateWithPasskey: vi.fn(),
+  continueWithPasskey: vi.fn(),
   authorizeRender: vi.fn(),
   translate: (key: string) => key,
 }));
@@ -30,7 +30,7 @@ vi.mock('@/utils/setupApi', () => ({
   getSiteStatus: async () => ({ data: { passkey: { enabled: true } } }),
 }));
 vi.mock('@/utils/passkey', () => ({
-  authenticateWithPasskey,
+  continueWithPasskey,
   isPasskeySupported: () => true,
   registerPasskey: vi.fn(),
   registerWithPasskey: vi.fn(),
@@ -43,9 +43,11 @@ vi.mock('@/components/others/LoadingPlaceholder', () => ({
 vi.mock('./components/StandardLoginPanel', () => ({
   StandardLoginPanel: ({
     loginData,
+    registerData,
     onLoginFieldChange,
+    onRegisterFieldChange,
     onLogin,
-    onPasskeyLogin,
+    onPasskeyContinue,
   }: ComponentProps<typeof import('./components/StandardLoginPanel').StandardLoginPanel>) => (
     <div>
       <input
@@ -59,7 +61,12 @@ vi.mock('./components/StandardLoginPanel', () => ({
         onChange={(event) => onLoginFieldChange('password', event.target.value)}
       />
       <button onClick={onLogin}>password login</button>
-      <button onClick={onPasskeyLogin}>passkey login</button>
+      <input
+        aria-label="passkey username"
+        value={registerData.username}
+        onChange={(event) => onRegisterFieldChange('username', event.target.value)}
+      />
+      <button onClick={onPasskeyContinue}>passkey continue</button>
     </div>
   ),
 }));
@@ -120,7 +127,7 @@ beforeEach(() => {
         : { isInitialized: true },
   }));
   post.mockResolvedValue({ data: tokens });
-  authenticateWithPasskey.mockResolvedValue(tokens);
+  continueWithPasskey.mockResolvedValue(tokens);
 });
 
 afterEach(cleanup);
@@ -149,9 +156,12 @@ describe('iOS login handoff', () => {
 
   it('shows loading after Passkey login even when the profile becomes available', async () => {
     renderLogin();
-    await screen.findByRole('button', { name: 'passkey login' });
+    await screen.findByRole('button', { name: 'passkey continue' });
+    fireEvent.change(screen.getByLabelText('passkey username'), { target: { value: 'reader' } });
 
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'passkey login' })));
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'passkey continue' }))
+    );
 
     await waitFor(() => expect(authService.getAccessToken()).toBe(tokens.accessToken));
     expect(authorizeRender).not.toHaveBeenCalled();

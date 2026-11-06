@@ -5,8 +5,48 @@ import {
 } from '@simplewebauthn/browser';
 import { get, post, publicPost, del } from './api';
 
+type PasskeyAccessOptions =
+  | {
+      method: 'register';
+      options: Parameters<typeof startRegistration>[0]['optionsJSON'];
+      registrationToken: string;
+    }
+  | {
+      method: 'authenticate';
+      options: Parameters<typeof startAuthentication>[0]['optionsJSON'];
+      challengeKey: string;
+    };
+
 export function isPasskeySupported(): boolean {
   return browserSupportsWebAuthn();
+}
+
+export async function continueWithPasskey(data: { username: string }): Promise<{
+  user: any;
+  accessToken: string;
+  refreshToken: string;
+}> {
+  const response = await publicPost<{ data: PasskeyAccessOptions }>(
+    '/auth/passkey/continue/options',
+    data
+  );
+  const options = response.data;
+  if (options.method === 'register') {
+    const credential = await startRegistration({ optionsJSON: options.options });
+    const result = await publicPost('/auth/register/passkey/verify', {
+      credential,
+      registrationToken: options.registrationToken,
+      deviceName: getDeviceName(),
+    });
+    return result.data;
+  }
+
+  const credential = await startAuthentication({ optionsJSON: options.options });
+  const result = await publicPost('/auth/passkey/authenticate/verify', {
+    credential,
+    challengeKey: options.challengeKey,
+  });
+  return result.data;
 }
 
 export async function registerWithPasskey(data: {

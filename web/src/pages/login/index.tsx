@@ -1,6 +1,5 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
-import { usePasskey } from '@/hooks/usePasskey';
 import { get, getApiUrl, publicPost } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAPIGet } from '@/utils/fetcher';
@@ -16,6 +15,7 @@ import { OAuthRegistrationPanel } from './components/OAuthRegistrationPanel';
 import { StandardLoginPanel } from './components/StandardLoginPanel';
 import type { AuthenticationTokens, AuthView, LoginData, RegisterData } from './types';
 import { useAccountRegistration } from './useAccountRegistration';
+import { usePasskeyContinuation } from './usePasskeyContinuation';
 import { createLoginDataSchema, getZodErrorMessage } from './validation';
 
 function Login() {
@@ -31,12 +31,12 @@ function Login() {
   const [activeTab, setActiveTab] = useState<AuthView>('primary');
   const [isRedirectingToIos, setIsRedirectingToIos] = useState(false);
   const [supportsPasskey] = useState(isPasskeySupported);
-  const { authenticateWithPasskey, isAuthenticating } = usePasskey();
   const [loginData, setLoginData] = useState<LoginData>({ username: '', password: '' });
   const [registerData, setRegisterData] = useState<RegisterData>({
     username: '',
     password: '',
     email: '',
+    nickname: '',
   });
   const isIosLoginFlow = searchParams.get('type') === 'ioslogin';
   const isOAuthRegistration = searchParams.get('oauth') === 'register';
@@ -78,7 +78,11 @@ function Login() {
     siteStatus,
     onAuthenticated: authenticated,
   });
-  const disabled = isLoggingIn || isAuthenticating || registration.isRegistering || !siteStatus;
+  const passkey = usePasskeyContinuation({
+    username: registerData.username,
+    onAuthenticated: authenticated,
+  });
+  const disabled = isLoggingIn || passkey.isContinuing || registration.isRegistering || !siteStatus;
 
   async function login() {
     const validation = createLoginDataSchema(t).safeParse(loginData);
@@ -95,14 +99,6 @@ function Login() {
       toast.error(getAuthErrorMessage(error, t, 'messages.loginFailed'));
     } finally {
       setIsLoggingIn(false);
-    }
-  }
-
-  async function loginWithPasskey() {
-    const tokens = await authenticateWithPasskey();
-    if (tokens) {
-      mutateProfile();
-      completeAuthenticatedFlow(tokens);
     }
   }
 
@@ -163,8 +159,8 @@ function Login() {
   }, [searchParams, navigate, mutateProfile, t, isIosLoginFlow, postLoginRedirect, retryLoginPath]);
 
   return (
-    <div className="relative flex min-h-dvh w-full items-center justify-center px-5 py-10">
-      <div className="animate-show z-10 flex w-full max-w-sm flex-col rounded-lg opacity-0">
+    <div className="relative flex h-dvh w-full items-center justify-center">
+      <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
         {isCheckingStatus || (isIosLoginFlow && isRedirectingToIos) || isIosOAuthCallback ? (
           <LoadingPlaceholder className="py-8" size={6} />
         ) : isOAuthRegistration ? (
@@ -192,7 +188,6 @@ function Login() {
             activeTab={activeTab}
             allowRegistration={siteStatus?.ui?.allowRegistration !== false}
             disabled={disabled}
-            isAuthenticating={isAuthenticating}
             loginData={loginData}
             oauthProviders={siteStatus?.oauth?.enabled ? siteStatus.oauth.providers : undefined}
             passkeyEnabled={passkeyEnabled}
@@ -201,9 +196,8 @@ function Login() {
             onLogin={login}
             onLoginFieldChange={(key, value) => setLoginData((data) => ({ ...data, [key]: value }))}
             onOAuthLogin={handleOAuthLogin}
-            onPasskeyLogin={loginWithPasskey}
-            onRegister={() => registration.register('password')}
-            onPasskeyRegister={() => registration.register('passkey')}
+            onRegister={registration.register}
+            onPasskeyContinue={passkey.continueWithUsername}
             onRegisterFieldChange={(key, value) =>
               setRegisterData((data) => ({ ...data, [key]: value }))
             }

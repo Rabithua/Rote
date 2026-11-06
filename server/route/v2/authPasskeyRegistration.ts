@@ -1,11 +1,5 @@
-import crypto from 'crypto';
-import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-  type RegistrationResponseJSON,
-} from '@simplewebauthn/server';
+import { verifyRegistrationResponse, type RegistrationResponseJSON } from '@simplewebauthn/server';
 import { Hono } from 'hono';
-import { eq } from 'drizzle-orm';
 import { users, userPasskeys } from '../../drizzle/schema';
 import type { SiteConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
@@ -16,6 +10,11 @@ import db from '../../utils/drizzle';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
 import { PasskeyRegisterDataZod } from '../../utils/zod';
+import { UserIdentityConflict } from '../../utils/dbMethods/user';
+import {
+  consumePasskeyRegistration,
+  createPasskeyRegistrationOptions,
+} from '../../authentication/passkeyRegistrationOptions';
 import messages from '../../authentication/messages.json';
 import {
   AuthenticationPolicyError,
@@ -26,6 +25,12 @@ import {
 const passkeyRegistrationRouter = new Hono<{ Variables: HonoVariables }>();
 
 passkeyRegistrationRouter.onError((error, c) => {
+  if (error instanceof UserIdentityConflict) {
+    return c.json(
+      { ...createResponse(null, error.message, 409), errorCode: 'username_unavailable' },
+      409
+    );
+  }
   if (!(error instanceof AuthenticationPolicyError)) throw error;
   return c.json(
     { ...createResponse(null, error.message, error.status), errorCode: error.code },
@@ -33,44 +38,10 @@ passkeyRegistrationRouter.onError((error, c) => {
   );
 });
 
-interface PendingRegistration {
-  userData: { username: string; tempUserId: string };
-  challenge: string;
-  expiresAt: number;
-}
-
-const pendingRegistrations = new Map<string, PendingRegistration>();
-
-function storePendingRegistration(
-  token: string,
-  userData: PendingRegistration['userData'],
-  challenge: string
-) {
-  if (pendingRegistrations.size > 500) {
-    const now = Date.now();
-    for (const [k, v] of pendingRegistrations) {
-      if (now > v.expiresAt) pendingRegistrations.delete(k);
-    }
-  }
-  pendingRegistrations.set(token, { userData, challenge, expiresAt: Date.now() + 300_000 });
-}
-
-function getAndDeletePendingRegistration(token: string) {
-  const entry = pendingRegistrations.get(token);
-  if (!entry || Date.now() > entry.expiresAt) {
-    pendingRegistrations.delete(token);
-    return null;
-  }
-  pendingRegistrations.delete(token);
-  return entry;
-}
-
 // 无密码注册 - Step 1: 验证用户数据，生成 passkey 注册 options
 passkeyRegistrationRouter.post('/options', async (c: HonoContext) => {
   const policy = await db.transaction(readAuthenticationPolicy);
   requireAccountRegistration(policy, 'passkey');
-  const securityConfig = policy.security;
-
   const parsed = PasskeyRegisterDataZod.safeParse(await c.req.json());
   if (!parsed.success) {
     return c.json(
@@ -81,59 +52,12 @@ passkeyRegistrationRouter.post('/options', async (c: HonoContext) => {
       400
     );
   }
-  const { username } = parsed.data;
-
-  const existing = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.username, username))
-    .limit(1);
-  if (existing.length > 0) {
-    return c.json(
-      {
-        ...createResponse(null, messages.usernameUnavailable, 409),
-        errorCode: 'username_unavailable',
-      },
-      409
-    );
-  }
-
-  // Generate temp user ID for WebAuthn
-  const tempUserId = crypto.randomUUID();
-
-  // Get passkey config
-  const origin = c.req.header('origin');
-  const siteConfig = await getConfig<SiteConfig>('site');
-  const passkeyCfg = securityConfig?.passkey;
-  const frontendUrl = origin || siteConfig?.frontendUrl || 'http://localhost:3001';
-  const url = new URL(frontendUrl);
-  const rpId = passkeyCfg?.rpId || url.hostname;
-  const rpName = passkeyCfg?.rpName || siteConfig?.name || 'Rote';
-
-  const options = await generateRegistrationOptions({
-    rpName,
-    rpID: rpId,
-    userID: new TextEncoder().encode(tempUserId),
-    userName: username,
-    userDisplayName: username,
-    excludeCredentials: [],
-    authenticatorSelection: {
-      residentKey: 'required',
-      userVerification: 'required',
-    },
-  });
-
-  // Store pending registration
-  const registrationToken = crypto.randomUUID();
-  storePendingRegistration(registrationToken, { username, tempUserId }, options.challenge);
-
-  return c.json(
-    createResponse({
-      options,
-      registrationToken,
-    }),
-    200
+  const result = await createPasskeyRegistrationOptions(
+    parsed.data.username,
+    policy,
+    c.req.header('origin')
   );
+  return c.json(createResponse(result), 200);
 });
 
 // 无密码注册 - Step 2: 验证 passkey，创建账号
@@ -149,7 +73,7 @@ passkeyRegistrationRouter.post('/verify', async (c: HonoContext) => {
     deviceName?: string;
   };
 
-  const pending = getAndDeletePendingRegistration(registrationToken);
+  const pending = consumePasskeyRegistration(registrationToken);
   if (!pending) {
     return c.json(
       {

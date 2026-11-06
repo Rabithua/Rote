@@ -278,25 +278,15 @@
         "passwordOptionalHint": "パスワードをスキップして、パスキーで登録できます。"
       },
       "entry": {
-        "title": "Rote へようこそ",
-        "description": "ログイン方法を選んで、記録を続けましょう。",
         "continueWithProvider": "{{provider}} で続ける",
-        "signInOrCreateAccount": "ログインまたはアカウント作成",
-        "createWithPasskey": "パスキーでアカウントを作成",
         "otherWays": "その他の方法",
         "back": "戻る",
         "backToLogin": "ログインに戻る",
-        "createTitle": "アカウントを作成",
-        "createDescription": "ユーザー名を選び、顔認証・指紋認証・端末のロックでパスキーを作成します。",
-        "createAccount": "アカウントを作成",
         "usernameHint": "半角英数字・アンダースコア・ハイフンの1〜20文字。プロフィールのURLに使用します。",
-        "emailLoginTitle": "パスワードでログイン",
-        "emailLoginDescription": "既存のユーザー名またはメールアドレスとパスワードを入力してください。",
-        "emailRegisterTitle": "メールアドレスで登録",
-        "emailRegisterDescription": "メールアドレスとパスワードでアカウントを作成します。",
-        "registerWithEmail": "メールアドレスとパスワードで登録",
-        "oauthCreateTitle": "ユーザー名を選択",
-        "oauthCreateDescription": "{{provider}} の認証が完了しました。ユーザー名を確認して記録を始めましょう。"
+        "oauthCreateDescription": "{{provider}} の認証が完了しました。ユーザー名を確認して記録を始めましょう。",
+        "continueWithPasskey": "パスキーで続ける",
+        "continue": "続ける",
+        "passkeyContinueHint": "ユーザー名を入力して、ログインまたはアカウント作成へ進みます。"
       },
       "errors": {
         "oauthRegistrationExpired": "登録用の認証期限が切れました。もう一度外部アカウントで続けてください。",
@@ -310,7 +300,9 @@
         "registrationExpired": "登録の期限が切れました。パスキーをもう一度作成してください。",
         "passkeyVerificationFailed": "パスキーを確認できませんでした。もう一度お試しください。",
         "registrationInvalid": "登録情報を確認してください。",
-        "emailUnavailable": "このメールアドレスは使用されています。既存のアカウントでログインしてください。"
+        "emailUnavailable": "このメールアドレスは使用されています。既存のアカウントでログインしてください。",
+        "passkeyNotAvailable": "このアカウントにはパスキーがありません。他の方法でログインしてください。",
+        "usernameLookupMaxLength": "ユーザー名は100文字以内で入力してください。"
       }
     },
     "oauthAuthorize": {
