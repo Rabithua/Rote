@@ -18,7 +18,7 @@ export function siteStatus(scenario: PreviewScenario) {
     system: { version: 'preview', lastMigration: '' },
     notification: { vapidPublicKey: null },
     storage: { r2Configured: false, urlPrefix: '' },
-    ui: { allowRegistration: scenario !== 'closed', allowUploadFile: false },
+    ui: { allowRegistration: !['closed', 'closed-new'].includes(scenario), allowUploadFile: false },
     oauth: {
       enabled: oauthEnabled,
       providers: { github: { enabled: oauthEnabled }, apple: { enabled: oauthEnabled } },

@@ -2005,13 +2005,6 @@
       "retry": "Try again",
       "article": "Linked article",
       "tags": "Tags"
-    },
-    "passkeyAdoption": {
-      "title": "Sign in faster next time",
-      "description": "Save a passkey to sign in with your face, fingerprint, or device PIN.",
-      "create": "Add a passkey",
-      "creating": "Adding a passkey…",
-      "later": "Not now"
     }
   },
   "components": {

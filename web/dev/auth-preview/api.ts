@@ -111,17 +111,17 @@ export function authPreviewApi() {
       const returnUrl =
         url.searchParams.get('redirect') || '/login?redirect=%2F__auth-preview%2Fsuccess';
       const callback = new URL(returnUrl, origin);
-      if (scenario === 'closed') {
-        callback.searchParams.set('oauth', 'error');
-        callback.searchParams.set('message', 'registration_disabled');
-        callback.searchParams.set('errorCode', 'registration_disabled');
-      } else if (scenario === 'existing' || scenario === 'existing-passkey') {
+      if (['existing', 'existing-passkey', 'closed'].includes(scenario)) {
         const tokens = previewTokens(
           scenario === 'existing-passkey' ? 'passkey_user' : 'returning_user'
         );
         callback.searchParams.set('oauth', 'success');
         callback.searchParams.set('token', tokens.accessToken);
         callback.searchParams.set('refreshToken', tokens.refreshToken);
+      } else if (!config.ui.allowRegistration) {
+        callback.searchParams.set('oauth', 'error');
+        callback.searchParams.set('message', 'registration_disabled');
+        callback.searchParams.set('errorCode', 'registration_disabled');
       } else {
         const registrationToken = randomUUID();
         registrations.set(registrationToken, {
@@ -139,6 +139,7 @@ export function authPreviewApi() {
     }
 
     if (path.startsWith('/auth/register/oauth/')) {
+      if (!config.ui.allowRegistration) return reply(res, null, 403, 'registration_disabled');
       const pending = registrations.get(path.split('/').pop() || '');
       if (!pending || pending.expired) return reply(res, null, 410, 'oauth_registration_expired');
       return reply(res, { provider: pending.provider, suggestedUsername: pending.username });

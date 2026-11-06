@@ -2009,13 +2009,6 @@
       "retry": "再試行",
       "article": "関連する記事",
       "tags": "タグ"
-    },
-    "passkeyAdoption": {
-      "title": "次回はパスキーですばやくログイン",
-      "description": "パスキーを保存すると、顔認証・指紋認証・端末の暗証番号でログインできます。",
-      "create": "パスキーを追加",
-      "creating": "パスキーを追加中…",
-      "later": "後で"
     }
   },
   "components": {

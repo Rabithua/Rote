@@ -1,5 +1,4 @@
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
-import { queuePasskeyAdoption } from '@/features/passkey-adoption/intent';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import { get, getApiUrl, publicPost } from '@/utils/api';
 import { authService } from '@/utils/auth';
@@ -131,7 +130,6 @@ function Login() {
     const errorMessage = searchParams.get('message');
     if (oauthStatus === 'success' && token && refreshToken) {
       authService.setTokens(token, refreshToken);
-      queuePasskeyAdoption(token, postLoginRedirect, isIosLoginFlow);
       toast.success(
         t(
           searchParams.get('provider') === 'apple'
@@ -172,7 +170,6 @@ function Login() {
           onBack={() => navigate(retryLoginPath, { replace: true })}
           onComplete={(tokens, completionUrl) => {
             authService.setTokens(tokens.accessToken, tokens.refreshToken);
-            queuePasskeyAdoption(tokens.accessToken, postLoginRedirect, isIosLoginFlow);
             if (isIosLoginFlow) setIsRedirectingToIos(true);
             window.location.assign(completionUrl);
           }}

@@ -3,9 +3,7 @@ import '@/utils/i18n';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
-import { PasskeyAdoptionNotice } from '@/features/passkey-adoption/PasskeyAdoptionNotice';
 import { AuthScreen } from '@/pages/login/components/AuthScreen';
-import { authService } from '@/utils/auth';
 import { createRoot } from 'react-dom/client';
 import { useTranslation } from 'react-i18next';
 import copy from './copy.json';
@@ -13,8 +11,6 @@ import copy from './copy.json';
 function AuthenticationPreviewSuccess() {
   const { i18n } = useTranslation();
   const t = copy[i18n.language as keyof typeof copy] ?? copy.zh;
-  const token = authService.getAccessToken();
-  const accountId = token ? authService.getUserInfoFromToken(token)?.userId : undefined;
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
@@ -27,7 +23,6 @@ function AuthenticationPreviewSuccess() {
           </Button>
         </div>
       </AuthScreen>
-      <PasskeyAdoptionNotice accountId={accountId} />
       <Toaster position="top-right" />
     </ThemeProvider>
   );

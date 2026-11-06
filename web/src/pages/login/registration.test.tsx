@@ -4,7 +4,6 @@ import { SWRConfig } from 'swr';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { toast } from 'sonner';
 import { authService } from '@/utils/auth';
-import { readPasskeyAdoptionIntent } from '@/features/passkey-adoption/intent';
 import Login from './index';
 
 const { get, post, getSiteStatus, authenticateWithPasskey, registerPasskey, state } = vi.hoisted(
@@ -86,7 +85,6 @@ function renderLogin(path = '/login?redirect=%2Fexplore') {
 beforeEach(() => {
   vi.clearAllMocks();
   localStorage.clear();
-  sessionStorage.clear();
   state.passkeySupported = true;
   state.allowRegistration = true;
   state.modernEnabled = true;
@@ -358,12 +356,12 @@ describe('passwordless registration', () => {
   });
 
   it.each([
-    ['ordinary web signup', '/explore', false, true],
-    ['iOS signup', '/explore', true, false],
-    ['MCP authorization signup', '/oauth/authorize?requestId=client-request', false, false],
+    ['ordinary web signup', '/explore', false],
+    ['iOS signup', '/explore', true],
+    ['MCP authorization signup', '/oauth/authorize?requestId=client-request', false],
   ] as const)(
-    'queues a Passkey suggestion at username-confirm completion only for %s',
-    async (_scenario, redirect, isIosLogin, shouldQueue) => {
+    'completes username-only OAuth registration for %s without enrolling a Passkey',
+    async (_scenario, redirect, isIosLogin) => {
       const accountId = 'new-oauth-account';
       const accessToken = `header.${btoa(JSON.stringify({ exp: 4102444800, userId: accountId, username: 'reader' }))}.signature`;
       post.mockResolvedValueOnce({
@@ -381,7 +379,11 @@ describe('passwordless registration', () => {
       fireEvent.click(screen.getByRole('button', { name: 'entry.continue' }));
 
       await waitFor(() => expect(authService.getAccessToken()).toBe(accessToken));
-      expect(readPasskeyAdoptionIntent()?.accountId ?? null).toBe(shouldQueue ? accountId : null);
+      expect(post).toHaveBeenCalledWith('/auth/register/oauth', {
+        registrationToken: 'pending',
+        username: 'reader',
+      });
+      expect(registerPasskey).not.toHaveBeenCalled();
     }
   );
 });

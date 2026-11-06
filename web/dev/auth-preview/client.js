@@ -9,10 +9,6 @@
     localStorage.removeItem('rote_access_token');
     localStorage.removeItem('rote_refresh_token');
     localStorage.removeItem('profile');
-    sessionStorage.removeItem('rote-passkey-adoption');
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith('rote-passkey-adoption-offered:')) localStorage.removeItem(key);
-    }
     localStorage.setItem('vite-ui-theme', params.get('previewTheme') || 'light');
   }
   if (scenario || language) {

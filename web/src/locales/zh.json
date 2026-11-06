@@ -1995,13 +1995,6 @@
       "retry": "重试",
       "article": "关联文章",
       "tags": "标签"
-    },
-    "passkeyAdoption": {
-      "title": "下次登录，直接用通行密钥",
-      "description": "保存通行密钥，下次用面容、指纹或设备密码即可登录。",
-      "create": "添加通行密钥",
-      "creating": "正在添加通行密钥…",
-      "later": "稍后"
     }
   },
   "components": {

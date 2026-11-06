@@ -9,11 +9,18 @@ callbacks are simulated; the preview never creates a real account or passkey.
 The middleware and browser simulation are absent from production builds.
 
 The toolbar switches between all methods, OAuth only, no OAuth with Passkeys available, traditional
-login, disabled registration, unsupported Passkeys, canceled or unavailable Passkeys, returning
+login, disabled registration for existing or new OAuth identities, unsupported Passkeys,
+canceled or unavailable Passkeys, returning
 OAuth accounts with and without a Passkey, and expired OAuth registration. Appearance can be switched
 between light and dark. Restart clears the preview origin's mock login session.
 Add `previewLanguage=en` or `previewLanguage=ja` to a direct `/login` preview URL
 to inspect the localized layout. Without it, the preview uses Chinese.
+
+Registration-off scenarios keep existing OAuth, password and Passkey sign-in
+available. `closed` simulates a bound OAuth account that signs in normally;
+`closed-new` simulates an unbound identity and rejects new-account creation.
+Pending OAuth username confirmation is also blocked if registration is disabled
+between authorization and confirmation.
 
 Apple is the first and only highlighted OAuth method. A localized “or” divider
 separates OAuth from the full-width Passkey sign-in button. When no OAuth provider
@@ -27,10 +34,8 @@ OAuth continues to use one combined sign-in/creation entry, asking new users onl
 for a username. Existing usernames such as `passkey_user`, `password_user`, and
 `taken` are unavailable for registration. The original traditional
 signup form retains username, email, nickname, and password. Successful flows reach a mock
-confirmation page instead of the application dashboard. That page mounts the real
-post-OAuth Passkey suggestion: it is optional, checks existing credentials, and
-creates a simulated Passkey only after its action is clicked. Restart also clears
-the preview origin's suggestion cooldown so this flow can be reviewed again.
+confirmation page instead of the application dashboard. Existing accounts add
+Passkeys from account settings; signing in does not display a setup prompt.
 
 This preview validates presentation and client flow. The server integration tests
 exercise the real registration transactions, credential checks, and database

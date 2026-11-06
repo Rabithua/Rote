@@ -15,7 +15,7 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.test.{ts,tsx}', 'dev/**/*.test.{ts,tsx}'],
   },
   plugins: [
     deploymentRevision(process.env.ROTE_BUILD_REVISION),

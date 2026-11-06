@@ -64,11 +64,8 @@ require a valid session and do not create users. The client confirms account own
 receiving options and after the browser ceremony, allowing same-account token refresh while
 preventing submission after logout or an account switch.
 
-After ordinary Web OAuth sign-in or account creation, the dashboard can offer a dismissible
-suggestion to add a Passkey. It checks browser support, the site setting, and existing credentials
-first. Only selecting Add opens the system creation prompt. A per-account thirty-day cooldown
-limits repeated offers. iOS handoffs and MCP authorization skip the suggestion and retain their
-original completion destinations.
+Existing accounts add Passkeys from account settings. OAuth completion navigates directly to
+the original Web, MCP or iOS destination without displaying a Passkey setup suggestion.
 
 ## Verification
 
