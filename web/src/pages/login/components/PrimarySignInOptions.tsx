@@ -24,7 +24,7 @@ export function PrimarySignInOptions({
   const { t } = useTranslation('translation', { keyPrefix: 'pages.login' });
 
   return (
-    <div className="space-y-4 py-4">
+    <div className="space-y-4">
       <div className="space-y-3">
         {passkeyEnabled && (
           <Button className="w-full" disabled={disabled} onClick={onPasskeyContinue}>

@@ -2,14 +2,17 @@
 (() => {
   const params = new URLSearchParams(window.location.search);
   const scenario = params.get('previewScenario');
+  const language = params.get('previewLanguage');
   if (scenario) {
     sessionStorage.setItem('rote-auth-preview', scenario);
     document.cookie = `rote-auth-preview=${encodeURIComponent(scenario)}; path=/; SameSite=Lax`;
     localStorage.removeItem('rote_access_token');
     localStorage.removeItem('rote_refresh_token');
     localStorage.removeItem('profile');
-    localStorage.setItem('i18nextLng', 'zh');
     localStorage.setItem('vite-ui-theme', params.get('previewTheme') || 'light');
+  }
+  if (scenario || language) {
+    localStorage.setItem('userLanguage', ['zh', 'en', 'ja'].includes(language) ? language : 'zh');
   }
   window.__ROTE_CONFIG__ = { VITE_API_BASE: window.location.origin };
   const selected = sessionStorage.getItem('rote-auth-preview') || 'all';

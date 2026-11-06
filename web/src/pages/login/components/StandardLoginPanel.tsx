@@ -1,9 +1,7 @@
-import Logo from '@/components/others/logo';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import type { AuthView, LoginData, OAuthProviders, RegisterData } from '../types';
 import { AuthTabs } from './AuthTabs';
-import { LoginCard } from './LoginCard';
 import { PrimarySignInOptions } from './PrimarySignInOptions';
 import { UsernameRegistrationForm } from './UsernameRegistrationForm';
 
@@ -36,65 +34,52 @@ export function StandardLoginPanel(props: StandardLoginPanelProps) {
       : props.activeTab;
   const view = !hasModernSignIn && requestedView === 'primary' ? 'password-login' : requestedView;
 
-  return (
+  return view === 'primary' ? (
+    <PrimarySignInOptions
+      disabled={disabled}
+      oauthProviders={oauthProviders}
+      passkeyEnabled={passkeyEnabled}
+      onOAuthLogin={props.onOAuthLogin}
+      onPasskeyContinue={() => onActiveTabChange('passkey-continue')}
+      onOtherWays={() => onActiveTabChange('password-login')}
+    />
+  ) : view === 'passkey-continue' ? (
+    <UsernameRegistrationForm
+      username={props.registerData.username}
+      disabled={disabled}
+      submitLabel={t('entry.continue')}
+      busyLabel={t('messages.loggingIn')}
+      maxLength={100}
+      hint={t('entry.passkeyContinueHint')}
+      onUsernameChange={(value) => props.onRegisterFieldChange('username', value)}
+      onSubmit={props.onPasskeyContinue}
+      onBack={() => onActiveTabChange('primary')}
+    />
+  ) : (
     <>
-      <div className="mb-4">
-        <Logo className="w-32" color="#3ECF4A" />
-      </div>
-      {view === 'primary' ? (
-        <LoginCard>
-          <PrimarySignInOptions
-            disabled={disabled}
-            oauthProviders={oauthProviders}
-            passkeyEnabled={passkeyEnabled}
-            onOAuthLogin={props.onOAuthLogin}
-            onPasskeyContinue={() => onActiveTabChange('passkey-continue')}
-            onOtherWays={() => onActiveTabChange('password-login')}
-          />
-        </LoginCard>
-      ) : view === 'passkey-continue' ? (
-        <LoginCard>
-          <div className="py-4">
-            <UsernameRegistrationForm
-              username={props.registerData.username}
-              disabled={disabled}
-              submitLabel={t('entry.continue')}
-              busyLabel={t('messages.loggingIn')}
-              maxLength={100}
-              hint={t('entry.passkeyContinueHint')}
-              onUsernameChange={(value) => props.onRegisterFieldChange('username', value)}
-              onSubmit={props.onPasskeyContinue}
-              onBack={() => onActiveTabChange('primary')}
-            />
-          </div>
-        </LoginCard>
-      ) : (
-        <>
-          <AuthTabs
-            activeTab={view === 'password-register' ? 'register' : 'login'}
-            allowRegistration={allowRegistration}
-            disabled={disabled}
-            loginData={props.loginData}
-            registerData={props.registerData}
-            onActiveTabChange={(tab) =>
-              onActiveTabChange(tab === 'register' ? 'password-register' : 'password-login')
-            }
-            onLogin={props.onLogin}
-            onLoginFieldChange={props.onLoginFieldChange}
-            onRegister={props.onRegister}
-            onRegisterFieldChange={props.onRegisterFieldChange}
-          />
-          {hasModernSignIn && (
-            <Button
-              variant="ghost"
-              className="text-muted-foreground w-full"
-              disabled={disabled}
-              onClick={() => onActiveTabChange('primary')}
-            >
-              {t('entry.back')}
-            </Button>
-          )}
-        </>
+      <AuthTabs
+        activeTab={view === 'password-register' ? 'register' : 'login'}
+        allowRegistration={allowRegistration}
+        disabled={disabled}
+        loginData={props.loginData}
+        registerData={props.registerData}
+        onActiveTabChange={(tab) =>
+          onActiveTabChange(tab === 'register' ? 'password-register' : 'password-login')
+        }
+        onLogin={props.onLogin}
+        onLoginFieldChange={props.onLoginFieldChange}
+        onRegister={props.onRegister}
+        onRegisterFieldChange={props.onRegisterFieldChange}
+      />
+      {hasModernSignIn && (
+        <Button
+          variant="ghost"
+          className="text-muted-foreground mt-4 w-full"
+          disabled={disabled}
+          onClick={() => onActiveTabChange('primary')}
+        >
+          {t('entry.back')}
+        </Button>
       )}
     </>
   );

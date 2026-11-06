@@ -1,4 +1,3 @@
-import Logo from '@/components/others/logo';
 import LoadingPlaceholder from '@/components/others/LoadingPlaceholder';
 import { Button } from '@/components/ui/button';
 import { publicGet, publicPost } from '@/utils/api';
@@ -10,7 +9,6 @@ import { getAuthErrorMessage } from '../authErrors';
 import type { AuthenticationTokens } from '../types';
 import { createUsernameDataSchema, getZodErrorMessage, type LoginSiteStatus } from '../validation';
 import { UsernameRegistrationForm } from './UsernameRegistrationForm';
-import { LoginCard } from './LoginCard';
 
 type OAuthRegistrationDetails = {
   provider: string;
@@ -62,7 +60,7 @@ function OAuthUsernameConfirmation({
 
   return (
     <>
-      <div className="space-y-5 py-4">
+      <div className="space-y-5">
         <p className="text-muted-foreground text-sm">
           {t('entry.oauthCreateDescription', { provider })}
         </p>
@@ -97,20 +95,15 @@ export function OAuthRegistrationPanel(props: OAuthRegistrationPanelProps) {
 
   return (
     <>
-      <div className="mb-4">
-        <Logo className="w-32" color="#3ECF4A" />
-      </div>
-      <LoginCard>
-        {isLoading ? (
-          <LoadingPlaceholder className="py-8" size={6} />
-        ) : data && !error ? (
-          <OAuthUsernameConfirmation key={props.registrationToken} {...props} details={data} />
-        ) : (
-          <Button variant="outline" className="w-full" onClick={props.onBack}>
-            {t('entry.backToLogin')}
-          </Button>
-        )}
-      </LoginCard>
+      {isLoading ? (
+        <LoadingPlaceholder className="py-8" size={6} />
+      ) : data && !error ? (
+        <OAuthUsernameConfirmation key={props.registrationToken} {...props} details={data} />
+      ) : (
+        <Button variant="outline" className="w-full" onClick={props.onBack}>
+          {t('entry.backToLogin')}
+        </Button>
+      )}
     </>
   );
 }

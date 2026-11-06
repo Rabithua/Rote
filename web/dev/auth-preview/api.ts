@@ -9,6 +9,7 @@ export function authPreviewApi() {
   const authenticationChallenges = new Map<string, string>();
   const accounts = new Map<string, 'passkey' | 'other'>([
     ['passkey_user', 'passkey'],
+    ['legacy_' + 'u'.repeat(93), 'passkey'],
     ['password_user', 'other'],
     ['taken', 'other'],
   ]);

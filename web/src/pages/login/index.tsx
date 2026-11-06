@@ -13,6 +13,7 @@ import { getAuthErrorMessage, getOAuthCallbackError } from './authErrors';
 import { IosAuthorizePanel } from './components/IosAuthorizePanel';
 import { OAuthRegistrationPanel } from './components/OAuthRegistrationPanel';
 import { StandardLoginPanel } from './components/StandardLoginPanel';
+import { AuthScreen } from './components/AuthScreen';
 import type { AuthenticationTokens, AuthView, LoginData, RegisterData } from './types';
 import { useAccountRegistration } from './useAccountRegistration';
 import { usePasskeyContinuation } from './usePasskeyContinuation';
@@ -159,52 +160,50 @@ function Login() {
   }, [searchParams, navigate, mutateProfile, t, isIosLoginFlow, postLoginRedirect, retryLoginPath]);
 
   return (
-    <div className="relative flex h-dvh w-full items-center justify-center">
-      <div className="animate-show text-primary z-10 flex w-96 flex-col gap-2 rounded-lg px-2 py-6 pb-10 opacity-0">
-        {isCheckingStatus || (isIosLoginFlow && isRedirectingToIos) || isIosOAuthCallback ? (
-          <LoadingPlaceholder className="py-8" size={6} />
-        ) : isOAuthRegistration ? (
-          <OAuthRegistrationPanel
-            registrationToken={searchParams.get('registrationToken') ?? ''}
-            siteStatus={siteStatus}
-            onBack={() => navigate(retryLoginPath, { replace: true })}
-            onComplete={(tokens, completionUrl) => {
-              authService.setTokens(tokens.accessToken, tokens.refreshToken);
-              if (isIosLoginFlow) setIsRedirectingToIos(true);
-              window.location.assign(completionUrl);
-            }}
-          />
-        ) : profile && isIosLoginFlow ? (
-          <IosAuthorizePanel
-            profile={profile}
-            onAuthorize={() => completeAuthenticatedFlow()}
-            onSwitchAccount={() => {
-              authService.logout(false);
-              mutateProfile(undefined, { revalidate: false });
-            }}
-          />
-        ) : (
-          <StandardLoginPanel
-            activeTab={activeTab}
-            allowRegistration={siteStatus?.ui?.allowRegistration !== false}
-            disabled={disabled}
-            loginData={loginData}
-            oauthProviders={siteStatus?.oauth?.enabled ? siteStatus.oauth.providers : undefined}
-            passkeyEnabled={passkeyEnabled}
-            registerData={registerData}
-            onActiveTabChange={setActiveTab}
-            onLogin={login}
-            onLoginFieldChange={(key, value) => setLoginData((data) => ({ ...data, [key]: value }))}
-            onOAuthLogin={handleOAuthLogin}
-            onRegister={registration.register}
-            onPasskeyContinue={passkey.continueWithUsername}
-            onRegisterFieldChange={(key, value) =>
-              setRegisterData((data) => ({ ...data, [key]: value }))
-            }
-          />
-        )}
-      </div>
-    </div>
+    <AuthScreen>
+      {isCheckingStatus || (isIosLoginFlow && isRedirectingToIos) || isIosOAuthCallback ? (
+        <LoadingPlaceholder className="py-8" size={6} />
+      ) : isOAuthRegistration ? (
+        <OAuthRegistrationPanel
+          registrationToken={searchParams.get('registrationToken') ?? ''}
+          siteStatus={siteStatus}
+          onBack={() => navigate(retryLoginPath, { replace: true })}
+          onComplete={(tokens, completionUrl) => {
+            authService.setTokens(tokens.accessToken, tokens.refreshToken);
+            if (isIosLoginFlow) setIsRedirectingToIos(true);
+            window.location.assign(completionUrl);
+          }}
+        />
+      ) : profile && isIosLoginFlow ? (
+        <IosAuthorizePanel
+          profile={profile}
+          onAuthorize={() => completeAuthenticatedFlow()}
+          onSwitchAccount={() => {
+            authService.logout(false);
+            mutateProfile(undefined, { revalidate: false });
+          }}
+        />
+      ) : (
+        <StandardLoginPanel
+          activeTab={activeTab}
+          allowRegistration={siteStatus?.ui?.allowRegistration !== false}
+          disabled={disabled}
+          loginData={loginData}
+          oauthProviders={siteStatus?.oauth?.enabled ? siteStatus.oauth.providers : undefined}
+          passkeyEnabled={passkeyEnabled}
+          registerData={registerData}
+          onActiveTabChange={setActiveTab}
+          onLogin={login}
+          onLoginFieldChange={(key, value) => setLoginData((data) => ({ ...data, [key]: value }))}
+          onOAuthLogin={handleOAuthLogin}
+          onRegister={registration.register}
+          onPasskeyContinue={passkey.continueWithUsername}
+          onRegisterFieldChange={(key, value) =>
+            setRegisterData((data) => ({ ...data, [key]: value }))
+          }
+        />
+      )}
+    </AuthScreen>
   );
 }
 

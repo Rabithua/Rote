@@ -205,7 +205,9 @@
         "title": "ログイン認証",
         "message": "Rote Web App を Rote iOS App に {{username}} としてログインすることを承認しようとしています",
         "button": "ログインを認証",
-        "switchAccount": "アカウントを切り替える"
+        "switchAccount": "アカウントを切り替える",
+        "switchAction": "切替",
+        "confirmAction": "認証"
       },
       "messages": {
         "loggingIn": "ログイン中...",

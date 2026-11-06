@@ -54,18 +54,17 @@ export function AuthTabs({
   }
 
   return (
-    <Tabs
-      value={activeTab}
-      onValueChange={onActiveTabChange}
-      className="bg-muted w-full rounded-lg"
-    >
-      <TabsList className={`grid w-full ${allowRegistration ? 'grid-cols-2' : 'grid-cols-1'}`}>
+    <Tabs value={activeTab} onValueChange={onActiveTabChange} className="w-full">
+      <TabsList
+        className={`grid w-full rounded-none border-b bg-transparent p-0 ${allowRegistration ? 'grid-cols-2' : 'grid-cols-1'}`}
+        activeClassName="rounded-none bg-muted/60 shadow-none"
+      >
         <TabsTrigger value="login">{t('buttons.login')}</TabsTrigger>
         {allowRegistration && <TabsTrigger value="register">{t('buttons.register')}</TabsTrigger>}
       </TabsList>
 
-      <TabsContents className="bg-background mx-1 -mt-2 mb-1 h-full rounded-sm">
-        <div className="space-y-4 p-4">
+      <TabsContents>
+        <div className="space-y-4">
           <TabsContent value="login" className="space-y-4 py-4">
             <div className="space-y-5">
               <div className="space-y-2">

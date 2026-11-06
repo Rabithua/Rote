@@ -191,7 +191,9 @@
         "title": "授权登录",
         "message": "你将授权 Rote Web App 以 {{username}} 的身份登录 Rote iOS App",
         "button": "授权登录",
-        "switchAccount": "切换账号"
+        "switchAccount": "切换账号",
+        "switchAction": "切换",
+        "confirmAction": "授权"
       },
       "messages": {
         "loggingIn": "登录中...",
