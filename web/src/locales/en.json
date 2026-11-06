@@ -277,7 +277,7 @@
         "title": "Welcome to Rote",
         "description": "Choose a way to continue your story.",
         "continueWithProvider": "Continue with {{provider}}",
-        "newHere": "New to Rote?",
+        "signInOrCreateAccount": "Sign in or create an account",
         "createWithPasskey": "Create an account with a passkey",
         "otherWays": "Other ways",
         "back": "Back",

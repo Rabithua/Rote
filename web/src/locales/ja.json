@@ -281,7 +281,7 @@
         "title": "Rote へようこそ",
         "description": "ログイン方法を選んで、記録を続けましょう。",
         "continueWithProvider": "{{provider}} で続ける",
-        "newHere": "Rote は初めてですか？",
+        "signInOrCreateAccount": "ログインまたはアカウント作成",
         "createWithPasskey": "パスキーでアカウントを作成",
         "otherWays": "その他の方法",
         "back": "戻る",

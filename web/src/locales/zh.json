@@ -267,7 +267,7 @@
         "title": "欢迎使用 Rote",
         "description": "选择一种方式，继续你的记录。",
         "continueWithProvider": "使用 {{provider}} 继续",
-        "newHere": "第一次使用 Rote？",
+        "signInOrCreateAccount": "登录或创建账号",
         "createWithPasskey": "使用通行密钥创建账号",
         "otherWays": "其他方式",
         "back": "返回",
