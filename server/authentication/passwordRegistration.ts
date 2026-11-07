@@ -9,6 +9,8 @@ import type { RegisterDataZod } from '../utils/zod';
 import { readAuthenticationPolicy, requireAccountRegistration } from './policy';
 
 export async function registerPasswordAccount(data: z.infer<typeof RegisterDataZod>) {
+  requireAccountRegistration(await db.transaction(readAuthenticationPolicy));
+
   const salt = crypto.randomBytes(16);
   const passwordhash = crypto.pbkdf2Sync(data.password, salt, 310000, 32, 'sha256');
   let user;

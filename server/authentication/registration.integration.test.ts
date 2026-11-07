@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, spyOn } from 'bun:test';
 import crypto from 'crypto';
 import { and, eq, like } from 'drizzle-orm';
 
@@ -177,18 +177,25 @@ suite('traditional registration and credential ownership', () => {
     expect(passkeys.length + bindings.length).toBe(1);
   });
 
-  it('rejects registration after another process disables signup without refreshing this cache', async () => {
+  it('rejects registration before hashing when the stored policy disables signup but the cache is stale', async () => {
     await db
       .update(settings)
       .set({ config: { allowRegistration: false } })
       .where(eq(settings.group, 'ui'));
     expect(getGlobalConfig('ui')).toMatchObject({ allowRegistration: true });
-    const traditional = await request('/register', {
-      username: 'identity-closed',
-      email: 'closed@example.test',
-      password: 'identity-password',
-    });
-    expect(traditional.status).toBe(403);
+    const hash = spyOn(crypto, 'pbkdf2Sync');
+    try {
+      const traditional = await request('/register', {
+        username: 'identity-closed',
+        email: 'closed@example.test',
+        password: 'identity-password',
+      });
+      expect(traditional.status).toBe(403);
+      expect((await traditional.json()).errorCode).toBe('registration_disabled');
+      expect(hash).not.toHaveBeenCalled();
+    } finally {
+      hash.mockRestore();
+    }
     expect(
       (await db.select().from(users).where(eq(users.username, 'identity-closed'))).length
     ).toBe(0);
