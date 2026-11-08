@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - name: Test deployment acceptance and timeout handling
-        run: bun test ./.github/scripts/verify-deployment.test.ts ./web/scripts/deployment/revision.test.ts
+        run: bun test ./.github/scripts/deploy-dokploy.test.ts ./.github/scripts/verify-deployment.test.ts ./web/scripts/deployment/revision.test.ts
 
   lint-and-build:
     runs-on: ubuntu-latest

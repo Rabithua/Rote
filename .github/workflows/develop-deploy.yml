@@ -93,7 +93,7 @@ jobs:
       - build-backend
       - build-frontend
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 9
 
     steps:
       - uses: actions/checkout@v4
@@ -101,44 +101,13 @@ jobs:
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Trigger Dokploy develop Compose deployment
+      - name: Deploy to Dokploy and retry a confirmed failure before Docker starts
         env:
           DOKPLOY_COMPOSE_WEBHOOK_URL: ${{ secrets.DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL }}
-        run: |
-          bun -e '
-            const rawUrl = Bun.env.DOKPLOY_COMPOSE_WEBHOOK_URL;
-            let webhookUrl;
-            try {
-              webhookUrl = new URL(rawUrl || "");
-            } catch {
-              console.error("DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL is not configured");
-              process.exit(1);
-            }
-            if (webhookUrl.protocol !== "https:") {
-              console.error("DOKPLOY_DEVELOP_COMPOSE_WEBHOOK_URL must use HTTPS");
-              process.exit(1);
-            }
-            const sha = Bun.env.GITHUB_SHA || "unknown";
-            const response = await fetch(webhookUrl, {
-              method: "POST",
-              signal: AbortSignal.timeout(20_000),
-              headers: {
-                "content-type": "application/json",
-                "x-github-event": "push",
-              },
-              body: JSON.stringify({
-                head_commit: {
-                  id: sha,
-                  message: `Deploy develop images ${sha}`,
-                },
-              }),
-            });
-            if (!response.ok) {
-              console.error(`Dokploy Compose webhook failed with HTTP ${response.status}`);
-              process.exit(1);
-            }
-            console.log("Dokploy develop Compose deployment queued");
-          '
+          DOKPLOY_STATUS_API_KEY: ${{ secrets.DOKPLOY_DEVELOP_STATUS_API_KEY }}
+          DOKPLOY_COMPOSE_ID: ${{ vars.DOKPLOY_DEVELOP_COMPOSE_ID }}
+          DOKPLOY_STATUS_API_ORIGIN: ${{ vars.DOKPLOY_DEVELOP_STATUS_API_ORIGIN }}
+        run: bun run .github/scripts/deploy-dokploy.ts
 
       - name: Verify the deployed backend and frontend
         env:
