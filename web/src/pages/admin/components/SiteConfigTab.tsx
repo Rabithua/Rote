@@ -13,6 +13,7 @@ import type { SystemConfig } from '../types';
 import AdminSettingsPanel from '../settings/AdminSettingsPanel';
 
 const CUSTOM_HEAD_SCRIPTS_MAX_BYTES = 64 * 1024;
+const CUSTOM_META_TAGS_MAX_BYTES = 8 * 1024;
 
 interface SiteConfigTabProps {
   siteConfig: SystemConfig['site'] | undefined;
@@ -38,6 +39,8 @@ export default function SiteConfigTab({
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin' });
   const { mutate: globalMutate } = useSWRConfig();
   const [saveError, setSaveError] = useState<string | null>(null);
+  const metaTagsValue = siteConfig?.customMetaTags ?? '';
+  const metaTagsBytes = new TextEncoder().encode(metaTagsValue).byteLength;
 
   const handleSave = async () => {
     setSaveError(null);
@@ -45,6 +48,10 @@ export default function SiteConfigTab({
       const message = t('saveFailed', { error: 'Site name and frontend URL are required' });
       setSaveError(message);
       toast.error(message);
+      return;
+    }
+    if (isSuperAdmin && metaTagsBytes > CUSTOM_META_TAGS_MAX_BYTES) {
+      toast.error(t('site.customMetaTags.tooLarge'));
       return;
     }
     if (
@@ -58,9 +65,10 @@ export default function SiteConfigTab({
     }
     setIsSaving(true);
     try {
+      const { customMetaTags = '', ...siteSettings } = siteConfig;
       await put('/admin/settings', {
         group: 'site',
-        config: siteConfig,
+        config: isSuperAdmin ? { ...siteSettings, customMetaTags } : siteSettings,
       });
       onSaved?.(siteConfig);
       toast.success(t('saveSuccess'));
@@ -68,12 +76,18 @@ export default function SiteConfigTab({
       // 更新所有使用 site-status 的组件
       globalMutate('site-status');
     } catch (error: any) {
+      const apiMessage = error?.response?.data?.message;
+      if (apiMessage === 'invalid_custom_meta_tags') {
+        toast.error(t('site.customMetaTags.invalid'));
+        return;
+      }
+      if (apiMessage === 'custom_meta_tags_forbidden') {
+        toast.error(t('site.customMetaTags.forbidden'));
+        return;
+      }
       // 优先使用后端返回的错误消息
       const errorMessage =
-        error?.response?.data?.message ||
-        error?.message ||
-        error?.response?.data?.error ||
-        'Unknown error';
+        apiMessage || error?.message || error?.response?.data?.error || 'Unknown error';
       const message = t('saveFailed', { error: errorMessage });
       setSaveError(message);
       toast.error(message);
@@ -235,6 +249,35 @@ export default function SiteConfigTab({
           />
           <p className="text-muted-foreground text-xs">{t('site.icpRecordDescription')}</p>
         </div>
+
+        {isSuperAdmin && (
+          <div className="space-y-2">
+            <Label htmlFor="customMetaTags">{t('site.customMetaTags.title')}</Label>
+            <Textarea
+              id="customMetaTags"
+              aria-describedby="customMetaTagsDescription"
+              value={metaTagsValue}
+              onChange={(e) =>
+                setSiteConfig({
+                  ...(siteConfig || {}),
+                  name: siteConfig?.name || '',
+                  frontendUrl: siteConfig?.frontendUrl || '',
+                  customMetaTags: e.target.value,
+                })
+              }
+              placeholder={t('site.customMetaTags.placeholder')}
+              minRows={3}
+              className="font-mono text-xs"
+              spellCheck={false}
+            />
+            <div className="text-muted-foreground flex justify-between gap-4 text-xs">
+              <span id="customMetaTagsDescription">{t('site.customMetaTags.description')}</span>
+              <span className="shrink-0">
+                {metaTagsBytes} / {CUSTOM_META_TAGS_MAX_BYTES}
+              </span>
+            </div>
+          </div>
+        )}
 
         {isSuperAdmin && (
           <div className="space-y-2">

@@ -45,6 +45,8 @@ export default defineConfig({
       strategies: 'injectManifest',
       injectManifest: {
         globIgnores: [
+          // The HTML shell contains site settings rendered by the origin.
+          '**/index.html',
           '**/jszip.min-*.js',
           '**/sql-wasm-browser-*.js',
           '**/sql-wasm-*.wasm',

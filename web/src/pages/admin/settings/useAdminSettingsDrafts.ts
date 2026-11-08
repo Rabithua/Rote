@@ -7,6 +7,7 @@ export function useAdminSettingsDrafts(configs: SystemConfig | undefined) {
     configs?.site && {
       description: '',
       icpRecord: '',
+      customMetaTags: '',
       customHeadScripts: '',
       ...configs.site,
       announcement: { enabled: false, content: '', link: '', ...configs.site.announcement },

@@ -3,10 +3,12 @@ import mainJson from '../../json/main.json';
 import type {
   NotificationConfig,
   SecurityConfig,
+  SiteConfig,
   StorageConfig,
   UiConfig,
 } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
+import { InvalidCustomMetaTags, normalizeCustomMetaTags } from '../../settings/customMetaTags';
 import { getConfig, isInitialized } from '../../utils/config';
 import {
   checkDatabaseConnection,
@@ -21,6 +23,18 @@ import { getReleaseVersion } from '../../release/releaseVersion';
 
 // 站点数据相关路由
 const siteRouter = new Hono<{ Variables: HonoVariables }>();
+
+siteRouter.get('/head-meta', async (c) => {
+  const site = await getConfig<SiteConfig>('site');
+  c.header('Cache-Control', 'no-store');
+  c.header('X-Content-Type-Options', 'nosniff');
+  try {
+    return c.text(normalizeCustomMetaTags(site?.customMetaTags) ?? '');
+  } catch (error) {
+    if (error instanceof InvalidCustomMetaTags) return c.text('');
+    throw error;
+  }
+});
 
 async function getPublicAiStatus() {
   const fallback = {

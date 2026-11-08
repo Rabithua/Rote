@@ -1419,6 +1419,14 @@
         "frontendUrlDescription": "Frontend access URL, used to generate note links in RSS feeds",
         "icpRecord": "ICP Record Number",
         "icpRecordDescription": "Website ICP record number, e.g., 京ICP备12345678号",
+        "customMetaTags": {
+          "title": "Custom Meta Tags",
+          "description": "Paste meta tags for link previews or site verification. After saving, both site pages and share pages include these tags in their initial HTML.",
+          "placeholder": "<meta name=\"twitter:creator\" content=\"@your_handle\">\n<meta property=\"og:image\" content=\"https://example.com/cover.png\">",
+          "invalid": "Check your meta tags. Each tag must have either name or property, plus content. Built-in tags are reserved.",
+          "forbidden": "Only super admins can change custom meta tags",
+          "tooLarge": "Custom meta tags must not exceed 8 KiB"
+        },
         "customHeadScripts": {
           "title": "Custom Head Scripts",
           "description": "Supports one or more script tags. Refresh the page after saving to apply changes.",

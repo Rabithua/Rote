@@ -1,4 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SystemConfig } from '../types';
 import AIConfigTab from './AIConfigTab';
@@ -35,6 +37,24 @@ const aiConfig: NonNullable<SystemConfig['ai']> = {
     output: { mode: 'native' },
   },
 };
+
+function SiteSettings({ isSuperAdmin }: { isSuperAdmin: boolean }) {
+  const [config, setConfig] = useState<SystemConfig['site']>({
+    ...siteConfig,
+    customMetaTags: '<meta name="twitter:creator" content="@rote">',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  return (
+    <SiteConfigTab
+      siteConfig={config}
+      setSiteConfig={setConfig}
+      isSaving={isSaving}
+      setIsSaving={setIsSaving}
+      isSuperAdmin={isSuperAdmin}
+      onMutate={onMutate}
+    />
+  );
+}
 
 describe('acknowledging saved admin settings', () => {
   beforeEach(() => {
@@ -80,6 +100,43 @@ describe('acknowledging saved admin settings', () => {
     fireEvent.click(screen.getByRole('button', { name: 'save' }));
     await waitFor(() => expect(setIsSaving).toHaveBeenLastCalledWith(false));
     expect(onSaved).not.toHaveBeenCalled();
+    expect(onMutate).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    'omits custom meta for an admin and allows a super admin to clear it (super admin: %s)',
+    async (isSuperAdmin) => {
+      render(<SiteSettings isSuperAdmin={isSuperAdmin} />);
+      if (isSuperAdmin) {
+        fireEvent.change(screen.getByLabelText('site.customMetaTags.title'), {
+          target: { value: '' },
+        });
+      } else {
+        expect(screen.queryByLabelText('site.customMetaTags.title')).not.toBeInTheDocument();
+      }
+      fireEvent.click(screen.getByRole('button', { name: 'save' }));
+      await waitFor(() => expect(onMutate).toHaveBeenCalledOnce());
+      expect(put).toHaveBeenCalledExactlyOnceWith('/admin/settings', {
+        group: 'site',
+        config: isSuperAdmin ? { ...siteConfig, customMetaTags: '' } : siteConfig,
+      });
+    }
+  );
+
+  it.each([
+    ['invalid_custom_meta_tags', 'site.customMetaTags.invalid'],
+    ['custom_meta_tags_forbidden', 'site.customMetaTags.forbidden'],
+  ])('shows a toast and keeps the meta draft on %s', async (message, translationKey) => {
+    put.mockRejectedValueOnce({ response: { data: { message } } });
+    render(<SiteSettings isSuperAdmin />);
+    const field = screen.getByLabelText('site.customMetaTags.title');
+    const draft = '<meta name="twitter:creator" content="@new_handle">';
+    fireEvent.change(field, { target: { value: draft } });
+    fireEvent.click(screen.getByRole('button', { name: 'save' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledExactlyOnceWith(translationKey));
+    expect(field).toHaveValue(draft);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(onMutate).not.toHaveBeenCalled();
   });
 

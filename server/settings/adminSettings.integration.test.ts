@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
 import { SignJWT } from 'jose';
-import type { NotificationConfig, SecurityConfig } from '../types/config';
+import type { NotificationConfig, SecurityConfig, SiteConfig } from '../types/config';
 import { registerSettingsPersistenceCases } from '../tests/settingsPersistenceCases';
 import {
   createAdminSettingsFixture,
@@ -51,6 +51,56 @@ databaseDescribe(
         expect(single.status).toBe(200);
         expectNoSigningKeys((await single.json()).data.config);
       }
+    });
+
+    it('serves only valid site metadata and requires super admin to change it', async () => {
+      const base = { name: 'Rote', frontendUrl: 'https://example.test' };
+      const customMetaTags = '<meta content="verify-123" name="google-site-verification" />';
+      const canonical = '<meta name="google-site-verification" content="verify-123">';
+      const save = (role: 'admin' | 'super_admin', update: object) =>
+        request('/settings', 'PUT', role, { group: 'site', config: { ...base, ...update } });
+      const fragment = () => app.request('/v2/api/site/head-meta');
+
+      // An older server allowed unknown site fields in settings.
+      expect(
+        await config.setConfig('site', {
+          ...base,
+          customMetaTags: '<script src="https://example.test/untrusted.js"></script>',
+        })
+      ).toBe(true);
+      expect(await (await fragment()).text()).toBe('');
+
+      expect((await save('super_admin', { customMetaTags })).status).toBe(200);
+      const publicResponse = await fragment();
+      expect(publicResponse.status).toBe(200);
+      expect(publicResponse.headers.get('content-type')).toMatch(/^text\/plain/);
+      expect(publicResponse.headers.get('cache-control')).toBe('no-store');
+      expect(await publicResponse.text()).toBe(canonical);
+
+      expect((await save('admin', { customMetaTags: '' })).status).toBe(403);
+      expect((await save('admin', { description: 'Updated site description' })).status).toBe(200);
+      const invalid = await save('super_admin', { customMetaTags: '<meta charset="utf-8">' });
+      expect(invalid.status).toBe(400);
+      expect((await invalid.json()).message).toBe('invalid_custom_meta_tags');
+      expect(await (await fragment()).text()).toBe(canonical);
+
+      // An independent server can update the row before this instance refreshes its cache.
+      const { mutateStoredConfigs } = await import('./configStore');
+      const newerMeta = '<meta name="twitter:creator" content="@rote">';
+      await mutateStoredConfigs([
+        {
+          group: 'site',
+          update: (site) => ({ ...(site as SiteConfig), customMetaTags: newerMeta }),
+        },
+      ]);
+      const frontendUrl = 'https://new.example.test';
+      const urlUpdate = await request('/settings/update-urls', 'POST', 'admin', { frontendUrl });
+      expect(urlUpdate.status).toBe(200);
+      expect((await urlUpdate.json()).data.urls.frontendUrl).toBe(frontendUrl);
+      expect(await (await fragment()).text()).toBe(newerMeta);
+
+      expect((await save('super_admin', { customMetaTags: '' })).status).toBe(200);
+      expect(await (await fragment()).text()).toBe('');
     });
 
     it('rejects root-key changes and cannot use the proposed attacker key to promote an admin', async () => {

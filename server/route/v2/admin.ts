@@ -12,9 +12,12 @@ import type {
   ConfigTestResult,
   NotificationConfig,
   SecurityConfig,
+  SiteConfig,
 } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import settingsMessages from '../../settings/messages.json';
+import { InvalidCustomMetaTags } from '../../settings/customMetaTags';
+import { applySiteHeadSettings, SiteHeadSettingsError } from '../../settings/siteHeadSettings';
 import { isSecurityKeyRotationScope } from '../../settings/securityKeys';
 import {
   mergeSecuritySettings,
@@ -41,7 +44,6 @@ import {
   validateNotificationConfig,
 } from '../../utils/adminHooks';
 import { ConfigTester } from '../../utils/configTester';
-import { resolveCustomHeadScriptsUpdate } from '../../utils/customHeadScripts';
 import { createResponse, getApiUrl } from '../../utils/main';
 import {
   getStorageFriendlyError,
@@ -185,22 +187,23 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
 
     if (group === 'site') {
       try {
-        const existingSiteConfig = (await getConfig('site')) as Record<string, any> | null;
-        const incomingScripts = resolveCustomHeadScriptsUpdate(
-          existingSiteConfig?.customHeadScripts,
-          config.customHeadScripts,
-          user?.role === 'super_admin'
+        const saved = await updateConfig<SiteConfig>(
+          'site',
+          (existing) => applySiteHeadSettings(config, existing, user?.role === 'super_admin'),
+          { isRequired: true, isSystem: false, isInitialized: true }
         );
-
-        config = { ...config };
-        if (incomingScripts === undefined) delete config.customHeadScripts;
-        else config.customHeadScripts = incomingScripts;
-      } catch (error: any) {
-        const message = error instanceof Error ? error.message : String(error ?? '');
         return c.json(
-          createResponse(null, message),
-          message === 'Only super admin can modify custom head scripts' ? 403 : 400
+          createResponse({ group, config: saved }, 'Configuration updated successfully')
         );
+      } catch (error) {
+        if (error instanceof InvalidCustomMetaTags) {
+          return c.json(createResponse(null, error.message, 400), 400);
+        }
+        if (error instanceof SiteHeadSettingsError) {
+          return c.json(createResponse(null, error.message), error.status);
+        }
+        console.error('Failed to update site configuration');
+        return c.json(createResponse(null, 'Failed to update configuration'), 500);
       }
     }
 
@@ -274,7 +277,7 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
 
     // 更新配置
     const success = await setConfig(group as any, config, {
-      isRequired: ['site', 'storage', 'security'].includes(group),
+      isRequired: ['storage', 'security'].includes(group),
       isSystem: group === 'system',
       isInitialized: true,
     });
@@ -444,25 +447,20 @@ adminRouter.post('/settings/update-urls', authenticateJWT, requireAdmin, async (
     const { frontendUrl } = body as { frontendUrl?: string };
 
     // 获取当前站点配置
-    const currentSiteConfig = (await getConfig('site')) as any;
+    const currentSiteConfig = await getConfig<SiteConfig>('site');
     if (!currentSiteConfig) {
       return c.json(createResponse(null, 'Site configuration not found'), 404);
     }
 
     // 更新前端 URL 配置（API URL 始终自动检测，不需要更新）
-    const updatedConfig = {
-      ...currentSiteConfig,
-      frontendUrl: frontendUrl || currentSiteConfig.frontendUrl,
-    };
-
-    const success = await setConfig('site', updatedConfig, {
-      isRequired: true,
-      isInitialized: true,
-    });
-
-    if (!success) {
-      return c.json(createResponse(null, 'Failed to update URL configuration'), 500);
-    }
+    const updatedConfig = await updateConfig<SiteConfig>(
+      'site',
+      (existing) => {
+        const latest = existing ?? currentSiteConfig;
+        return { ...latest, frontendUrl: frontendUrl || latest.frontendUrl };
+      },
+      { isRequired: true, isInitialized: true }
+    );
 
     return c.json(
       createResponse(
@@ -476,8 +474,8 @@ adminRouter.post('/settings/update-urls', authenticateJWT, requireAdmin, async (
       ),
       200
     );
-  } catch (error: any) {
-    console.error('Failed to update URL configuration:', error);
+  } catch {
+    console.error('Failed to update URL configuration');
     return c.json(createResponse(null, 'Failed to update URL configuration'), 500);
   }
 });
