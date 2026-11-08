@@ -1959,7 +1959,6 @@
           "title": "{{username}} 的权限",
           "description": "用户覆盖规则优先于角色默认权限；选择继承可移除覆盖规则。",
           "close": "关闭",
-          "save": "保存",
           "saveSuccess": "用户权限已保存",
           "saveFailed": "保存用户权限失败：{{error}}"
         }
