@@ -146,6 +146,11 @@ describe('UserPermissionsDialog', () => {
     await screen.findAllByRole('combobox');
     const storage = permissionSelect(storageKey);
     const overlay = document.querySelector('[data-slot="dialog-overlay"]') as HTMLElement;
+    const tapOverlay = () => {
+      fireEvent.pointerDown(overlay, { pointerType: 'touch', button: 0 });
+      fireEvent.pointerUp(overlay, { pointerType: 'touch', button: 0 });
+      fireEvent.click(overlay);
+    };
 
     fireEvent.change(storage, { target: { value: 'inherit' } });
 
@@ -159,7 +164,7 @@ describe('UserPermissionsDialog', () => {
     expect(close).toBeDisabled();
     fireEvent.click(close);
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-    fireEvent.pointerDown(overlay, { pointerType: 'mouse', button: 0 });
+    tapOverlay();
     expect(onClose).not.toHaveBeenCalled();
 
     await act(async () => finishSave({ data: savedPermissions }));
@@ -168,7 +173,7 @@ describe('UserPermissionsDialog', () => {
     expect(storage).toBeEnabled();
     expect(close).toBeEnabled();
     expect(onClose).not.toHaveBeenCalled();
-    fireEvent.pointerDown(overlay, { pointerType: 'mouse', button: 0 });
+    tapOverlay();
     expect(onClose).toHaveBeenCalledOnce();
   });
 
