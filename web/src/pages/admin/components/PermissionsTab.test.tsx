@@ -1,43 +1,39 @@
+import { MANAGEABLE_ROLES, type RoleCapabilityPolicy } from '@/types/permissions';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { toast } from 'sonner';
+import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PermissionsTab from './PermissionsTab';
 
-const { mutate, put, useSWR } = vi.hoisted(() => ({
-  mutate: vi.fn(),
+const { get, put, useProfile } = vi.hoisted(() => ({
+  get: vi.fn(),
   put: vi.fn(),
-  useSWR: vi.fn(),
+  useProfile: vi.fn(),
 }));
 
-vi.mock('swr', () => ({ default: useSWR }));
-vi.mock('@/utils/api', () => ({ get: vi.fn(), put }));
-vi.mock('@/state/profile', () => ({
-  useProfile: () => ({ role: 'super_admin' }),
-}));
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, options?: { role: string }) =>
-      key === 'saveRoleFor' ? `${key}:${options?.role}` : key,
-  }),
-}));
+vi.mock('@/utils/api', () => ({ get, put }));
+vi.mock('@/state/profile', () => ({ useProfile }));
 vi.mock('./PermissionSettingRow', () => ({
   default: ({
     capability,
     value,
     options,
     effective,
+    disabled,
     onChange,
   }: {
     capability: string;
     value: string;
     options: readonly string[];
     effective?: { allowed: boolean };
+    disabled?: boolean;
     onChange: (value: string) => void;
   }) => (
     <div data-testid={`permission-${capability}`} data-options={options.join(',')}>
       <select
         aria-label={capability}
         value={value}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
       >
         {options.map((option) => (
@@ -54,160 +50,133 @@ vi.unmock('react-dom/client');
 
 const capabilities = {
   'attachment.upload': 'allow',
-  'attachment.video.upload': 'deny',
+  'attachment.video.upload': 'allow',
   'ai.chat': 'deny',
   'resource.storage.unlimited': 'inherit',
 } as const;
 
-const effective = {
-  'attachment.upload': { allowed: true, source: 'role_policy', role: 'user' },
-  'attachment.video.upload': { allowed: false, source: 'role_policy', role: 'user' },
-  'ai.chat': { allowed: false, source: 'role_policy', role: 'user' },
-  'resource.storage.unlimited': { allowed: false, source: 'role_default', role: 'user' },
-} as const;
-
-const policies = ['user', 'moderator', 'admin'].map((role) => ({
+const policies: RoleCapabilityPolicy[] = MANAGEABLE_ROLES.map((role) => ({
   role,
   capabilities,
-  effective: Object.fromEntries(
-    Object.entries(effective).map(([key, capability]) => [key, { ...capability, role }])
-  ),
+  effective: {
+    'attachment.upload': { allowed: true, source: 'role_policy', role },
+    'attachment.video.upload': { allowed: true, source: 'role_policy', role },
+    'ai.chat': { allowed: false, source: 'role_policy', role },
+    'resource.storage.unlimited': { allowed: false, source: 'role_default', role },
+  },
 }));
+
+const updatedPolicies: RoleCapabilityPolicy[] = policies.map((policy) =>
+  policy.role === 'user'
+    ? {
+        ...policy,
+        capabilities: { ...policy.capabilities, 'attachment.upload': 'deny' },
+        effective: {
+          ...policy.effective,
+          'attachment.upload': { allowed: false, source: 'role_policy', role: 'user' },
+          'attachment.video.upload': { allowed: false, source: 'dependency', role: 'user' },
+        },
+      }
+    : policy
+);
 
 function roleSection(role: string) {
   return within(screen.getByText(`roles.${role}.label`).closest('section') as HTMLElement);
 }
 
-function changeCapability(role: string, value: string) {
-  fireEvent.change(roleSection(role).getByLabelText('attachment.upload'), {
-    target: { value },
-  });
-}
-
-function saveRole(role: string) {
-  fireEvent.click(screen.getByRole('button', { name: `saveRoleFor:roles.${role}.label` }));
+async function renderPermissions(onSavingChange?: (saving: boolean) => void) {
+  const result = render(
+    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <PermissionsTab onSavingChange={onSavingChange} />
+    </SWRConfig>
+  );
+  await screen.findAllByRole('combobox');
+  return result;
 }
 
 describe('PermissionsTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mutate.mockResolvedValue(undefined);
-    put.mockResolvedValue({ data: policies });
-    useSWR.mockReturnValue({ data: policies, isLoading: false, mutate });
+    get.mockResolvedValue({ data: policies });
+    put.mockResolvedValue({ data: updatedPolicies });
+    useProfile.mockReturnValue({ role: 'super_admin' });
   });
 
-  it('shows inherited unlimited storage with its effective state and preserves it on save', async () => {
-    render(<PermissionsTab />);
-
-    const userSection = screen.getByText('roles.user.label').closest('section');
-    expect(userSection).not.toBeNull();
-    const row = within(userSection as HTMLElement).getByTestId(
-      'permission-resource.storage.unlimited'
-    );
-    expect(row).toHaveAttribute('data-options', 'inherit,allow,deny');
-    expect(within(row).getByText('inherit')).toBeVisible();
-    expect(within(row).getByText('effective.denied')).toBeVisible();
-
-    expect(screen.getAllByRole('button')).toHaveLength(3);
-    expect(screen.getByRole('button', { name: 'saveRoleFor:roles.user.label' })).toBeDisabled();
-    changeCapability('user', 'deny');
-    expect(
-      screen.getByRole('button', { name: 'saveRoleFor:roles.moderator.label' })
-    ).toBeDisabled();
-    saveRole('user');
-
-    await waitFor(() =>
-      expect(put).toHaveBeenCalledWith('/admin/permissions/roles/user', {
-        capabilities: { ...capabilities, 'attachment.upload': 'deny' },
-      })
-    );
-  });
-
-  it('reports edits and clears the dirty state when a change is reverted', () => {
-    const onDirtyChange = vi.fn();
-    render(<PermissionsTab onDirtyChange={onDirtyChange} />);
-
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-    changeCapability('user', 'deny');
-    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
-    changeCapability('user', 'allow');
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it('preserves edited roles when SWR refreshes and updates clean roles', () => {
-    const onDirtyChange = vi.fn();
-    const { rerender } = render(<PermissionsTab onDirtyChange={onDirtyChange} />);
-    changeCapability('user', 'deny');
-
-    const refreshed = policies.map((policy) => ({
-      ...policy,
-      capabilities: { ...policy.capabilities, 'attachment.upload': 'inherit' },
-    }));
-    useSWR.mockReturnValue({ data: refreshed, isLoading: false, mutate });
-    rerender(<PermissionsTab onDirtyChange={onDirtyChange} />);
-
-    expect(roleSection('user').getByLabelText('attachment.upload')).toHaveValue('deny');
-    expect(roleSection('moderator').getByLabelText('attachment.upload')).toHaveValue('inherit');
-    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
-  });
-
-  it('saves one role without clearing another role draft', async () => {
-    const onDirtyChange = vi.fn();
-    render(<PermissionsTab onDirtyChange={onDirtyChange} />);
-    changeCapability('user', 'deny');
-    changeCapability('moderator', 'deny');
-    saveRole('user');
-
-    await waitFor(() => expect(mutate).toHaveBeenCalledOnce());
-    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
-    expect(roleSection('moderator').getByLabelText('attachment.upload')).toHaveValue('deny');
-    changeCapability('moderator', 'allow');
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it('preserves edits made to a role while its save is pending', async () => {
-    let finishSave!: (value: { data: typeof policies }) => void;
+  it('autosaves only the selected capability and displays server-calculated permissions', async () => {
+    let finishSave!: (value: { data: RoleCapabilityPolicy[] }) => void;
     put.mockReturnValueOnce(
       new Promise((resolve) => {
         finishSave = resolve;
       })
     );
-    const onDirtyChange = vi.fn();
     const onSavingChange = vi.fn();
-    render(<PermissionsTab onDirtyChange={onDirtyChange} onSavingChange={onSavingChange} />);
-    changeCapability('user', 'deny');
-    saveRole('user');
-    expect(onSavingChange).toHaveBeenLastCalledWith(true);
-    changeCapability('user', 'inherit');
+    const { container } = await renderPermissions(onSavingChange);
+    const user = roleSection('user');
+    const upload = user.getByLabelText('attachment.upload');
+    const storage = user.getByTestId('permission-resource.storage.unlimited');
+    const video = user.getByTestId('permission-attachment.video.upload');
+    const moderatorUpload = roleSection('moderator').getByLabelText('attachment.upload');
 
-    await act(async () => finishSave({ data: policies }));
-    expect(onSavingChange).toHaveBeenLastCalledWith(false);
-    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
-    expect(roleSection('user').getByLabelText('attachment.upload')).toHaveValue('inherit');
-    expect(put).toHaveBeenCalledWith('/admin/permissions/roles/user', {
-      capabilities: { ...capabilities, 'attachment.upload': 'deny' },
+    expect(container.querySelector('[data-slot="admin-settings-actions"]')).toBeNull();
+    expect(storage).toHaveAttribute('data-options', 'inherit,allow,deny');
+    expect(within(storage).getByRole('combobox')).toHaveValue('inherit');
+    expect(within(storage).getByText('effective.denied')).toBeVisible();
+    expect(within(video).getByText('effective.allowed')).toBeVisible();
+    expect(put).not.toHaveBeenCalled();
+
+    fireEvent.change(upload, { target: { value: 'deny' } });
+
+    expect(put).toHaveBeenCalledExactlyOnceWith('/admin/permissions/roles/user', {
+      capabilities: { 'attachment.upload': 'deny' },
     });
+    expect(onSavingChange).toHaveBeenLastCalledWith(true);
+    expect(user.getByRole('status')).toHaveTextContent('saving');
+    expect(upload).toHaveValue('deny');
+    expect(upload).toBeDisabled();
+    expect(moderatorUpload).toBeDisabled();
 
-    changeCapability('user', 'deny');
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    await act(async () => finishSave({ data: updatedPolicies }));
+
+    expect(upload).toHaveValue('deny');
+    expect(within(storage).getByRole('combobox')).toHaveValue('inherit');
+    expect(within(video).getByText('effective.denied')).toBeVisible();
+    expect(moderatorUpload).toHaveValue('allow');
+    expect(moderatorUpload).toBeEnabled();
+    expect(onSavingChange).toHaveBeenLastCalledWith(false);
+    expect(user.getByRole('status')).toBeEmptyDOMElement();
+    expect(toast.success).toHaveBeenCalledWith('saveSuccess');
   });
 
-  it('keeps failed saves dirty and clears reported state on unmount', async () => {
+  it('restores the confirmed selection on failure and lets the same choice be retried', async () => {
     put.mockRejectedValueOnce(new Error('save rejected'));
-    const onDirtyChange = vi.fn();
     const onSavingChange = vi.fn();
-    const { unmount } = render(
-      <PermissionsTab onDirtyChange={onDirtyChange} onSavingChange={onSavingChange} />
-    );
-    changeCapability('user', 'deny');
-    saveRole('user');
+    await renderPermissions(onSavingChange);
+    const upload = roleSection('user').getByLabelText('attachment.upload');
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
-    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
+    fireEvent.change(upload, { target: { value: 'deny' } });
+
+    await waitFor(() => expect(upload).toBeEnabled());
+    expect(upload).toHaveValue('allow');
+    expect(toast.error).toHaveBeenCalledWith('saveFailed');
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).toBeNull();
     expect(onSavingChange).toHaveBeenLastCalledWith(false);
-    expect(mutate).not.toHaveBeenCalled();
-    unmount();
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-    expect(onSavingChange).toHaveBeenLastCalledWith(false);
+
+    fireEvent.change(upload, { target: { value: 'deny' } });
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(put).toHaveBeenCalledTimes(2);
+    expect(upload).toHaveValue('deny');
+  });
+
+  it('keeps role defaults read-only for regular administrators', async () => {
+    useProfile.mockReturnValue({ role: 'admin' });
+    await renderPermissions();
+
+    expect(screen.getByText('readOnlyDescription')).toBeVisible();
+    for (const select of screen.getAllByRole('combobox')) {
+      expect(select).toBeDisabled();
+    }
+    expect(put).not.toHaveBeenCalled();
   });
 });
