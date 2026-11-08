@@ -1,16 +1,18 @@
+import {
+  CAPABILITY_KEYS,
+  type CapabilityKey,
+  type UserCapabilityPermissions,
+} from '@/types/permissions';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
+import { toast } from 'sonner';
+import { SWRConfig } from 'swr';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import UserPermissionsDialog from './UserPermissionsDialog';
 
-const { mutate, put, useSWR } = vi.hoisted(() => ({
-  mutate: vi.fn(),
-  put: vi.fn(),
-  useSWR: vi.fn(),
-}));
+const { get, put } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn() }));
 
-vi.mock('swr', () => ({ default: useSWR }));
-vi.mock('@/utils/api', () => ({ get: vi.fn(), put }));
+vi.mock('@/utils/api', () => ({ get, put }));
 vi.unmock('react-dom/client');
 vi.mock('@/components/ui/select', () => ({
   Select: ({
@@ -40,206 +42,180 @@ vi.mock('@/components/ui/select', () => ({
     <option value={value}>{children}</option>
   ),
 }));
-const user = { id: 'user-1', username: 'alice', role: 'user' };
-function editPermission() {
-  fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'deny' } });
-}
 
-const permissions = {
+const user = { id: 'user-1', username: 'alice', role: 'user' };
+const storageKey = 'resource.storage.unlimited';
+
+const permissions: UserCapabilityPermissions = {
   role: 'user',
   capabilities: {
     'attachment.upload': { allowed: true, source: 'role_default', role: 'user' },
     'attachment.video.upload': { allowed: false, source: 'role_default', role: 'user' },
     'ai.chat': { allowed: false, source: 'role_default', role: 'user' },
-    'resource.storage.unlimited': { allowed: true, source: 'user_override', role: 'user' },
+    [storageKey]: { allowed: true, source: 'user_override', role: 'user' },
   },
   overrides: {
     'attachment.upload': 'inherit',
     'attachment.video.upload': 'inherit',
     'ai.chat': 'inherit',
-    'resource.storage.unlimited': 'allow',
+    [storageKey]: 'allow',
   },
-} as const;
+};
+
+const savedPermissions: UserCapabilityPermissions = {
+  ...permissions,
+  capabilities: {
+    ...permissions.capabilities,
+    [storageKey]: { allowed: false, source: 'role_default', role: 'user' },
+  },
+  overrides: { ...permissions.overrides, [storageKey]: 'inherit' },
+};
+
+function permissionSelect(capability: CapabilityKey) {
+  return screen.getAllByRole('combobox')[CAPABILITY_KEYS.indexOf(capability)];
+}
+
+function renderDialog({
+  canManage = true,
+  onClose = vi.fn(),
+  onSavingChange,
+}: {
+  canManage?: boolean;
+  onClose?: () => void;
+  onSavingChange?: (saving: boolean) => void;
+} = {}) {
+  const dialog = (selectedUser: typeof user) => (
+    <SWRConfig value={{ provider: () => new Map(), shouldRetryOnError: false }}>
+      <UserPermissionsDialog
+        user={selectedUser}
+        onClose={onClose}
+        onSavingChange={onSavingChange}
+        canManage={canManage}
+      />
+    </SWRConfig>
+  );
+  const view = render(dialog(user));
+  return { selectUser: (selectedUser: typeof user) => view.rerender(dialog(selectedUser)) };
+}
 
 describe('UserPermissionsDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mutate.mockResolvedValue(undefined);
-    put.mockReset().mockResolvedValue({ data: permissions });
-    useSWR.mockReturnValue({ data: permissions, isLoading: false, mutate });
+    get.mockReset().mockResolvedValue({ data: permissions });
+    put.mockReset().mockResolvedValue({ data: savedPermissions });
   });
 
-  it('loads the unlimited storage row and shows its effective state', () => {
-    render(
-      <UserPermissionsDialog
-        user={{ id: 'user-1', username: 'alice', role: 'user' }}
-        onClose={vi.fn()}
-        canManage
-      />
-    );
+  it('autosaves only the changed override and keeps the dialog open with effective values', async () => {
+    const onClose = vi.fn();
+    renderDialog({ onClose });
+    await screen.findAllByRole('combobox');
+    const storage = permissionSelect(storageKey);
+    const storageRow = within(storage.parentElement as HTMLElement);
 
-    const label = screen.getByText('capabilities.resource.storage.unlimited.label');
-    const row = label.closest('[data-slot="dialog-content"]')
-      ? label.parentElement?.parentElement?.parentElement
-      : null;
-    expect(row).not.toBeNull();
+    expect(storage).toHaveValue('allow');
     expect(
-      within(row as HTMLElement).getByText('capabilities.resource.storage.unlimited.description')
+      storageRow.getByText('capabilities.resource.storage.unlimited.description')
     ).toBeVisible();
-    expect(within(row as HTMLElement).getByText('effective.allowed')).toBeVisible();
-  });
+    expect(storageRow.getByText('effective.allowed')).toBeVisible();
+    expect(permissionSelect('attachment.upload')).toHaveValue('inherit');
+    expect(screen.queryByRole('button', { name: 'userDialog.save' })).toBeNull();
+    expect(put).not.toHaveBeenCalled();
 
-  it('saves the unlimited storage override through the existing user permissions endpoint', async () => {
-    render(
-      <UserPermissionsDialog
-        user={{ id: 'user-1', username: 'alice', role: 'user' }}
-        onClose={vi.fn()}
-        canManage
-      />
-    );
+    fireEvent.change(storage, { target: { value: 'inherit' } });
 
-    expect(screen.getByRole('button', { name: 'userDialog.save' })).toBeDisabled();
-    fireEvent.change(screen.getAllByRole('combobox')[3], { target: { value: 'deny' } });
-    fireEvent.click(screen.getByRole('button', { name: 'userDialog.save' }));
-
-    await waitFor(() =>
-      expect(put).toHaveBeenCalledWith('/admin/permissions/users/user-1', {
-        capabilities: { ...permissions.overrides, 'resource.storage.unlimited': 'deny' },
-      })
-    );
-  });
-  it.each(['footer', 'close', 'escape'] as const)(
-    'guards %s closure and retains edits when continuing',
-    (entry) => {
-      const onClose = vi.fn();
-      const onDirtyChange = vi.fn();
-      render(
-        <UserPermissionsDialog
-          user={user}
-          onClose={onClose}
-          onDirtyChange={onDirtyChange}
-          canManage
-        />
-      );
-      editPermission();
-      expect(onDirtyChange).toHaveBeenLastCalledWith(true);
-      if (entry === 'escape') fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
-      else {
-        const buttons = screen.getAllByRole('button', { name: 'userDialog.close' });
-        fireEvent.click(buttons[entry === 'footer' ? 0 : buttons.length - 1]);
-      }
-      expect(screen.getByRole('button', { name: 'continueEditing' })).toBeVisible();
-      expect(onClose).not.toHaveBeenCalled();
-      fireEvent.click(screen.getByRole('button', { name: 'continueEditing' }));
-      expect(screen.getAllByRole('combobox')[0]).toHaveValue('deny');
-      fireEvent.click(screen.getAllByRole('button', { name: 'userDialog.close' })[0]);
-      fireEvent.click(screen.getByRole('button', { name: 'discardAndLeave' }));
-      expect(onClose).toHaveBeenCalledOnce();
-      expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-    }
-  );
-
-  it('guards clicking the overlay', () => {
-    vi.useFakeTimers();
-    try {
-      const onClose = vi.fn();
-      render(<UserPermissionsDialog user={user} onClose={onClose} canManage />);
-      editPermission();
-      act(() => vi.advanceTimersByTime(0));
-      fireEvent.pointerDown(document.querySelector('[data-slot="dialog-overlay"]')!, {
-        pointerType: 'mouse',
-        button: 0,
-      });
-      expect(screen.getByRole('button', { name: 'continueEditing' })).toBeVisible();
-      expect(onClose).not.toHaveBeenCalled();
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it('keeps a dirty draft when SWR refreshes', () => {
-    const { rerender } = render(<UserPermissionsDialog user={user} onClose={vi.fn()} canManage />);
-    editPermission();
-    useSWR.mockReturnValue({
-      data: { ...permissions, overrides: { ...permissions.overrides, 'ai.chat': 'allow' } },
-      isLoading: false,
-      mutate,
+    expect(put).toHaveBeenCalledExactlyOnceWith('/admin/permissions/users/user-1', {
+      capabilities: { [storageKey]: 'inherit' },
     });
-    rerender(<UserPermissionsDialog user={user} onClose={vi.fn()} canManage />);
-    expect(screen.getAllByRole('combobox')[0]).toHaveValue('deny');
-    expect(screen.getAllByRole('combobox')[2]).toHaveValue('inherit');
+    expect(await storageRow.findByText('effective.denied')).toBeVisible();
+    expect(storage).toHaveValue('inherit');
+    expect(toast.success).toHaveBeenCalledWith('userDialog.saveSuccess');
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog')).toBeVisible();
   });
 
-  it('blocks editing and all closing while saving, then closes on success', async () => {
-    let finish!: (response: { data: typeof permissions }) => void;
+  it('blocks edits and dismissal while saving, then enables close when the write finishes', async () => {
+    let finishSave!: (response: { data: UserCapabilityPermissions }) => void;
     put.mockReturnValueOnce(
       new Promise((resolve) => {
-        finish = resolve;
+        finishSave = resolve;
       })
     );
     const onClose = vi.fn();
     const onSavingChange = vi.fn();
-    render(
-      <UserPermissionsDialog
-        user={user}
-        onClose={onClose}
-        onSavingChange={onSavingChange}
-        canManage
-      />
-    );
-    editPermission();
-    fireEvent.click(screen.getByRole('button', { name: 'userDialog.save' }));
+    renderDialog({ onClose, onSavingChange });
+    await screen.findAllByRole('combobox');
+    const storage = permissionSelect(storageKey);
+    const overlay = document.querySelector('[data-slot="dialog-overlay"]') as HTMLElement;
+
+    fireEvent.change(storage, { target: { value: 'inherit' } });
+
+    expect(storage).toHaveValue('inherit');
+    expect(screen.getByRole('status')).toHaveTextContent('saving');
     expect(onSavingChange).toHaveBeenLastCalledWith(true);
-    screen.getAllByRole('combobox').forEach((select) => expect(select).toBeDisabled());
-    expect(screen.getByRole('button', { name: 'userDialog.close' })).toBeDisabled();
+    for (const select of screen.getAllByRole('combobox')) {
+      expect(select).toBeDisabled();
+    }
+    const close = screen.getByRole('button', { name: 'userDialog.close' });
+    expect(close).toBeDisabled();
+    fireEvent.click(close);
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+    fireEvent.pointerDown(overlay, { pointerType: 'mouse', button: 0 });
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.queryByRole('button', { name: 'continueEditing' })).not.toBeInTheDocument();
-    await act(async () => finish({ data: permissions }));
-    expect(onClose).toHaveBeenCalledOnce();
+
+    await act(async () => finishSave({ data: savedPermissions }));
+
     expect(onSavingChange).toHaveBeenLastCalledWith(false);
-  });
-
-  it('preserves rejected saves and starts a fresh session for each user', async () => {
-    put.mockRejectedValueOnce(new Error('offline'));
-    const onClose = vi.fn();
-    const onDirtyChange = vi.fn();
-    const { rerender, unmount } = render(
-      <UserPermissionsDialog
-        user={user}
-        onClose={onClose}
-        onDirtyChange={onDirtyChange}
-        canManage
-      />
-    );
-    editPermission();
-    fireEvent.click(screen.getByRole('button', { name: 'userDialog.save' }));
-    await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'userDialog.save' })).toBeEnabled()
-    );
+    expect(storage).toBeEnabled();
+    expect(close).toBeEnabled();
     expect(onClose).not.toHaveBeenCalled();
-    expect(onDirtyChange).toHaveBeenLastCalledWith(true);
-    expect(screen.getByRole('alert')).toHaveTextContent('userDialog.saveFailed');
-    expect(screen.getAllByRole('combobox')[0]).toHaveValue('deny');
-    rerender(
-      <UserPermissionsDialog
-        user={{ ...user, id: 'user-2' }}
-        onClose={onClose}
-        onDirtyChange={onDirtyChange}
-        canManage
-      />
-    );
-    expect(screen.getAllByRole('combobox')[0]).toHaveValue('inherit');
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
-    editPermission();
-    unmount();
-    expect(onDirtyChange).toHaveBeenLastCalledWith(false);
+    fireEvent.pointerDown(overlay, { pointerType: 'mouse', button: 0 });
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it('keeps ordinary administrators read-only', () => {
-    render(<UserPermissionsDialog user={user} onClose={vi.fn()} canManage={false} />);
+  it('reports a failed save through a toast, restores the last value, and permits reselection', async () => {
+    put.mockRejectedValueOnce(new Error('offline'));
+    renderDialog();
+    await screen.findAllByRole('combobox');
+    const storage = permissionSelect(storageKey);
+
+    fireEvent.change(storage, { target: { value: 'inherit' } });
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('userDialog.saveFailed'));
+    expect(storage).toHaveValue('allow');
+    expect(storage).toBeEnabled();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(toast.success).not.toHaveBeenCalled();
+
+    fireEvent.change(storage, { target: { value: 'inherit' } });
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(put).toHaveBeenCalledTimes(2);
+    expect(storage).toHaveValue('inherit');
+  });
+
+  it('loads separate permission values for each selected user', async () => {
+    get
+      .mockResolvedValueOnce({ data: permissions })
+      .mockResolvedValueOnce({ data: savedPermissions });
+    const { selectUser } = renderDialog();
+    await screen.findAllByRole('combobox');
+    expect(permissionSelect(storageKey)).toHaveValue('allow');
+
+    selectUser({ ...user, id: 'user-2' });
+
+    await screen.findAllByRole('combobox');
+    expect(get).toHaveBeenLastCalledWith('/admin/permissions/users/user-2');
+    expect(permissionSelect(storageKey)).toHaveValue('inherit');
+    expect(put).not.toHaveBeenCalled();
+  });
+
+  it('keeps ordinary administrators read-only', async () => {
+    renderDialog({ canManage: false });
+    await screen.findAllByRole('combobox');
     expect(screen.getByText('readOnlyDescription')).toBeVisible();
-    screen.getAllByRole('combobox').forEach((select) => expect(select).toBeDisabled());
-    expect(screen.queryByRole('button', { name: 'userDialog.save' })).not.toBeInTheDocument();
+    for (const select of screen.getAllByRole('combobox')) {
+      expect(select).toBeDisabled();
+    }
+    expect(put).not.toHaveBeenCalled();
   });
 });

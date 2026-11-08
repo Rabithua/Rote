@@ -44,7 +44,6 @@ export default function AdminDashboard() {
   const [hooksDirty, setHooksDirty] = useState(false);
   const [autosaveDirty, setAutosaveDirty] = useState(false);
   const [autosaveSaving, setAutosaveSaving] = useState(false);
-  const [userPermissionsDirty, setUserPermissionsDirty] = useState(false);
   const [userPermissionsSaving, setUserPermissionsSaving] = useState(false);
   const isNavigationLocked =
     isSaving || permissionsSaving || autosaveSaving || userPermissionsSaving;
@@ -69,8 +68,7 @@ export default function AdminDashboard() {
   const navigation = useAdminNavigationGuard({
     activeTab,
     hasUnsavedChanges:
-      canManageSettings &&
-      (drafts.hasUnsavedChanges || hooksDirty || autosaveDirty || userPermissionsDirty),
+      canManageSettings && (drafts.hasUnsavedChanges || hooksDirty || autosaveDirty),
     isSaving: canManageSettings && isNavigationLocked,
     onDiscard: drafts.discard,
     onTabChange: setActiveTab,
@@ -302,10 +300,7 @@ export default function AdminDashboard() {
           {/* 用户管理 */}
           {activeTab === 'users' && (
             <div id="admin-settings-scroll" className="min-h-0 flex-1 overflow-y-auto">
-              <UsersTab
-                onDirtyChange={setUserPermissionsDirty}
-                onSavingChange={setUserPermissionsSaving}
-              />
+              <UsersTab onSavingChange={setUserPermissionsSaving} />
             </div>
           )}
 

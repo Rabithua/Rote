@@ -12,27 +12,20 @@ vi.mock('swr', () => ({
   }),
 }));
 vi.mock('./UserPermissionsDialog', () => ({
-  default: ({
-    onDirtyChange,
-    onSavingChange,
-  }: {
-    onDirtyChange?: (dirty: boolean) => void;
-    onSavingChange?: (saving: boolean) => void;
-  }) => (
+  default: ({ onSavingChange }: { onSavingChange?: (saving: boolean) => void }) => (
     <>
-      <button onClick={() => onDirtyChange?.(true)}>Edit permissions</button>
-      <button onClick={() => onSavingChange?.(true)}>Save permissions</button>
+      <button onClick={() => onSavingChange?.(true)}>Start permission save</button>
+      <button onClick={() => onSavingChange?.(false)}>Finish permission save</button>
     </>
   ),
 }));
 describe('user list permission protection', () => {
-  it('forwards permission dialog dirty and saving state to the administrator page', () => {
-    const onDirtyChange = vi.fn();
+  it('forwards pending and finished permission saves to the administrator page', () => {
     const onSavingChange = vi.fn();
-    render(<UsersTab onDirtyChange={onDirtyChange} onSavingChange={onSavingChange} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Edit permissions' }));
-    expect(onDirtyChange).toHaveBeenCalledWith(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Save permissions' }));
-    expect(onSavingChange).toHaveBeenCalledWith(true);
+    render(<UsersTab onSavingChange={onSavingChange} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Start permission save' }));
+    expect(onSavingChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Finish permission save' }));
+    expect(onSavingChange).toHaveBeenLastCalledWith(false);
   });
 });

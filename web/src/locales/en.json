@@ -1969,7 +1969,6 @@
           "title": "Permissions for {{username}}",
           "description": "User overrides take precedence over role defaults. Select inherit to remove an override.",
           "close": "Close",
-          "save": "Save",
           "saveSuccess": "User permissions saved",
           "saveFailed": "Failed to save user permissions: {{error}}"
         }

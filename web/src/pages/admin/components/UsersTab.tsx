@@ -75,11 +75,10 @@ type SortField = 'createdAt' | 'username' | 'email';
 type SortOrder = 'asc' | 'desc';
 
 interface UsersTabProps {
-  onDirtyChange?: (dirty: boolean) => void;
   onSavingChange?: (saving: boolean) => void;
 }
 
-export default function UsersTab({ onDirtyChange, onSavingChange }: UsersTabProps) {
+export default function UsersTab({ onSavingChange }: UsersTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.users' });
   const profile = useProfile();
   const [searchQuery, setSearchQuery] = useState('');
@@ -433,7 +432,6 @@ export default function UsersTab({ onDirtyChange, onSavingChange }: UsersTabProp
         user={permissionUser}
         onClose={() => setPermissionUser(null)}
         canManage={isSuperAdmin}
-        onDirtyChange={onDirtyChange}
         onSavingChange={onSavingChange}
       />
     </Card>

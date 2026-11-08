@@ -20,8 +20,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import useSWR from 'swr';
-import UnsavedSettingsDialog from '../settings/UnsavedSettingsDialog';
-import { useAdminSettingsDraft } from '../settings/useAdminSettingsDraft';
 import PermissionSettingRow from './PermissionSettingRow';
 
 type PermissionUser = { id: string; username: string; role: string };
@@ -29,7 +27,6 @@ type UserPermissionsDialogProps = {
   user: PermissionUser | null;
   onClose: () => void;
   canManage: boolean;
-  onDirtyChange?: (dirty: boolean) => void;
   onSavingChange?: (saving: boolean) => void;
 };
 export default function UserPermissionsDialog(props: UserPermissionsDialogProps) {
@@ -41,13 +38,14 @@ function UserPermissionsEditor({
   user,
   onClose,
   canManage,
-  onDirtyChange,
   onSavingChange,
 }: Omit<UserPermissionsDialogProps, 'user'> & { user: PermissionUser }) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.permissions' });
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [closeRequested, setCloseRequested] = useState(false);
+  const [pending, setPending] = useState<{
+    capability: CapabilityKey;
+    effect: CapabilityOverride;
+  } | null>(null);
+  const isSaving = pending !== null;
   const { data, isLoading, mutate } = useSWR<UserCapabilityPermissions>(
     `/admin/permissions/users/${user.id}`,
     async (url: string) => {
@@ -55,51 +53,38 @@ function UserPermissionsEditor({
       return response.data as UserCapabilityPermissions;
     }
   );
-  const form = useAdminSettingsDraft<Partial<Record<CapabilityKey, CapabilityOverride>>>(
-    data?.overrides || {}
-  );
-  useEffect(() => {
-    onDirtyChange?.(form.isDirty);
-  }, [form.isDirty, onDirtyChange]);
   useEffect(() => {
     onSavingChange?.(isSaving);
   }, [isSaving, onSavingChange]);
-  useEffect(
-    () => () => {
-      onDirtyChange?.(false);
-      onSavingChange?.(false);
-    },
-    [onDirtyChange, onSavingChange]
-  );
+  useEffect(() => () => onSavingChange?.(false), [onSavingChange]);
+
   const requestClose = () => {
-    if (isSaving) return;
-    if (form.isDirty) setCloseRequested(true);
-    else onClose();
+    if (!isSaving) onClose();
   };
-  const save = async () => {
-    if (!canManage || isSaving || isLoading || !data || !form.isDirty) return;
-    const submitted = form.value;
-    setSaveError(null);
-    setIsSaving(true);
+
+  const saveCapability = async (capability: CapabilityKey, effect: CapabilityOverride) => {
+    if (!canManage || isSaving || !data || (data.overrides[capability] ?? 'inherit') === effect)
+      return;
+
+    setPending({ capability, effect });
     try {
-      const response = await put<{ data: UserCapabilityPermissions }>(
-        `/admin/permissions/users/${user.id}`,
-        { capabilities: submitted }
+      await mutate(
+        async () => {
+          const response = await put<{ data: UserCapabilityPermissions }>(
+            `/admin/permissions/users/${user.id}`,
+            { capabilities: { [capability]: effect } }
+          );
+          return response.data;
+        },
+        { revalidate: false }
       );
-      form.markSaved(submitted, response.data.overrides);
-      setIsSaving(false);
-      void mutate(response.data, { revalidate: false });
-      onDirtyChange?.(false);
       toast.success(t('userDialog.saveSuccess'));
-      onClose();
     } catch (error) {
-      const message = t('userDialog.saveFailed', {
-        error: getErrorMessage(error) || t('unknownError'),
-      });
-      setSaveError(message);
-      toast.error(message);
+      toast.error(
+        t('userDialog.saveFailed', { error: getErrorMessage(error) || t('unknownError') })
+      );
     } finally {
-      setIsSaving(false);
+      setPending(null);
     }
   };
   return (
@@ -117,6 +102,9 @@ function UserPermissionsEditor({
         <DialogHeader className="pr-6">
           <DialogTitle>{t('userDialog.title', { username: user.username })}</DialogTitle>
           <DialogDescription>{t('userDialog.description')}</DialogDescription>
+          <span role="status" className="text-muted-foreground text-sm empty:sr-only">
+            {isSaving && t('saving')}
+          </span>
         </DialogHeader>
         <div className="space-y-4" data-slot="user-permissions-body">
           {!canManage && (
@@ -132,57 +120,31 @@ function UserPermissionsEditor({
                 <PermissionSettingRow
                   key={capability}
                   capability={capability}
-                  value={form.value[capability] || 'inherit'}
+                  value={
+                    pending?.capability === capability
+                      ? pending.effect
+                      : (data.overrides[capability] ?? 'inherit')
+                  }
                   options={['inherit', 'allow', 'deny']}
                   disabled={!canManage || isSaving}
                   effective={data.capabilities[capability]}
-                  onChange={(effect) =>
-                    form.setValue({ ...form.value, [capability]: effect as CapabilityOverride })
-                  }
+                  onChange={(effect) => saveCapability(capability, effect)}
                 />
               ))}
             </div>
           )}
         </div>
-        <div className="bg-background space-y-3 border-t pt-4">
-          {saveError && (
-            <p className="text-destructive text-sm" role="alert">
-              {saveError}
-            </p>
-          )}
-          <DialogFooter className="flex-row">
-            <Button
-              variant="outline"
-              onClick={requestClose}
-              disabled={isSaving}
-              className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
-            >
-              {t('userDialog.close')}
-            </Button>
-            {canManage && (
-              <Button
-                onClick={() => void save()}
-                className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
-                disabled={isLoading || !data || isSaving || !form.isDirty}
-              >
-                {isSaving && <Loader className="size-4 animate-spin" />}
-                {t('userDialog.save')}
-              </Button>
-            )}
-          </DialogFooter>
-        </div>
+        <DialogFooter className="bg-background flex-row border-t pt-4">
+          <Button
+            variant="outline"
+            onClick={requestClose}
+            disabled={isSaving}
+            className="h-auto min-h-9 min-w-0 flex-1 whitespace-normal sm:flex-none"
+          >
+            {t('userDialog.close')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
-      <UnsavedSettingsDialog
-        open={closeRequested}
-        isSaving={isSaving}
-        onContinue={() => setCloseRequested(false)}
-        onDiscard={() => {
-          if (!isSaving) {
-            onDirtyChange?.(false);
-            onClose();
-          }
-        }}
-      />
     </Dialog>
   );
 }
