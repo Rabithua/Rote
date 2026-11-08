@@ -7,8 +7,9 @@ one-year immutable cache lifetime. Missing assets return 404 instead of HTML.
 
 The service worker's navigation request also uses `cache: 'no-store'`, so an
 older HTTP cache cannot supply the app shell after this worker activates.
-Workbox's revisioned asset precache is unchanged. Anonymous `/s/` navigation
-and share APIs remain excluded from offline caching.
+Workbox precaches versioned assets. The HTML shell is fetched from the origin
+so navigation can pick up changes to the site's Meta tags. Anonymous `/s/`
+navigation and share APIs remain excluded from offline caching.
 
 ## CDN configuration and rollout
 
@@ -34,10 +35,17 @@ activates, reopen the original share link and check that the reader renders.
 Verify an existing browser session as well as a fresh session; adding a query
 parameter alone does not bypass an old worker's navigation handler.
 
+## Custom site Meta tags
+
+The frontend image reads the site's public Meta fragment from
+`http://rote-backend:3000` by default. For a standalone frontend, set
+`ROTE_META_API_BASE` to the backend's HTTP(S) origin reachable from the frontend
+container. The origin caches the fragment for 15 seconds. This cache is separate
+from the page response and its `no-store` policy.
+
 ## Verification
 
-Build in `web/` with `bun run build`, then serve `web/dist` through Nginx using
-`web/nginx.conf`. Run:
+Run the frontend Docker image, then point the HTTP check at its exposed port:
 
 ```sh
 bun run scripts/verify-cache-policy.ts http://127.0.0.1:38081

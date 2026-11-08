@@ -45,6 +45,11 @@ for (const path of [
   }
   if (path === '/sw.js') {
     assert.match(response.headers.get('content-type') ?? '', /javascript/);
+    assert.doesNotMatch(
+      await response.text(),
+      /\burl\s*:\s*["']\/?index\.html["']/,
+      'The service worker must fetch the current HTML shell from the origin'
+    );
   }
   process.stdout.write(`PASS ${path}\n`);
 }

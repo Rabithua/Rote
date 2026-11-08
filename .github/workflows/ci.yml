@@ -74,6 +74,55 @@ jobs:
           done
           bun run scripts/verify-cache-policy.ts http://127.0.0.1:38081
 
+      - name: Verify custom Meta in the initial HTML
+        if: matrix.path == 'web'
+        working-directory: web
+        shell: bash
+        run: |
+          set -euo pipefail
+          network=rote-site-head-meta-test
+          frontend_id=''
+          fixture_id=''
+          docker network create "$network" >/dev/null
+          cleanup() {
+            if [[ -n "$frontend_id" ]]; then docker rm -f "$frontend_id" >/dev/null || true; fi
+            if [[ -n "$fixture_id" ]]; then docker rm -f "$fixture_id" >/dev/null || true; fi
+            docker network rm "$network" >/dev/null
+          }
+          trap cleanup EXIT
+
+          fixture_id=$(docker run --rm -d --network "$network" --network-alias site-head-meta-fixture \
+            --mount "type=bind,src=$GITHUB_WORKSPACE/.github/scripts/site-head-meta-fixture.conf,dst=/etc/nginx/conf.d/default.conf,readonly" \
+            --entrypoint nginx rote-frontend:ci -g 'daemon off;')
+          for attempt in {1..10}; do
+            if docker exec "$fixture_id" wget -qO /dev/null http://127.0.0.1:3000/v2/api/site/head-meta; then break; fi
+            sleep 1
+          done
+
+          verify_meta() {
+            local fixture_port=$1 expected=$2 origin
+            frontend_id=$(docker run --rm -d --network "$network" -p 127.0.0.1::80 \
+              -e "ROTE_META_API_BASE=http://site-head-meta-fixture:$fixture_port" rote-frontend:ci)
+            origin="http://$(docker port "$frontend_id" 80/tcp)"
+            for attempt in {1..10}; do
+              if curl --silent --fail --head "$origin/healthz" >/dev/null; then break; fi
+              sleep 1
+            done
+            bun run scripts/verify-site-head-meta.ts "$origin" "$expected"
+            if docker logs "$frontend_id" 2>&1 | grep -F '/s/site-head-meta-check'; then
+              echo 'The frontend logged a share bearer path' >&2
+              return 1
+            fi
+            docker rm -f "$frontend_id" >/dev/null
+            frontend_id=''
+          }
+
+          verify_meta 3000 present # Configured tags
+          verify_meta 3001 absent  # Empty settings
+          verify_meta 3002 absent  # Upstream error
+          verify_meta 3003 absent  # Unexpected HTML response
+          verify_meta 3004 absent  # Upstream connection refused
+
   security-regressions:
     runs-on: ubuntu-latest
     strategy:

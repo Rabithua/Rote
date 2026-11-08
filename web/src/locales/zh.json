@@ -1409,6 +1409,14 @@
         "frontendUrlDescription": "前端访问地址，用于生成 RSS Feed 中的笔记链接",
         "icpRecord": "ICP 备案号",
         "icpRecordDescription": "网站备案号，如：京ICP备12345678号",
+        "customMetaTags": {
+          "title": "自定义 Meta 标签",
+          "description": "粘贴用于链接预览或站点验证的 Meta 标签。保存后，普通页面和分享页返回的 HTML 都会包含这些标签。",
+          "placeholder": "<meta name=\"twitter:creator\" content=\"@your_handle\">\n<meta property=\"og:image\" content=\"https://example.com/cover.png\">",
+          "invalid": "请检查 Meta 标签。每个标签需要 name 或 property，以及 content，且不能使用站点内置标签。",
+          "forbidden": "只有超级管理员可以修改自定义 Meta 标签",
+          "tooLarge": "自定义 Meta 标签不能超过 8 KiB"
+        },
         "customHeadScripts": {
           "title": "自定义 Head 脚本",
           "description": "支持一个或多个 script 标签，保存后刷新页面生效。",

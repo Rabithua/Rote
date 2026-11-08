@@ -40,6 +40,7 @@ FROM nginx:alpine
 # 从构建阶段复制 Vite 的 /dist 目录产物到 Nginx 的服务目录
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY configure-site-meta.sh /usr/local/bin/configure-site-meta
 
 # 清理 Nginx 默认文件以减小镜像
 RUN rm -rf /usr/share/nginx/html/*.md && \
@@ -64,6 +65,8 @@ if [ -n "$VITE_API_BASE" ] && [ -f /usr/share/nginx/html/index.html ]; then
     echo "✓ 已插入配置脚本，VITE_API_BASE: ${VITE_API_BASE}"
   fi
 fi
+
+sh /usr/local/bin/configure-site-meta
 
 # 启动 Nginx
 exec nginx -g "daemon off;"

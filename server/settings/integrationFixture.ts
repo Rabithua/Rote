@@ -65,8 +65,10 @@ export async function createAdminSettingsFixture(databaseUrl: string) {
     }))
   );
   const { default: router } = await import('../route/v2/admin');
+  const { default: siteRouter } = await import('../route/v2/site');
   const app = new Hono<{ Variables: HonoVariables }>();
   app.route('/admin', router);
+  app.route('/v2/api/site', siteRouter);
   return {
     db,
     schema,

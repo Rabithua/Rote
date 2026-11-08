@@ -6,6 +6,7 @@ export interface SiteConfig {
   name: string;
   frontendUrl: string; // 前端 URL，用于生成 RSS Feed 链接等
   customHeadScripts?: string;
+  customMetaTags?: string;
   description?: string;
   defaultLanguage?: string;
   allowedOrigins?: string[]; // CORS 允许的 origin 列表，为空或不设置则允许所有

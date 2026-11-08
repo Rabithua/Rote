@@ -18,6 +18,10 @@
     </script>
     <title>Rote</title>
     <meta name="description" content="Personal note like twitter" />
+    <!--# include virtual="/_rote/site-head-meta" set="rote_site_meta" -->
+    <!--# if expr='$rote_site_meta = /^(?:<meta (?:name|property)="[^"<>]+" content="[^"<>]*">[[:space:]]*)+\z/' -->
+    <!--# echo var="rote_site_meta" encoding="none" -->
+    <!--# endif -->
     <link rel="icon" type="image/svg+xml" href="/ico.svg" />
     <!-- 让页面在移动端使用 viewport 缩放规则 -->
     <meta
