@@ -1,35 +1,39 @@
-import { Button } from '@/components/ui/button';
 import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProfile } from '@/state/profile';
 import {
   CAPABILITY_KEYS,
   MANAGEABLE_ROLES,
+  type CapabilityKey,
   type CapabilityOverride,
   type ManageableRole,
   type RoleCapabilityPolicy,
 } from '@/types/permissions';
 import { get, put } from '@/utils/api';
 import { getErrorMessage } from '@/utils/error';
-import { Loader, Save } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import useSWR from 'swr';
 import PermissionSettingRow from './PermissionSettingRow';
-import { usePermissionsDrafts } from './permissionsDrafts';
 import AdminSettingsPanel from '../settings/AdminSettingsPanel';
 
 interface PermissionsTabProps {
-  onDirtyChange?: (dirty: boolean) => void;
   onSavingChange?: (saving: boolean) => void;
 }
 
-export default function PermissionsTab({ onDirtyChange, onSavingChange }: PermissionsTabProps) {
+interface PendingPermission {
+  role: ManageableRole;
+  capability: CapabilityKey;
+  effect: CapabilityOverride;
+}
+
+export default function PermissionsTab({ onSavingChange }: PermissionsTabProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.admin.permissions' });
   const profile = useProfile();
   const isSuperAdmin = profile?.role === 'super_admin';
-  const [savingRole, setSavingRole] = useState<ManageableRole | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingPermission | null>(null);
+  const isSaving = pending !== null;
   const { data, isLoading, mutate } = useSWR<RoleCapabilityPolicy[]>(
     '/admin/permissions/roles',
     async (url: string) => {
@@ -37,78 +41,46 @@ export default function PermissionsTab({ onDirtyChange, onSavingChange }: Permis
       return response.data as RoleCapabilityPolicy[];
     }
   );
-  const { drafts, dirtyRoles, hasUnsavedChanges, markRoleSaved, updateRoleCapability } =
-    usePermissionsDrafts(data);
-
   useEffect(() => {
-    onDirtyChange?.(hasUnsavedChanges);
-  }, [hasUnsavedChanges, onDirtyChange]);
+    onSavingChange?.(isSaving);
+  }, [isSaving, onSavingChange]);
+  useEffect(() => () => onSavingChange?.(false), [onSavingChange]);
 
-  useEffect(() => {
-    onSavingChange?.(savingRole !== null);
-  }, [onSavingChange, savingRole]);
+  const saveCapability = async (
+    role: ManageableRole,
+    capability: CapabilityKey,
+    effect: CapabilityOverride
+  ) => {
+    const current = data?.find((policy) => policy.role === role)?.capabilities[capability];
+    if (!isSuperAdmin || isSaving || current === undefined || current === effect) return;
 
-  useEffect(
-    () => () => {
-      onDirtyChange?.(false);
-      onSavingChange?.(false);
-    },
-    [onDirtyChange, onSavingChange]
-  );
-
-  const saveRole = async (role: ManageableRole) => {
-    const capabilities = drafts[role];
-    if (!capabilities || savingRole !== null || !dirtyRoles.includes(role)) return;
-
-    setSaveError(null);
-    setSavingRole(role);
+    setPending({ role, capability, effect });
     try {
-      const response = await put<{ data: RoleCapabilityPolicy[] }>(
-        `/admin/permissions/roles/${role}`,
-        { capabilities }
+      await mutate(
+        async () => {
+          const response = await put<{ data: RoleCapabilityPolicy[] }>(
+            `/admin/permissions/roles/${role}`,
+            { capabilities: { [capability]: effect } }
+          );
+          return response.data;
+        },
+        { revalidate: false }
       );
-      markRoleSaved(role, capabilities);
-      await mutate(response.data, { revalidate: false });
       toast.success(t('saveSuccess'));
     } catch (error) {
-      const message = t('saveFailed', { error: getErrorMessage(error) || t('unknownError') });
-      setSaveError(message);
-      toast.error(message);
+      toast.error(t('saveFailed', { error: getErrorMessage(error) || t('unknownError') }));
     } finally {
-      setSavingRole(null);
+      setPending(null);
     }
   };
 
   return (
     <AdminSettingsPanel
-      isDirty={hasUnsavedChanges}
-      saveError={saveError}
       header={
         <CardHeader className="pb-0">
           <CardTitle>{t('title')}</CardTitle>
           <CardDescription>{t('description')}</CardDescription>
         </CardHeader>
-      }
-      actions={
-        isSuperAdmin && (
-          <div className="flex flex-wrap justify-end gap-2">
-            {MANAGEABLE_ROLES.map((role) => (
-              <Button
-                key={role}
-                size="sm"
-                onClick={() => saveRole(role)}
-                disabled={!drafts[role] || savingRole !== null || !dirtyRoles.includes(role)}
-              >
-                {savingRole === role ? (
-                  <Loader className="size-4 animate-spin" />
-                ) : (
-                  <Save className="size-4" />
-                )}
-                {t('saveRoleFor', { role: t(`roles.${role}.label`) })}
-              </Button>
-            ))}
-          </div>
-        )
       }
     >
       <CardContent className="space-y-6">
@@ -121,8 +93,8 @@ export default function PermissionsTab({ onDirtyChange, onSavingChange }: Permis
           </div>
         ) : (
           MANAGEABLE_ROLES.map((role) => {
-            const capabilities = drafts[role];
-            const effective = data?.find((policy) => policy.role === role)?.effective;
+            const policy = data?.find((entry) => entry.role === role);
+            const pendingForRole = pending?.role === role ? pending : null;
             return (
               <section key={role} className="border">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4">
@@ -132,20 +104,25 @@ export default function PermissionsTab({ onDirtyChange, onSavingChange }: Permis
                       {t(`roles.${role}.description`)}
                     </p>
                   </div>
+                  <span role="status" className="text-muted-foreground text-sm empty:hidden">
+                    {pendingForRole && t('saving')}
+                  </span>
                 </div>
                 <div className="px-4">
-                  {capabilities &&
+                  {policy &&
                     CAPABILITY_KEYS.map((capability) => (
                       <PermissionSettingRow
                         key={capability}
                         capability={capability}
-                        value={capabilities[capability]}
-                        options={['inherit', 'allow', 'deny']}
-                        disabled={!isSuperAdmin}
-                        effective={effective?.[capability]}
-                        onChange={(effect) =>
-                          updateRoleCapability(role, capability, effect as CapabilityOverride)
+                        value={
+                          pendingForRole?.capability === capability
+                            ? pendingForRole.effect
+                            : policy.capabilities[capability]
                         }
+                        options={['inherit', 'allow', 'deny']}
+                        disabled={!isSuperAdmin || isSaving}
+                        effective={policy.effective[capability]}
+                        onChange={(effect) => saveCapability(role, capability, effect)}
                       />
                     ))}
                 </div>

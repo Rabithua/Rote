@@ -1916,11 +1916,10 @@
         }
       },
       "permissions": {
-        "saveRoleFor": "Save {{role}} permissions",
         "title": "Permissions",
         "description": "Control role defaults and apply overrides for individual users.",
         "readOnlyDescription": "Administrators can view permissions. Only super administrators can make changes.",
-        "saveRole": "Save Role",
+        "saving": "Saving…",
         "saveSuccess": "Role permissions saved",
         "saveFailed": "Failed to save role permissions: {{error}}",
         "unknownError": "Unknown error",

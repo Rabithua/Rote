@@ -1920,11 +1920,10 @@
         }
       },
       "permissions": {
-        "saveRoleFor": "{{role}}の権限を保存",
         "title": "権限管理",
         "description": "ロールのデフォルト権限を制御し、ユーザーごとの上書きを設定します。",
         "readOnlyDescription": "管理者は権限を閲覧できます。変更できるのはスーパー管理者のみです。",
-        "saveRole": "ロールを保存",
+        "saving": "保存中…",
         "saveSuccess": "ロール権限を保存しました",
         "saveFailed": "ロール権限の保存に失敗しました：{{error}}",
         "unknownError": "不明なエラー",

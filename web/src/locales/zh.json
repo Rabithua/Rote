@@ -1906,11 +1906,10 @@
         }
       },
       "permissions": {
-        "saveRoleFor": "保存{{role}}权限",
         "title": "权限管理",
         "description": "分别控制角色默认权限，并为单个用户设置覆盖规则。",
         "readOnlyDescription": "管理员可以查看权限配置，只有超级管理员可以修改。",
-        "saveRole": "保存角色",
+        "saving": "保存中…",
         "saveSuccess": "角色权限已保存",
         "saveFailed": "保存角色权限失败：{{error}}",
         "unknownError": "未知错误",

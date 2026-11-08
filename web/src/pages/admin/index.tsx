@@ -40,7 +40,6 @@ export default function AdminDashboard() {
     authReady && (profile?.role === 'admin' || profile?.role === 'super_admin');
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
-  const [permissionsDirty, setPermissionsDirty] = useState(false);
   const [permissionsSaving, setPermissionsSaving] = useState(false);
   const [hooksDirty, setHooksDirty] = useState(false);
   const [autosaveDirty, setAutosaveDirty] = useState(false);
@@ -71,11 +70,7 @@ export default function AdminDashboard() {
     activeTab,
     hasUnsavedChanges:
       canManageSettings &&
-      (drafts.hasUnsavedChanges ||
-        permissionsDirty ||
-        hooksDirty ||
-        autosaveDirty ||
-        userPermissionsDirty),
+      (drafts.hasUnsavedChanges || hooksDirty || autosaveDirty || userPermissionsDirty),
     isSaving: canManageSettings && isNavigationLocked,
     onDiscard: drafts.discard,
     onTabChange: setActiveTab,
@@ -315,12 +310,7 @@ export default function AdminDashboard() {
           )}
 
           {/* 权限管理 */}
-          {activeTab === 'permissions' && (
-            <PermissionsTab
-              onDirtyChange={setPermissionsDirty}
-              onSavingChange={setPermissionsSaving}
-            />
-          )}
+          {activeTab === 'permissions' && <PermissionsTab onSavingChange={setPermissionsSaving} />}
         </fieldset>
       </div>
       <UnsavedSettingsDialog {...navigation.dialogProps} />
