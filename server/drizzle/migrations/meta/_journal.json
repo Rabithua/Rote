@@ -1,293 +1,300 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1763402248073,
-      "tag": "0000_stiff_sunset_bain",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1763402249000,
-      "tag": "0001_add_email_flags",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1765180572172,
-      "tag": "0002_kind_runaways",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1765187191427,
-      "tag": "0003_open_bug",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1765210662259,
-      "tag": "0004_cold_captain_cross",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1765212424685,
-      "tag": "0005_strong_bullseye",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1765212685452,
-      "tag": "0006_demonic_blockbuster",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1768223165577,
-      "tag": "0007_colorful_manta",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1768809282659,
-      "tag": "0008_soft_black_widow",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1768810713927,
-      "tag": "0009_tricky_meltdown",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1768810911950,
-      "tag": "0010_hard_rocket_raccoon",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1770032753350,
-      "tag": "0011_dusty_firelord",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1774848020569,
-      "tag": "0012_video_poster_support",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1779428594602,
-      "tag": "0013_fuzzy_payback",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1779848623895,
-      "tag": "0014_freezing_scarecrow",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1779953050458,
-      "tag": "0015_round_the_spike",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1781071229459,
-      "tag": "0016_organic_sunset_bain",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1782903517329,
-      "tag": "0017_orange_black_tom",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1783494313000,
-      "tag": "0018_ai_chat_capability",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1784182877469,
-      "tag": "0019_sparkling_martin_li",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1784981710926,
-      "tag": "0020_extend_jwt_expiry",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "7",
-      "when": 1785222667914,
-      "tag": "0021_friendly_dazzler",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1786094757978,
-      "tag": "0022_billing_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "7",
-      "when": 1786320881344,
-      "tag": "0023_billing_delivery_target",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": "7",
-      "when": 1786591381444,
-      "tag": "0024_vengeful_wendigo",
-      "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": "7",
-      "when": 1786608883008,
-      "tag": "0025_resource_invariants",
-      "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "7",
-      "when": 1786894167031,
-      "tag": "0026_sloppy_wildside",
-      "breakpoints": true
-    },
-    {
-      "idx": 27,
-      "version": "7",
-      "when": 1786894730247,
-      "tag": "0027_chemical_diamondback",
-      "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "7",
-      "when": 1787501815374,
-      "tag": "0028_wet_triton",
-      "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "7",
-      "when": 1787749501889,
-      "tag": "0029_talented_professor_monster",
-      "breakpoints": true
-    },
-    {
-      "idx": 30,
-      "version": "7",
-      "when": 1788674776412,
-      "tag": "0030_embedding_contract",
-      "breakpoints": true
-    },
-    {
-      "idx": 31,
-      "version": "7",
-      "when": 1788676603359,
-      "tag": "0031_embedding_source_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 32,
-      "version": "7",
-      "when": 1788683900000,
-      "tag": "0032_settings_updated_at_default",
-      "breakpoints": true
-    },
-    {
-      "idx": 33,
-      "version": "7",
-      "when": 1788686228847,
-      "tag": "0033_embedding_generation_identity",
-      "breakpoints": true
-    },
-    {
-      "idx": 34,
-      "version": "7",
-      "when": 1788695755662,
-      "tag": "0034_embedding_source_input_events",
-      "breakpoints": true
-    },
-    {
-      "idx": 35,
-      "version": "7",
-      "when": 1788698004166,
-      "tag": "0035_anonymous_note_sharing",
-      "breakpoints": true
-    },
-    {
-      "idx": 36,
-      "version": "7",
-      "when": 1791512313240,
-      "tag": "0036_ai_usage_statistics",
-      "breakpoints": true
-    },
-    {
-      "idx": 37,
-      "version": "7",
-      "when": 1791647281420,
-      "tag": "0037_rote_sync_cursor",
-      "breakpoints": true
-    },
-    {
-      "idx": 38,
-      "version": "7",
-      "when": 1791707782945,
-      "tag": "0038_ai_conversation_history",
-      "breakpoints": true
-    },
-    {
-      "idx": 39,
-      "version": "7",
-      "when": 1793422564367,
-      "tag": "0039_oauth_merge_authorizations",
-      "breakpoints": true
-    },
-    {
-      "idx": 40,
-      "version": "7",
-      "when": 1793973268754,
-      "tag": "0040_confused_riptide",
-      "breakpoints": true
-    }
-  ]
+ "version": "7",
+ "dialect": "postgresql",
+ "entries": [
+  {
+   "idx": 0,
+   "version": "7",
+   "when": 1763402248073,
+   "tag": "0000_stiff_sunset_bain",
+   "breakpoints": true
+  },
+  {
+   "idx": 1,
+   "version": "7",
+   "when": 1763402249000,
+   "tag": "0001_add_email_flags",
+   "breakpoints": true
+  },
+  {
+   "idx": 2,
+   "version": "7",
+   "when": 1765180572172,
+   "tag": "0002_kind_runaways",
+   "breakpoints": true
+  },
+  {
+   "idx": 3,
+   "version": "7",
+   "when": 1765187191427,
+   "tag": "0003_open_bug",
+   "breakpoints": true
+  },
+  {
+   "idx": 4,
+   "version": "7",
+   "when": 1765210662259,
+   "tag": "0004_cold_captain_cross",
+   "breakpoints": true
+  },
+  {
+   "idx": 5,
+   "version": "7",
+   "when": 1765212424685,
+   "tag": "0005_strong_bullseye",
+   "breakpoints": true
+  },
+  {
+   "idx": 6,
+   "version": "7",
+   "when": 1765212685452,
+   "tag": "0006_demonic_blockbuster",
+   "breakpoints": true
+  },
+  {
+   "idx": 7,
+   "version": "7",
+   "when": 1768223165577,
+   "tag": "0007_colorful_manta",
+   "breakpoints": true
+  },
+  {
+   "idx": 8,
+   "version": "7",
+   "when": 1768809282659,
+   "tag": "0008_soft_black_widow",
+   "breakpoints": true
+  },
+  {
+   "idx": 9,
+   "version": "7",
+   "when": 1768810713927,
+   "tag": "0009_tricky_meltdown",
+   "breakpoints": true
+  },
+  {
+   "idx": 10,
+   "version": "7",
+   "when": 1768810911950,
+   "tag": "0010_hard_rocket_raccoon",
+   "breakpoints": true
+  },
+  {
+   "idx": 11,
+   "version": "7",
+   "when": 1770032753350,
+   "tag": "0011_dusty_firelord",
+   "breakpoints": true
+  },
+  {
+   "idx": 12,
+   "version": "7",
+   "when": 1774848020569,
+   "tag": "0012_video_poster_support",
+   "breakpoints": true
+  },
+  {
+   "idx": 13,
+   "version": "7",
+   "when": 1779428594602,
+   "tag": "0013_fuzzy_payback",
+   "breakpoints": true
+  },
+  {
+   "idx": 14,
+   "version": "7",
+   "when": 1779848623895,
+   "tag": "0014_freezing_scarecrow",
+   "breakpoints": true
+  },
+  {
+   "idx": 15,
+   "version": "7",
+   "when": 1779953050458,
+   "tag": "0015_round_the_spike",
+   "breakpoints": true
+  },
+  {
+   "idx": 16,
+   "version": "7",
+   "when": 1781071229459,
+   "tag": "0016_organic_sunset_bain",
+   "breakpoints": true
+  },
+  {
+   "idx": 17,
+   "version": "7",
+   "when": 1782903517329,
+   "tag": "0017_orange_black_tom",
+   "breakpoints": true
+  },
+  {
+   "idx": 18,
+   "version": "7",
+   "when": 1783494313000,
+   "tag": "0018_ai_chat_capability",
+   "breakpoints": true
+  },
+  {
+   "idx": 19,
+   "version": "7",
+   "when": 1784182877469,
+   "tag": "0019_sparkling_martin_li",
+   "breakpoints": true
+  },
+  {
+   "idx": 20,
+   "version": "7",
+   "when": 1784981710926,
+   "tag": "0020_extend_jwt_expiry",
+   "breakpoints": true
+  },
+  {
+   "idx": 21,
+   "version": "7",
+   "when": 1785222667914,
+   "tag": "0021_friendly_dazzler",
+   "breakpoints": true
+  },
+  {
+   "idx": 22,
+   "version": "7",
+   "when": 1786094757978,
+   "tag": "0022_billing_foundation",
+   "breakpoints": true
+  },
+  {
+   "idx": 23,
+   "version": "7",
+   "when": 1786320881344,
+   "tag": "0023_billing_delivery_target",
+   "breakpoints": true
+  },
+  {
+   "idx": 24,
+   "version": "7",
+   "when": 1786591381444,
+   "tag": "0024_vengeful_wendigo",
+   "breakpoints": true
+  },
+  {
+   "idx": 25,
+   "version": "7",
+   "when": 1786608883008,
+   "tag": "0025_resource_invariants",
+   "breakpoints": true
+  },
+  {
+   "idx": 26,
+   "version": "7",
+   "when": 1786894167031,
+   "tag": "0026_sloppy_wildside",
+   "breakpoints": true
+  },
+  {
+   "idx": 27,
+   "version": "7",
+   "when": 1786894730247,
+   "tag": "0027_chemical_diamondback",
+   "breakpoints": true
+  },
+  {
+   "idx": 28,
+   "version": "7",
+   "when": 1787501815374,
+   "tag": "0028_wet_triton",
+   "breakpoints": true
+  },
+  {
+   "idx": 29,
+   "version": "7",
+   "when": 1787749501889,
+   "tag": "0029_talented_professor_monster",
+   "breakpoints": true
+  },
+  {
+   "idx": 30,
+   "version": "7",
+   "when": 1788674776412,
+   "tag": "0030_embedding_contract",
+   "breakpoints": true
+  },
+  {
+   "idx": 31,
+   "version": "7",
+   "when": 1788676603359,
+   "tag": "0031_embedding_source_events",
+   "breakpoints": true
+  },
+  {
+   "idx": 32,
+   "version": "7",
+   "when": 1788683900000,
+   "tag": "0032_settings_updated_at_default",
+   "breakpoints": true
+  },
+  {
+   "idx": 33,
+   "version": "7",
+   "when": 1788686228847,
+   "tag": "0033_embedding_generation_identity",
+   "breakpoints": true
+  },
+  {
+   "idx": 34,
+   "version": "7",
+   "when": 1788695755662,
+   "tag": "0034_embedding_source_input_events",
+   "breakpoints": true
+  },
+  {
+   "idx": 35,
+   "version": "7",
+   "when": 1788698004166,
+   "tag": "0035_anonymous_note_sharing",
+   "breakpoints": true
+  },
+  {
+   "idx": 36,
+   "version": "7",
+   "when": 1791512313240,
+   "tag": "0036_ai_usage_statistics",
+   "breakpoints": true
+  },
+  {
+   "idx": 37,
+   "version": "7",
+   "when": 1791647281420,
+   "tag": "0037_rote_sync_cursor",
+   "breakpoints": true
+  },
+  {
+   "idx": 38,
+   "version": "7",
+   "when": 1791707782945,
+   "tag": "0038_ai_conversation_history",
+   "breakpoints": true
+  },
+  {
+   "idx": 39,
+   "version": "7",
+   "when": 1793422564367,
+   "tag": "0039_oauth_merge_authorizations",
+   "breakpoints": true
+  },
+  {
+   "idx": 40,
+   "version": "7",
+   "when": 1793973268754,
+   "tag": "0040_confused_riptide",
+   "breakpoints": true
+  },
+  {
+   "idx": 41,
+   "version": "7",
+   "when": 1794416457634,
+   "tag": "0041_wandering_tide",
+   "breakpoints": true
+  }
+ ]
 }

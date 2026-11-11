@@ -19,6 +19,38 @@ function containsSensitiveServerDetails(message: string): boolean {
   );
 }
 
+// Drizzle wraps driver failures in DrizzleQueryError and keeps the PostgreSQL
+// error on `cause`; older wrappers used `originalError`. Walk the chain so
+// unique-violation and connection handling keep working for wrapped errors.
+function unwrapDatabaseError(error: unknown): {
+  code?: string;
+  message?: string;
+  constraint?: string;
+} {
+  let current: unknown = error;
+  for (let depth = 0; current instanceof Error && depth < 4; depth += 1) {
+    const candidate = current as Error & {
+      code?: unknown;
+      cause?: unknown;
+      originalError?: unknown;
+      constraint?: unknown;
+      constraint_name?: unknown;
+    };
+    if (typeof candidate.code === 'string' && candidate.code.length > 0) {
+      const constraint = [candidate.constraint, candidate.constraint_name].find(
+        (value): value is string => typeof value === 'string' && value.length > 0
+      );
+      return {
+        code: candidate.code,
+        message: candidate.message,
+        constraint,
+      };
+    }
+    current = candidate.cause ?? candidate.originalError;
+  }
+  return {};
+}
+
 export const errorHandler = async (err: Error, c: HonoContext) => {
   if (err instanceof HTTPException) {
     return c.json({ code: 1, message: err.message, data: null }, err.status);
@@ -29,20 +61,27 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   if (err instanceof EmbeddingError)
     return c.json({ code: 1, message: err.code, data: err.details }, err.status);
   console.error('API Error:', err.message);
+  const dbError = unwrapDatabaseError(err);
+  if (dbError.code) {
+    // The wrapped driver error names the real failure; without it wrapped
+    // database errors are indistinguishable in production logs.
+    console.error('API Error cause:', dbError.code, dbError.constraint ?? '', dbError.message);
+  }
 
   // 只在开发环境下打印完整的错误堆栈
   if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
     console.error('Error details:', err);
     // 如果是 DatabaseError，打印原始错误
-    if ((err as any).originalError) {
-      console.error('Original error:', (err as any).originalError);
+    const originalError = (err as any).originalError ?? (err as any).cause;
+    if (originalError) {
+      console.error('Original error:', originalError);
     }
   }
 
   // PostgreSQL unique constraint violation (23505 = unique_violation)
   // Check for both direct error code and nested error
-  const errorCode = (err as any).code || (err as any).originalError?.code;
-  const errorMessage = err.message || (err as any).originalError?.message || '';
+  const errorCode = dbError.code;
+  const errorMessage = err.message || dbError.message || '';
 
   if (err instanceof ResourcePolicyError) {
     return c.json(
@@ -213,10 +252,12 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   }
 
   // Database errors - 特殊处理数据库错误
-  if (err.name === 'DatabaseError') {
-    const originalError = (err as any).originalError;
-    const errorCode = originalError?.code;
-    const errorMessage = originalError?.message || err.message;
+  // Wrapped driver errors (drizzle keeps SQLSTATE on cause) get the same
+  // translation as the project's DatabaseError wrapper.
+  const SQLSTATE_PATTERN = /^[0-9][0-9A-Z]{4}$/;
+  if (err.name === 'DatabaseError' || (dbError.code && SQLSTATE_PATTERN.test(dbError.code))) {
+    const errorCode = dbError.code;
+    const errorMessage = dbError.message || err.message;
 
     // PostgreSQL 错误代码处理
     // 42P01 = undefined_table (表不存在)
