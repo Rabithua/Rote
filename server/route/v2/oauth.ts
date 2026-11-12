@@ -5,7 +5,7 @@ import mergeMessages from '../../accountMerge/messages.json';
 import { parseOAuthMergeRequest } from '../../accountMerge/request';
 import type { User } from '../../drizzle/schema';
 import { authenticateJWT } from '../../middleware/jwtAuth';
-import type { SecurityConfig } from '../../types/config';
+import type { AppleOAuthProviderConfig, SecurityConfig } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { getConfig } from '../../utils/config';
 import { getUserOAuthBindings, unbindOAuthProvider } from '../../utils/dbMethods';
@@ -17,6 +17,10 @@ import '../../utils/oauth/providers';
 import { completeOAuthBinding } from '../../oauthAccounts/binding';
 import { completeOAuthDeleteConfirm } from '../../oauthAccounts/deleteConfirm';
 import { completeOAuthLogin } from '../../oauthAccounts/login';
+import {
+  completeNativeAppleBind,
+  type AppleNativeBindBody,
+} from '../../oauthAccounts/nativeAppleBind';
 import { OAuthUnbindWouldPreventLogin } from '../../oauthAccounts/errors';
 import {
   validateRedirectUrl,
@@ -154,6 +158,37 @@ oauthRouter.get('/:provider/bind', authenticateJWT, async (c: HonoContext) => {
   } catch (error: any) {
     console.error(`OAuth bind initiation error for ${c.req.param('provider')}:`, error);
     return c.json(createResponse(null, error.message || 'Failed to initiate OAuth bind', 500), 500);
+  }
+});
+
+// 原生 Sign in with Apple 绑定（iOS 客户端直连，免网页授权）
+oauthRouter.post('/apple/bind/native', authenticateJWT, async (c: HonoContext) => {
+  try {
+    const provider = oauthProviderRegistry.getProvider('apple');
+    if (!provider) {
+      return c.json(createResponse(null, `OAuth provider "apple" is not supported`, 404), 404);
+    }
+
+    const user = c.get('user') as User;
+
+    const securityConfig = await getConfig<SecurityConfig>('security');
+    if (!securityConfig?.oauth?.enabled) {
+      throw new Error('OAuth is disabled');
+    }
+    const providerConfig = securityConfig.oauth.providers?.apple as
+      | AppleOAuthProviderConfig
+      | undefined;
+    if (!providerConfig) {
+      throw new Error('OAuth provider "apple" is not configured');
+    }
+    await provider.validateConfig(providerConfig);
+
+    const body = (await c.req.json().catch(() => ({}))) as AppleNativeBindBody;
+    return await completeNativeAppleBind(c, providerConfig, user.id, body);
+  } catch (error: any) {
+    console.error('Native Apple bind error:', error);
+    const status = typeof error?.status === 'number' ? error.status : 500;
+    return c.json(createResponse(null, error.message || 'Native Apple bind failed'), status);
   }
 });
 

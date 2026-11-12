@@ -6,5 +6,9 @@
   "userCreationConflict": "Failed to create user due to conflict",
   "authenticationFailed": "{provider} OAuth authentication failed",
   "errorResponse": "OAuth error: {message}",
-  "unbindWouldPreventLogin": "无法解绑：您没有设置密码，解绑后将无法登录"
+  "unbindWouldPreventLogin": "无法解绑：您没有设置密码，解绑后将无法登录",
+  "nativeAppleBindInvalidToken": "Apple identity token verification failed, please retry",
+  "nativeAppleBindNonceMismatch": "Apple authorization nonce mismatch, please retry",
+  "nativeAppleBindSuccess": "Apple 账号绑定成功",
+  "nativeAppleBindMergeRequired": "该 Apple 身份已绑定到其他账号，需要合并确认"
 }
