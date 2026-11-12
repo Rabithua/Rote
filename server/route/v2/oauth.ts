@@ -125,13 +125,18 @@ oauthRouter.get('/:provider/bind', authenticateJWT, async (c: HonoContext) => {
     const iosBind = c.req.query('type') === 'iosbind';
 
     // 生成包含绑定模式的 state token（包含 provider 信息）
-    const state = await generateStateToken({
-      provider: providerName,
-      redirectUrl,
-      bindMode: true,
-      iosBind,
-      userId: user.id,
-    });
+    // 绑定从设置页发起，用户可能在 provider 授权页停留较久；
+    // iOS 绑定流程的 state 有效期放宽到 15 分钟（登录等其他流程仍为默认 5 分钟）。
+    const state = await generateStateToken(
+      {
+        provider: providerName,
+        redirectUrl,
+        bindMode: true,
+        iosBind,
+        userId: user.id,
+      },
+      iosBind ? { expiresIn: '15m' } : undefined
+    );
 
     // 生成授权 URL
     const authUrl = provider.getAuthUrl(providerConfig, state, redirectUrl);
