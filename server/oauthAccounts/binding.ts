@@ -10,7 +10,7 @@ import {
 import { oneUser } from '../utils/dbMethods/user';
 import db from '../utils/drizzle';
 import type { OAuthUserInfo } from '../utils/oauth/providers/base';
-import { getFrontendBaseUrl } from './redirects';
+import { getFrontendBaseUrl, getIOSOAuthBindCallbackUrl } from './redirects';
 import messages from './messages.json';
 
 export async function completeOAuthBinding(
@@ -47,19 +47,15 @@ export async function completeOAuthBinding(
         providerId: oauthUser.id,
       });
       if (stateData.iosBind === true) {
-        const callback = new URL('rote://oauthbind');
-        callback.searchParams.set('oauth', 'bind');
-        callback.searchParams.set('bind', 'merge_required');
-        callback.searchParams.set('provider', providerName);
-        callback.searchParams.set('existingUserId', existingOAuthUser.id);
-        callback.searchParams.set('existingUsername', existingOAuthUser.username || '');
-        callback.searchParams.set('existingEmail', existingOAuthUser.email || '');
-        callback.searchParams.set(`${providerName}UserId`, oauthUser.id);
-        callback.searchParams.set(
-          `${providerName}Username`,
-          oauthUser.username || oauthUser.name || ''
+        return c.redirect(
+          getIOSOAuthBindCallbackUrl('merge_required', providerName, {
+            existingUserId: existingOAuthUser.id,
+            existingUsername: existingOAuthUser.username || '',
+            existingEmail: existingOAuthUser.email || '',
+            [`${providerName}UserId`]: oauthUser.id,
+            [`${providerName}Username`]: oauthUser.username || oauthUser.name || '',
+          }).toString()
         );
-        return c.redirect(callback.toString());
       }
       const frontendBaseUrl = await getFrontendBaseUrl(c);
       const redirectUrl = stateData.redirectUrl || '/profile';
@@ -107,11 +103,7 @@ export async function completeOAuthBinding(
 
   // 绑定成功，重定向回前端
   if (stateData.iosBind === true) {
-    const callback = new URL('rote://oauthbind');
-    callback.searchParams.set('oauth', 'bind');
-    callback.searchParams.set('bind', 'success');
-    callback.searchParams.set('provider', providerName);
-    return c.redirect(callback.toString());
+    return c.redirect(getIOSOAuthBindCallbackUrl('success', providerName).toString());
   }
 
   const frontendBaseUrl = await getFrontendBaseUrl(c);

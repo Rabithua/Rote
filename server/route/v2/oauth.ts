@@ -245,8 +245,8 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
       error = c.req.query('error');
     }
 
-    // 处理用户取消授权
-    const cancelErrors = ['access_denied', 'user_cancelled_authorize'];
+    // 处理用户取消授权（user_cancelled 为 Apple 回调的错误码）
+    const cancelErrors = ['access_denied', 'user_cancelled_authorize', 'user_cancelled'];
     if (error && cancelErrors.includes(error)) {
       return await handleOAuthCancelled(
         c,

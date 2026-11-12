@@ -32,6 +32,24 @@ function getLoginRedirectUrl(frontendBaseUrl: string, stateData: any | null): UR
   return new URL(validateRedirectUrl(stateData?.redirectUrl, '/login'), frontendBaseUrl);
 }
 
+// iOS 绑定回调统一出口；bind 取值与 Web 前端 /profile?oauth=bind... 保持一致
+export type IOSOAuthBindOutcome = 'success' | 'merge_required' | 'error' | 'cancelled';
+
+export function getIOSOAuthBindCallbackUrl(
+  bind: IOSOAuthBindOutcome,
+  provider: string,
+  extraParams: Record<string, string> = {}
+): URL {
+  const callback = new URL('rote://oauthbind');
+  callback.searchParams.set('oauth', 'bind');
+  callback.searchParams.set('bind', bind);
+  callback.searchParams.set('provider', provider);
+  for (const [key, value] of Object.entries(extraParams)) {
+    callback.searchParams.set(key, value);
+  }
+  return callback;
+}
+
 export async function extractOptionalStateData(state: string | undefined): Promise<any | null> {
   if (!state) return null;
 
@@ -75,12 +93,9 @@ export async function handleOAuthError(
 
     if (isBindMode && stateData?.iosBind === true) {
       // iOS 绑定模式错误，回跳 App 自定义 scheme
-      const callback = new URL('rote://oauthbind');
-      callback.searchParams.set('oauth', 'bind');
-      callback.searchParams.set('bind', 'error');
-      callback.searchParams.set('provider', provider);
-      callback.searchParams.set('message', userFriendlyMessage);
-      return c.redirect(callback.toString());
+      return c.redirect(
+        getIOSOAuthBindCallbackUrl('error', provider, { message: userFriendlyMessage }).toString()
+      );
     } else if (isBindMode) {
       // 绑定模式错误，重定向到 profile 页面
       const redirectUrl = stateData?.redirectUrl || '/profile';
@@ -127,11 +142,7 @@ export async function handleOAuthCancelled(
 ): Promise<Response> {
   if (stateData?.iosBind === true) {
     // iOS 绑定模式取消，回跳 App 自定义 scheme
-    const callback = new URL('rote://oauthbind');
-    callback.searchParams.set('oauth', 'bind');
-    callback.searchParams.set('bind', 'cancelled');
-    callback.searchParams.set('provider', provider);
-    return c.redirect(callback.toString());
+    return c.redirect(getIOSOAuthBindCallbackUrl('cancelled', provider).toString());
   }
   const frontendBaseUrl = await getFrontendBaseUrl(c);
   const loginUrl = getLoginRedirectUrl(frontendBaseUrl, stateData);
