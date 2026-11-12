@@ -20,7 +20,6 @@ interface DeleteAccountDialogProps {
   onConfirmOAuth: (provider: string) => void;
   onConfirmPasskey: () => void;
   onConfirmMock: () => void;
-  onCancel: () => void;
 }
 
 function providerLabel(provider: string) {
@@ -42,7 +41,6 @@ export default function DeleteAccountDialog({
   onConfirmOAuth,
   onConfirmPasskey,
   onConfirmMock,
-  onCancel,
 }: DeleteAccountDialogProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile' });
   const [password, setPassword] = useState('');
@@ -75,26 +73,20 @@ export default function DeleteAccountDialog({
                   }
                 }}
               />
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={onCancel} disabled={anyBusy}>
-                  {t('settings.deleteAccount.cancel')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => onConfirmPassword(password)}
-                  disabled={anyBusy || !password}
-                >
-                  {isMethodBusy('password') && <Loader className="mr-2 size-4 animate-spin" />}
-                  {isMethodBusy('password')
-                    ? t('settings.deleteAccount.deleting')
-                    : t('settings.deleteAccount.confirm')}
-                </Button>
-              </div>
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => onConfirmPassword(password)}
+                disabled={anyBusy || !password}
+              >
+                {isMethodBusy('password') && <Loader className="mr-2 size-4 animate-spin" />}
+                {isMethodBusy('password')
+                  ? t('settings.deleteAccount.deleting')
+                  : t('settings.deleteAccount.confirm')}
+              </Button>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">{t('settings.deleteAccount.reauthHint')}</p>
               {oauthProviders.length === 0 && !hasPasskey && (
                 <p className="text-muted-foreground text-sm">
                   {t('settings.deleteAccount.reauthNoneHint')}
@@ -136,9 +128,6 @@ export default function DeleteAccountDialog({
                   {t('settings.deleteAccount.verifyWithMock')}
                 </Button>
               )}
-              <Button variant="outline" className="w-full" onClick={onCancel} disabled={anyBusy}>
-                {t('settings.deleteAccount.cancel')}
-              </Button>
             </div>
           )}
         </div>

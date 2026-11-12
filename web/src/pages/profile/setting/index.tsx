@@ -544,9 +544,6 @@ export default function SettingsPage() {
         onConfirmOAuth={handleConfirmOAuthDeletion}
         onConfirmPasskey={handleConfirmPasskeyDeletion}
         onConfirmMock={handleConfirmMockDeletion}
-        onCancel={() => {
-          setIsDeleteAccountModalOpen(false);
-        }}
       />
 
       <ChangePasswordDialog
