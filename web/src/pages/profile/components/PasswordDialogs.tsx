@@ -233,6 +233,7 @@ export function ClearPasswordDialog({
             </Button>
           </div>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );
