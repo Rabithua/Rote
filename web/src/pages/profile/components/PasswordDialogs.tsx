@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { del, post, put } from '@/utils/api';
-import { Lightbulb, Loader } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -146,16 +146,9 @@ interface ClearPasswordDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-  // 无其他登录方式时为 true：此时无法清除密码，弹窗只做解释
-  blocked: boolean;
 }
 
-export function ClearPasswordDialog({
-  isOpen,
-  onOpenChange,
-  onSuccess,
-  blocked,
-}: ClearPasswordDialogProps) {
+export function ClearPasswordDialog({ isOpen, onOpenChange, onSuccess }: ClearPasswordDialogProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile.settings.password' });
   const [password, setPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -186,58 +179,44 @@ export function ClearPasswordDialog({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{blocked ? t('clearBlockedTitle') : t('clearConfirmTitle')}</DialogTitle>
-          {!blocked && <DialogDescription>{t('clearWarning')}</DialogDescription>}
+          <DialogTitle>{t('clearConfirmTitle')}</DialogTitle>
+          <DialogDescription>{t('clearWarning')}</DialogDescription>
         </DialogHeader>
-        {blocked ? (
-          <div className="space-y-4">
-            <div className="flex items-start gap-2">
-              <Lightbulb className="text-muted-foreground mt-0.5 size-4 shrink-0" />
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                {t('clearBlockedHint')}
-              </p>
-            </div>
-            <Button variant="outline" className="w-full" onClick={() => handleClose(false)}>
-              {t('gotIt')}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <Input
+              type="password"
+              placeholder={t('passwordPlaceholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={isSaving}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isSaving && password) {
+                  handleConfirm();
+                }
+              }}
+            />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => handleClose(false)}
+              disabled={isSaving}
+            >
+              {t('cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={handleConfirm}
+              disabled={isSaving || !password}
+            >
+              {isSaving && <Loader className="mr-2 size-4 animate-spin" />}
+              {isSaving ? t('saving') : t('confirm')}
             </Button>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex flex-col gap-1.5">
-              <Input
-                type="password"
-                placeholder={t('passwordPlaceholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isSaving}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !isSaving && password) {
-                    handleConfirm();
-                  }
-                }}
-              />
-            </div>
-            <div className="flex gap-2 pt-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => handleClose(false)}
-                disabled={isSaving}
-              >
-                {t('cancel')}
-              </Button>
-              <Button
-                variant="destructive"
-                className="flex-1"
-                onClick={handleConfirm}
-                disabled={isSaving || !password}
-              >
-                {isSaving && <Loader className="mr-2 size-4 animate-spin" />}
-                {isSaving ? t('saving') : t('confirm')}
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

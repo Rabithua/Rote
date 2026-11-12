@@ -467,7 +467,16 @@ export default function SettingsPage() {
                   size="icon"
                   className="text-destructive size-8"
                   onClick={() => setIsClearPasswordOpen(true)}
-                  title={t('settings.password.clear')}
+                  disabled={
+                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
+                    passkeys.length === 0
+                  }
+                  title={
+                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
+                    passkeys.length === 0
+                      ? t('settings.password.clearWarning')
+                      : t('settings.password.clear')
+                  }
                 >
                   <Trash2 className="size-4" />
                 </Button>
@@ -485,6 +494,13 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+        {(!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
+          passkeys.length === 0 &&
+          profile?.hasPassword && (
+            <div className="text-destructive bg-destructive/5 border-destructive/20 flex items-start gap-2 rounded-lg border p-3 text-xs leading-relaxed">
+              <span>{t('settings.password.clearWarning')}</span>
+            </div>
+          )}
       </div>
 
       {/* 危险操作 */}
@@ -543,9 +559,6 @@ export default function SettingsPage() {
       />
 
       <ClearPasswordDialog
-        blocked={
-          (!profile?.oauthBindings || profile.oauthBindings.length === 0) && passkeys.length === 0
-        }
         isOpen={isClearPasswordOpen}
         onOpenChange={setIsClearPasswordOpen}
         onSuccess={loadProfile}
