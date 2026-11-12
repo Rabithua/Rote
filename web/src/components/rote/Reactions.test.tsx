@@ -7,6 +7,7 @@ import {
 } from 'react-intersection-observer/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { defaultAnonymousPreReactions } from '@/features/reactions/policy';
 import type { Reaction, Rote } from '@/types/main';
 import { generateVisitorId } from '@/utils/deviceFingerprint';
 
@@ -240,13 +241,13 @@ describe('ReactionsPart', () => {
     expect(reactions).toEqual(originalReactions);
   });
 
-  it('preserves the twelve anonymous defaults when the server omits its allowlist', () => {
+  it('preserves the shared anonymous defaults when the server omits its allowlist', () => {
     mocks.anonymousPreReactions = undefined;
     const { container } = renderReactions();
 
     expect(
       Array.from(container.querySelectorAll('.grid span'), (entry) => entry.textContent)
-    ).toEqual(['❤️', '👍', '🎉', '👏', '✨', '💡', '🚀', '🙏', '💪', '🤝', '🔥', '🌟']);
+    ).toEqual([...defaultAnonymousPreReactions]);
   });
 
   it('allows an anonymous thumbs up without granting permission to its replacement', async () => {

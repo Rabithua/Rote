@@ -3,7 +3,7 @@ import mainJson from '../json/main.json';
 import { anonymousPreReactions, isAnonymousReactionAllowed, mayAddReaction } from './policy';
 
 describe('anonymous reaction policy', () => {
-  it('contains twelve unique positive presets in the configured order', () => {
+  it('contains the shared visitor presets in the configured order', () => {
     expect(anonymousPreReactions).toEqual([
       '❤️',
       '👍',
@@ -17,8 +17,33 @@ describe('anonymous reaction policy', () => {
       '🤝',
       '🔥',
       '🌟',
+      '👍🏿',
+      '😂',
+      '🥳',
+      '🤩',
+      '😎',
+      '🤤',
+      '🥹',
+      '😮',
+      '🤯',
+      '🤔',
+      '☹️',
+      '😢',
+      '😭',
+      '😡',
+      '🥵',
+      '👀',
+      '💯',
+      '🐶',
+      '😺',
+      '😈',
+      '🤖',
+      '🧌',
+      '🌚',
+      '🐛',
+      '☕',
     ]);
-    expect(new Set(anonymousPreReactions).size).toBe(12);
+    expect(new Set(anonymousPreReactions).size).toBe(37);
     expect(
       anonymousPreReactions.every((reaction) => mainJson.preReactions.includes(reaction))
     ).toBe(true);
@@ -26,7 +51,11 @@ describe('anonymous reaction policy', () => {
 
   it('allows only configured anonymous reaction types', () => {
     expect(isAnonymousReactionAllowed('❤️')).toBe(true);
+    expect(isAnonymousReactionAllowed('😂')).toBe(true);
+    expect(isAnonymousReactionAllowed('☕')).toBe(true);
     expect(isAnonymousReactionAllowed('👎')).toBe(false);
+    expect(isAnonymousReactionAllowed('🤡')).toBe(false);
+    expect(isAnonymousReactionAllowed('💩')).toBe(false);
     expect(isAnonymousReactionAllowed('custom reaction')).toBe(false);
   });
 

@@ -16,7 +16,7 @@ describe('reaction access policy', () => {
     expect(availablePreReactions(false, ['👎'], [])).toEqual([]);
   });
 
-  it('falls back to twelve anonymous presets for an older server', () => {
+  it('falls back to the shared anonymous presets for an older server', () => {
     expect(availablePreReactions(false, [], undefined)).toEqual([
       '❤️',
       '👍',
@@ -30,8 +30,39 @@ describe('reaction access policy', () => {
       '🤝',
       '🔥',
       '🌟',
+      '👍🏿',
+      '😂',
+      '🥳',
+      '🤩',
+      '😎',
+      '🤤',
+      '🥹',
+      '😮',
+      '🤯',
+      '🤔',
+      '☹️',
+      '😢',
+      '😭',
+      '😡',
+      '🥵',
+      '👀',
+      '💯',
+      '🐶',
+      '😺',
+      '😈',
+      '🤖',
+      '🧌',
+      '🌚',
+      '🐛',
+      '☕',
     ]);
-    expect(defaultAnonymousPreReactions).toHaveLength(12);
+    expect(defaultAnonymousPreReactions).toHaveLength(37);
+    const excludedTypes: readonly string[] = ['👎', '🤡', '💩'];
+    expect(
+      excludedTypes.every(
+        (excluded) => !(defaultAnonymousPreReactions as readonly string[]).includes(excluded)
+      )
+    ).toBe(true);
   });
 
   it('lets anonymous visitors add allowed reactions or remove their own legacy reaction', () => {
