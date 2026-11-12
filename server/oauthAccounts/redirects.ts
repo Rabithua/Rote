@@ -82,6 +82,14 @@ export async function handleOAuthError(
       bindUrl.searchParams.set('provider', provider);
       bindUrl.searchParams.set('message', userFriendlyMessage);
       return c.redirect(bindUrl.toString());
+    } else if (stateData?.deleteMode === true && stateData?.userId) {
+      // 删除确认模式错误，重定向回发起页面
+      const redirectUrl = validateRedirectUrl(stateData.redirectUrl, '/profile/setting');
+      const deleteUrl = new URL(redirectUrl, frontendBaseUrl);
+      deleteUrl.searchParams.set('oauth', 'delete-error');
+      deleteUrl.searchParams.set('provider', provider);
+      deleteUrl.searchParams.set('message', userFriendlyMessage);
+      return c.redirect(deleteUrl.toString());
     } else {
       // 登录模式错误，重定向到登录页面
       const loginUrl = getLoginRedirectUrl(frontendBaseUrl, stateData);

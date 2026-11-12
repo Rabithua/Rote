@@ -15,6 +15,7 @@ import { extractStateData, generateStateToken } from '../../utils/oauth';
 // 导入提供商注册器（这会自动注册所有提供商）
 import '../../utils/oauth/providers';
 import { completeOAuthBinding } from '../../oauthAccounts/binding';
+import { completeOAuthDeleteConfirm } from '../../oauthAccounts/deleteConfirm';
 import { completeOAuthLogin } from '../../oauthAccounts/login';
 import { OAuthUnbindWouldPreventLogin } from '../../oauthAccounts/errors';
 import {
@@ -149,6 +150,54 @@ oauthRouter.get('/:provider/bind', authenticateJWT, async (c: HonoContext) => {
   }
 });
 
+// 发起删除确认 OAuth（需要登录；仅限已绑定该提供商的用户）
+oauthRouter.get('/:provider/delete-confirm', authenticateJWT, async (c: HonoContext) => {
+  try {
+    const providerName = c.req.param('provider');
+    const provider = oauthProviderRegistry.getProvider(providerName);
+
+    if (!provider) {
+      return c.json(
+        createResponse(null, `OAuth provider "${providerName}" is not supported`, 404),
+        404
+      );
+    }
+
+    const securityConfig = await getConfig<SecurityConfig>('security');
+    if (!securityConfig?.oauth?.enabled) {
+      throw new Error('OAuth is disabled');
+    }
+    const providerConfig = securityConfig.oauth.providers?.[providerName];
+    if (!providerConfig) {
+      throw new Error(`OAuth provider "${providerName}" is not configured`);
+    }
+    await provider.validateConfig(providerConfig);
+
+    const user = c.get('user') as User;
+    const bindings = await getUserOAuthBindings(user.id);
+    if (!bindings.some((binding) => binding.provider === providerName)) {
+      return c.json(createResponse(null, `This account is not bound to ${providerName}`, 400), 400);
+    }
+
+    const redirectUrl = validateRedirectUrl(c.req.query('redirect'), '/profile/setting');
+
+    const state = await generateStateToken({
+      provider: providerName,
+      redirectUrl,
+      deleteMode: true,
+      userId: user.id,
+    });
+
+    const authUrl = provider.getAuthUrl(providerConfig, state, redirectUrl);
+
+    // 与绑定流程一致：返回 JSON，由前端携带凭证跳转
+    return c.json(createResponse({ redirectUrl: authUrl }, 'Delete confirmation initiated'), 200);
+  } catch (error: any) {
+    console.error(`OAuth delete-confirm initiation error for ${c.req.param('provider')}:`, error);
+    return c.json(createResponse(null, error.message || 'Failed to initiate OAuth', 500), 500);
+  }
+});
+
 // OAuth 回调处理（支持 GET 和 POST）
 async function handleOAuthCallback(c: HonoContext, providerName: string): Promise<Response> {
   try {
@@ -235,6 +284,11 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
 
     if (isBindMode) {
       return await completeOAuthBinding(c, providerName, oauthUser, stateData);
+    }
+
+    const isDeleteConfirmMode = stateData.deleteMode === true && stateData.userId;
+    if (isDeleteConfirmMode) {
+      return await completeOAuthDeleteConfirm(c, providerName, oauthUser, stateData);
     }
 
     return await completeOAuthLogin(c, providerName, oauthUser, stateData, additionalParams);

@@ -6,10 +6,16 @@ import { lockMergeAccounts } from '../../accountMerge/accounts';
 import { transferAccountOwnership, afterAccountMergeCommit } from '../../accountMerge/transfer';
 import type { AccountMergeResult } from '../../accountMerge/types';
 import db from '../drizzle';
+import { verifyDeleteGrantToken } from '../../oauthAccounts/deleteConfirm';
 import { DatabaseError } from './common';
 
 // 删除用户账户
-export async function deleteUserAccount(userid: string, password: string): Promise<any> {
+// 有密码的用户验证密码；仅 OAuth / Passkey 登录的用户必须携带
+// provider 再授权或 Passkey 断言通过后签发的删除授予令牌。
+export async function deleteUserAccount(
+  userid: string,
+  verification: { password?: string; deleteGrant?: string }
+): Promise<any> {
   try {
     // 1. 验证用户存在
     const [user] = await db.select().from(users).where(eq(users.id, userid)).limit(1);
@@ -18,8 +24,12 @@ export async function deleteUserAccount(userid: string, password: string): Promi
       throw new DatabaseError('User not found');
     }
 
-    // 2. 验证密码（仅对有密码的用户）
+    // 2. 按登录方式验证
     if (user.passwordhash && user.salt) {
+      const password = verification.password;
+      if (!password) {
+        throw new Error('Password confirmation is required');
+      }
       const passwordhashToVerify = crypto.pbkdf2Sync(password, user.salt, 310000, 32, 'sha256');
 
       if (
@@ -29,10 +39,10 @@ export async function deleteUserAccount(userid: string, password: string): Promi
         throw new Error('Incorrect password');
       }
     } else {
-      // OAuth 用户不需要密码验证，但为了安全，仍然需要传递一个占位符
-      // 前端应该已经通过 JWT 认证确认了用户身份
-      if (!password) {
-        throw new Error('Password confirmation is required');
+      // 无密码账户必须携带再验证通过后签发的授予令牌，不接受任何替代字段。
+      const grantVerified = await verifyDeleteGrantToken(verification.deleteGrant, userid);
+      if (!grantVerified) {
+        throw new Error('Re-authentication is required to delete this account');
       }
     }
 

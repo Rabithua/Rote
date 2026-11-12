@@ -23,6 +23,7 @@ import {
   statistics,
   updateMySettings,
 } from '../../utils/dbMethods';
+import { generateDeleteGrantToken } from '../../oauthAccounts/deleteConfirm';
 import { createResponse, isValidUUID } from '../../utils/main';
 import { UsernameUpdateZod } from '../../utils/zod';
 
@@ -160,28 +161,35 @@ usersRouter.post('/me/import/plan', authenticateJWT, async (c: HonoContext) => {
 });
 
 // 删除当前用户账户
+// 有密码的用户验证密码；无密码用户须携带再验证通过后签发的删除授予令牌
 usersRouter.delete('/me', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const body = await c.req.json();
-  const { password } = body;
+  const { password, deleteGrant } = body;
 
-  // 获取完整用户信息以检查是否有密码
+  const data = await deleteUserAccount(user.id, { password, deleteGrant });
+  return c.json(createResponse(data), 200);
+});
+
+// 开发环境专用：为无密码账户直接签发删除授予令牌，便于本地测试删除流程。
+// 生产环境始终返回 404。
+usersRouter.post('/me/delete-grant/mock', authenticateJWT, async (c: HonoContext) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return c.json(createResponse(null, 'Not found', 404), 404);
+  }
+  const user = c.get('user') as User;
   const fullUser = await oneUser(user.id);
   if (!fullUser) {
     throw new Error('User not found');
   }
-
-  // OAuth 用户不需要密码，但为了保持 API 一致性，仍然需要传递一个占位符
-  // 有密码的用户必须提供密码
-  if (fullUser.passwordhash && fullUser.salt && !password) {
-    throw new Error('Password is required for users with password');
+  if (fullUser.passwordhash && fullUser.salt) {
+    return c.json(
+      createResponse(null, 'Mock deletion grant is only for passwordless accounts', 400),
+      400
+    );
   }
-
-  // 对于 OAuth 用户，如果没有提供密码，使用占位符
-  const passwordToVerify = password || 'oauth_user_placeholder';
-
-  const data = await deleteUserAccount(user.id, passwordToVerify);
-  return c.json(createResponse(data), 200);
+  const deleteGrant = await generateDeleteGrantToken(user.id);
+  return c.json(createResponse({ deleteGrant }, 'Mock deletion grant issued'), 200);
 });
 
 // 获取公开用户信息。屏蔽者仍可看到目标资料以便解除屏蔽；反向屏蔽不泄露。

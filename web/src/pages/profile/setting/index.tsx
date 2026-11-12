@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadProfileAtom, profileAtom } from '@/state/profile';
-import { del } from '@/utils/api';
+import { del, get } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
@@ -31,12 +31,14 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Link, useSearchParams } from 'react-router-dom';
-import DeleteAccountDialog from '../components/DeleteAccountDialog';
+import DeleteAccountDialog, { type DeleteConfirmMethod } from '../components/DeleteAccountDialog';
 import MergeAccountDialog from '../components/MergeAccountDialog';
 import ProfilePreferencesSection from '../components/ProfilePreferencesSection';
 import ProfileSidebar from '../components/ProfileSidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOAuthBinding } from '../hooks/useOAuthBinding';
 import { usePasskey } from '@/hooks/usePasskey';
+import { confirmDeletionWithPasskey, fetchMockDeleteGrant } from '@/utils/passkey';
 import {
   ChangePasswordDialog,
   ClearPasswordDialog,
@@ -64,8 +66,8 @@ export default function SettingsPage() {
   } = useResourceState(Boolean(profile) && showOfficialResources && previewScenario === null);
   const loadProfile = useSetAtom(loadProfileAtom);
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletingMethod, setDeletingMethod] = useState<DeleteConfirmMethod | null>(null);
 
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isClearPasswordOpen, setIsClearPasswordOpen] = useState(false);
@@ -110,29 +112,100 @@ export default function SettingsPage() {
     }
   }, [profile, siteStatus, fetchPasskeys]);
 
-  const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      toast.error(t('settings.deleteAccount.passwordRequired'));
-      return;
-    }
+  const canClearPassword = (profile?.oauthBindings?.length ?? 0) > 0 || passkeys.length > 0;
 
+  const reportDeletionError = (error: any) => {
+    const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
+    toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+  };
+
+  const performAccountDeletion = async (
+    body: Record<string, unknown>,
+    method: 'password' | 'oauth' | 'passkey' | 'mock'
+  ) => {
     try {
       setIsDeletingAccount(true);
-      await del('/users/me', {
-        data: { password: deletePassword },
-      });
+      setDeletingMethod(method);
+      await del('/users/me', { data: body });
       toast.success(t('settings.deleteAccount.success'));
+      setIsDeleteAccountModalOpen(false);
       setTimeout(() => {
         authService.logout(true);
       }, 1000);
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
-      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+      reportDeletionError(error);
     } finally {
       setIsDeletingAccount(false);
-      setDeletePassword('');
+      setDeletingMethod(null);
     }
   };
+
+  const handleConfirmPassword = (password: string) => {
+    if (!password) {
+      toast.error(t('settings.deleteAccount.passwordRequired'));
+      return;
+    }
+    performAccountDeletion({ password }, 'password');
+  };
+
+  const handleConfirmOAuthDeletion = async (provider: string) => {
+    try {
+      const response = await get(
+        `/auth/oauth/${provider}/delete-confirm?redirect=${encodeURIComponent('/profile/setting')}`
+      );
+      if (response.data?.redirectUrl) {
+        window.location.href = response.data.redirectUrl;
+        return;
+      }
+      throw new Error(t('settings.deleteAccount.oauthInitFailed', { provider }));
+    } catch (error: any) {
+      reportDeletionError(error);
+    }
+  };
+
+  const handleConfirmPasskeyDeletion = async () => {
+    try {
+      const deleteGrant = await confirmDeletionWithPasskey();
+      await performAccountDeletion({ deleteGrant }, 'passkey');
+    } catch (error: any) {
+      if (error?.name === 'NotAllowedError') {
+        toast.info(t('settings.deleteAccount.passkeyCancelled'));
+        return;
+      }
+      reportDeletionError(error);
+    }
+  };
+
+  const handleConfirmMockDeletion = async () => {
+    try {
+      const deleteGrant = await fetchMockDeleteGrant();
+      await performAccountDeletion({ deleteGrant }, 'mock');
+    } catch (error: any) {
+      reportDeletionError(error);
+    }
+  };
+
+  // OAuth / Passkey 再验证完成后携带 deleteGrant 回到本页，直接完成删除
+  const deleteGrantFromCallback = searchParams.get('deleteGrant');
+  const oauthCallbackStatus = searchParams.get('oauth');
+  useEffect(() => {
+    if (oauthCallbackStatus === 'delete-confirmed' && deleteGrantFromCallback) {
+      performAccountDeletion({ deleteGrant: deleteGrantFromCallback }, 'oauth');
+      const next = new URLSearchParams(searchParams);
+      next.delete('oauth');
+      next.delete('deleteGrant');
+      next.delete('provider');
+      setSearchParams(next, { replace: true });
+    } else if (oauthCallbackStatus === 'delete-error') {
+      const errorMessage = searchParams.get('message') || 'Unknown error';
+      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+      const next = new URLSearchParams(searchParams);
+      next.delete('oauth');
+      next.delete('provider');
+      next.delete('message');
+      setSearchParams(next, { replace: true });
+    }
+  }, [oauthCallbackStatus, deleteGrantFromCallback]);
 
   const getOAuthProviderInfo = (provider: string) => {
     const providerInfo: Record<string, { icon: any; labelKey: string }> = {
@@ -391,24 +464,26 @@ export default function SettingsPage() {
                 >
                   <RotateCcw className="size-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive size-8"
-                  onClick={() => setIsClearPasswordOpen(true)}
-                  disabled={
-                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-                    passkeys.length === 0
-                  }
-                  title={
-                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-                    passkeys.length === 0
-                      ? t('settings.password.clearWarning')
-                      : t('settings.password.clear')
-                  }
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive size-8"
+                        onClick={() => setIsClearPasswordOpen(true)}
+                        disabled={!canClearPassword}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={4}>
+                    {canClearPassword
+                      ? t('settings.password.clear')
+                      : t('settings.password.clearWarning')}
+                  </TooltipContent>
+                </Tooltip>
               </>
             ) : (
               <Button
@@ -423,14 +498,6 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
-
-        {(!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-          passkeys.length === 0 &&
-          profile?.hasPassword && (
-            <div className="text-destructive bg-destructive/5 border-destructive/20 flex items-start gap-2 rounded-lg border p-3 text-xs leading-relaxed">
-              <span>{t('settings.password.clearWarning')}</span>
-            </div>
-          )}
       </div>
 
       {/* 危险操作 */}
@@ -467,14 +534,19 @@ export default function SettingsPage() {
       <DeleteAccountDialog
         isOpen={isDeleteAccountModalOpen}
         onOpenChange={setIsDeleteAccountModalOpen}
-        password={deletePassword}
-        onPasswordChange={setDeletePassword}
-        onConfirm={handleDeleteAccount}
+        hasPassword={profile?.hasPassword !== false}
+        oauthProviders={(profile?.oauthBindings || []).map((binding) => binding.provider)}
+        hasPasskey={passkeys.length > 0}
+        showMockOption={import.meta.env.DEV && profile?.hasPassword === false}
+        isDeleting={isDeletingAccount}
+        deletingMethod={deletingMethod}
+        onConfirmPassword={handleConfirmPassword}
+        onConfirmOAuth={handleConfirmOAuthDeletion}
+        onConfirmPasskey={handleConfirmPasskeyDeletion}
+        onConfirmMock={handleConfirmMockDeletion}
         onCancel={() => {
           setIsDeleteAccountModalOpen(false);
-          setDeletePassword('');
         }}
-        isDeleting={isDeletingAccount}
       />
 
       <ChangePasswordDialog
