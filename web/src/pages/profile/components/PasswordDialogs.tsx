@@ -186,14 +186,23 @@ export function ClearPasswordDialog({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{blocked ? t('clearBlockedTitle') : t('clearConfirmTitle')}</DialogTitle>
-          <DialogDescription>
-            {blocked ? t('clearBlockedHint') : t('clearWarning')}
-          </DialogDescription>
+          <DialogTitle className={blocked ? 'text-destructive' : undefined}>
+            {blocked ? t('clearBlockedTitle') : t('clearConfirmTitle')}
+          </DialogTitle>
+          {blocked ? (
+            <DialogDescription className="text-foreground">{t('clearWarning')}</DialogDescription>
+          ) : (
+            <DialogDescription>{t('clearWarning')}</DialogDescription>
+          )}
         </DialogHeader>
         {blocked ? (
-          <div className="flex justify-end pt-2">
-            <Button variant="outline" onClick={() => handleClose(false)}>
+          <div className="space-y-4">
+            <div className="bg-destructive/5 border-destructive/20 rounded-lg border p-3">
+              <p className="text-foreground text-sm leading-relaxed font-medium">
+                {t('clearBlockedHint')}
+              </p>
+            </div>
+            <Button variant="outline" className="w-full" onClick={() => handleClose(false)}>
               {t('gotIt')}
             </Button>
           </div>
