@@ -95,6 +95,11 @@ export default function DeleteAccountDialog({
           ) : (
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium">{t('settings.deleteAccount.reauthHint')}</p>
+              {oauthProviders.length === 0 && !hasPasskey && (
+                <p className="text-muted-foreground text-sm">
+                  {t('settings.deleteAccount.reauthNoneHint')}
+                </p>
+              )}
               {oauthProviders.map((provider) => (
                 <Button
                   key={provider}
