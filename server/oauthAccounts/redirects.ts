@@ -73,7 +73,15 @@ export async function handleOAuthError(
     const frontendBaseUrl = await getFrontendBaseUrl(c);
     const isBindMode = stateData?.bindMode === true;
 
-    if (isBindMode) {
+    if (isBindMode && stateData?.iosBind === true) {
+      // iOS 绑定模式错误，回跳 App 自定义 scheme
+      const callback = new URL('rote://oauthbind');
+      callback.searchParams.set('oauth', 'bind');
+      callback.searchParams.set('bind', 'error');
+      callback.searchParams.set('provider', provider);
+      callback.searchParams.set('message', userFriendlyMessage);
+      return c.redirect(callback.toString());
+    } else if (isBindMode) {
       // 绑定模式错误，重定向到 profile 页面
       const redirectUrl = stateData?.redirectUrl || '/profile';
       const bindUrl = new URL(redirectUrl, frontendBaseUrl);
@@ -117,6 +125,14 @@ export async function handleOAuthCancelled(
   _errorCode: string,
   stateData: any | null
 ): Promise<Response> {
+  if (stateData?.iosBind === true) {
+    // iOS 绑定模式取消，回跳 App 自定义 scheme
+    const callback = new URL('rote://oauthbind');
+    callback.searchParams.set('oauth', 'bind');
+    callback.searchParams.set('bind', 'cancelled');
+    callback.searchParams.set('provider', provider);
+    return c.redirect(callback.toString());
+  }
   const frontendBaseUrl = await getFrontendBaseUrl(c);
   const loginUrl = getLoginRedirectUrl(frontendBaseUrl, stateData);
   loginUrl.searchParams.set('oauth', 'cancelled');

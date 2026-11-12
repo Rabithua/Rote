@@ -46,6 +46,21 @@ export async function completeOAuthBinding(
         provider: providerName,
         providerId: oauthUser.id,
       });
+      if (stateData.iosBind === true) {
+        const callback = new URL('rote://oauthbind');
+        callback.searchParams.set('oauth', 'bind');
+        callback.searchParams.set('bind', 'merge_required');
+        callback.searchParams.set('provider', providerName);
+        callback.searchParams.set('existingUserId', existingOAuthUser.id);
+        callback.searchParams.set('existingUsername', existingOAuthUser.username || '');
+        callback.searchParams.set('existingEmail', existingOAuthUser.email || '');
+        callback.searchParams.set(`${providerName}UserId`, oauthUser.id);
+        callback.searchParams.set(
+          `${providerName}Username`,
+          oauthUser.username || oauthUser.name || ''
+        );
+        return c.redirect(callback.toString());
+      }
       const frontendBaseUrl = await getFrontendBaseUrl(c);
       const redirectUrl = stateData.redirectUrl || '/profile';
       const bindUrl = new URL(redirectUrl, frontendBaseUrl);
@@ -91,6 +106,14 @@ export async function completeOAuthBinding(
   }
 
   // 绑定成功，重定向回前端
+  if (stateData.iosBind === true) {
+    const callback = new URL('rote://oauthbind');
+    callback.searchParams.set('oauth', 'bind');
+    callback.searchParams.set('bind', 'success');
+    callback.searchParams.set('provider', providerName);
+    return c.redirect(callback.toString());
+  }
+
   const frontendBaseUrl = await getFrontendBaseUrl(c);
   const redirectUrl = stateData.redirectUrl || '/profile';
   const bindUrl = new URL(redirectUrl, frontendBaseUrl);

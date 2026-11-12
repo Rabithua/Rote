@@ -8,6 +8,8 @@ export interface OAuthStatePayload {
   redirectUrl?: string;
   iosLogin?: boolean;
   bindMode?: boolean;
+  // 绑定结果回跳 iOS App（rote://oauthbind），而不是重定向到 Web 前端
+  iosBind?: boolean;
   userId?: string;
   [key: string]: any;
 }

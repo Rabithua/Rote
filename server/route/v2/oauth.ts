@@ -122,12 +122,14 @@ oauthRouter.get('/:provider/bind', authenticateJWT, async (c: HonoContext) => {
 
     // 获取查询参数
     const redirectUrl = validateRedirectUrl(c.req.query('redirect'), '/profile');
+    const iosBind = c.req.query('type') === 'iosbind';
 
     // 生成包含绑定模式的 state token（包含 provider 信息）
     const state = await generateStateToken({
       provider: providerName,
       redirectUrl,
       bindMode: true,
+      iosBind,
       userId: user.id,
     });
 
