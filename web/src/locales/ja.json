@@ -228,7 +228,6 @@
       },
       "fields": {
         "username": "ユーザー名",
-        "usernamePlaceholder": "ユーザー名",
         "usernameOrEmail": "ユーザー名またはメールアドレス",
         "usernameOrEmailPlaceholder": "ユーザー名またはメールアドレス",
         "password": "パスワード",
@@ -252,7 +251,6 @@
         "backendIssue": "バックエンドサービスの問題",
         "dockerDeployment": "Docker デプロイメントを使用している場合、バックエンドコンテナの構築に数分かかる場合があります。後でページを更新してください。"
       },
-      "usernameRequired": "ユーザー名は必須です",
       "usernameOrEmailRequired": "ユーザー名またはメールアドレスは必須です",
       "usernameMaxLength": "ユーザー名は20文字以内で入力してください",
       "usernameFormat": "ユーザー名は英字、数字、アンダースコア、ハイフンのみ使用できます",
@@ -563,11 +561,11 @@
           "passwordLabel": "削除を確認するためにパスワードを入力してください",
           "reauthHint": "このアカウントにはパスワードが設定されていません。ご本人様の確認のため、削除前に下のサインイン方法で再認証してください。",
           "verifyWithProvider": "{{provider}} で認証して削除",
+          "oauthInitFailed": "{{provider}} の認可URLの取得に失敗しました",
           "verifyWithPasskey": "Passkey で認証して削除",
           "verifyWithMock": "モック認証して削除（ローカル開発専用）",
           "reauthNoneHint": "このアカウントにはパスワードがなく、利用できる認証方式もありません。先に上で外部アカウントを連携するか Passkey を登録してから、削除してください。",
           "passkeyCancelled": "Passkey 認証をキャンセルしました",
-          "usernameLabel": "削除を確認するためにユーザー名を入力してください",
           "usernamePlaceholder": "ユーザー名",
           "usernameRequired": "ユーザー名は必須です",
           "passwordPlaceholder": "パスワード",

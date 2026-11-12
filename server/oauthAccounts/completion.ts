@@ -48,3 +48,15 @@ export function getOAuthCompletionUrl(
   destination.searchParams.set('refreshToken', tokens.refreshToken);
   return destination.toString();
 }
+
+export function getOAuthDeleteConfirmUrl(
+  context: OAuthCompletionContext,
+  deleteGrant: string,
+  provider: string
+): string {
+  const destination = getWebRedirect(context);
+  destination.searchParams.set('oauth', 'delete-confirmed');
+  destination.searchParams.set('deleteGrant', deleteGrant);
+  destination.searchParams.set('provider', provider);
+  return destination.toString();
+}

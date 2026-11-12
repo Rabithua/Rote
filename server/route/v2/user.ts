@@ -174,7 +174,7 @@ usersRouter.delete('/me', authenticateJWT, async (c: HonoContext) => {
 // 开发环境专用：为无密码账户直接签发删除授予令牌，便于本地测试删除流程。
 // 生产环境始终返回 404。
 usersRouter.post('/me/delete-grant/mock', authenticateJWT, async (c: HonoContext) => {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV !== 'development') {
     return c.json(createResponse(null, 'Not found', 404), 404);
   }
   const user = c.get('user') as User;

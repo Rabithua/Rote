@@ -214,7 +214,6 @@
       },
       "fields": {
         "username": "用户名",
-        "usernamePlaceholder": "用户名",
         "usernameOrEmail": "用户名或邮箱",
         "usernameOrEmailPlaceholder": "用户名或邮箱",
         "password": "密码",
@@ -238,7 +237,6 @@
         "backendIssue": "后端服务出现问题",
         "dockerDeployment": "使用Docker部署，后端容器可能需要几分钟构建，请稍后刷新页面"
       },
-      "usernameRequired": "请输入用户名",
       "usernameOrEmailRequired": "请输入用户名或邮箱",
       "usernameMaxLength": "用户名不能超过20个字符",
       "usernameFormat": "用户名只能包含字母、数字、下划线和连字符",
@@ -549,11 +547,11 @@
           "passwordLabel": "请输入您的密码以确认删除",
           "reauthHint": "检测到您的账户没有设置密码。为了确认是您本人操作，请通过下方的登录方式重新验证后再删除。",
           "verifyWithProvider": "通过 {{provider}} 验证并删除",
+          "oauthInitFailed": "获取 {{provider}} 授权链接失败",
           "verifyWithPasskey": "使用 Passkey 验证并删除",
           "verifyWithMock": "模拟验证并删除（仅本地开发）",
           "reauthNoneHint": "此账户未设置密码，也没有可用的验证方式。请先在上方绑定第三方账号或注册通行密钥，之后再回来删除账户。",
           "passkeyCancelled": "已取消 Passkey 验证",
-          "usernameLabel": "请输入您的用户名以确认删除",
           "usernamePlaceholder": "用户名",
           "usernameRequired": "请输入用户名",
           "passwordPlaceholder": "密码",

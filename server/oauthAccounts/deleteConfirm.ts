@@ -5,6 +5,7 @@ import { getUserOAuthBindings } from '../utils/dbMethods/userOAuth';
 import type { OAuthUserInfo } from '../utils/oauth/providers/base';
 import type { HonoContext } from '../types/hono';
 import { getFrontendBaseUrl, validateRedirectUrl } from './redirects';
+import { getOAuthDeleteConfirmUrl } from './completion';
 
 // 删除确认授予令牌：provider 再授权或 Passkey 断言通过后签发，
 // 删除接口校验其 purpose 与归属，有效期 5 分钟。
@@ -55,12 +56,10 @@ export async function completeOAuthDeleteConfirm(
   const deleteGrant = await generateDeleteGrantToken(targetUserId);
 
   const frontendBaseUrl = await getFrontendBaseUrl(c);
-  const destination = new URL(
-    validateRedirectUrl(stateData.redirectUrl as string, '/profile/setting'),
-    frontendBaseUrl
-  );
-  destination.searchParams.set('oauth', 'delete-confirmed');
-  destination.searchParams.set('deleteGrant', deleteGrant);
-  destination.searchParams.set('provider', providerName);
-  return c.redirect(destination.toString());
+  const context = {
+    frontendBaseUrl,
+    redirectUrl: validateRedirectUrl(stateData.redirectUrl as string, '/profile/setting'),
+    iosLogin: false,
+  };
+  return c.redirect(getOAuthDeleteConfirmUrl(context, deleteGrant, providerName));
 }

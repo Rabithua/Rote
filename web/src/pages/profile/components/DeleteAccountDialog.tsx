@@ -5,7 +5,7 @@ import { Loader } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-type DeleteConfirmMethod = 'password' | 'oauth' | 'passkey' | 'mock';
+export type DeleteConfirmMethod = 'password' | 'oauth' | 'passkey' | 'mock';
 
 interface DeleteAccountDialogProps {
   isOpen: boolean;
@@ -108,9 +108,7 @@ export default function DeleteAccountDialog({
                   onClick={() => onConfirmOAuth(provider)}
                   disabled={anyBusy}
                 >
-                  {isMethodBusy('oauth') && deletingMethod === 'oauth' && (
-                    <Loader className="mr-2 size-4 animate-spin" />
-                  )}
+                  {isMethodBusy('oauth') && <Loader className="mr-2 size-4 animate-spin" />}
                   {t('settings.deleteAccount.verifyWithProvider', {
                     provider: providerLabel(provider),
                   })}

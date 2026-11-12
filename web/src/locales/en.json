@@ -224,7 +224,6 @@
       },
       "fields": {
         "username": "Username",
-        "usernamePlaceholder": "username",
         "usernameOrEmail": "Username or Email",
         "usernameOrEmailPlaceholder": "username or email",
         "password": "Password",
@@ -248,7 +247,6 @@
         "backendIssue": "Backend service issue",
         "dockerDeployment": "Using Docker deployment, backend container may take a few minutes to build. Please refresh the page later."
       },
-      "usernameRequired": "Username is required",
       "usernameOrEmailRequired": "Username or email is required",
       "usernameMaxLength": "Username cannot exceed 20 characters",
       "usernameFormat": "Username can only contain letters, numbers, underscores and hyphens",
@@ -559,11 +557,11 @@
           "passwordLabel": "Please enter your password to confirm deletion",
           "reauthHint": "This account has no password set. To confirm it is really you, please re-verify with one of your sign-in methods below before deleting.",
           "verifyWithProvider": "Verify with {{provider}} and delete",
+          "oauthInitFailed": "Failed to get the {{provider}} authorization URL",
           "verifyWithPasskey": "Verify with Passkey and delete",
           "verifyWithMock": "Mock verification and delete (local development only)",
           "reauthNoneHint": "This account has no password and no verification method available. Please bind a third-party account above or register a Passkey first, then return to delete your account.",
           "passkeyCancelled": "Passkey verification cancelled",
-          "usernameLabel": "Please type your username to confirm deletion",
           "usernamePlaceholder": "Username",
           "usernameRequired": "Username is required",
           "passwordPlaceholder": "Password",

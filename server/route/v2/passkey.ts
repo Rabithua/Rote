@@ -234,17 +234,14 @@ passkeyRouter.post('/delete/options', authenticateJWT, async (c: HonoContext) =>
   // Challenge scoped to the current user; the verify step re-checks ownership.
   storePasskeyChallenge(`delete:${user.id}`, options.challenge);
 
-  return c.json(createResponse({ options, challengeKey: user.id }), 200);
+  return c.json(createResponse({ options }), 200);
 });
 
 // POST /delete/verify - verify the assertion and issue a deletion grant
 passkeyRouter.post('/delete/verify', authenticateJWT, async (c: HonoContext) => {
   const user = c.get('user') as User;
   const body = await c.req.json();
-  const { credential, challengeKey } = body as {
-    credential: AuthenticationResponseJSON;
-    challengeKey: string;
-  };
+  const { credential } = body as { credential: AuthenticationResponseJSON };
 
   const origin = c.req.header('origin');
   const config = await getPasskeyConfig(origin || undefined);
@@ -252,9 +249,6 @@ passkeyRouter.post('/delete/verify', authenticateJWT, async (c: HonoContext) => 
     return c.json(createResponse(null, 'Passkeys are disabled', 403), 403);
   }
 
-  if (challengeKey !== user.id) {
-    return c.json(createResponse(null, 'Challenge expired or not found', 400), 400);
-  }
   const pending = consumePasskeyChallenge(`delete:${user.id}`);
   if (!pending) {
     return c.json(createResponse(null, 'Challenge expired or not found', 400), 400);

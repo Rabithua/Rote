@@ -39,10 +39,9 @@ export async function deleteUserAccount(
         throw new Error('Incorrect password');
       }
     } else {
+      // 无密码账户必须携带再验证通过后签发的授予令牌，不接受任何替代字段。
       const grantVerified = await verifyDeleteGrantToken(verification.deleteGrant, userid);
-      // 旧客户端兼容：接受仅带非空 password 的请求体。
-      // TODO(removal): 当所有已发布客户端都改为携带删除授予令牌后移除该分支。
-      if (!grantVerified && !verification.password) {
+      if (!grantVerified) {
         throw new Error('Re-authentication is required to delete this account');
       }
     }

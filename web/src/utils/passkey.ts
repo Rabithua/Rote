@@ -83,16 +83,13 @@ export async function confirmDeletionWithPasskey(): Promise<string> {
 
   assertCurrentAccount();
   const res = await post('/auth/passkey/delete/options', {});
-  const { options, challengeKey } = res.data;
+  const { options } = res.data;
   assertCurrentAccount();
 
   const credential = await startAuthentication({ optionsJSON: options });
   assertCurrentAccount();
 
-  const verifyRes = await post('/auth/passkey/delete/verify', {
-    credential,
-    challengeKey,
-  });
+  const verifyRes = await post('/auth/passkey/delete/verify', { credential });
   return verifyRes.data.deleteGrant as string;
 }
 
