@@ -1,4 +1,5 @@
 import {
+  generateAuthenticationOptions,
   generateRegistrationOptions,
   verifyAuthenticationResponse,
   verifyRegistrationResponse,
@@ -22,6 +23,7 @@ import { oneUser } from '../../utils/dbMethods/user';
 import { generateAccessToken, generateRefreshToken } from '../../utils/jwt';
 import { createResponse, sanitizeUserData } from '../../utils/main';
 import { AuthenticationPolicyError } from '../../authentication/policy';
+import { generateDeleteGrantToken } from '../../oauthAccounts/deleteConfirm';
 import {
   consumePasskeyChallenge,
   createPasskeyAuthenticationOptions,
@@ -203,6 +205,88 @@ passkeyRouter.post('/authenticate/verify', async (c: HonoContext) => {
     ),
     200
   );
+});
+
+// POST /delete/options - deletion-confirmation options scoped to the current user's passkeys
+passkeyRouter.post('/delete/options', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+
+  const origin = c.req.header('origin');
+  const config = await getPasskeyConfig(origin || undefined);
+  if (!config.enabled) {
+    return c.json(createResponse(null, 'Passkeys are disabled', 403), 403);
+  }
+
+  const existingPasskeys = await getUserPasskeys(user.id);
+  if (existingPasskeys.length === 0) {
+    return c.json(createResponse(null, 'No passkey registered', 400), 400);
+  }
+
+  const options = await generateAuthenticationOptions({
+    rpID: config.rpId,
+    userVerification: 'required',
+    allowCredentials: existingPasskeys.map((pk) => ({
+      id: pk.credentialId,
+      transports: (pk.transports as AuthenticatorTransportFuture[]) || [],
+    })),
+  });
+
+  // Challenge scoped to the current user; the verify step re-checks ownership.
+  storePasskeyChallenge(`delete:${user.id}`, options.challenge);
+
+  return c.json(createResponse({ options, challengeKey: user.id }), 200);
+});
+
+// POST /delete/verify - verify the assertion and issue a deletion grant
+passkeyRouter.post('/delete/verify', authenticateJWT, async (c: HonoContext) => {
+  const user = c.get('user') as User;
+  const body = await c.req.json();
+  const { credential, challengeKey } = body as {
+    credential: AuthenticationResponseJSON;
+    challengeKey: string;
+  };
+
+  const origin = c.req.header('origin');
+  const config = await getPasskeyConfig(origin || undefined);
+  if (!config.enabled) {
+    return c.json(createResponse(null, 'Passkeys are disabled', 403), 403);
+  }
+
+  if (challengeKey !== user.id) {
+    return c.json(createResponse(null, 'Challenge expired or not found', 400), 400);
+  }
+  const pending = consumePasskeyChallenge(`delete:${user.id}`);
+  if (!pending) {
+    return c.json(createResponse(null, 'Challenge expired or not found', 400), 400);
+  }
+
+  const passkey = await getPasskeyByCredentialId(credential.id);
+  if (!passkey || passkey.userid !== user.id) {
+    return c.json(createResponse(null, 'Passkey not found', 404), 404);
+  }
+
+  const verification = await verifyAuthenticationResponse({
+    response: credential,
+    expectedChallenge: pending.challenge,
+    expectedOrigin: config.origin,
+    expectedRPID: config.rpId,
+    requireUserVerification: true,
+    credential: {
+      id: passkey.credentialId,
+      publicKey: new Uint8Array(passkey.publicKey),
+      counter: passkey.counter,
+      transports: (passkey.transports as AuthenticatorTransportFuture[]) || [],
+    },
+  });
+
+  if (!verification.verified) {
+    return c.json(createResponse(null, 'Authentication verification failed', 400), 400);
+  }
+
+  await updatePasskeyCounter(passkey.credentialId, verification.authenticationInfo.newCounter);
+
+  const deleteGrant = await generateDeleteGrantToken(user.id);
+  return c.json(createResponse({ deleteGrant }, 'Passkey deletion confirmation successful'), 200);
 });
 
 // GET / - list user's passkeys (requires JWT)

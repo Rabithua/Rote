@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useSiteStatus } from '@/hooks/useSiteStatus';
 import ContainerWithSideBar from '@/layout/ContainerWithSideBar';
 import { loadProfileAtom, profileAtom } from '@/state/profile';
-import { del } from '@/utils/api';
+import { del, get } from '@/utils/api';
 import { authService } from '@/utils/auth';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
@@ -37,6 +37,7 @@ import ProfilePreferencesSection from '../components/ProfilePreferencesSection';
 import ProfileSidebar from '../components/ProfileSidebar';
 import { useOAuthBinding } from '../hooks/useOAuthBinding';
 import { usePasskey } from '@/hooks/usePasskey';
+import { confirmDeletionWithPasskey, fetchMockDeleteGrant } from '@/utils/passkey';
 import {
   ChangePasswordDialog,
   ClearPasswordDialog,
@@ -64,8 +65,10 @@ export default function SettingsPage() {
   } = useResourceState(Boolean(profile) && showOfficialResources && previewScenario === null);
   const loadProfile = useSetAtom(loadProfileAtom);
   const [isDeleteAccountModalOpen, setIsDeleteAccountModalOpen] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deletingMethod, setDeletingMethod] = useState<
+    'password' | 'oauth' | 'passkey' | 'mock' | null
+  >(null);
 
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isClearPasswordOpen, setIsClearPasswordOpen] = useState(false);
@@ -110,18 +113,16 @@ export default function SettingsPage() {
     }
   }, [profile, siteStatus, fetchPasskeys]);
 
-  const handleDeleteAccount = async () => {
-    if (!deletePassword) {
-      toast.error(t('settings.deleteAccount.passwordRequired'));
-      return;
-    }
-
+  const performAccountDeletion = async (
+    body: Record<string, unknown>,
+    method: 'password' | 'oauth' | 'passkey' | 'mock'
+  ) => {
     try {
       setIsDeletingAccount(true);
-      await del('/users/me', {
-        data: { password: deletePassword },
-      });
+      setDeletingMethod(method);
+      await del('/users/me', { data: body });
       toast.success(t('settings.deleteAccount.success'));
+      setIsDeleteAccountModalOpen(false);
       setTimeout(() => {
         authService.logout(true);
       }, 1000);
@@ -130,9 +131,79 @@ export default function SettingsPage() {
       toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
     } finally {
       setIsDeletingAccount(false);
-      setDeletePassword('');
+      setDeletingMethod(null);
     }
   };
+
+  const handleConfirmPassword = (password: string) => {
+    if (!password) {
+      toast.error(t('settings.deleteAccount.passwordRequired'));
+      return;
+    }
+    performAccountDeletion({ password }, 'password');
+  };
+
+  const handleConfirmOAuthDeletion = async (provider: string) => {
+    try {
+      const response = await get(
+        `/auth/oauth/${provider}/delete-confirm?redirect=${encodeURIComponent('/profile/setting')}`
+      );
+      if (response.data?.redirectUrl) {
+        window.location.href = response.data.redirectUrl;
+        return;
+      }
+      throw new Error(`Failed to get ${provider} authorization URL`);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+    }
+  };
+
+  const handleConfirmPasskeyDeletion = async () => {
+    try {
+      const deleteGrant = await confirmDeletionWithPasskey();
+      await performAccountDeletion({ deleteGrant }, 'passkey');
+    } catch (error: any) {
+      if (error?.name === 'NotAllowedError') {
+        toast.info(t('settings.deleteAccount.passkeyCancelled'));
+        return;
+      }
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+    }
+  };
+
+  const handleConfirmMockDeletion = async () => {
+    try {
+      const deleteGrant = await fetchMockDeleteGrant();
+      await performAccountDeletion({ deleteGrant }, 'mock');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Unknown error';
+      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+    }
+  };
+
+  // OAuth / Passkey 再验证完成后携带 deleteGrant 回到本页，直接完成删除
+  const deleteGrantFromCallback = searchParams.get('deleteGrant');
+  const oauthCallbackStatus = searchParams.get('oauth');
+  useEffect(() => {
+    if (oauthCallbackStatus === 'delete-confirmed' && deleteGrantFromCallback) {
+      performAccountDeletion({ deleteGrant: deleteGrantFromCallback }, 'oauth');
+      const next = new URLSearchParams(searchParams);
+      next.delete('oauth');
+      next.delete('deleteGrant');
+      next.delete('provider');
+      setSearchParams(next, { replace: true });
+    } else if (oauthCallbackStatus === 'delete-error') {
+      const errorMessage = searchParams.get('message') || 'Unknown error';
+      toast.error(t('settings.deleteAccount.failed', { error: errorMessage }));
+      const next = new URLSearchParams(searchParams);
+      next.delete('oauth');
+      next.delete('provider');
+      next.delete('message');
+      setSearchParams(next, { replace: true });
+    }
+  }, [oauthCallbackStatus, deleteGrantFromCallback]);
 
   const getOAuthProviderInfo = (provider: string) => {
     const providerInfo: Record<string, { icon: any; labelKey: string }> = {
@@ -467,14 +538,19 @@ export default function SettingsPage() {
       <DeleteAccountDialog
         isOpen={isDeleteAccountModalOpen}
         onOpenChange={setIsDeleteAccountModalOpen}
-        password={deletePassword}
-        onPasswordChange={setDeletePassword}
-        onConfirm={handleDeleteAccount}
+        hasPassword={profile?.hasPassword === false ? false : true}
+        oauthProviders={(profile?.oauthBindings || []).map((binding) => binding.provider)}
+        hasPasskey={passkeys.length > 0}
+        showMockOption={import.meta.env.DEV && profile?.hasPassword === false}
+        isDeleting={isDeletingAccount}
+        deletingMethod={deletingMethod}
+        onConfirmPassword={handleConfirmPassword}
+        onConfirmOAuth={handleConfirmOAuthDeletion}
+        onConfirmPasskey={handleConfirmPasskeyDeletion}
+        onConfirmMock={handleConfirmMockDeletion}
         onCancel={() => {
           setIsDeleteAccountModalOpen(false);
-          setDeletePassword('');
         }}
-        isDeleting={isDeletingAccount}
       />
 
       <ChangePasswordDialog
