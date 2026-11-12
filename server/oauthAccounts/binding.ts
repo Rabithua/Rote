@@ -10,7 +10,7 @@ import {
 import { oneUser } from '../utils/dbMethods/user';
 import db from '../utils/drizzle';
 import type { OAuthUserInfo } from '../utils/oauth/providers/base';
-import { getFrontendBaseUrl } from './redirects';
+import { getFrontendBaseUrl, getIOSOAuthBindCallbackUrl } from './redirects';
 import messages from './messages.json';
 
 export async function completeOAuthBinding(
@@ -46,6 +46,17 @@ export async function completeOAuthBinding(
         provider: providerName,
         providerId: oauthUser.id,
       });
+      if (stateData.iosBind === true) {
+        return c.redirect(
+          getIOSOAuthBindCallbackUrl('merge_required', providerName, {
+            existingUserId: existingOAuthUser.id,
+            existingUsername: existingOAuthUser.username || '',
+            existingEmail: existingOAuthUser.email || '',
+            [`${providerName}UserId`]: oauthUser.id,
+            [`${providerName}Username`]: oauthUser.username || oauthUser.name || '',
+          }).toString()
+        );
+      }
       const frontendBaseUrl = await getFrontendBaseUrl(c);
       const redirectUrl = stateData.redirectUrl || '/profile';
       const bindUrl = new URL(redirectUrl, frontendBaseUrl);
@@ -91,6 +102,10 @@ export async function completeOAuthBinding(
   }
 
   // 绑定成功，重定向回前端
+  if (stateData.iosBind === true) {
+    return c.redirect(getIOSOAuthBindCallbackUrl('success', providerName).toString());
+  }
+
   const frontendBaseUrl = await getFrontendBaseUrl(c);
   const redirectUrl = stateData.redirectUrl || '/profile';
   const bindUrl = new URL(redirectUrl, frontendBaseUrl);

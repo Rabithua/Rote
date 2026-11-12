@@ -122,14 +122,21 @@ oauthRouter.get('/:provider/bind', authenticateJWT, async (c: HonoContext) => {
 
     // 获取查询参数
     const redirectUrl = validateRedirectUrl(c.req.query('redirect'), '/profile');
+    const iosBind = c.req.query('type') === 'iosbind';
 
     // 生成包含绑定模式的 state token（包含 provider 信息）
-    const state = await generateStateToken({
-      provider: providerName,
-      redirectUrl,
-      bindMode: true,
-      userId: user.id,
-    });
+    // 绑定从设置页发起，用户可能在 provider 授权页停留较久；
+    // iOS 绑定流程的 state 有效期放宽到 15 分钟（登录等其他流程仍为默认 5 分钟）。
+    const state = await generateStateToken(
+      {
+        provider: providerName,
+        redirectUrl,
+        bindMode: true,
+        iosBind,
+        userId: user.id,
+      },
+      iosBind ? { expiresIn: '15m' } : undefined
+    );
 
     // 生成授权 URL
     const authUrl = provider.getAuthUrl(providerConfig, state, redirectUrl);
@@ -243,14 +250,15 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
       error = c.req.query('error');
     }
 
-    // 处理用户取消授权
-    const cancelErrors = ['access_denied', 'user_cancelled_authorize'];
+    // 处理用户取消授权（user_cancelled 为 Apple 回调的错误码）
+    const cancelErrors = ['access_denied', 'user_cancelled_authorize', 'user_cancelled'];
     if (error && cancelErrors.includes(error)) {
       return await handleOAuthCancelled(
         c,
         providerName,
         error,
-        await extractOptionalStateData(state)
+        await extractOptionalStateData(state),
+        state
       );
     }
 
@@ -297,17 +305,20 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
 
     // 尝试从 state 中获取信息（根据提供商的 callbackMethod）
     let stateData: any | null = null;
+    let rawState: string | null = null;
     try {
       const provider = oauthProviderRegistry.getProvider(providerName);
       if (provider?.callbackMethod === 'POST') {
         const body = await c.req.parseBody();
         const state = body.state as string | undefined;
         if (state) {
+          rawState = state;
           stateData = await extractStateData(state);
         }
       } else {
         const state = c.req.query('state');
         if (state) {
+          rawState = state;
           stateData = await extractStateData(state);
         }
       }
@@ -315,7 +326,7 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
       // 忽略 state 解析错误
     }
 
-    return await handleOAuthError(c, error, providerName, stateData);
+    return await handleOAuthError(c, error, providerName, stateData, rawState);
   }
 }
 
