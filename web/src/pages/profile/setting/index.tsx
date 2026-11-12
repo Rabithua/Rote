@@ -16,6 +16,7 @@ import { authService } from '@/utils/auth';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
   Fingerprint,
+  Lightbulb,
   Github,
   Loader,
   Settings2,
@@ -497,7 +498,8 @@ export default function SettingsPage() {
         {(!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
           passkeys.length === 0 &&
           profile?.hasPassword && (
-            <div className="text-destructive bg-destructive/5 border-destructive/20 flex items-start gap-2 rounded-lg border p-3 text-xs leading-relaxed">
+            <div className="text-muted-foreground flex items-start gap-2 text-xs leading-relaxed">
+              <Lightbulb className="mt-0.5 size-3.5 shrink-0" />
               <span>{t('settings.password.clearWarning')}</span>
             </div>
           )}
