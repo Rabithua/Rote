@@ -488,7 +488,7 @@
           "change": "Change Password",
           "set": "Set Password",
           "clear": "Clear Password",
-          "clearWarning": "After clearing the password, you will no longer be able to log in with your username and password. Please make sure you have bound at least one third-party account or registered a Passkey.",
+          "clearWarning": "The password cannot be cleared right now because it is your only remaining sign-in method. Bind a third-party account or register a Passkey first, and you can clear it afterwards.",
           "clearConfirmTitle": "Confirm Clearing Password",
           "passwordLabel": "Current Password",
           "passwordPlaceholder": "Enter current password",

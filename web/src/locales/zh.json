@@ -478,7 +478,7 @@
           "change": "修改密码",
           "set": "设置密码",
           "clear": "清除密码",
-          "clearWarning": "清除密码后，您将无法使用账号密码登录。请确保您已绑定至少一个第三方账号或注册了通行密钥。",
+          "clearWarning": "当前无法清除密码：密码是您唯一的登录方式。请先绑定第三方账号或注册通行密钥，之后即可清除。",
           "clearConfirmTitle": "确认清除密码",
           "passwordLabel": "当前密码",
           "passwordPlaceholder": "请输入当前密码",
