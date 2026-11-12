@@ -16,7 +16,6 @@ import { authService } from '@/utils/auth';
 import { useAtomValue, useSetAtom } from 'jotai';
 import {
   Fingerprint,
-  Lightbulb,
   Github,
   Loader,
   Settings2,
@@ -36,6 +35,7 @@ import DeleteAccountDialog from '../components/DeleteAccountDialog';
 import MergeAccountDialog from '../components/MergeAccountDialog';
 import ProfilePreferencesSection from '../components/ProfilePreferencesSection';
 import ProfileSidebar from '../components/ProfileSidebar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useOAuthBinding } from '../hooks/useOAuthBinding';
 import { usePasskey } from '@/hooks/usePasskey';
 import { confirmDeletionWithPasskey, fetchMockDeleteGrant } from '@/utils/passkey';
@@ -463,24 +463,28 @@ export default function SettingsPage() {
                 >
                   <RotateCcw className="size-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive size-8"
-                  onClick={() => setIsClearPasswordOpen(true)}
-                  disabled={
-                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-                    passkeys.length === 0
-                  }
-                  title={
-                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-                    passkeys.length === 0
-                      ? t('settings.password.clearWarning')
-                      : t('settings.password.clear')
-                  }
-                >
-                  <Trash2 className="size-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive size-8"
+                        onClick={() => setIsClearPasswordOpen(true)}
+                        disabled={
+                          (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
+                          passkeys.length === 0
+                        }
+                        title={t('settings.password.clear')}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent sideOffset={4}>
+                    {t('settings.password.clearWarning')}
+                  </TooltipContent>
+                </Tooltip>
               </>
             ) : (
               <Button
@@ -495,14 +499,6 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
-        {(!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-          passkeys.length === 0 &&
-          profile?.hasPassword && (
-            <div className="text-muted-foreground flex items-start gap-2 text-xs leading-relaxed">
-              <Lightbulb className="mt-0.5 size-3.5 shrink-0" />
-              <span>{t('settings.password.clearWarning')}</span>
-            </div>
-          )}
       </div>
 
       {/* 危险操作 */}
