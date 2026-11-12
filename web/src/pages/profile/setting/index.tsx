@@ -467,10 +467,6 @@ export default function SettingsPage() {
                   size="icon"
                   className="text-destructive size-8"
                   onClick={() => setIsClearPasswordOpen(true)}
-                  disabled={
-                    (!profile?.oauthBindings || profile.oauthBindings.length === 0) &&
-                    passkeys.length === 0
-                  }
                   title={t('settings.password.clear')}
                 >
                   <Trash2 className="size-4" />
@@ -547,6 +543,9 @@ export default function SettingsPage() {
       />
 
       <ClearPasswordDialog
+        blocked={
+          (!profile?.oauthBindings || profile.oauthBindings.length === 0) && passkeys.length === 0
+        }
         isOpen={isClearPasswordOpen}
         onOpenChange={setIsClearPasswordOpen}
         onSuccess={loadProfile}

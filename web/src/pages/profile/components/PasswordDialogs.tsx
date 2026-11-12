@@ -146,9 +146,16 @@ interface ClearPasswordDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  // 无其他登录方式时为 true：此时无法清除密码，弹窗只做解释
+  blocked: boolean;
 }
 
-export function ClearPasswordDialog({ isOpen, onOpenChange, onSuccess }: ClearPasswordDialogProps) {
+export function ClearPasswordDialog({
+  isOpen,
+  onOpenChange,
+  onSuccess,
+  blocked,
+}: ClearPasswordDialogProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'pages.profile.settings.password' });
   const [password, setPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -179,9 +186,18 @@ export function ClearPasswordDialog({ isOpen, onOpenChange, onSuccess }: ClearPa
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{t('clearConfirmTitle')}</DialogTitle>
-          <DialogDescription>{t('clearWarning')}</DialogDescription>
+          <DialogTitle>{blocked ? t('clearBlockedTitle') : t('clearConfirmTitle')}</DialogTitle>
+          <DialogDescription>
+            {blocked ? t('clearBlockedHint') : t('clearWarning')}
+          </DialogDescription>
         </DialogHeader>
+        {blocked ? (
+          <div className="flex justify-end pt-2">
+            <Button variant="outline" onClick={() => handleClose(false)}>
+              {t('gotIt')}
+            </Button>
+          </div>
+        ) : (
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
             <Input
