@@ -81,8 +81,22 @@ jobs:
   merge-backend:
     needs: build-backend
     runs-on: ubuntu-latest
+    outputs:
+      release-version: ${{ steps.backend_release.outputs.value }}
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve backend release version
+        id: backend_release
+        shell: bash
+        run: |
+          description="$(git describe --tags --match 'v[0-9]*' --always --long --dirty)"
+          printf 'value=dev-%s\n' "$description" >> "$GITHUB_OUTPUT"
+
       - name: Download digests
         uses: actions/download-artifact@v4
         with:
@@ -250,6 +264,6 @@ jobs:
 
       - name: Verify the deployed backend and frontend
         env:
-          ROTE_EXPECTED_RELEASE_VERSION: ${{ needs.build-backend.outputs.release-version }}
+          ROTE_EXPECTED_RELEASE_VERSION: ${{ needs.merge-backend.outputs.release-version }}
           ROTE_EXPECTED_REVISION: ${{ github.sha }}
         run: bun run .github/scripts/verify-deployment.ts
