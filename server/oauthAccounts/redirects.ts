@@ -2,7 +2,7 @@ import type { HonoContext } from '../types/hono';
 import type { SiteConfig } from '../types/config';
 import { getConfig } from '../utils/config';
 import { createResponse } from '../utils/main';
-import { extractStateData } from '../utils/oauth';
+import { extractStateData, extractStateRoutingData } from '../utils/oauth';
 import { oauthProviderRegistry } from '../utils/oauth/providers';
 import messages from './messages.json';
 import { OAuthRegistrationError } from './registrationError';
@@ -73,7 +73,8 @@ export async function handleOAuthError(
   c: HonoContext,
   error: any,
   provider: string,
-  stateData: any | null
+  stateData: any | null,
+  rawState?: string | null
 ): Promise<Response> {
   const providerInstance = oauthProviderRegistry.getProvider(provider);
   const errorMessages = providerInstance?.getErrorMessages() || [];
@@ -87,27 +88,31 @@ export async function handleOAuthError(
   }
   if (error instanceof OAuthRegistrationError) userFriendlyMessage = error.message;
 
+  // 严格校验失败（如 state 已过期）时，退化为仅验签的路由读取：
+  // 只用于决定回跳到 App scheme 还是 Web 页面，过期 state 仍无法推进流程。
+  const routingState = stateData ?? (await extractStateRoutingData(rawState));
+
   try {
     const frontendBaseUrl = await getFrontendBaseUrl(c);
-    const isBindMode = stateData?.bindMode === true;
+    const isBindMode = routingState?.bindMode === true;
 
-    if (isBindMode && stateData?.iosBind === true) {
+    if (isBindMode && routingState?.iosBind === true) {
       // iOS 绑定模式错误，回跳 App 自定义 scheme
       return c.redirect(
         getIOSOAuthBindCallbackUrl('error', provider, { message: userFriendlyMessage }).toString()
       );
     } else if (isBindMode) {
       // 绑定模式错误，重定向到 profile 页面
-      const redirectUrl = stateData?.redirectUrl || '/profile';
+      const redirectUrl = routingState?.redirectUrl || '/profile';
       const bindUrl = new URL(redirectUrl, frontendBaseUrl);
       bindUrl.searchParams.set('oauth', 'bind');
       bindUrl.searchParams.set('bind', 'error');
       bindUrl.searchParams.set('provider', provider);
       bindUrl.searchParams.set('message', userFriendlyMessage);
       return c.redirect(bindUrl.toString());
-    } else if (stateData?.deleteMode === true && stateData?.userId) {
+    } else if (routingState?.deleteMode === true && routingState?.userId) {
       // 删除确认模式错误，重定向回发起页面
-      const redirectUrl = validateRedirectUrl(stateData.redirectUrl, '/profile/setting');
+      const redirectUrl = validateRedirectUrl(routingState.redirectUrl, '/profile/setting');
       const deleteUrl = new URL(redirectUrl, frontendBaseUrl);
       deleteUrl.searchParams.set('oauth', 'delete-error');
       deleteUrl.searchParams.set('provider', provider);
@@ -115,7 +120,7 @@ export async function handleOAuthError(
       return c.redirect(deleteUrl.toString());
     } else {
       // 登录模式错误，重定向到登录页面
-      const loginUrl = getLoginRedirectUrl(frontendBaseUrl, stateData);
+      const loginUrl = getLoginRedirectUrl(frontendBaseUrl, routingState);
       loginUrl.searchParams.set('oauth', 'error');
       loginUrl.searchParams.set('provider', provider);
       loginUrl.searchParams.set('message', userFriendlyMessage);
@@ -138,14 +143,16 @@ export async function handleOAuthCancelled(
   c: HonoContext,
   provider: string,
   _errorCode: string,
-  stateData: any | null
+  stateData: any | null,
+  rawState?: string | null
 ): Promise<Response> {
-  if (stateData?.iosBind === true) {
+  const routingState = stateData ?? (await extractStateRoutingData(rawState));
+  if (routingState?.iosBind === true) {
     // iOS 绑定模式取消，回跳 App 自定义 scheme
     return c.redirect(getIOSOAuthBindCallbackUrl('cancelled', provider).toString());
   }
   const frontendBaseUrl = await getFrontendBaseUrl(c);
-  const loginUrl = getLoginRedirectUrl(frontendBaseUrl, stateData);
+  const loginUrl = getLoginRedirectUrl(frontendBaseUrl, routingState);
   loginUrl.searchParams.set('oauth', 'cancelled');
   loginUrl.searchParams.set('provider', provider);
   return c.redirect(loginUrl.toString());

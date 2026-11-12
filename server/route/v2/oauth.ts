@@ -252,7 +252,8 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
         c,
         providerName,
         error,
-        await extractOptionalStateData(state)
+        await extractOptionalStateData(state),
+        state
       );
     }
 
@@ -299,17 +300,20 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
 
     // 尝试从 state 中获取信息（根据提供商的 callbackMethod）
     let stateData: any | null = null;
+    let rawState: string | null = null;
     try {
       const provider = oauthProviderRegistry.getProvider(providerName);
       if (provider?.callbackMethod === 'POST') {
         const body = await c.req.parseBody();
         const state = body.state as string | undefined;
         if (state) {
+          rawState = state;
           stateData = await extractStateData(state);
         }
       } else {
         const state = c.req.query('state');
         if (state) {
+          rawState = state;
           stateData = await extractStateData(state);
         }
       }
@@ -317,7 +321,7 @@ async function handleOAuthCallback(c: HonoContext, providerName: string): Promis
       // 忽略 state 解析错误
     }
 
-    return await handleOAuthError(c, error, providerName, stateData);
+    return await handleOAuthError(c, error, providerName, stateData, rawState);
   }
 }
 
