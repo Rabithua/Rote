@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { del, post, put } from '@/utils/api';
-import { Loader } from 'lucide-react';
+import { Lightbulb, Loader } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -186,19 +186,14 @@ export function ClearPasswordDialog({
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className={blocked ? 'text-destructive' : undefined}>
-            {blocked ? t('clearBlockedTitle') : t('clearConfirmTitle')}
-          </DialogTitle>
-          {blocked ? (
-            <DialogDescription className="text-foreground">{t('clearWarning')}</DialogDescription>
-          ) : (
-            <DialogDescription>{t('clearWarning')}</DialogDescription>
-          )}
+          <DialogTitle>{blocked ? t('clearBlockedTitle') : t('clearConfirmTitle')}</DialogTitle>
+          {!blocked && <DialogDescription>{t('clearWarning')}</DialogDescription>}
         </DialogHeader>
         {blocked ? (
           <div className="space-y-4">
-            <div className="bg-destructive/5 border-destructive/20 rounded-lg border p-3">
-              <p className="text-foreground text-sm leading-relaxed font-medium">
+            <div className="flex items-start gap-2">
+              <Lightbulb className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+              <p className="text-muted-foreground text-sm leading-relaxed">
                 {t('clearBlockedHint')}
               </p>
             </div>
