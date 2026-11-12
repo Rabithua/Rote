@@ -198,41 +198,41 @@ export function ClearPasswordDialog({
             </Button>
           </div>
         ) : (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-1.5">
-            <Input
-              type="password"
-              placeholder={t('passwordPlaceholder')}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isSaving}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isSaving && password) {
-                  handleConfirm();
-                }
-              }}
-            />
+          <div className="space-y-4">
+            <div className="flex flex-col gap-1.5">
+              <Input
+                type="password"
+                placeholder={t('passwordPlaceholder')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isSaving}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !isSaving && password) {
+                    handleConfirm();
+                  }
+                }}
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => handleClose(false)}
+                disabled={isSaving}
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleConfirm}
+                disabled={isSaving || !password}
+              >
+                {isSaving && <Loader className="mr-2 size-4 animate-spin" />}
+                {isSaving ? t('saving') : t('confirm')}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => handleClose(false)}
-              disabled={isSaving}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              className="flex-1"
-              onClick={handleConfirm}
-              disabled={isSaving || !password}
-            >
-              {isSaving && <Loader className="mr-2 size-4 animate-spin" />}
-              {isSaving ? t('saving') : t('confirm')}
-            </Button>
-          </div>
-        </div>
         )}
       </DialogContent>
     </Dialog>
