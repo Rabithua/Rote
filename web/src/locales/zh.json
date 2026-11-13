@@ -1570,7 +1570,10 @@
         "apiRateLimit": "API 速率限制",
         "apiRateLimitDescription": "每个用户或 IP 地址每秒允许的最大请求数。用于防止 API 滥用。最小值为 10，默认值为 100 请求/秒。",
         "maxVideoUploadSizeMB": "视频大小上限（MB）",
-        "maxVideoUploadSizeMBDesc": "单个视频允许上传的最大大小，最小值为 1MB，默认值为 300MB。"
+        "maxVideoUploadSizeMBDesc": "单个视频允许上传的最大大小，最小值为 1MB，默认值为 300MB。",
+        "roles": {
+          "user": "普通用户"
+        }
       },
       "security": {
         "errors": {
