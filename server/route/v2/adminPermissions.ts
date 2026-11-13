@@ -11,7 +11,7 @@ import {
   setRoleCapabilityPolicies,
   setUserCapabilityOverrides,
 } from '../../authz/capabilityService';
-import { authenticateJWT, requireAdmin, requireSuperAdmin } from '../../middleware/jwtAuth';
+import { authenticateJWT, requireSuperAdmin } from '../../middleware/jwtAuth';
 import type { HonoContext, HonoVariables } from '../../types/hono';
 import { UserRole } from '../../types/main';
 import { createResponse } from '../../utils/main';
@@ -38,7 +38,7 @@ function parseCapabilities<T extends string>(
   return Object.fromEntries(entries) as Partial<Record<CapabilityKey, T>>;
 }
 
-adminPermissionsRouter.get('/roles', authenticateJWT, requireAdmin, async (c: HonoContext) =>
+adminPermissionsRouter.get('/roles', authenticateJWT, requireSuperAdmin, async (c: HonoContext) =>
   c.json(createResponse(await getRoleCapabilityPolicies()), 200)
 );
 
@@ -63,7 +63,7 @@ adminPermissionsRouter.put(
 adminPermissionsRouter.get(
   '/users/:userId',
   authenticateJWT,
-  requireAdmin,
+  requireSuperAdmin,
   async (c: HonoContext) =>
     c.json(createResponse(await getUserCapabilityOverrides(c.req.param('userId'))), 200)
 );

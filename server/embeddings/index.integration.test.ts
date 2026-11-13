@@ -94,7 +94,7 @@ beforeEach(async () => {
       id: ownerId,
       email: 'embedding@example.test',
       username: 'embedding-fixture',
-      role: 'admin',
+      role: 'super_admin',
     })
     .onConflictDoNothing();
 });

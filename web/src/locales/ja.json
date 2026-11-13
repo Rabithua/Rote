@@ -4,7 +4,11 @@
       "poem": "",
       "headingBefore": "",
       "headingAfter": " のようなノートリポジトリ 🤔",
-      "linksItems": ["ログイン", "", "GitHub"],
+      "linksItems": [
+        "ログイン",
+        "",
+        "GitHub"
+      ],
       "dashboard": "ダッシュボード",
       "star": "スター",
       "fork": "フォーク",
@@ -235,7 +239,8 @@
         "email": "メールアドレス",
         "emailPlaceholder": "someone@mail.com",
         "nickname": "ニックネーム",
-        "nicknamePlaceholder": "ニックネーム"
+        "nicknamePlaceholder": "ニックネーム",
+        "usernamePlaceholder": "ユーザー名"
       },
       "buttons": {
         "login": "ログイン",
@@ -1561,11 +1566,7 @@
         "allowUploadFileDesc": "ユーザーが添付ファイルをアップロードすることを許可するかどうか",
         "defaultUserRole": "デフォルトユーザーロール",
         "defaultUserRolePlaceholder": "デフォルトロールを選択",
-        "defaultUserRoleDescription": "新規登録ユーザーのデフォルトロール。user または moderator のみ選択可能。管理者ロールは手動で割り当てる必要があります。",
-        "roles": {
-          "user": "ユーザー",
-          "moderator": "モデレーター"
-        },
+        "defaultUserRoleDescription": "新規登録ユーザーのデフォルトロール。新規ユーザーは一般ユーザーとして参加し、権限昇格は手動で割り当てる必要があります。",
         "apiRateLimit": "API レート制限",
         "apiRateLimitDescription": "ユーザーまたはIPアドレスごとに許可される1秒あたりの最大リクエスト数。APIの悪用を防ぐために使用されます。最小値は10、デフォルトは100リクエスト/秒です。",
         "maxVideoUploadSizeMB": "動画サイズ上限（MB）",
@@ -1946,14 +1947,6 @@
           "user": {
             "label": "ユーザー",
             "description": "新規登録ユーザーが継承するデフォルト権限です。"
-          },
-          "moderator": {
-            "label": "モデレーター",
-            "description": "モデレーターが継承するデフォルト権限です。"
-          },
-          "admin": {
-            "label": "管理者",
-            "description": "管理者が継承するデフォルト権限です。"
           }
         },
         "capabilities": {

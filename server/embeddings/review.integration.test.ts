@@ -99,7 +99,7 @@ beforeEach(async () => {
       id: ownerId,
       email: 'review@example.test',
       username: 'review-fixture',
-      role: 'admin',
+      role: 'super_admin',
     })
     .onConflictDoNothing();
 });
@@ -147,7 +147,7 @@ describe.serial('embedding review regressions', () => {
         id: nextOwner,
         email: 'new-owner@example.test',
         username: 'new-owner',
-        role: 'admin',
+        role: 'super_admin',
       })
       .onConflictDoNothing();
     await db.update(rotes).set({ authorid: nextOwner }).where(eq(rotes.id, noteId));

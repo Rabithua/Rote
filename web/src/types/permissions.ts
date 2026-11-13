@@ -18,7 +18,7 @@ export type EffectiveCapability = {
 
 export type EffectiveCapabilities = Record<CapabilityKey, EffectiveCapability>;
 
-export const MANAGEABLE_ROLES = ['user', 'moderator', 'admin'] as const;
+export const MANAGEABLE_ROLES = ['user'] as const;
 export type ManageableRole = (typeof MANAGEABLE_ROLES)[number];
 
 export type RoleCapabilityPolicy = {

@@ -147,7 +147,7 @@ adminSetupRouter.post('/setup', async (c: HonoContext) => {
         400
       );
     }
-    if (!['user', 'moderator'].includes(setupData.ui.defaultUserRole)) {
+    if (setupData.ui.defaultUserRole !== 'user') {
       return c.json(
         createResponse(null, 'Default user role must be either "user" or "moderator"'),
         400
@@ -191,7 +191,7 @@ adminSetupRouter.post('/setup', async (c: HonoContext) => {
     let reusedExistingAdmin = false;
 
     if (existingUser) {
-      const isExistingAdmin = ['admin', 'super_admin'].includes(existingUser.role);
+      const isExistingAdmin = existingUser.role === 'super_admin';
       const isSameAdminIdentity =
         existingUser.username === setupData.admin.username &&
         existingUser.email === setupData.admin.email;

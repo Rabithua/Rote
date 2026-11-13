@@ -40,7 +40,7 @@ databaseDescribe(
 
     it('omits signing material from both GET variants for admin and super admin', async () => {
       expect((await request('/settings', 'GET', 'user')).status).toBe(403);
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         const all = await request('/settings', 'GET', role);
         expect(all.status).toBe(200);
         const result = (await all.json()).data;
@@ -92,7 +92,9 @@ databaseDescribe(
       expect(await publicResponse.text()).toBe(canonical);
 
       expect((await save('admin', { customMetaTags: '' })).status).toBe(403);
-      expect((await save('admin', { description: 'Updated site description' })).status).toBe(200);
+      expect((await save('super_admin', { description: 'Updated site description' })).status).toBe(
+        200
+      );
       const invalid = await save('super_admin', { customMetaTags: '<meta charset="utf-8">' });
       expect(invalid.status).toBe(400);
       expect((await invalid.json()).message).toBe('invalid_custom_meta_tags');
@@ -108,7 +110,9 @@ databaseDescribe(
         },
       ]);
       const frontendUrl = 'https://new.example.test';
-      const urlUpdate = await request('/settings/update-urls', 'POST', 'admin', { frontendUrl });
+      const urlUpdate = await request('/settings/update-urls', 'POST', 'super_admin', {
+        frontendUrl,
+      });
       expect(urlUpdate.status).toBe(200);
       expect((await urlUpdate.json()).data.urls.frontendUrl).toBe(frontendUrl);
       expect(await (await fragment()).text()).toBe(newerMeta);
@@ -118,7 +122,7 @@ databaseDescribe(
     });
 
     it('rejects root-key changes and cannot use the proposed attacker key to promote an admin', async () => {
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         for (const field of ['jwtSecret', 'jwtRefreshSecret', 'sessionSecret']) {
           const response = await request('/settings', 'PUT', role, {
             group: 'security',
@@ -143,19 +147,21 @@ databaseDescribe(
       expect(
         (await request(`/users/${ids.admin}/role`, 'PUT', 'admin', { role: 'super_admin' })).status
       ).toBe(403);
-      expect(
-        (await request(`/users/${ids.admin}/role`, 'PUT', 'super_admin', { role: 'admin' })).status
-      ).toBe(200);
+      // admin 角色已废除：授予已移除的角色被拒绝（非法角色不走 200）
+      const grantStatus = (
+        await request(`/users/${ids.admin}/role`, 'PUT', 'super_admin', { role: 'admin' })
+      ).status;
+      expect(grantStatus).not.toBe(200);
     });
 
     it('preserves normal admin settings, omitted keys and top-level sections without leaking PUT secrets', async () => {
-      for (const [index, patch] of [
+      for (const patch of [
         { requireCertifiedUserForExplore: false },
         { jwtAccessExpiry: '3h' },
         { passkey: { enabled: true, rpId: 'other.example.test' } },
         { oauth: { enabled: false, providers: {} } },
-      ].entries()) {
-        const response = await request('/settings', 'PUT', index === 0 ? 'super_admin' : 'admin', {
+      ]) {
+        const response = await request('/settings', 'PUT', 'super_admin', {
           group: 'security',
           config: patch,
         });
@@ -175,7 +181,7 @@ databaseDescribe(
       );
       expect(
         (
-          await request('/settings', 'PUT', 'admin', {
+          await request('/settings', 'PUT', 'super_admin', {
             group: 'security',
             config: { requireVerifiedEmailForExplore: true },
           })
@@ -191,7 +197,7 @@ databaseDescribe(
         { jwtAccessExpiry: 'never' },
       ]) {
         expect(
-          (await request('/settings', 'PUT', 'admin', { group: 'security', config: invalid }))
+          (await request('/settings', 'PUT', 'super_admin', { group: 'security', config: invalid }))
             .status
         ).toBe(400);
       }
@@ -308,7 +314,7 @@ databaseDescribe(
         urlPrefix: 'https://cdn.example.test',
       };
       expect(await config.setConfig('storage', storageFixture)).toBe(true);
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         const response = await request('/settings?group=storage', 'GET', role);
         expect(response.status).toBe(200);
         const stored = (await response.json()).data.config;
@@ -329,7 +335,7 @@ databaseDescribe(
       expect(await config.setConfig('storage', storageFixture)).toBe(true);
       // 占位符回传会走配置连通性测试（假端点必然失败返回 400），
       // 关键断言是占位符在任何情况下都不会被持久化。
-      const save = await request('/settings', 'PUT', 'admin', {
+      const save = await request('/settings', 'PUT', 'super_admin', {
         group: 'storage',
         config: {
           ...storageFixture,
@@ -344,21 +350,12 @@ databaseDescribe(
 
     it('gates OAuth credential and callback writes to super admin', async () => {
       const adminSave = (providerPatch: object) =>
-        request('/settings', 'PUT', 'admin', {
+        request('/settings', 'PUT', 'super_admin', {
           group: 'security',
           config: { oauth: { enabled: true, providers: { github: providerPatch } } },
         });
       const github = security.oauth.providers.github;
 
-      // 回调地址重定向（账户接管向量）对普通管理员关闭
-      expect(
-        (await adminSave({ ...github, callbackUrl: 'https://attacker.example.test/callback' }))
-          .status
-      ).toBe(403);
-      // 真实凭据变更同样关闭
-      expect(
-        (await adminSave({ ...github, clientSecret: 'attacker-controlled-secret' })).status
-      ).toBe(403);
       // 掩码占位符原样回传 + 未变更回调：允许（保持原值）
       expect((await adminSave({ ...github, clientSecret: '********' })).status).toBe(200);
       const stored = await config.getConfig('security');
@@ -386,7 +383,7 @@ databaseDescribe(
 
     it('masks notification secrets and never persists or echoes placeholders', async () => {
       // GET 掩码（双角色）
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         const response = await request('/settings?group=notification', 'GET', role);
         expect(response.status).toBe(200);
         const stored = (await response.json()).data.config;

@@ -97,7 +97,6 @@ export default function UIConfigTab({ onDirtyChange, onSavingChange, ...props }:
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="user">{t('ui.roles.user')}</SelectItem>
-              <SelectItem value="moderator">{t('ui.roles.moderator')}</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">{t('ui.defaultUserRoleDescription')}</p>

@@ -302,6 +302,13 @@
    "when": 1794417827433,
    "tag": "0042_bright_shore",
    "breakpoints": true
+  },
+  {
+   "idx": 43,
+   "version": "7",
+   "when": 1794552376000,
+   "tag": "0043_flatten_user_roles",
+   "breakpoints": true
   }
  ]
 }

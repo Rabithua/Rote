@@ -4,7 +4,11 @@
       "poem": "",
       "headingBefore": "A note repository like",
       "headingAfter": " 🤔",
-      "linksItems": ["Login", "", "GitHub"],
+      "linksItems": [
+        "Login",
+        "",
+        "GitHub"
+      ],
       "dashboard": "Dashboard",
       "star": "Stars",
       "fork": "Forks",
@@ -69,7 +73,11 @@
           },
           "debug": {
             "title": "Search trace",
-            "items": ["Tool 1x: rote_search_notes", "Hits: 20", "Finish reason: agent_search_tool"]
+            "items": [
+              "Tool 1x: rote_search_notes",
+              "Hits: 20",
+              "Finish reason: agent_search_tool"
+            ]
           },
           "thinking": {
             "route": {
@@ -231,7 +239,8 @@
         "email": "Email",
         "emailPlaceholder": "someone@mail.com",
         "nickname": "Nickname",
-        "nicknamePlaceholder": "nickname"
+        "nicknamePlaceholder": "nickname",
+        "usernamePlaceholder": "Username"
       },
       "buttons": {
         "login": "Login",
@@ -1557,11 +1566,7 @@
         "allowUploadFileDesc": "Whether to allow users to upload attachments",
         "defaultUserRole": "Default User Role",
         "defaultUserRolePlaceholder": "Select default role",
-        "defaultUserRoleDescription": "Default role for newly registered users. Only user or moderator can be selected. Admin roles must be assigned manually.",
-        "roles": {
-          "user": "User",
-          "moderator": "Moderator"
-        },
+        "defaultUserRoleDescription": "Default role for newly registered users. New signups join as regular users; elevated roles must be assigned manually.",
         "apiRateLimit": "API Rate Limit",
         "apiRateLimitDescription": "Maximum number of requests per second allowed per user or IP address. Used to prevent API abuse. Minimum is 10, default is 100 requests/second.",
         "maxVideoUploadSizeMB": "Video Size Limit (MB)",
@@ -1942,14 +1947,6 @@
           "user": {
             "label": "User",
             "description": "Default permissions inherited by newly registered users."
-          },
-          "moderator": {
-            "label": "Moderator",
-            "description": "Default permissions inherited by moderators."
-          },
-          "admin": {
-            "label": "Administrator",
-            "description": "Default permissions inherited by administrators."
           }
         },
         "capabilities": {

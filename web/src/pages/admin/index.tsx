@@ -80,7 +80,7 @@ export default function AdminDashboard() {
   }
 
   // 检查用户是否有管理员权限
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
+  if (!profile || profile.role !== 'super_admin') {
     return (
       <div className="flex h-dvh items-center justify-center">
         <div className="text-center">
