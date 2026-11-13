@@ -110,7 +110,7 @@ function LayoutDashboard({
     const canShowAi = tokenValid === true;
     const tabs = canShowAi ? [...baseTabs] : baseTabs.filter((tab) => tab.name !== 'aiMemory');
     // 如果是管理员或超级管理员，添加管理员 tab
-    if (profile && (profile.role === 'admin' || profile.role === 'super_admin')) {
+    if (profile && profile.role === 'super_admin') {
       tabs.splice(tabs.length - 1, 0, ...adminTabs);
     }
     tabs.push({

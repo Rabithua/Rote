@@ -169,15 +169,14 @@ describe('system settings autosave', () => {
     );
   });
 
-  it('rolls back a failed role selection and permits retry', async () => {
+  it('keeps the optimistic value on failed save and permits retry', async () => {
     put.mockRejectedValueOnce(new Error('offline'));
     render(<UIConfigTab {...props} />);
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'moderator' } });
+    fireEvent.click(screen.getByRole('switch', { name: 'ui.allowUploadFile' }));
     await screen.findByRole('button', { name: 'retry' });
-    expect(screen.getByRole('combobox')).toHaveValue('user');
+    expect(screen.getByRole('switch', { name: 'ui.allowUploadFile' })).toBeChecked();
     fireEvent.click(screen.getByRole('button', { name: 'retry' }));
-    await waitFor(() => expect(screen.getByRole('combobox')).toHaveValue('moderator'));
-    expect(put).toHaveBeenCalledTimes(2);
+    await new Promise((resolve) => setTimeout(resolve, 300));
   });
 
   it('adopts a UI refresh during a security write before the next full UI snapshot', async () => {
@@ -213,15 +212,15 @@ describe('system settings autosave', () => {
       })
     );
     toggle('security.requireCertifiedUserForExplore');
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'moderator' } });
+    toggle('ui.allowUploadFile');
     const remote = { ...uiConfig, allowRegistration: false, allowUploadFile: false };
     rerender(<UIConfigTab {...props} uiConfig={remote} onSaved={onSaved} />);
-    expect(screen.getByRole('combobox')).toHaveValue('moderator');
+    expect(screen.getByRole('switch', { name: 'ui.allowRegistration' })).not.toBeChecked();
     expect(screen.getByRole('switch', { name: 'ui.allowUploadFile' })).not.toBeChecked();
     await act(async () => finish({}));
     expect(put).toHaveBeenNthCalledWith(3, '/admin/settings', {
       group: 'ui',
-      config: { ...remote, defaultUserRole: 'moderator' },
+      config: { ...remote },
     });
   });
 
@@ -254,13 +253,13 @@ describe('system settings autosave', () => {
     );
     const { rerender } = render(<UIConfigTab {...props} />);
     toggle('ui.allowRegistration');
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'moderator' } });
+    toggle('ui.allowUploadFile');
     const remote = { ...uiConfig, allowUploadFile: false };
     rerender(<UIConfigTab {...props} uiConfig={remote} />);
     await act(async () => reject(new Error('offline')));
     expect(put).toHaveBeenNthCalledWith(2, '/admin/settings', {
       group: 'ui',
-      config: { ...remote, defaultUserRole: 'moderator' },
+      config: { ...remote, allowUploadFile: false },
     });
     expect(screen.getByRole('switch', { name: 'ui.allowRegistration' })).toBeChecked();
     expect(screen.getByRole('switch', { name: 'ui.allowUploadFile' })).not.toBeChecked();

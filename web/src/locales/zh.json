@@ -4,7 +4,11 @@
       "poem": "采菊东篱下，悠然见南山",
       "headingBefore": "一个看起来不太一样的",
       "headingAfter": " 🤔",
-      "linksItems": ["登录", "", "GitHub"],
+      "linksItems": [
+        "登录",
+        "",
+        "GitHub"
+      ],
       "dashboard": "仪表盘",
       "star": "Stars",
       "fork": "Forks",
@@ -61,11 +65,19 @@
           "backToBottom": "回到底部",
           "scope": {
             "title": "范围",
-            "items": ["关键词：性格、决策、社交、情绪、反思", "内容类型：笔记", "归档范围：全部"]
+            "items": [
+              "关键词：性格、决策、社交、情绪、反思",
+              "内容类型：笔记",
+              "归档范围：全部"
+            ]
           },
           "debug": {
             "title": "检索过程",
-            "items": ["工具 1 次：rote_search_notes", "命中数：20", "结束原因：agent_search_tool"]
+            "items": [
+              "工具 1 次：rote_search_notes",
+              "命中数：20",
+              "结束原因：agent_search_tool"
+            ]
           },
           "thinking": {
             "route": {
@@ -106,7 +118,13 @@
         "error": "检测到后端错误，正在跳转到设置页面",
         "notInitialized": "系统未初始化，正在跳转到设置页面"
       },
-      "typewriterTexts": ["个人笔记库", "碎碎念本子", "私人朋友圈", "个人频道", "微型博客"],
+      "typewriterTexts": [
+        "个人笔记库",
+        "碎碎念本子",
+        "私人朋友圈",
+        "个人频道",
+        "微型博客"
+      ],
       "subtitle": "开放API，记录的姿势不止一种🤩，支持Self-Hosted，对自己的数据掌握主动权，来去自由，没有数据绑架🙅🏻",
       "iosAppTooltip": {
         "title": "想要加入 iOS 测试版吗？",
@@ -1547,11 +1565,7 @@
         "allowUploadFileDesc": "是否允许用户上传附件",
         "defaultUserRole": "默认用户角色",
         "defaultUserRolePlaceholder": "选择默认角色",
-        "defaultUserRoleDescription": "新注册用户的默认角色。只能选择普通用户或版主，管理员角色需要手动分配。",
-        "roles": {
-          "user": "普通用户",
-          "moderator": "版主"
-        },
+        "defaultUserRoleDescription": "新注册用户的默认角色。新用户一律以普通用户身份加入，提权需手动分配。",
         "apiRateLimit": "API 速率限制",
         "apiRateLimitDescription": "每个用户或 IP 地址每秒允许的最大请求数。用于防止 API 滥用。最小值为 10，默认值为 100 请求/秒。",
         "maxVideoUploadSizeMB": "视频大小上限（MB）",
@@ -1932,14 +1946,6 @@
           "user": {
             "label": "普通用户",
             "description": "新注册普通用户默认继承这些权限。"
-          },
-          "moderator": {
-            "label": "版主",
-            "description": "版主默认继承这些权限。"
-          },
-          "admin": {
-            "label": "管理员",
-            "description": "管理员默认继承这些权限。"
           }
         },
         "capabilities": {

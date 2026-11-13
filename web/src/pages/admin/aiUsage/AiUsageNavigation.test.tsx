@@ -97,7 +97,7 @@ beforeEach(() => {
   }));
   vi.mocked(useAuthState).mockReturnValue({
     authReady: true,
-    profile: { role: 'admin' },
+    profile: { role: 'super_admin' },
   } as ReturnType<typeof useAuthState>);
 });
 
@@ -132,7 +132,8 @@ describe('AI usage navigation', () => {
     expect(link).toHaveAttribute('href', '/admin/ai-usage');
   });
 
-  it.each(['admin', 'super_admin'])('allows %s to open details directly', async (role) => {
+  it('allows super admin to open details directly', async () => {
+    const role = 'super_admin';
     vi.mocked(useAuthState).mockReturnValue({ authReady: true, profile: { role } } as ReturnType<
       typeof useAuthState
     >);

@@ -115,7 +115,6 @@ describe('PermissionsTab', () => {
     const upload = user.getByLabelText('attachment.upload');
     const storage = user.getByTestId('permission-resource.storage.unlimited');
     const video = user.getByTestId('permission-attachment.video.upload');
-    const moderatorUpload = roleSection('moderator').getByLabelText('attachment.upload');
 
     expect(container.querySelector('[data-slot="admin-settings-actions"]')).toBeNull();
     expect(storage).toHaveAttribute('data-options', 'inherit,allow,deny');
@@ -133,15 +132,12 @@ describe('PermissionsTab', () => {
     expect(user.getByRole('status')).toHaveTextContent('saving');
     expect(upload).toHaveValue('deny');
     expect(upload).toBeDisabled();
-    expect(moderatorUpload).toBeDisabled();
 
     await act(async () => finishSave({ data: updatedPolicies }));
 
     expect(upload).toHaveValue('deny');
     expect(within(storage).getByRole('combobox')).toHaveValue('inherit');
     expect(within(video).getByText('effective.denied')).toBeVisible();
-    expect(moderatorUpload).toHaveValue('allow');
-    expect(moderatorUpload).toBeEnabled();
     expect(onSavingChange).toHaveBeenLastCalledWith(false);
     expect(user.getByRole('status')).toBeEmptyDOMElement();
     expect(toast.success).toHaveBeenCalledWith('saveSuccess');
@@ -167,16 +163,5 @@ describe('PermissionsTab', () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     expect(put).toHaveBeenCalledTimes(2);
     expect(upload).toHaveValue('deny');
-  });
-
-  it('keeps role defaults read-only for regular administrators', async () => {
-    useProfile.mockReturnValue({ role: 'admin' });
-    await renderPermissions();
-
-    expect(screen.getByText('readOnlyDescription')).toBeVisible();
-    for (const select of screen.getAllByRole('combobox')) {
-      expect(select).toBeDisabled();
-    }
-    expect(put).not.toHaveBeenCalled();
   });
 });

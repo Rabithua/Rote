@@ -120,7 +120,7 @@ describe('anonymous share reader', () => {
       'rote_refresh_token',
       `header.${btoa(JSON.stringify({ exp: Date.now() / 1000 + 3600 }))}.signature`
     );
-    renderPage({ id: 'admin', role: 'admin' } as Profile, true);
+    renderPage({ id: 'admin', role: 'super_admin' } as Profile, true);
     await screen.findByText(note.content);
     expect(screen.getByRole('link', { name: 'leftNavBar.admin' })).toHaveAttribute(
       'href',

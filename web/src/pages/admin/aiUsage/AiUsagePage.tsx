@@ -16,7 +16,7 @@ export default function AiUsagePage() {
     return <LoadingPlaceholder className="h-dvh w-full" size={6} />;
   }
 
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
+  if (!profile || profile.role !== 'super_admin') {
     return (
       <div className="flex h-dvh items-center justify-center">
         <div className="text-center">
