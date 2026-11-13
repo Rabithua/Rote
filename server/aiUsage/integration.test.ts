@@ -44,7 +44,7 @@ beforeAll(async () => {
       })
     );
     await migrate(drizzle(client), { migrationsFolder: folder });
-    await client`INSERT INTO users (id, email, username, role) VALUES (${owner}, 'ai-usage@example.test', 'ai-usage', 'admin')`;
+    await client`INSERT INTO users (id, email, username, role) VALUES (${owner}, 'ai-usage@example.test', 'ai-usage', 'super_admin')`;
     await client`INSERT INTO ai_token_usage_logs (userid, model, type, "promptTokens", "completionTokens", "totalTokens") VALUES (${owner}, 'old', 'chat', 11, 2, 13)`;
     writeFileSync(journalPath, JSON.stringify(journal));
     await migrate(drizzle(client), { migrationsFolder: folder });
@@ -422,6 +422,6 @@ it('serves the aggregate API only to admins, validates filters, and keeps the le
     expect((await router.request('/stats/ai-usage', { headers })).status).toBe(403);
     expect((await router.request('/stats/ai-usage/users', { headers })).status).toBe(403);
   } finally {
-    await client`UPDATE users SET role='admin' WHERE id=${owner}`;
+    await client`UPDATE users SET role='super_admin' WHERE id=${owner}`;
   }
 });

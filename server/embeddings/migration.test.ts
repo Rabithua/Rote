@@ -56,7 +56,7 @@ it('migrates a legacy database without pgvector, retaining configuration and vec
         dimensions: 1024,
       },
     };
-    await client`INSERT INTO users (id, email, username, role) VALUES (${ownerId}, 'legacy@example.test', 'legacy-embedding', 'admin')`;
+    await client`INSERT INTO users (id, email, username, role) VALUES (${ownerId}, 'legacy@example.test', 'legacy-embedding', 'super_admin')`;
     await client`INSERT INTO settings ("group", config) VALUES ('ai', ${JSON.stringify(oldConfig)}::jsonb)`;
     await client`INSERT INTO settings ("group", config) VALUES ('security', ${JSON.stringify({ jwtSecret: 'isolated-migration-test-secret', jwtAccessExpiry: '5m' })}::jsonb)`;
     // Existing Prisma-era tables were retained by the CREATE TABLE IF NOT EXISTS baseline.

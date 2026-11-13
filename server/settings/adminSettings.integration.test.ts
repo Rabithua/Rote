@@ -40,7 +40,7 @@ databaseDescribe(
 
     it('omits signing material from both GET variants for admin and super admin', async () => {
       expect((await request('/settings', 'GET', 'user')).status).toBe(403);
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         const all = await request('/settings', 'GET', role);
         expect(all.status).toBe(200);
         const result = (await all.json()).data;
@@ -118,7 +118,7 @@ databaseDescribe(
     });
 
     it('rejects root-key changes and cannot use the proposed attacker key to promote an admin', async () => {
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         for (const field of ['jwtSecret', 'jwtRefreshSecret', 'sessionSecret']) {
           const response = await request('/settings', 'PUT', role, {
             group: 'security',
@@ -143,9 +143,11 @@ databaseDescribe(
       expect(
         (await request(`/users/${ids.admin}/role`, 'PUT', 'admin', { role: 'super_admin' })).status
       ).toBe(403);
-      expect(
-        (await request(`/users/${ids.admin}/role`, 'PUT', 'super_admin', { role: 'admin' })).status
-      ).toBe(200);
+      // admin 角色已废除：授予已移除的角色被拒绝（非法角色不走 200）
+      const grantStatus = (
+        await request(`/users/${ids.admin}/role`, 'PUT', 'super_admin', { role: 'admin' })
+      ).status;
+      expect(grantStatus).not.toBe(200);
     });
 
     it('preserves normal admin settings, omitted keys and top-level sections without leaking PUT secrets', async () => {
@@ -308,7 +310,7 @@ databaseDescribe(
         urlPrefix: 'https://cdn.example.test',
       };
       expect(await config.setConfig('storage', storageFixture)).toBe(true);
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         const response = await request('/settings?group=storage', 'GET', role);
         expect(response.status).toBe(200);
         const stored = (await response.json()).data.config;
@@ -386,7 +388,7 @@ databaseDescribe(
 
     it('masks notification secrets and never persists or echoes placeholders', async () => {
       // GET 掩码（双角色）
-      for (const role of ['admin', 'super_admin'] as const) {
+      for (const role of ['super_admin'] as const) {
         const response = await request('/settings?group=notification', 'GET', role);
         expect(response.status).toBe(200);
         const stored = (await response.json()).data.config;
