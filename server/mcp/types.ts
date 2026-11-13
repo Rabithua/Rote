@@ -9,6 +9,10 @@ export type McpToolDefinition = {
   name: string;
   description: string;
   requiredScopes: string[];
+  // Role-restricted tools are hidden from tools/list and refused on tools/call
+  // unless the authenticated user holds the role. Handlers re-check (defense
+  // in depth) via requireSuperAdmin in shared.ts.
+  requiredRole?: 'super_admin';
   inputSchema: Record<string, any>;
 };
 

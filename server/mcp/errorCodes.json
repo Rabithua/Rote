@@ -27,5 +27,10 @@
   "tagLengthExceeded": "tag_length_exceeded",
   "toolDefinitionMissingPrefix": "mcp_tool_definition_missing:",
   "toolNameRequired": "tool_name_required",
-  "unknownToolPrefix": "unknown_tool:"
+  "unknownToolPrefix": "unknown_tool:",
+  "superAdminRequired": "super_admin_required",
+  "giftInvalidRequest": "gift_invalid_request",
+  "giftCampaignNotFound": "gift_campaign_not_found",
+  "giftInsufficientCodes": "gift_insufficient_codes",
+  "giftNotAvailable": "gift_not_available"
 }

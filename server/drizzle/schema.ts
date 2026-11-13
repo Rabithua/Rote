@@ -1334,3 +1334,72 @@ export const embeddingSourceEvents = pgTable(
     pending: index('embedding_source_events_pending_idx').on(table.createdAt, table.id),
   })
 );
+
+// Gift redemption campaigns. Eligibility targeting lives outside this module:
+// the operator passes an explicit recipient list at allocation time, so future
+// campaigns can target any audience without schema or logic changes.
+export const giftCampaigns = pgTable(
+  'gift_campaigns',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 120 }).notNull().unique(),
+    // Sheet copy shown to recipients; falls back to client defaults when null.
+    title: varchar('title', { length: 120 }),
+    description: text('description'),
+    createdBy: uuid('createdBy'),
+    status: varchar('status', { length: 20 })
+      .$type<'draft' | 'allocated' | 'closed'>()
+      .notNull()
+      .default('draft'),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    createdByFk: foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'gift_campaigns_created_by_users_id_fk',
+    }).onDelete('set null'),
+    statusIdx: index('gift_campaigns_status_idx').on(table.status, table.createdAt),
+  })
+);
+
+// Individual Apple offer codes. Distribution funnel stops at `shownAt`:
+// redemption truth lives with Apple, not here.
+export const giftCodes = pgTable(
+  'gift_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    campaignId: uuid('campaignId').notNull(),
+    code: text('code').notNull().unique(),
+    expiresAt: timestamp('expiresAt', { withTimezone: true, precision: 6 }).notNull(),
+    userid: uuid('userid'),
+    allocatedAt: timestamp('allocatedAt', { withTimezone: true, precision: 6 }),
+    shownAt: timestamp('shownAt', { withTimezone: true, precision: 6 }),
+    status: varchar('status', { length: 20 })
+      .$type<'available' | 'allocated'>()
+      .notNull()
+      .default('available'),
+    createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => ({
+    campaignFk: foreignKey({
+      columns: [table.campaignId],
+      foreignColumns: [giftCampaigns.id],
+      name: 'gift_codes_campaign_id_gift_campaigns_id_fk',
+    }).onDelete('cascade'),
+    useridFk: foreignKey({
+      columns: [table.userid],
+      foreignColumns: [users.id],
+      name: 'gift_codes_userid_users_id_fk',
+    }).onDelete('set null'),
+    useridIdx: index('gift_codes_userid_idx').on(table.userid),
+    campaignStatusIdx: index('gift_codes_campaign_status_idx').on(table.campaignId, table.status),
+  })
+);
+
+export type GiftCampaign = typeof giftCampaigns.$inferSelect;
+export type NewGiftCampaign = typeof giftCampaigns.$inferInsert;
+export type GiftCode = typeof giftCodes.$inferSelect;
+export type NewGiftCode = typeof giftCodes.$inferInsert;

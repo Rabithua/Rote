@@ -309,6 +309,13 @@
    "when": 1794552376000,
    "tag": "0043_flatten_user_roles",
    "breakpoints": true
+  },
+  {
+   "idx": 45,
+   "version": "7",
+   "when": 1794576925959,
+   "tag": "0045_lean_devos",
+   "breakpoints": true
   }
  ]
 }
