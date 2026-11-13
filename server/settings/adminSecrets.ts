@@ -115,3 +115,87 @@ export function resolveStorageSecret(
   }
   return existingValue('secretAccessKey', (existing || {}) as SecretRecord);
 }
+
+/// notification 组：vapidPrivateKey + bark key + http headers 属于实例级机密
+export function maskNotificationSecretsForAdmin(
+  config: SecretRecord | undefined | null
+): SecretRecord | undefined | null {
+  if (!config || typeof config !== 'object') return config;
+  const next = { ...config };
+  if (typeof next.vapidPrivateKey === 'string' && next.vapidPrivateKey) {
+    next.vapidPrivateKey = MASKED_SECRET;
+  }
+  if (next.adminHooks && typeof next.adminHooks === 'object') {
+    const hooks = next.adminHooks as SecretRecord;
+    if (Array.isArray(hooks.channels)) {
+      next.adminHooks = {
+        ...hooks,
+        channels: hooks.channels.map(maskHookChannelSecrets),
+      };
+    }
+  }
+  return next;
+}
+
+function maskHookChannelSecrets(channel: SecretRecord): SecretRecord {
+  const next = { ...channel };
+  if (typeof next.key === 'string' && next.key) next.key = MASKED_SECRET;
+  if (next.headers && typeof next.headers === 'object') {
+    // 整组头视为机密；保存时占位符还原为已存头
+    next.headers = MASKED_SECRET;
+  }
+  return next;
+}
+
+export function resolveNotificationSecrets(
+  incoming: SecretRecord | undefined | null,
+  existing: SecretRecord | undefined | null
+): SecretRecord | undefined | null {
+  if (!incoming || typeof incoming !== 'object') return incoming;
+  const prior = existing && typeof existing === 'object' ? existing : {};
+  const next = { ...incoming };
+
+  if (
+    (next.vapidPrivateKey === MASKED_SECRET ||
+      next.vapidPrivateKey === '' ||
+      next.vapidPrivateKey === undefined) &&
+    typeof prior.vapidPrivateKey === 'string' &&
+    prior.vapidPrivateKey
+  ) {
+    next.vapidPrivateKey = prior.vapidPrivateKey;
+  }
+
+  const priorHooks = prior.adminHooks as SecretRecord | undefined;
+  const incomingHooks = next.adminHooks as SecretRecord | undefined;
+  if (incomingHooks && typeof incomingHooks === 'object' && Array.isArray(incomingHooks.channels)) {
+    const priorChannels = Array.isArray(priorHooks?.channels)
+      ? (priorHooks.channels as SecretRecord[])
+      : [];
+    const priorById = new Map(priorChannels.map((channel) => [channel.id, channel]));
+    next.adminHooks = {
+      ...incomingHooks,
+      channels: incomingHooks.channels.map((channel) => {
+        const ch = channel as SecretRecord;
+        if (!ch || typeof ch !== 'object') return channel;
+        const priorChannel = priorById.get(ch.id) as SecretRecord | undefined;
+        const resolved = { ...ch };
+        if (
+          (resolved.key === MASKED_SECRET || resolved.key === '' || resolved.key === undefined) &&
+          typeof priorChannel?.key === 'string' &&
+          priorChannel.key
+        ) {
+          resolved.key = priorChannel.key;
+        }
+        if (
+          resolved.headers === MASKED_SECRET &&
+          priorChannel?.headers &&
+          typeof priorChannel.headers === 'object'
+        ) {
+          resolved.headers = priorChannel.headers;
+        }
+        return resolved;
+      }),
+    };
+  }
+  return next;
+}

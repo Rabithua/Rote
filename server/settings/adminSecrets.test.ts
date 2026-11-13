@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  maskNotificationSecretsForAdmin,
   maskOAuthSecretsForAdmin,
   maskStorageSecretForAdmin,
   oauthProviderCredentialChanges,
   resolveMaskedOAuthProviderSecrets,
+  resolveNotificationSecrets,
   resolveStorageSecret,
 } from './adminSecrets';
 
@@ -114,6 +116,35 @@ describe('admin secret masking', () => {
       { oauth: { enabled: true, providers: {} } }
     );
     expect(resolved.providers.apple.privateKey).toBe('');
+  });
+
+  it('masks notification secrets and resolves placeholders per channel', () => {
+    const existing = {
+      vapidPublicKey: 'vapid-public',
+      vapidPrivateKey: 'vapid-private',
+      adminHooks: {
+        enabled: true,
+        channels: [{ id: 'hook-1', name: 'Hook', type: 'bark', key: 'bark-key', enabled: true }],
+      },
+    };
+    const masked = maskNotificationSecretsForAdmin(existing);
+    expect(masked.vapidPublicKey).toBe('vapid-public');
+    expect(masked.vapidPrivateKey).toBe('********');
+    expect(masked.adminHooks.channels[0].key).toBe('********');
+
+    const resolved = resolveNotificationSecrets(
+      {
+        vapidPublicKey: 'vapid-public',
+        vapidPrivateKey: '********',
+        adminHooks: {
+          enabled: true,
+          channels: [{ id: 'hook-1', name: 'Hook', type: 'bark', key: '********', enabled: true }],
+        },
+      },
+      existing
+    );
+    expect(resolved.vapidPrivateKey).toBe('vapid-private');
+    expect(resolved.adminHooks.channels[0].key).toBe('bark-key');
   });
 
   it('resolves masked or empty storage secrets back to the stored value', () => {
