@@ -239,7 +239,8 @@
         "email": "メールアドレス",
         "emailPlaceholder": "someone@mail.com",
         "nickname": "ニックネーム",
-        "nicknamePlaceholder": "ニックネーム"
+        "nicknamePlaceholder": "ニックネーム",
+        "usernamePlaceholder": "ユーザー名"
       },
       "buttons": {
         "login": "ログイン",

@@ -239,7 +239,8 @@
         "email": "Email",
         "emailPlaceholder": "someone@mail.com",
         "nickname": "Nickname",
-        "nicknamePlaceholder": "nickname"
+        "nicknamePlaceholder": "nickname",
+        "usernamePlaceholder": "Username"
       },
       "buttons": {
         "login": "Login",

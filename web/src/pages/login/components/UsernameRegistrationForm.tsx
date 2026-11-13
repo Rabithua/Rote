@@ -46,6 +46,7 @@ export function UsernameRegistrationForm({
           className="text-md rounded-md font-mono"
           value={username}
           disabled={disabled}
+          placeholder={t('fields.usernamePlaceholder')}
           onChange={(event) => onUsernameChange(event.target.value)}
           aria-describedby="signup-username-hint"
         />

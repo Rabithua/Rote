@@ -239,7 +239,8 @@
         "email": "邮箱",
         "emailPlaceholder": "someone@mail.com",
         "nickname": "昵称",
-        "nicknamePlaceholder": "昵称"
+        "nicknamePlaceholder": "昵称",
+        "usernamePlaceholder": "用户名"
       },
       "buttons": {
         "login": "登录",
