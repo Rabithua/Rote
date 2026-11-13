@@ -11,6 +11,16 @@ export function requireAuth(c: HonoContext) {
   return auth;
 }
 
+// Role check on top of OAuth scopes: scopes gate content access, super_admin
+// gates server administration (gift campaigns and future admin tools).
+export function requireSuperAdmin(c: HonoContext) {
+  const user = c.get('user');
+  if (!user || user.role !== 'super_admin') {
+    throw new Error(mcpErrors.superAdminRequired);
+  }
+  return user;
+}
+
 export function assertUuid(id: unknown, label: string): string {
   if (typeof id !== 'string' || !isValidUUID(id)) {
     throw new Error(mcpErrors.invalidUuidPrefix + label);

@@ -229,6 +229,37 @@ jobs:
       - run: bun run test -- src/features/attachments src/utils/uploadHelpers.test.ts src/utils/__tests__/directUpload.test.ts src/utils/directUpload.test.ts
         working-directory: web
 
+  gift-redemption:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17-trixie
+        env:
+          POSTGRES_USER: rote
+          POSTGRES_PASSWORD: gift_test
+          POSTGRES_DB: rote_gift_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRESQL_URL: postgres://rote:gift_test@127.0.0.1:5432/rote_gift_test
+      GIFT_TEST_DATABASE_URL: postgres://rote:gift_test@127.0.0.1:5432/rote_gift_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+        working-directory: server
+      - run: bun run db:migrate:programmatic
+        working-directory: server
+      - run: bun test gift mcp/gift.test.ts
+        working-directory: server
+
   ai-agent-streaming:
     runs-on: ubuntu-latest
     steps:

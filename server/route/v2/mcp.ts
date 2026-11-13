@@ -114,7 +114,7 @@ mcpRouter.post('/', authenticateMcpOAuth, async (c: HonoContext) => {
         const scopes = auth?.scopes || [];
         return c.json(
           jsonRpcResult(body.id, {
-            tools: getToolsForScopes(scopes).map((tool) => ({
+            tools: getToolsForScopes(scopes, c.get('user')).map((tool) => ({
               name: tool.name,
               description: tool.description,
               inputSchema: tool.inputSchema,
@@ -143,6 +143,12 @@ mcpRouter.post('/', authenticateMcpOAuth, async (c: HonoContext) => {
             jsonRpcError(body.id, -32001, mcpErrors.insufficientScope, { missing }),
             403
           );
+        }
+        if (tool.requiredRole != null) {
+          const user = c.get('user');
+          if (!user || user.role !== tool.requiredRole) {
+            return c.json(jsonRpcError(body.id, -32002, mcpErrors.superAdminRequired), 403);
+          }
         }
 
         const result = await tool.handler(c, body.params?.arguments || {});

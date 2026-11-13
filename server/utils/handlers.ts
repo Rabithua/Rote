@@ -3,6 +3,7 @@ import { ShareNoteNotFound } from '../noteShares/repository';
 import { HonoContext } from '../types/hono';
 import { ResourcePolicyError } from '../resources/errors';
 import { PushApiError } from '../push/errors';
+import { GiftApiError } from '../gift/errors';
 import { HTTPException } from 'hono/http-exception';
 
 function containsSensitiveServerDetails(message: string): boolean {
@@ -95,6 +96,17 @@ export const errorHandler = async (err: Error, c: HonoContext) => {
   }
 
   if (err instanceof PushApiError) {
+    return c.json(
+      {
+        code: 1,
+        message: err.code,
+        data: null,
+      },
+      err.status
+    );
+  }
+
+  if (err instanceof GiftApiError) {
     return c.json(
       {
         code: 1,

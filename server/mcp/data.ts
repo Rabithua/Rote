@@ -10,7 +10,7 @@ export const dataTools: McpTool[] = [
       clientId: auth.clientId,
       userId: auth.userId,
       scopes: auth.scopes,
-      tools: getToolDefinitionsForScopes(auth.scopes).map((tool) => tool.name),
+      tools: getToolDefinitionsForScopes(auth.scopes, c.get('user')).map((tool) => tool.name),
     };
   }),
   defineMcpTool('tags_get', async (c) => await getMyTags(requireAuth(c).userId)),

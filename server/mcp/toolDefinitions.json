@@ -2,7 +2,9 @@
   {
     "name": "notes_create",
     "description": "Create a Rote note for the current user.",
-    "requiredScopes": ["notes:write"],
+    "requiredScopes": [
+      "notes:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -14,7 +16,10 @@
         },
         "state": {
           "type": "string",
-          "enum": ["private", "public"]
+          "enum": [
+            "private",
+            "public"
+          ]
         },
         "tags": {
           "type": "array",
@@ -44,14 +49,18 @@
           "maxItems": 1
         }
       },
-      "required": ["content"],
+      "required": [
+        "content"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_list",
     "description": "List notes owned by the current user.",
-    "requiredScopes": ["notes:read"],
+    "requiredScopes": [
+      "notes:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -86,7 +95,9 @@
   {
     "name": "notes_search",
     "description": "Search notes owned by the current user.",
-    "requiredScopes": ["notes:read"],
+    "requiredScopes": [
+      "notes:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -117,14 +128,18 @@
           "type": "boolean"
         }
       },
-      "required": ["keyword"],
+      "required": [
+        "keyword"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_get",
     "description": "Get a note by ID if it is public or owned by the current user.",
-    "requiredScopes": ["notes:read"],
+    "requiredScopes": [
+      "notes:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -133,14 +148,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_batch_get",
     "description": "Batch get public or owned notes by IDs.",
-    "requiredScopes": ["notes:read"],
+    "requiredScopes": [
+      "notes:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -153,14 +172,18 @@
           "minItems": 1
         }
       },
-      "required": ["ids"],
+      "required": [
+        "ids"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_update",
     "description": "Update a note owned by the current user.",
-    "requiredScopes": ["notes:write"],
+    "requiredScopes": [
+      "notes:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -219,14 +242,18 @@
           "maxItems": 1
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_delete",
     "description": "Delete a note owned by the current user.",
-    "requiredScopes": ["notes:delete"],
+    "requiredScopes": [
+      "notes:delete"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -235,14 +262,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_share_get",
     "description": "Get the current share-link state for a note owned by the current user.",
-    "requiredScopes": ["notes:share"],
+    "requiredScopes": [
+      "notes:share"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -251,14 +282,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_share_create",
     "description": "Create or return the share link for a note owned by the current user.",
-    "requiredScopes": ["notes:share"],
+    "requiredScopes": [
+      "notes:share"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -267,14 +302,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "notes_share_revoke",
     "description": "Revoke the share link for a note owned by the current user.",
-    "requiredScopes": ["notes:share"],
+    "requiredScopes": [
+      "notes:share"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -283,14 +322,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "articles_create",
     "description": "Create an article for the current user.",
-    "requiredScopes": ["articles:write"],
+    "requiredScopes": [
+      "articles:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -298,14 +341,18 @@
           "type": "string"
         }
       },
-      "required": ["content"],
+      "required": [
+        "content"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "articles_list",
     "description": "List current user articles.",
-    "requiredScopes": ["articles:read"],
+    "requiredScopes": [
+      "articles:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -328,7 +375,9 @@
   {
     "name": "articles_get",
     "description": "Get an article by ID if owned or referenced by a public note.",
-    "requiredScopes": ["articles:read"],
+    "requiredScopes": [
+      "articles:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -337,14 +386,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "articles_get_by_note",
     "description": "Get the article card bound to a note.",
-    "requiredScopes": ["articles:read"],
+    "requiredScopes": [
+      "articles:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -353,14 +406,18 @@
           "format": "uuid"
         }
       },
-      "required": ["noteId"],
+      "required": [
+        "noteId"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "articles_update",
     "description": "Update an article owned by the current user.",
-    "requiredScopes": ["articles:write"],
+    "requiredScopes": [
+      "articles:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -372,14 +429,18 @@
           "type": "string"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "articles_delete",
     "description": "Delete an article owned by the current user.",
-    "requiredScopes": ["articles:delete"],
+    "requiredScopes": [
+      "articles:delete"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -388,14 +449,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "reactions_add",
     "description": "Add a reaction to a note as the current user.",
-    "requiredScopes": ["reactions:write"],
+    "requiredScopes": [
+      "reactions:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -410,14 +475,19 @@
           "type": "object"
         }
       },
-      "required": ["type", "roteid"],
+      "required": [
+        "type",
+        "roteid"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "reactions_remove",
     "description": "Remove the current user reaction from a note.",
-    "requiredScopes": ["reactions:delete"],
+    "requiredScopes": [
+      "reactions:delete"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -429,14 +499,19 @@
           "format": "uuid"
         }
       },
-      "required": ["type", "roteid"],
+      "required": [
+        "type",
+        "roteid"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "profile_get",
     "description": "Get current user profile.",
-    "requiredScopes": ["profile:read"],
+    "requiredScopes": [
+      "profile:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -447,7 +522,9 @@
   {
     "name": "profile_update",
     "description": "Update current user profile.",
-    "requiredScopes": ["profile:write"],
+    "requiredScopes": [
+      "profile:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -493,7 +570,9 @@
   {
     "name": "tags_get",
     "description": "Get current user tag statistics.",
-    "requiredScopes": ["stats:read"],
+    "requiredScopes": [
+      "stats:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -504,7 +583,9 @@
   {
     "name": "heatmap_get",
     "description": "Get current user activity heatmap between two dates.",
-    "requiredScopes": ["stats:read"],
+    "requiredScopes": [
+      "stats:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -515,14 +596,19 @@
           "type": "string"
         }
       },
-      "required": ["startDate", "endDate"],
+      "required": [
+        "startDate",
+        "endDate"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "statistics_get",
     "description": "Get current user note, article, and attachment statistics.",
-    "requiredScopes": ["stats:read"],
+    "requiredScopes": [
+      "stats:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -533,7 +619,9 @@
   {
     "name": "settings_get",
     "description": "Get current user settings.",
-    "requiredScopes": ["settings:read"],
+    "requiredScopes": [
+      "settings:read"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {},
@@ -544,7 +632,9 @@
   {
     "name": "settings_update",
     "description": "Update current user settings.",
-    "requiredScopes": ["settings:write"],
+    "requiredScopes": [
+      "settings:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -559,7 +649,9 @@
   {
     "name": "attachments_presign_upload",
     "description": "Create presigned upload URLs for image, video, or Live Photo attachments.",
-    "requiredScopes": ["attachments:write"],
+    "requiredScopes": [
+      "attachments:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -582,7 +674,11 @@
               },
               "mediaKind": {
                 "type": "string",
-                "enum": ["image", "video", "livePhoto"]
+                "enum": [
+                  "image",
+                  "video",
+                  "livePhoto"
+                ]
               },
               "pairedVideo": {
                 "type": "object",
@@ -598,23 +694,33 @@
                     "minimum": 1
                   }
                 },
-                "required": ["contentType", "size"],
+                "required": [
+                  "contentType",
+                  "size"
+                ],
                 "additionalProperties": false
               }
             },
-            "required": ["contentType", "size"],
+            "required": [
+              "contentType",
+              "size"
+            ],
             "additionalProperties": false
           }
         }
       },
-      "required": ["files"],
+      "required": [
+        "files"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "attachments_finalize_upload",
     "description": "Finalize uploaded attachment objects and create attachment records.",
-    "requiredScopes": ["attachments:write"],
+    "requiredScopes": [
+      "attachments:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -630,14 +736,18 @@
           "minItems": 1
         }
       },
-      "required": ["attachments"],
+      "required": [
+        "attachments"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "attachments_sort",
     "description": "Update attachment order for a note owned by the current user.",
-    "requiredScopes": ["attachments:write"],
+    "requiredScopes": [
+      "attachments:write"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -654,14 +764,19 @@
           "minItems": 1
         }
       },
-      "required": ["noteId", "attachmentIds"],
+      "required": [
+        "noteId",
+        "attachmentIds"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "attachments_delete_one",
     "description": "Delete one attachment owned by the current user.",
-    "requiredScopes": ["attachments:delete"],
+    "requiredScopes": [
+      "attachments:delete"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -670,14 +785,18 @@
           "format": "uuid"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "additionalProperties": false
     }
   },
   {
     "name": "attachments_delete_many",
     "description": "Delete multiple attachments owned by the current user.",
-    "requiredScopes": ["attachments:delete"],
+    "requiredScopes": [
+      "attachments:delete"
+    ],
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -690,7 +809,189 @@
           "minItems": 1
         }
       },
-      "required": ["ids"],
+      "required": [
+        "ids"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gift_import_codes",
+    "description": "Import Apple offer codes into a gift campaign; the campaign is created on first import. Codes must not be expired. Super admin only.",
+    "requiredScopes": [],
+    "requiredRole": "super_admin",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "campaignName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Sheet headline shown to recipients. Omit to use the client default."
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Sheet body text shown to recipients (also records who the campaign targets and why)."
+        },
+        "codes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50000,
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "expiresAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "code",
+              "expiresAt"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "campaignName",
+        "codes"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gift_allocate",
+    "description": "Allocate one gift code per recipient from a campaign pool. The recipient list is explicit (usernames or userids); eligibility targeting is decided by the caller, not this tool. Already-allocated recipients are skipped; fails when too few unexpired codes remain. Super admin only.",
+    "requiredScopes": [],
+    "requiredRole": "super_admin",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "usernames": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "maxItems": 5000
+        },
+        "userids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "minItems": 1,
+          "maxItems": 5000
+        }
+      },
+      "required": [
+        "campaignId"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "usernames"
+          ]
+        },
+        {
+          "required": [
+            "userids"
+          ]
+        }
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gift_status",
+    "description": "Gift campaign funnel: total/shown plus live available and allocated-active counts, one expired bucket (covers expired-unallocated and expired-unshown), and recipients whose codes expire within 7 days while unshown. Super admin only.",
+    "requiredScopes": [],
+    "requiredRole": "super_admin",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "campaignId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gift_detail",
+    "description": "Per-code gift campaign detail: recipient, username, status, expiry, allocation and shown timestamps. Returns at most 10,000 rows; truncated=true means the campaign holds more (check gift_status totals instead). Super admin only.",
+    "requiredScopes": [],
+    "requiredRole": "super_admin",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "campaignId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "gift_grant",
+    "description": "Grant one additional gift code from a campaign pool to a single user (by username or userid), even if they already hold one. Super admin only.",
+    "requiredScopes": [],
+    "requiredRole": "super_admin",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "userid": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "campaignId"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "username"
+          ]
+        },
+        {
+          "required": [
+            "userid"
+          ]
+        }
+      ],
       "additionalProperties": false
     }
   }
