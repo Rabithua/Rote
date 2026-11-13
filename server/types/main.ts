@@ -34,11 +34,9 @@ export interface NotificationOptions {
   requireInteraction?: boolean;
 }
 
-// 用户角色枚举
+// 用户角色枚举（扁平双层：普通用户 + 超级管理员）
 export enum UserRole {
   USER = 'user',
-  ADMIN = 'admin',
-  MODERATOR = 'moderator',
   SUPER_ADMIN = 'super_admin',
 }
 
@@ -57,18 +55,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermissions> = {
     canManageSystem: false,
     canModerateContent: false,
     canAccessAdminPanel: false,
-  },
-  [UserRole.MODERATOR]: {
-    canManageUsers: false,
-    canManageSystem: false,
-    canModerateContent: true,
-    canAccessAdminPanel: false,
-  },
-  [UserRole.ADMIN]: {
-    canManageUsers: true,
-    canManageSystem: false,
-    canModerateContent: true,
-    canAccessAdminPanel: true,
   },
   [UserRole.SUPER_ADMIN]: {
     canManageUsers: true,

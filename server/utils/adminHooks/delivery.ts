@@ -89,7 +89,7 @@ async function sendAdminPwa(envelope: AdminHookEnvelope) {
     },
   });
   const adminSubscriptions = subscriptions.filter((subscription) =>
-    ['admin', 'super_admin'].includes(subscription.user?.role)
+    ['super_admin'].includes(subscription.user?.role)
   );
 
   let success = 0;

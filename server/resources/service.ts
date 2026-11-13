@@ -133,7 +133,7 @@ export async function cancelPendingUploadReservationsForUser(
 }
 
 function isRoleExempt(role: string): boolean {
-  return role === 'admin' || role === 'super_admin';
+  return role === 'super_admin';
 }
 
 function requestedOfficialStorageEnforcement(): 'observe' | 'enforce' {

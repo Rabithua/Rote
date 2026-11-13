@@ -48,8 +48,6 @@ const ADMIN_DEFAULTS: Record<CapabilityKey, boolean> = {
 
 export const ROLE_DEFAULT_CAPABILITIES: Record<string, Record<CapabilityKey, boolean>> = {
   [UserRole.USER]: USER_DEFAULTS,
-  [UserRole.MODERATOR]: USER_DEFAULTS,
-  [UserRole.ADMIN]: ADMIN_DEFAULTS,
   [UserRole.SUPER_ADMIN]: ADMIN_DEFAULTS,
 };
 

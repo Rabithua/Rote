@@ -3,26 +3,21 @@ import { UserRole } from '../types/main';
 import { buildRoleCapabilitySettings, resolveEffectiveCapabilities } from '../authz/capabilities';
 
 describe('capability resolution', () => {
-  it('keeps AI chat denied for users and allowed for admins by default', () => {
+  it('keeps AI chat denied for users and allowed for super admins by default', () => {
     const userCapabilities = resolveEffectiveCapabilities({ role: UserRole.USER });
-    const moderatorCapabilities = resolveEffectiveCapabilities({ role: UserRole.MODERATOR });
-    const adminCapabilities = resolveEffectiveCapabilities({ role: UserRole.ADMIN });
+    const superCapabilities = resolveEffectiveCapabilities({ role: UserRole.SUPER_ADMIN });
 
     expect(userCapabilities['ai.chat'].allowed).toBe(false);
-    expect(moderatorCapabilities['ai.chat'].allowed).toBe(false);
-    expect(adminCapabilities['ai.chat'].allowed).toBe(true);
+    expect(superCapabilities['ai.chat'].allowed).toBe(true);
   });
 
-  it('denies unlimited storage for users and moderators but allows it for admins by default', () => {
+  it('denies unlimited storage for users but allows it for super admins by default', () => {
     expect(
       resolveEffectiveCapabilities({ role: UserRole.USER })['resource.storage.unlimited']
     ).toEqual({ allowed: false, source: 'role_default', role: UserRole.USER });
     expect(
-      resolveEffectiveCapabilities({ role: UserRole.MODERATOR })['resource.storage.unlimited']
-    ).toEqual({ allowed: false, source: 'role_default', role: UserRole.MODERATOR });
-    expect(
-      resolveEffectiveCapabilities({ role: UserRole.ADMIN })['resource.storage.unlimited']
-    ).toEqual({ allowed: true, source: 'role_default', role: UserRole.ADMIN });
+      resolveEffectiveCapabilities({ role: UserRole.SUPER_ADMIN })['resource.storage.unlimited']
+    ).toEqual({ allowed: true, source: 'role_default', role: UserRole.SUPER_ADMIN });
   });
 
   it('preserves inherit for missing role policies while reporting the effective default', () => {
@@ -34,21 +29,15 @@ describe('capability resolution', () => {
       },
     ]);
     const user = settings.find((setting) => setting.role === UserRole.USER)!;
-    const moderator = settings.find((setting) => setting.role === UserRole.MODERATOR)!;
-    const admin = settings.find((setting) => setting.role === UserRole.ADMIN)!;
+    const superAdmin = settings.find((setting) => setting.role === UserRole.SUPER_ADMIN)!;
 
     expect(user.capabilities['resource.storage.unlimited']).toBe('allow');
     expect(user.effective['resource.storage.unlimited']).toMatchObject({
       allowed: true,
       source: 'role_policy',
     });
-    expect(moderator.capabilities['resource.storage.unlimited']).toBe('inherit');
-    expect(moderator.effective['resource.storage.unlimited']).toMatchObject({
-      allowed: false,
-      source: 'role_default',
-    });
-    expect(admin.capabilities['resource.storage.unlimited']).toBe('inherit');
-    expect(admin.effective['resource.storage.unlimited']).toMatchObject({
+    expect(superAdmin.capabilities['resource.storage.unlimited']).toBe('inherit');
+    expect(superAdmin.effective['resource.storage.unlimited']).toMatchObject({
       allowed: true,
       source: 'role_default',
     });
@@ -220,15 +209,15 @@ describe('capability resolution', () => {
 
   it('keeps non-subscription permission DTO fields backward-compatible', () => {
     const capabilities = resolveEffectiveCapabilities({
-      role: UserRole.ADMIN,
+      role: UserRole.USER,
       userOverrides: { 'ai.chat': 'allow' },
     });
-    const permissionsMeData = JSON.parse(JSON.stringify({ role: UserRole.ADMIN, capabilities }));
+    const permissionsMeData = JSON.parse(JSON.stringify({ role: UserRole.USER, capabilities }));
 
     expect(permissionsMeData.capabilities['ai.chat']).toEqual({
       allowed: true,
       source: 'user_override',
-      role: UserRole.ADMIN,
+      role: UserRole.USER,
     });
     expect('validUntil' in permissionsMeData.capabilities['ai.chat']).toBe(false);
   });

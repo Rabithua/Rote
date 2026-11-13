@@ -32,7 +32,7 @@ export async function hasAdminUser(): Promise<boolean> {
   const [result] = await db
     .select({ count: count() })
     .from(users)
-    .where(inArray(users.role, ['admin', 'super_admin']));
+    .where(inArray(users.role, ['super_admin']));
   return (result?.count || 0) > 0;
 }
 

@@ -1,5 +1,5 @@
 import { HonoContext } from '../types/hono';
-import { ROLE_PERMISSIONS, UserRole } from '../types/main';
+import { UserRole } from '../types/main';
 import { getSafeUser } from '../utils/dbMethods';
 import { verifyAccessToken } from '../utils/jwt';
 
@@ -69,7 +69,7 @@ export function createOptionalJWTAuthenticationMiddleware(
 
 export const optionalJWT = createOptionalJWTAuthenticationMiddleware();
 
-// 角色验证中间件
+// 角色验证中间件（扁平双层：user < super_admin）
 export function requireRole(requiredRole: UserRole) {
   return async (c: HonoContext, next: () => Promise<void>) => {
     const user = c.get('user');
@@ -78,7 +78,7 @@ export function requireRole(requiredRole: UserRole) {
     }
 
     const userRole = (user as any).role as UserRole;
-    const roleHierarchy = [UserRole.USER, UserRole.MODERATOR, UserRole.ADMIN, UserRole.SUPER_ADMIN];
+    const roleHierarchy = [UserRole.USER, UserRole.SUPER_ADMIN];
 
     const userRoleIndex = roleHierarchy.indexOf(userRole);
     const requiredRoleIndex = roleHierarchy.indexOf(requiredRole);
@@ -95,36 +95,6 @@ export function requireRole(requiredRole: UserRole) {
 
     await next();
   };
-}
-
-// 权限验证中间件
-export function requirePermission(permission: keyof (typeof ROLE_PERMISSIONS)[UserRole]) {
-  return async (c: HonoContext, next: () => Promise<void>) => {
-    const user = c.get('user');
-    if (!user) {
-      return c.json({ code: 401, message: 'Authentication required' }, 401);
-    }
-
-    const userRole = (user as any).role as UserRole;
-    const permissions = ROLE_PERMISSIONS[userRole];
-
-    if (!permissions[permission]) {
-      return c.json(
-        {
-          code: 403,
-          message: `Insufficient permissions. Required permission: ${permission}`,
-        },
-        403
-      );
-    }
-
-    await next();
-  };
-}
-
-// 管理员权限验证中间件
-export async function requireAdmin(c: HonoContext, next: () => Promise<void>) {
-  return requireRole(UserRole.ADMIN)(c, next);
 }
 
 // 超级管理员权限验证中间件

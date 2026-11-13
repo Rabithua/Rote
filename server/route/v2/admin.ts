@@ -1,12 +1,7 @@
 import { saveAiSettings, getStoredAiConfig } from '../../embeddings/configStore';
 import { EmbeddingError } from '../../embeddings/errors';
 import { Hono } from 'hono';
-import {
-  authenticateJWT,
-  optionalJWT,
-  requireAdmin,
-  requireSuperAdmin,
-} from '../../middleware/jwtAuth';
+import { authenticateJWT, optionalJWT, requireSuperAdmin } from '../../middleware/jwtAuth';
 import type {
   AiConfig,
   ConfigTestResult,
@@ -66,7 +61,7 @@ const adminRouter = new Hono<{ Variables: HonoVariables }>();
 
 adminRouter.route('/', adminSetupRouter);
 
-adminRouter.post('/hooks/test', authenticateJWT, requireAdmin, async (c: HonoContext) => {
+adminRouter.post('/hooks/test', authenticateJWT, requireSuperAdmin, async (c: HonoContext) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     const channel = body.channel
@@ -129,7 +124,7 @@ const sanitizeSettingsForAdmin = (configs: Record<string, any>) => ({
 });
 
 // 获取所有配置（管理员）
-adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContext) => {
+adminRouter.get('/settings', authenticateJWT, requireSuperAdmin, async (c: HonoContext) => {
   try {
     const group = c.req.query('group');
 
@@ -169,7 +164,7 @@ adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
 });
 
 // 更新配置（管理员）
-adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContext) => {
+adminRouter.put('/settings', authenticateJWT, requireSuperAdmin, async (c: HonoContext) => {
   try {
     const body = await c.req.json();
     const { group } = body as { group: string; config: any };
@@ -300,7 +295,7 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
         );
       }
       // 验证 defaultUserRole 必须是有效角色
-      if (config.defaultUserRole && !['user', 'moderator'].includes(config.defaultUserRole)) {
+      if (config.defaultUserRole && config.defaultUserRole !== 'user') {
         return c.json(
           createResponse(null, 'Default user role must be either "user" or "moderator"'),
           400
@@ -370,7 +365,7 @@ adminRouter.post('/settings/test', optionalJWT, async (c: HonoContext) => {
       if (!user) {
         return c.json(createResponse(null, 'Authentication required'), 401);
       }
-      if (!['admin', 'super_admin'].includes(user.role)) {
+      if (user.role !== 'super_admin') {
         return c.json(createResponse(null, 'Only admin can test configuration'), 403);
       }
     }
@@ -470,75 +465,85 @@ adminRouter.post(
 );
 
 // 自动检测当前 URL（管理员）
-adminRouter.get('/settings/detect-urls', authenticateJWT, requireAdmin, async (c: HonoContext) => {
-  try {
-    // 动态检测当前 API URL（始终自动检测）
-    const detectedApiUrl = getApiUrl(c);
+adminRouter.get(
+  '/settings/detect-urls',
+  authenticateJWT,
+  requireSuperAdmin,
+  async (c: HonoContext) => {
+    try {
+      // 动态检测当前 API URL（始终自动检测）
+      const detectedApiUrl = getApiUrl(c);
 
-    // 获取当前站点配置
-    const currentSiteConfig = (await getConfig('site')) as any;
-    const currentFrontendUrl = currentSiteConfig?.frontendUrl || 'http://localhost:3001';
+      // 获取当前站点配置
+      const currentSiteConfig = (await getConfig('site')) as any;
+      const currentFrontendUrl = currentSiteConfig?.frontendUrl || 'http://localhost:3001';
 
-    return c.json(
-      createResponse({
-        detected: {
-          apiUrl: detectedApiUrl,
-          frontendUrl: currentFrontendUrl,
-        },
-        current: {
-          frontendUrl: currentSiteConfig?.frontendUrl || '',
-        },
-      }),
-      200
-    );
-  } catch (error: any) {
-    console.error('Failed to detect URLs:', error);
-    return c.json(createResponse(null, 'Failed to detect URLs'), 500);
+      return c.json(
+        createResponse({
+          detected: {
+            apiUrl: detectedApiUrl,
+            frontendUrl: currentFrontendUrl,
+          },
+          current: {
+            frontendUrl: currentSiteConfig?.frontendUrl || '',
+          },
+        }),
+        200
+      );
+    } catch (error: any) {
+      console.error('Failed to detect URLs:', error);
+      return c.json(createResponse(null, 'Failed to detect URLs'), 500);
+    }
   }
-});
+);
 
 // 更新 URL 配置（管理员）
-adminRouter.post('/settings/update-urls', authenticateJWT, requireAdmin, async (c: HonoContext) => {
-  try {
-    const body = await c.req.json();
-    const { frontendUrl } = body as { frontendUrl?: string };
+adminRouter.post(
+  '/settings/update-urls',
+  authenticateJWT,
+  requireSuperAdmin,
+  async (c: HonoContext) => {
+    try {
+      const body = await c.req.json();
+      const { frontendUrl } = body as { frontendUrl?: string };
 
-    // 获取当前站点配置
-    const currentSiteConfig = await getConfig<SiteConfig>('site');
-    if (!currentSiteConfig) {
-      return c.json(createResponse(null, 'Site configuration not found'), 404);
-    }
+      // 获取当前站点配置
+      const currentSiteConfig = await getConfig<SiteConfig>('site');
+      if (!currentSiteConfig) {
+        return c.json(createResponse(null, 'Site configuration not found'), 404);
+      }
 
-    // 更新前端 URL 配置（API URL 始终自动检测，不需要更新）
-    const updatedConfig = await updateConfig<SiteConfig>(
-      'site',
-      (existing) => {
-        const latest = existing ?? currentSiteConfig;
-        return { ...latest, frontendUrl: frontendUrl || latest.frontendUrl };
-      },
-      { isRequired: true, isInitialized: true }
-    );
-
-    return c.json(
-      createResponse(
-        {
-          message: 'URL configuration updated successfully',
-          urls: {
-            frontendUrl: updatedConfig.frontendUrl,
-          },
+      // 更新前端 URL 配置（API URL 始终自动检测，不需要更新）
+      const updatedConfig = await updateConfig<SiteConfig>(
+        'site',
+        (existing) => {
+          const latest = existing ?? currentSiteConfig;
+          return { ...latest, frontendUrl: frontendUrl || latest.frontendUrl };
         },
-        'URL configuration updated successfully'
-      ),
-      200
-    );
-  } catch {
-    console.error('Failed to update URL configuration');
-    return c.json(createResponse(null, 'Failed to update URL configuration'), 500);
+        { isRequired: true, isInitialized: true }
+      );
+
+      return c.json(
+        createResponse(
+          {
+            message: 'URL configuration updated successfully',
+            urls: {
+              frontendUrl: updatedConfig.frontendUrl,
+            },
+          },
+          'URL configuration updated successfully'
+        ),
+        200
+      );
+    } catch {
+      console.error('Failed to update URL configuration');
+      return c.json(createResponse(null, 'Failed to update URL configuration'), 500);
+    }
   }
-});
+);
 
 // 刷新配置缓存（测试专用）
-adminRouter.post('/refresh-cache', authenticateJWT, requireAdmin, async (c: HonoContext) => {
+adminRouter.post('/refresh-cache', authenticateJWT, requireSuperAdmin, async (c: HonoContext) => {
   try {
     await refreshConfigCache();
     return c.json(createResponse(null, 'Configuration cache refreshed successfully'), 200);
