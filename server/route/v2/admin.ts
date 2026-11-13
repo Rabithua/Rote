@@ -12,6 +12,7 @@ import type {
   ConfigTestResult,
   NotificationConfig,
   SecurityConfig,
+  SecuritySettingsUpdate,
   SiteConfig,
 } from '../../types/config';
 import type { HonoContext, HonoVariables } from '../../types/hono';
@@ -19,6 +20,12 @@ import settingsMessages from '../../settings/messages.json';
 import { InvalidCustomMetaTags } from '../../settings/customMetaTags';
 import { applySiteHeadSettings, SiteHeadSettingsError } from '../../settings/siteHeadSettings';
 import { isSecurityKeyRotationScope } from '../../settings/securityKeys';
+import {
+  maskStorageSecretForAdmin,
+  oauthProviderCredentialChanges,
+  resolveMaskedOAuthProviderSecrets,
+  resolveStorageSecret,
+} from '../../settings/adminSecrets';
 import {
   mergeSecuritySettings,
   parseSecuritySettingsUpdate,
@@ -104,6 +111,7 @@ const sanitizeSettingsForAdmin = (configs: Record<string, any>) => ({
   ...configs,
   ...(configs.ai ? { ai: sanitizeAiConfig(configs.ai) } : {}),
   ...(configs.security ? { security: readSecuritySettings(configs.security) } : {}),
+  ...(configs.storage ? { storage: maskStorageSecretForAdmin(configs.storage) } : {}),
 });
 
 // 获取所有配置（管理员）
@@ -126,7 +134,9 @@ adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
               ? sanitizeAiConfig(config as AiConfig)
               : group === 'security'
                 ? readSecuritySettings(config)
-                : config,
+                : group === 'storage'
+                  ? maskStorageSecretForAdmin(config as Record<string, any>)
+                  : config,
         }),
         200
       );
@@ -167,10 +177,24 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
 
     if (group === 'security') {
       const patch = parseSecuritySettingsUpdate(config);
+      const existingSecurity = await getConfig('security');
+      if (
+        oauthProviderCredentialChanges(patch.oauth, existingSecurity) &&
+        user?.role !== 'super_admin'
+      ) {
+        return c.json(
+          createResponse(null, settingsMessages.oauth_credentials_super_admin_only),
+          403
+        );
+      }
+      const resolvedPatch = {
+        ...patch,
+        oauth: resolveMaskedOAuthProviderSecrets(patch.oauth, existingSecurity) ?? patch.oauth,
+      } as SecuritySettingsUpdate;
       const saved = await updateConfig<SecurityConfig>(
         'security',
         async (existing) => {
-          const merged = mergeSecuritySettings(existing || ({} as SecurityConfig), patch);
+          const merged = mergeSecuritySettings(existing || ({} as SecurityConfig), resolvedPatch);
           await validateSecuritySettings(merged);
           return merged;
         },
@@ -209,6 +233,15 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
 
     // 如果是存储配置，需要先验证配置是否可用
     if (group === 'storage') {
+      // 掩码占位符/空 secret 还原为已存值（管理端 UI 会把掩码原样回传）；
+      // 无已存值时按配置不完整处理，占位符永远不会被持久化。
+      const existingStorage = await getConfig('storage');
+      const resolvedSecret = resolveStorageSecret(config, existingStorage);
+      if (!resolvedSecret) {
+        return c.json(createResponse(null, 'Storage configuration is incomplete'), 400);
+      }
+      config = { ...config, secretAccessKey: resolvedSecret };
+
       // 验证存储配置字段是否完整
       if (
         !config.endpoint ||

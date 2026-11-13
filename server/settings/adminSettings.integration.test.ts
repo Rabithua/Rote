@@ -45,11 +45,20 @@ databaseDescribe(
         expect(all.status).toBe(200);
         const result = (await all.json()).data;
         expectNoSigningKeys(result.security);
-        expect(result.security.oauth).toEqual(security.oauth);
+        expect(result.security.oauth.enabled).toBe(security.oauth.enabled);
+        expect(result.security.oauth.providers.github.clientId).toBe(
+          security.oauth.providers.github.clientId
+        );
+        expect(result.security.oauth.providers.github.callbackUrl).toBe(
+          security.oauth.providers.github.callbackUrl
+        );
+        expect(result.security.oauth.providers.github.clientSecret).toBe('********');
         expect(result.notification).toEqual(notification);
         const single = await request('/settings?group=security', 'GET', role);
         expect(single.status).toBe(200);
-        expectNoSigningKeys((await single.json()).data.config);
+        const singleConfig = (await single.json()).data.config;
+        expectNoSigningKeys(singleConfig);
+        expect(singleConfig.oauth.providers.github.clientSecret).toBe('********');
       }
     });
 
@@ -285,6 +294,91 @@ databaseDescribe(
       expect(cached.sessionSecret).toBe(stored.sessionSecret);
       expect(config.getGlobalConfig('notification')).toEqual(keys);
     });
+    it('masks the storage secret for admins and super admins', async () => {
+      const storageFixture = {
+        endpoint: 'https://storage.example.test',
+        bucket: 'isolated-bucket',
+        accessKeyId: 'isolated-access-key',
+        secretAccessKey: 'isolated-secret-key',
+        urlPrefix: 'https://cdn.example.test',
+      };
+      expect(await config.setConfig('storage', storageFixture)).toBe(true);
+      for (const role of ['admin', 'super_admin'] as const) {
+        const response = await request('/settings?group=storage', 'GET', role);
+        expect(response.status).toBe(200);
+        const stored = (await response.json()).data.config;
+        expect(stored.accessKeyId).toBe(storageFixture.accessKeyId);
+        expect(stored.secretAccessKey).toBe('********');
+        expect(stored.secretAccessKey).not.toBe(storageFixture.secretAccessKey);
+      }
+    });
+
+    it('never persists the masked storage placeholder', async () => {
+      const storageFixture = {
+        endpoint: 'https://storage.example.test',
+        bucket: 'isolated-bucket',
+        accessKeyId: 'isolated-access-key',
+        secretAccessKey: 'isolated-secret-key',
+        urlPrefix: 'https://cdn.example.test',
+      };
+      expect(await config.setConfig('storage', storageFixture)).toBe(true);
+      // 占位符回传会走配置连通性测试（假端点必然失败返回 400），
+      // 关键断言是占位符在任何情况下都不会被持久化。
+      const save = await request('/settings', 'PUT', 'admin', {
+        group: 'storage',
+        config: {
+          ...storageFixture,
+          secretAccessKey: '********',
+          urlPrefix: 'https://cdn.example.test/changed',
+        },
+      });
+      expect([200, 400]).toContain(save.status);
+      const stored = await config.getConfig('storage');
+      expect(stored?.secretAccessKey).toBe('isolated-secret-key');
+    });
+
+    it('gates OAuth credential and callback writes to super admin', async () => {
+      const adminSave = (providerPatch: object) =>
+        request('/settings', 'PUT', 'admin', {
+          group: 'security',
+          config: { oauth: { enabled: true, providers: { github: providerPatch } } },
+        });
+      const github = security.oauth.providers.github;
+
+      // 回调地址重定向（账户接管向量）对普通管理员关闭
+      expect(
+        (await adminSave({ ...github, callbackUrl: 'https://attacker.example.test/callback' }))
+          .status
+      ).toBe(403);
+      // 真实凭据变更同样关闭
+      expect(
+        (await adminSave({ ...github, clientSecret: 'attacker-controlled-secret' })).status
+      ).toBe(403);
+      // 掩码占位符原样回传 + 未变更回调：允许（保持原值）
+      expect((await adminSave({ ...github, clientSecret: '********' })).status).toBe(200);
+      const stored = await config.getConfig('security');
+      expect(stored?.oauth?.providers?.github?.clientSecret).toBe('isolated-provider-secret');
+      expect(stored?.oauth?.providers?.github?.callbackUrl).toBe(github.callbackUrl);
+
+      // super admin 可以轮换回调地址
+      const rotated = await request('/settings', 'PUT', 'super_admin', {
+        group: 'security',
+        config: {
+          oauth: {
+            enabled: true,
+            providers: {
+              github: { ...github, callbackUrl: 'https://example.test/callback-rotated' },
+            },
+          },
+        },
+      });
+      expect(rotated.status).toBe(200);
+      const rotatedConfig = await config.getConfig('security');
+      expect(rotatedConfig?.oauth?.providers?.github?.callbackUrl).toBe(
+        'https://example.test/callback-rotated'
+      );
+    });
+
     registerSettingsPersistenceCases(() => fixture);
   }
 );

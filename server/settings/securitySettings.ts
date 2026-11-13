@@ -1,4 +1,5 @@
 import { SignJWT } from 'jose';
+import { maskOAuthSecretsForAdmin } from './adminSecrets';
 import type { SecurityConfig, SecuritySettings, SecuritySettingsUpdate } from '../types/config';
 
 const signingKeys = ['jwtSecret', 'jwtRefreshSecret', 'sessionSecret'] as const;
@@ -30,11 +31,17 @@ function invalid(): never {
 
 export function readSecuritySettings(config: unknown): SecuritySettings {
   if (!isRecord(config)) return {} as SecuritySettings;
-  return Object.fromEntries(
+  const settings = Object.fromEntries(
     editableFields
       .filter((field) => Object.prototype.hasOwnProperty.call(config, field))
       .map((field) => [field, config[field]])
   ) as SecuritySettings;
+  // 次要管理员永远收不到真实的 OAuth 凭据材料（与签名密钥同一边界）
+  const oauth = maskOAuthSecretsForAdmin(settings.oauth as Record<string, any> | undefined | null);
+  if (oauth !== undefined && oauth !== null) {
+    settings.oauth = oauth as SecuritySettings['oauth'];
+  }
+  return settings;
 }
 
 export function parseSecuritySettingsUpdate(value: unknown): SecuritySettingsUpdate {
