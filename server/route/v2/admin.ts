@@ -79,8 +79,17 @@ adminRouter.post('/hooks/test', authenticateJWT, requireAdmin, async (c: HonoCon
       return c.json(createResponse(null, ''), 404);
     }
 
+    // 管理端 GET 拿到的是掩码后的通道；测试前用已存配置还原真实凭据
+    // （与 storage 分支先 resolve 再 testStorage 同一惯例）。
+    const storedNotification = await getConfig('notification');
+    const resolvedChannel =
+      (
+        resolveNotificationSecrets({ adminHooks: { channels: [channel] } }, storedNotification)
+          ?.adminHooks?.channels as any[] | undefined
+      )?.[0] ?? channel;
+
     const testChannel = {
-      ...channel,
+      ...resolvedChannel,
       enabled: true,
       events: ['user.registered' as const],
     };

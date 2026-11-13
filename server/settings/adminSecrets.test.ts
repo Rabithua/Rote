@@ -147,6 +147,76 @@ describe('admin secret masking', () => {
     expect(resolved.adminHooks.channels[0].key).toBe('bark-key');
   });
 
+  it('masks HTTP hook header values per value, preserving the object shape', () => {
+    const masked = maskNotificationSecretsForAdmin({
+      vapidPublicKey: 'vapid-public',
+      vapidPrivateKey: 'vapid-private',
+      adminHooks: {
+        enabled: true,
+        channels: [
+          {
+            id: 'http-hook',
+            name: 'Hook',
+            type: 'http',
+            url: 'https://hooks.example.test/endpoint',
+            headers: { Authorization: 'Bearer token-1', 'X-Trace': 'trace-1' },
+            enabled: true,
+          },
+        ],
+      },
+    });
+    const channel = masked.adminHooks.channels[0];
+    expect(channel.headers).toEqual({
+      Authorization: '********',
+      'X-Trace': '********',
+    });
+    expect(typeof channel.headers).toBe('object');
+  });
+
+  it('resolves masked header values per key and keeps new headers', () => {
+    const existing = {
+      vapidPublicKey: 'vapid-public',
+      vapidPrivateKey: 'vapid-private',
+      adminHooks: {
+        enabled: true,
+        channels: [
+          {
+            id: 'http-hook',
+            name: 'Hook',
+            type: 'http',
+            url: 'https://hooks.example.test/endpoint',
+            headers: { Authorization: 'Bearer stored-token' },
+            enabled: true,
+          },
+        ],
+      },
+    };
+    const resolved = resolveNotificationSecrets(
+      {
+        vapidPublicKey: 'vapid-public',
+        vapidPrivateKey: 'vapid-private',
+        adminHooks: {
+          enabled: true,
+          channels: [
+            {
+              id: 'http-hook',
+              name: 'Hook',
+              type: 'http',
+              url: 'https://hooks.example.test/endpoint',
+              headers: { Authorization: '********', 'X-New': 'new-value' },
+              enabled: true,
+            },
+          ],
+        },
+      },
+      existing
+    );
+    expect(resolved.adminHooks.channels[0].headers).toEqual({
+      Authorization: 'Bearer stored-token',
+      'X-New': 'new-value',
+    });
+  });
+
   it('resolves masked or empty storage secrets back to the stored value', () => {
     const existing = { secretAccessKey: 'stored-secret' };
     expect(resolveStorageSecret({ secretAccessKey: '********' }, existing)).toBe('stored-secret');

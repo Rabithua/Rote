@@ -141,8 +141,12 @@ function maskHookChannelSecrets(channel: SecretRecord): SecretRecord {
   const next = { ...channel };
   if (typeof next.key === 'string' && next.key) next.key = MASKED_SECRET;
   if (next.headers && typeof next.headers === 'object') {
-    // 整组头视为机密；保存时占位符还原为已存头
-    next.headers = MASKED_SECRET;
+    // 逐 header value 掩码，保持对象形状（管理端 headersToText/textarea 按对象编辑）
+    const maskedHeaders: Record<string, string> = {};
+    for (const [header, value] of Object.entries(next.headers as Record<string, string>)) {
+      maskedHeaders[header] = typeof value === 'string' && value ? MASKED_SECRET : value;
+    }
+    next.headers = maskedHeaders;
   }
   return next;
 }
@@ -187,11 +191,28 @@ export function resolveNotificationSecrets(
           resolved.key = priorChannel.key;
         }
         if (
-          resolved.headers === MASKED_SECRET &&
+          resolved.headers &&
+          typeof resolved.headers === 'object' &&
           priorChannel?.headers &&
           typeof priorChannel.headers === 'object'
         ) {
-          resolved.headers = priorChannel.headers;
+          // 逐 header 还原已存值（header 名大小写不敏感）：
+          // 占位符回传恢复原值，新增/修改保留新值
+          const priorHeaders = priorChannel.headers as Record<string, string>;
+          const incomingHeaders = resolved.headers as Record<string, string>;
+          const priorByKey = new Map(
+            Object.entries(priorHeaders).map(([key, value]) => [key.toLowerCase(), value])
+          );
+          const resolvedHeaders: Record<string, string> = {};
+          for (const [header, value] of Object.entries(incomingHeaders)) {
+            const priorValue = priorByKey.get(header.toLowerCase());
+            if (value === MASKED_SECRET && priorValue) {
+              resolvedHeaders[header] = priorHeaders[header] ?? value;
+            } else {
+              resolvedHeaders[header] = value;
+            }
+          }
+          resolved.headers = resolvedHeaders;
         }
         return resolved;
       }),
