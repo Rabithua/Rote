@@ -1570,7 +1570,10 @@
         "apiRateLimit": "API レート制限",
         "apiRateLimitDescription": "ユーザーまたはIPアドレスごとに許可される1秒あたりの最大リクエスト数。APIの悪用を防ぐために使用されます。最小値は10、デフォルトは100リクエスト/秒です。",
         "maxVideoUploadSizeMB": "動画サイズ上限（MB）",
-        "maxVideoUploadSizeMBDesc": "動画1件あたりの最大アップロードサイズ。最小1MB、既定値は300MBです。"
+        "maxVideoUploadSizeMBDesc": "動画1件あたりの最大アップロードサイズ。最小1MB、既定値は300MBです。",
+        "roles": {
+          "user": "ユーザー"
+        }
       },
       "security": {
         "errors": {

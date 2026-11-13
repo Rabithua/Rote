@@ -1570,7 +1570,10 @@
         "apiRateLimit": "API Rate Limit",
         "apiRateLimitDescription": "Maximum number of requests per second allowed per user or IP address. Used to prevent API abuse. Minimum is 10, default is 100 requests/second.",
         "maxVideoUploadSizeMB": "Video Size Limit (MB)",
-        "maxVideoUploadSizeMBDesc": "Maximum upload size per video. Minimum 1MB, default 300MB."
+        "maxVideoUploadSizeMBDesc": "Maximum upload size per video. Minimum 1MB, default 300MB.",
+        "roles": {
+          "user": "User"
+        }
       },
       "security": {
         "errors": {
