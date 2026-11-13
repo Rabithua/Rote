@@ -56,10 +56,9 @@ databaseDescribe(
         expect(result.notification).toEqual(notification);
         const single = await request('/settings?group=security', 'GET', role);
         expect(single.status).toBe(200);
-        expectNoSigningKeys((await single.json()).data.config);
-        expect((await single.json()).data.config.oauth.providers.github.clientSecret).toBe(
-          '********'
-        );
+        const singleConfig = (await single.json()).data.config;
+        expectNoSigningKeys(singleConfig);
+        expect(singleConfig.oauth.providers.github.clientSecret).toBe('********');
       }
     });
 
