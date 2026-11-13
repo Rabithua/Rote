@@ -196,17 +196,18 @@ export function resolveNotificationSecrets(
           priorChannel?.headers &&
           typeof priorChannel.headers === 'object'
         ) {
-          // 逐 header key 还原已存值：占位符回传恢复原值，新增/修改保留新值
+          // 逐 header 还原已存值（header 名大小写不敏感）：
+          // 占位符回传恢复原值，新增/修改保留新值
           const priorHeaders = priorChannel.headers as Record<string, string>;
           const incomingHeaders = resolved.headers as Record<string, string>;
+          const priorByKey = new Map(
+            Object.entries(priorHeaders).map(([key, value]) => [key.toLowerCase(), value])
+          );
           const resolvedHeaders: Record<string, string> = {};
           for (const [header, value] of Object.entries(incomingHeaders)) {
-            if (
-              value === MASKED_SECRET &&
-              typeof priorHeaders[header] === 'string' &&
-              priorHeaders[header]
-            ) {
-              resolvedHeaders[header] = priorHeaders[header];
+            const priorValue = priorByKey.get(header.toLowerCase());
+            if (value === MASKED_SECRET && priorValue) {
+              resolvedHeaders[header] = priorHeaders[header] ?? value;
             } else {
               resolvedHeaders[header] = value;
             }
