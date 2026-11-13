@@ -1,3 +1,4 @@
 {
-  "security_settings_updated": "Configuration updated successfully"
+  "security_settings_updated": "Configuration updated successfully",
+  "oauth_credentials_super_admin_only": "Only super admin can modify OAuth provider credentials or callback URLs"
 }
