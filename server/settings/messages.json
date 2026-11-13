@@ -1,4 +1,5 @@
 {
   "security_settings_updated": "Configuration updated successfully",
-  "oauth_credentials_super_admin_only": "Only super admin can modify OAuth provider credentials or callback URLs"
+  "oauth_credentials_super_admin_only": "Only super admin can modify OAuth provider credentials or callback URLs",
+  "storage_configuration_incomplete": "Storage configuration is incomplete"
 }

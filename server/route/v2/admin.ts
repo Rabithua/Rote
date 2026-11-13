@@ -24,6 +24,8 @@ import {
   maskStorageSecretForAdmin,
   oauthProviderCredentialChanges,
   resolveMaskedOAuthProviderSecrets,
+  maskNotificationSecretsForAdmin,
+  resolveNotificationSecrets,
   resolveStorageSecret,
 } from '../../settings/adminSecrets';
 import {
@@ -112,6 +114,9 @@ const sanitizeSettingsForAdmin = (configs: Record<string, any>) => ({
   ...(configs.ai ? { ai: sanitizeAiConfig(configs.ai) } : {}),
   ...(configs.security ? { security: readSecuritySettings(configs.security) } : {}),
   ...(configs.storage ? { storage: maskStorageSecretForAdmin(configs.storage) } : {}),
+  ...(configs.notification
+    ? { notification: maskNotificationSecretsForAdmin(configs.notification) }
+    : {}),
 });
 
 // 获取所有配置（管理员）
@@ -136,7 +141,9 @@ adminRouter.get('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
                 ? readSecuritySettings(config)
                 : group === 'storage'
                   ? maskStorageSecretForAdmin(config as Record<string, any>)
-                  : config,
+                  : group === 'notification'
+                    ? maskNotificationSecretsForAdmin(config as Record<string, any>)
+                    : config,
         }),
         200
       );
@@ -298,6 +305,9 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
     }
 
     if (group === 'notification') {
+      // 掩码占位符/空值还原为已存机密（管理端 UI 会把掩码原样回传）
+      const existingNotification = await getConfig('notification');
+      config = resolveNotificationSecrets(config, existingNotification) as NotificationConfig;
       try {
         config = validateNotificationConfig(config as NotificationConfig);
       } catch (error: any) {
@@ -319,11 +329,16 @@ adminRouter.put('/settings', authenticateJWT, requireAdmin, async (c: HonoContex
       return c.json(createResponse(null, 'Failed to update configuration'), 500);
     }
 
+    const responseConfig =
+      group === 'ai'
+        ? sanitizeAiConfig(config as AiConfig)
+        : group === 'storage'
+          ? maskStorageSecretForAdmin(config as Record<string, any>)
+          : group === 'notification'
+            ? maskNotificationSecretsForAdmin(config as Record<string, any>)
+            : config;
     return c.json(
-      createResponse(
-        { group, config: group === 'ai' ? sanitizeAiConfig(config as AiConfig) : config },
-        'Configuration updated successfully'
-      ),
+      createResponse({ group, config: responseConfig }, 'Configuration updated successfully'),
       200
     );
   } catch (error: any) {

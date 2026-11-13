@@ -53,7 +53,12 @@ databaseDescribe(
           security.oauth.providers.github.callbackUrl
         );
         expect(result.security.oauth.providers.github.clientSecret).toBe('********');
-        expect(result.notification).toEqual(notification);
+        expect(result.notification.vapidPublicKey).toBe(notification.vapidPublicKey);
+        expect(result.notification.vapidPrivateKey).toBe('********');
+        expect(result.notification.adminHooks.channels[0].key).toBe('********');
+        expect(result.notification.adminHooks.channels[0].id).toBe(
+          notification.adminHooks.channels[0].id
+        );
         const single = await request('/settings?group=security', 'GET', role);
         expect(single.status).toBe(200);
         const singleConfig = (await single.json()).data.config;
@@ -377,6 +382,41 @@ databaseDescribe(
       expect(rotatedConfig?.oauth?.providers?.github?.callbackUrl).toBe(
         'https://example.test/callback-rotated'
       );
+    });
+
+    it('masks notification secrets and never persists or echoes placeholders', async () => {
+      // GET 掩码（双角色）
+      for (const role of ['admin', 'super_admin'] as const) {
+        const response = await request('/settings?group=notification', 'GET', role);
+        expect(response.status).toBe(200);
+        const stored = (await response.json()).data.config;
+        expect(stored.vapidPublicKey).toBe(notification.vapidPublicKey);
+        expect(stored.vapidPrivateKey).toBe('********');
+        expect(stored.adminHooks.channels[0].key).toBe('********');
+      }
+
+      // super_admin 保存：掩码回传 → 还原已存机密持久化；响应体回显掩码（非真实值）
+      const save = await request('/settings', 'PUT', 'super_admin', {
+        group: 'notification',
+        config: {
+          ...notification,
+          vapidPrivateKey: '********',
+          adminHooks: {
+            ...notification.adminHooks,
+            channels: notification.adminHooks.channels.map((channel) => ({
+              ...channel,
+              key: '********',
+            })),
+          },
+        },
+      });
+      expect(save.status).toBe(200);
+      const echoed = (await save.json()).data.config;
+      expect(echoed.vapidPrivateKey).toBe('********');
+      expect(echoed.adminHooks.channels[0].key).toBe('********');
+      const stored = await config.getConfig('notification');
+      expect(stored?.vapidPrivateKey).toBe(notification.vapidPrivateKey);
+      expect(stored?.adminHooks?.channels?.[0]?.key).toBe('isolated-bark-key');
     });
 
     registerSettingsPersistenceCases(() => fixture);
