@@ -1364,8 +1364,10 @@ export const giftCampaigns = pgTable(
   })
 );
 
-// Individual Apple offer codes. Distribution funnel stops at `shownAt`:
-// redemption truth lives with Apple, not here.
+// Individual Apple offer codes. Every row is a live allocation: codes enter
+// the table already paired with their recipient, so there is no unallocated
+// pool. Distribution funnel stops at `shownAt`: redemption truth lives with
+// Apple, not here.
 export const giftCodes = pgTable(
   'gift_codes',
   {
@@ -1373,13 +1375,9 @@ export const giftCodes = pgTable(
     campaignId: uuid('campaignId').notNull(),
     code: text('code').notNull().unique(),
     expiresAt: timestamp('expiresAt', { withTimezone: true, precision: 6 }).notNull(),
-    userid: uuid('userid'),
-    allocatedAt: timestamp('allocatedAt', { withTimezone: true, precision: 6 }),
+    userid: uuid('userid').notNull(),
+    allocatedAt: timestamp('allocatedAt', { withTimezone: true, precision: 6 }).notNull(),
     shownAt: timestamp('shownAt', { withTimezone: true, precision: 6 }),
-    status: varchar('status', { length: 20 })
-      .$type<'available' | 'allocated'>()
-      .notNull()
-      .default('available'),
     createdAt: timestamp('createdAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
     updatedAt: timestamp('updatedAt', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
   },
@@ -1393,9 +1391,9 @@ export const giftCodes = pgTable(
       columns: [table.userid],
       foreignColumns: [users.id],
       name: 'gift_codes_userid_users_id_fk',
-    }).onDelete('set null'),
+    }).onDelete('cascade'),
     useridIdx: index('gift_codes_userid_idx').on(table.userid),
-    campaignStatusIdx: index('gift_codes_campaign_status_idx').on(table.campaignId, table.status),
+    campaignIdx: index('gift_codes_campaign_idx').on(table.campaignId),
   })
 );
 

@@ -10,7 +10,10 @@ databaseDescribe('gift service integration', () => {
   let schema: typeof import('../drizzle/schema');
   let service: typeof import('./service');
   const adminId = randomUUID();
-  const usernames = ['gift_alice', 'gift_bob', 'gift_carol'];
+  // dave and eve stay code-less through the first import so later tests can
+  // exercise duplicate-code conflicts and expiry without leftover pending
+  // gifts from earlier cases.
+  const usernames = ['gift_alice', 'gift_bob', 'gift_carol', 'gift_dave', 'gift_eve'];
   const userIds: string[] = [];
   // Teardown stays scoped to campaigns this suite created — the test database
   // may be shared and must not lose unrelated gift data. Unique per-run names
@@ -69,66 +72,97 @@ databaseDescribe('gift service integration', () => {
     await database.delete(schema.users).where(inArray(schema.users.id, [...userIds, adminId]));
   });
 
-  it('imports codes with dedupe and audit description', async () => {
+  it('imports paired codes with dedupe and audit description', async () => {
+    const [aliceId, bobId, carolId] = userIds;
     const first = await importTestCodes({
       name: 'push-thanks-2026-11',
       title: 'A thank-you gift',
       description: 'Thanks for keeping notifications on.',
       createdBy: adminId,
       codes: [
-        { code: 'ROTE-AAA1', expiresAt: futureDate(30) },
-        { code: 'ROTE-BBB2', expiresAt: futureDate(30) },
-        { code: 'ROTE-CCC3', expiresAt: futureDate(45) },
+        { code: 'ROTE-AAA1', expiresAt: futureDate(30), userid: aliceId },
+        { code: 'ROTE-BBB2', expiresAt: futureDate(30), userid: bobId },
+        { code: 'ROTE-CCC3', expiresAt: futureDate(45), userid: carolId },
       ],
     });
     expect(first.imported).toBe(3);
-    expect(first.duplicates).toBe(0);
+    expect(first.duplicateCodes).toBe(0);
+    expect(first.skippedUserids).toEqual([]);
     expect(first.totalCodes).toBe(3);
 
+    // Re-importing an already-present code string for a fresh recipient loses
+    // the unique-code conflict; a code for a recipient who already holds one
+    // is skipped and reported.
+    const daveId = userIds[3];
     const second = await importTestCodes({
       name: 'push-thanks-2026-11',
-      codes: [
-        { code: 'ROTE-BBB2', expiresAt: futureDate(30) },
-        { code: 'ROTE-DDD4', expiresAt: futureDate(45) },
-        { code: 'ROTE-DDD4', expiresAt: futureDate(45) },
-      ],
+      codes: [{ code: 'ROTE-BBB2', expiresAt: futureDate(30), userid: daveId }],
     });
-    expect(second.imported).toBe(1);
-    expect(second.duplicates).toBe(1);
-    expect(second.totalCodes).toBe(4);
-    primaryCampaignId = second.campaignId;
+    expect(second.imported).toBe(0);
+    expect(second.duplicateCodes).toBe(1);
+    expect(second.skippedUserids).toEqual([]);
+    expect(second.totalCodes).toBe(3);
+
+    const third = await importTestCodes({
+      name: 'push-thanks-2026-11',
+      codes: [{ code: 'ROTE-DDD4', expiresAt: futureDate(45), userid: aliceId }],
+    });
+    expect(third.imported).toBe(0);
+    expect(third.duplicateCodes).toBe(0);
+    expect(third.skippedUserids).toEqual([aliceId]);
+    expect(third.totalCodes).toBe(3);
+    primaryCampaignId = third.campaignId;
+
+    const detail = await service.campaignDetail(primaryCampaignId);
+    expect(detail.campaign.status).toBe('allocated');
   });
 
-  it('rejects expired or malformed imports', async () => {
+  it('rejects expired, malformed, or unknown-recipient imports', async () => {
     expect(
       importTestCodes({
         name: 'expired-import',
-        codes: [{ code: 'ROTE-OLD', expiresAt: new Date(Date.now() - 1000) }],
+        codes: [{ code: 'ROTE-OLD', expiresAt: new Date(Date.now() - 1000), userid: userIds[0] }],
       })
     ).rejects.toThrow('gift_invalid_request');
     expect(
       importTestCodes({
         name: 'expired-import',
-        codes: [{ code: '', expiresAt: futureDate(1) }],
+        codes: [{ code: '', expiresAt: futureDate(1), userid: userIds[0] }],
+      })
+    ).rejects.toThrow('gift_invalid_request');
+    expect(
+      importTestCodes({
+        name: 'expired-import',
+        codes: [{ code: 'ROTE-BADID', expiresAt: futureDate(1), userid: 'not-a-uuid' }],
+      })
+    ).rejects.toThrow('gift_invalid_request');
+    expect(
+      importTestCodes({
+        name: 'expired-import',
+        codes: [{ code: 'ROTE-GHOST', expiresAt: futureDate(1), userid: randomUUID() }],
+      })
+    ).rejects.toThrow('gift_invalid_request');
+    // The same code pointed at two recipients is a caller data conflict:
+    // refuse it instead of silently dropping one of the listed recipients.
+    expect(
+      importTestCodes({
+        name: 'expired-import',
+        codes: [
+          { code: 'ROTE-TWIN', expiresAt: futureDate(1), userid: userIds[0] },
+          { code: 'ROTE-TWIN', expiresAt: futureDate(1), userid: userIds[1] },
+        ],
       })
     ).rejects.toThrow('gift_invalid_request');
   });
 
-  it('allocates by username, reports unknown names, and is idempotent', async () => {
-    const result = await service.allocate({
-      campaignId: primaryCampaignId!,
-      usernames: ['gift_alice', 'gift_bob', 'gift_ghost'],
+  it('accepts uppercase uuid recipients by canonicalizing before checks', async () => {
+    const daveId = userIds[3];
+    const imported = await importTestCodes({
+      name: 'upper-uuid',
+      codes: [{ code: 'ROTE-UP', expiresAt: futureDate(10), userid: daveId.toUpperCase() }],
     });
-    expect(result.allocated).toBe(2);
-    expect(result.unknownUsernames).toEqual(['gift_ghost']);
-    expect(result.alreadyAllocated).toBe(0);
-
-    const rerun = await service.allocate({
-      campaignId: primaryCampaignId!,
-      usernames: ['gift_alice', 'gift_bob'],
-    });
-    expect(rerun.allocated).toBe(0);
-    expect(rerun.alreadyAllocated).toBe(2);
+    expect(imported.imported).toBe(1);
+    expect(await service.currentGiftForUser(daveId)).not.toBeNull();
   });
 
   it('surfaces the pending gift once, marks shown, then hides it', async () => {
@@ -147,12 +181,11 @@ databaseDescribe('gift service integration', () => {
   });
 
   it('never returns expired allocations and reports them in the funnel', async () => {
-    const carolId = userIds[2];
+    const eveId = userIds[4];
     const imported = await importTestCodes({
       name: 'short-window',
-      codes: [{ code: 'ROTE-SOON', expiresAt: futureDate(1) }],
+      codes: [{ code: 'ROTE-SOON', expiresAt: futureDate(1), userid: eveId }],
     });
-    await service.allocate({ campaignId: imported.campaignId, userids: [carolId] });
     // Backdate the expiry directly to simulate the clock passing show time.
     await database
       .update(schema.giftCodes)
@@ -163,65 +196,36 @@ databaseDescribe('gift service integration', () => {
           eq(schema.giftCodes.code, 'ROTE-SOON')
         )
       );
-    expect(await service.currentGiftForUser(carolId)).toBeNull();
+    expect(await service.currentGiftForUser(eveId)).toBeNull();
 
     const status = await service.campaignStatus(imported.campaignId);
     expect(status.totals.expired).toBe(1);
     expect(status.totals.allocatedActive).toBe(0);
-    expect(status.totals.available).toBe(0);
+    expect(status.totals.shown).toBe(0);
+    expect(status.totals.total).toBe(1);
   });
 
-  it('fails allocation when the unexpired pool is too small', async () => {
-    const imported = await importTestCodes({
-      name: 'tiny-pool',
-      codes: [{ code: 'ROTE-ONE', expiresAt: futureDate(5) }],
-    });
-    expect(
-      service.allocate({
-        campaignId: imported.campaignId,
-        usernames: ['gift_alice', 'gift_bob'],
-      })
-    ).rejects.toThrow('gift_insufficient_codes');
-    // Nothing was partially allocated by the failed transaction.
-    const detail = await service.campaignDetail(imported.campaignId);
-    expect(detail.codes.every((row) => row.status === 'available')).toBe(true);
-  });
-
-  it('grants an extra code even to a user who already holds one', async () => {
+  it('delivers multiple codes for one recipient from a single import in order', async () => {
     const aliceId = userIds[0];
-    const granted = await service.grant({ campaignId: primaryCampaignId!, userid: aliceId });
-    expect(granted.code).toBeTruthy();
-
-    const detail = await service.campaignDetail(primaryCampaignId!);
-    const aliceRows = detail.codes.filter((row) => row.userid === aliceId);
-    expect(aliceRows.length).toBe(2);
-    // The granted code becomes alice's pending offer (the earlier one was shown).
-    const pending = await service.currentGiftForUser(aliceId);
-    expect(pending?.codeId).toBe(granted.codeId);
-  });
-
-  it('requires recipients to resolve before allocating', async () => {
-    const byName = await service.allocate({
-      campaignId: primaryCampaignId!,
-      usernames: ['nobody_here'],
+    const imported = await importTestCodes({
+      name: 'double-gift',
+      codes: [
+        { code: 'ROTE-D1', expiresAt: futureDate(10), userid: aliceId },
+        { code: 'ROTE-D2', expiresAt: futureDate(20), userid: aliceId },
+      ],
     });
-    expect(byName.allocated).toBe(0);
-    expect(byName.unknownUsernames).toEqual(['nobody_here']);
+    expect(imported.imported).toBe(2);
+    expect(imported.skippedUserids).toEqual([]);
 
-    const byId = await service.allocate({
-      campaignId: primaryCampaignId!,
-      userids: [randomUUID()],
-    });
-    expect(byId.allocated).toBe(0);
-    expect(byId.unknownUserids.length).toBe(1);
+    const detail = await service.campaignDetail(imported.campaignId);
+    expect(detail.codes.filter((row) => row.userid === aliceId).length).toBe(2);
 
-    // A mistyped campaign id must fail loudly even when every recipient is
-    // unknown — a silent zero-allocation success would mask the typo.
-    expect(
-      service.allocate({
-        campaignId: randomUUID(),
-        usernames: ['nobody_here'],
-      })
-    ).rejects.toThrow('gift_campaign_not_found');
+    // The earlier allocation surfaces first; showing it reveals the next.
+    const firstOffer = await service.currentGiftForUser(aliceId);
+    expect(firstOffer).not.toBeNull();
+    expect(await service.markShown(firstOffer!.codeId, aliceId)).toBe('marked');
+    const secondOffer = await service.currentGiftForUser(aliceId);
+    expect(secondOffer).not.toBeNull();
+    expect(secondOffer!.codeId).not.toBe(firstOffer!.codeId);
   });
 });

@@ -817,7 +817,7 @@
   },
   {
     "name": "gift_import_codes",
-    "description": "Import Apple offer codes into a gift campaign; the campaign is created on first import. Codes must not be expired. Super admin only.",
+    "description": "Create or extend a gift campaign by importing Apple offer codes already paired with recipients: each code carries the userid of the user who will receive it. Codes enter the campaign allocated and pending; recipients already holding a code from this campaign are skipped and reported. Re-importing the same campaignName appends codes and can update the sheet copy. Codes must not be expired. Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {
@@ -852,11 +852,17 @@
               "expiresAt": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "userid": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Stable user id of the recipient; usernames can change, ids cannot."
               }
             },
             "required": [
               "code",
-              "expiresAt"
+              "expiresAt",
+              "userid"
             ],
             "additionalProperties": false
           }
@@ -870,56 +876,8 @@
     }
   },
   {
-    "name": "gift_allocate",
-    "description": "Allocate one gift code per recipient from a campaign pool. The recipient list is explicit (usernames or userids); eligibility targeting is decided by the caller, not this tool. Already-allocated recipients are skipped; fails when too few unexpired codes remain. Super admin only.",
-    "requiredScopes": [],
-    "requiredRole": "super_admin",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "campaignId": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "usernames": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1,
-          "maxItems": 5000
-        },
-        "userids": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "minItems": 1,
-          "maxItems": 5000
-        }
-      },
-      "required": [
-        "campaignId"
-      ],
-      "oneOf": [
-        {
-          "required": [
-            "usernames"
-          ]
-        },
-        {
-          "required": [
-            "userids"
-          ]
-        }
-      ],
-      "additionalProperties": false
-    }
-  },
-  {
     "name": "gift_status",
-    "description": "Gift campaign funnel: total/shown plus live available and allocated-active counts, one expired bucket (covers expired-unallocated and expired-unshown), and recipients whose codes expire within 7 days while unshown. Super admin only.",
+    "description": "Gift campaign funnel: total, live allocated-active (unshown, unexpired), shown, and expired counts, plus recipients whose codes expire within 7 days while unshown. Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {
@@ -938,7 +896,7 @@
   },
   {
     "name": "gift_detail",
-    "description": "Per-code gift campaign detail: recipient, username, status, expiry, allocation and shown timestamps. Returns at most 10,000 rows; truncated=true means the campaign holds more (check gift_status totals instead). Super admin only.",
+    "description": "Per-code gift campaign detail: recipient id and username, code, expiry, allocation and shown timestamps. Returns at most 10,000 rows; truncated=true means the campaign holds more (check gift_status totals instead). Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {
@@ -951,46 +909,6 @@
       },
       "required": [
         "campaignId"
-      ],
-      "additionalProperties": false
-    }
-  },
-  {
-    "name": "gift_grant",
-    "description": "Grant one additional gift code from a campaign pool to a single user (by username or userid), even if they already hold one. Super admin only.",
-    "requiredScopes": [],
-    "requiredRole": "super_admin",
-    "inputSchema": {
-      "type": "object",
-      "properties": {
-        "campaignId": {
-          "type": "string",
-          "format": "uuid"
-        },
-        "username": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 100
-        },
-        "userid": {
-          "type": "string",
-          "format": "uuid"
-        }
-      },
-      "required": [
-        "campaignId"
-      ],
-      "oneOf": [
-        {
-          "required": [
-            "username"
-          ]
-        },
-        {
-          "required": [
-            "userid"
-          ]
-        }
       ],
       "additionalProperties": false
     }

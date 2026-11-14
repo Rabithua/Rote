@@ -2,13 +2,7 @@ import { describe, expect, it } from 'bun:test';
 import { getToolDefinitionsForScopes } from './registry';
 import { getToolByName, getToolsForScopes } from './tools';
 
-const GIFT_TOOL_NAMES = [
-  'gift_import_codes',
-  'gift_allocate',
-  'gift_status',
-  'gift_detail',
-  'gift_grant',
-];
+const GIFT_TOOL_NAMES = ['gift_import_codes', 'gift_status', 'gift_detail'];
 
 const adminUser = { role: 'super_admin' };
 const normalUser = { role: 'user' };
