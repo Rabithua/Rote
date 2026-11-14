@@ -871,7 +871,7 @@
   },
   {
     "name": "gift_allocate",
-    "description": "Allocate one gift code per recipient from a campaign pool. The recipient list is explicit (usernames or userids); eligibility targeting is decided by the caller, not this tool. Already-allocated recipients are skipped; fails when too few unexpired codes remain. Super admin only.",
+    "description": "Allocate one gift code per recipient from a campaign pool. The recipient list is explicit; pass exactly one of usernames or userids. Eligibility targeting is decided by the caller, not this tool. Already-allocated recipients are skipped; fails when too few unexpired codes remain. Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {
@@ -883,6 +883,7 @@
         },
         "usernames": {
           "type": "array",
+          "description": "Recipient usernames; exactly one of usernames or userids must be provided.",
           "items": {
             "type": "string"
           },
@@ -891,6 +892,7 @@
         },
         "userids": {
           "type": "array",
+          "description": "Recipient user ids; exactly one of usernames or userids must be provided.",
           "items": {
             "type": "string",
             "format": "uuid"
@@ -901,18 +903,6 @@
       },
       "required": [
         "campaignId"
-      ],
-      "oneOf": [
-        {
-          "required": [
-            "usernames"
-          ]
-        },
-        {
-          "required": [
-            "userids"
-          ]
-        }
       ],
       "additionalProperties": false
     }
@@ -957,7 +947,7 @@
   },
   {
     "name": "gift_grant",
-    "description": "Grant one additional gift code from a campaign pool to a single user (by username or userid), even if they already hold one. Super admin only.",
+    "description": "Grant one additional gift code from a campaign pool to a single user, even if they already hold one. Pass exactly one of username or userid. Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {
@@ -969,28 +959,18 @@
         },
         "username": {
           "type": "string",
+          "description": "Recipient username; exactly one of username or userid must be provided.",
           "minLength": 1,
           "maxLength": 100
         },
         "userid": {
           "type": "string",
+          "description": "Recipient user id; exactly one of username or userid must be provided.",
           "format": "uuid"
         }
       },
       "required": [
         "campaignId"
-      ],
-      "oneOf": [
-        {
-          "required": [
-            "username"
-          ]
-        },
-        {
-          "required": [
-            "userid"
-          ]
-        }
       ],
       "additionalProperties": false
     }
