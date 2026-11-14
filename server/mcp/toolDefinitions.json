@@ -877,7 +877,7 @@
   },
   {
     "name": "gift_status",
-    "description": "Gift campaign funnel: total/shown plus live available and allocated-active counts, one expired bucket (covers expired-unallocated and expired-unshown), and recipients whose codes expire within 7 days while unshown. Super admin only.",
+    "description": "Gift campaign funnel: total, live allocated-active (unshown, unexpired), shown, and expired counts, plus recipients whose codes expire within 7 days while unshown. Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {
@@ -896,7 +896,7 @@
   },
   {
     "name": "gift_detail",
-    "description": "Per-code gift campaign detail: recipient, username, status, expiry, allocation and shown timestamps. Returns at most 10,000 rows; truncated=true means the campaign holds more (check gift_status totals instead). Super admin only.",
+    "description": "Per-code gift campaign detail: recipient id and username, code, expiry, allocation and shown timestamps. Returns at most 10,000 rows; truncated=true means the campaign holds more (check gift_status totals instead). Super admin only.",
     "requiredScopes": [],
     "requiredRole": "super_admin",
     "inputSchema": {

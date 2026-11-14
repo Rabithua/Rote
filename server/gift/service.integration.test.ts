@@ -142,6 +142,17 @@ databaseDescribe('gift service integration', () => {
         codes: [{ code: 'ROTE-GHOST', expiresAt: futureDate(1), userid: randomUUID() }],
       })
     ).rejects.toThrow('gift_invalid_request');
+    // The same code pointed at two recipients is a caller data conflict:
+    // refuse it instead of silently dropping one of the listed recipients.
+    expect(
+      importTestCodes({
+        name: 'expired-import',
+        codes: [
+          { code: 'ROTE-TWIN', expiresAt: futureDate(1), userid: userIds[0] },
+          { code: 'ROTE-TWIN', expiresAt: futureDate(1), userid: userIds[1] },
+        ],
+      })
+    ).rejects.toThrow('gift_invalid_request');
   });
 
   it('surfaces the pending gift once, marks shown, then hides it', async () => {

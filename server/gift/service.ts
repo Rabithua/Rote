@@ -1,6 +1,7 @@
 import { and, asc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { db } from '../utils/drizzle';
 import { giftCampaigns, giftCodes, users } from '../drizzle/schema';
+import { isValidUUID } from '../utils/main';
 import { GiftApiError } from './errors';
 
 const MAX_IMPORT_CODES = 50_000;
@@ -15,10 +16,6 @@ export type GiftImportResult = {
   skippedUserids: string[];
   totalCodes: number;
 };
-
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-}
 
 export async function importCodes(input: {
   name: string;
@@ -37,7 +34,7 @@ export async function importCodes(input: {
 
   // Codes arrive pre-paired with their recipient: every row enters the table
   // already allocated, so there is no unallocated pool state.
-  const seenCodes = new Set<string>();
+  const seenCodes = new Map<string, string>();
   const normalized: GiftCodeImport[] = [];
   const requestedUserids = new Set<string>();
   for (const item of input.codes) {
@@ -54,13 +51,21 @@ export async function importCodes(input: {
       throw new GiftApiError('gift_invalid_request', 400);
     }
     const userid = typeof item.userid === 'string' ? item.userid.trim() : '';
-    if (!isUuid(userid)) {
+    if (!isValidUUID(userid)) {
       throw new GiftApiError('gift_invalid_request', 400);
     }
-    // Repeated codes inside one payload collapse silently; they were never
-    // distinct cards, so counting them as duplicates would misstate the pool.
-    if (seenCodes.has(code)) continue;
-    seenCodes.add(code);
+    // Exact repeats of the same code+recipient collapse silently — they were
+    // never distinct cards. The same code pointed at a different recipient is
+    // a caller data conflict, not a repeat: refuse it instead of silently
+    // dropping one of the listed recipients.
+    const first = seenCodes.get(code);
+    if (first != null) {
+      if (first !== userid) {
+        throw new GiftApiError('gift_invalid_request', 400);
+      }
+      continue;
+    }
+    seenCodes.set(code, userid);
     requestedUserids.add(userid);
     normalized.push({ code, expiresAt, userid });
   }
@@ -125,12 +130,15 @@ export async function importCodes(input: {
       const rows = await tx
         .insert(giftCodes)
         .values(
-          chunk.map((item) => ({
+          chunk.map((item, index) => ({
             campaignId: campaign.id,
             code: item.code,
             expiresAt: item.expiresAt,
             userid: item.userid,
-            allocatedAt: now,
+            // One timestamp per payload would tie every row's allocatedAt and
+            // collapse currentGiftForUser's oldest-first ordering to heap
+            // order; a 1ms step per payload entry keeps payload order.
+            allocatedAt: new Date(now.getTime() + (start + index)),
           }))
         )
         .onConflictDoNothing({ target: giftCodes.code })
