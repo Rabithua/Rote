@@ -1,3 +1,8 @@
+-- The paired-import redesign keeps no unallocated pool, so pooled rows from
+-- the previous model have no place in the new schema: drop them before the
+-- NOT NULL constraints land.
+DELETE FROM "gift_codes" WHERE "userid" IS NULL OR "allocatedAt" IS NULL;
+--> statement-breakpoint
 ALTER TABLE "gift_codes" DROP CONSTRAINT "gift_codes_userid_users_id_fk";
 --> statement-breakpoint
 DROP INDEX "gift_codes_campaign_status_idx";--> statement-breakpoint

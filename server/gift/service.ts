@@ -50,7 +50,10 @@ export async function importCodes(input: {
     ) {
       throw new GiftApiError('gift_invalid_request', 400);
     }
-    const userid = typeof item.userid === 'string' ? item.userid.trim() : '';
+    // Lowercase before any comparison: Postgres canonicalizes uuid to
+    // lowercase, so an uppercase id from the caller would otherwise fail the
+    // known-user check below.
+    const userid = typeof item.userid === 'string' ? item.userid.trim().toLowerCase() : '';
     if (!isValidUUID(userid)) {
       throw new GiftApiError('gift_invalid_request', 400);
     }
@@ -82,6 +85,12 @@ export async function importCodes(input: {
   }
 
   return await db.transaction(async (tx) => {
+    // Serialize concurrent shipments of the same campaign name (the register
+    // pattern's transaction-scoped advisory lock): overlapping imports would
+    // both miss the already-holding check below and double-send recipients.
+    // Keyed on the caller-supplied name so it also covers first imports where
+    // the campaign row does not exist yet.
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`gift-import:${name}`}))`);
     let [campaign] = await tx
       .select()
       .from(giftCampaigns)

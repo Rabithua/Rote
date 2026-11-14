@@ -155,6 +155,16 @@ databaseDescribe('gift service integration', () => {
     ).rejects.toThrow('gift_invalid_request');
   });
 
+  it('accepts uppercase uuid recipients by canonicalizing before checks', async () => {
+    const daveId = userIds[3];
+    const imported = await importTestCodes({
+      name: 'upper-uuid',
+      codes: [{ code: 'ROTE-UP', expiresAt: futureDate(10), userid: daveId.toUpperCase() }],
+    });
+    expect(imported.imported).toBe(1);
+    expect(await service.currentGiftForUser(daveId)).not.toBeNull();
+  });
+
   it('surfaces the pending gift once, marks shown, then hides it', async () => {
     const aliceId = userIds[0];
 
