@@ -125,7 +125,8 @@ function isLoopbackHostname(hostname: string): boolean {
 /**
  * RFC 8252 §7.3: loopback clients bind an ephemeral port per run, so a
  * registered loopback URI matches on scheme, host, path, and query while the
- * port may differ. Non-loopback URIs keep requiring an exact match.
+ * port may differ. The relaxation is scoped to plain-http loopback redirects;
+ * every other URI keeps requiring an exact match.
  */
 export function isRegisteredRedirectUri(
   registeredUris: readonly string[],
@@ -139,11 +140,13 @@ export function isRegisteredRedirectUri(
   } catch {
     return false;
   }
+  // RFC 6749 §3.1.2 forbids fragments in redirect URIs, and userinfo is never
+  // part of a legitimate callback — reject both instead of ignoring them.
+  if (requested.hash || requested.username || requested.password) return false;
+  // RFC 8252 §7.3 port variance is scoped to plain-http loopback redirects.
+  if (requested.protocol !== 'http:') return false;
   const hostname = requested.hostname.toLowerCase();
-  const isLoopback =
-    (requested.protocol === 'http:' || requested.protocol === 'https:') &&
-    isLoopbackHostname(hostname);
-  if (!isLoopback) return false;
+  if (!isLoopbackHostname(hostname)) return false;
 
   return registeredUris.some((registered) => {
     let candidate: URL;

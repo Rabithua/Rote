@@ -76,6 +76,26 @@ export async function testAuthorizeValidation(clientId: string, codeChallenge: s
     'loopback redirect port variation should be accepted'
   );
 
+  const httpsLoopbackVariation = await startAuthorization({
+    clientId,
+    scopes: ['notes:read'],
+    codeChallenge,
+    redirectUri: 'https://localhost:53211/oauth/callback',
+  });
+  assertStatus(
+    httpsLoopbackVariation.status,
+    400,
+    'loopback port relaxation should stay scoped to plain http'
+  );
+
+  const fragmentRedirect = await startAuthorization({
+    clientId,
+    scopes: ['notes:read'],
+    codeChallenge,
+    redirectUri: 'http://localhost:8765/oauth/callback#frag',
+  });
+  assertStatus(fragmentRedirect.status, 400, 'fragment redirect_uri should be rejected');
+
   const badScope = await startAuthorization({
     clientId,
     scopes: ['notes:read', 'unknown:scope'],
