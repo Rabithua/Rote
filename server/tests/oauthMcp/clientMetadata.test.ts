@@ -33,6 +33,21 @@ export async function testClientMetadataDocumentSupport() {
     !isRegisteredRedirectUri(['https://example.com/callback'], 'https://example.com:8443/callback'),
     'non-loopback redirect port differences should not match'
   );
+  assert(
+    !isRegisteredRedirectUri(['http://127.0.0.1:8765/callback'], 'https://127.0.0.1:8765/callback'),
+    'loopback port relaxation should stay scoped to plain http'
+  );
+  assert(
+    !isRegisteredRedirectUri(['http://localhost/callback'], 'http://localhost:53211/callback#frag'),
+    'fragment-bearing loopback redirect should not match'
+  );
+  assert(
+    !isRegisteredRedirectUri(
+      ['http://127.0.0.1:8765/callback'],
+      'http://user@127.0.0.1:53211/callback'
+    ),
+    'userinfo-bearing loopback redirect should not match'
+  );
 
   for (const invalid of [
     'http://client.example.com/oauth/client-metadata.json',
