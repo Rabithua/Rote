@@ -64,6 +64,18 @@ export async function testAuthorizeValidation(clientId: string, codeChallenge: s
   assertStatus(badRedirect.status, 400, 'bad redirect_uri should be rejected');
   assert(badRedirect.data.error === 'invalid_request', 'bad redirect should return OAuth error');
 
+  const loopbackPortVariation = await startAuthorization({
+    clientId,
+    scopes: ['notes:read'],
+    codeChallenge,
+    redirectUri: 'http://localhost:53211/oauth/callback',
+  });
+  assertStatus(
+    loopbackPortVariation.status,
+    302,
+    'loopback redirect port variation should be accepted'
+  );
+
   const badScope = await startAuthorization({
     clientId,
     scopes: ['notes:read', 'unknown:scope'],

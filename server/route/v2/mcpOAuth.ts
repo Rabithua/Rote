@@ -33,6 +33,7 @@ import {
   expiresIn,
   getMcpResource,
   getOAuthIssuer,
+  isRegisteredRedirectUri,
   MCP_ACCESS_TOKEN_TTL_SECONDS,
   OAUTH_AUTHORIZATION_CODE_TTL_SECONDS,
   OAUTH_AUTHORIZATION_REQUEST_TTL_SECONDS,
@@ -111,7 +112,7 @@ oauthRouter.get('/authorize', (c: HonoContext) =>
 
     const client = await resolveClientInitiatedOAuthClient(clientId, { redirectUri });
     if (!client) oauthError(messages.errors.invalidClient, messages.clientNotFound);
-    if (!client.redirectUris.includes(redirectUri))
+    if (!isRegisteredRedirectUri(client.redirectUris, redirectUri))
       oauthError(messages.errors.invalidRequest, messages.redirectUriMismatch);
     if (resource !== getMcpResource(c))
       oauthError(messages.errors.invalidTarget, messages.invalidResource);

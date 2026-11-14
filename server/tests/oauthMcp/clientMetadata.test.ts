@@ -2,7 +2,7 @@ import {
   clientMetadataTestExports,
   fetchOAuthClientMetadataDocument,
 } from '../../oauth/clientMetadata';
-import { assertValidRedirectUri } from '../../oauth/utils';
+import { assertValidRedirectUri, isRegisteredRedirectUri } from '../../oauth/utils';
 import { assert } from './common.test';
 
 const { assertClientMetadataDocumentUrl, isNativePublicClientId } = clientMetadataTestExports;
@@ -12,6 +12,27 @@ export async function testClientMetadataDocumentSupport() {
   assertClientMetadataDocumentUrl(clientId);
   assert(isNativePublicClientId('org.rcex.KeepTalkingApp'), 'native client id should be accepted');
   assertValidRedirectUri('ktoauth://oauth/callback');
+
+  // RFC 8252 §7.3: loopback redirect URIs match across ports.
+  assert(
+    isRegisteredRedirectUri(['http://127.0.0.1:8765/callback'], 'http://127.0.0.1:53211/callback'),
+    'loopback redirect should match with a different port'
+  );
+  assert(
+    isRegisteredRedirectUri(['http://localhost/callback'], 'http://localhost:53211/callback'),
+    'portless loopback redirect should match a port-embellished request'
+  );
+  assert(
+    !isRegisteredRedirectUri(
+      ['http://localhost:8765/oauth/callback'],
+      'http://localhost:9999/wrong'
+    ),
+    'loopback redirect with a different path should not match'
+  );
+  assert(
+    !isRegisteredRedirectUri(['https://example.com/callback'], 'https://example.com:8443/callback'),
+    'non-loopback redirect port differences should not match'
+  );
 
   for (const invalid of [
     'http://client.example.com/oauth/client-metadata.json',

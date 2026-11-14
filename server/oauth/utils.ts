@@ -113,6 +113,54 @@ export function isPrivateUseRedirectUri(value: string): boolean {
   return Boolean(parsed.hostname || parsed.pathname);
 }
 
+function isLoopbackHostname(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1' ||
+    hostname === '[::1]'
+  );
+}
+
+/**
+ * RFC 8252 §7.3: loopback clients bind an ephemeral port per run, so a
+ * registered loopback URI matches on scheme, host, path, and query while the
+ * port may differ. Non-loopback URIs keep requiring an exact match.
+ */
+export function isRegisteredRedirectUri(
+  registeredUris: readonly string[],
+  redirectUri: string
+): boolean {
+  if (registeredUris.includes(redirectUri)) return true;
+
+  let requested: URL;
+  try {
+    requested = new URL(redirectUri);
+  } catch {
+    return false;
+  }
+  const hostname = requested.hostname.toLowerCase();
+  const isLoopback =
+    (requested.protocol === 'http:' || requested.protocol === 'https:') &&
+    isLoopbackHostname(hostname);
+  if (!isLoopback) return false;
+
+  return registeredUris.some((registered) => {
+    let candidate: URL;
+    try {
+      candidate = new URL(registered);
+    } catch {
+      return false;
+    }
+    return (
+      candidate.protocol === requested.protocol &&
+      candidate.hostname.toLowerCase() === hostname &&
+      candidate.pathname === requested.pathname &&
+      candidate.search === requested.search
+    );
+  });
+}
+
 export async function parseFormBody(c: HonoContext): Promise<Record<string, string>> {
   const contentType = c.req.header('content-type') || '';
   if (contentType.includes('application/x-www-form-urlencoded')) {
