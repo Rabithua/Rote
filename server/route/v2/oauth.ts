@@ -188,7 +188,10 @@ oauthRouter.post('/apple/bind/native', authenticateJWT, async (c: HonoContext) =
   } catch (error: any) {
     console.error('Native Apple bind error:', error);
     const status = typeof error?.status === 'number' ? error.status : 500;
-    return c.json(createResponse(null, error.message || 'Native Apple bind failed'), status);
+    return c.json(
+      createResponse(null, error.message || 'Native Apple bind failed', status),
+      status
+    );
   }
 });
 
